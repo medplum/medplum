@@ -161,7 +161,6 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
 
   let worker: Worker<SubscriptionJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'subscription');
     worker = new Worker<SubscriptionJobData>(
       queueName,
       (job) =>
@@ -171,8 +170,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
             )
           : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
       {
-        ...defaultOptions,
-        ...workerBullmq,
+        ...getWorkerBullmqConfig(config, 'subscription', defaultOptions),
         settings: {
           backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
             if (type !== 'cappedExponential') {

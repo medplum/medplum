@@ -1,0 +1,1433 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  scroll-margin-top: 80px;
+  padding: var(--landing-section-padding-y) 0;
+}
+
+/* ---- Carousel: list left, media right --------------------------------- */
+.carousel {
+  display: grid;
+  /* Media column (left) is slightly wider than the list column (right). */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 1.5rem;
+  /* stretch: the media column matches the list height so the image can center within it. */
+  align-items: stretch;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+/* Rule-line separators + purple timer fill — mirrors the App section tabs. */
+.item {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  border: none;
+  border-top: 1px solid var(--landing-divider);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 1.25rem 0;
+}
+
+.itemTitle {
+  display: block;
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-card-title-size);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  color: var(--landing-color-heading);
+  transition: color var(--landing-transition);
+}
+
+.item:hover .itemTitle,
+.itemActive .itemTitle {
+  color: var(--oc-grape-8);
+}
+
+/* Description expands under the selected title — mirrors SolutionAccordion's max-height animation. */
+.itemBodyWrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 200ms ease;
+}
+
+.itemBodyInner {
+  opacity: 0;
+  transition: opacity 200ms ease;
+  padding-bottom: 1.25rem;
+}
+
+.itemBodyWrapOpen .itemBodyInner {
+  opacity: 1;
+}
+
+.itemBody {
+  margin: 0;
+  font-family: var(--landing-font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--landing-color-body);
+  text-wrap-style: pretty;
+}
+
+/* Timer fill — runs left to right along the item's top rule over AUTO_ADVANCE_MS. */
+.itemProgress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1px;
+  background: var(--oc-grape-7);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation-name: itemProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* Clicked: kill the timer, lock a full purple rule. */
+.itemProgressFull {
+  transform: scaleX(1);
+  animation: none;
+}
+
+@keyframes itemProgress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---- Media area — centers the example image over the full list height -- */
+.imageArea {
+  /* order: -1 places the media in the left column while the list stays first in the DOM. */
+  order: -1;
+  position: relative;
+  /* isolation: isolate scopes the ::before's negative z-index to this box — without it,
+     z-index:-1 can slip behind unrelated ancestors up the page instead of just behind
+     this element's own content. */
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--oc-indigo-0);
+  border: 1px solid rgba(var(--oc-indigo-1-rgb), 0.25);
+  border-radius: 4px;
+}
+
+/* Grid lives on a pseudo-element (not the border-carrying box) and fades toward every
+   edge — no partial cells ever show at the container's edge, and the lines never run
+   flush against the border, so the border itself reads as a single clean line.
+   z-index: -1 keeps it behind the media content (positioned elements with z-index:auto
+   would otherwise paint above normal in-flow children, regardless of DOM order).
+   Two linear-gradient masks (one per axis), intersected, fade the SAME fixed distance
+   in from every edge — a uniform "picture frame" falloff, not a radial vignette that
+   fades harder at the corners than along the sides. */
+.imageArea::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(var(--oc-indigo-1-rgb), 0.75) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--oc-indigo-1-rgb), 0.75) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image:
+    linear-gradient(to right, transparent, black 100px, black calc(100% - 100px), transparent),
+    linear-gradient(to bottom, transparent, black 100px, black calc(100% - 100px), transparent);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, black 100px, black calc(100% - 100px), transparent),
+    linear-gradient(to bottom, transparent, black 100px, black calc(100% - 100px), transparent);
+  -webkit-mask-composite: source-in, source-in;
+}
+
+/* Cross-fade: the current media fades out, then the next remounts and fades in. */
+.mediaSwap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: mediaIn 100ms cubic-bezier(0.22, 0.9, 0.35, 1);
+}
+
+.mediaSwapExiting {
+  animation: mediaOut 150ms ease forwards;
+}
+
+@keyframes mediaIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mediaOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mediaSwap,
+  .mediaSwapExiting {
+    animation: none;
+  }
+}
+
+/* ---- FHIR datastore: layered code panel + floating search UI card -------- */
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: 380px;
+  min-height: 380px;
+  margin: 0 auto;
+  padding: 0;
+  transform: translateY(-42px);
+}
+
+/* Dark code panel — sits behind, offset top-left like the reference compositions. */
+.codePanel {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  z-index: 1;
+  width: 94%;
+  background: #1a1d2e;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 18, 35, 0.35);
+  overflow: hidden;
+  transform: rotate(-2.5deg) translate(-10px, -8px);
+}
+
+.panelBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.panelDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.panelFile {
+  margin-left: 4px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Code body rendered from an SVG asset (see the foundations code panels). Intrinsic size
+   (no width: 100%) keeps the 10.5px text crisp and 1:1; the panel's overflow: hidden clips it
+   on narrow viewports, exactly as the original <pre> was. */
+.panelBodyImage {
+  display: block;
+}
+
+/* Light UI card — the rendered-output surface that floats over the code panel.
+   Look only (background/shadow/border); each example positions its own card via a
+   modifier class (.fhirFloatMain, .floatCardAlt, .sdkFloat, .libFloat, .botsFloat,
+   .subsFloat, .bridgeFloat, .authFloat, .acFloat, .tenantFloat, .auditFloat). */
+.floatCard {
+  position: absolute;
+  background: var(--landing-surface-elevated);
+  border-radius: 14px;
+  box-shadow:
+    0 16px 40px rgba(var(--oc-indigo-2-rgb), 0.45),
+    0 2px 8px rgba(15, 18, 35, 0.08);
+  border: 1px solid rgba(var(--oc-indigo-1-rgb), 0.35);
+  overflow: hidden;
+}
+
+/* FHIR: the patient search-result card, offset bottom-right over the code panel. */
+.fhirFloatMain {
+  z-index: 2;
+  right: -10px;
+  bottom: 196px;
+  width: 64%;
+  transform: rotate(1.5deg);
+}
+
+.floatHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  background: var(--landing-surface-inset);
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.floatIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--oc-grape-7);
+}
+
+.floatQuery {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.floatMethod {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--oc-blue-7);
+}
+
+.floatPath {
+  overflow: hidden;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10px;
+  color: var(--landing-color-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.floatSectionLabel {
+  padding: 10px 14px 6px;
+  font-family: var(--landing-font-body);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--landing-color-muted);
+}
+
+.floatResults {
+  padding: 0 0 4px;
+}
+
+.floatRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+}
+
+.floatAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--oc-gray-0);
+  font-family: var(--landing-font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--oc-gray-5);
+}
+
+.floatName {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--landing-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--landing-color-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floatStatus {
+  flex-shrink: 0;
+  font-family: var(--landing-font-body);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--oc-green-8);
+  background: var(--oc-green-0);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* FHIR: the SNOMED ValueSet $expand card — offset lower so the patient card and
+   code panel peek out behind it. Composes with .floatCard for the shared surface look. */
+.floatCardAlt {
+  z-index: 3;
+  left: 8%;
+  right: -6px;
+  bottom: -108px;
+  width: auto;
+  transform: rotate(-0.75deg);
+}
+
+.altPath {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 9.5px;
+  color: var(--landing-color-muted);
+  white-space: nowrap;
+}
+
+.altBadge {
+  flex-shrink: 0;
+  font-family: var(--landing-font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--oc-indigo-7);
+  background: var(--oc-indigo-0);
+  border: 1px solid rgba(var(--oc-indigo-1-rgb), 0.6);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.altRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 14px;
+}
+
+.altMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.altCode {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10px;
+  color: var(--landing-color-muted);
+}
+
+.altDisplay {
+  font-family: var(--landing-font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--landing-color-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme='dark'] .floatCard {
+  border-color: rgba(var(--oc-indigo-8-rgb), 0.35);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .floatIcon {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .floatMethod {
+  color: var(--oc-blue-3);
+}
+
+[data-theme='dark'] .floatSectionLabel {
+  color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .floatAvatar {
+  background: var(--oc-gray-8);
+  color: var(--oc-gray-4);
+}
+
+[data-theme='dark'] .floatStatus {
+  color: var(--oc-green-4);
+  background: rgba(var(--oc-green-9-rgb), 0.3);
+}
+
+[data-theme='dark'] .altBadge {
+  color: var(--oc-indigo-3);
+  background: rgba(var(--oc-indigo-9-rgb), 0.4);
+  border-color: rgba(var(--oc-indigo-8-rgb), 0.4);
+}
+
+[data-theme='dark'] .codePanel {
+  background: #12141f;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage,
+  .codePanel,
+  .floatCard,
+  .fhirFloatMain,
+  .floatCardAlt,
+  .sdkFloat,
+  .libFloat {
+    transform: none;
+  }
+}
+
+/* ---- SDK: typed-client result card ------------------------------------ */
+/* Floats front-right over the app.ts code panel — the rendered result of the
+   readResource / searchResources calls shown in the code behind it. */
+.sdkFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 40px;
+  width: 70%;
+  transform: rotate(1.5deg);
+}
+
+.floatTag {
+  flex-shrink: 0;
+  font-family: var(--landing-font-body);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--oc-indigo-7);
+  background: var(--oc-indigo-0);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.obsRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 14px;
+}
+
+.obsName {
+  min-width: 0;
+  font-family: var(--landing-font-body);
+  font-size: 11.5px;
+  color: var(--landing-color-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obsValue {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--landing-color-heading);
+}
+
+[data-theme='dark'] .floatTag {
+  color: var(--oc-indigo-3);
+  background: rgba(var(--oc-indigo-9-rgb), 0.4);
+}
+
+/* ---- Component library: rendered <SearchControl /> card --------------- */
+/* Floats front-right over the App.tsx code panel — the actual component the
+   JSX in the code renders. */
+.libFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 30px;
+  width: 74%;
+  transform: rotate(1.25deg);
+}
+
+/* Component-name chips across the top of the card — signals the breadth of the
+   library while one (SearchControl) is previewed below. */
+.libTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 14px 4px;
+}
+
+.libTab {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10px;
+  color: var(--landing-color-muted);
+  background: var(--landing-surface-inset);
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.libTabActive {
+  color: var(--oc-grape-8);
+  background: var(--oc-grape-0);
+  font-weight: 600;
+}
+
+.libFloatBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 14px 14px;
+}
+
+[data-theme='dark'] .libTabActive {
+  color: var(--oc-grape-3);
+  background: rgba(var(--oc-grape-8-rgb), 0.35);
+}
+
+/* ---- Bots: bot.ts source behind the execution log ----------------------
+   The log (rowHead / botRun / botTrace, defined below) renders inside a
+   float card over the bot handler code. */
+.botsFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 58px;
+  width: 88%;
+  transform: rotate(1.25deg);
+}
+
+/* Trigger → action arrow, making the automation relationship explicit. */
+.botArrow {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 12px;
+  color: var(--landing-color-subtle);
+}
+
+/* ---- Subscriptions: Subscription resource behind the live dashboard ---- */
+.subsFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 44px;
+  width: 78%;
+  transform: rotate(1.25deg);
+}
+
+/* Footer note emphasizing the real-time, no-polling nature of the stream. */
+.subFootNote {
+  font-family: var(--landing-font-body);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--landing-color-muted);
+}
+
+/* ---- Medplum Bridge: raw HL7v2 behind a connection diagram -------------
+   Segment ids (MSH/PID/…) are highlighted in the dark code panel. */
+.bridgeFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 44px;
+  width: 80%;
+  transform: rotate(1.25deg);
+}
+
+/* Connection diagram: on-prem node → encrypted link → cloud node. */
+.bridgeDiagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 16px 16px 14px;
+}
+
+.bridgeNodeBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  width: 76px;
+}
+
+.bridgeNodeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--landing-surface-inset);
+  color: var(--oc-grape-7);
+}
+
+.bridgeNodeLabel {
+  font-family: var(--landing-font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--landing-color-heading);
+}
+
+.bridgeNodeSub {
+  margin-top: -4px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 9px;
+  color: var(--landing-color-muted);
+}
+
+/* The encrypted tunnel between the two nodes, with a flowing message dot. */
+.bridgeLink {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+}
+
+.bridgeLink::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 50%;
+  border-top: 2px dashed var(--oc-grape-3);
+}
+
+.bridgeFlowDot {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--oc-grape-6);
+  box-shadow: 0 0 0 3px rgba(var(--oc-grape-2-rgb), 0.6);
+  animation: bridgeFlow 2.4s ease-in-out infinite;
+}
+
+[data-theme='dark'] .bridgeFlowDot {
+  box-shadow: 0 0 0 3px rgba(156, 54, 181, 0.35);
+}
+
+@keyframes bridgeFlow {
+  0% {
+    left: 6%;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  100% {
+    left: 94%;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+}
+
+.bridgeLock {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--landing-surface-elevated);
+  border: 1px solid var(--landing-border);
+  font-family: var(--landing-font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--oc-grape-7);
+}
+
+/* Message flow: recent messages with delivery confirmation. */
+.bridgeMsg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-top: 1px solid var(--landing-divider);
+}
+
+.bridgeMsgDesc {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--landing-font-body);
+  font-size: 11.5px;
+  color: var(--landing-color-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme='dark'] .bridgeNodeIcon {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .bridgeLock {
+  color: var(--oc-grape-3);
+}
+
+[data-theme='dark'] .bridgeLink::before {
+  border-top-color: var(--oc-grape-7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bridgeFlowDot {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ---- Medplum Auth: sign-in screen over the sign-in code ---------------- */
+.authFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 26px;
+  width: 72%;
+  transform: rotate(1.25deg);
+}
+
+.authBody {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 13px 14px 14px;
+}
+
+.authField {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.authLabel {
+  font-family: var(--landing-font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--landing-color-subtle);
+}
+
+.authInput {
+  font-family: var(--landing-font-body);
+  font-size: 12px;
+  color: var(--landing-color-heading);
+  padding: 7px 10px;
+  border: 1px solid var(--landing-border);
+  border-radius: 7px;
+}
+
+.authPrimary {
+  margin-top: 2px;
+  padding: 8px;
+  border-radius: 7px;
+  text-align: center;
+  font-family: var(--landing-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--oc-grape-7);
+}
+
+.authDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--landing-font-body);
+  font-size: 10px;
+  color: var(--landing-color-muted);
+}
+
+.authRule {
+  flex: 1;
+  height: 1px;
+  background: var(--landing-divider);
+}
+
+.authSso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--landing-border);
+  border-radius: 7px;
+  font-family: var(--landing-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--landing-color-heading);
+}
+
+.authMfa {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: var(--oc-indigo-0);
+  font-family: var(--landing-font-body);
+  font-size: 10.5px;
+  color: var(--oc-indigo-7);
+}
+
+[data-theme='dark'] .authMfa {
+  background: rgba(var(--oc-indigo-9-rgb), 0.4);
+  color: var(--oc-indigo-3);
+}
+
+/* ---- Access Control: read/write matrix over the AccessPolicy ----------- */
+.acFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 40px;
+  width: 80%;
+  transform: rotate(1.25deg);
+}
+
+.acHead,
+.acRow {
+  display: grid;
+  grid-template-columns: 1fr 52px 52px;
+  align-items: center;
+  padding: 7px 14px;
+}
+
+.acHead {
+  font-family: var(--landing-font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--landing-color-subtle);
+}
+
+.acRow {
+  border-top: 1px solid var(--landing-divider);
+}
+
+.acRes {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11.5px;
+  color: var(--landing-color-heading);
+}
+
+.acHead span:not(:first-child),
+.acCell {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.acAllow {
+  color: var(--oc-green-7);
+}
+
+.acDeny {
+  color: var(--landing-color-subtle);
+}
+
+[data-theme='dark'] .acAllow {
+  color: var(--oc-green-4);
+}
+
+/* ---- Multi-Tenancy: project switcher over the Project resource --------- */
+.tenantFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 62px;
+  width: 70%;
+  transform: rotate(1.25deg);
+}
+
+.tenantMenu {
+  padding: 6px;
+}
+
+.tenantRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.tenantRowActive {
+  background: var(--oc-grape-0);
+}
+
+.tenantIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--landing-color-muted);
+}
+
+.tenantName {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--landing-font-display);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--landing-color-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tenantEnv {
+  flex-shrink: 0;
+  font-family: var(--landing-font-body);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--landing-color-muted);
+  background: var(--landing-surface-inset);
+}
+
+.tenantCheck {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--oc-grape-7);
+}
+
+[data-theme='dark'] .tenantRowActive {
+  background: rgba(var(--oc-grape-8-rgb), 0.3);
+}
+
+[data-theme='dark'] .tenantCheck {
+  color: var(--oc-grape-3);
+}
+
+/* ---- Audit Logging: searchable log over the AuditEvent ----------------- */
+.auditFloat {
+  z-index: 2;
+  right: -8px;
+  bottom: 30px;
+  width: 82%;
+  transform: rotate(1.25deg);
+}
+
+.auditSearch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 14px 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--landing-border);
+  border-radius: 6px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  color: var(--landing-color-muted);
+}
+
+.auditRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--landing-divider);
+}
+
+.auditAction {
+  flex-shrink: 0;
+  width: 52px;
+  text-align: center;
+  font-family: var(--landing-font-body);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 0;
+  border-radius: 5px;
+}
+
+.auditView {
+  color: var(--oc-indigo-7);
+  background: var(--oc-indigo-0);
+}
+
+.auditUpdate {
+  color: var(--oc-blue-7);
+  background: var(--oc-blue-0);
+}
+
+.auditCreate {
+  color: var(--oc-green-7);
+  background: var(--oc-green-0);
+}
+
+.auditLogin {
+  color: var(--landing-color-muted);
+  background: var(--landing-surface-inset);
+}
+
+.auditText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--landing-font-body);
+  font-size: 11.5px;
+  color: var(--landing-color-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auditActor {
+  font-weight: 600;
+  color: var(--landing-color-heading);
+}
+
+.auditTarget {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  color: var(--landing-color-muted);
+}
+
+.auditTime {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10px;
+  color: var(--landing-color-muted);
+}
+
+[data-theme='dark'] .auditView {
+  color: var(--oc-indigo-3);
+  background: rgba(var(--oc-indigo-9-rgb), 0.4);
+}
+
+[data-theme='dark'] .auditUpdate {
+  color: var(--oc-blue-3);
+  background: rgba(var(--oc-blue-9-rgb), 0.4);
+}
+
+[data-theme='dark'] .auditCreate {
+  color: var(--oc-green-4);
+  background: rgba(var(--oc-green-9-rgb), 0.3);
+}
+
+/* ---- (obsolete flat-card code styles removed; SDK/Lib now use the shared
+   dark code panel above) ------------------------------------------------ */
+
+[data-theme='dark'] .item {
+  border-top-color: rgba(var(--oc-gray-7-rgb), 0.55);
+}
+
+[data-theme='dark'] .list {
+  border-bottom-color: rgba(var(--oc-gray-7-rgb), 0.55);
+}
+
+[data-theme='dark'] .item:hover .itemTitle,
+[data-theme='dark'] .itemActive .itemTitle {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .itemProgress {
+  background: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .imageArea {
+  background-color: rgba(var(--oc-indigo-9-rgb), 0.25);
+  border-color: rgba(var(--oc-indigo-8-rgb), 0.3);
+}
+
+[data-theme='dark'] .imageArea::before {
+  background-image:
+    linear-gradient(to right, rgba(var(--oc-indigo-8-rgb), 0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--oc-indigo-8-rgb), 0.3) 1px, transparent 1px);
+}
+
+@media (max-width: 996px) {
+  .carousel {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .imageArea {
+    order: -1;
+  }
+}
+
+/* ---- Shared: header bar + row list, reused by Bots / Subscriptions ----- */
+.rowHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--landing-surface-inset);
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.rowHeadIcon {
+  display: flex;
+  color: var(--oc-grape-7);
+}
+
+.rowHeadTitle {
+  font-family: var(--landing-font-display);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--landing-color-heading);
+}
+
+.rowHeadTag {
+  margin-left: auto;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10px;
+  color: var(--landing-color-muted);
+}
+
+.rowList {
+  padding: 6px;
+}
+
+/* Mono resource/trigger chip. */
+.codeBadge {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--oc-grape-8);
+  background: var(--oc-grape-0);
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.statusOk {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--oc-green-8);
+}
+
+.statusErr {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--oc-red-8);
+}
+
+[data-theme='dark'] .rowHeadIcon {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .codeBadge {
+  background: rgba(var(--oc-grape-8-rgb), 0.3);
+  color: var(--oc-grape-3);
+}
+
+[data-theme='dark'] .statusOk {
+  color: var(--oc-green-4);
+}
+
+[data-theme='dark'] .statusErr {
+  color: var(--oc-red-4);
+}
+
+/* ---- Component library: rendered SearchControl (inside the float card) - */
+.libSearch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--landing-border);
+  border-radius: 6px;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  color: var(--landing-color-muted);
+}
+
+.libTable {
+  display: flex;
+  flex-direction: column;
+}
+
+.libTableHead {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-family: var(--landing-font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--landing-color-subtle);
+}
+
+.libRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-top: 1px solid var(--landing-divider);
+}
+
+.libName {
+  font-family: var(--landing-font-display);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--landing-color-heading);
+}
+
+.libPill {
+  font-family: var(--landing-font-body);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--oc-green-8);
+  background: var(--oc-green-0);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.libPillMuted {
+  color: var(--landing-color-muted);
+  background: var(--landing-surface-inset);
+}
+
+[data-theme='dark'] .libPill {
+  color: var(--oc-green-4);
+  background: rgba(var(--oc-green-9-rgb), 0.3);
+}
+
+/* ---- Bots: execution log ---------------------------------------------- */
+.botRun {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.botAction {
+  flex: 1;
+  overflow: hidden;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11.5px;
+  color: var(--landing-color-body);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.botTrace {
+  margin: 2px 8px 6px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  background: var(--oc-red-0);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  color: var(--oc-red-8);
+}
+
+[data-theme='dark'] .botTrace {
+  background: rgba(var(--oc-red-9-rgb), 0.3);
+  color: var(--oc-red-4);
+}
+
+/* ---- Subscriptions: live event stream --------------------------------- */
+.subLive {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--landing-font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--oc-red-7);
+}
+
+.subLiveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--oc-red-6);
+  animation: subPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes subPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+
+.subEvent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-top: 1px solid var(--landing-divider);
+}
+
+.subEvent:first-child {
+  border-top: none;
+}
+
+.subType {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--oc-indigo-7);
+  background: var(--oc-indigo-0);
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.subDesc {
+  flex: 1;
+  font-family: var(--landing-font-body);
+  font-size: 12px;
+  color: var(--landing-color-body);
+}
+
+.subTime {
+  flex-shrink: 0;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  color: var(--landing-color-muted);
+}
+
+.subFoot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  background: var(--landing-surface-inset);
+  border-top: 1px solid var(--landing-divider);
+}
+
+[data-theme='dark'] .subType {
+  color: var(--oc-indigo-3);
+  background: rgba(var(--oc-indigo-9-rgb), 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subLiveDot {
+    animation: none;
+  }
+}

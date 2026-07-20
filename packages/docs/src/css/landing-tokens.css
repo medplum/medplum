@@ -1,0 +1,115 @@
+/**
+ * Shared visual tokens extracted from the marketing homepage (LandingPage,
+ * SectionHeader, FeatureGrid, BuildDropdown). Import via custom.css.
+ *
+ * Poppins (--landing-font-display): headlines, subheads, labels, buttons.
+ * system-ui (--landing-font-body): longer body copy, descriptions, captions.
+ */
+
+:root {
+  --landing-font-display: 'Poppins', sans-serif;
+  --landing-font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --landing-color-heading: var(--oc-gray-8);
+  --landing-color-body: var(--oc-gray-7);
+  --landing-color-body-alt: #4d4d4d;
+  --landing-color-muted: var(--oc-gray-6);
+  --landing-color-subtle: var(--oc-gray-5);
+
+  --landing-surface: #fff;
+  --landing-surface-muted: var(--oc-gray-0);
+  --landing-surface-elevated: #fff;
+  --landing-surface-inset: var(--oc-gray-0);
+  --landing-border: var(--oc-gray-2);
+  --landing-border-strong: var(--oc-gray-3);
+  --landing-divider: var(--oc-gray-2);
+
+  --landing-hero-size: 3.5em;
+  --landing-hero-weight: 700;
+  --landing-hero-leading: 1.2;
+  --landing-hero-tracking: -0.025em;
+
+  --landing-section-size: 2.5rem;
+  --landing-section-weight: 700;
+  --landing-section-leading: 1.2;
+  --landing-section-tracking: -0.025em;
+
+  --landing-subsection-size: 1.25rem;
+  --landing-subsection-weight: 700;
+  --landing-subsection-leading: 1.25rem;
+  --landing-subsection-tracking: -0.015em;
+
+  --landing-card-title-size: 1.25rem;
+  --landing-card-title-weight: 700;
+  --landing-card-title-leading: 1.25rem;
+  --landing-card-title-tracking: -0.015em;
+
+  --landing-lead-size: 1.125rem;
+  --landing-lead-leading: 1.75rem;
+  --landing-lead-weight: 400;
+
+  --landing-body-size: 1rem;
+  --landing-body-leading: 1.4;
+  --landing-body-weight: 400;
+  --landing-body-tracking: 0.005em;
+
+  --landing-label-size: 0.75rem;
+  --landing-label-weight: 500;
+
+  --landing-section-padding-y: 6rem;
+  --landing-section-header-gap: 3rem;
+  --landing-stack-gap: 1.5rem;
+
+  --landing-btn-padding: 1.25rem 2rem;
+  --landing-btn-radius: 2.5rem;
+  --landing-btn-size: 1rem;
+  --landing-btn-weight: 500;
+  --landing-btn-gap: 0.5rem;
+
+  --landing-shadow-card: 0px 8px 24px rgba(var(--oc-indigo-2-rgb), 0.5);
+  --landing-shadow-card-border: 1px solid rgba(var(--oc-indigo-1-rgb), 1);
+  --landing-shadow-media: 0px 8px 40px rgba(var(--oc-orange-3-rgb), 0.75);
+  --landing-shadow-cta-white: 0px 8px 16px rgba(var(--oc-violet-1-rgb), 0.5),
+    0px -1px 16px rgba(var(--oc-violet-1-rgb), 0.75);
+
+  --landing-icon-size: 2rem;
+  --landing-icon-color: var(--oc-indigo-3);
+  --landing-icon-color-accent: var(--oc-orange-3);
+
+  --landing-radius-card: 1rem;
+  --landing-radius-media: 4px;
+  --landing-radius-chip: 9999px;
+
+  --landing-transition: 200ms ease;
+}
+
+[data-theme='dark'] {
+  --landing-color-heading: var(--oc-gray-0);
+  --landing-color-body: var(--oc-gray-4);
+  --landing-color-body-alt: #b2b2b2;
+  --landing-color-muted: var(--oc-gray-5);
+  --landing-color-subtle: var(--oc-gray-6);
+
+  --landing-surface: var(--ifm-background-color);
+  --landing-surface-muted: var(--oc-gray-9);
+  --landing-surface-elevated: #1b1b1d;
+  --landing-surface-inset: var(--oc-gray-9);
+  --landing-border: rgba(var(--oc-gray-8-rgb), 0.5);
+  --landing-border-strong: var(--oc-gray-7);
+  --landing-divider: var(--oc-gray-8);
+
+  --landing-shadow-card: 0px 4px 40px rgba(var(--oc-orange-1-rgb), 0.15);
+  --landing-shadow-card-border: 1px solid rgba(var(--oc-gray-8-rgb), 0.5);
+  --landing-shadow-media: none;
+  --landing-shadow-cta-white: 0px 8px 16px rgba(var(--oc-grape-8-rgb), 0.25),
+    0px -1px 16px rgba(var(--oc-grape-8-rgb), 0.5);
+}
+
+@media screen and (max-width: 1000px) {
+  :root {
+    /* Hero ↔ section headline scale inversion on narrow viewports (≤1000px and ≤600px). */
+    --landing-hero-size: 2.5rem;
+    --landing-section-size: 2rem;
+    --landing-section-padding-y: 4rem;
+  }
+}
