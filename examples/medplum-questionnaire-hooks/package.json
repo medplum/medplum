@@ -23,7 +23,7 @@
     "@vitejs/plugin-react": "6.0.3",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vite": "8.1.5"
   },
   "packageManager": "npm@10.9.8",

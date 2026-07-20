@@ -27,7 +27,7 @@
     "@medplum/definitions": "5.1.26",
     "fast-xml-parser": "5.10.1",
     "form-data": "4.0.6",
-    "jose": "5.10.0",
+    "jose": "6.2.3",
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.21",
