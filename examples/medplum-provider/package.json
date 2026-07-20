@@ -56,7 +56,7 @@
     "recharts": "3.9.2",
     "remark-gfm": "4.0.1",
     "temporal-polyfill": "1.0.1",
-    "typescript": "7.0.2",
+    "typescript": "6.0.3",
     "vite": "8.1.5",
     "vitest": "4.1.10"
   },

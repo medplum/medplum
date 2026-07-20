@@ -43,7 +43,7 @@
     "ssh2-sftp-client": "12.1.1",
     "stripe": "22.3.2",
     "twilio": "^6.0.2",
-    "typescript": "7.0.2",
+    "typescript": "6.0.3",
     "vitest": "4.1.10"
   },
   "packageManager": "npm@10.9.8",
