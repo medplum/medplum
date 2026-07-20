@@ -31,6 +31,7 @@ export function SolutionsCategoryNav(): JSX.Element {
 
   return (
     <nav className={styles.nav} aria-label="Solution categories">
+      <p className={styles.label}>Explore</p>
       <div className={styles.inner}>
         {SOLUTIONS_CATEGORIES.map((category) => (
           <a

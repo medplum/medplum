@@ -11,6 +11,18 @@
   max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: 0 var(--layout-padding);
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.copy {
+  min-width: 0;
+}
+
+.visual {
+  min-width: 0;
 }
 
 .eyebrow {
@@ -111,6 +123,14 @@
 
   .container {
     padding: 0 var(--layout-padding-md);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+
+  .visual {
+    order: -1;
+    display: flex;
+    justify-content: center;
   }
 }
 

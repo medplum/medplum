@@ -15,7 +15,6 @@ import {
 import type { JSX } from 'react';
 import type { SolutionCategory } from '../../data/solutions-content';
 import styles from './SolutionsCategorySection.module.css';
-import { SolutionsCustomerCard } from './SolutionsCustomerCard';
 import { SolutionsCustomerFeature } from './SolutionsCustomerFeature';
 
 const ICONS: Record<string, JSX.Element> = {
@@ -31,22 +30,19 @@ const ICONS: Record<string, JSX.Element> = {
 
 export interface SolutionsCategorySectionProps {
   readonly category: SolutionCategory;
-  readonly index: number;
-  readonly tinted?: boolean;
 }
 
 export function SolutionsCategorySection(props: SolutionsCategorySectionProps): JSX.Element {
-  const { category, index, tinted } = props;
-  const isSingle = category.customers.length === 1;
+  const { category } = props;
   return (
-    <section id={category.id} className={`${styles.section} ${tinted ? styles.tinted : ''}`}>
+    <section id={category.id} className={styles.section}>
       <div className={styles.container}>
         <div className={styles.header}>
-          <div className={styles.titleRow}>
+          <div className={styles.eyebrowRow}>
             <div className={styles.iconTile}>{ICONS[category.icon]}</div>
-            <h2 className={styles.title}>{category.title}</h2>
+            <span className={styles.eyebrow}>{category.title}</span>
           </div>
-          <p className={styles.tagline}>{category.tagline}</p>
+          <h2 className={styles.headline}>{category.tagline}</h2>
           <p className={styles.description}>
             {category.description}
             {category.learnMoreUrl && (
@@ -59,15 +55,11 @@ export function SolutionsCategorySection(props: SolutionsCategorySectionProps): 
             )}
           </p>
         </div>
-        {isSingle ? (
-          <SolutionsCustomerFeature customer={category.customers[0]} reverse={index % 2 === 1} />
-        ) : (
-          <div className={styles.cardGrid}>
-            {category.customers.map((customer) => (
-              <SolutionsCustomerCard key={customer.id} customer={customer} />
-            ))}
-          </div>
-        )}
+        <div className={styles.customers}>
+          {category.customers.map((customer) => (
+            <SolutionsCustomerFeature key={customer.id} customer={customer} />
+          ))}
+        </div>
         {category.accelerator && (
           <div className={styles.accelerator}>
             <div className={styles.acceleratorIcon}>{ICONS[category.accelerator.icon]}</div>

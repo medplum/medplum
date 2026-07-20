@@ -25,6 +25,12 @@ export interface CustomerFeature {
   id: string;
   name: string;
   logoSrc?: string;
+  /** True when the logo is a wordmark that already spells the name, so the
+   * text name is redundant and should be hidden in favor of the logo. */
+  logoHasName?: boolean;
+  /** Height multiplier for the header logo, to even out wordmarks whose files
+   * are shorter/narrower than their peers. */
+  logoScale?: number;
   /** A short autoplaying UI clip. Takes precedence over screenshotSrc when set. */
   videoSrc?: string;
   screenshotSrc?: string;
@@ -62,8 +68,6 @@ export const SOLUTIONS_HERO = {
   secondaryCta: { label: 'Read Case Studies', href: '/case-studies' },
 };
 
-export const SOLUTIONS_LOGOS_HEADING = 'Trusted by healthcare leaders and innovators';
-
 export const SOLUTIONS_CTA = {
   headline: 'Ready to see what you could build?',
   body: 'Talk to our team about your use case, or dive deeper into the case studies.',
@@ -85,12 +89,30 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
       {
         id: 'develo',
         name: 'Develo',
-        logoSrc: '/img/blog/develo.jpeg',
+        logoSrc: '/img/logos/develo.png',
+        logoHasName: true,
         screenshotSrc: '/img/solutions/develo-screenshot.jpg',
         screenshotAlt: 'Develo pediatric EHR visit orders and diagnoses screen',
         valueStatement:
           'Develo built a full-featured pediatric EHR and CRM on Medplum — scheduling, charting, billing, and family engagement in one FHIR-native system, with AI-assisted documentation designed around how independent pediatric practices actually work.',
         caseStudyUrl: '/blog/develo-case-study',
+      },
+      {
+        id: 'everself',
+        name: 'Everself',
+        logoSrc: '/img/logos/everselflogo.png',
+        logoHasName: true,
+        logoScale: 1.6,
+        screenshotSrc: '/img/solutions/everself-screenshot.png',
+        screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
+        valueStatement:
+          'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs — organizing every appointment, note, message, lab, and device reading into one longitudinal timeline, with integrated communications, multi-site scheduling, and a triaged provider inbox, on a data structure they own and can build AI into.',
+        quote: {
+          text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
+          attribution: 'Petch Jirapinyo',
+          title: 'CEO, Everself',
+        },
+        caseStudyUrl: '/blog/everself-case-study',
       },
     ],
     accelerator: {
@@ -137,6 +159,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         id: 'ultralight',
         name: 'Ultralight',
         logoSrc: '/img/logos/ultralight.svg',
+        logoHasName: true,
         videoSrc: '/img/solutions/ultralight-clip.mp4',
         screenshotAlt: 'Ultralight AI-native EHR biomarker dashboard with ambient scribing',
         valueStatement:
@@ -146,6 +169,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         id: 'rad-ai',
         name: 'Rad AI',
         logoSrc: '/img/logos/rad-ai.svg',
+        logoHasName: true,
         videoSrc: '/img/solutions/rad-ai-clip.mp4',
         valueStatement:
           'Rad AI builds generative AI trusted by radiologists across thousands of healthcare facilities, using Medplum to ground its models in structured clinical data — automating reporting and follow-up so care teams move faster with less manual work.',

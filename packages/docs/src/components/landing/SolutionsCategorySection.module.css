@@ -3,35 +3,29 @@
 
 .section {
   font-family: var(--landing-font-display);
-  background: var(--landing-surface);
   padding: 4rem 0;
-  /* Anchor jumps must clear the fixed navbar plus the sticky category nav. */
-  scroll-margin-top: calc(var(--ifm-navbar-height) + 64px);
+  /* Anchor jumps must clear the fixed navbar (plus the sticky nav on mobile). */
+  scroll-margin-top: calc(var(--ifm-navbar-height) + 24px);
 }
 
-.tinted {
-  background: rgba(var(--oc-violet-0-rgb), 0.45);
-}
-
-[data-theme='dark'] .tinted {
-  background: var(--oc-gray-9);
+/* Divider between stacked sections in the content column. */
+.section + .section {
+  border-top: 1px solid var(--landing-divider);
 }
 
 .container {
-  max-width: var(--layout-max-width);
-  margin: 0 auto;
-  padding: 0 var(--layout-padding);
+  min-width: 0;
 }
 
 .header {
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
 }
 
-.titleRow {
+.eyebrowRow {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
 }
 
 .iconTile {
@@ -39,10 +33,10 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   background: var(--oc-grape-0);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--oc-grape-8);
 }
 
@@ -50,25 +44,29 @@
   background: var(--oc-grape-1);
 }
 
-.title {
+/* Chunky eyebrow — the former category title, now sitting above the headline. */
+.eyebrow {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .eyebrow {
+  color: var(--oc-grape-4);
+}
+
+/* The former tagline, promoted to the section headline. Runs full width of the
+   content column (like the homepage section headings) rather than a narrow block. */
+.headline {
   font-size: var(--landing-section-size);
   font-weight: var(--landing-section-weight);
   line-height: var(--landing-section-leading);
   letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
   color: var(--landing-color-heading);
-  margin: 0;
-}
-
-.tagline {
-  font-size: var(--landing-lead-size);
-  line-height: var(--landing-lead-leading);
-  font-weight: 600;
-  color: var(--oc-grape-8);
-  margin: 0 0 0.5rem;
-}
-
-[data-theme='dark'] .tagline {
-  color: var(--oc-grape-4);
+  margin: 0 0 1rem;
 }
 
 .description {
@@ -78,7 +76,13 @@
   font-weight: var(--landing-lead-weight);
   color: var(--landing-color-body-alt);
   margin: 0;
-  max-width: 64%;
+  max-width: 68ch;
+}
+
+.customers {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
 }
 
 .learnMore {
@@ -98,13 +102,6 @@
 
 [data-theme='dark'] .learnMore {
   color: var(--oc-grape-4);
-}
-
-.cardGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
-  align-items: start;
 }
 
 .accelerator {
@@ -164,6 +161,7 @@
 }
 
 @media screen and (max-width: 996px) {
+  /* Content column spans full width once the vertical nav collapses. */
   .container {
     padding: 0 var(--layout-padding-md);
   }
@@ -172,12 +170,8 @@
     padding: 3rem 0;
   }
 
-  .cardGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .description {
-    max-width: 90%;
+  .customers {
+    gap: 3rem;
   }
 
   .accelerator {
@@ -190,14 +184,9 @@
     padding: 0 var(--layout-padding-sm);
   }
 
-  .iconTile {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-  }
-
-  .title {
+  .headline {
     font-size: 1.75rem;
+    max-width: 100%;
   }
 
   .description {

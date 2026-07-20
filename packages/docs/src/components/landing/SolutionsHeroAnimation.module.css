@@ -1,0 +1,127 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Dark "canvas": a 3x3 grid of landscape customer-logo tiles that flip to reveal
+   more customers. Reads the same in light and dark themes. */
+.canvas {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  padding: 22px;
+  border-radius: 24px;
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px) 0 0 / 22px 22px,
+    var(--oc-grape-9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.tile {
+  aspect-ratio: 1.9 / 1;
+  perspective: 900px;
+  opacity: 0;
+}
+
+.in .tile {
+  animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tileInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+.in .tileInner {
+  animation: flip 16s ease-in-out infinite;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6%;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.faceBack {
+  transform: rotateY(180deg);
+}
+
+/* Logos fill the tile as fully as their files allow; per-logo scale (inline)
+   compensates for files that carry extra whitespace. */
+.logo {
+  max-width: 100%;
+  max-height: 84%;
+  object-fit: contain;
+}
+
+.placeholder {
+  font-family: var(--landing-font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(var(--oc-grape-8-rgb), 0.45);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Hold the front a long while, flip once to the back, hold, then flip home.
+   Long dwells keep the grid calm — only a tile or two is ever mid-flip. */
+@keyframes flip {
+  0%,
+  34% {
+    transform: rotateY(0deg);
+  }
+  42%,
+  76% {
+    transform: rotateY(180deg);
+  }
+  84%,
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .canvas {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .in .tile,
+  .in .tileInner {
+    animation: none;
+  }
+  .tile {
+    opacity: 1;
+  }
+}

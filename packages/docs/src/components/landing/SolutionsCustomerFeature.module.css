@@ -4,7 +4,7 @@
 .feature {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .header {
@@ -15,9 +15,10 @@
 }
 
 .logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  height: 42px;
+  width: auto;
+  max-width: 220px;
+  border-radius: 6px;
   object-fit: contain;
 }
 
@@ -49,21 +50,6 @@
 [data-theme='dark'] .placeholderBadge {
   background: rgba(var(--oc-yellow-9-rgb), 0.35);
   color: var(--oc-yellow-2);
-}
-
-.body {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 2.5rem;
-  align-items: center;
-}
-
-.bodyReverse .media {
-  order: 2;
-}
-
-.media {
-  min-width: 0;
 }
 
 .screenshotFrame {
@@ -102,7 +88,7 @@
 .screenshot {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   object-position: top;
 }
@@ -113,7 +99,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   color: var(--landing-color-subtle);
   font-family: var(--landing-font-display);
   font-size: 0.9375rem;
@@ -124,6 +110,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  max-width: 72ch;
 }
 
 .valueStatement {
@@ -212,18 +199,6 @@
 
 [data-theme='dark'] .caseStudyLink:hover {
   color: var(--oc-grape-3);
-}
-
-@media screen and (max-width: 996px) {
-  .body,
-  .bodyReverse {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.5rem;
-  }
-
-  .bodyReverse .media {
-    order: 0;
-  }
 }
 
 @media screen and (max-width: 600px) {
