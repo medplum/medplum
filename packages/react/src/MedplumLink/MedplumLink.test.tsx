@@ -105,4 +105,15 @@ describe('MedplumLink', () => {
     expect(screen.getByText('test')).toBeDefined();
     fireEvent.click(screen.getByText('test'));
   });
+
+  test('Passes anchor DOM props through to the underlying element', () => {
+    setup(
+      <MedplumLink to="xyz" tabIndex={-1}>
+        test
+      </MedplumLink>
+    );
+    const node = screen.getByText('test');
+    expect(node).toBeDefined();
+    expect(node).toHaveAttribute('tabIndex', '-1');
+  });
 });

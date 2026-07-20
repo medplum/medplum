@@ -16,13 +16,13 @@ describe('TaskListItem', () => {
     medplum = new MockClient();
   });
 
-  const setup = (task: Task, selectedTask?: Task, getTaskUri?: (task: Task) => string): ReturnType<typeof render> => {
+  const setup = (task: Task, getTaskUri?: (task: Task) => string): ReturnType<typeof render> => {
     const defaultGetTaskUri = (t: Task): string => `/Task/${t.id}`;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri ?? defaultGetTaskUri} />
+            <TaskListItem task={task} getTaskUri={getTaskUri ?? defaultGetTaskUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -102,11 +102,6 @@ describe('TaskListItem', () => {
     expect(await screen.findByText('Assigned to Jane Smith')).toBeInTheDocument();
   });
 
-  test('highlights selected task', () => {
-    setup(mockTask, mockTask);
-    expect(screen.getByText('Test Task')).toBeInTheDocument();
-  });
-
   test('uses getTaskUri URL', () => {
     setup(mockTask);
     const link = screen.getByRole('link');
@@ -121,7 +116,7 @@ describe('TaskListItem', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskListItem task={mockTask} selectedTask={undefined} getTaskUri={getTaskUri} />
+            <TaskListItem task={mockTask} getTaskUri={getTaskUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -136,7 +131,7 @@ describe('TaskListItem', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <TaskListItem task={mockTask} selectedTask={undefined} getTaskUri={getTaskUri} />
+            <TaskListItem task={mockTask} getTaskUri={getTaskUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>

@@ -23,9 +23,16 @@ export interface DestinationQueryContext {
 
 export interface DataWarehouseDestination {
   readonly type: DataWarehouseDestinationType;
-  getSetupQueries(connectionString: string): string[];
+  /** DuckDB setup that does not require or open a Postgres connection. */
+  getSetupQueries(): string[];
+  /** Postgres attach SQL run after destination-side state (e.g. watermarks) is resolved. */
+  getPostgresAttachQueries(connectionString: string): string[];
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression | undefined;
+  buildSourcePredicate(
+    connection: DuckdbConnection,
+    tableSpec: WarehouseSourceTable,
+    namespace: string
+  ): Promise<Expression | undefined>;
   writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number>;
   /**
    * For local destinations, use the path to the Parquet file
@@ -42,7 +49,11 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
     this.basePath = basePath;
   }
 
-  getSetupQueries(connectionString: string): string[] {
+  getSetupQueries(): string[] {
+    return [];
+  }
+
+  getPostgresAttachQueries(connectionString: string): string[] {
     return ['INSTALL postgres', 'LOAD postgres', buildDuckdbPostgresAttachQuery(connectionString)];
   }
 
@@ -50,7 +61,11 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
     mkdirSync(this.basePath, { recursive: true });
   }
 
-  buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): undefined {
+  async buildSourcePredicate(
+    _connection: DuckdbConnection,
+    _tableSpec: WarehouseSourceTable,
+    _namespace: string
+  ): Promise<undefined> {
     /* TODO: Support incremental local sync by deriving a watermark from existing parquet output.
      * For now we always export all source rows because the local destination does not yet read prior parquet state.
      */

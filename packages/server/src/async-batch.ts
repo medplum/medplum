@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, badRequest, OperationOutcomeError } from '@medplum/core';
-import type { Bundle } from '@medplum/fhirtypes';
+import type { Bundle, Project } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { json } from 'express';
 import { JSON_TYPE, runMiddleware } from './app';
@@ -10,7 +10,7 @@ import type { MedplumServerConfig } from './config/types';
 import { getAuthenticatedContext } from './context';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { sendOutcome } from './fhir/outcomes';
-import { queueBatchProcessing } from './workers/batch';
+import { queueBatchProcessing, queueLegacyBatchProcessing } from './workers/batch';
 
 export function asyncBatchHandler(
   config: MedplumServerConfig
@@ -37,10 +37,18 @@ export function asyncBatchHandler(
     const exec = new AsyncJobExecutor(repo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await queueBatchProcessing(bundle, asyncJob);
+      if (useLegacyBatchProcessing(project)) {
+        await queueLegacyBatchProcessing(bundle, asyncJob);
+      } else {
+        await queueBatchProcessing(bundle, asyncJob);
+      }
     });
 
     const { baseUrl } = getConfig();
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   };
+}
+
+function useLegacyBatchProcessing(project: Project): boolean {
+  return !project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean;
 }

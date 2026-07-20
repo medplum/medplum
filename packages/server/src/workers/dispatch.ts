@@ -40,21 +40,15 @@ const queueName = 'DispatchQueue';
 const jobName = 'DispatchJobData';
 
 export const initDispatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
-  const queue = new Queue<DispatchJobData>(queueName, {
-    ...defaultOptions,
-  });
+  const queueOptions = defaultQueueOptions(config);
+  const queue = new Queue<DispatchJobData>(queueName, queueOptions);
 
   let worker: Worker<DispatchJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'dispatch');
     worker = new Worker<DispatchJobData>(
       queueName,
       (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDispatchJob(job)),
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-      }
+      getWorkerBullmqConfig(config, 'dispatch', queueOptions)
     );
   }
 

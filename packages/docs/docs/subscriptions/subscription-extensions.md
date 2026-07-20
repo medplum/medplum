@@ -66,15 +66,13 @@ Below are explanations of the different extensions Medplum Provides
 ## Interactions
 
 :::caution[Note]
-By default, FHIR Subscriptions will execute on "create" and "update" operations.
+By default, FHIR Subscriptions will execute on all "create", "update", and "delete" operations. To restrict a Subscription to a subset of these interactions, use one or more `subscription-supported-interaction` extensions as described below.
 :::
 
 You can use extensions as follows for more fine-grained control over when Subscriptions execute. To confirm if your Subscriptions are executing, navigate to `https://app.medplum.com/Subscription/<id>/event` to view related [AuditEvents](/docs/api/fhir/resources/auditevent). Note that if you configure the subscription to use `log`-only destination for AuditEvents (see [AuditEvent Destination](#auditevent-destination) below), these events will not appear in the UI.
 
-:::caution[Note]
-Only **one** `subscription-supported-interaction` extension is supported per Subscription. If you need to listen for multiple interaction types (e.g., both "create" and "update"), you should either use the default behavior (which fires on both "create" and "update") or create separate Subscription resources for each interaction type.
-
-Adding multiple `subscription-supported-interaction` extensions to a single Subscription will result in only the first one being evaluated, and the Subscription will revert to default behavior for any unrecognized configuration.
+:::note
+A Subscription may declare **multiple** `subscription-supported-interaction` extensions. When one or more are present, the Subscription will only execute for the listed interactions. For example, adding one extension with `valueCode` of `create` and another with `valueCode` of `update` will fire on "create" and "update" but **not** "delete". When no `subscription-supported-interaction` extension is present, the Subscription fires on all interactions ("create", "update", and "delete").
 :::
 
 ### Subscriptions for "create"-only or "update"-only events
@@ -113,6 +111,31 @@ You can also restrict the FHIR Subscription to only execute on "update", using t
     "endpoint": "https://example.com/webhook"
   },
   "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "update"
+    }
+  ]
+}
+```
+
+To listen for more than one interaction while excluding the others (for example, "create" and "update" but not "delete"), include a separate `subscription-supported-interaction` extension for each interaction you want:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "create"
+    },
     {
       "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
       "valueCode": "update"
@@ -250,6 +273,41 @@ Subscriptions with Bot endpoints will only execute once and will not retry on fa
   ]
 }
 ```
+
+### Retry timing and backoff
+
+Retries are not immediate. Medplum spaces them out using **exponential backoff with jitter**, which is important to understand when planning for downtime in the destination service that receives the webhook.
+
+- **Base delay:** the first retry is delayed ~20 seconds after the initial failure.
+- **Exponential growth:** each subsequent delay doubles (20s → 40s → 80s → 160s → …).
+- **Maximum delay:** the delay between attempts is capped at **8 hours**.
+- **Jitter:** a random factor of ±10% is applied to each delay to avoid thundering-herd retries, so actual times may vary slightly from the values below.
+
+Because retries back off exponentially, increasing `subscription-max-attempts` extends the total retry window super-linearly. The following table shows approximately how long Medplum will keep retrying (from the first failure until the last attempt) for a given `subscription-max-attempts` value:
+
+| `subscription-max-attempts` | Approx. total retry window |
+| --------------------------- | -------------------------- |
+| 4 (default)                 | ~2 minutes                 |
+| 6                           | ~10 minutes                |
+| 8                           | ~40 minutes                |
+| 10                          | ~3 hours                   |
+| 12                          | ~11 hours                  |
+| 15                          | ~1.5 days                  |
+| 18 (max)                    | ~2.5 days                  |
+
+### Planning for downtime in the destination service
+
+If the system receiving your webhook (for example, an external API, integration engine, or your own backend) experiences downtime, the retry policy is what determines whether the event is eventually delivered or lost:
+
+- With the **default of 4 attempts**, retries are exhausted in roughly **2 minutes**. This is only enough to survive brief, transient blips (e.g. a momentary network error or a quick restart).
+- To survive longer outages (maintenance windows, multi-hour incidents), raise `subscription-max-attempts`. For example, `12` covers roughly an 11-hour outage, and the maximum of `18` covers roughly 2.5 days.
+- Once the maximum number of attempts is exhausted, the event is **not** retried again and the notification is effectively dropped. Medplum does not queue events indefinitely.
+
+For each attempt, an [`AuditEvent`](/docs/api/fhir/resources/auditevent) records the outcome (unless configured for [log-only destination](#auditevent-destination)), so you can inspect delivery history and failures at `https://app.medplum.com/Subscription/<id>/event`.
+
+:::caution[Note]
+A higher `subscription-max-attempts` value increases resilience to downstream downtime, but it also means failing subscriptions stay active in the queue longer. For high-volume subscriptions, consider pairing longer retry windows with the [log-only AuditEvent destination](#auditevent-destination) to limit database growth.
+:::
 
 ## Custom Status Codes
 

@@ -36,16 +36,47 @@ export const SCRIPTSURE_ORDER_MEDICATION_BOT: Identifier = {
 /** Identifier system for ScriptSure ROUTED_MED_ID on in-memory Medication resources from drug search. */
 export const SCRIPTSURE_ROUTED_MED_ID_SYSTEM = 'https://scriptsure.com/routed-med-id';
 
+/**
+ * Identifier/coding system for the FDB GCN Sequence Number (`GCN_SEQNO`) — the
+ * clinical-formulation key (ingredient+strength+dose-form+route), independent of
+ * brand and NDC. Stamped as a `medicationCodeableConcept.coding` on the draft
+ * MedicationRequest so the ScriptSure prescription webhook can reconcile a draft
+ * to its sent prescription even when the NDC drifts or the pharmacy substitutes a
+ * generic (brand and generic share the same GCN). Mirrors the medplum-ee bot
+ * constant of the same name.
+ */
+export const SCRIPTSURE_GCN_SEQNO_SYSTEM = 'https://scriptsure.com/gcn-seqno';
+
 export const SCRIPTSURE_PENDING_ORDER_ID_SYSTEM = 'https://scriptsure.com/pending-order-id';
 
 export const SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION = 'https://scriptsure.com/pending-order-status';
 
+/**
+ * `SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION` value marking a draft
+ * `MedicationRequest` as staged in the patient's ScriptSure MedCart (added by
+ * `$checkout-medications`, before the prescriber sends from the MedCart widget).
+ * Consumed by the paired `medplum-ee` cart-checkout / cart-manage bots when
+ * stamping drafts; the Provider App uses the pure-cart model (all drafts on the
+ * Draft tab) rather than filtering on this code today.
+ */
+export const SCRIPTSURE_PENDING_ORDER_STATUS_IN_CART = 'in-cart';
+
 export const SCRIPTSURE_IFRAME_URL_EXTENSION = 'https://scriptsure.com/iframe-url';
+
+/**
+ * Identifier system for the SureScripts `messageId` stamped on a draft
+ * `MedicationRequest` by the cart-checkout flow (electronic-queue submit).
+ * Consumed by the paired `medplum-ee` `scriptsure-cart-checkout-bot` when
+ * stamping queued drafts and by `scriptsure-prescription-webhook-bot` when
+ * reconciling the approval webhook back to the originating draft.
+ */
+export const SCRIPTSURE_MESSAGE_ID_SYSTEM = 'https://scriptsure.com/message-id';
 
 export const SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS: MedicationOrderExtensions = {
   pendingOrderIdSystem: SCRIPTSURE_PENDING_ORDER_ID_SYSTEM,
   pendingOrderStatusUrl: SCRIPTSURE_PENDING_ORDER_STATUS_EXTENSION,
   iframeUrlExtension: SCRIPTSURE_IFRAME_URL_EXTENSION,
+  messageIdSystem: SCRIPTSURE_MESSAGE_ID_SYSTEM,
 };
 
 export const SCRIPTSURE_IFRAME_BOT: Identifier = {
@@ -86,6 +117,19 @@ export const SCRIPTSURE_ADD_PATIENT_PHARMACY_BOT: Identifier = {
 };
 
 export const SCRIPTSURE_PATIENT_ID_SYSTEM = 'https://scriptsure.com/patient-id';
+
+/**
+ * Identifier system for the ScriptSure `practiceId` stamped on the Practice-level
+ * Medplum `Organization`. Used by the practice/location selector to discover the
+ * prescriber's ScriptSure practices and pass the chosen `organizationId` to bots.
+ */
+export const SCRIPTSURE_PRACTICE_ID_SYSTEM = 'https://scriptsure.com/practice-id';
+
+/** Identifier system for the ScriptSure `businessUnitId` on the BU-level Medplum `Organization`. */
+export const SCRIPTSURE_BUSINESS_UNIT_ID_SYSTEM = 'https://scriptsure.com/business-unit-id';
+
+/** `Organization.type` coding system discriminating ScriptSure entity Organizations (`business-unit` | `practice`). */
+export const SCRIPTSURE_ORGANIZATION_TYPE_SYSTEM = 'https://scriptsure.com/organization-type';
 
 /** Base URL for ScriptSure-specific extensions on in-memory Medication resources (e.g. `/sig`). */
 export const SCRIPTSURE_SYSTEM = 'https://scriptsure.com';

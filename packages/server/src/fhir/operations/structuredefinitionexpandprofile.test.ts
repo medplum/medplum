@@ -27,7 +27,7 @@ describe('StructureDefinition $expand-profile', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(sd);
-      expect(res.status).toStrictEqual(201);
+      expect(res).toHaveStatus(201);
     }
   }
 
@@ -61,7 +61,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const bundle = res.body as Bundle<StructureDefinition>;
@@ -82,7 +82,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const bundle = res.body as Bundle<StructureDefinition>;
@@ -101,7 +101,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Profile URL not specified', async () => {
@@ -109,7 +109,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Circuit breaker for deeply nested profiles', async () => {
@@ -122,7 +122,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<StructureDefinition>;
     expect(bundle.entry?.length).toStrictEqual(sds.length);
     for (const entry of bundle.entry || []) {
@@ -140,7 +140,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<StructureDefinition>;
     expect(bundle.entry?.length).toStrictEqual(sds.length - 1); // -1 because the last extension was not recursed due to circuit breaker
 
@@ -231,7 +231,7 @@ async function createNestedStructureDefinitions(
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(sd);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
   }
 
   return sds;

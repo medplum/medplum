@@ -141,7 +141,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
         return txRepo.conditionalCreate(userResource, searchRequest);
       },
-      { serializable: true }
+      {
+        resourceTypes: ['ProjectMembership', 'User'],
+        source: 'inviteUser.upsertUser',
+        serializable: true,
+      }
     );
     user = result;
     existingUser = !isCreated(outcome);
@@ -396,13 +400,43 @@ async function upsertProjectMembership(
 
   // Patients only. RelatedPerson and Practitioner invites are unchanged.
   // Also applies on upsert when no policy is provided in the request.
+  // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
+  if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    } else if (project.defaultPatientAccessPolicy) {
+      // Fallback to legacy field for backwards compatibility
+      partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+    }
+  }
+
+  // Apply default membership policy for RelatedPerson invites, with patient as a parameter.
   if (
-    request.resourceType === 'Patient' &&
+    request.resourceType === 'RelatedPerson' &&
     !partialMembership.accessPolicy &&
-    !partialMembership.access?.length &&
-    project.defaultPatientAccessPolicy
+    !partialMembership.access?.length
   ) {
-    partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const patientRef = (profile as RelatedPerson).patient;
+    if (defaultPolicy && patientRef) {
+      partialMembership.access = [
+        {
+          policy: defaultPolicy.accessPolicy,
+          parameter: [{ name: 'patient', valueReference: patientRef }],
+        },
+      ];
+    }
+  }
+
+  // Apply default membership policy for Practitioner invites, based on whether the member is
+  // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
+  if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    }
   }
 
   if (request.forceNewMembership) {
@@ -439,7 +473,11 @@ async function upsertProjectMembership(
         return createProjectMembership(txRepo, user, project, profile, partialMembership);
       }
     },
-    { serializable: true }
+    {
+      resourceTypes: ['ProjectMembership', profile.resourceType],
+      source: 'upsertProjectMembership',
+      serializable: true,
+    }
   );
 
   return membership;

@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Expression } from '../fhir/sql';
-import { Column, Condition, Disjunction, InsertQuery, IsNull, SelectQuery, SqlBuilder, Subquery } from '../fhir/sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  InsertQuery,
+  Parameter,
+  SelectQuery,
+  SqlBuilder,
+  SqlFunction,
+} from '../fhir/sql';
 
 const DEFAULT_COMPRESSION_TYPE = 'zstd';
 const DEFAULT_FILE_FORMAT = 'PARQUET';
@@ -22,11 +31,9 @@ export const PROJECT_ID_JSON_PATH = '$.meta.project';
 export const WAREHOUSE_HISTORY_COLUMN_NAMES = ['id', 'version_id', 'content', 'last_updated', 'project_id'] as const;
 
 /** Options required to build managed Iceberg attach/setup SQL (extensions, secrets, attach). */
-export interface ManagedIcebergAttachOptions {
-  connectionString: string;
+export interface ManagedIcebergSetupOptions {
   s3Region: string;
   awsS3TableArn: string;
-  namespace?: string;
 }
 
 export interface DuckdbMaterializedResult {
@@ -116,6 +123,46 @@ export function buildManagedIcebergQualifiedTable(namespace: string, icebergTabl
   return `${DEFAULT_ICEBERG_CATALOG_ALIAS}.${namespace}.${icebergTable}`;
 }
 
+/**
+ * Reads the incremental sync watermark from Iceberg manifest column stats (no Parquet scan).
+ *
+ * Uses per-file `upper_bound` values from `iceberg_column_stats`.
+ * Requires Iceberg V2+ tables with accurate `last_updated` bounds in manifest metadata.
+ *
+ * @param connection - DuckDB connection used to run the watermark query.
+ * @param qualifiedIcebergTable - Fully qualified table name (e.g. `iceberg_catalog.default.patient_history`).
+ * @returns The max `last_updated` upper bound, or `undefined` when the table is empty or has no stats.
+ */
+export async function fetchIcebergWatermark(
+  connection: Pick<DuckdbConnection, 'prepare'>,
+  qualifiedIcebergTable: string
+): Promise<string | undefined> {
+  // create the query
+  const statsTableFn = new SqlFunction('iceberg_column_stats', [new Parameter(qualifiedIcebergTable)]);
+  const watermarkColumn = new Column(undefined, 'max(try_cast(upper_bound AS TIMESTAMPTZ)) AS watermark', true);
+  const filters = new Conjunction([
+    new Condition('column_name', '=', 'last_updated'),
+    new Condition('status', '!=', 'DELETED'),
+    new Condition('upper_bound', '!=', null),
+    new Condition('upper_bound', '!=', ''),
+  ]);
+  // NOTE: SelectQuery only supports table identifiers or subqueries in FROM, not table-valued
+  //       functions like iceberg_column_stats(...), so we'll assemble this query with SqlBuilder directly.
+  const query = buildSqlBuilder((sql) => {
+    sql.append('SELECT ');
+    sql.appendColumn(watermarkColumn);
+    sql.append(' FROM ');
+    sql.appendExpression(statsTableFn);
+    sql.append(' WHERE ');
+    sql.appendExpression(filters);
+  });
+
+  // execute it
+  const result = await runParameterizedWarehouseSqlReadAll(connection, query);
+  const row = result.getRowObjectsJson()[0] as { watermark?: string | null } | undefined;
+  return row?.watermark ?? undefined;
+}
+
 export function buildInsertIntoSelectQuery(
   qualifiedTable: string,
   selectQuery: SelectQuery,
@@ -154,13 +201,14 @@ export function buildSelectFromHistoryTableQuery(
     inner.whereExpr(sourcePredicate);
   }
 
+  const projectIdExpression = `json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}')`;
+
   return new SelectQuery('src', inner)
     .column('id')
     .column('version_id')
     .column('content')
     .column('last_updated')
-    .raw(`json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}') AS project_id`)
-    .orderBy('last_updated');
+    .raw(`${projectIdExpression} AS project_id`);
 }
 
 export function buildProjectedSelectFromHistoryTable(
@@ -170,48 +218,6 @@ export function buildProjectedSelectFromHistoryTable(
   return buildSqlBuilder((sql) =>
     sql.appendExpression(buildSelectFromHistoryTableQuery(sourceHistoryTable, sourcePredicate))
   );
-}
-
-export function buildCountFromHistoryTableQuery(sourceHistoryTable: string, sourcePredicate?: Expression): SqlBuilder {
-  const table = buildQualifiedTableIdentifier(`${POSTGRES_CATALOG}.${sourceHistoryTable}`);
-  const query = new SelectQuery(table).raw('COUNT(*) AS count').where('content', '!=', null).where('content', '!=', '');
-  if (sourcePredicate) {
-    query.whereExpr(sourcePredicate);
-  }
-
-  return buildSqlBuilder((sql) => {
-    sql.appendExpression(query);
-  });
-}
-
-/**
- * Constructs a SQL predicate for selecting rows with a "lastUpdated" value greater than the current high-watermark.
- *
- * This predicate is used for incremental syncs, ensuring only new rows are considered. The query is intentionally written as
- *   (MAX(last_updated)) IS NULL OR lastUpdated > (MAX(last_updated))
- * and not just lastUpdated > (MAX(...)), for the following reasons:
- *
- * 1. The target table may be empty. In this case, MAX(last_updated) returns NULL. SQL `NULL > value` is unknown (not true!),
- *    so we must explicitly check for the NULL case. Only by adding IS NULL do we guarantee that when the table is empty,
- *    the predicate evaluates as true for all source rows.
- *
- * 2. DuckDB and Postgres strictly follow SQL three-valued logic; without this clause, no rows would be selected if there
- *    is not yet a high-watermark value.
- *
- * 3. Users may set up a table with no prior sync artifacts, and in that case, we need to ensure the initial sync (bootstrap)
- *    includes all data.
- *
- * @param qualifiedTable - Fully qualified table name (may include schema, etc.)
- * @returns SQL boolean expression for use in WHERE clauses to filter records for incremental sync based on lastUpdated.
- */
-export function buildMaxLastUpdatedWatermarkPredicate(qualifiedTable: string): Expression {
-  const safeQualifiedTableName = buildQualifiedTableIdentifier(qualifiedTable, 2);
-  const maxLastUpdatedSubquery = new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated)');
-
-  return new Disjunction([
-    new IsNull(new Subquery(maxLastUpdatedSubquery)),
-    new Condition('lastUpdated', '>', new Subquery(maxLastUpdatedSubquery)),
-  ]);
 }
 
 export function buildCopySelectToParquetQuery(selectQuery: SqlBuilder, parquetPath: string): SqlBuilder {
@@ -267,15 +273,27 @@ export function buildManagedS3TablesIcebergAttachQuery(awsS3TableArn: string): s
 }
 
 /**
- * DuckDB setup for managed Iceberg (extensions, S3 secret, Postgres attach, S3 Tables attach).
+ * DuckDB setup for managed Iceberg (extensions, S3 secret, S3 Tables attach).
+ * Postgres is attached separately after destination watermarks are resolved.
  *
  * @param options - Attach options; requires `awsS3TableArn` and `s3Region`.
  * @returns SQL strings to run in order before per-table mutations.
  */
-export function buildManagedIcebergSetupQueries(options: ManagedIcebergAttachOptions): string[] {
+export function buildManagedIcebergSetupQueries(options: ManagedIcebergSetupOptions): string[] {
   return [
     ...buildManagedIcebergExtensionQueries(),
     buildManagedS3CredentialSecretQuery(options.s3Region),
+    /*
+     * the default is 524288, which can take a LOT of memory since we're copying
+     * JSON content data
+     */
+    'SET partitioned_write_flush_threshold = 10000;',
+    /*
+     * Misleading option.  This is to allow duckdb to insert into a "sorted table", which is really a hint anyway.
+     * https://github.com/duckdb/duckdb-iceberg/issues/851
+     * https://github.com/duckdb/duckdb-iceberg/pull/992
+     */
+    'SET unsafe_iceberg_ignore_sort_order=true',
     /*
      * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
      * the default connection pool settings are very aggressive; many connections, much parallelism
@@ -283,9 +301,6 @@ export function buildManagedIcebergSetupQueries(options: ManagedIcebergAttachOpt
      */
     'SET threads = 1',
     'SET pg_use_ctid_scan = false',
-    'SET pg_pool_max_connections = 1',
-    "SET pg_pool_acquire_mode = 'wait'",
-    buildDuckdbPostgresAttachQuery(options.connectionString),
     buildManagedS3TablesIcebergAttachQuery(options.awsS3TableArn),
   ];
 }

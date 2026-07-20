@@ -389,7 +389,10 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: 'Claim submission',
-          items: ['integration/stedi/claim-submission/professional-claims'],
+          items: [
+            'integration/stedi/claim-submission/professional-claims',
+            'integration/stedi/claim-submission/claim-responses',
+          ],
         },
       ],
     },
@@ -455,6 +458,7 @@ const sidebars: SidebarsConfig = {
       label: 'Self-Hosting',
       link: { type: 'doc', id: 'self-hosting/index' },
       items: [
+        { type: 'doc', id: 'self-hosting/considerations' },
         { type: 'html', value: '<strong class="menu__link">Installing</strong>' },
         { type: 'doc', id: 'self-hosting/install-on-aws' },
         { type: 'doc', id: 'self-hosting/aws-cdk-settings' },
@@ -481,7 +485,6 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/opentelemetry' },
         { type: 'doc', id: 'self-hosting/aws-athena-guide' },
         { type: 'html', value: '<strong class="menu__link">Advanced</strong>' },
-        { type: 'doc', id: 'self-hosting/considerations' },
         { type: 'doc', id: 'self-hosting/best-practices' },
         { type: 'doc', id: 'self-hosting/upgrading-server' },
         { type: 'doc', id: 'self-hosting/upgrade-rds-database' },

@@ -45,6 +45,8 @@ export async function sendEmail(repo: Repository, options: Mail.Options, project
     await sendEmailViaSmtp(config.smtp, options);
   } else if (config.emailProvider === 'awsses') {
     await sendEmailViaSes(options);
+  } else {
+    globalLogger.warn('Email not configured — skipping send', { to: options.to, subject: options.subject });
   }
 }
 

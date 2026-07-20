@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { getExtension, Operator } from '@medplum/core';
 import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Queue, QueueOptions, Worker } from 'bullmq';
+import type { ConnectionOptions, Job, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
@@ -281,15 +281,31 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
   throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
 }
 
+/**
+ * Builds the effective `Worker` options by merging, in increasing order of precedence: the given
+ * default queue options (for the shared `connection`), the global `bullmq` server config,
+ * worker-specific defaults from code, and the per-worker `workers.bullmq.<workerName>` server
+ * config.
+ * @param config - The server config.
+ * @param workerName - The worker to build the config for.
+ * @param queueOptions - The queue options for this worker, typically returned by
+ * {@link defaultQueueOptions}
+ * @param workerDefaults - Worker-specific defaults that supersede the global `bullmq` server
+ * config (including the defaults added by `addDefaults`) but are overridden by the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @returns The merged `Worker` options for the worker.
+ */
 export function getWorkerBullmqConfig(
   config: MedplumServerConfig,
-  workerName: WorkerName
-): Partial<MedplumBullmqConfig> | undefined {
+  workerName: WorkerName,
+  queueOptions: QueueOptions,
+  workerDefaults?: Partial<MedplumBullmqConfig>
+): WorkerOptions {
   const perWorker = config.workers?.bullmq?.[workerName];
-  if (perWorker) {
-    return { ...config.bullmq, ...perWorker };
-  }
-  return config.bullmq;
+  // `queueOptions.defaultJobOptions` field and potentially others is not a valid `WorkerOptions`
+  // property. It rides along as an inert excess key on the returned object (harmless, since `Worker`
+  // ignores unrecognized options)
+  return { ...queueOptions, ...config.bullmq, ...workerDefaults, ...perWorker };
 }
 
 export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {
@@ -307,4 +323,8 @@ export function defaultQueueOptions(config: MedplumServerConfig): QueueOptions {
       },
     },
   };
+}
+
+export class CancelledError extends Error {
+  name = 'CancelledError';
 }

@@ -41,19 +41,18 @@ describe('clinical-activity', () => {
 
   describe('fetchMostRecentMedicationDate', () => {
     test('returns updated_at when available', async () => {
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: {
-                  medications: [{ id: 'med1', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-15T00:00:00Z' }],
-                },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve({
+              data: {
+                medications: [{ id: 'med1', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-15T00:00:00Z' }],
+              },
+            }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentMedicationDate(healthieClient, 'patient123');
@@ -61,19 +60,18 @@ describe('clinical-activity', () => {
     });
 
     test('returns created_at when updated_at is not available', async () => {
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: {
-                  medications: [{ id: 'med1', created_at: '2024-01-01T00:00:00Z' }],
-                },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve({
+              data: {
+                medications: [{ id: 'med1', created_at: '2024-01-01T00:00:00Z' }],
+              },
+            }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentMedicationDate(healthieClient, 'patient123');
@@ -81,14 +79,13 @@ describe('clinical-activity', () => {
     });
 
     test('returns undefined when no medications', async () => {
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { medications: [] } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { medications: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentMedicationDate(healthieClient, 'patient123');
@@ -99,25 +96,24 @@ describe('clinical-activity', () => {
   describe('fetchMostRecentAllergyDate', () => {
     test('returns updated_at when available', async () => {
       // Allergies are queried through User.last_updated_allergy
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: {
-                  user: {
-                    last_updated_allergy: {
-                      id: 'allergy1',
-                      created_at: '2024-01-01T00:00:00Z',
-                      updated_at: '2024-02-01T00:00:00Z',
-                    },
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve({
+              data: {
+                user: {
+                  last_updated_allergy: {
+                    id: 'allergy1',
+                    created_at: '2024-01-01T00:00:00Z',
+                    updated_at: '2024-02-01T00:00:00Z',
                   },
                 },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+              },
+            }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentAllergyDate(healthieClient, 'patient123');
@@ -125,14 +121,13 @@ describe('clinical-activity', () => {
     });
 
     test('returns undefined when no allergies', async () => {
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentAllergyDate(healthieClient, 'patient123');
@@ -142,19 +137,18 @@ describe('clinical-activity', () => {
 
   describe('fetchMostRecentFormAnswerGroupDate', () => {
     test('returns created_at from most recent form', async () => {
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                data: {
-                  formAnswerGroups: [{ id: 'form1', created_at: '2024-03-01T00:00:00Z' }],
-                },
-              }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve({
+              data: {
+                formAnswerGroups: [{ id: 'form1', created_at: '2024-03-01T00:00:00Z' }],
+              },
+            }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentFormAnswerGroupDate(healthieClient, 'patient123');
@@ -162,14 +156,13 @@ describe('clinical-activity', () => {
     });
 
     test('returns undefined when no form answer groups', async () => {
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await fetchMostRecentFormAnswerGroupDate(healthieClient, 'patient123');
@@ -181,49 +174,46 @@ describe('clinical-activity', () => {
     test('returns max date across all clinical resources', async () => {
       // Mock all three fetch calls
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () =>
-                Promise.resolve({
-                  data: {
-                    medications: [{ id: 'med1', created_at: '2024-01-01T00:00:00Z' }],
-                  },
-                }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                data: {
+                  medications: [{ id: 'med1', created_at: '2024-01-01T00:00:00Z' }],
+                },
+              }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () =>
-                Promise.resolve({
-                  data: {
-                    user: {
-                      last_updated_allergy: { id: 'allergy1', created_at: '2024-02-15T00:00:00Z' },
-                    },
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                data: {
+                  user: {
+                    last_updated_allergy: { id: 'allergy1', created_at: '2024-02-15T00:00:00Z' },
                   },
-                }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+                },
+              }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () =>
-                Promise.resolve({
-                  data: {
-                    formAnswerGroups: [{ id: 'form1', created_at: '2024-02-01T00:00:00Z' }],
-                  },
-                }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                data: {
+                  formAnswerGroups: [{ id: 'form1', created_at: '2024-02-01T00:00:00Z' }],
+                },
+              }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await fetchLatestClinicalUpdate(healthieClient, 'patient123');
@@ -234,32 +224,29 @@ describe('clinical-activity', () => {
     test('returns undefined when no clinical data exists', async () => {
       // Mock all three fetch calls returning empty
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({ data: { medications: [] } }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { medications: [] } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await fetchLatestClinicalUpdate(healthieClient, 'patient123');
@@ -268,37 +255,34 @@ describe('clinical-activity', () => {
 
     test('handles partial clinical data (only medications)', async () => {
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () =>
-                Promise.resolve({
-                  data: {
-                    medications: [{ id: 'med1', created_at: '2024-03-01T00:00:00Z' }],
-                  },
-                }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                data: {
+                  medications: [{ id: 'med1', created_at: '2024-03-01T00:00:00Z' }],
+                },
+              }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await fetchLatestClinicalUpdate(healthieClient, 'patient123');

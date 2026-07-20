@@ -3832,7 +3832,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       await sleep(retryDelay, { signal: options.signal });
       state.pollCount++;
     }
-    return this.request(statusUrl, { ...options, method: 'GET' }, state);
+    return this.request(statusUrl, statusOptions, state);
   }
 
   /**
@@ -3868,15 +3868,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const batch: Bundle = {
       resourceType: 'Bundle',
       type: 'batch',
-      entry: entries.map(
-        (e): BundleEntry => ({
-          request: {
-            method: e.method,
-            url: e.url,
-          },
-          resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
-        })
-      ),
+      entry: entries.map((e): BundleEntry => ({
+        request: {
+          method: e.method,
+          url: e.url,
+        },
+        resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
+      })),
     };
 
     // Execute the batch request
@@ -4013,8 +4011,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Handles an unauthenticated (HTTP 401) response from the server.
    *
-   * Bounded and terminal: at most {@link MAX_AUTH_ATTEMPTS} attempts per request (1 initial
-   * + 1 recovery, tracked via {@link RequestState.authAttempt}). The recovery re-mints via a
+   * Bounded and terminal: at most `MAX_AUTH_ATTEMPTS` attempts per request (1 initial
+   * + 1 recovery, tracked via `RequestState.authAttempt`). The recovery re-mints via a
    * forced {@link MedplumClient.refresh} (bypassing the {@link MedplumClient.isAuthenticated}
    * short-circuit on the rejected token), single-flight so concurrent 401s share one re-mint.
    * A second 401 is terminal: clear auth, `onUnauthenticated`, reject — never recurse.
