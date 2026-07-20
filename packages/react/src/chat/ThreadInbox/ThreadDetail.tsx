@@ -1,6 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Divider, Flex, Group, Menu, Paper, ScrollArea, Stack, Text, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Group,
+  Menu,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { IconChevronDown, IconInfoCircle } from '@tabler/icons-react';
@@ -32,8 +45,15 @@ export interface ThreadDetailProps {
  * @returns The ThreadDetail React node.
  */
 export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
-  const { thread, showPatientSummary = false, sections, uploadEnabled, onViewInDocuments, onStatusChange, onOpenSettings } =
-    props;
+  const {
+    thread,
+    showPatientSummary = false,
+    sections,
+    uploadEnabled,
+    onViewInDocuments,
+    onStatusChange,
+    onOpenSettings,
+  } = props;
 
   return (
     <>
