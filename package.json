@@ -57,8 +57,7 @@
     "typescript": "6.0.3",
     "vite": "8.1.5",
     "vitest": "4.1.10",
-    "@vitest/expect": "4.1.10",
-    "vitest-websocket-mock": "0.7.0"
+    "vitest-websocket-mock": "0.5.0"
   },
   "packageManager": "npm@10.9.8",
   "engines": {
