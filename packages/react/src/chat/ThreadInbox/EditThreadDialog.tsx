@@ -57,11 +57,11 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
     // Preserve all non-Practitioner recipients (the patient subject, RelatedPerson,
     // CareTeam, etc.) and replace only the Practitioner entries with the edited set,
     // so editing the topic/practitioners never silently drops other participants.
-    const preservedRecipients = (thread.recipient ?? []).filter((r) => !r.reference?.startsWith('Practitioner/'));
+    const preservedRecipients = (thread.recipient ?? []).filter((r) => !isReference<Practitioner>(r, 'Practitioner'));
     const updated: Communication = {
       ...thread,
       recipient: [...preservedRecipients, ...practitioners],
-      topic: { text: topic },
+      topic: topic ? { text: topic } : undefined,
     };
 
     try {

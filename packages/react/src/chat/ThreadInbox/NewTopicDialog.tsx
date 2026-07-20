@@ -56,15 +56,8 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
       status: 'in-progress',
       subject: patient,
       sender: profileRef,
-      recipient: [
-        patient,
-        ...practitioners.map((practitioner) => ({
-          reference: practitioner.reference,
-        })),
-      ],
-      topic: {
-        text: topic,
-      },
+      recipient: [patient, ...practitioners],
+      topic: topic ? { text: topic } : undefined,
     };
 
     try {
