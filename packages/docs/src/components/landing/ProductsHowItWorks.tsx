@@ -24,7 +24,7 @@ export function ProductsHowItWorks(): JSX.Element {
     <div id="howitworks" className={`${styles.section} ${diagramStyles.diagramScale}`}>
       <ProductsSectionHeader headline="How it all works together" leadFullMobile>
         Medplum unifies auth, access control, data, and automation into a single tenant-isolated system for your
-        apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Bridge connects
+        apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Agent connects
         on-prem systems, integrations extend your apps&apos; capabilities, and our compliance and security are built in.
       </ProductsSectionHeader>
 
