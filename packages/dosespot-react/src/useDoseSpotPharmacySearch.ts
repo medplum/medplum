@@ -7,7 +7,7 @@ import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from 
 
 export type UseDoseSpotPharmacySearchReturn = UsePharmacySearchReturn;
 
-/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
+ 
 /**
  * React hook that provides DoseSpot-specific pharmacy search and add-to-favorites functionality.
  *

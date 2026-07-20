@@ -18,7 +18,7 @@ export interface UseScriptSureOrderSetOptions {
 
 export type UseScriptSureOrderSetReturn = UseMedicationOrderSetReturn;
 
-/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
+ 
 /**
  * React hook that returns the ScriptSure order-set prescribing widget URL via
  * the vendor-neutral `$order-set-url` FHIR custom operation
