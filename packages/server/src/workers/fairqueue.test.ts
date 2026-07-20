@@ -12,7 +12,7 @@ import { getRateLimitRedis } from '../redis';
 import { deleteRedisKeys } from '../test.setup';
 import {
   BULLMQ_MAX_PRIORITY,
-  decrementProjectJobCount,
+  decrementProjectJobPriority,
   incrementProjectJobPriority,
   isFairQueueEnabled,
 } from './fairqueue';
@@ -64,10 +64,10 @@ describe('Fair queue counter', () => {
     await incrementProjectJobPriority(logger, queueName, projectId);
     await incrementProjectJobPriority(logger, queueName, projectId);
 
-    await decrementProjectJobCount(logger, queueName, projectId);
+    await decrementProjectJobPriority(logger, queueName, projectId);
     expect(await getRateLimitRedis().get(key)).toStrictEqual('1');
 
-    await decrementProjectJobCount(logger, queueName, projectId);
+    await decrementProjectJobPriority(logger, queueName, projectId);
     // At zero the key remains but stays TTL-bounded, so it self-expires rather than lingering.
     expect(await getRateLimitRedis().get(key)).toStrictEqual('0');
     expect(await getRateLimitRedis().pttl(key)).toBeGreaterThan(0);
@@ -76,7 +76,7 @@ describe('Fair queue counter', () => {
   test('decrement of an absent counter sets a TTL so a stray negative self-expires', async () => {
     const projectId = randomUUID();
     const key = `${KEY_PREFIX}${queueName}:${projectId}`;
-    await decrementProjectJobCount(logger, queueName, projectId);
+    await decrementProjectJobPriority(logger, queueName, projectId);
     // DECR on a missing key would otherwise recreate it at -1 with no expiry; the pipelined EXPIRE
     // bounds it so it cannot linger forever.
     expect(await getRateLimitRedis().get(key)).toStrictEqual('-1');
@@ -116,9 +116,9 @@ describe('Fair queue counter Redis handling', () => {
     mockPipeline(null);
     const projectId = randomUUID();
 
-    expect(await incrementProjectJobPriority(logger, queueName, projectId)).toStrictEqual(1);
+    expect(await incrementProjectJobPriority(logger, queueName, projectId)).toStrictEqual(0);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to increment fairqueue project job count',
+      expect.stringContaining('fairqueue'),
       expect.objectContaining({ queueName, projectId })
     );
   });
@@ -130,9 +130,9 @@ describe('Fair queue counter Redis handling', () => {
     const projectId = randomUUID();
 
     // With no usable INCR result the priority defaults to 1.
-    expect(await incrementProjectJobPriority(logger, queueName, projectId)).toStrictEqual(1);
+    expect(await incrementProjectJobPriority(logger, queueName, projectId)).toStrictEqual(0);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to increment fairqueue project job count',
+      expect.stringContaining('fairqueue'),
       expect.objectContaining({ queueName, projectId, error: commandErr })
     );
   });
@@ -142,8 +142,8 @@ describe('Fair queue counter Redis handling', () => {
     mockPipeline(null);
     const projectId = randomUUID();
 
-    await decrementProjectJobCount(logger, queueName, projectId);
-    expect(errorSpy).toHaveBeenCalledWith('Failed to decrement fairqueue project job count', { queueName, projectId });
+    await decrementProjectJobPriority(logger, queueName, projectId);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('fairqueue'), { queueName, projectId });
   });
 
   test('logs when the decrement command reports an error', async () => {
@@ -152,9 +152,9 @@ describe('Fair queue counter Redis handling', () => {
     mockPipeline([[commandErr, null]]);
     const projectId = randomUUID();
 
-    await decrementProjectJobCount(logger, queueName, projectId);
+    await decrementProjectJobPriority(logger, queueName, projectId);
     expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to decrement fairqueue project job count',
+      expect.stringContaining('fairqueue'),
       expect.objectContaining({ queueName, projectId, error: commandErr })
     );
   });

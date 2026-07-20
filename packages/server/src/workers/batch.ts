@@ -26,7 +26,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { decrementProjectJobCount, incrementProjectJobPriority, isFairQueueEnabled } from './fairqueue';
+import { decrementProjectJobPriority, incrementProjectJobPriority, isFairQueueEnabled } from './fairqueue';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -254,7 +254,7 @@ async function addBatchJobData(logger: ILogger, jobData: BatchJobData): Promise<
 async function releaseFairQueueSlot(logger: ILogger, job: Job<BatchJobData>): Promise<void> {
   if (isFairQueueEnabled(job.data.authState)) {
     try {
-      await decrementProjectJobCount(logger, queueName, job.data.authState.project.id);
+      await decrementProjectJobPriority(logger, queueName, job.data.authState.project.id);
     } catch (err) {
       logger.error('Failed to release async batch fair-queue slot', {
         err: err instanceof Error ? err.message : err,

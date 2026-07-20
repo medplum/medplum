@@ -104,7 +104,7 @@ export interface MedplumServerConfig {
   defaultFhirQuota?: number;
   /**
    * Enables project-based fair queueing for async batch jobs, so one project's backlog does not
-   * starve other projects. Default is `true`; overridable per-project via the
+   * starve other projects. Default is `false`; overridable per-project via the
    * `asyncBatchFairQueueEnabled` Project.systemSetting.
    */
   asyncBatchFairQueueEnabled?: boolean;

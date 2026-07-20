@@ -39,8 +39,7 @@ function getFairQueueKey(queueName: string, projectId: string): string {
 
 /**
  * Determines whether fair queueing is active for the given auth state. A per-project
- * `asyncBatchFairQueueEnabled` Project.systemSetting wins if present; otherwise the server config flag
- * applies, defaulting to enabled.
+ * `asyncBatchFairQueueEnabled` Project.systemSetting overrides {@link ServerConfig.asyncBatchFairQueueEnabled}
  * @param authState - The auth state the job was submitted under.
  * @returns True if fair queueing should be applied.
  */
@@ -55,7 +54,7 @@ export function isFairQueueEnabled(authState: Readonly<AuthState>): boolean {
 /**
  * Increments the project's in-flight job counter and returns the BullMQ priority to assign the new
  * job (lower number = higher priority), clamped to the valid range. Refreshes the counter's TTL. The
- * slot is released via {@link decrementProjectJobCount} when the job reaches a terminal state.
+ * slot is released via {@link decrementProjectJobPriority} when the job reaches a terminal state.
  * @param logger - The logger instance for logging purposes.
  * @param queueName - The BullMQ queue name.
  * @param projectId - The project id the job belongs to.
@@ -70,13 +69,16 @@ export async function incrementProjectJobPriority(
   const key = getFairQueueKey(queueName, projectId);
   const pipeline = redis.pipeline().incr(key).expire(key, FAIR_QUEUE_COUNTER_TTL_SECONDS);
   const results = await pipeline.exec();
-  if (!results || results[0]?.[0]) {
-    logger.error('Failed to increment fairqueue project job count', { queueName, projectId, error: results?.[0]?.[0] });
-  }
+
   // results[0] is [err, incrResult] for the INCR command.
-  const count = (results?.[0]?.[1] as number | undefined) ?? 1;
-  // Clamp to BullMQ's valid range; INCR starts at 1, so the lower bound is defensive.
-  return Math.min(Math.max(count, 1), BULLMQ_MAX_PRIORITY);
+  if (!results || results[0]?.[0]) {
+    logger.error('Error incrementing fairqueue priority', { queueName, projectId, error: results?.[0]?.[0] });
+  }
+  // Errors in Redis do not block job processing. Incase of error, default to priority of zero;
+  // effectively emulating behavior when fair queueing is not enabled. This assumes that Redis
+  // errors affect all projects equally
+  const priority = (results?.[0]?.[1] as number | undefined) ?? 0;
+  return Math.min(Math.max(priority, 0), BULLMQ_MAX_PRIORITY); // Clamp to BullMQ's valid range
 }
 
 /**
@@ -90,14 +92,18 @@ export async function incrementProjectJobPriority(
  * @param queueName - The BullMQ queue name.
  * @param projectId - The project id the job belongs to.
  */
-export async function decrementProjectJobCount(logger: ILogger, queueName: string, projectId: string): Promise<void> {
+export async function decrementProjectJobPriority(
+  logger: ILogger,
+  queueName: string,
+  projectId: string
+): Promise<void> {
   const redis = getRateLimitRedis();
   const key = getFairQueueKey(queueName, projectId);
   const pipeline = redis.pipeline().decr(key).expire(key, FAIR_QUEUE_COUNTER_TTL_SECONDS);
   const results = await pipeline.exec();
   if (!results) {
-    logger.error('Failed to decrement fairqueue project job count', { queueName, projectId });
+    logger.error('Error decrementing fairqueue priority', { queueName, projectId });
   } else if (results[0]?.[0]) {
-    logger.error('Failed to decrement fairqueue project job count', { queueName, projectId, error: results[0][0] });
+    logger.error('Error decrementing fairqueue priority', { queueName, projectId, error: results[0][0] });
   }
 }
