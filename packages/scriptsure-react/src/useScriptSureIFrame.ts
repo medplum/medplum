@@ -6,7 +6,6 @@ import { SCRIPTSURE_IFRAME_BOT, SCRIPTSURE_PATIENT_SYNC_BOT } from './common';
 
 export type ScriptSureIFrameOptions = MedicationIFrameOptions;
 
- 
 /**
  * React hook that syncs a patient to ScriptSure and returns the iframe URL.
  *

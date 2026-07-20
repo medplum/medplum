@@ -8,7 +8,6 @@ import type { ScriptSurePharmacySearchParams } from './pharmacy-search';
 
 export type UseScriptSurePharmacySearchReturn = UsePharmacySearchReturn<ScriptSurePharmacySearchParams>;
 
- 
 /**
  * React hook that provides ScriptSure-specific pharmacy search and add-to-favorites functionality.
  *

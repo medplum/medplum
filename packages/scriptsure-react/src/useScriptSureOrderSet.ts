@@ -18,7 +18,6 @@ export interface UseScriptSureOrderSetOptions {
 
 export type UseScriptSureOrderSetReturn = UseMedicationOrderSetReturn;
 
- 
 /**
  * React hook that returns the ScriptSure order-set prescribing widget URL via
  * the vendor-neutral `$order-set-url` FHIR custom operation
