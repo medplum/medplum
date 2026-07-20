@@ -19,7 +19,6 @@ export interface DoseSpotIFrameOptions extends MedicationIFrameOptions {
   readonly onSelfEnrollSuccess?: (result: DoseSpotSelfEnrollmentResult) => void;
 }
 
-/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
 /**
  * React hook that syncs a patient to DoseSpot and returns the iframe URL.
  *
