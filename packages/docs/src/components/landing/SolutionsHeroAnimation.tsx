@@ -18,13 +18,34 @@ type Face = Logo | typeof PLACEHOLDER;
 // again, on a slow cadence. We have 16 logos for 9 tiles (18 faces), so two backs
 // are placeholders rather than repeated logos.
 const TILES: { front: Logo; back: Face }[] = [
-  { front: { src: '/img/logos/ro.svg', alt: 'Ro' }, back: { src: '/img/logos/thirty-madison.webp', alt: 'Thirty Madison' } },
-  { front: { src: '/img/logos/rad-ai.svg', alt: 'Rad AI' }, back: { src: '/img/logos/ultralight.svg', alt: 'Ultralight' } },
-  { front: { src: '/img/logos/summer-health.svg', alt: 'Summer Health' }, back: { src: '/img/logos/color.svg', alt: 'Color' } },
-  { front: { src: '/img/logos/flexpa.svg', alt: 'Flexpa' }, back: { src: '/img/logos/seen-health.svg', alt: 'Seen Health' } },
-  { front: { src: '/img/logos/develo.png', alt: 'Develo' }, back: { src: '/img/logos/quilted-health.svg', alt: 'Quilted Health', fill: true } },
-  { front: { src: '/img/logos/everselflogo.png', alt: 'Everself' }, back: { src: '/img/logos/stanford.svg', alt: 'Stanford' } },
-  { front: { src: '/img/logos/imagine.svg', alt: 'Imagine Pediatrics' }, back: { src: '/img/logos/remo.svg', alt: 'Remo' } },
+  {
+    front: { src: '/img/logos/ro.svg', alt: 'Ro' },
+    back: { src: '/img/logos/thirty-madison.webp', alt: 'Thirty Madison' },
+  },
+  {
+    front: { src: '/img/logos/rad-ai.svg', alt: 'Rad AI' },
+    back: { src: '/img/logos/ultralight.svg', alt: 'Ultralight' },
+  },
+  {
+    front: { src: '/img/logos/summer-health.svg', alt: 'Summer Health' },
+    back: { src: '/img/logos/color.svg', alt: 'Color' },
+  },
+  {
+    front: { src: '/img/logos/flexpa.svg', alt: 'Flexpa' },
+    back: { src: '/img/logos/seen-health.svg', alt: 'Seen Health' },
+  },
+  {
+    front: { src: '/img/logos/develo.png', alt: 'Develo' },
+    back: { src: '/img/logos/quilted-health.svg', alt: 'Quilted Health', fill: true },
+  },
+  {
+    front: { src: '/img/logos/everselflogo.png', alt: 'Everself' },
+    back: { src: '/img/logos/stanford.svg', alt: 'Stanford' },
+  },
+  {
+    front: { src: '/img/logos/imagine.svg', alt: 'Imagine Pediatrics' },
+    back: { src: '/img/logos/remo.svg', alt: 'Remo' },
+  },
   { front: { src: '/img/logos/cdc.svg', alt: 'CDC' }, back: PLACEHOLDER },
   { front: { src: '/img/logos/tia.svg', alt: 'Tia' }, back: PLACEHOLDER },
 ];
