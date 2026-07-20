@@ -111,7 +111,7 @@ describe('Fair queue counter Redis handling', () => {
     expect(await incrementProjectJobPriority(logger, queueName, randomUUID())).toStrictEqual(BULLMQ_MAX_PRIORITY);
   });
 
-  test('logs and falls back to priority 1 when the increment pipeline returns no results', async () => {
+  test('logs and falls back to default priority when the increment pipeline returns no results', async () => {
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
     mockPipeline(null);
     const projectId = randomUUID();
@@ -123,7 +123,7 @@ describe('Fair queue counter Redis handling', () => {
     );
   });
 
-  test('logs and falls back to priority 1 when the increment command reports an error', async () => {
+  test('logs and falls back to default priority when the increment command reports an error', async () => {
     const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
     const commandErr = new Error('INCR failed');
     mockPipeline([[commandErr, null]]);

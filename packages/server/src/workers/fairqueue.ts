@@ -58,7 +58,7 @@ export function isFairQueueEnabled(authState: Readonly<AuthState>): boolean {
  * @param logger - The logger instance for logging purposes.
  * @param queueName - The BullMQ queue name.
  * @param projectId - The project id the job belongs to.
- * @returns The BullMQ priority (1..{@link BULLMQ_MAX_PRIORITY}) for the just-enqueued job.
+ * @returns The BullMQ priority (0..{@link BULLMQ_MAX_PRIORITY}) for the just-enqueued job.
  */
 export async function incrementProjectJobPriority(
   logger: ILogger,
