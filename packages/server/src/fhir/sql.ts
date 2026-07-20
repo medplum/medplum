@@ -390,7 +390,7 @@ export class TypedCondition<T extends keyof typeof Operator> extends Condition {
   }
 }
 
-export abstract class Connective implements Expression {
+abstract class Connective implements Expression {
   readonly keyword: string;
   readonly expressions: Expression[];
 
@@ -728,7 +728,7 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
   return new OperationOutcomeError(normalizeOperationOutcome(err), err);
 }
 
-export abstract class BaseQuery extends Executable {
+abstract class BaseQuery extends Executable {
   readonly actualTableName: string;
   readonly predicate: Conjunction;
   explain: boolean | string[] = false;
