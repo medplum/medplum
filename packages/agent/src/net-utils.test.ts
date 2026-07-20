@@ -1,13 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentMessage, AgentTransmitRequest, AgentTransmitResponse } from '@medplum/core';
+import type { AgentMessage, AgentTransmitRequest } from '@medplum/core';
 import { allOk, ContentType, generateId, LogLevel, sleep } from '@medplum/core';
 import type { Agent, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
-import child_process, { ChildProcess } from 'node:child_process';
+import type { ExecException } from 'node:child_process';
+import { ChildProcess, exec } from 'node:child_process';
 import { App } from './app';
+
+function mockPingExecSuccess(
+  _command: string,
+  _options: unknown,
+  callback?: (error: ExecException | null, stdout: string, stderr: string) => void
+): ChildProcess {
+  setTimeout(() => {
+    callback?.(null, 'ping statistics\n4 packets transmitted, 4 received', '');
+  }, 0);
+  return new ChildProcess();
+}
 
 const medplum = new MockClient();
 
@@ -16,7 +28,7 @@ describe('Agent Net Utils', () => {
 
   beforeAll(() => {
     originalLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
   });
 
   afterAll(() => {
@@ -30,7 +42,9 @@ describe('Agent Net Utils', () => {
     let onMessage: (command: AgentMessage) => void;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
+      vi.mocked(exec).mockImplementation(mockPingExecSuccess);
+
       medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
         return [allOk, {} as Resource];
       });
@@ -72,17 +86,14 @@ describe('Agent Net Utils', () => {
       }
     });
 
-    afterAll(async () => {
+    afterEach(async () => {
       await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
+      clearTimeout(timer);
       // @ts-expect-error We know by the time it's used again this will be redefined
       wsClient = undefined;
-    });
-
-    afterEach(() => {
-      clearTimeout(timer);
     });
 
     test('Valid ping to IP', async () => {
@@ -114,7 +125,7 @@ describe('Agent Net Utils', () => {
         reject(new Error('Timeout'));
       }, 3500);
 
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         callback,
         statusCode: 200,
@@ -151,7 +162,7 @@ describe('Agent Net Utils', () => {
         reject(new Error('Timeout'));
       }, 3500);
 
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         callback,
         statusCode: 200,
@@ -189,7 +200,7 @@ describe('Agent Net Utils', () => {
         reject(new Error('Timeout'));
       }, 3500);
 
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
         statusCode: 400,
@@ -228,7 +239,7 @@ describe('Agent Net Utils', () => {
         reject(new Error('Timeout'));
       }, 3500);
 
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         contentType: ContentType.PING,
         statusCode: 200,
@@ -269,7 +280,7 @@ describe('Agent Net Utils', () => {
         reject(new Error('Timeout'));
       }, 3500);
 
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
         statusCode: 400,
@@ -328,6 +339,10 @@ describe('Agent Net Utils', () => {
       }
     });
 
+    beforeEach(() => {
+      vi.mocked(exec).mockImplementation(mockPingExecSuccess);
+    });
+
     afterEach(async () => {
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -369,7 +384,7 @@ describe('Agent Net Utils', () => {
       }, 3500);
 
       // We can ping localhost, woohoo
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         body: expect.stringMatching(/ping statistics/i),
         contentType: ContentType.PING,
@@ -391,7 +406,7 @@ describe('Agent Net Utils', () => {
       onMessage = (command) => resolve(command);
 
       // We are gonna make ping fail after a timeout
-      jest.spyOn(child_process, 'exec').mockImplementationOnce((_command, _options, callback): ChildProcess => {
+      vi.mocked(exec).mockImplementationOnce((_command, _options, callback): ChildProcess => {
         setTimeout(() => {
           callback?.(new Error('Ping command timeout'), '', '');
         }, 50);
@@ -412,7 +427,7 @@ describe('Agent Net Utils', () => {
       );
 
       // We should get a timeout error
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
         callback,
@@ -423,7 +438,7 @@ describe('Agent Net Utils', () => {
 
     test('No ping command available', async () => {
       // We are gonna make ping fail after a timeout
-      jest.spyOn(child_process, 'exec').mockImplementationOnce((_command, _options, callback): ChildProcess => {
+      vi.mocked(exec).mockImplementationOnce((_command, _options, callback): ChildProcess => {
         setTimeout(() => {
           callback?.(new Error('Ping not found'), '', '');
         }, 50);
@@ -458,7 +473,7 @@ describe('Agent Net Utils', () => {
         reject(new Error('Timeout'));
       }, 3500);
 
-      await expect(messageReceived).resolves.toMatchObject<Partial<AgentTransmitResponse>>({
+      await expect(messageReceived).resolves.toMatchObject({
         type: 'agent:transmit:response',
         contentType: ContentType.TEXT,
         statusCode: 400,

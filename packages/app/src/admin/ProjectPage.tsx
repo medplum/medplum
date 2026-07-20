@@ -14,6 +14,7 @@ const tabs: TabDefinition[] = [
   { label: 'Clients', value: 'clients' },
   { label: 'Bots', value: 'bots' },
   { label: 'Secrets', value: 'secrets' },
+  { label: 'Settings', value: 'settings' },
   { label: 'Sites', value: 'sites' },
   { label: 'Rate Limits', value: 'rate-limits' },
 ];

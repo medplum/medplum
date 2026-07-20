@@ -9,16 +9,17 @@ import {
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import type { MedplumClient } from '@medplum/core';
 import { mockClient } from 'aws-sdk-client-mock';
-import fetch from 'node-fetch';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
 
-jest.mock('node-fetch');
-jest.mock('node:child_process');
-jest.mock('../util/client');
+vi.mock('node:child_process');
+vi.mock('../util/client');
+
+const fetchMock = vi.spyOn(globalThis, 'fetch') as unknown as Mock;
 
 describe('update-server command', () => {
   const currentVersion = '2.4.17';
@@ -28,29 +29,29 @@ describe('update-server command', () => {
 
   const cfMock = mockClient(CloudFormationClient);
   let medplum: MedplumClient;
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
     const ecsMock = mockClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
 
-    (fetch as unknown as jest.Mock).mockResolvedValue({
-      json: jest
+    fetchMock.mockResolvedValue({
+      json: vi
         .fn()
         .mockResolvedValue([
-          { tag_name: finalVersion },
-          { tag_name: nextVersion },
-          { tag_name: patchVersion },
-          { tag_name: currentVersion },
+          { tag_name: `v${finalVersion}` },
+          { tag_name: `v${nextVersion}` },
+          { tag_name: `v${patchVersion}` },
+          { tag_name: `v${currentVersion}` },
         ]),
     });
 
@@ -102,15 +103,15 @@ describe('update-server command', () => {
       ],
     });
 
-    (spawnSync as unknown as jest.Mock).mockReturnValue({ status: 0 });
+    (spawnSync as unknown as Mock).mockReturnValue({ status: 0 });
 
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum = {
-      startAsyncRequest: jest.fn(),
-      get: jest.fn().mockResolvedValue({ version: '2.4.17-b27a9f' }),
+      startAsyncRequest: vi.fn(),
+      get: vi.fn().mockResolvedValue({ version: '2.4.17-b27a9f' }),
     } as unknown as MedplumClient;
-    (createMedplumClient as unknown as jest.Mock).mockResolvedValue(medplum);
+    (createMedplumClient as unknown as Mock).mockResolvedValue(medplum);
   });
 
   test('Update server command', async () => {

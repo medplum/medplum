@@ -170,7 +170,7 @@ function buildResolveBySearchDataLoader(
   searchRequest: SearchRequest,
   maxBatchSize: number
 ): DataLoader<Filter, Resource[]> {
-  return new DataLoader<Filter, Resource[]>(
+  return new DataLoader<Filter, Resource[], string>(
     async (filters) => {
       const results = await repo.searchByReference(
         searchRequest,
@@ -179,7 +179,7 @@ function buildResolveBySearchDataLoader(
       );
       return filters.map((filter) => results[filter.value]);
     },
-    { maxBatchSize }
+    { maxBatchSize, cacheKeyFn: (filter) => `${filter.code} ${filter.operator} ${filter.value}` }
   );
 }
 

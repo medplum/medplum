@@ -4,6 +4,8 @@ import { badRequest, ContentType, getReferenceString, unsupportedMediaType } fro
 import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
@@ -15,10 +17,10 @@ import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
 describe('App', () => {
-  let stdOutSpy: jest.SpyInstance;
+  let stdOutSpy: MockInstance;
 
   beforeEach(() => {
-    stdOutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    stdOutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -30,7 +32,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
@@ -42,7 +44,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/api/');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
@@ -88,7 +90,7 @@ describe('App', () => {
     getConfig().baseUrl = 'https://example.com/';
     await initApp(app, config);
     const res = await request(app).get('/');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['strict-transport-security']).toBeDefined();
@@ -100,7 +102,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/robots.txt');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.text).toBe('User-agent: *\nDisallow: /');
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -110,7 +112,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/').set('Origin', 'https://blackhat.xyz');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['origin']).toBeUndefined();
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -132,7 +134,7 @@ describe('App', () => {
 
     test('X-Forwarded-For spoofing', async () => {
       const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
 
       const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
       expect(logLines).toHaveLength(1);
@@ -152,13 +154,13 @@ describe('App', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(patient);
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body).toMatchObject(patient);
 
       const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
       expect(logLines).toHaveLength(1);
       const logObj = JSON.parse(logLines[0][0]);
-      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
+      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201, fhirQuota: 100 });
     });
 
     test('Authenticated request with On-Behalf-Of', async () => {
@@ -175,7 +177,7 @@ describe('App', () => {
         lastName: 'Person',
       });
 
-      (process.stdout.write as jest.Mock).mockClear();
+      (process.stdout.write as Mock).mockClear();
 
       const patient: Patient = {
         resourceType: 'Patient',
@@ -187,11 +189,11 @@ describe('App', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(patient);
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body).toMatchObject(patient);
       expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const logLine = (process.stdout.write as Mock).mock.calls[0][0];
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ profile: `${getReferenceString(client)} (as ${getReferenceString(profile)})` });
     });
@@ -203,7 +205,7 @@ describe('App', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(`>kjaysgdfsk;sdfgjsdrg<`); // Send malformed data that will fail in the body parser middleware
-      expect(res1.status).toBe(400);
+      expect(res1).toHaveStatus(400);
 
       const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
       expect(logLines).toHaveLength(1);
@@ -222,7 +224,7 @@ describe('App', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send();
-      expect(res1.status).toBe(400);
+      expect(res1).toHaveStatus(400);
       const outcome = res1.body as OperationOutcome;
       const issue = outcome.issue[0];
 
@@ -244,7 +246,7 @@ describe('App', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send();
-      expect(res1.status).toBe(400);
+      expect(res1).toHaveStatus(400);
     });
   });
 
@@ -256,7 +258,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/throw');
-    expect(res.status).toBe(500);
+    expect(res).toHaveStatus(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -271,7 +273,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/throw');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Stream not readable'));
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -281,7 +283,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
+    const loggerError = vi.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
     getDatabasePool(DatabaseMode.WRITER).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
@@ -299,17 +301,23 @@ describe('App', () => {
     const res = await request(app)
       .get(`/fhir/R4/SearchParameter?base=Observation`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
 
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test.skip('Preflight max age', async () => {
+  test('Preflight max age', async () => {
     const app = express();
-    const res = await request(app).options('/');
-    expect(res.status).toBe(204);
-    expect(res.header['access-control-max-age']).toBe('86400');
-    expect(res.header['cache-control']).toBe('public, max-age=86400');
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app)
+      .options('/fhir/R4/Patient')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'GET');
+    expect(res).toHaveStatus(204);
+    expect(res.header['access-control-max-age']).toBe('600');
+    expect(res.header['cache-control']).toBe('no-store, no-cache, must-revalidate');
+    expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Server rate limit', async () => {
@@ -323,10 +331,24 @@ describe('App', () => {
     await initApp(app, config);
 
     const res = await request(app).get('/api/');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const res2 = await request(app).get('/api/');
-    expect(res2.status).toBe(429);
+    expect(res2).toHaveStatus(429);
     await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('Server rate limit disabled', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.rateLimitsEnabled = false;
+    config.defaultRateLimit = 1;
+    await initApp(app, config);
+
+    const res = await request(app).get('/api/');
+    expect(res).toHaveStatus(200);
+    const res2 = await request(app).get('/api/');
+    expect(res2).toHaveStatus(200);
     expect(await shutdownApp()).toBeUndefined();
   });
 
@@ -340,7 +362,7 @@ describe('App', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     const res = await request(app).get('/throw');
-    expect(res.status).toBe(415);
+    expect(res).toHaveStatus(415);
     expect(res.body).toMatchObject(unsupportedMediaType);
     expect(await shutdownApp()).toBeUndefined();
   });

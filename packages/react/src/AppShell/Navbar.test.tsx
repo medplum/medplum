@@ -1,23 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Communication, UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconMail, IconStar } from '@tabler/icons-react';
-import 'jest-websocket-mock';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import 'vitest-websocket-mock';
+import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import type { NavbarMenu } from './Navbar';
 import { Navbar } from './Navbar';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
-const toggleMock = jest.fn();
-const closeMock = jest.fn();
+const navigateMock = vi.fn();
+const toggleMock = vi.fn();
+const closeMock = vi.fn();
 
 async function setup(initial = '/'): Promise<void> {
   const initialUrl = new URL(initial, 'http://localhost');
-  medplum.getUserConfiguration = jest.fn(() => {
+  medplum.getUserConfiguration = vi.fn((): WithId<UserConfiguration> | undefined => {
     return {
       resourceType: 'UserConfiguration',
       id: 'test-user-config-id',
@@ -78,21 +79,62 @@ async function setup(initial = '/'): Promise<void> {
 
 describe('Navbar', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
     closeMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
     await setup();
     expect(screen.getByText('Menu 1')).toBeInTheDocument();
+  });
+
+  test('Renders user name and active project name', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: {
+          reference: 'Practitioner/124',
+          display: 'Alice Smith',
+        },
+        project: {
+          reference: 'Project/456',
+          display: 'My Project',
+        },
+      })
+    );
+
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum} navigate={navigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={toggleMock}
+              closeNavbar={closeMock}
+              userMenuEnabled={true}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+
+    window.localStorage.removeItem('activeLogin');
   });
 
   test('Highlighted link', async () => {
@@ -176,26 +218,7 @@ describe('Navbar', () => {
     await setup();
 
     const input = screen.getByPlaceholderText('Resource Type');
-
-    // Enter random text
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
+    await selectAutocompleteOption(input, 'Test');
 
     expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
@@ -262,9 +285,9 @@ describe('Navbar', () => {
 
 describe('NavbarLinkWithSubscription', () => {
   let subscriptionMedplum: MockClient;
-  const subscriptionNavigateMock = jest.fn();
-  const subscriptionToggleMock = jest.fn();
-  const subscriptionCloseMock = jest.fn();
+  const subscriptionNavigateMock = vi.fn();
+  const subscriptionToggleMock = vi.fn();
+  const subscriptionCloseMock = vi.fn();
 
   const subscriptionMenus: NavbarMenu[] = [
     {
@@ -309,16 +332,16 @@ describe('NavbarLinkWithSubscription', () => {
 
   beforeEach(() => {
     subscriptionMedplum = new MockClient();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     subscriptionNavigateMock.mockClear();
     subscriptionCloseMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders subscription link', async () => {
@@ -411,10 +434,10 @@ describe('NavbarLinkWithSubscription', () => {
 });
 
 describe('Navbar onDismiss', () => {
-  const dismissNavigateMock = jest.fn();
-  const dismissToggleMock = jest.fn();
-  const dismissCloseMock = jest.fn();
-  const dismissMock = jest.fn();
+  const dismissNavigateMock = vi.fn();
+  const dismissToggleMock = vi.fn();
+  const dismissCloseMock = vi.fn();
+  const dismissMock = vi.fn();
 
   async function setupDismiss(opened = true): Promise<void> {
     const initialUrl = new URL('/', 'http://localhost');
@@ -446,7 +469,7 @@ describe('Navbar onDismiss', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     dismissNavigateMock.mockClear();
     dismissCloseMock.mockClear();
     dismissMock.mockClear();
@@ -454,9 +477,9 @@ describe('Navbar onDismiss', () => {
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders dismiss button when onDismiss is provided and navbar is opened', async () => {

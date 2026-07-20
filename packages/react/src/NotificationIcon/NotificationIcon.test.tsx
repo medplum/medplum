@@ -4,17 +4,17 @@ import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { IconMail } from '@tabler/icons-react';
-import 'jest-websocket-mock';
+import 'vitest-websocket-mock';
 import { act, render, screen } from '../test-utils/render';
 import { NotificationIcon } from './NotificationIcon';
 
 describe('NotificationIcon()', () => {
   beforeAll(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterAll(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Criteria changed', async () => {

@@ -367,7 +367,7 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "The access policy for the user within the project memebership.",
+      "definition": "The access policy for the user within the project membership.",
       "comment": "",
       "inherited": false
     },
@@ -482,7 +482,7 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+      "definition": "The user configuration for the user within the project membership such as menu links, saved searches, and features.",
       "comment": "",
       "inherited": false
     },

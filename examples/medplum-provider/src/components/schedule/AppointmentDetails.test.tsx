@@ -3,14 +3,14 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Patient } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { RenderResult } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { AppointmentDetails } from './AppointmentDetails';
 
@@ -21,6 +21,8 @@ vi.mock('../../utils/encounter', () => ({
 
 describe('AppointmentDetails', () => {
   let medplum: MockClient;
+  const start = '2024-01-15T10:00:00Z';
+  const end = '2024-01-15T10:30:00Z';
 
   beforeEach(async () => {
     medplum = new MockClient();
@@ -29,34 +31,44 @@ describe('AppointmentDetails', () => {
 
   type SetupOptions = {
     appointment: WithId<Appointment>;
-    onUpdate?: (appointment: Appointment) => void;
+    onAppointmentUpdate?: (appointment: Appointment) => void;
+    onSlotUpdate?: (slot: Slot) => void;
   };
 
-  const setup = async (options: SetupOptions): Promise<void> => {
-    const { appointment, onUpdate = vi.fn() } = options;
+  const setup = async (options: SetupOptions): Promise<RenderResult> => {
+    const { appointment, onAppointmentUpdate = vi.fn(), onSlotUpdate = vi.fn() } = options;
 
-    // AppointmentDetails uses `useResource` to load patient information; wrap the setup
-    // in `act` so that async effect is visible in the rendered result.
+    let result!: RenderResult;
     await act(async () => {
-      return render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <AppointmentDetails appointment={appointment} onUpdate={onUpdate} />
-            </MantineProvider>
-          </MedplumProvider>
-        </MemoryRouter>
+      result = render(
+        <AppointmentDetails
+          appointment={appointment}
+          onAppointmentUpdate={onAppointmentUpdate}
+          onSlotUpdate={onSlotUpdate}
+        />,
+        {
+          wrapper: ({ children }) => (
+            <MemoryRouter>
+              <MedplumProvider medplum={medplum}>
+                <MantineProvider>
+                  <Notifications />
+                  {children}
+                </MantineProvider>
+              </MedplumProvider>
+            </MemoryRouter>
+          ),
+        }
       );
     });
+    return result;
   };
 
   const createAppointment = (overrides?: Partial<Appointment>): WithId<Appointment> => ({
     resourceType: 'Appointment',
     id: 'appointment-1',
     status: 'booked',
-    start: '2024-01-15T10:00:00Z',
-    end: '2024-01-15T10:30:00Z',
+    start,
+    end,
     participant: [
       {
         actor: { reference: 'Practitioner/practitioner-1', display: 'Dr. Smith' },
@@ -71,8 +83,8 @@ describe('AppointmentDetails', () => {
       const appointment = createAppointment();
       await setup({ appointment });
 
-      // formatPeriod should display the appointment time
-      expect(screen.getByText(/2024/)).toBeInTheDocument();
+      // "Appointment Start" and "Appointment End" are shown as timestamps
+      expect(screen.getAllByText(/2024/)).toHaveLength(2);
     });
 
     test('renders patient input when no patient participant exists', async () => {
@@ -124,9 +136,9 @@ describe('AppointmentDetails', () => {
   });
 
   describe('Patient Selection', () => {
-    test('calls onUpdate with updated appointment when patient is selected and form submitted', async () => {
+    test('calls onAppointmentUpdate with updated appointment when patient is selected and form submitted', async () => {
       const user = userEvent.setup();
-      const onUpdate = vi.fn();
+      const onAppointmentUpdate = vi.fn();
       const appointment = createAppointment();
 
       // Mock updateResource to return the updated appointment
@@ -142,7 +154,7 @@ describe('AppointmentDetails', () => {
       };
       medplum.updateResource = vi.fn().mockResolvedValue(updatedAppointment);
 
-      await setup({ appointment, onUpdate });
+      await setup({ appointment, onAppointmentUpdate });
 
       // Type in the patient search input (ResourceInput uses a searchbox role)
       const patientInput = screen.getByRole('searchbox');
@@ -171,25 +183,25 @@ describe('AppointmentDetails', () => {
         })
       );
 
-      // Verify onUpdate callback was called
-      expect(onUpdate).toHaveBeenCalledWith(updatedAppointment);
+      // Verify onAppointmentUpdate callback was called
+      expect(onAppointmentUpdate).toHaveBeenCalledWith(updatedAppointment);
     });
 
     test('does not call updateResource when no patient is selected', async () => {
       const user = userEvent.setup();
-      const onUpdate = vi.fn();
+      const onAppointmentUpdate = vi.fn();
       const appointment = createAppointment();
 
       medplum.updateResource = vi.fn();
 
-      await setup({ appointment, onUpdate });
+      await setup({ appointment, onAppointmentUpdate });
 
       // Submit without selecting a patient
       await user.click(screen.getByRole('button', { name: 'Update Appointment' }));
 
       // updateResource should not have been called
       expect(medplum.updateResource).not.toHaveBeenCalled();
-      expect(onUpdate).not.toHaveBeenCalled();
+      expect(onAppointmentUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -208,7 +220,7 @@ describe('AppointmentDetails', () => {
 
     test('preserves existing participants when adding patient', async () => {
       const user = userEvent.setup();
-      const onUpdate = vi.fn();
+      const onAppointmentUpdate = vi.fn();
       const appointment = createAppointment({
         participant: [
           {
@@ -224,7 +236,7 @@ describe('AppointmentDetails', () => {
 
       medplum.updateResource = vi.fn().mockResolvedValue(appointment);
 
-      await setup({ appointment, onUpdate });
+      await setup({ appointment, onAppointmentUpdate });
 
       // Select a patient (ResourceInput uses a searchbox role)
       const patientInput = screen.getByRole('searchbox');
@@ -273,14 +285,14 @@ describe('AppointmentDetails', () => {
   describe('Error Handling', () => {
     test('handles updateResource failure', async () => {
       const user = userEvent.setup();
-      const onUpdate = vi.fn();
+      const onAppointmentUpdate = vi.fn();
       const appointment = createAppointment();
 
       const updateError = new Error('Network error');
 
       medplum.updateResource = vi.fn().mockRejectedValue(updateError);
 
-      await setup({ appointment, onUpdate });
+      await setup({ appointment, onAppointmentUpdate });
 
       // Select a patient (ResourceInput uses a searchbox role)
       const patientInput = screen.getByRole('searchbox');
@@ -294,9 +306,9 @@ describe('AppointmentDetails', () => {
       // Submit the form - this will cause an unhandled rejection
       await user.click(screen.getByRole('button', { name: 'Update Appointment' }));
 
-      // onUpdate should not have been called since the request failed
+      // onAppointmentUpdate should not have been called since the request failed
       expect(medplum.updateResource).toHaveBeenCalled();
-      expect(onUpdate).not.toHaveBeenCalled();
+      expect(onAppointmentUpdate).not.toHaveBeenCalled();
 
       expect(showErrorNotification).toHaveBeenCalledWith(updateError);
     });
@@ -351,102 +363,6 @@ describe('AppointmentDetails', () => {
       });
     });
 
-    test('Apply button is disabled when class and care template are not selected', async () => {
-      const appointment = createAppointmentWithPatient(patient.id);
-      await setup({ appointment });
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
-      });
-    });
-
-    test('shows warning notification when form submitted without required fields filled', async () => {
-      const appointment = createAppointmentWithPatient(patient.id);
-      await setup({ appointment });
-
-      await waitFor(() => {
-        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
-      });
-
-      // Bypass the disabled button by submitting the form directly
-      const form = screen.getByText('Set Up Encounter').closest('div')?.querySelector('form');
-      expect(form).toBeTruthy();
-      await act(async () => {
-        fireEvent.submit(form as HTMLFormElement);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Please fill out required fields.')).toBeInTheDocument();
-      });
-    });
-
-    test('does not call createEncounter when required fields are not filled', async () => {
-      const appointment = createAppointmentWithPatient(patient.id);
-      await setup({ appointment });
-
-      await waitFor(() => {
-        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
-      });
-
-      // Submit the form without filling either field
-      const form = screen.getByText('Set Up Encounter').closest('div')?.querySelector('form');
-      expect(form).toBeTruthy();
-      await act(async () => {
-        fireEvent.submit(form as HTMLFormElement);
-      });
-
-      // createEncounter must not have been called
-      expect(createEncounter).not.toHaveBeenCalled();
-    });
-
-    test('createEncounter failure shows an error message', async () => {
-      const user = userEvent.setup();
-
-      // Create a PlanDefinition so ResourceInput can find it (searched by `name`)
-      await medplum.createResource({
-        resourceType: 'PlanDefinition',
-        name: 'Test Plan',
-        title: 'Test Plan',
-        status: 'active',
-      });
-
-      const encounterError = new Error('Failed to create encounter');
-      vi.mocked(createEncounter).mockRejectedValue(encounterError);
-
-      const appointment = createAppointmentWithPatient(patient.id);
-      await setup({ appointment });
-
-      await waitFor(() => {
-        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
-      });
-
-      // Fill in Encounter Class — MockClient's ValueSet expansion returns 'Test Display'
-      const classInput = screen.getByLabelText(/Encounter Class/i);
-      await user.type(classInput, 'Test');
-      await waitFor(() => {
-        expect(screen.getByText('Test Display')).toBeInTheDocument();
-      });
-      await user.click(screen.getByText('Test Display'));
-
-      // Fill in Care template
-      const templateInput = screen.getByLabelText(/Care template/i);
-      await user.type(templateInput, 'Test Plan');
-      await waitFor(() => {
-        expect(screen.getByText('Test Plan')).toBeInTheDocument();
-      });
-      await user.click(screen.getByText('Test Plan'));
-
-      // Wait for the Apply button to become enabled, then submit
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
-      });
-      await user.click(screen.getByRole('button', { name: 'Apply' }));
-
-      await waitFor(() => {
-        expect(showErrorNotification).toHaveBeenCalledWith(encounterError);
-      });
-    });
-
     test('renders patient name when patient participant is loaded', async () => {
       const appointment = createAppointmentWithPatient(patient.id);
       await setup({ appointment });
@@ -461,6 +377,8 @@ describe('AppointmentDetails', () => {
     const user = userEvent.setup();
     const appointment = createAppointment();
     const cancelledAppointment = { ...appointment, status: 'cancelled' as const };
+    const onAppointmentUpdate = vi.fn();
+    const onSlotUpdate = vi.fn();
 
     const postPromise = Promise.withResolvers<Appointment>();
     const postMock = vi.fn().mockReturnValue(postPromise.promise);
@@ -469,7 +387,7 @@ describe('AppointmentDetails', () => {
     medplum.invalidateSearches = invalidateSearchesMock;
 
     // click the button
-    await setup({ appointment });
+    const { rerender } = await setup({ appointment, onAppointmentUpdate, onSlotUpdate });
     const button = screen.getByRole('button', { name: /Cancel Visit/i });
     await user.click(button);
 
@@ -490,6 +408,21 @@ describe('AppointmentDetails', () => {
     // it invalidated Appointment and Slot searches on success
     expect(invalidateSearchesMock).toHaveBeenCalledWith('Appointment');
     expect(invalidateSearchesMock).toHaveBeenCalledWith('Slot');
+
+    // it invoked onAppointmentUpdate callback
+    expect(onAppointmentUpdate).toHaveBeenCalledWith(cancelledAppointment);
+
+    // re-render with cancelled appointment
+    await rerender(
+      <AppointmentDetails
+        appointment={cancelledAppointment}
+        onAppointmentUpdate={onAppointmentUpdate}
+        onSlotUpdate={onSlotUpdate}
+      />
+    );
+
+    // cancel button is disabled
+    await waitFor(() => expect(button).toHaveAttribute('data-disabled'));
   });
 
   test('Uncancellable appointment status', async () => {
@@ -504,5 +437,84 @@ describe('AppointmentDetails', () => {
     await waitFor(() => expect(button).toHaveAttribute('data-disabled'));
     await user.hover(button);
     await waitFor(() => screen.getByText(`Can't cancel appointment with status "${status}"`));
+  });
+
+  test('Confirm Visit button', async () => {
+    const user = userEvent.setup();
+    const bookedAppointment = createAppointment();
+    const pendingAppointment = { ...bookedAppointment, status: 'pending' as const };
+    const busySlot: Slot = {
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'busy',
+      schedule: { reference: 'Schedule/abc123' },
+    };
+    const busyUnavailableSlot: Slot = {
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'busy-unavailable',
+      schedule: { reference: 'Schedule/abc123' },
+    };
+
+    const onAppointmentUpdate = vi.fn();
+    const onSlotUpdate = vi.fn();
+
+    const postPromise = Promise.withResolvers<Bundle<Appointment | Slot>>();
+    const postMock = vi.fn().mockReturnValue(postPromise.promise);
+    const invalidateSearchesMock = vi.fn();
+    medplum.post = postMock;
+    medplum.invalidateSearches = invalidateSearchesMock;
+
+    // click the button
+    const { rerender } = await setup({
+      appointment: pendingAppointment,
+      onAppointmentUpdate,
+      onSlotUpdate,
+    });
+    const button = screen.getByRole('button', { name: /Confirm Appointment/i });
+    await user.click(button);
+
+    // it invokes the $confirm endpoint
+    await waitFor(() => expect(medplum.post).toHaveBeenCalled());
+    const postUrl = postMock.mock.calls[0][0];
+    expect(postUrl.toString()).toContain(`Appointment/${pendingAppointment.id}/$confirm`);
+
+    // button goes into loading state
+    await waitFor(() => expect(button).toHaveAttribute('data-loading'));
+
+    // resolve the promise
+    postPromise.resolve({
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [{ resource: bookedAppointment }, { resource: busySlot }, { resource: busyUnavailableSlot }],
+    });
+
+    // button is no longer loading
+    await waitFor(() => expect(button).not.toHaveAttribute('data-loading'));
+
+    // onAppointmentUpdate was called with the updated appointment
+    expect(onAppointmentUpdate).toHaveBeenCalledWith(bookedAppointment);
+
+    // onSlotUpdate was called with the updated slots
+    expect(onSlotUpdate).toHaveBeenCalledWith(busySlot);
+    expect(onSlotUpdate).toHaveBeenCalledWith(busyUnavailableSlot);
+
+    // it invalidated Appointment and Slot searches on success
+    expect(invalidateSearchesMock).toHaveBeenCalledWith('Appointment');
+    expect(invalidateSearchesMock).toHaveBeenCalledWith('Slot');
+
+    // re-render with booked appointment
+    await rerender(
+      <AppointmentDetails
+        appointment={bookedAppointment}
+        onAppointmentUpdate={onAppointmentUpdate}
+        onSlotUpdate={onSlotUpdate}
+      />
+    );
+
+    // button is not rendered when status is "booked"
+    expect(screen.queryByRole('button', { name: 'Confirm Appointment' })).not.toBeInTheDocument();
   });
 });

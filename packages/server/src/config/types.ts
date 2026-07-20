@@ -55,6 +55,8 @@ export interface MedplumServerConfig {
   backgroundJobsRedis?: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
+  /** Allow projects to configure their own SMTP transport via Project.secret entries. Default is `true`. */
+  allowProjectSmtp?: boolean;
   bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
   googleClientSecret?: string;
@@ -84,6 +86,7 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   maxSearchOffset?: number;
   base64BinaryMaxBytes?: number;
+  inlineAttachmentsMaxTotalBytes?: number;
   defaultSuperAdminEmail?: string;
   defaultSuperAdminPassword?: string;
   defaultSuperAdminClientId?: string;
@@ -91,6 +94,8 @@ export interface MedplumServerConfig {
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?: Project['features'];
   defaultProjectSystemSetting?: ProjectSetting[];
+  /** Enables HTTP request rate limits, FHIR quota, and resource cap accounting. Default is `true`. */
+  rateLimitsEnabled?: boolean;
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
@@ -114,11 +119,23 @@ export interface MedplumServerConfig {
   /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
 
+  /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
+  idleInTransactionLogThresholdMs?: number;
+
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
+
+  /**
+   * Flag to enable server-scoped rest-hook subscriptions (default: false).
+   * When enabled, the subscription worker evaluates not only the subscriptions within a
+   * resource's own project, but also subscriptions that are not scoped to any project
+   * (i.e. stored in the system project). This allows a single set of subscriptions to
+   * apply across every project on the server.
+   */
+  serverScopedSubscriptionsEnabled?: boolean;
 
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];
@@ -202,8 +219,12 @@ export interface MedplumServerConfig {
    */
   requireVerifiedEmailForProjectCreation?: boolean;
 
-  /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
-  allowInsecureRestHookUrl?: boolean;
+  /**
+   * Optional flag to allow outbound fetch requests to private/local networks.
+   * Intended only for on-premises deployments that connect to trusted local services.
+   * Do not enable in hosted or cloud-managed environments.
+   */
+  allowUnsafeOutbound?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -273,6 +294,8 @@ export interface MedplumSmtpConfig {
   port: number;
   username: string;
   password: string;
+  /** Use TLS when connecting. If not specified, inferred from `port === 465`. */
+  secure?: boolean;
 }
 
 export interface MedplumBullmqConfig {
@@ -292,6 +315,8 @@ export interface MedplumBullmqConfig {
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
+  /** Optional client ID used to select this external auth provider during token exchange. */
+  readonly clientId?: string;
   /** @deprecated Use identityProvider.userInfoUrl instead. */
   readonly userInfoUrl?: string;
   readonly identityProvider?: IdentityProvider;
@@ -348,6 +373,10 @@ export interface MedplumDataWarehouseConfig {
    * History rows with `lastUpdated` before this value are excluded.
    */
   startDate?: string;
+  /** FHIR resource types to include (e.g. `Patient`, `Observation`). When omitted, all types are candidates. */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. Cannot be set together with `includeResourceTypes`. */
+  excludeResourceTypes?: string[];
 }
 
 export interface MedplumFissionConfig {

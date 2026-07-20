@@ -32,8 +32,8 @@ describe('Scheduler', () => {
 
   beforeAll(async () => {
     // Use a consistent base date for slot generation
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2023-11-03T00:00:00Z').getTime());
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2023-11-03T00:00:00Z').getTime());
     const slotDate = new Date();
 
     // Create mock slots for Dr. Bob's schedule
@@ -54,16 +54,16 @@ describe('Scheduler', () => {
       slotDate.setDate(slotDate.getDate() + 1);
     }
 
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date('2023-11-03T00:00:00Z').getTime());
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2023-11-03T00:00:00Z').getTime());
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders by reference', async () => {
@@ -79,7 +79,7 @@ describe('Scheduler', () => {
   });
 
   test('Success', async () => {
-    const onSelectSlot = jest.fn();
+    const onSelectSlot = vi.fn();
     await act(async () => {
       setup({ schedule: DrAliceSmithSchedule, onSelectSlot });
     });
@@ -116,7 +116,7 @@ describe('Scheduler', () => {
   });
 
   test('Children prop is rendered after slot selection', async () => {
-    const onSelectSlot = jest.fn();
+    const onSelectSlot = vi.fn();
     await act(async () => {
       setup({
         schedule: DrAliceSmithSchedule,
@@ -207,7 +207,7 @@ describe('Scheduler', () => {
       } satisfies WithId<Slot>;
     });
 
-    const customSlotSearch: SlotSearchFunction = jest.fn().mockResolvedValue(mockSlots);
+    const customSlotSearch: SlotSearchFunction = vi.fn().mockResolvedValue(mockSlots);
 
     await act(async () => {
       setup({ schedule: DrAliceSmithSchedule, fetchSlots: customSlotSearch });

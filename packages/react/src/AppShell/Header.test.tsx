@@ -10,8 +10,8 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
 
 const medplum = new MockClient();
-const navigateMock = jest.fn();
-const closeMock = jest.fn();
+const navigateMock = vi.fn();
+const closeMock = vi.fn();
 
 async function setup(initialUrl = '/'): Promise<void> {
   await act(async () => {
@@ -29,21 +29,46 @@ async function setup(initialUrl = '/'): Promise<void> {
 
 describe('Header', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     navigateMock.mockClear();
     closeMock.mockClear();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
     await setup();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('Renders active project name', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: {
+          reference: 'Practitioner/124',
+          display: 'Alice Smith',
+        },
+        project: {
+          reference: 'Project/456',
+          display: 'My Project',
+        },
+      })
+    );
+
+    await setup();
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+
+    window.localStorage.removeItem('activeLogin');
   });
 
   test('Open and close the user menu', async () => {
@@ -65,7 +90,7 @@ describe('Header', () => {
   });
 
   test('Switch profile', async () => {
-    const reloadSpy = jest.spyOn(locationUtils, 'reload').mockImplementation(() => {});
+    const reloadSpy = vi.spyOn(locationUtils, 'reload').mockImplementation(() => {});
 
     window.localStorage.setItem(
       'activeLogin',
@@ -73,7 +98,7 @@ describe('Header', () => {
         accessToken: 'abc',
         refreshToken: 'xyz',
         profile: {
-          reference: 'Practitioner/123',
+          reference: 'Practitioner/124',
           display: 'Alice Smith',
         },
         project: {
@@ -89,7 +114,7 @@ describe('Header', () => {
           accessToken: 'abc',
           refreshToken: 'xyz',
           profile: {
-            reference: 'Practitioner/123',
+            reference: 'Practitioner/124',
             display: 'Alice Smith',
           },
           project: {
@@ -119,7 +144,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Alice Smith'));
     });
 
-    expect(await screen.findByText('My Project')).toBeInTheDocument();
+    expect((await screen.findAllByText('My Project')).length).toBeGreaterThan(0);
     expect(await screen.findByText('My Other Project')).toBeInTheDocument();
 
     // Click on other project to switch
@@ -153,7 +178,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Account settings'));
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/123');
+    expect(navigateMock).toHaveBeenCalledWith('/Practitioner/124');
   });
 
   test('Sign out', async () => {

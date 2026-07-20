@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Subscription } from '@medplum/fhirtypes';
-import type { Job, Worker } from 'bullmq';
+import type { Job, QueueOptions, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
@@ -30,7 +31,7 @@ describe('worker utils', () => {
       expect(isJobSuccessful(subscription, 200)).toBe(true);
     });
 
-    test('Successful job with invalid custom codes', () => {
+    test('Successful job with invalid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -47,10 +48,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
     });
 
-    test('Unsuccessful job with invalid custom codes', () => {
+    test('Unsuccessful job with invalid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -67,10 +68,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(false));
     });
 
-    test('Successful job with valid custom codes', () => {
+    test('Successful job with valid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -87,10 +88,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 500)).toBe(true));
     });
 
-    test('Unsuccessful job with valid custom codes', () => {
+    test('Unsuccessful job with valid custom codes', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -107,10 +108,10 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(false));
     });
 
-    test('Successful job with valid custom codes comma separated', () => {
+    test('Successful job with valid custom codes comma separated', async () => {
       const subscription: Subscription = {
         resourceType: 'Subscription',
         status: 'active',
@@ -127,7 +128,7 @@ describe('worker utils', () => {
           },
         ],
       };
-      withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
+      await withTestContext(() => expect(isJobSuccessful(subscription, 200)).toBe(true));
     });
   });
 
@@ -145,7 +146,7 @@ describe('worker utils', () => {
         this.name = name;
       }
 
-      close = jest.fn();
+      close = vi.fn();
     }
 
     beforeEach(() => {
@@ -245,7 +246,7 @@ describe('worker utils', () => {
       const queue = { name: queueName } as Queue;
       const worker = new EventEmitter() as unknown as Worker;
 
-      const loggerInfoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
+      const loggerInfoSpy = vi.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
 
       addVerboseQueueLogging<any>(queue, worker, (job) => ({ asyncJob: 'AsyncJob/' + job.data.asyncJobId }));
 
@@ -342,23 +343,25 @@ describe('worker utils', () => {
   });
 
   describe('getWorkerBullmqConfig', () => {
-    test('returns global bullmq config when no per-worker overrides', () => {
+    const defaultOptions: QueueOptions = { connection: { host: 'test-redis' } };
+
+    test('returns default options plus global bullmq config when no per-worker overrides', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'subscription');
-      expect(result).toStrictEqual(config.bullmq);
+      const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
     });
 
-    test('returns global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
+    test('returns default options plus global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
         workers: { enabled: ['subscription'] },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'subscription');
-      expect(result).toStrictEqual(config.bullmq);
+      const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
     });
 
     test('merges per-worker bullmq overrides on top of global config', () => {
@@ -371,9 +374,43 @@ describe('worker utils', () => {
         },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'subscription');
+      const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
       expect(result).toStrictEqual({
+        ...defaultOptions,
         concurrency: 50,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
+    test('worker defaults supersede global bullmq config', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'batch', defaultOptions, { concurrency: 1 });
+      expect(result).toStrictEqual({
+        ...defaultOptions,
+        concurrency: 1,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
+    test('per-worker overrides supersede worker defaults', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+        workers: {
+          bullmq: {
+            batch: { concurrency: 5 },
+          },
+        },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'batch', defaultOptions, { concurrency: 1 });
+      expect(result).toStrictEqual({
+        ...defaultOptions,
+        concurrency: 5,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
       });
@@ -389,8 +426,8 @@ describe('worker utils', () => {
         },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'download');
-      expect(result).toStrictEqual(config.bullmq);
+      const result = getWorkerBullmqConfig(config, 'download', defaultOptions);
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
     });
   });
 });

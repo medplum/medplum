@@ -7,12 +7,13 @@ import type { Project, User } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
+import type { MockInstance } from 'vitest';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { RescopeUserWidget } from './RescopeUserWidget';
 
 describe('RescopeUserWidget', () => {
   let medplum: MockClient;
-  let postSpy: jest.SpyInstance;
+  let postSpy: MockInstance;
 
   const project: Project = { resourceType: 'Project', id: 'project-1', name: 'Test Project' };
   const projectScopedUser: User = {
@@ -32,7 +33,7 @@ describe('RescopeUserWidget', () => {
   };
 
   function setup(opts: { superAdmin?: boolean } = {}): void {
-    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => opts.superAdmin ?? true);
+    vi.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => opts.superAdmin ?? true);
     if (!opts.superAdmin) {
       medplum.setActiveLoginOverride({
         accessToken: 't',
@@ -59,7 +60,7 @@ describe('RescopeUserWidget', () => {
       fireEvent.change(projectInput, { target: { value: 'Test' } });
     });
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
     await act(async () => {
       fireEvent.keyDown(projectInput, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -75,7 +76,7 @@ describe('RescopeUserWidget', () => {
       fireEvent.change(userInput, { target: { value: 'alice' } });
     });
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      await vi.advanceTimersByTimeAsync(1000);
     });
     await act(async () => {
       fireEvent.keyDown(userInput, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -90,7 +91,7 @@ describe('RescopeUserWidget', () => {
       allOk,
       { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: user }] } as any,
     ]);
-    jest.spyOn(medplum, 'readResource').mockImplementation(((resourceType: string, id: string) => {
+    vi.spyOn(medplum, 'readResource').mockImplementation(((resourceType: string, id: string) => {
       if (resourceType === 'User' && id === user.id) {
         return Promise.resolve(user);
       }
@@ -100,21 +101,21 @@ describe('RescopeUserWidget', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     medplum.router.add('GET', 'Project', async () => [
       allOk,
       { resourceType: 'Bundle', type: 'searchset', entry: [{ resource: project }] } as any,
     ]);
-    postSpy = jest.spyOn(medplum, 'post');
+    postSpy = vi.spyOn(medplum, 'post');
   });
 
   afterEach(async () => {
     await act(async () => notifications.clean());
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('renders title and form (super admin)', () => {

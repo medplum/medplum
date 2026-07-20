@@ -83,15 +83,42 @@ export interface WarehouseSourceTable {
   readonly icebergTable: string;
 }
 
+const HISTORY_TABLE_SUFFIX = '_History';
+
+function toHistoryPostgresTableName(resourceType: string): string {
+  return `${resourceType}${HISTORY_TABLE_SUFFIX}`;
+}
+
 /**
- * Postgres history table names for all indexed repository resource types (`{ResourceType}_History`),
+ * Postgres history table names for indexed repository resource types (`{ResourceType}_History`),
  * matching migrations (`resourceType + '_History'`).
  * Used by the scheduled data warehouse sync worker.
  *
+ * @param includeResourceTypes - FHIR types to sync. When omitted or empty (and exclude is too), all types are included.
+ * @param excludeResourceTypes - FHIR types to omit from sync. Cannot be combined with a non-empty include list.
  * @returns The list of Postgres table names.
  */
-export function getWarehouseSyncPostgresTableNames(): string[] {
-  return getResourceTypes().map((resourceType) => `${resourceType}_History`);
+export function getWarehouseSyncPostgresTableNames(
+  includeResourceTypes?: string[],
+  excludeResourceTypes?: string[]
+): string[] {
+  const hasIncluded = !!includeResourceTypes?.length;
+  const hasExcluded = !!excludeResourceTypes?.length;
+
+  if (!hasIncluded && !hasExcluded) {
+    return getResourceTypes().map(toHistoryPostgresTableName);
+  }
+
+  let types = getResourceTypes();
+  if (hasIncluded) {
+    const includedSet = new Set(includeResourceTypes);
+    types = types.filter((resourceType) => includedSet.has(resourceType));
+  } else if (hasExcluded) {
+    const excludedSet = new Set(excludeResourceTypes);
+    types = types.filter((resourceType) => !excludedSet.has(resourceType));
+  }
+
+  return types.map(toHistoryPostgresTableName);
 }
 
 /**

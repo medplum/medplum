@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ReleaseManifest } from '@medplum/core';
 import { fetchVersionManifest } from '@medplum/core';
-import { createWriteStream, unlinkSync } from 'node:fs';
+import { createWriteStream, existsSync, unlinkSync } from 'node:fs';
 import { platform } from 'node:os';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
@@ -36,7 +36,10 @@ export async function downloadRelease(version: string, path: string): Promise<vo
   try {
     await pipeline(readable, createWriteStream(path));
   } catch (err) {
-    unlinkSync(path);
+    // The pipeline may have failed before the file was created, so only unlink if it exists
+    if (existsSync(path)) {
+      unlinkSync(path);
+    }
     throw new Error(`Error while downloading release version ${version} to ${path}`, { cause: err });
   }
 }

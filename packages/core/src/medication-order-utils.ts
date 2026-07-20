@@ -5,11 +5,13 @@ import type {
   CodeableConcept,
   Medication,
   MedicationRequest,
+  Organization,
   Parameters,
   ParametersParameter,
+  Reference,
 } from '@medplum/fhirtypes';
 import { isResource } from './types';
-import { getExtensionValue, getIdentifier } from './utils';
+import { getExtensionValue, getIdentifier, resolveId } from './utils';
 
 /** Re-export common coding systems used with medication-order drug search. */
 export { NDC, RXNORM } from './constants';
@@ -119,6 +121,8 @@ export interface MedicationOrderRequest {
   /** Free-text patient instructions (additional sig); maps to dosageInstruction[0].patientInstruction when using MR path. */
   readonly patientInstruction?: string;
   readonly appId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
 }
 
 /**
@@ -154,6 +158,8 @@ export interface MedicationOrderSetRequest {
    */
   readonly vendorOrderSetId?: number | string;
   readonly appId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
 }
 
 /**
@@ -196,6 +202,14 @@ export interface MedicationOrderExtensions {
   readonly pendingOrderIdSystem: string;
   readonly pendingOrderStatusUrl: string;
   readonly iframeUrlExtension: string;
+  /**
+   * Identifier system for the vendor's per-prescription message id (SureScripts
+   * `messageId` in ScriptSure). Stamped on a draft `MedicationRequest` by the
+   * cart-checkout flow and used to reconcile the approval webhook back to the
+   * draft. Optional so existing single-order consumers don't have to populate it.
+   * Consumed by the paired `medplum-ee` cart-checkout / prescription-webhook bots.
+   */
+  readonly messageIdSystem?: string;
 }
 
 /**
@@ -517,6 +531,10 @@ export function medicationOrderRequestToParameters(req: MedicationOrderRequest):
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
   }
+  const organizationId = resolveId(req.organization);
+  if (organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', organizationId));
+  }
 
   return { resourceType: 'Parameters', parameter };
 }
@@ -580,6 +598,10 @@ export function medicationOrderSetRequestToParameters(req: MedicationOrderSetReq
   if (req.appId !== undefined) {
     parameter.push(param('appId', 'valueString', req.appId));
   }
+  const organizationId = resolveId(req.organization);
+  if (organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', organizationId));
+  }
   return { resourceType: 'Parameters', parameter };
 }
 
@@ -618,4 +640,439 @@ export function parametersToMedicationOrderSetResponse(params: Parameters): Medi
     throw new Error(INVALID_MEDICATION_ORDER_SET_RESPONSE);
   }
   return candidate;
+}
+
+// ============================================================================
+// Cart checkout (multi-medication → single Approve Queue widget)
+// ============================================================================
+
+/**
+ * Stable error when a checkout-medications bot response does not match
+ * {@link MedicationCheckoutResponse}.
+ */
+export const INVALID_MEDICATION_CHECKOUT_RESPONSE = 'Invalid response from checkout-medications bot';
+
+/**
+ * Per-line outcome from a cart checkout. A single bad line is reported here as
+ * `failed` rather than rolling back the lines that already queued.
+ */
+export interface MedicationCheckoutItemResult {
+  readonly medicationRequestId: string;
+  /**
+   * Vendor per-line reference returned at checkout, for diagnostics/audit. The
+   * concrete meaning is vendor-specific: a cart-item id for cart-based vendors
+   * (ScriptSure MedCart `rxId`) or a per-prescription id for queue-based ones.
+   * Optional because the vendor may not mint one at add time.
+   */
+  readonly vendorLineId?: string;
+  readonly status: 'queued' | 'failed';
+  /**
+   * True when the line was **not** added because the same drug was already in
+   * the vendor's cart (the vendor-recommended duplicate check matched). Reported
+   * as `status: 'queued'` with this flag set so the caller can surface it.
+   */
+  readonly duplicate?: boolean;
+  readonly error?: string;
+}
+
+/**
+ * Vendor-neutral input for a cart-checkout bot: submit a set of draft
+ * `MedicationRequest`s (the cart) to the vendor's electronic approval queue.
+ */
+export interface MedicationCheckoutRequest {
+  readonly patientId: string;
+  readonly medicationRequestIds: string[];
+  readonly appId?: string;
+  /** Selected practice location; omit for single-practice prescribers. */
+  readonly organization?: Reference<Organization>;
+}
+
+/**
+ * Vendor-neutral output from a cart-checkout bot: a single embeddable approval
+ * widget URL (the vendor's batch sign-off surface) plus per-line results.
+ */
+export interface MedicationCheckoutResponse {
+  readonly approvalUrl: string;
+  /** Vendor-side patient id (numeric in ScriptSure today). */
+  readonly vendorPatientId: number;
+  readonly items: MedicationCheckoutItemResult[];
+}
+
+/**
+ * Type guard: validates a checkout-medications bot response.
+ * @param value - Unknown bot JSON payload.
+ * @returns True when the value matches {@link MedicationCheckoutResponse}.
+ */
+export function isMedicationCheckoutResponse(value: unknown): value is MedicationCheckoutResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.approvalUrl === 'string' &&
+    obj.approvalUrl.length > 0 &&
+    typeof obj.vendorPatientId === 'number' &&
+    Number.isFinite(obj.vendorPatientId) &&
+    Array.isArray(obj.items)
+  );
+}
+
+/**
+ * Encodes a {@link MedicationCheckoutRequest} as a FHIR `Parameters` body for
+ * the vendor-neutral `$checkout-medications` custom operation
+ * (`POST /fhir/R4/MedicationRequest/$checkout-medications`).
+ *
+ * `medicationRequestIds` is emitted as one `parameter` entry per id so the
+ * OperationDefinition's `max: '*'` cardinality round-trips. Optional fields are
+ * omitted entirely.
+ *
+ * @param req - Cart checkout request (vendor-neutral).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationCheckoutRequestToParameters(req: MedicationCheckoutRequest): Parameters {
+  const parameter: ParametersParameter[] = [];
+  parameter.push(param('patientId', 'valueId', req.patientId));
+  for (const id of req.medicationRequestIds) {
+    parameter.push(param('medicationRequestIds', 'valueId', id));
+  }
+  if (req.appId !== undefined) {
+    parameter.push(param('appId', 'valueString', req.appId));
+  }
+  const organizationId = resolveId(req.organization);
+  if (organizationId !== undefined) {
+    parameter.push(param('organizationId', 'valueString', organizationId));
+  }
+  return { resourceType: 'Parameters', parameter };
+}
+
+/**
+ * Parses a single repeating `items` out-parameter (its nested `part:`) into a
+ * {@link MedicationCheckoutItemResult}. Returns `undefined` when the required
+ * `medicationRequestId` / `status` fields are missing or malformed.
+ *
+ * @param part - The `part` array of one `items` parameter entry.
+ * @returns The parsed item result, or `undefined`.
+ */
+function checkoutItemFromPart(part: ParametersParameter[] | undefined): MedicationCheckoutItemResult | undefined {
+  if (!part?.length) {
+    return undefined;
+  }
+  const map: Record<string, unknown> = {};
+  for (const p of part) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const medicationRequestId = typeof map.medicationRequestId === 'string' ? map.medicationRequestId : '';
+  const status = map.status === 'queued' || map.status === 'failed' ? map.status : undefined;
+  if (!medicationRequestId || !status) {
+    return undefined;
+  }
+  return {
+    medicationRequestId,
+    status,
+    vendorLineId: typeof map.vendorLineId === 'string' ? map.vendorLineId : undefined,
+    duplicate: map.duplicate === true ? true : undefined,
+    error: typeof map.error === 'string' ? map.error : undefined,
+  };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$checkout-medications` custom
+ * operation into a typed {@link MedicationCheckoutResponse}. Throws
+ * `INVALID_MEDICATION_CHECKOUT_RESPONSE` when required top-level fields are
+ * missing.
+ *
+ * The repeating `items` parameter is collected across every occurrence (each is
+ * one queued/failed line); the scalar `approvalUrl` / `vendorPatientId` are read
+ * once.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link MedicationCheckoutResponse}.
+ */
+export function parametersToMedicationCheckoutResponse(params: Parameters): MedicationCheckoutResponse {
+  const items: MedicationCheckoutItemResult[] = [];
+  const map: Record<string, unknown> = {};
+  for (const p of params.parameter ?? []) {
+    if (!p.name) {
+      continue;
+    }
+    if (p.name === 'items') {
+      const item = checkoutItemFromPart(p.part);
+      if (item) {
+        items.push(item);
+      }
+    } else {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const candidate: MedicationCheckoutResponse = {
+    approvalUrl: typeof map.approvalUrl === 'string' ? map.approvalUrl : '',
+    vendorPatientId: typeof map.vendorPatientId === 'number' ? map.vendorPatientId : Number.NaN,
+    items,
+  };
+  if (!isMedicationCheckoutResponse(candidate)) {
+    throw new Error(INVALID_MEDICATION_CHECKOUT_RESPONSE);
+  }
+  return candidate;
+}
+
+// ============================================================================
+// Cart management (remove one item / clear the whole cart)
+// ============================================================================
+
+/**
+ * Stable error when a cart-management bot response does not match
+ * {@link MedicationCartManageResponse}.
+ */
+export const INVALID_MEDICATION_CART_RESPONSE = 'Invalid response from cart-management bot';
+
+/**
+ * Per-item outcome from a cart remove/clear. `removed` = the vendor cart item
+ * was deleted; `not-in-cart` = the draft was not staged (nothing to remove);
+ * `failed` = the vendor delete failed (see `error`).
+ */
+export interface MedicationCartItemResult {
+  readonly medicationRequestId?: string;
+  /** Vendor cart-item reference that was removed (ScriptSure MedCart `rxId`), when known. */
+  readonly vendorLineId?: string;
+  readonly status: 'removed' | 'not-in-cart' | 'failed';
+  readonly error?: string;
+}
+
+/**
+ * Vendor-neutral input to remove a single draft `MedicationRequest` from the
+ * patient's vendor cart (`$remove-cart-medication`).
+ */
+export interface MedicationCartRemoveRequest {
+  readonly patientId: string;
+  readonly medicationRequestId: string;
+}
+
+/**
+ * Vendor-neutral input to clear the patient's whole vendor cart (`$clear-cart`).
+ */
+export interface MedicationCartClearRequest {
+  readonly patientId: string;
+}
+
+/**
+ * Vendor-neutral output from a cart remove/clear: the vendor patient id, the
+ * number of cart items actually removed, and the per-line outcomes (one for a
+ * remove, N for a clear).
+ */
+export interface MedicationCartManageResponse {
+  /** Vendor-side patient id (numeric in ScriptSure today). */
+  readonly vendorPatientId: number;
+  readonly removedCount: number;
+  readonly items: MedicationCartItemResult[];
+}
+
+/**
+ * Type guard: validates a cart-management bot response.
+ * @param value - Unknown bot JSON payload.
+ * @returns True when the value matches {@link MedicationCartManageResponse}.
+ */
+export function isMedicationCartManageResponse(value: unknown): value is MedicationCartManageResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.vendorPatientId === 'number' &&
+    Number.isFinite(obj.vendorPatientId) &&
+    typeof obj.removedCount === 'number' &&
+    Number.isFinite(obj.removedCount) &&
+    Array.isArray(obj.items)
+  );
+}
+
+/**
+ * Encodes a {@link MedicationCartRemoveRequest} as a FHIR `Parameters` body for
+ * the `$remove-cart-medication` custom operation. Emits the `action: 'remove'`
+ * discriminator the shared cart-management bot dispatches on.
+ *
+ * @param req - Remove request (vendor-neutral).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationCartRemoveRequestToParameters(req: MedicationCartRemoveRequest): Parameters {
+  return {
+    resourceType: 'Parameters',
+    parameter: [
+      param('patientId', 'valueId', req.patientId),
+      param('action', 'valueCode', 'remove'),
+      param('medicationRequestId', 'valueId', req.medicationRequestId),
+    ],
+  };
+}
+
+/**
+ * Encodes a {@link MedicationCartClearRequest} as a FHIR `Parameters` body for
+ * the `$clear-cart` custom operation. Emits the `action: 'clear'` discriminator.
+ *
+ * @param req - Clear request (vendor-neutral).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationCartClearRequestToParameters(req: MedicationCartClearRequest): Parameters {
+  return {
+    resourceType: 'Parameters',
+    parameter: [param('patientId', 'valueId', req.patientId), param('action', 'valueCode', 'clear')],
+  };
+}
+
+/**
+ * Parses a single repeating `items` out-parameter (its nested `part:`) into a
+ * {@link MedicationCartItemResult}. Returns `undefined` when the required
+ * `status` field is missing or malformed.
+ *
+ * @param part - The `part` array of one `items` parameter entry.
+ * @returns The parsed item result, or `undefined`.
+ */
+function cartItemFromPart(part: ParametersParameter[] | undefined): MedicationCartItemResult | undefined {
+  if (!part?.length) {
+    return undefined;
+  }
+  const map: Record<string, unknown> = {};
+  for (const p of part) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const status =
+    map.status === 'removed' || map.status === 'not-in-cart' || map.status === 'failed' ? map.status : undefined;
+  if (!status) {
+    return undefined;
+  }
+  return {
+    status,
+    medicationRequestId: typeof map.medicationRequestId === 'string' ? map.medicationRequestId : undefined,
+    vendorLineId: typeof map.vendorLineId === 'string' ? map.vendorLineId : undefined,
+    error: typeof map.error === 'string' ? map.error : undefined,
+  };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$remove-cart-medication` /
+ * `$clear-cart` custom operations into a typed {@link MedicationCartManageResponse}.
+ * Throws {@link INVALID_MEDICATION_CART_RESPONSE} when required top-level fields
+ * are missing.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link MedicationCartManageResponse}.
+ */
+export function parametersToMedicationCartManageResponse(params: Parameters): MedicationCartManageResponse {
+  const items: MedicationCartItemResult[] = [];
+  const map: Record<string, unknown> = {};
+  for (const p of params.parameter ?? []) {
+    if (!p.name) {
+      continue;
+    }
+    if (p.name === 'items') {
+      const item = cartItemFromPart(p.part);
+      if (item) {
+        items.push(item);
+      }
+    } else {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const candidate: MedicationCartManageResponse = {
+    vendorPatientId: typeof map.vendorPatientId === 'number' ? map.vendorPatientId : Number.NaN,
+    removedCount: typeof map.removedCount === 'number' ? map.removedCount : Number.NaN,
+    items,
+  };
+  if (!isMedicationCartManageResponse(candidate)) {
+    throw new Error(INVALID_MEDICATION_CART_RESPONSE);
+  }
+  return candidate;
+}
+
+// ============================================================================
+// Order-set sync ($sync-orderset)
+// ============================================================================
+
+/**
+ * Per-action outcome from the vendor-neutral `$sync-orderset` operation. A
+ * `'failed'` row carries `error` and was NOT added to the vendor order set, so
+ * a later apply/signing session would open with fewer meds than the
+ * `PlanDefinition` requested — callers must surface these.
+ */
+export interface OrderSetSyncSequenceResult {
+  readonly actionTitle?: string;
+  readonly activityDefinitionUrl?: string;
+  readonly scriptSureSequenceId?: number;
+  readonly scriptSureOrderId?: number;
+  readonly status: 'synced' | 'failed';
+  readonly error?: string;
+}
+
+/**
+ * Vendor-neutral decoded response from the `$sync-orderset` custom operation
+ * (`POST /fhir/R4/PlanDefinition/$sync-orderset`). `failedCount > 0` means the
+ * synced vendor order set carries fewer meds than the `PlanDefinition`.
+ */
+export interface OrderSetSyncResponse {
+  readonly mode: 'created' | 'noop-already-synced';
+  readonly planDefinitionId?: string;
+  readonly scriptSureOrdersetId?: number;
+  readonly syncedCount: number;
+  readonly failedCount: number;
+  readonly results: OrderSetSyncSequenceResult[];
+}
+
+/**
+ * Decodes one repeating `results` part list from the `$sync-orderset` response
+ * into a typed {@link OrderSetSyncSequenceResult}.
+ *
+ * @param parts - The `part[]` entries of a single `results` output parameter.
+ * @returns The decoded per-action row.
+ */
+function partsToSyncSequenceResult(parts: ParametersParameter[]): OrderSetSyncSequenceResult {
+  const map: Record<string, unknown> = {};
+  for (const part of parts) {
+    if (part.name) {
+      map[part.name] = readParameterValue(part);
+    }
+  }
+  return {
+    actionTitle: typeof map.actionTitle === 'string' ? map.actionTitle : undefined,
+    activityDefinitionUrl: typeof map.activityDefinitionUrl === 'string' ? map.activityDefinitionUrl : undefined,
+    scriptSureSequenceId: typeof map.scriptSureSequenceId === 'number' ? map.scriptSureSequenceId : undefined,
+    scriptSureOrderId: typeof map.scriptSureOrderId === 'number' ? map.scriptSureOrderId : undefined,
+    status: map.status === 'failed' ? 'failed' : 'synced',
+    error: typeof map.error === 'string' ? map.error : undefined,
+  };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$sync-orderset` custom operation
+ * into a typed {@link OrderSetSyncResponse}, including the repeating per-action
+ * `results` rows the server previously dropped.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link OrderSetSyncResponse}.
+ */
+export function parametersToOrderSetSyncResponse(params: Parameters): OrderSetSyncResponse {
+  const map: Record<string, unknown> = {};
+  const results: OrderSetSyncSequenceResult[] = [];
+  for (const p of params.parameter ?? []) {
+    if (!p.name) {
+      continue;
+    }
+    if (p.name === 'results' && p.part?.length) {
+      results.push(partsToSyncSequenceResult(p.part));
+    } else {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  return {
+    mode: map.mode === 'noop-already-synced' ? 'noop-already-synced' : 'created',
+    planDefinitionId: typeof map.planDefinitionId === 'string' ? map.planDefinitionId : undefined,
+    scriptSureOrdersetId: typeof map.scriptSureOrdersetId === 'number' ? map.scriptSureOrdersetId : undefined,
+    syncedCount:
+      typeof map.syncedCount === 'number' ? map.syncedCount : results.filter((r) => r.status === 'synced').length,
+    failedCount:
+      typeof map.failedCount === 'number' ? map.failedCount : results.filter((r) => r.status === 'failed').length,
+    results,
+  };
 }

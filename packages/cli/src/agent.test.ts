@@ -11,6 +11,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Agent, Bundle, Parameters, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
+import type { Mock, MockInstance } from 'vitest';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
 
@@ -18,25 +19,25 @@ const EXAMPLE_HL7_MSG = `MSH|^~\\&|SENDING_APPLICATION|SENDING_FACILITY|RECEIVIN
 EVN|A01|20240927120000
 PID|1||123456789^^^HOSPITAL^MR||Doe^John^^^^||19800101|M`;
 
-jest.mock('./util/client');
+vi.mock('./util/client');
 
 describe('Agent CLI', () => {
   const env = process.env;
-  let processError: jest.SpyInstance;
-  let consoleTableSpy: jest.SpyInstance;
-  let consoleInfoSpy: jest.SpyInstance;
-  let consoleErrorSpy: jest.SpyInstance;
+  let processError: MockInstance;
+  let consoleTableSpy: MockInstance;
+  let consoleInfoSpy: MockInstance;
+  let consoleErrorSpy: MockInstance;
   let medplum: MockClient;
-  let medplumGetSpy: jest.SpyInstance;
+  let medplumGetSpy: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
-    consoleTableSpy = jest.spyOn(console, 'table').mockImplementation(jest.fn());
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(jest.fn());
-    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
+    consoleTableSpy = vi.spyOn(console, 'table').mockImplementation(vi.fn());
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
+    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(vi.fn());
 
     indexSearchParameterBundle(readJson('fhir/r4/profiles-types.json') as Bundle<SearchParameter>);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -47,13 +48,13 @@ describe('Agent CLI', () => {
   });
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     medplum = new MockClient();
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
 
     process.env = { ...env };
-    medplumGetSpy = jest.spyOn(medplum, 'get');
+    medplumGetSpy = vi.spyOn(medplum, 'get');
   });
 
   afterAll(() => {
@@ -473,7 +474,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 1',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', agentId])).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
@@ -494,7 +495,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 1',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', agentId, '--count', '4'])
         ).resolves.toBeUndefined();
@@ -517,7 +518,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 1',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', agentId, '--criteria', 'Agent?name=Test Agent'])
         ).rejects.toThrow('Process exited with exit code 1');
@@ -539,7 +540,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 1',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
 
         await expect(
           main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', '--criteria', 'Agent?name=Test Agent'])
@@ -563,7 +564,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 1',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', '--criteria', 'Agent?name=Test Agent', '--count', '4'])
         ).resolves.toBeUndefined();
@@ -593,7 +594,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 2',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', '--criteria', 'Agent?name=Test Agent'])
         ).rejects.toThrow('Process exited with exit code 1');
@@ -630,7 +631,7 @@ describe('Agent CLI', () => {
         name: 'Test Agent 1',
         status: 'active',
       } satisfies Agent);
-      const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
+      const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
         throw new Error('Invalid response!');
       });
       await expect(
@@ -685,7 +686,7 @@ describe('Agent CLI', () => {
         } satisfies Agent);
         const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, agentId])
         ).resolves.toBeUndefined();
@@ -710,7 +711,7 @@ describe('Agent CLI', () => {
         } satisfies Agent);
         const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main([
             'node',
@@ -745,7 +746,7 @@ describe('Agent CLI', () => {
         } satisfies Agent);
         const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main([
             'node',
@@ -781,7 +782,7 @@ describe('Agent CLI', () => {
         } satisfies Agent);
         const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, agentId, '--no-wait'])
         ).resolves.toBeUndefined();
@@ -804,7 +805,7 @@ describe('Agent CLI', () => {
           name: 'Test Agent 1',
           status: 'active',
         } satisfies Agent);
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
           throw new Error('Invalid response!');
         });
         await expect(
@@ -835,7 +836,7 @@ describe('Agent CLI', () => {
         } satisfies Agent);
         const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, '--criteria', 'Agent?name=Test Agent'])
         ).resolves.toBeUndefined();
@@ -867,7 +868,7 @@ describe('Agent CLI', () => {
         } satisfies Agent);
         const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-        const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
+        const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent');
         await expect(
           main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, '--criteria', 'Agent?name=Test Agent'])
         ).rejects.toThrow('Process exited with exit code 1');
@@ -915,7 +916,7 @@ describe('Agent CLI', () => {
       } satisfies Agent);
       const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
 
-      const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
+      const medplumPushSpy = vi.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
         throw new Error('Invalid response!');
       });
       await expect(main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, agentId])).rejects.toThrow(
@@ -1666,10 +1667,10 @@ describe('Agent CLI', () => {
         expect(consoleInfoSpy).toHaveBeenCalledWith('Channel Stats:');
         expect(consoleInfoSpy).toHaveBeenCalledWith('Client Stats:');
 
-        const tableCalls = consoleTableSpy.mock.calls.map((call) => call[0]);
+        const tableCalls = consoleTableSpy.mock.calls.map((call: unknown[]) => call[0]);
 
         const summary = tableCalls.find(
-          (arg) => arg && typeof arg === 'object' && !Array.isArray(arg) && 'live' in arg
+          (arg: unknown) => arg && typeof arg === 'object' && !Array.isArray(arg) && 'live' in arg
         );
         expect(summary).toMatchObject({
           live: 'true',
@@ -1682,7 +1683,7 @@ describe('Agent CLI', () => {
           extraField: 'extra-value',
         });
 
-        const channelTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'channel-a');
+        const channelTable = tableCalls.find((arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'channel-a');
         expect(channelTable).toEqual([
           expect.objectContaining({
             name: 'channel-a',
@@ -1692,7 +1693,7 @@ describe('Agent CLI', () => {
           }),
         ]);
 
-        const clientTable = tableCalls.find((arg) => Array.isArray(arg) && arg[0]?.name === 'client-a');
+        const clientTable = tableCalls.find((arg: unknown) => Array.isArray(arg) && arg[0]?.name === 'client-a');
         expect(clientTable).toEqual([
           expect.objectContaining({
             name: 'client-a',

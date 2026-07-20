@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Project } from '@medplum/fhirtypes';
+import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
@@ -8,6 +9,7 @@ import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
+import { repoAccess } from './fhir/repository/access-tracker';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -51,10 +53,10 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  let loggerWriteSpy: jest.SpyInstance;
+  let loggerWriteSpy: MockInstance;
 
   beforeAll(async () => {
-    loggerWriteSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    loggerWriteSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
     const config = await loadTestConfig();
     config.database.runMigrations = true;
@@ -78,7 +80,9 @@ describe('Seed', () => {
       // and then vacuum the tables to clear any existing pending list entries.
       const actions: OutputAction[] = [];
       const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient(
+        repoAccess.sqlWrite(['Appointment', 'Slot'], { source: 'seed.test.configureIndexes' })
+      );
       await configureGinIndexes(client, actions, tables, { fastUpdate: false });
       for (const table of tables) {
         await vacuumTable(client, actions, table);
@@ -108,7 +112,7 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        loggerWriteSpy.mock.calls.forEach((call) => console.log(...call));
+        loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 

@@ -1,19 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import {
-  createReference,
-  EMPTY,
-  flatMapFilter,
-  getExtensionValue,
-  getReferenceString,
-  isDefined,
-  isReference,
-} from '@medplum/core';
+import { createReference, EMPTY, getExtensionValue, getReferenceString, isDefined } from '@medplum/core';
 import type { CodeableConcept, HealthcareService, Reference } from '@medplum/fhirtypes';
-import { getExtensions } from './extension';
-import type { WithPath } from './withpath';
-import { getPath, withPath, withPaths } from './withpath';
 
 /**
  * In R5/R6, `serviceType` attributes are changing from `CodeableConcept[]` to
@@ -99,30 +88,4 @@ export function extractReferencesFromCodeableReferenceLike(
   return serviceType
     .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
     .filter(isDefined);
-}
-
-/**
- * Takes an object that may have a `serviceType` attribute. Finds our extension
- * inside concepts in that array, extracts the references, and decorates them
- * with path information.
- *
- * @param obj - A resource that has a `serviceType` - Appointment, Encounter, Slot, Schedule
- * @returns Reference<HealthcareService>[], with embedded path information
- */
-export function getServiceTypeReferences<T extends { serviceType?: CodeableConcept[] }>(
-  obj: WithPath<T>
-): WithPath<Reference<HealthcareService> & { reference: string }>[] {
-  if (!obj.serviceType?.length) {
-    return [];
-  }
-
-  return withPaths(obj.serviceType, `${getPath(obj)}.serviceType`).flatMap((concept) => {
-    const extensions = getExtensions(concept, ServiceTypeReferenceURI);
-    return flatMapFilter(extensions, (ext) => {
-      if (isReference<HealthcareService>(ext.valueReference, 'HealthcareService')) {
-        return withPath(ext.valueReference, `${getPath(ext)}.valueReference`);
-      }
-      return undefined;
-    });
-  });
 }

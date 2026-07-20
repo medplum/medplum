@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { DiagnosticReport, Observation } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Observation, Reference } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
@@ -78,6 +78,8 @@ const syntheaReport: DiagnosticReport = {
 const medplum = new MockClient();
 
 describe('DiagnosticReportDisplay', () => {
+  let exampleReport: DiagnosticReport;
+
   function setup(args: DiagnosticReportDisplayProps): void {
     render(
       <MemoryRouter>
@@ -90,11 +92,11 @@ describe('DiagnosticReportDisplay', () => {
 
   beforeAll(async () => {
     const obs = await medplum.createResource(CreatinineObservation);
-    const report = {
+    exampleReport = await medplum.createResource<DiagnosticReport>({
       ...ExampleReport,
+      id: undefined,
       result: [createReference(obs)],
-    };
-    await medplum.updateResource(report);
+    });
   });
 
   test('Renders by value', async () => {
@@ -157,16 +159,25 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders performer', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
 
     expect(screen.getByText('Test Organization')).not.toBeNull();
     expect(screen.getByText('Alice Smith')).not.toBeNull();
   });
 
+  test('Renders performer organization address', async () => {
+    await act(async () => {
+      setup({ value: exampleReport });
+    });
+
+    // See packages/mock/src/mocks/alice.ts for the TestOrganization address
+    expect(screen.getByText('123 Test Street, Springfield, CA, 90210')).not.toBeNull();
+  });
+
   test('Renders observation category', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('Day 2')).toBeDefined();
@@ -174,14 +185,14 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders observation note', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
     expect(screen.getByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).not.toBeNull();
   });
 
   test('Hide observation note', async () => {
     await act(async () => {
-      setup({ value: ExampleReport, hideObservationNotes: true });
+      setup({ value: exampleReport, hideObservationNotes: true });
     });
     expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });
@@ -241,8 +252,13 @@ describe('DiagnosticReportDisplay', () => {
     // This is a technically valid Observation resource,
     // although it doesn't really make sense.
     // It uses "Observation Grouping" to create a cycle.
-    let obs = await medplum.createResource({ resourceType: 'Observation', valueString: 'XYZ' } as Observation);
-    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs)] });
+    let obs = await medplum.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      valueString: 'XYZ',
+    });
+    obs = await medplum.updateResource({ ...obs, hasMember: [createReference(obs) as Reference<Observation>] });
 
     const report: DiagnosticReport = {
       resourceType: 'DiagnosticReport',

@@ -13,7 +13,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { EMPTY, normalizeErrorString } from '@medplum/core';
-import fetch from 'node-fetch';
 import { readdirSync } from 'node:fs';
 import * as semver from 'semver';
 import { getConfigFileName } from '../utils';

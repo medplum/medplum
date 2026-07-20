@@ -36,7 +36,7 @@ const theme = createTheme({
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  baseUrl: 'http://localhost:8103/',
+  baseUrl: import.meta.env.MEDPLUM_BASE_URL,
 });
 
 ReactDOM.createRoot(root).render(

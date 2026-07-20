@@ -4,11 +4,11 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import type { SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
-  LogLevel,
-  Operator,
   createReference,
   generateId,
   getReferenceString,
+  LogLevel,
+  Operator,
   stringify,
 } from '@medplum/core';
 import type {
@@ -28,22 +28,22 @@ import type {
 } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import type { Job, Worker } from 'bullmq';
+import type { Job } from 'bullmq';
 import * as bullmqModule from 'bullmq';
-import type { Redis } from 'ioredis';
-import fetch from 'node-fetch';
+import { UnrecoverableError } from 'bullmq';
 import { createHmac, randomUUID } from 'node:crypto';
-import { UnrecoverableError } from '../__mocks__/bullmq';
-import { initAppServices, shutdownApp } from '../app';
+import type { Mock, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
-import * as otelModule from '../otel/otel';
 import {
   addUserActiveWebSocketSubscription,
   getActiveSubscriptions,
@@ -52,7 +52,8 @@ import {
 } from '../pubsub';
 import * as redisModule from '../redis';
 import { getPubSubRedisSubscriber } from '../redis';
-import { createTestProject, withTestContext } from '../test.setup';
+import { createTestProject, waitForPubSubRedisSubscriberReady, withTestContext } from '../test.setup';
+import { mockFetchStatus } from '../test.setup.fetch';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import type { SubscriptionJobData } from './subscription';
@@ -65,12 +66,20 @@ import {
 import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
 
-jest.mock('node-fetch');
-jest.mock('../constants', () => ({
-  ...jest.requireActual('../constants'),
-  WEBSOCKET_SUB_PUBLISH_CHANNEL: 'medplum:subscriptions:r4:websockets:test:worker',
+const wsSubscriptionTestChannels = vi.hoisted(() => {
+  const suffix = process.env.VITEST_WORKER_ID ?? process.env.VITEST_POOL_ID ?? `pid-${process.pid}`;
+  return {
+    worker: `medplum:subscriptions:r4:websockets:test:worker:${suffix}`,
+    ws: `medplum:subscriptions:r4:websockets:test:ws:${suffix}`,
+  };
+});
+
+vi.mock('../constants', async (importOriginal) => ({
+  ...(await importOriginal<typeof Constants>()),
+  WEBSOCKET_SUB_PUBLISH_CHANNEL: wsSubscriptionTestChannels.worker,
 }));
-const mockBullmq = jest.mocked(bullmqModule);
+const mockBullmq = vi.mocked(bullmqModule);
+const fetchMock = vi.spyOn(globalThis, 'fetch');
 
 describe('Subscription Worker', () => {
   let systemRepo: SystemRepository;
@@ -81,15 +90,18 @@ describe('Subscription Worker', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    const { initAppServices } = await import('../app');
     await initAppServices(config);
   });
 
   afterAll(async () => {
+    const { shutdownApp } = await import('../app');
     await shutdownApp();
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    fetchMock.mockClear();
+    getConfig().allowUnsafeOutbound = false;
 
     // Create one simple project with no advanced features enabled
     const { client, repo: _repo } = await withTestContext(() =>
@@ -156,7 +168,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -201,7 +213,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 201 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(201));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -238,7 +250,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -290,7 +302,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -412,7 +424,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         const body = stringify(patient);
         const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -468,7 +480,7 @@ describe('Subscription Worker', () => {
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         const body = stringify(patient);
         const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -537,7 +549,7 @@ describe('Subscription Worker', () => {
       await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Reject insecure rest-hook URLs by default', () =>
+  test('Ignore insecure rest-hook URLs by default', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({
         resourceType: 'Subscription',
@@ -557,48 +569,189 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('HTTPS is required');
-      expect(fetch).not.toHaveBeenCalled();
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Allow insecure rest-hook URLs when configured', () =>
+  test('Send insecure rest-hook URLs to fetch when unsafe outbound is allowed', () =>
     withTestContext(async () => {
-      const url = 'http://example.com/subscription';
-      const savedConfig = getConfig().allowInsecureRestHookUrl;
-      getConfig().allowInsecureRestHookUrl = true;
+      getConfig().allowUnsafeOutbound = true;
+      const url = 'http://localhost:8080/subscription';
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      await findAndExecSubscriptionJob(patient, 'create');
+
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: stringify(patient),
+        })
+      );
+    }));
+
+  test('Server-scoped subscription fires across projects when enabled', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/server-scoped-subscription';
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      getConfig().serverScopedSubscriptionsEnabled = true;
+
+      const projectId = repo.currentProject()?.id;
+      assert(projectId);
+
+      // Create a subscription with no project (i.e. server-scoped / system project)
+      const serverSub = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      // A server-scoped subscription is not scoped to any project (stored in the system project)
+      expect(serverSub.meta?.project).toBeUndefined();
+
+      const projectSub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
 
       try {
-        const subscription = await repo.createResource<Subscription>({
-          resourceType: 'Subscription',
-          reason: 'test',
-          status: 'active',
-          criteria: 'Patient',
-          channel: {
-            type: 'rest-hook',
-            endpoint: url,
-          },
+        // Create a patient in a regular project
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
         });
-        expect(subscription).toBeDefined();
+        expect(patient).toBeDefined();
+        // The patient lives in a real project (unlike the project-less server-scoped subscription).
+        expect(patient.meta?.project).toStrictEqual(projectId);
 
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+        // The server-scoped subscription should fire for a resource in a different project.
+        // Target this specific subscription's job so other (potentially leftover) server-scoped
+        // subscriptions in the shared system project don't make the assertions non-deterministic.
+        await findAndExecSubscriptionJob(patient, 'create', serverSub);
+
+        expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST', body: stringify(patient) }));
+
+        // project-scoped subscriptions should also fire
+        await findAndExecSubscriptionJob(patient, 'create', projectSub);
+
+        // The AuditEvent for a server-scoped subscription inherits the subscription's (missing)
+        // project rather than the triggering resource's project, so it is itself project-less and
+        // lives in the system scope alongside the subscription. Search across all projects with the
+        // system repo and locate it by the entity it references.
+        const auditEvents = await repo.getSystemRepo().searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+        });
+        // The audit event references the server-scoped subscription that triggered it...
+        const serverAuditEvent = auditEvents.find((e) =>
+          e.entity?.some((entity) => entity.what?.reference === getReferenceString(serverSub))
+        );
+        expect(serverAuditEvent).toBeDefined();
+        // ...and, like that subscription, is not scoped to any project.
+        expect(serverAuditEvent?.meta?.project).toBeUndefined();
+
+        // audit event for the project-scoped subscription
+        const projectAuditEvent = auditEvents.find((e) =>
+          e.entity?.some((entity) => entity.what?.reference === getReferenceString(projectSub))
+        );
+        // is scoped to the project.
+        expect(projectAuditEvent?.meta?.project).toStrictEqual(projectId);
+      } finally {
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
+        // Clean up the server-scoped subscription so it does not leak into the shared system project
+        await superAdminRepo.deleteResource('Subscription', serverSub.id);
+      }
+    }));
+
+  test('Server-scoped subscription does not fire when disabled', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/server-scoped-subscription-disabled';
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      // Explicitly disabled (this is also the default)
+      getConfig().serverScopedSubscriptionsEnabled = false;
+
+      const projectId = repo.currentProject()?.id;
+      assert(projectId);
+
+      const serverSub = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      expect(serverSub.meta?.project).toBeUndefined();
+
+      const projectSub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+
+      try {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
         expect(patient).toBeDefined();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
-        await findAndExecSubscriptionJob(patient, 'create');
+        // With server-scoped subscriptions disabled, the project-less subscription is not
+        // considered for resources in other projects, so its job should never be enqueued.
+        await expect(findAndExecSubscriptionJob(patient, 'create', serverSub)).rejects.toThrow('Job not found');
+        expect(fetch).not.toHaveBeenCalledWith(url, expect.anything());
 
-        expect(fetch).toHaveBeenCalledWith(
-          url,
-          expect.objectContaining({
-            method: 'POST',
-            body: stringify(patient),
-          })
+        // project-scoped subscriptions should still fire
+        await findAndExecSubscriptionJob(patient, 'create', projectSub);
+        expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST', body: stringify(patient) }));
+
+        const auditEvents = await repo.getSystemRepo().searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+        });
+
+        // The audit event references the server-scoped subscription that triggered it...
+        const serverAuditEvent = auditEvents.find((e) =>
+          e.entity?.some((entity) => entity.what?.reference === getReferenceString(serverSub))
         );
+        expect(serverAuditEvent).toBeUndefined();
+
+        // audit event for the project-scoped subscription
+        const projectAuditEvent = auditEvents.find((e) =>
+          e.entity?.some((entity) => entity.what?.reference === getReferenceString(projectSub))
+        );
+        // is scoped to the project.
+        expect(projectAuditEvent?.meta?.project).toStrictEqual(projectId);
       } finally {
-        getConfig().allowInsecureRestHookUrl = savedConfig;
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
+        // Clean up the server-scoped subscription so it does not leak into the shared system project
+        await superAdminRepo.deleteResource('Subscription', serverSub.id);
       }
     }));
 
@@ -786,7 +939,7 @@ describe('Subscription Worker', () => {
       expect(patient).toBeDefined();
 
       // causes an error to be thrown
-      const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
+      const getLoggerSpy = vi.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
         throw new Error('Logger not available for some weird reason');
       });
 
@@ -829,10 +982,10 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
-        .mockImplementationOnce(() => ({ status: 429 }))
-        .mockImplementationOnce(() => ({ status: 429 }))
-        .mockImplementation(() => ({ status: 200 }));
+      (fetch as unknown as Mock)
+        .mockImplementationOnce(() => mockFetchStatus(429))
+        .mockImplementationOnce(() => mockFetchStatus(429))
+        .mockImplementation(() => mockFetchStatus(200));
 
       // If the job throws, then the QueueScheduler will retry
       const jobs = await findAndExecSubscriptionJob(patient, 'create');
@@ -870,11 +1023,11 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock)
+      (fetch as unknown as Mock)
         .mockImplementationOnce(() => {
           throw new Error('foo');
         })
-        .mockImplementation(() => ({ status: 200 }));
+        .mockImplementation(() => mockFetchStatus(200));
 
       // If the job throws, then the QueueScheduler will retry
       const jobs = await findAndExecSubscriptionJob(patient, 'create');
@@ -910,7 +1063,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => {
+      fetchMock.mockImplementation(() => {
         throw new Error();
       });
 
@@ -958,7 +1111,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1018,7 +1171,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
       expect(fetch).not.toHaveBeenCalled();
@@ -1076,7 +1229,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
       expect(fetch).not.toHaveBeenCalled();
@@ -1132,7 +1285,7 @@ describe('Subscription Worker', () => {
         ],
       };
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       // Attempt to trigger the Subscription
       const patient = await repo.createResource<Patient>({
@@ -1332,7 +1485,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1394,7 +1547,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 515 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(515));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1442,7 +1595,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1462,12 +1615,12 @@ describe('Subscription Worker', () => {
     }));
 
   describe('Subscription AuditEvent destination with logging', () => {
-    let writeSpy: jest.SpyInstance;
+    let writeSpy: MockInstance;
 
     beforeEach(async () => {
       const config = await loadTestConfig();
       config.logAuditEvents = true;
-      writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
     });
 
     afterEach(async () => {
@@ -1508,7 +1661,7 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1528,9 +1681,9 @@ describe('Subscription Worker', () => {
 
         // Should log AuditEvent via globalLogger
         expect(writeSpy).toHaveBeenCalled();
-        const loggedCall = writeSpy.mock.calls.find((call) => {
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
-            const parsed = JSON.parse(call[0]);
+            const parsed = JSON.parse(call[0] as string);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
           } catch {
             return false;
@@ -1575,7 +1728,7 @@ describe('Subscription Worker', () => {
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
 
         await findAndExecSubscriptionJob(patient, 'create');
 
@@ -1595,9 +1748,9 @@ describe('Subscription Worker', () => {
 
         // Should also log AuditEvent via globalLogger
         expect(writeSpy).toHaveBeenCalled();
-        const loggedCall = writeSpy.mock.calls.find((call) => {
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
-            const parsed = JSON.parse(call[0]);
+            const parsed = JSON.parse(call[0] as string);
             return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
           } catch {
             return false;
@@ -1639,7 +1792,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient2, 'update');
       expect(fetch).toHaveBeenCalledWith(
@@ -1739,7 +1892,7 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow('Job not found');
       await findAndExecSubscriptionJob(patient, 'update', subscription2);
@@ -1748,7 +1901,7 @@ describe('Subscription Worker', () => {
   test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1796,7 +1949,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
@@ -1819,7 +1972,7 @@ describe('Subscription Worker', () => {
   test('Subscription -- Rest Hook Sub does not meet AccessPolicy', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
-      const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
       const url = 'https://example.com/subscription';
 
@@ -1869,7 +2022,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(patient2, 'update', subscription);
       expect(fetch).toHaveBeenCalledWith(
@@ -1917,7 +2070,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      const spy = jest.spyOn(workerUtils, 'findProjectMembership');
+      const spy = vi.spyOn(workerUtils, 'findProjectMembership');
 
       await addSubscriptionJobs(patient, undefined, { project, interaction: 'create' });
 
@@ -1966,7 +2119,7 @@ describe('Subscription Worker', () => {
       });
       expect(documentRef).toBeDefined();
 
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
 
       await findAndExecSubscriptionJob(documentRef, 'create', subscription);
 
@@ -1983,7 +2136,10 @@ describe('Subscription Worker', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
-    let subscriber: Redis;
+    // ws/subscriptions.test.ts loads workers/subscription.ts first with its own mocked channel.
+    const WS_SUBSCRIPTIONS_TEST_CHANNEL = wsSubscriptionTestChannels.ws;
+
+    let subscriber: ReturnType<typeof getPubSubRedisSubscriber>;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
     let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
@@ -2005,11 +2161,26 @@ describe('Subscription Worker', () => {
           rejectNotExpected = undefined;
         }
       });
-      await subscriber.subscribe(WEBSOCKET_SUB_PUBLISH_CHANNEL);
+      // Vitest applies per-file mocks after setupFiles, so subscription.ts may bind the
+      // production channel before this test file's mock is registered. Listen on both.
+      const actualConstants = await vi.importActual<typeof Constants>('../constants');
+      const channels = new Set([
+        WEBSOCKET_SUB_PUBLISH_CHANNEL,
+        WS_SUBSCRIPTIONS_TEST_CHANNEL,
+        actualConstants.WEBSOCKET_SUB_PUBLISH_CHANNEL,
+      ]);
+      // ioredis runs an INFO "ready check" during connect. If SUBSCRIBE completes first, the
+      // connection enters subscriber mode and that check fails with ERR Can't execute 'info'.
+      // Production code on main does not need this helper, but under Vitest's full-suite order
+      // other tests may leave subscribers in flight, so wait for ready before subscribing here.
+      await waitForPubSubRedisSubscriberReady(subscriber);
+      for (const channel of channels) {
+        await subscriber.subscribe(channel);
+      }
     });
 
     afterAll(async () => {
-      await subscriber.quit();
+      subscriber.disconnect();
     });
 
     async function assertNoWsNotifications(timeoutMs?: number): Promise<void> {
@@ -2096,6 +2267,10 @@ describe('Subscription Worker', () => {
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
       const subRef = `Subscription/${subscription.id}`;
       const expiration = Math.floor(Date.now() / 1000) + 3600;
+      await setResourceCacheEntry({
+        ...subscription,
+        meta: { ...subscription.meta, project: projectId },
+      });
       await addUserActiveWebSocketSubscription(authorRef, subRef);
       await setActiveSubscription(projectId, criteriaResourceType, subRef, {
         criteria,
@@ -2247,7 +2422,7 @@ describe('Subscription Worker', () => {
     test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
-        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const {
           repo: noWsSubRepo,
@@ -2294,7 +2469,7 @@ describe('Subscription Worker', () => {
     test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
@@ -2429,6 +2604,7 @@ describe('Subscription Worker', () => {
 
         // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
         // unconditionally returns `true` for non-websocket channel types.
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
         await findAndExecSubscriptionJob(patient, 'create', restHookSub);
       }));
 
@@ -2577,7 +2753,7 @@ describe('Subscription Worker', () => {
     test('Subscription Author Access Policy Removed', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
@@ -2645,7 +2821,7 @@ describe('Subscription Worker', () => {
     test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
-        const writeSpy = jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+        const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
         const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
@@ -2977,10 +3153,7 @@ describe('Subscription Worker', () => {
 
         const message = await nextMessagePromise;
         const subIds = message.events.map(([subId]) => subId);
-        expect(subIds).toHaveLength(3);
-        expect(subIds).toContain(sub1.id);
-        expect(subIds).toContain(sub2.id);
-        expect(subIds).toContain(sub3.id);
+        expect(subIds).toContainExactly([sub1.id, sub2.id, sub3.id]);
       }));
 
     test('Cached criteria - multiple subscriptions with same non-matching criteria do not fire', () =>
@@ -3087,9 +3260,7 @@ describe('Subscription Worker', () => {
         // Only the Alice subscriptions should fire; Bob subscriptions should be skipped via cached result
         const message = await nextMessagePromise;
         const subIds = message.events.map(([subId]) => subId);
-        expect(subIds).toHaveLength(2);
-        expect(subIds).toContain(aliceSub1.id);
-        expect(subIds).toContain(aliceSub2.id);
+        expect(subIds).toContainExactly([aliceSub1.id, aliceSub2.id]);
       }));
 
     test('Logs WS subscription eval info after evaluating criteria', () =>
@@ -3117,12 +3288,12 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         await bindSubscription(subscription, wsProject.id, login.id, membership.id);
 
-        const mockInfo = jest.fn();
-        const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockReturnValue({
+        const mockInfo = vi.fn();
+        const getLoggerSpy = vi.spyOn(loggerModule, 'getLogger').mockReturnValue({
           info: mockInfo,
-          warn: jest.fn(),
-          debug: jest.fn(),
-          error: jest.fn(),
+          warn: vi.fn(),
+          debug: vi.fn(),
+          error: vi.fn(),
         } as any);
 
         const patient = await wsSubRepo.createResource<Patient>({
@@ -3387,14 +3558,14 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
       const projectId = randomUUID();
       const mockedSystemRepo = {
-        readResource: jest.fn().mockResolvedValue({
+        readResource: vi.fn().mockResolvedValue({
           resourceType: 'Project',
           id: projectId,
           systemSetting: [{ name: 'subscriptionAutoDisable' }],
         }),
       } as unknown as SystemRepository;
 
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => {});
       try {
         await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
           getConfig().subscriptionAutoDisable
@@ -3411,14 +3582,14 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
       const projectId = randomUUID();
       const mockedSystemRepo = {
-        readResource: jest.fn().mockResolvedValue({
+        readResource: vi.fn().mockResolvedValue({
           resourceType: 'Project',
           id: projectId,
           systemSetting: [{ name: 'subscriptionAutoDisable', valueString: '[{"maxConsecutiveFailures":"bad"}]' }],
         }),
       } as unknown as SystemRepository;
 
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => {});
       try {
         await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
           getConfig().subscriptionAutoDisable
@@ -3436,10 +3607,10 @@ describe('Subscription Worker', () => {
       getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
       const projectId = randomUUID();
       const mockedSystemRepo = {
-        readResource: jest.fn().mockRejectedValue(new Error('Project lookup failed')),
+        readResource: vi.fn().mockRejectedValue(new Error('Project lookup failed')),
       } as unknown as SystemRepository;
 
-      const warnSpy = jest.spyOn(globalLogger, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => {});
       try {
         await expect(getSubscriptionAutoDisableTriggers(mockedSystemRepo, projectId)).resolves.toStrictEqual(
           getConfig().subscriptionAutoDisable
@@ -3456,19 +3627,19 @@ describe('Subscription Worker', () => {
 
     test('Subscription failure tracker ignores Redis zcount errors', async () => {
       const pipeline = {
-        zremrangebyscore: jest.fn().mockReturnThis(),
-        zadd: jest.fn().mockReturnThis(),
-        zcount: jest.fn().mockReturnThis(),
-        expire: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue([
+        zremrangebyscore: vi.fn().mockReturnThis(),
+        zadd: vi.fn().mockReturnThis(),
+        zcount: vi.fn().mockReturnThis(),
+        expire: vi.fn().mockReturnThis(),
+        exec: vi.fn().mockResolvedValue([
           [null, 0],
           [null, 1],
           [new Error('zcount failed'), null],
         ]),
       };
 
-      const redisSpy = jest.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
-        pipeline: jest.fn().mockReturnValue(pipeline),
+      const redisSpy = vi.spyOn(redisModule, 'getCacheRedis').mockReturnValue({
+        pipeline: vi.fn().mockReturnValue(pipeline),
       } as any);
 
       try {
@@ -3504,7 +3675,7 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 3; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3554,7 +3725,7 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 3; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3594,7 +3765,7 @@ describe('Subscription Worker', () => {
         queue.add.mockClear();
 
         // Fail twice
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3604,7 +3775,7 @@ describe('Subscription Worker', () => {
         }
 
         // Succeed once - should reset counter
-        (fetch as unknown as jest.Mock).mockResolvedValue({ status: 200 });
+        (fetch as unknown as Mock).mockResolvedValue({ status: 200 });
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Test'], family: 'ResetSuccess' }],
@@ -3612,7 +3783,7 @@ describe('Subscription Worker', () => {
         await findAndExecSubscriptionJob(patient, 'create');
 
         // Fail twice more (should not trigger auto-disable since counter was reset)
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3653,7 +3824,7 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3692,7 +3863,7 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3730,7 +3901,7 @@ describe('Subscription Worker', () => {
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
+        (fetch as unknown as Mock).mockRejectedValue(new Error('Mock error: Connection refused'));
         for (let i = 0; i < 2; i++) {
           const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
@@ -3769,7 +3940,7 @@ describe('Subscription Worker', () => {
         queue.add.mockClear();
 
         let callCount = 0;
-        (fetch as unknown as jest.Mock).mockImplementation(async () => {
+        fetchMock.mockImplementation(async () => {
           callCount++;
           if (callCount === 3) {
             // Simulate a concurrent process disabling the subscription after execSubscriptionJob
@@ -3815,8 +3986,8 @@ describe('Subscription Worker', () => {
 
 describe('Subscription Worker Event Handling', () => {
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.resetModules();
+    vi.restoreAllMocks();
+    vi.resetModules();
   });
 
   test('Worker event handlers work correctly', async () => {
@@ -3824,7 +3995,7 @@ describe('Subscription Worker Event Handling', () => {
     const handlers = new Map<string, ((job?: Job, error?: Error) => void)[] | undefined>();
     const mockWorker = {
       name: 'MockSubscriptionWorker',
-      on: jest.fn().mockImplementation((event: string, handler: () => void) => {
+      on: vi.fn().mockImplementation((event: string, handler: () => void) => {
         const handlerList = handlers.get(event);
         if (handlerList) {
           handlerList.push(handler);
@@ -3834,13 +4005,16 @@ describe('Subscription Worker Event Handling', () => {
         return mockWorker;
       }),
     };
-    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
+    (mockBullmq.Worker as unknown as Mock).mockImplementation(function MockWorker() {
+      return mockWorker;
+    });
     // Now import the subscription worker init function
 
-    jest.spyOn(globalLogger, 'info').mockImplementation(() => {});
+    vi.spyOn(globalLogger, 'info').mockImplementation(() => {});
 
     // Mock the logger and metrics functions
-    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
+    const otelModule = await import('../otel/otel');
+    const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     // Initialize the subscription worker with mock config
     initSubscriptionWorker({} as MedplumServerConfig);

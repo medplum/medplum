@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
+import { EMPTY, OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { requireSuperAdmin } from '../../admin/super';
+import { requireSuperAdmin } from '../../context';
 import { getShardSystemRepo } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidColumnName, isValidTableName } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -61,13 +62,20 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
   }
 
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
-  await systemRepo.withTransaction(async (client) => {
-    for (const columnName of params.columnNames) {
-      await client.query(
-        'ALTER TABLE "' + params.tableName + '" ALTER COLUMN "' + columnName + '" SET STATISTICS ' + newStatisticsTarget
-      );
-    }
-  });
+  await systemRepo.withTransaction(
+    async (txRepo) => {
+      for (const columnName of params.columnNames) {
+        // table and column names cannot be parameterized, so string interpolate after validating inputs
+        const query = `ALTER TABLE "${params.tableName}" ALTER COLUMN "${columnName}" SET STATISTICS ${newStatisticsTarget}`;
+        await txRepo.executeRawSql(
+          query,
+          undefined,
+          repoAccess.sqlWriteConfig({ source: 'configureColumnStatisticsHandler' })
+        );
+      }
+    },
+    { resourceTypes: EMPTY, source: 'configureColumnStatisticsHandler.transaction' }
+  );
 
   return [allOk];
 }

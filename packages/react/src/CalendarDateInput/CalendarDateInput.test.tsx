@@ -6,22 +6,22 @@ import { getMonthString, getStartMonth } from './CalendarDateInput.utils';
 
 describe('CalendarDateInput', () => {
   test('Renders', () => {
-    const onClick = jest.fn();
-    render(<CalendarDateInput availableDates={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
+    const onClick = vi.fn();
+    render(<CalendarDateInput availableDates={[]} onChangeMonth={vi.fn()} onClick={onClick} />);
     expect(screen.getByText(getMonthString(new Date()))).toBeDefined();
     expect(screen.getByText('SUN')).toBeDefined();
     expect(screen.getByText('1')).toBeDefined();
   });
 
   test('Disabled days', () => {
-    const onClick = jest.fn();
-    render(<CalendarDateInput availableDates={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
+    const onClick = vi.fn();
+    render(<CalendarDateInput availableDates={[]} onChangeMonth={vi.fn()} onClick={onClick} />);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '4' }).disabled).toBe(true);
   });
 
   test('Change months', async () => {
-    const onChangeMonth = jest.fn();
-    const onClick = jest.fn();
+    const onChangeMonth = vi.fn();
+    const onClick = vi.fn();
     render(<CalendarDateInput availableDates={[]} onChangeMonth={onChangeMonth} onClick={onClick} />);
 
     const nextMonth = getStartMonth();
@@ -52,8 +52,8 @@ describe('CalendarDateInput', () => {
 
     const availableDates = [startTime];
 
-    const onClick = jest.fn();
-    render(<CalendarDateInput availableDates={availableDates} onChangeMonth={jest.fn()} onClick={onClick} />);
+    const onClick = vi.fn();
+    render(<CalendarDateInput availableDates={availableDates} onChangeMonth={vi.fn()} onClick={onClick} />);
 
     // Move forward one month
     await act(async () => {

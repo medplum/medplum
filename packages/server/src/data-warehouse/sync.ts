@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DuckDBInstance } from '@duckdb/node-api';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { MedplumDatabaseConfig } from '../config/types';
@@ -22,44 +22,35 @@ export interface SyncOptions {
   namespace?: string;
   /** Earliest history `lastUpdated` to export (ISO-8601 date or date-time string). */
   startDate?: string;
+  /** FHIR resource types to include; omitted means all types. */
+  includeResourceTypes?: string[];
+  /** FHIR resource types to exclude from sync. */
+  excludeResourceTypes?: string[];
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
-export interface SyncResourceResult {
-  icebergTable: string;
-  table: string;
-  count: number;
+export interface SyncTableResult {
+  destination: string;
+  rowsInserted: number;
+  syncDurationMs: number;
+  watermarkDurationMs: number;
 }
 
 export interface SyncResult {
-  resources: SyncResourceResult[];
-}
-
-export type SyncAction = 'skip-empty' | 'insert';
-
-async function logSyncProgress(
-  options: SyncOptions,
-  message: string,
-  metadata: Record<string, string | number> | undefined
-): Promise<void> {
-  if (options.onProgress) {
-    await options.onProgress(message, metadata);
-    return;
-  }
-
-  globalLogger.info(message, metadata);
+  tables: SyncTableResult[];
 }
 
 function getSyncSourceConnectionString(options: SyncOptions): string {
   return buildPgConnectionURI(options.database);
 }
 
-export function buildWarehouseSourcePredicate(
+export async function buildWarehouseSourcePredicate(
+  connection: DuckdbConnection,
   options: SyncOptions,
   tableSpec: WarehouseSourceTable,
   namespace: string
-): Expression | undefined {
-  const destinationPredicate = options.destination.buildSourcePredicate(tableSpec, namespace);
+): Promise<Expression | undefined> {
+  const destinationPredicate = await options.destination.buildSourcePredicate(connection, tableSpec, namespace);
   if (!options.startDate) {
     return destinationPredicate;
   }
@@ -72,102 +63,158 @@ type WarehouseSyncDuckdbConnection = DuckdbConnection & {
   closeSync(): void;
 };
 
-async function runWarehouseTableSync(
-  connection: WarehouseSyncDuckdbConnection,
+/**
+ * Opens a fresh DuckDB instance/connection backed by a throwaway temp directory,
+ * runs the destination setup queries, invokes `fn`, and tears everything down
+ * afterwards. A new database is created and destroyed for each invocation.
+ * @param options - The sync options.
+ * @param sourceConnectionString - The Postgres source connection string.
+ * @param fn - Callback invoked with the ready-to-use DuckDB connection.
+ * @returns The value returned by `fn`.
+ */
+async function withWarehouseConnection<T>(
   options: SyncOptions,
-  namespace: string
-): Promise<SyncResourceResult[]> {
-  const results: SyncResourceResult[] = [];
-
-  const total = options.warehouseSources.length;
-
-  // general logging of the sync start
-  globalLogger.info('Starting warehouse sync', {
-    tableCount: total,
-    startDate: options.startDate,
-    warehouseSources: options.warehouseSources.map((spec) => ({
-      icebergTable: spec.icebergTable,
-      postgresTable: spec.postgresTable,
-    })),
-  });
-
-  // now looping through each table (alphabetically)
-  for (const [index, spec] of options.warehouseSources.entries()) {
-    const { icebergTable, postgresTable } = spec;
-    const tableNumber = index + 1;
-    const sourcePredicate = buildWarehouseSourcePredicate(options, spec, namespace);
-    const resultTableName = options.destination.getDestinationName(spec);
-    await options.destination.ensureTargetExists(spec, namespace);
-
-    await logSyncProgress(options, `Syncing warehouse table ${tableNumber} of ${total}: ${icebergTable}`, {
-      tableNumber,
-      total,
-      icebergTable,
-      postgresTable,
-      table: resultTableName,
-    });
-
-    const count = await options.destination.writeRows(connection, {
-      tableSpec: spec,
-      namespace,
-      sourcePredicate,
-    });
-
-    if (count > 0) {
-      await logSyncProgress(options, `Synced ${icebergTable}: ${count} row(s)`, {
-        table: resultTableName,
-        icebergTable,
-        count,
-      });
-    } else {
-      await logSyncProgress(options, `Skipped ${icebergTable}: no new rows`, {
-        table: resultTableName,
-        icebergTable,
-        count,
-      });
-    }
-
-    results.push({
-      icebergTable,
-      table: resultTableName,
-      count,
-    });
-  }
-
-  return results;
-}
-
-export async function syncData(options: SyncOptions): Promise<SyncResult> {
-  const sourceConnectionString = getSyncSourceConnectionString(options);
-  const namespace = options.namespace ?? DEFAULT_NAMESPACE;
-
+  sourceConnectionString: string,
+  fn: (connection: WarehouseSyncDuckdbConnection) => Promise<T>
+): Promise<T> {
   let connection: WarehouseSyncDuckdbConnection | undefined;
+  let instance: DuckDBInstance | undefined;
   let duckdbTempDir: string | undefined;
   try {
     // create a temporary directory for the DuckDB database
-    duckdbTempDir = mkdtempSync(join(tmpdir(), `medplum-dw-sync-${Date.now()}-`));
+    duckdbTempDir = await mkdtemp(join(tmpdir(), `medplum-dw-sync-`));
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
-    const instance = await DuckDBInstance.create(duckdbDatabasePath);
+    instance = await DuckDBInstance.create(duckdbDatabasePath);
     connection = await instance.connect();
-    for (const q of options.destination.getSetupQueries(sourceConnectionString)) {
+    for (const q of options.destination.getSetupQueries()) {
       await connection.run(q);
     }
 
-    if (!options.warehouseSources.length) {
-      throw new Error('warehouseSources must include at least one table.');
+    return await fn(connection);
+  } finally {
+    try {
+      connection?.closeSync();
+    } catch (err) {
+      globalLogger.warn('Failed closing data warehouse DuckDB connection', { err, subsystem: 'data-warehouse-sync' });
     }
 
-    const resources = await runWarehouseTableSync(connection, options, namespace);
-    return { resources };
-  } finally {
-    // close the DuckDB connection
-    connection?.closeSync();
+    try {
+      instance?.closeSync();
+    } catch (err) {
+      globalLogger.warn('Failed closing data warehouse DuckDB instance', { err, subsystem: 'data-warehouse-sync' });
+    }
+
     /*
      * DuckDB often creates companion files next to the database, so
      * we're gonna delete the whole directory.
      */
     if (duckdbTempDir) {
-      rmSync(duckdbTempDir, { recursive: true, force: true });
+      try {
+        await rm(duckdbTempDir, { recursive: true, force: true });
+      } catch (err) {
+        globalLogger.warn('Failed deleting data warehouse DuckDB temp dir', {
+          err,
+          subsystem: 'data-warehouse-sync',
+        });
+      }
     }
   }
+}
+
+async function syncWarehouseTable(
+  connection: WarehouseSyncDuckdbConnection,
+  options: SyncOptions,
+  spec: WarehouseSourceTable,
+  namespace: string,
+  sourceConnectionString: string,
+  index: number,
+  tablesTotal: number
+): Promise<SyncTableResult> {
+  const tablesCompleted = index + 1;
+  const destination = options.destination.getDestinationName(spec);
+
+  const syncStartTime = Date.now();
+
+  await options.destination.ensureTargetExists(spec, namespace);
+
+  const watermarkStartTime = Date.now();
+  const sourcePredicate = await buildWarehouseSourcePredicate(connection, options, spec, namespace);
+  const watermarkDurationMs = Date.now() - watermarkStartTime;
+
+  for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
+    await connection.run(query);
+  }
+
+  const rowsInserted = await options.destination.writeRows(connection, {
+    tableSpec: spec,
+    namespace,
+    sourcePredicate,
+  });
+
+  const syncEndTime = Date.now();
+  const syncDurationMs = syncEndTime - syncStartTime;
+
+  globalLogger.info(`Data warehouse sync finished for table=${destination}`, {
+    tableIndex: tablesCompleted,
+    tablesCompleted,
+    tablesTotal,
+    destination,
+    rowsInserted,
+    syncDurationMs,
+    watermarkDurationMs,
+    startDate: options.startDate,
+    subsystem: 'data-warehouse-sync',
+  });
+
+  if (options.onProgress) {
+    await options.onProgress(
+      `Completed ${destination} (${rowsInserted} rows, table ${tablesCompleted}/${tablesTotal})`,
+      {
+        tablesCompleted,
+        tablesTotal,
+        destination,
+        rowsInserted,
+      }
+    );
+  }
+
+  return {
+    destination,
+    rowsInserted,
+    syncDurationMs,
+    watermarkDurationMs,
+  };
+}
+
+async function runWarehouseTableSync(
+  options: SyncOptions,
+  namespace: string,
+  sourceConnectionString: string
+): Promise<SyncTableResult[]> {
+  const tables: SyncTableResult[] = [];
+
+  const tablesTotal = options.warehouseSources.length;
+
+  for (const [index, spec] of options.warehouseSources.entries()) {
+    // Close and re-open the DuckDB database between tables so each table sync
+    // runs against a fresh instance/connection and temp directory.
+    const result = await withWarehouseConnection(options, sourceConnectionString, (connection) =>
+      syncWarehouseTable(connection, options, spec, namespace, sourceConnectionString, index, tablesTotal)
+    );
+    tables.push(result);
+  }
+
+  return tables;
+}
+
+export async function syncData(options: SyncOptions): Promise<SyncResult> {
+  if (!options.warehouseSources.length) {
+    throw new Error('warehouseSources must include at least one table.');
+  }
+
+  const sourceConnectionString = getSyncSourceConnectionString(options);
+  const namespace = options.namespace ?? DEFAULT_NAMESPACE;
+
+  const tables = await runWarehouseTableSync(options, namespace, sourceConnectionString);
+  return { tables };
 }

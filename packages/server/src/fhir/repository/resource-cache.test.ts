@@ -14,8 +14,6 @@ import {
   setResourceCacheEntry,
 } from './resource-cache';
 
-jest.mock('hibp');
-
 describe('Repository resource cache', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();

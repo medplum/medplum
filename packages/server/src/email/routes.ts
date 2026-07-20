@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, forbidden } from '@medplum/core';
+import { allOk, badRequest, ContentType } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, check } from 'express-validator';
@@ -9,6 +10,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { makeValidationMiddleware } from '../util/validator';
 import { sendEmail } from './email';
+import { isEmailConfigured } from './utils';
 
 export const emailRouter = Router();
 emailRouter.use(authenticateRequest);
@@ -22,13 +24,29 @@ const sendEmailValidator = makeValidationMiddleware([
 emailRouter.post('/send', sendEmailValidator, async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
 
-  // Make sure the user project has the email feature enabled
-  if (!ctx.project.features?.includes('email') || !ctx.membership.admin) {
-    sendOutcome(res, forbidden);
+  if (!ctx.project.features?.includes('email')) {
+    sendOutcome(res, badRequest('Email feature is not enabled for this project'));
+    return;
+  }
+
+  if (!ctx.membership.admin) {
+    const outcome: OperationOutcome = {
+      resourceType: 'OperationOutcome',
+      id: 'forbidden',
+      issue: [
+        { severity: 'error', code: 'forbidden', details: { text: 'Only project administrators can send emails' } },
+      ],
+    };
+    sendOutcome(res, outcome);
+    return;
+  }
+
+  if (!isEmailConfigured()) {
+    sendOutcome(res, badRequest('Email is not configured on this server. Set up SMTP or AWS SES.'));
     return;
   }
 
   // Use the user repository to enforce permission checks on email attachments
-  await sendEmail(ctx.repo, req.body);
+  await sendEmail(ctx.repo, req.body, ctx.project);
   sendOutcome(res, allOk);
 });

@@ -5,44 +5,48 @@ import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import type { Mock, MockInstance } from 'vitest';
 import * as cli from '.';
 import { createMedplumClient } from './util/client';
 
 const { main } = cli;
 
-jest.mock('./util/client');
-jest.mock('node:fs', () => ({
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  constants: {
-    O_CREAT: 0,
-  },
-  promises: {
-    readFile: jest.fn(async () => '{}'),
-  },
-}));
+vi.mock('./util/client');
+vi.mock('node:fs', () => {
+  const mock = {
+    existsSync: vi.fn(),
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    constants: {
+      O_CREAT: 0,
+    },
+    promises: {
+      readFile: vi.fn(async () => '{}'),
+    },
+  };
+  return { default: mock, ...mock };
+});
 
 describe('CLI Bots', () => {
   const env = process.env;
   let medplum: MockClient;
-  let processError: jest.SpyInstance;
+  let processError: MockInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);
     });
-    processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+    processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
     process.env = { ...env };
     medplum = new MockClient();
-    console.log = jest.fn();
+    console.log = vi.fn();
 
-    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+    (createMedplumClient as unknown as Mock).mockImplementation(async () => medplum);
   });
 
   afterEach(() => {
@@ -61,8 +65,8 @@ describe('CLI Bots', () => {
     const id = randomUUID();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -84,8 +88,8 @@ describe('CLI Bots', () => {
     const id = randomUUID();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -112,8 +116,8 @@ describe('CLI Bots', () => {
     expect(bot.code).toBeUndefined();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -141,8 +145,8 @@ describe('CLI Bots', () => {
     expect(bot.code).toBeUndefined();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -170,8 +174,8 @@ describe('CLI Bots', () => {
     expect(bot.code).toBeUndefined();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -198,8 +202,8 @@ describe('CLI Bots', () => {
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -229,8 +233,8 @@ describe('CLI Bots', () => {
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -255,8 +259,8 @@ describe('CLI Bots', () => {
 
   test('Deploy bot multiple bot ending with bot name with no config', async () => {
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
+    (fs.existsSync as unknown as Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(undefined);
 
     await main(['node', 'index.js', 'bot', 'deploy', '*-staging']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
@@ -266,8 +270,8 @@ describe('CLI Bots', () => {
     medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [],
       })
@@ -281,8 +285,8 @@ describe('CLI Bots', () => {
 
   test('Create bot command success without existing config file', async () => {
     // No bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue('');
+    (fs.existsSync as unknown as Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as Mock).mockReturnValue('');
 
     await main(['node', 'index.js', 'bot', 'create', 'test-bot', '1', 'src/hello-world.ts', 'dist/src/hello-world.ts']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Success! Bot created:'));
@@ -292,8 +296,8 @@ describe('CLI Bots', () => {
 
   test('Create bot command with auth options', async () => {
     // No bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue('');
+    (fs.existsSync as unknown as Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as Mock).mockReturnValue('');
 
     await main([
       'node',
@@ -325,9 +329,9 @@ describe('CLI Bots', () => {
 
   test('Create bot do not write to config', async () => {
     // No bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue('');
-    (fs.writeFileSync as unknown as jest.Mock).mockImplementation(() => {});
+    (fs.existsSync as unknown as Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as Mock).mockReturnValue('');
+    (fs.writeFileSync as unknown as Mock).mockImplementation(() => {});
 
     await main([
       'node',
@@ -356,8 +360,8 @@ describe('CLI Bots', () => {
     const id = randomUUID();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -378,8 +382,8 @@ describe('CLI Bots', () => {
     const id = randomUUID();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -405,8 +409,8 @@ describe('CLI Bots', () => {
     expect(bot.code).toBeUndefined();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -434,8 +438,8 @@ describe('CLI Bots', () => {
     expect(bot.code).toBeUndefined();
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -463,8 +467,8 @@ describe('CLI Bots', () => {
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -494,8 +498,8 @@ describe('CLI Bots', () => {
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
       JSON.stringify({
         bots: [
           {
@@ -521,8 +525,8 @@ describe('CLI Bots', () => {
 
   test('Deprecate Deploy bot multiple bot ending with bot name with no config', async () => {
     // Setup bot config
-    (fs.existsSync as unknown as jest.Mock).mockReturnValue(false);
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
+    (fs.existsSync as unknown as Mock).mockReturnValue(false);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(undefined);
 
     await main(['node', 'index.js', 'deploy-bot', '*-staging']);
     expect(console.log).not.toHaveBeenCalledWith(expect.stringMatching(/Success/));

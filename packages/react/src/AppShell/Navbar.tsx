@@ -14,7 +14,7 @@ import {
 import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
+import { useMedplum, useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
 import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch, IconX } from '@tabler/icons-react';
 import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
@@ -23,6 +23,7 @@ import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { HeaderDropdown } from './HeaderDropdown';
+import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
 import { Spotlight } from './Spotlight';
 
@@ -67,11 +68,13 @@ export interface NavbarProps {
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
+  const medplum = useMedplum();
   const navigate = useMedplumNavigate();
   const profile = useMedplumProfile();
   const activeLink = getActiveLink(props.pathname, props.searchParams, props.menus);
   const [userMenuOpened, setUserMenuOpened] = useState(false);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
+  const projectDisplay = medplum.getProject()?.name ?? medplum.getActiveLogin()?.project.display;
 
   function onLinkClick(e: SyntheticEvent, to: string): void {
     e.stopPropagation();
@@ -196,6 +199,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             >
               <UnstyledButton
                 className={classes.toggleButton}
+                data-opened={opened || undefined}
                 aria-label={opened ? 'Close Sidebar' : 'Open Sidebar'}
                 onClick={props.navbarToggle}
                 aria-expanded={opened}
@@ -204,10 +208,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <IconLayoutSidebar />
               </UnstyledButton>
             </Tooltip>
-            <Divider my="xs" mx={6} className={classes.divider} />
+            <Divider my="xs" className={classes.divider} />
             <Menu
               width={260}
-              shadow="xl"
+              shadow="md"
+              radius="md"
               position="top-start"
               transitionProps={{ transition: 'fade-up' }}
               opened={userMenuOpened}
@@ -215,7 +220,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             >
               <Menu.Target>
                 <UnstyledButton
-                  className={classes.link}
+                  className={`${classes.link} ${classes.userLink}`}
                   pl="7"
                   aria-label="User menu"
                   data-active={userMenuOpened || undefined}
@@ -223,12 +228,19 @@ export function Navbar(props: NavbarProps): JSX.Element {
                   bd="1px 0 0 0 solid var(--mantine-color-gray-200)"
                 >
                   <ResourceAvatar value={profile} radius="xl" size={24} />
-                  <span className={classes.linkLabel} data-opened={opened || undefined}>
-                    {formatHumanName(profile?.name?.[0])}
+                  <span className={classes.userLinkLabel} data-opened={opened || undefined}>
+                    <Text span inherit truncate>
+                      {formatHumanName(profile?.name?.[0])}
+                    </Text>
+                    {projectDisplay && (
+                      <Text span inherit fz="xs" c="dimmed" truncate title={projectDisplay}>
+                        {projectDisplay}
+                      </Text>
+                    )}
                   </span>
                 </UnstyledButton>
               </Menu.Target>
-              <Menu.Dropdown>
+              <Menu.Dropdown className={headerDropdownClasses.dropdown}>
                 <HeaderDropdown version={props.version} showLayoutVersionToggle={props.showLayoutVersionToggle} />
               </Menu.Dropdown>
             </Menu>

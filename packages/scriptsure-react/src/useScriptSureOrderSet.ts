@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Organization, Reference } from '@medplum/fhirtypes';
 import type { UseMedicationOrderSetReturn } from '@medplum/react-hooks';
 import { useMedicationOrderSet } from '@medplum/react-hooks';
 
@@ -11,16 +12,19 @@ export interface UseScriptSureOrderSetOptions {
   /** ScriptSure orderset id (escape hatch when no synced PD exists yet). */
   readonly scriptSureOrdersetId?: number;
   readonly appId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
 }
 
 export type UseScriptSureOrderSetReturn = UseMedicationOrderSetReturn;
 
+/* eslint-disable jsdoc/escape-inline-tags -- TSDoc cross-package {@link @package#symbol} references */
 /**
  * React hook that returns the ScriptSure order-set prescribing widget URL via
  * the vendor-neutral `$order-set-url` FHIR custom operation
  * (`POST /fhir/R4/PlanDefinition/$order-set-url`).
  *
- * Thin wrapper around {@link useMedicationOrderSet}: forwards
+ * Thin wrapper around {@link @medplum/react-hooks#useMedicationOrderSet}: forwards
  * `scriptSureOrdersetId` as the operation's `vendorOrderSetId` parameter,
  * leaves vendor binding to the deployed `OperationDefinition` →
  * `Bot/scriptsure-order-set-bot` link.
@@ -38,5 +42,6 @@ export function useScriptSureOrderSet(options: UseScriptSureOrderSetOptions): Us
     planDefinitionId: options.planDefinitionId,
     vendorOrderSetId: options.scriptSureOrdersetId,
     appId: options.appId,
+    organization: options.organization,
   });
 }

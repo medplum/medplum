@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Checkbox, Group, Modal, Stack } from '@mantine/core';
+import { Button, Checkbox, Group, Modal, NativeSelect, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import type { BackgroundJobInteraction } from '@medplum/core';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
@@ -19,6 +20,7 @@ export function ResendSubscriptionsModal(props: ResendSubscriptionsModalProps): 
   const { resource, opened, onClose } = props;
   const [choose, setChoose] = useState(false);
   const [subscription, setSubscription] = useState<Resource | undefined>();
+  const [interaction, setInteraction] = useState<BackgroundJobInteraction>('update');
   const [verbose, setVerbose] = useState(false);
 
   const handleSubmit = useCallback(async () => {
@@ -28,6 +30,7 @@ export function ResendSubscriptionsModal(props: ResendSubscriptionsModalProps): 
     try {
       await medplum.post(medplum.fhirUrl(resource.resourceType, resource.id, '$resend'), {
         subscription: choose && subscription ? getReferenceString(subscription) : undefined,
+        interaction,
         verbose,
       });
       showNotification({ color: 'green', message: 'Done' });
@@ -35,7 +38,7 @@ export function ResendSubscriptionsModal(props: ResendSubscriptionsModalProps): 
     } catch (err) {
       showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
     }
-  }, [medplum, resource, onClose, choose, subscription, verbose]);
+  }, [medplum, resource, onClose, choose, subscription, interaction, verbose]);
 
   return (
     <Modal opened={opened} onClose={onClose} title="Resend Subscriptions">
@@ -53,6 +56,17 @@ export function ResendSubscriptionsModal(props: ResendSubscriptionsModalProps): 
               onChange={setSubscription}
             />
           )}
+          <NativeSelect
+            label="Interaction"
+            description="The interaction type to resend (update by default)"
+            defaultValue="update"
+            data={[
+              { label: 'Update', value: 'update' },
+              { label: 'Create', value: 'create' },
+              { label: 'Delete', value: 'delete' },
+            ]}
+            onChange={(e) => setInteraction(e.currentTarget.value as BackgroundJobInteraction)}
+          />
           <Checkbox label="Verbose mode" onChange={(e) => setVerbose(e.currentTarget.checked)} />
           <Group justify="flex-end">
             <Button type="submit">Resend</Button>

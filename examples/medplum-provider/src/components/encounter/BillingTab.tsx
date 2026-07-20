@@ -4,11 +4,10 @@ import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mant
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { CPT, getReferenceString } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
-  ClaimDiagnosis,
   ClaimResponse,
   Condition,
   Coverage,
@@ -22,12 +21,12 @@ import type {
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
-import { calculateTotalPrice } from '../../utils/chargeitems';
-import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
+import { getChargeItemsForEncounter } from '../../utils/chargeitems';
+import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
@@ -42,27 +41,14 @@ export interface BillingTabProps {
   setEncounter: (encounter: WithId<Encounter>) => void;
   practitioner: WithId<Practitioner> | undefined;
   setPractitioner: (practitioner: WithId<Practitioner>) => void;
-  chargeItems: WithId<ChargeItem>[] | undefined;
-  setChargeItems: (chargeItems: WithId<ChargeItem>[]) => void;
-  claim: WithId<Claim> | undefined;
-  setClaim: (claim: WithId<Claim>) => void;
   chartNoteStatus: ChartNoteStatus;
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const {
-    encounter,
-    setEncounter,
-    claim,
-    patient,
-    practitioner,
-    setPractitioner,
-    chargeItems,
-    setChargeItems,
-    setClaim,
-    chartNoteStatus,
-  } = props;
+  const { encounter, setEncounter, patient, practitioner, setPractitioner, chartNoteStatus } = props;
   const medplum = useMedplum();
+  const [claim, setClaim] = useState<WithId<Claim> | undefined>();
+  const [chargeItems, setChargeItems] = useState<WithId<ChargeItem>[]>([]);
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverages, setCoverages] = useState<WithId<Coverage>[]>([]);
   const [coverage, setCoverage] = useState<WithId<Coverage> | undefined>();
@@ -71,12 +57,31 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
   const [claimResponseLoading, setClaimResponseLoading] = useState(false);
 
-  const conditionsRef = useRef(conditions);
-  conditionsRef.current = conditions;
-  const claimRef = useRef(claim);
-  claimRef.current = claim;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
-  const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);
+
+  useEffect(() => {
+    const fetchClaim = async (): Promise<void> => {
+      const response = await medplum.searchOne(
+        'Claim',
+        { encounter: getReferenceString(encounter), status: 'active,draft' },
+        { cache: 'no-cache' }
+      );
+      if (response) {
+        setClaim(response);
+      }
+    };
+
+    fetchClaim().catch((err) => showErrorNotification(err));
+  }, [encounter, medplum]);
+
+  useEffect(() => {
+    const loadChargeItems = async (): Promise<void> => {
+      const chargeItemsResult = await getChargeItemsForEncounter(medplum, encounter);
+      setChargeItems(chargeItemsResult);
+    };
+
+    loadChargeItems().catch((err) => showErrorNotification(err));
+  }, [encounter, medplum]);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -119,7 +124,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
   }, [claim, medplum]);
 
+  // Refetch the ClaimResponse whenever the resolved claim changes (e.g. after the claim loads or is
+  // (re)persisted). The synchronous clear in fetchClaimResponse is intentional, so suppress the rule.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchClaimResponse().catch((err) => showErrorNotification(err));
   }, [fetchClaimResponse]);
 
@@ -132,108 +140,72 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [encounter, setEncounter, debouncedUpdateResource]
   );
 
-  // Creates the claim if it doesn't exist yet, otherwise updates it with the given patch.
-  // Always folds in current diagnosis and insurance so every save is complete.
-  // Pass creationArgs to override encounter/practitioner/items used at creation time.
-  const syncClaim = useCallback(
-    async (
-      patch: Partial<Claim> = {},
-      creationArgs?: { enc?: WithId<Encounter>; prac?: WithId<Practitioner>; items?: WithId<ChargeItem>[] }
-    ): Promise<void> => {
-      const currentClaim = claimRef.current;
-      if (currentClaim) {
-        const updatedClaim = {
-          ...currentClaim,
-          diagnosis: createDiagnosisArray(conditionsRef.current),
-          ...(coverage && {
-            insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(coverage) } }],
-          }),
-          ...patch,
-        };
-        setClaim(updatedClaim);
-        debouncedUpdateClaim(updatedClaim).catch((err) => showErrorNotification(err));
-        return;
+  const generateClaim = useCallback(
+    async (insuranceRefs?: Reference<Coverage>[]): Promise<WithId<Claim>> => {
+      if (!practitioner) {
+        throw new Error('A practitioner is required to create a claim');
       }
-      const enc = creationArgs?.enc ?? encounter;
-      const prac = creationArgs?.prac ?? practitioner;
-      const items = creationArgs?.items ?? chargeItems;
-      if (!patient?.id || !enc?.id || !prac?.id || !items?.length) {
-        return;
-      }
-      const newClaim = await createClaimFromEncounter(medplum, patient, enc, prac, items);
-      if (newClaim) {
-        setClaim(newClaim);
-      }
-    },
-    [chargeItems, coverage, debouncedUpdateClaim, encounter, medplum, patient, practitioner, setClaim]
-  );
+      const insurance = insuranceRefs ?? (coverage ? [{ reference: getReferenceString(coverage) }] : undefined);
+      const built = buildClaimFromEncounter({
+        patient,
+        encounter,
+        practitioner,
+        chargeItems,
+        conditions,
+        insurance,
+      });
 
-  // Re-sync claim whenever conditions, coverage, or claim id changes.
-  useEffect(() => {
-    if (!claimRef.current) {
-      return;
-    }
-    syncClaim().catch((err) => showErrorNotification(err));
-  }, [conditions, coverage, claim?.id, syncClaim]);
+      const existingClaim = await medplum.searchOne(
+        'Claim',
+        { encounter: getReferenceString(encounter), status: 'active,draft' },
+        { cache: 'no-cache' }
+      );
+
+      const saved = existingClaim?.id
+        ? await medplum.updateResource({
+            ...existingClaim,
+            ...built,
+            status: existingClaim.status ?? built.status,
+            created: existingClaim.created ?? built.created,
+          })
+        : await medplum.createResource(built);
+      setClaim(saved);
+      return saved;
+    },
+    [patient, encounter, practitioner, chargeItems, conditions, coverage, medplum, setClaim]
+  );
 
   const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
     try {
       const savedEncounter = await medplum.updateResource(updatedEncounter);
       setEncounter(savedEncounter);
 
-      let currentPractitioner = practitioner;
       if (savedEncounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
-        currentPractitioner = practitionerResult as WithId<Practitioner>;
-        setPractitioner(currentPractitioner);
+        setPractitioner(practitionerResult as WithId<Practitioner>);
       }
-
-      if (!patient?.id || !savedEncounter?.id || !currentPractitioner?.id || !chargeItems?.length) {
-        return;
-      }
-
-      await syncClaim(
-        { provider: { reference: getReferenceString(currentPractitioner) } },
-        { enc: savedEncounter, prac: currentPractitioner }
-      );
     } catch (err) {
       showErrorNotification(err);
     }
   }, SAVE_TIMEOUT_MS);
 
-  const updateChargeItems = useCallback(
-    async (updatedChargeItems: WithId<ChargeItem>[]): Promise<void> => {
-      setChargeItems(updatedChargeItems);
-      if (!patient?.id || !encounter?.id || !practitioner?.id || !updatedChargeItems.length) {
-        return;
+  const exportClaimAsCMS1500 = useCallback(async (): Promise<void> => {
+    try {
+      const saved = await generateClaim();
+      const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'resource', resource: saved }],
+      });
+
+      if (response.resourceType === 'Media' && response.content?.url) {
+        window.open(response.content.url, '_blank');
+      } else {
+        showErrorNotification('Failed to download PDF');
       }
-      await syncClaim(
-        {
-          item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
-          total: { value: calculateTotalPrice(updatedChargeItems) },
-        },
-        { items: updatedChargeItems }
-      );
-    },
-    [patient, encounter, practitioner, syncClaim, setChargeItems]
-  );
-
-  const exportClaimAsCMS1500 = async (): Promise<void> => {
-    if (!claim?.id) {
-      return;
+    } catch (err) {
+      showErrorNotification(err);
     }
-
-    const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
-      resourceType: 'Parameters',
-      parameter: [{ name: 'resource', resource: claim }],
-    });
-
-    if (response.resourceType === 'Media' && response.content?.url) {
-      window.open(response.content.url, '_blank');
-    } else {
-      showErrorNotification('Failed to download PDF');
-    }
-  };
+  }, [generateClaim, medplum]);
 
   const runClaimSubmit = useCallback(
     async (
@@ -242,22 +214,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       successTitle: string,
       successMessage: string
     ): Promise<void> => {
-      if (!claim) {
-        return;
-      }
       setSubmitting(true);
-      debouncedUpdateClaim.cancel();
       try {
-        const updatedClaim = await medplum.updateResource({
-          ...claim,
-          insurance: coverageRefs.map((ref, index) => ({
-            sequence: index + 1,
-            focal: index === 0,
-            coverage: ref,
-          })),
-        });
-        setClaim(updatedClaim);
-        const result = await medplum.post(medplum.fhirUrl('Claim', updatedClaim.id, operation), {
+        const saved = await generateClaim(coverageRefs);
+        const result = await medplum.post(medplum.fhirUrl('Claim', saved.id, operation), {
           resourceType: 'Parameters',
           parameter: [],
         });
@@ -283,7 +243,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         setSubmitting(false);
       }
     },
-    [claim, debouncedUpdateClaim, fetchClaimResponse, medplum, setClaim]
+    [generateClaim, fetchClaimResponse, medplum]
   );
 
   const submitToCandid = useCallback(
@@ -392,7 +352,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [conditions, coverages, medplum, patient]);
 
   const renderClaimCard = (): JSX.Element | null => {
-    if (!claim) {
+    const hasCptItems = chargeItems.some((item) => item.code?.coding?.some((c) => c.system === CPT));
+    if (!hasCptItems && !claim && !claimResponse) {
       return null;
     }
 
@@ -465,34 +426,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         />
       )}
 
-      {chargeItems && (
-        <ChargeItemList
-          patient={patient}
-          encounter={encounter}
-          chargeItems={chargeItems}
-          updateChargeItems={updateChargeItems}
-        />
-      )}
+      <ChargeItemList
+        patient={patient}
+        encounter={encounter}
+        chargeItems={chargeItems}
+        updateChargeItems={setChargeItems}
+      />
     </Stack>
   );
-};
-
-const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
-  return conditions.map((condition, index) => {
-    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`);
-    return {
-      diagnosisCodeableConcept: {
-        coding: icd10Coding
-          ? [
-              {
-                ...icd10Coding,
-                system: `${HTTP_HL7_ORG}/fhir/sid/icd-10`,
-              },
-            ]
-          : [],
-      },
-      sequence: index + 1,
-      type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
-    };
-  });
 };

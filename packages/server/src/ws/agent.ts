@@ -41,6 +41,13 @@ function initAgentHeartbeat(): void {
   }
 }
 
+export function stopAgentHeartbeat(): void {
+  if (agentHeartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', agentHeartbeatHandler);
+    agentHeartbeatHandler = undefined;
+  }
+}
+
 /**
  * Handles a new WebSocket connection to the agent service.
  * The agent service executes a bot and returns the result.
@@ -118,11 +125,21 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
   socket.on(
     'close',
     AsyncLocalStorage.bind(async () => {
+      // Release connection resources before the async status update, so that a failed
+      // update (e.g. Redis already closing during shutdown) cannot leak the heartbeat
+      // listener or the Redis subscriber
       agentWebSockets.delete(socket);
-      await updateAgentStatus(AgentConnectionState.DISCONNECTED);
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
       redisSubscriber?.disconnect();
       redisSubscriber = undefined;
+      try {
+        await updateAgentStatus(AgentConnectionState.DISCONNECTED);
+      } catch (err) {
+        globalLogger.error('[Agent]: Failed to update agent status on disconnect', {
+          agentId,
+          error: normalizeErrorString(err),
+        });
+      }
       agentId = undefined;
     })
   );
@@ -155,22 +172,28 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
+    // Bind the message listener before awaiting the subscribe so that messages
+    // published immediately after subscription are not dropped.
     redisSubscriber = getPubSubRedisSubscriber();
-    await redisSubscriber.subscribe(getReferenceString(agent));
+    const subscribed = redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
       agentMessagesSent++;
     });
+    await subscribed;
+
+    // Update the agent status in Redis before acknowledging the connection.
+    // The status update is a non-atomic read-modify-write (read last info, write new status),
+    // so it must complete before the agent can send an "agent:heartbeat:response" --
+    // otherwise a stale read here could clobber the version reported by the heartbeat.
+    await updateAgentStatus(AgentConnectionState.CONNECTED);
 
     // Subscribe to heartbeat events
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
     // Send connected message
     sendMessage({ type: 'agent:connect:response' });
-
-    // Update the agent status in Redis
-    await updateAgentStatus(AgentConnectionState.CONNECTED);
   }
 
   /**

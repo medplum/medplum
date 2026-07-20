@@ -20,7 +20,7 @@ function setup(url: string): void {
 
 describe('SetPasswordPage', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   test('Renders', () => {
@@ -41,7 +41,7 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Set password' }));
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Set password' }));
     });
 
     expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
@@ -79,11 +79,11 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Set password' }));
     });
 
     await act(async () => {
-      await jest.runAllTimersAsync();
+      await vi.runAllTimersAsync();
     });
 
     expect(screen.getByText('Invalid password')).toBeInTheDocument();

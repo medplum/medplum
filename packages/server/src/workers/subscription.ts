@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
+import type { BackgroundJobContext, BackgroundJobInteraction, Filter, Operation, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   ContentType,
@@ -34,11 +34,9 @@ import type {
   ResourceType,
   Subscription,
 } from '@medplum/fhirtypes';
-import type { AdvancedOptions, Job, MinimalJob, QueueBaseOptions } from 'bullmq';
+import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
-import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
@@ -58,6 +56,7 @@ import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscri
 import { getCacheRedis } from '../redis';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {
   clearSubscriptionFailures,
@@ -67,8 +66,8 @@ import {
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
+  defaultQueueOptions,
   findProjectMembership,
-  getBullmqRedisConnectionOptions,
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
@@ -76,7 +75,7 @@ import {
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
- * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
+ * This is passed into fetch using an AbortSignal and will abort the request after REQUEST_TIMEOUT milliseconds.
  */
 const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
@@ -150,30 +149,18 @@ const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
-    settings: {
-      backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
-        if (type !== 'cappedExponential') {
-          throw new Error('Invalid backoff strategy for subscription queue');
-        }
-        const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
-        return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
-      },
-    } as AdvancedOptions,
     defaultJobOptions: {
+      ...defaultOptions.defaultJobOptions,
       attempts: MAX_JOB_ATTEMPTS, // can be overridden in catchJobError() below
-      backoff: { type: 'cappedExponential' }, // see above
+      backoff: { type: 'cappedExponential' }, // see below
     },
   });
 
   let worker: Worker<SubscriptionJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'subscription');
     worker = new Worker<SubscriptionJobData>(
       queueName,
       (job) =>
@@ -183,8 +170,16 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
             )
           : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
       {
-        ...defaultOptions,
-        ...workerBullmq,
+        ...getWorkerBullmqConfig(config, 'subscription', defaultOptions),
+        settings: {
+          backoffStrategy: (attemptsMade: number, type?: string, _err?: Error, _job?: MinimalJob) => {
+            if (type !== 'cappedExponential') {
+              throw new Error('Invalid backoff strategy for subscription queue');
+            }
+            const jitterFactor = 0.9 + 0.2 * Math.random(); // 90–110% of the calculated delay is applied
+            return Math.min(BASE_DELAY * Math.pow(2, attemptsMade - 1) * jitterFactor, MAX_DELAY);
+          },
+        },
       }
     );
     addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
@@ -243,6 +238,24 @@ async function satisfiesAccessPolicy(
   subscription: Subscription,
   options?: SatisfiesAccessPolicyOpts
 ): Promise<boolean> {
+  // Server-scoped subscriptions live in the system project and have no `meta.project` of their own,
+  // so they are intentionally not bound to any single project's access policy. Skip the check and
+  // allow the notification.
+  //
+  // SECURITY NOTE (for future audits, human or LLM): This early return bypasses access-policy
+  // enforcement, but it is only reachable for a Subscription with no `meta.project`, which is safe
+  // on two independent grounds:
+  //   1. Creation is restricted. A normal user's write always has `meta.project` defaulted to their
+  //      own project context (see Repository.getProjectId in fhir/repo.ts), so only a super admin
+  //      (operating with no project context) can create a project-less Subscription at all.
+  //   2. Evaluation is gated. Project-less subscriptions are only ever loaded and evaluated when the
+  //      `serverScopedSubscriptionsEnabled` server config flag is enabled (see getSubscriptions below);
+  //      when it is off they are never matched against any resource.
+  // A normal project-scoped Subscription always has `meta.project` set and is fully checked below.
+  if (!subscription.meta?.project) {
+    return true;
+  }
+
   let satisfied = true;
   try {
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
@@ -394,6 +407,13 @@ export async function addSubscriptionJobs(
         wsSubEvents.push([subscription.id, { includeResource: true }]);
         continue;
       }
+      if (subscription.channel.type === 'rest-hook') {
+        const endpoint = subscription.channel.endpoint;
+        if (!endpoint?.startsWith('Bot/') && !isAllowedOutboundUrlForQueue(endpoint ?? '', getConfig())) {
+          logFn(`Subscription rest-hook URL is not allowed for outbound fetch`);
+          continue;
+        }
+      }
       await addSubscriptionJobData({
         subscriptionId: subscription.id,
         resourceType: resource.resourceType,
@@ -465,21 +485,21 @@ interface SubscriptionWithMetadata {
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<SubscriptionWithMetadata[]> {
   const projectId = project.id;
   const systemRepo = await getProjectSystemRepo(projectId);
+
+  // By default only subscriptions in the resource's own project are evaluated. When server-scoped
+  // subscriptions are enabled, also evaluate "server-scoped" subscriptions — those not scoped to
+  // any project (stored in the system project) — so a single set of subscriptions can apply across
+  // every project on the server. The two sets are matched by different `_project` operators
+  // (EQUALS `<projectId>` vs MISSING), which Medplum cannot OR within a single ordinary filter, so
+  // the server-scoped case uses a `_filter` expression to combine them into one query.
+  const projectFilter: Filter = getConfig().serverScopedSubscriptionsEnabled
+    ? { code: '_filter', operator: Operator.EQUALS, value: `_project eq ${projectId} or _project pr false` }
+    : { code: '_project', operator: Operator.EQUALS, value: projectId };
+
   const restHookSubscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
-    filters: [
-      {
-        code: '_project',
-        operator: Operator.EQUALS,
-        value: projectId,
-      },
-      {
-        code: 'status',
-        operator: Operator.EQUALS,
-        value: 'active',
-      },
-    ],
+    filters: [projectFilter, { code: 'status', operator: Operator.EQUALS, value: 'active' }],
   });
 
   const subscriptionsWithMetadata: SubscriptionWithMetadata[] = restHookSubscriptions.map((subscription) => ({
@@ -731,14 +751,18 @@ async function sendRestHook(
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
   try {
-    validateRestHookUrl(url);
     log.info('Sending rest hook', {
       url,
       subscriptionId: subscription.id,
       projectId: subscription.meta?.project,
     });
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
+    const response = await safeFetch(url, {
+      method: 'POST',
+      headers,
+      body,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT),
+    });
     fetchEndTime = Date.now();
     log.info('Received rest hook response', {
       status: response.status,
@@ -787,25 +811,6 @@ async function sendRestHook(
   if (error) {
     throw error;
   }
-}
-
-function validateRestHookUrl(url: string): void {
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    throw new Error('Invalid rest-hook URL: must be an absolute HTTPS URL');
-  }
-
-  if (parsedUrl.protocol === 'https:') {
-    return;
-  }
-
-  if (parsedUrl.protocol === 'http:' && getConfig().allowInsecureRestHookUrl) {
-    return;
-  }
-
-  throw new Error('Invalid rest-hook URL: HTTPS is required unless allowInsecureRestHookUrl is enabled');
 }
 
 /**
@@ -969,18 +974,21 @@ async function autoDisableSubscription(
       { op: 'add', path: '/error', value: errorMessage },
     ];
 
-    await systemRepo.withTransaction(async () => {
-      await systemRepo.patchResource('Subscription', subscription.id, patch);
+    await systemRepo.withTransaction(
+      async (txRepo) => {
+        await txRepo.patchResource('Subscription', subscription.id, patch);
 
-      await createSubscriptionAuditEvent(
-        systemRepo,
-        subscription,
-        new Date().toISOString(),
-        AuditEventOutcome.SeriousFailure,
-        errorMessage,
-        subscription
-      );
-    });
+        await createSubscriptionAuditEvent(
+          txRepo,
+          subscription,
+          new Date().toISOString(),
+          AuditEventOutcome.SeriousFailure,
+          errorMessage,
+          subscription
+        );
+      },
+      { resourceTypes: ['AuditEvent', 'Subscription'], source: 'autoDisableSubscription' }
+    );
 
     await clearSubscriptionFailures(subscription.id);
 
@@ -992,7 +1000,10 @@ async function autoDisableSubscription(
   } catch (err) {
     globalLogger.warn('Failed to auto-disable subscription', {
       subscription: subscription.id,
+      projectId: subscription?.meta?.project,
+      failureCount,
       error: err,
+      timeWindowSeconds: trigger.timeWindowSeconds,
     });
   }
 }

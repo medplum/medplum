@@ -145,6 +145,7 @@ import type { SearchParameter } from './SearchParameter.d.ts';
 import type { ServiceRequest } from './ServiceRequest.d.ts';
 import type { Slot } from './Slot.d.ts';
 import type { SmartAppLaunch } from './SmartAppLaunch.d.ts';
+import type { SmartHealthLink } from './SmartHealthLink.d.ts';
 import type { Specimen } from './Specimen.d.ts';
 import type { SpecimenDefinition } from './SpecimenDefinition.d.ts';
 import type { StructureDefinition } from './StructureDefinition.d.ts';
@@ -311,6 +312,7 @@ export type Resource = AccessPolicy
   | ServiceRequest
   | Slot
   | SmartAppLaunch
+  | SmartHealthLink
   | Specimen
   | SpecimenDefinition
   | StructureDefinition

@@ -30,6 +30,7 @@ import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
+import { claimSubmitPostByIdHandler, claimSubmitPostHandler } from './operations/claimsubmit';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
@@ -54,7 +55,7 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
-import { appointmentFindHandler, scheduleFindHandler } from './operations/find';
+import { appointmentFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
@@ -69,11 +70,14 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectRateLimitsHandler } from './operations/project-rate-limits';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { rebuildBaseDefinitionsOperation } from './operations/rebuild-base-definitions';
 import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { userRescopeOperation } from './operations/rescope';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
+import { generateSmartHealthCardHandler, verifySmartHealthCardHandler } from './operations/smarthealthcards';
+import { generateSmartHealthLinkHandler, resolveSmartHealthLinkHandler } from './operations/smarthealthlinks';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { updateUserEmailOperation } from './operations/update-user-email';
@@ -226,6 +230,9 @@ function initInternalFhirRouter(): FhirRouter {
     introspectionEnabled: getConfig().introspectionEnabled,
   });
 
+  // Rebuild base definitions
+  router.add('POST', '/$rebuild-base-definitions', rebuildBaseDefinitionsOperation);
+
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
   router.add('POST', '/$export', bulkExportHandler);
@@ -326,6 +333,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
+  // Claim $submit operation (dispatches to the configured claim or prior auth custom operation).
+  router.add('POST', '/Claim/$submit', claimSubmitPostHandler);
+  router.add('POST', '/Claim/:id/$submit', claimSubmitPostByIdHandler);
+
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
   router.add('POST', '/Group/:id/$export', groupExportHandler);
@@ -367,6 +378,14 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
   router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
+  // SMART Health Cards operations
+  router.add('POST', '/Patient/:id/$generate-smart-health-card', generateSmartHealthCardHandler);
+  router.add('POST', '/$verify-smart-health-card', verifySmartHealthCardHandler);
+
+  // SMART Health Links operations
+  router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
+  router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
+
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
   router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
@@ -389,9 +408,6 @@ function initInternalFhirRouter(): FhirRouter {
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
-
-  // Schedule $find operation
-  router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
 
   // Appointment Scheduling operations
   router.add('GET', '/Appointment/$find', appointmentFindHandler);

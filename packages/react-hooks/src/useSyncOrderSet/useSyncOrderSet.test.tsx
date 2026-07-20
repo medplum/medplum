@@ -18,7 +18,7 @@ function wrapper(medplum: MockClient) {
 describe('useSyncOrderSet', () => {
   test('POSTs planDefinitionId to $sync-orderset', async () => {
     const medplum = new MockClient();
-    const post = jest.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters', parameter: [] });
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters', parameter: [] });
 
     const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
 
@@ -32,9 +32,77 @@ describe('useSyncOrderSet', () => {
     expect(body).toEqual({ planDefinitionId: 'plan-def-123' });
   });
 
+  test('threads organizationId to $sync-orderset for multi-practice deployments', async () => {
+    const medplum = new MockClient();
+    const post = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'Parameters', parameter: [] });
+
+    const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
+
+    await act(async () => {
+      await result.current('plan-def-123', { reference: 'Organization/org-9' });
+    });
+
+    expect(post.mock.calls[0][1]).toEqual({ planDefinitionId: 'plan-def-123', organizationId: 'org-9' });
+  });
+
+  test('decodes per-action results and counts so partial failures surface', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'mode', valueCode: 'created' },
+        { name: 'scriptSureOrdersetId', valueInteger: 379 },
+        { name: 'syncedCount', valueInteger: 1 },
+        { name: 'failedCount', valueInteger: 1 },
+        {
+          name: 'results',
+          part: [
+            { name: 'actionTitle', valueString: 'Jardiance' },
+            { name: 'status', valueCode: 'synced' },
+            { name: 'scriptSureSequenceId', valueInteger: 1011 },
+          ],
+        },
+        {
+          name: 'results',
+          part: [
+            { name: 'actionTitle', valueString: 'Ozempic' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'drug not in FDB' },
+          ],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
+
+    let response: Awaited<ReturnType<ReturnType<typeof useSyncOrderSet>>>;
+    await act(async () => {
+      response = await result.current('plan-def-123');
+    });
+
+    expect(response?.mode).toBe('created');
+    expect(response?.scriptSureOrdersetId).toBe(379);
+    expect(response?.syncedCount).toBe(1);
+    expect(response?.failedCount).toBe(1);
+    expect(response?.results).toHaveLength(2);
+    expect(response?.results[0]).toMatchObject({ actionTitle: 'Jardiance', status: 'synced' });
+    expect(response?.results[1]).toMatchObject({ actionTitle: 'Ozempic', status: 'failed', error: 'drug not in FDB' });
+  });
+
+  test('resolves undefined when the response is not a Parameters resource', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'post').mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useSyncOrderSet(), { wrapper: wrapper(medplum) });
+
+    await act(async () => {
+      await expect(result.current('plan-def-123')).resolves.toBeUndefined();
+    });
+  });
+
   test('silently no-ops when operation is not deployed (not-found)', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockRejectedValue(
+    vi.spyOn(medplum, 'post').mockRejectedValue(
       new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Operation not found' }],
@@ -50,7 +118,7 @@ describe('useSyncOrderSet', () => {
 
   test('re-throws non-not-found errors', async () => {
     const medplum = new MockClient();
-    jest.spyOn(medplum, 'post').mockRejectedValue(
+    vi.spyOn(medplum, 'post').mockRejectedValue(
       new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: [{ severity: 'error', code: 'exception', diagnostics: 'Internal server error' }],

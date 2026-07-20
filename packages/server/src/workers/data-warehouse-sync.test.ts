@@ -15,19 +15,21 @@
  */
 
 import type { Queue } from 'bullmq';
-import { Queue as BullmqQueue, Worker } from 'bullmq';
+import { Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
+import type { MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import type * as DataWarehouseConfigModule from '../data-warehouse/config';
+import * as validateConfig from '../config/validate-config';
+import * as dataWarehouseConfig from '../data-warehouse/config';
 import { buildPgConnectionURI } from '../data-warehouse/config';
-import { syncData } from '../data-warehouse/sync';
+import * as syncModule from '../data-warehouse/sync';
 import * as database from '../database';
 import { locks } from '../database';
 import {
-  DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
   DataWarehouseSyncQueueName,
   DataWarehouseSyncSchedulerId,
   getDataWarehouseSyncOptions,
@@ -37,28 +39,40 @@ import {
   refreshDataWarehouseSyncScheduler,
 } from './data-warehouse-sync';
 
-const TABLE_NAMES = ['Patient_history', 'Observation_history'];
+const TABLE_NAMES = ['Patient_History', 'Observation_History', 'Account_History', 'Encounter_History'];
+const FILTERED_HISTORY_TABLES = ['Patient_History', 'Observation_History'];
 
-jest.mock('../data-warehouse/config', () => {
-  const actual: typeof DataWarehouseConfigModule = jest.requireActual('../data-warehouse/config');
-  return {
-    ...actual,
-    getWarehouseSyncPostgresTableNames: jest.fn(() => TABLE_NAMES),
-  };
-});
-jest.mock('../data-warehouse/sync', () => ({
-  syncData: jest.fn(async () => ({
-    resources: [
-      { icebergTable: 'patient_history', table: 'patient_history.parquet', count: 1 },
-      { icebergTable: 'observation_history', table: 'observation_history.parquet', count: 0 },
+function setupWarehouseTableNamesMock(): void {
+  vi.spyOn(dataWarehouseConfig, 'getWarehouseSyncPostgresTableNames').mockImplementation(
+    (includeResourceTypes?: string[], _excludeResourceTypes?: string[]) => {
+      if (!includeResourceTypes?.length) {
+        return TABLE_NAMES;
+      }
+      const selected = new Set(includeResourceTypes);
+      return FILTERED_HISTORY_TABLES.filter((tableName) => selected.has(tableName.replace(/_History$/, '')));
+    }
+  );
+}
+
+function setupSyncDataMock(): MockInstance<typeof syncModule.syncData> {
+  return vi.spyOn(syncModule, 'syncData').mockResolvedValue({
+    tables: [
+      {
+        destination: 'patient_history.parquet',
+        rowsInserted: 1,
+        syncDurationMs: 0,
+        watermarkDurationMs: 0,
+      },
+      {
+        destination: 'observation_history.parquet',
+        rowsInserted: 0,
+        syncDurationMs: 0,
+        watermarkDurationMs: 0,
+      },
     ],
-  })),
-}));
-jest.mock('bullmq');
-
-const mockedSyncData = jest.mocked(syncData);
-const mockedQueue = jest.mocked(BullmqQueue);
-const mockedWorker = jest.mocked(Worker);
+  });
+}
+const mockedWorker = vi.mocked(Worker);
 
 const enabledDataWarehouse: NonNullable<MedplumServerConfig['dataWarehouse']> = {
   enabled: true,
@@ -84,8 +98,32 @@ describe('data-warehouse sync worker', () => {
   }
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    vi.restoreAllMocks();
+    setupWarehouseTableNamesMock();
+    setupSyncDataMock();
     await initConfig();
+  });
+
+  test('getDataWarehouseSyncOptions passes includeResourceTypes and filters warehouse sources', async () => {
+    vi.spyOn(validateConfig, 'getDataWarehouseConfigErrors').mockReturnValue([]);
+
+    await initConfig({
+      dataWarehouse: {
+        ...enabledDataWarehouse,
+        includeResourceTypes: ['Patient'],
+      },
+    });
+    const result = getDataWarehouseSyncOptions(config);
+
+    expect(result.includeResourceTypes).toStrictEqual(['Patient']);
+    expect(dataWarehouseConfig.getWarehouseSyncPostgresTableNames).toHaveBeenCalledWith(['Patient'], undefined);
+    expect(result.warehouseSources).toHaveLength(1);
+    expect(result.warehouseSources[0]).toMatchObject({
+      postgresTable: 'Patient_History',
+      icebergTable: 'patient_history',
+    });
+
+    vi.restoreAllMocks();
   });
 
   test('getDataWarehouseSyncOptions passes startDate when configured', async () => {
@@ -110,7 +148,7 @@ describe('data-warehouse sync worker', () => {
     });
     expect(result.database).not.toBe(config);
     expect(result.destination.type).toStrictEqual('s3tables');
-    expect(result.warehouseSources).toHaveLength(2);
+    expect(result.warehouseSources).toHaveLength(TABLE_NAMES.length);
   });
 
   test('getDataWarehouseSyncOptions database is usable by buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
@@ -178,14 +216,13 @@ describe('data-warehouse sync worker', () => {
 
       expect(result.queue).toBeUndefined();
       expect(result.worker).toBeUndefined();
-      expect(mockedQueue).not.toHaveBeenCalled();
       expect(mockedWorker).not.toHaveBeenCalled();
     });
 
     test('refreshDataWarehouseSyncScheduler removes scheduler when disabled', async () => {
       const queue = {
-        upsertJobScheduler: jest.fn(),
-        removeJobScheduler: jest.fn(),
+        upsertJobScheduler: vi.fn(),
+        removeJobScheduler: vi.fn(),
       } as unknown as Queue;
 
       await refreshDataWarehouseSyncScheduler(config, queue);
@@ -197,8 +234,8 @@ describe('data-warehouse sync worker', () => {
 
   test('refreshDataWarehouseSyncScheduler upserts scheduler when enabled', async () => {
     const queue = {
-      upsertJobScheduler: jest.fn(),
-      removeJobScheduler: jest.fn(),
+      upsertJobScheduler: vi.fn(),
+      removeJobScheduler: vi.fn(),
     } as unknown as Queue;
 
     await refreshDataWarehouseSyncScheduler(config, queue);
@@ -216,7 +253,6 @@ describe('data-warehouse sync worker', () => {
 
     expect(result.queue).toBeUndefined();
     expect(result.worker).toBeUndefined();
-    expect(mockedQueue).not.toHaveBeenCalled();
     expect(mockedWorker).not.toHaveBeenCalled();
   });
 
@@ -244,14 +280,13 @@ describe('data-warehouse sync worker', () => {
 
       expect(result.queue).toBeUndefined();
       expect(result.worker).toBeUndefined();
-      expect(mockedQueue).not.toHaveBeenCalled();
       expect(mockedWorker).not.toHaveBeenCalled();
     });
 
     test('refreshDataWarehouseSyncScheduler removes scheduler and does not upsert', async () => {
       const queue = {
-        upsertJobScheduler: jest.fn(),
-        removeJobScheduler: jest.fn(),
+        upsertJobScheduler: vi.fn(),
+        removeJobScheduler: vi.fn(),
       } as unknown as Queue;
 
       await refreshDataWarehouseSyncScheduler(config, queue);
@@ -261,33 +296,28 @@ describe('data-warehouse sync worker', () => {
     });
   });
 
-  test('initDataWarehouseSyncWorker defaults concurrency to 1 and lockDuration to 5 minutes', () => {
-    initDataWarehouseSyncWorker(config, { workerEnabled: true });
+  test('initDataWarehouseSyncWorker creates queue and worker when enabled', () => {
+    const result = initDataWarehouseSyncWorker(config, { workerEnabled: true });
 
-    expect(mockedQueue).toHaveBeenCalled();
-    expect(mockedWorker).toHaveBeenCalled();
-    const lastCall = mockedWorker.mock.calls[mockedWorker.mock.calls.length - 1];
-    expect(lastCall[0]).toStrictEqual(DataWarehouseSyncQueueName);
-    expect(lastCall[2]).toMatchObject({
-      concurrency: 1,
-      lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
-    });
+    expect(result.name).toStrictEqual(DataWarehouseSyncQueueName);
+    expect(result.queue).toBeDefined();
+    expect(result.worker).toBeDefined();
   });
 
   describe('processDataWarehouseSyncJob', () => {
     beforeEach(() => {
-      jest.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
-      jest.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({} as PoolClient));
-      jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
-      jest.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
+      vi.spyOn(database, 'getDatabasePool').mockReturnValue({} as ReturnType<typeof database.getDatabasePool>);
+      vi.spyOn(database, 'withPoolClient').mockImplementation(async (callback) => callback({} as PoolClient));
+      vi.spyOn(database, 'acquireAdvisoryLock').mockResolvedValue(true);
+      vi.spyOn(database, 'releaseAdvisoryLock').mockResolvedValue(undefined);
     });
 
     afterEach(() => {
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     test('acquires and releases data warehouse sync advisory lock', async () => {
-      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      const updateProgress = vi.fn().mockResolvedValue(undefined);
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
         data: { trigger: 'scheduler' },
@@ -302,28 +332,28 @@ describe('data-warehouse sync worker', () => {
     });
 
     test('skips sync when advisory lock is not available', async () => {
-      jest.spyOn(database, 'acquireAdvisoryLock').mockResolvedValueOnce(false);
+      vi.spyOn(database, 'acquireAdvisoryLock').mockResolvedValueOnce(false);
 
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
         data: { trigger: 'scheduler' },
-        updateProgress: jest.fn(),
+        updateProgress: vi.fn(),
       } as any);
 
-      expect(mockedSyncData).not.toHaveBeenCalled();
+      expect(syncModule.syncData).not.toHaveBeenCalled();
       expect(database.releaseAdvisoryLock).not.toHaveBeenCalled();
     });
 
     test('calls syncData with resolved database config', async () => {
-      const updateProgress = jest.fn().mockResolvedValue(undefined);
+      const updateProgress = vi.fn().mockResolvedValue(undefined);
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
         data: { trigger: 'scheduler' },
         updateProgress,
       } as any);
 
-      expect(mockedSyncData).toHaveBeenCalledTimes(1);
-      const callArg = mockedSyncData.mock.calls[0][0];
+      expect(syncModule.syncData).toHaveBeenCalledTimes(1);
+      const callArg = vi.mocked(syncModule.syncData).mock.calls[0][0];
       expect(callArg?.database).toMatchObject({
         host: config.readonlyDatabase?.host,
         dbname: config.readonlyDatabase?.dbname,
@@ -336,14 +366,15 @@ describe('data-warehouse sync worker', () => {
     });
 
     test('forwards syncData onProgress to job.updateProgress', async () => {
-      const updateProgress = jest.fn().mockResolvedValue(undefined);
-      mockedSyncData.mockImplementationOnce(async (options) => {
-        await options?.onProgress?.('Syncing Patient_history: 1 row(s)', {
-          table: 'patient_history',
-          icebergTable: 'patient_history',
-          count: 1,
+      const updateProgress = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(syncModule.syncData).mockImplementationOnce(async (options) => {
+        await options?.onProgress?.('Completed patient_history (1 rows, table 1/1)', {
+          tablesCompleted: 1,
+          tablesTotal: 1,
+          destination: 'patient_history.parquet',
+          rowsInserted: 1,
         });
-        return { resources: [] };
+        return { tables: [] };
       });
 
       await processDataWarehouseSyncJob(config, {
@@ -353,10 +384,10 @@ describe('data-warehouse sync worker', () => {
       } as any);
 
       expect(updateProgress).toHaveBeenCalledWith({
-        message: 'Syncing Patient_history: 1 row(s)',
-        table: 'patient_history',
-        icebergTable: 'patient_history',
-        count: 1,
+        tablesCompleted: 1,
+        tablesTotal: 1,
+        destination: 'patient_history.parquet',
+        rowsInserted: 1,
       });
     });
   });
@@ -391,7 +422,6 @@ describe('data-warehouse sync worker', () => {
       });
 
       expect(getDataWarehouseSyncQueue()).toBeDefined();
-      expect(getDataWarehouseSyncQueue()).toBeInstanceOf(BullmqQueue);
     });
 
     test('does not register queue when data warehouse config is invalid', async () => {

@@ -3,11 +3,11 @@
 import type { AgentTransmitResponse } from '@medplum/core';
 import { allOk, ContentType, createReference, LogLevel, sleep } from '@medplum/core';
 import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import { getFreePort } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';
 import { App } from './app';
-import { getFreePort } from './test-utils';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -16,7 +16,7 @@ let port: number;
 
 describe('Byte Stream', () => {
   beforeAll(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -108,7 +108,7 @@ describe('Byte Stream', () => {
 
   test('Send and receive -- error', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const mockServer = new Server('wss://example.com/ws/agent');
 
@@ -184,7 +184,7 @@ describe('Byte Stream', () => {
 
   test('Send and receive -- no callback in response', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const mockServer = new Server('wss://example.com/ws/agent');
 
@@ -416,7 +416,7 @@ describe('Byte Stream', () => {
 
   test('Invalid startChar/endChar parameters', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const mockServer = new Server('wss://example.com/ws/agent');
 

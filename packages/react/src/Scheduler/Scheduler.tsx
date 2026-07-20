@@ -13,13 +13,17 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
 
-type SchedulingOption<T> = [T, Date];
+export type SchedulingOption<T> = [T, Date];
 export type FetchOptionsFunction<T> = (period: Period) => Promise<SchedulingOption<T>[]>;
 
 export interface BaseSchedulerProps<T> {
+  /** A Reference or Resource to the actor being scheduled against (typically a Practitioner) */
   readonly actor?: Reference | Resource;
+  /** A function that fetches SchedulingOption pairs. If this is not a stable function it can cause duplicate queries. */
   readonly fetchOptions: FetchOptionsFunction<T>;
+  /** React nodes to render inside the scheduler container */
   readonly children?: React.ReactNode;
+  /** A callback invoked when a specific option is selected */
   readonly onSelectOption?: (el: T, date: Date) => void;
 }
 
@@ -28,10 +32,6 @@ export interface BaseSchedulerProps<T> {
  * calendar UI and lets the viewer drill down into options on a given day.
  *
  * @param props - The React props
- * @param props.actor - A Reference or Resource to the actor being scheduled against (typically a Practitioner)
- * @param props.fetchOptions - A function that fetches SchedulingOption pairs. If this is not a stable function it can cause duplicate queries.
- * @param props.onSelectOption - A callback invoked when a specific option is selected
- * @param props.children - React nodes to render inside the scheduler container
  * @returns the JSX Element
  */
 export function BaseScheduler<T>(props: BaseSchedulerProps<T>): JSX.Element | null {

@@ -1,0 +1,41 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.page {
+  font-family: var(--landing-font-display);
+  color: var(--landing-color-heading);
+  background: var(--landing-surface);
+  width: 100%;
+  line-height: var(--landing-body-leading);
+}
+
+.stackedSections {
+  background: var(--landing-surface);
+  padding: 0;
+}
+
+.container {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 0 var(--layout-padding);
+
+}
+
+@media (max-width: 996px) {
+  .container {
+    padding: 0 var(--layout-padding-md);
+  }
+
+  /* Keep the full section rhythm on small screens to match the home page, which doesn't
+     shrink its vertical spacing. The global token drops to 4rem at <=996px; hold it at 6rem
+     for the products page so section-to-section gaps stay 12rem (6rem + 6rem), same as home. */
+  .page {
+    --landing-section-padding-y: 6rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 var(--layout-padding-sm);
+  }
+}

@@ -9,7 +9,7 @@ import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
 import type { UserEvent } from './test-utils/render';
-import { act, render, screen, userEvent } from './test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from './test-utils/render';
 
 async function setup(medplum: MedplumClient): Promise<UserEvent> {
   const user = userEvent.setup();
@@ -43,7 +43,7 @@ describe('RegisterPage', () => {
 
   test('Renders', async () => {
     const medplum = new MockClient();
-    medplum.getProfile = jest.fn(() => undefined) as any;
+    medplum.getProfile = vi.fn(() => undefined);
     await setup(medplum);
     expect(screen.getByRole('button', { name: 'Register Account' })).toBeInTheDocument();
   });
@@ -56,8 +56,8 @@ describe('RegisterPage', () => {
 
   test('Submit success', async () => {
     const medplum = new MockClient();
-    medplum.getProfile = jest.fn(() => undefined) as any;
-    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
+    medplum.getProfile = vi.fn(() => undefined);
+    medplum.startNewUser = vi.fn(() => Promise.resolve({ login: '1' }));
     const user = await setup(medplum);
 
     Object.defineProperty(global, 'grecaptcha', {
@@ -76,19 +76,31 @@ describe('RegisterPage', () => {
     await user.type(screen.getByLabelText('Email *'), 'george@example.com');
     await user.type(screen.getByLabelText('Password *'), 'password');
 
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Register Account' }));
 
     await user.type(screen.getByLabelText('Project Name *'), 'Test Project');
 
     await user.click(screen.getByRole('button'));
   });
 
+  test('Sign in link navigates to sign in page', async () => {
+    const medplum = new MockClient();
+    medplum.getProfile = vi.fn(() => undefined);
+    await setup(medplum);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign In'));
+    });
+
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
+  });
+
   test('Register disabled', async () => {
     getConfig().registerEnabled = false;
 
     const medplum = new MockClient();
-    medplum.getProfile = jest.fn(() => undefined) as any;
-    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
+    medplum.getProfile = vi.fn(() => undefined);
+    medplum.startNewUser = vi.fn(() => Promise.resolve({ login: '1' }));
     await setup(medplum);
 
     expect(screen.getByText('New projects are disabled on this server.')).toBeInTheDocument();

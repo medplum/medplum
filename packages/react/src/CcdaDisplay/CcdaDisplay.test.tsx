@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { Mock, MockInstance } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import * as domUtils from '../utils/dom';
 import { CcdaDisplay } from './CcdaDisplay';
@@ -11,22 +12,22 @@ const VALIDATION_URL_PATTERN = 'https://ccda-validator.medplum.com/referenceccda
 
 describe('CcdaDisplay', () => {
   let medplum: MockClient;
-  let fetchSpy: jest.Mock;
-  let exportJsonFileSpy: jest.SpyInstance;
+  let fetchSpy: Mock;
+  let exportJsonFileSpy: MockInstance;
 
   // Keep original fetch
   const originalFetch = global.fetch;
 
   beforeAll(() => {
     // Mock the exportJsonFile function
-    exportJsonFileSpy = jest.spyOn(domUtils, 'exportJsonFile').mockImplementation(jest.fn());
+    exportJsonFileSpy = vi.spyOn(domUtils, 'exportJsonFile').mockImplementation(vi.fn());
   });
 
   beforeEach(() => {
     medplum = new MockClient();
 
     // Mock global fetch for both retrieving CCDA content and validation API
-    fetchSpy = jest.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
+    fetchSpy = vi.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
       const urlString = url.toString();
 
       // For CCDA content retrieval (GET request)
@@ -83,7 +84,7 @@ describe('CcdaDisplay', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
@@ -104,7 +105,7 @@ describe('CcdaDisplay', () => {
   });
 
   test('Renders C-CDA', async () => {
-    const sendCommandSpy = jest.spyOn(domUtils, 'sendCommand').mockImplementation(jest.fn(async () => {}));
+    const sendCommandSpy = vi.spyOn(domUtils, 'sendCommand').mockImplementation(vi.fn(async () => {}));
     setup(EXAMPLE_CCDA_URL);
     expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
     await act(async () => {
@@ -142,8 +143,11 @@ describe('CcdaDisplay', () => {
         (call) => call[0].toString().includes(VALIDATION_URL_PATTERN) && call[1]?.method === 'POST'
       );
       expect(validationCall).toBeTruthy();
-      expect(validationCall[1].credentials).toBe('omit');
-      expect(validationCall[1].body).toBeInstanceOf(FormData);
+      if (!validationCall) {
+        throw new Error('Expected validation fetch call');
+      }
+      expect(validationCall[1]?.credentials).toBe('omit');
+      expect(validationCall[1]?.body).toBeInstanceOf(FormData);
     });
 
     // Should display validation results with 9 errors (5 + 4)
@@ -186,7 +190,7 @@ describe('CcdaDisplay', () => {
   test('Validation with service error returns appropriate message', async () => {
     // Override fetch mock for this test to return a validation service error
     const originalFetchSpy = fetchSpy;
-    fetchSpy = jest.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
+    fetchSpy = vi.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
       const urlString = url.toString();
 
       // Still handle content retrieval normally
@@ -235,11 +239,11 @@ describe('CcdaDisplay', () => {
 
   test('Handles API validation failure correctly', async () => {
     // Mock console.error to check if error is logged
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Override fetch mock for this test to return a failed validation response
     const originalFetchSpy = fetchSpy;
-    fetchSpy = jest.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
+    fetchSpy = vi.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
       const urlString = url.toString();
 
       // Still handle content retrieval normally

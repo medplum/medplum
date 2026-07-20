@@ -12,14 +12,14 @@ describe('PreviewPage', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      await vi.runOnlyPendingTimersAsync();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('ValueSet preview tab appears in ResourcePage', async () => {
@@ -66,7 +66,7 @@ describe('PreviewPage', () => {
     });
 
     // Mock valueSetExpand
-    medplum.valueSetExpand = jest.fn().mockResolvedValue(valueSet);
+    medplum.valueSetExpand = vi.fn().mockResolvedValue(valueSet);
 
     await setup(`/ValueSet/${valueSet.id}`);
 
@@ -75,7 +75,7 @@ describe('PreviewPage', () => {
 
     await act(async () => {
       previewTab.click();
-      jest.advanceTimersByTime(100);
+      await vi.advanceTimersByTimeAsync(100);
     });
 
     // After clicking preview tab, should show the preview content

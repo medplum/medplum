@@ -5,7 +5,10 @@ import type { Bot, Login, Practitioner, Project, ProjectMembership, User } from 
 import type { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import type * as Pg from 'pg';
 import request from 'supertest';
+import type { MockedFunction, MockInstance } from 'vitest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
@@ -13,6 +16,8 @@ import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
+import type * as MigrationDataV1 from '../migrations/data/v1';
+import type * as MigrationDataV2 from '../migrations/data/v2';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
@@ -27,8 +32,12 @@ import { getReindexQueue } from '../workers/reindex';
 
 const mockPgMaintenanceQueries: string[] = [];
 
-jest.mock('pg', () => {
-  const original = jest.requireActual('pg');
+vi.mock('pg', async () => {
+  const original = await vi.importActual<typeof Pg>('pg');
+  const poolPrototype = original.Pool.prototype as {
+    query: (...args: any[]) => any;
+    connect: (...args: any[]) => any;
+  };
 
   function mockGetSql(query: unknown): string | undefined {
     if (typeof query === 'string') {
@@ -95,13 +104,13 @@ jest.mock('pg', () => {
       if (handled) {
         return handled.result;
       }
-      return original.Pool.prototype.query.apply(this, args);
+      return poolPrototype.query.apply(this, args);
     }
 
     connect(...args: any[]): any {
       const callback = args[args.length - 1];
       if (typeof callback === 'function') {
-        return original.Pool.prototype.connect.apply(this, [
+        return poolPrototype.connect.apply(this, [
           ...args.slice(0, -1),
           (err: unknown, client: any, done: unknown) => {
             if (client) {
@@ -112,7 +121,7 @@ jest.mock('pg', () => {
         ]);
       }
 
-      return original.Pool.prototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
+      return poolPrototype.connect.apply(this, args).then((client: any) => mockWrapClient(client));
     }
   }
 
@@ -122,35 +131,39 @@ jest.mock('pg', () => {
   };
 });
 
-jest.mock('../seeds/valuesets');
-jest.mock('../seeds/structuredefinitions');
-jest.mock('../seeds/searchparameters');
+vi.mock('../seeds/valuesets');
+vi.mock('../seeds/structuredefinitions');
+vi.mock('../seeds/searchparameters');
 
 const app = express();
 let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 const mockAsyncJobWaitOptions = { completionDelayMs: 0, maxAttempts: 200, pollIntervalMs: 10 };
-const mockRebuildR4ValueSets = rebuildR4ValueSets as jest.MockedFunction<typeof rebuildR4ValueSets>;
-const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as jest.MockedFunction<
+const mockRebuildR4ValueSets = rebuildR4ValueSets as MockedFunction<typeof rebuildR4ValueSets>;
+const mockRebuildR4StructureDefinitions = rebuildR4StructureDefinitions as MockedFunction<
   typeof rebuildR4StructureDefinitions
 >;
-const mockRebuildR4SearchParameters = rebuildR4SearchParameters as jest.MockedFunction<
-  typeof rebuildR4SearchParameters
->;
+const mockRebuildR4SearchParameters = rebuildR4SearchParameters as MockedFunction<typeof rebuildR4SearchParameters>;
 
-jest.mock('../migrations/data/index', () => {
-  return {
-    v1: jest.requireMock('../migrations/data/v1'),
-    v2: jest.requireMock('../migrations/data/v2'),
-    v3: jest.requireMock('../migrations/data/v2'),
-  };
-});
+vi.mock('../migrations/data/v1', () => ({
+  migration: { type: 'reindex' },
+}));
+
+vi.mock('../migrations/data/v2', () => ({
+  migration: { type: 'custom' },
+}));
+
+vi.mock('../migrations/data/index', async () => ({
+  v1: await vi.importMock<typeof MigrationDataV1>('../migrations/data/v1'),
+  v2: await vi.importMock<typeof MigrationDataV2>('../migrations/data/v2'),
+  v3: await vi.importMock<typeof MigrationDataV2>('../migrations/data/v2'),
+}));
 
 describe('Super Admin routes', () => {
-  let processStdoutWriteSpy: jest.SpyInstance;
+  let processStdoutWriteSpy: MockInstance;
   beforeAll(async () => {
-    processStdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    processStdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
     await initApp(app, config);
 
@@ -252,7 +265,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body?.issue?.[0]?.details?.text).toBe('Operation requires "Prefer: respond-async"');
     expect(mockRebuildR4ValueSets).not.toHaveBeenCalled();
   });
@@ -265,7 +278,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4ValueSets).toHaveBeenCalledTimes(1);
@@ -279,7 +292,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(mockRebuildR4ValueSets).not.toHaveBeenCalled();
   });
 
@@ -290,7 +303,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
     expect(mockRebuildR4StructureDefinitions).not.toHaveBeenCalled();
   });
@@ -303,7 +316,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
@@ -321,7 +334,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
     expect(mockRebuildR4StructureDefinitions).toHaveBeenCalledTimes(1);
@@ -335,7 +348,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(mockRebuildR4StructureDefinitions).not.toHaveBeenCalled();
   });
 
@@ -346,7 +359,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
     expect(mockRebuildR4SearchParameters).not.toHaveBeenCalled();
   });
@@ -359,7 +372,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
@@ -377,7 +390,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
     expect(job.status).toStrictEqual('error');
     expect(mockRebuildR4SearchParameters).toHaveBeenCalledTimes(1);
@@ -391,7 +404,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(mockRebuildR4SearchParameters).not.toHaveBeenCalled();
   });
 
@@ -404,7 +417,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Reindex require async', async () => {
@@ -416,7 +429,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -429,7 +442,7 @@ describe('Super Admin routes', () => {
         resourceType: 'XYZ',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test.each([
@@ -451,7 +464,7 @@ describe('Super Admin routes', () => {
         maxResourceVersion,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -486,7 +499,7 @@ describe('Super Admin routes', () => {
         maxResourceVersion,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe(expectedError);
   });
 
@@ -504,7 +517,7 @@ describe('Super Admin routes', () => {
         reindexType: 'outdated',
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -535,7 +548,7 @@ describe('Super Admin routes', () => {
         maxIterationAttempts: 5,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -565,7 +578,7 @@ describe('Super Admin routes', () => {
         reindexType: 'outdated',
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -597,7 +610,7 @@ describe('Super Admin routes', () => {
         delayBetweenBatches: 1000,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -645,7 +658,7 @@ describe('Super Admin routes', () => {
         [paramName]: paramValue,
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe(expectedError);
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -678,7 +691,7 @@ describe('Super Admin routes', () => {
         [paramName]: paramValue,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -705,7 +718,7 @@ describe('Super Admin routes', () => {
         delayBetweenBatches: 0,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -741,7 +754,7 @@ describe('Super Admin routes', () => {
 
       const afterTime = Date.now();
 
-      expect(res.status).toStrictEqual(202);
+      expect(res).toHaveStatus(202);
       expect(res.headers['content-location']).toBeDefined();
 
       // endTimestampBufferMinutes is consumed to calculate endTimestamp, not stored directly
@@ -764,7 +777,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -783,7 +796,7 @@ describe('Super Admin routes', () => {
         dryRun: false,
       });
 
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'LambdaCleanerJob',
@@ -812,7 +825,7 @@ describe('Super Admin routes', () => {
         deleteConcurrency: 0,
       });
 
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -826,7 +839,7 @@ describe('Super Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Set password missing password', async () => {
@@ -839,7 +852,7 @@ describe('Super Admin routes', () => {
         password: '',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
   });
 
@@ -853,14 +866,14 @@ describe('Super Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
   test('Set password success', async () => {
     const email = `alice${randomUUID()}@example.com`;
 
-    await withTestContext(() =>
+    await withTestContext(async () =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -879,7 +892,7 @@ describe('Super Admin routes', () => {
         password: 'new-password!@#',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Purge access denied', async () => {
@@ -892,7 +905,7 @@ describe('Super Admin routes', () => {
         before: '2020-01-01',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Purge invalid resource type', async () => {
@@ -905,7 +918,7 @@ describe('Super Admin routes', () => {
         before: '2020-01-01',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid resource type');
   });
 
@@ -919,7 +932,7 @@ describe('Super Admin routes', () => {
         before: '2020-01-01',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Remove Bot Id from Jobs Queue access denied', async () => {
@@ -931,7 +944,7 @@ describe('Super Admin routes', () => {
         botId: 'testBotId',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Remove Bot Id from Jobs Queue success', async () => {
@@ -943,7 +956,7 @@ describe('Super Admin routes', () => {
         botId: 'TestBotId',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Remove Bot Id from Jobs Queue missing bot id', async () => {
@@ -955,7 +968,7 @@ describe('Super Admin routes', () => {
         botId: '',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Rebuild projectId as super admin with respond-async', async () => {
@@ -966,7 +979,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res1.status).toStrictEqual(202);
+    expect(res1).toHaveStatus(202);
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
@@ -981,13 +994,13 @@ describe('Super Admin routes', () => {
         postDeployMigrations: [1, 2, 3],
         pendingPostDeployMigration: 0,
       });
-      expect(res1.status).toStrictEqual(200);
+      expect(res1).toHaveStatus(200);
     });
   });
 
   describe('Table settings', () => {
     test('Set table auto-vacuum settings -- Happy path', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -995,7 +1008,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
-      expect(res1.status).toStrictEqual(200);
+      expect(res1).toHaveStatus(200);
       expect(res1.body).toMatchObject(allOk);
 
       expect(mockPgMaintenanceQueries).toContain(
@@ -1012,7 +1025,7 @@ describe('Super Admin routes', () => {
     });
 
     test('No table name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1020,7 +1033,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('Table name must be a string'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1028,7 +1041,7 @@ describe('Super Admin routes', () => {
     });
 
     test('No settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1036,7 +1049,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation' });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
@@ -1064,7 +1077,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Invalid setting', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1072,7 +1085,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [
@@ -1092,7 +1105,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Settings with int values reject floats', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1100,7 +1113,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_threshold: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('settings.autovacuum_analyze_threshold must be an integer value'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1108,7 +1121,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Settings with float values reject non-numeric values', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1116,7 +1129,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 'testing' } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('settings.autovacuum_analyze_scale_factor must be a float value'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1124,7 +1137,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Multiple settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1135,7 +1148,7 @@ describe('Super Admin routes', () => {
           settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale_factor: 0.01 },
         });
 
-      expect(res1.status).toStrictEqual(200);
+      expect(res1).toHaveStatus(200);
       expect(res1.body).toMatchObject(allOk);
 
       expect(mockPgMaintenanceQueries).toContain(
@@ -1152,7 +1165,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Multiple settings w/ invalid settings', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1163,7 +1176,7 @@ describe('Super Admin routes', () => {
           settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale: 0.01 },
         });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('autovacuum_vacuum_scale is not a valid table setting'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1173,7 +1186,7 @@ describe('Super Admin routes', () => {
 
   describe('Vacuum', () => {
     test('Vacuum -- No tables specified', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1181,7 +1194,7 @@ describe('Super Admin routes', () => {
         .set('Prefer', 'respond-async')
         .type('json');
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       const asyncJob = await waitForAsyncJob(
         res1.headers['content-location'],
@@ -1206,7 +1219,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Invalid table name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/tablesettings')
@@ -1214,7 +1227,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: 'Observation History', settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject(badRequest('Table name must be a snake_cased_string'));
 
       expect(infoSpy).not.toHaveBeenCalled();
@@ -1222,7 +1235,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Table names listed', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1231,7 +1244,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'] });
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
@@ -1247,7 +1260,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Analyze too', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1256,7 +1269,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'], analyze: true });
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
@@ -1272,7 +1285,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Only analyze', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1281,7 +1294,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'], analyze: true, vacuum: false });
 
-      expect(res1.status).toStrictEqual(202);
+      expect(res1).toHaveStatus(202);
       expect(res1.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken, mockAsyncJobWaitOptions);
 
@@ -1304,11 +1317,11 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation_History'], analyze: false, vacuum: false });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
     });
 
     test('Vacuum -- Non-string table names', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1317,7 +1330,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 123] });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Table name(s) must be a string'));
 
@@ -1326,7 +1339,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Non-snake-cased table names', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1335,7 +1348,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableNames: ['Observation', 'Observation History'] });
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Table name(s) must be a snake_cased_string'));
 
@@ -1344,7 +1357,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Vacuum -- Invalid parameter name', async () => {
-      const infoSpy = jest.spyOn(globalLogger, 'info');
+      const infoSpy = vi.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
         .post('/admin/super/vacuum')
@@ -1353,7 +1366,7 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ tableName: ['Observation', 123] }); // should be tableNames
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Unknown field(s)'));
 
@@ -1367,7 +1380,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json');
 
-      expect(res1.status).toStrictEqual(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Operation requires "Prefer: respond-async"'));
     });
@@ -1384,13 +1397,13 @@ describe('Super Admin routes', () => {
         .type('json')
         .send({ resourceType: 'Bot', cronString: '*/20 * * * *' } satisfies Bot);
 
-      expect(res1.status).toStrictEqual(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body).toBeDefined();
 
       const bot = res1.body as Bot & { id: string };
 
-      const obliterateSpy = jest.spyOn(cronQueue, 'obliterate');
-      const upsertJobSchedulerSpy = jest.spyOn(cronQueue, 'upsertJobScheduler');
+      const obliterateSpy = vi.spyOn(cronQueue, 'obliterate');
+      const upsertJobSchedulerSpy = vi.spyOn(cronQueue, 'upsertJobScheduler');
 
       const res2 = await request(app)
         .post('/admin/super/reloadcron')
@@ -1398,7 +1411,7 @@ describe('Super Admin routes', () => {
         .set('Prefer', 'respond-async')
         .type('json');
 
-      expect(res2.status).toStrictEqual(202);
+      expect(res2).toHaveStatus(202);
       expect(res2.headers['content-location']).toBeDefined();
       await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
 

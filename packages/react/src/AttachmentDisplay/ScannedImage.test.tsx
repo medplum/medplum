@@ -6,12 +6,12 @@ import { ScannedImage } from './ScannedImage';
 
 describe('ScannedImage', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   test('retries after an image load error', () => {
@@ -22,7 +22,7 @@ describe('ScannedImage', () => {
     expect(document.querySelector('.mantine-Loader-root')).toBeInTheDocument();
 
     act(() => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     expect(screen.getByAltText('Scanned document')).toBeInTheDocument();
@@ -34,7 +34,7 @@ describe('ScannedImage', () => {
     fireEvent.error(screen.getByAltText('Scanned document'));
 
     act(() => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     fireEvent.error(screen.getByAltText('Scanned document'));
@@ -43,7 +43,7 @@ describe('ScannedImage', () => {
   });
 
   test('clears the retry timer on unmount', () => {
-    const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
     const { unmount } = render(<ScannedImage alt="Scanned document" src="https://example.com/image.jpg" />);
 
     fireEvent.error(screen.getByAltText('Scanned document'));

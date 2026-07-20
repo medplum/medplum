@@ -2928,6 +2928,13 @@
             "code": "Reference"
           }
         ]
+      },
+      "deleted": {
+        "type": [
+          {
+            "code": "boolean"
+          }
+        ]
       }
     }
   },
@@ -4256,6 +4263,20 @@
       },
       "userInfoUrl": {
         "min": 1,
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "userInfoMode": {
+        "type": [
+          {
+            "code": "code"
+          }
+        ]
+      },
+      "userInfoApiKey": {
         "type": [
           {
             "code": "string"

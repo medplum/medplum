@@ -3,7 +3,7 @@
 import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
-import type { CriteriaState, SubscriptionEventMap } from '.';
+import type { BackgroundJobInteraction, CriteriaState, SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
@@ -1362,6 +1362,83 @@ describe('SubscriptionManager', () => {
       expect(receivedEvent7.type).toStrictEqual('message');
     });
 
+    test('should recreate the Subscription rather than reuse a dropped subscriptionId after reconnect', async () => {
+      // Regression: the server drops the Subscription bound to a connection when it
+      // closes, so on reconnect refreshAllSubscriptions clears subscriptionId and
+      // rebindCriteriaEntry creates a fresh Subscription on the new connection. Reusing
+      // the old id would fail $get-ws-binding-token ("Not found") on every reconnect, and
+      // the criteria would stop delivering until a full page reload.
+      const createResourceSpy = vi.spyOn(medplum, 'createResource');
+
+      await wsServer.connected;
+
+      const firstConnect = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['connect']): void => {
+          defaultManager.getMasterEmitter().removeEventListener('connect', handler);
+          resolve(event);
+        };
+        defaultManager.getMasterEmitter().addEventListener('connect', handler);
+      });
+
+      const emitter = defaultManager.addCriteria('Communication');
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      expect((await firstConnect).payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
+      expect(createResourceSpy).toHaveBeenCalledTimes(1);
+
+      // Drop the connection — the server discards the Subscription bound to it.
+      const closed = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['close']): void => {
+          emitter.removeEventListener('close', handler);
+          resolve(event);
+        };
+        emitter.addEventListener('close', handler);
+      });
+      wsServer.close();
+      await closed;
+      await wsServer.closed;
+      WS.clean();
+
+      // The recreated Subscription is assigned a new id on reconnect.
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+
+      const reopened = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['open']): void => {
+          emitter.removeEventListener('open', handler);
+          resolve(event);
+        };
+        emitter.addEventListener('open', handler);
+      });
+
+      const secondConnect = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        const handler = (event: SubscriptionEventMap['connect']): void => {
+          defaultManager.getMasterEmitter().removeEventListener('connect', handler);
+          resolve(event);
+        };
+        defaultManager.getMasterEmitter().addEventListener('connect', handler);
+      });
+
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      await reopened;
+      await wsServer.connected;
+
+      // Wait for the recreated subscription to bind on the new connection. An unbind for
+      // the old token may precede it depending on close timing, so assert on the bind
+      // rather than the exact message sequence.
+      await vi.waitFor(
+        () => {
+          expect(wsServer.messages).toContainEqual({ type: 'bind-with-token', payload: { token: 'token-123' } });
+        },
+        { timeout: 5000 }
+      );
+      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+
+      // A fresh Subscription was created and bound, not the dropped id reused.
+      expect((await secondConnect).payload.subscriptionId).toStrictEqual(SECOND_SUBSCRIPTION_ID);
+      expect(createResourceSpy).toHaveBeenCalledTimes(2);
+    }, 30000);
+
     test('should rebind subscription when token is about to expire', async () => {
       console.warn = vi.fn();
 
@@ -1773,7 +1850,7 @@ describe('resourceMatchesSubscriptionCriteria', () => {
   );
 
   describe('Account matching logic', () => {
-    const ORGANIZATION_ONE = { reference: 'Organization/123' };
+    const ORGANIZATION_ONE = { reference: 'Organization/125' };
     const ORGANIZATION_TWO = { reference: 'Organization/456' };
     const ORGANIZATION_THREE = { reference: 'Organization/789' };
     const ORGANIZATION_FOUR = { reference: 'Organization/999' };
@@ -1966,5 +2043,46 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
       }
     });
+  });
+
+  describe('Supported interaction matching logic', () => {
+    const SUPPORTED_INTERACTION_URL = 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction';
+
+    function buildSubscription(interactions: BackgroundJobInteraction[]): Subscription {
+      return {
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'test subscription',
+        criteria: 'Communication',
+        channel: { type: 'rest-hook', endpoint: 'Bot/123' },
+        extension: interactions.map((valueCode) => ({ url: SUPPORTED_INTERACTION_URL, valueCode })),
+      };
+    }
+
+    test.each([
+      // No extension → every interaction is supported (including delete)
+      { interactions: [], received: 'create', expected: true },
+      { interactions: [], received: 'update', expected: true },
+      { interactions: [], received: 'delete', expected: true },
+      // Single extension → only the declared interaction is supported
+      { interactions: ['create'], received: 'create', expected: true },
+      { interactions: ['create'], received: 'update', expected: false },
+      { interactions: ['create'], received: 'delete', expected: false },
+      // Multiple extensions → any declared interaction is supported, others (e.g. delete) are not
+      { interactions: ['create', 'update'], received: 'create', expected: true },
+      { interactions: ['create', 'update'], received: 'update', expected: true },
+      { interactions: ['create', 'update'], received: 'delete', expected: false },
+    ] as { interactions: BackgroundJobInteraction[]; received: BackgroundJobInteraction; expected: boolean }[])(
+      'interactions=$interactions received=$received → $expected',
+      async ({ interactions, received, expected }) => {
+        const matches = await resourceMatchesSubscriptionCriteria({
+          resource: { id: '123', resourceType: 'Communication', status: 'in-progress' },
+          subscription: buildSubscription(interactions),
+          context: { interaction: received },
+          getPreviousResource: async () => undefined,
+        });
+        expect(matches).toStrictEqual(expected);
+      }
+    );
   });
 });

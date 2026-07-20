@@ -81,6 +81,14 @@ const config: Config = {
             from: '/docs/questionnaires/structured-data-capture',
             to: '/docs/questionnaires/parsing-questionnaire-responses',
           },
+          {
+            from: '/docs/integration/stedi/eligibility-checks',
+            to: '/docs/integration/stedi/insurance-eligibility/eligibility-checks',
+          },
+          {
+            from: '/docs/integration/stedi/professional-claims',
+            to: '/docs/integration/stedi/claim-submission/professional-claims',
+          },
         ],
       },
     ],
@@ -109,9 +117,15 @@ const config: Config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        gtag: {
-          trackingID: 'G-SHW0ZNT27G',
-        },
+        // Only enable Google Analytics for production builds. In dev (`docusaurus start`)
+        // the gtag.js script is never injected, but the plugin's route-change hook still
+        // calls `window.gtag`, throwing "window.gtag is not a function" on navigation.
+        gtag:
+          process.env.NODE_ENV === 'production'
+            ? {
+                trackingID: 'G-SHW0ZNT27G',
+              }
+            : undefined,
       },
     ],
   ],

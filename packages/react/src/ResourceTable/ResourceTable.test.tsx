@@ -38,7 +38,7 @@ describe('ResourceTable', () => {
   test('Renders Practitioner resource', async () => {
     await setup({
       value: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
     });
 
@@ -51,7 +51,7 @@ describe('ResourceTable', () => {
   test('Ignore missing values', async () => {
     await setup({
       value: {
-        reference: 'Practitioner/123',
+        reference: 'Practitioner/124',
       },
       ignoreMissingValues: true,
     });
@@ -79,13 +79,13 @@ describe('ResourceTable', () => {
     for (const url of profileUrls) {
       const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
       if (!sd) {
-        fail(`could not find structure definition for ${url}`);
+        expect.fail(`could not find structure definition for ${url}`);
       }
       loadDataType(sd);
     }
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
+    const fakeRequestProfileSchema = vi.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
     const value = HomerSimpsonUSCorePatient;

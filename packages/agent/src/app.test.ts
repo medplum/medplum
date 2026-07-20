@@ -10,63 +10,59 @@ import type {
   AgentUpgradeResponse,
 } from '@medplum/core';
 import {
+  allOk,
+  clearReleaseCache,
   ContentType,
+  createReference,
+  getReferenceString,
   Hl7Message,
   LogLevel,
   MEDPLUM_VERSION,
   ReconnectingWebSocket,
-  allOk,
-  createReference,
-  getReferenceString,
   sleep,
 } from '@medplum/core';
 import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
-import { Hl7Client, Hl7Server } from '@medplum/hl7';
+import { getFreePort, Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import type { ChildProcess } from 'node:child_process';
-import child_process from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
-import { resolve } from 'node:path';
+import type * as NodeFs from 'node:fs';
+import { existsSync, mkdtempSync, openSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import net from 'node:net';
+import { platform, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentByteStreamChannel } from './bytestream';
-import type { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
+import type * as AgentConstants from './constants';
+import type { AgentHl7ChannelConnection } from './hl7';
+import { AgentHl7Channel } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
-import { createEndpointWithRandomPort, getFreePort } from './test-utils';
-import { mockFetchForUpgrader } from './upgrader-test-utils';
+import { createEndpointWithRandomPort, waitFor } from './test-utils';
+import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
-  RETRY_WAIT_DURATION_MS: 200,
-  // We don't care about how fast the clients release in these tests
-  CLIENT_RELEASE_COUNTDOWN_MS: 0,
-}));
-
-jest.mock('./pid', () => ({
-  createPidFile: jest.fn(),
-  getPidFilePath: jest.fn(() => 'pid/file/path'),
-  waitForPidFile: jest.fn(async () => undefined),
-  removePidFile: jest.fn(),
-  isAppRunning: jest.fn(() => false),
-  forceKillApp: jest.fn(),
-}));
-
-jest.mock('node:process', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return new (class MockProcess extends require('node:events') {
-    send = jest.fn().mockImplementation((msg) => {
-      this.emit('childSend', msg);
-    });
-    exit = jest.fn(() => {
-      throw new Error('process.exit');
-    });
-  })();
+vi.mock('./constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof AgentConstants>();
+  return {
+    ...actual,
+    RETRY_WAIT_DURATION_MS: 200,
+    // We don't care about how fast the clients release in these tests
+    CLIENT_RELEASE_COUNTDOWN_MS: 0,
+  };
 });
+
+vi.mock('./pid', () => ({
+  createPidFile: vi.fn(),
+  getPidFilePath: vi.fn(() => 'pid/file/path'),
+  waitForPidFile: vi.fn(async () => undefined),
+  removePidFile: vi.fn(),
+  isAppRunning: vi.fn(() => false),
+  forceKillApp: vi.fn(),
+}));
 
 const HL7_ENDPOINT = {
   resourceType: 'Endpoint',
@@ -94,7 +90,7 @@ describe('App', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -103,7 +99,7 @@ describe('App', () => {
 
   test('Runs successfully', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
     const mockServer = new Server('wss://example.com/ws/agent');
     const state = {
       mySocket: undefined as Client | undefined,
@@ -173,15 +169,15 @@ describe('App', () => {
 
   test('Keeps trying to connect on startup', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
     const state = {
       maxReconnectAttempts: 2,
       shouldConnect: false,
     };
 
     const originalDispatchEvent = ReconnectingWebSocket.prototype.dispatchEvent;
-    const reconnectSpy = jest.spyOn(ReconnectingWebSocket.prototype, 'reconnect');
-    const mockDispatchEvent = jest.spyOn(ReconnectingWebSocket.prototype, 'dispatchEvent').mockImplementation(function (
+    const reconnectSpy = vi.spyOn(ReconnectingWebSocket.prototype, 'reconnect');
+    const mockDispatchEvent = vi.spyOn(ReconnectingWebSocket.prototype, 'dispatchEvent').mockImplementation(function (
       this: ReconnectingWebSocket,
       event: Event
     ) {
@@ -347,6 +343,274 @@ describe('App', () => {
     mockServer.stop();
   });
 
+  test('Attempt to reconnect when WebSocket is open but agent never becomes live', async () => {
+    const state = {
+      connectRequestCount: 0,
+      respondToConnect: false,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          // Simulate the server failing to process the connect request (e.g. a transient error
+          // while validating the token or reading the Agent resource) -- the socket stays open
+          // but no `agent:connect:response` is ever sent
+          if (state.respondToConnect) {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          }
+        }
+        // Keep answering heartbeats so that, once we're live, the connection stays up and the
+        // final liveness assertion isn't racing against the missed-heartbeat reconnect.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Bail out of the polling loops after this long so a regression fails on the assertions below
+    // (with a useful message) instead of hanging until the whole test times out.
+    const WAIT_TIMEOUT_MS = 5000;
+
+    // Wait for the first connect request, which goes unanswered -- the agent is stuck
+    // open-but-not-live
+    let deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (state.connectRequestCount < 1 && Date.now() < deadline) {
+      await sleep(50);
+    }
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(false);
+
+    // The agent should notice it never became live and force a reconnect, which re-sends the
+    // connect request -- this time we answer it, so the agent should fully recover to live
+    state.respondToConnect = true;
+    deadline = Date.now() + WAIT_TIMEOUT_MS;
+    while (!app.getStats().live && Date.now() < deadline) {
+      await sleep(50);
+    }
+
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(2);
+    expect(app.getStats().live).toBe(true);
+
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('WebSocket queue worker recovers after a failed send', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      live: false,
+      transmitRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        if (command.type === 'agent:transmit:request') {
+          state.transmitRequestCount += 1;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    // Long heartbeat period so the heartbeat retry doesn't interfere with this test --
+    // recovery should be driven by the next enqueued message alone
+    app.heartbeatPeriod = 30_000;
+    await app.start();
+
+    // Wait for the WebSocket to connect and the agent to become live
+    while (!state.mySocket) {
+      await sleep(50);
+    }
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    // Channel messages carry an accessToken, which makes the queue worker refresh the token
+    // before sending. Make the next refresh fail, like when the token endpoint is unreachable
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const transmitRequest = {
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: 'test',
+      remote: 'mllp://127.0.0.1:9001',
+      contentType: ContentType.HL7_V2,
+      body: 'MSH|^~\\&|A|B|C|D|20240101000000||ADT^A01|1|P|2.5\r',
+    } satisfies AgentTransmitRequest;
+
+    app.addToWebSocketQueue(transmitRequest);
+
+    // Wait for the failed send attempt
+    while (refreshSpy.mock.calls.length < 1) {
+      await sleep(50);
+    }
+    await sleep(100);
+    expect(state.transmitRequestCount).toStrictEqual(0);
+
+    // Queueing the next message must restart the worker and drain BOTH messages
+    // (the failed message was put back on the queue)
+    app.addToWebSocketQueue({ ...transmitRequest, body: transmitRequest.body.replace('|1|', '|2|') });
+
+    while (state.transmitRequestCount < 2) {
+      await sleep(50);
+    }
+    expect(state.transmitRequestCount).toStrictEqual(2);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('Reconnects when sending the connect request throws (token refresh fails)', async () => {
+    const state = {
+      connectRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    // The connect request carries an accessToken, so `sendToWebSocket` refreshes the token before
+    // sending. Make the first refresh fail -- like when the token endpoint is briefly unreachable
+    // right after a network blip. The send throws inside the `open` handler; an uncaught error there
+    // would crash the process. Instead it's logged, the agent stays not-live, and the heartbeat
+    // forces a reconnect that re-sends the connect request (this time the refresh succeeds).
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // The first connect attempt fails before reaching the server, so no connect request is recorded
+    // until the reconnect re-sends it with a working token.
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    expect(refreshSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(state.connectRequestCount).toBeGreaterThanOrEqual(1);
+    expect(app.getStats().live).toBe(true);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
+  test('WebSocket queue worker is restarted by the heartbeat after a failed send', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitRequestCount: 0,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+        // Keep responding to heartbeats so the connection stays live and the queue recovery is
+        // driven purely by the heartbeat retry -- not by a reconnect re-draining the queue.
+        if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+        }
+        if (command.type === 'agent:transmit:request') {
+          state.transmitRequestCount += 1;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    // Short heartbeat period so the heartbeat retry kicks in quickly. Recovery here must come from
+    // the heartbeat alone -- no second message is enqueued to restart the worker.
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(50);
+    }
+    while (!app.getStats().live) {
+      await sleep(50);
+    }
+
+    // Channel messages carry an accessToken, which makes the queue worker refresh the token
+    // before sending. Make the next refresh fail, like when the token endpoint is unreachable.
+    const refreshSpy = vi.spyOn(medplum, 'refreshIfExpired').mockRejectedValueOnce(new Error('Network failure'));
+
+    const transmitRequest = {
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: 'test',
+      remote: 'mllp://127.0.0.1:9001',
+      contentType: ContentType.HL7_V2,
+      body: 'MSH|^~\\&|A|B|C|D|20240101000000||ADT^A01|1|P|2.5\r',
+    } satisfies AgentTransmitRequest;
+
+    app.addToWebSocketQueue(transmitRequest);
+
+    // Nothing else is enqueued, so the only thing that can restart the worker (which cleared itself
+    // after the failed send put the message back on the queue) is the heartbeat's queue check.
+    while (state.transmitRequestCount < 1) {
+      await sleep(50);
+    }
+    expect(state.transmitRequestCount).toStrictEqual(1);
+
+    // The first send failed on the token refresh and requeued the message; the heartbeat retry
+    // refreshed again and re-sent it -- so the token was refreshed at least twice for this message.
+    expect(refreshSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    refreshSpy.mockRestore();
+    await app.stop();
+    mockServer.stop();
+  });
+
   test('Empty endpoint URL', async () => {
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -403,7 +667,7 @@ describe('App', () => {
 
   test('Unknown endpoint protocol', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -458,6 +722,283 @@ describe('App', () => {
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
     console.log = originalConsoleLog;
+  });
+
+  // The durable-queue wiring in app.ts (reconcileDurableQueue → open/close the DB,
+  // start/stop the lease manager) has no direct coverage in app.test.ts; it's only
+  // exercised indirectly by the queue integration suite. This pins the toggle
+  // itself: flipping the `durableQueue` setting across a reloadConfig opens the
+  // queue (and, as the sole process, acquires the lease) and closes it again.
+  test('durableQueue setting toggles the queue on and off across reloadConfig', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentReloadResponse: false,
+    };
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+          case 'agent:reloadconfig:response':
+            state.gotAgentReloadResponse = true;
+            break;
+          default:
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const dir = mkdtempSync(join(tmpdir(), 'dq-toggle-'));
+    const dbPath = join(dir, 'queue.sqlite');
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Toggle Agent',
+      status: 'active',
+      channel: [],
+      setting: [
+        { name: 'durableQueue', valueBoolean: false },
+        { name: 'queueDbPath', valueString: dbPath },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    app.heartbeatPeriod = 100;
+    await app.start();
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Updates the durableQueue setting, sends a reloadconfig request, waits for the ack.
+    async function reloadWith(durableQueueOn: boolean): Promise<void> {
+      await medplum.updateResource<Agent>({
+        ...agent,
+        setting: [
+          { name: 'durableQueue', valueBoolean: durableQueueOn },
+          { name: 'queueDbPath', valueString: dbPath },
+        ],
+      });
+      state.gotAgentReloadResponse = false;
+      state.mySocket?.send(
+        JSON.stringify({
+          type: 'agent:reloadconfig:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentReloadConfigRequest)
+      );
+      const start = Date.now();
+      while (!state.gotAgentReloadResponse) {
+        if (Date.now() - start > 3000) {
+          throw new Error('Timed out waiting for reloadconfig:response');
+        }
+        await sleep(50);
+      }
+    }
+
+    // Starts OFF: no queue handle, not a leader, no DB file on disk.
+    expect(app.getDurableQueue()).toBeUndefined();
+    expect(app.isQueueLeader()).toBe(false);
+    expect(existsSync(dbPath)).toBe(false);
+
+    // Flip ON → the queue opens, the DB file is created, and (as the only process)
+    // we acquire the lease.
+    await reloadWith(true);
+    expect(app.getDurableQueue()).toBeDefined();
+    expect(existsSync(dbPath)).toBe(true);
+    const leaderStart = Date.now();
+    while (!app.isQueueLeader()) {
+      if (Date.now() - leaderStart > 5000) {
+        throw new Error('Did not become queue leader after enabling durableQueue');
+      }
+      await sleep(25);
+    }
+
+    // Flip OFF → the queue closes and the lease is released.
+    await reloadWith(false);
+    expect(app.getDurableQueue()).toBeUndefined();
+    expect(app.isQueueLeader()).toBe(false);
+
+    await app.stop();
+    mockServer.stop();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('onBecameQueueLeader starts every HL7 channel worker even when one throws, then rethrows', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    // Stub the durable queue so onBecameQueueLeader gets past the early return and
+    // recovery sweep without touching a real DB.
+    (app as any).durableQueue = {
+      recoverOnStartup: vi.fn(() => ({ requeued: 0, failed: 0 })),
+      isLeader: () => true,
+    };
+
+    // Three HL7 channels where the middle one throws. instanceof must pass, so we
+    // build them off the real prototype and only stub onBecameQueueLeader.
+    const boom = new Error('channel-2 failed to start its worker');
+    function makeHl7Channel(impl: () => void): AgentHl7Channel {
+      const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+      (channel as any).onBecameQueueLeader = vi.fn(impl);
+      return channel;
+    }
+    const channel1 = makeHl7Channel(() => undefined);
+    const channel2 = makeHl7Channel(() => {
+      throw boom;
+    });
+    const channel3 = makeHl7Channel(() => undefined);
+
+    // A non-HL7 channel must be skipped entirely.
+    const nonHl7Channel = { onBecameQueueLeader: vi.fn() };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+      ['non-hl7', nonHl7Channel],
+      ['hl7-3', channel3],
+    ]);
+
+    let thrown: unknown;
+    try {
+      (app as any).onBecameQueueLeader();
+    } catch (err) {
+      thrown = err;
+    }
+
+    // We made it through the entire array despite channel2 throwing in the middle.
+    expect(channel1.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel3.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    // The non-HL7 channel is never asked to start a worker.
+    expect(nonHl7Channel.onBecameQueueLeader).not.toHaveBeenCalled();
+
+    // And we threw at the end, carrying the collected errors as the cause.
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).cause).toEqual([boom]);
+  });
+
+  test('onBecameQueueLeader does not throw when all HL7 channel workers start cleanly', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    (app as any).durableQueue = {
+      recoverOnStartup: vi.fn(() => ({ requeued: 0, failed: 0 })),
+      isLeader: () => true,
+    };
+
+    const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channel1 as any).onBecameQueueLeader = vi.fn();
+    const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channel2 as any).onBecameQueueLeader = vi.fn();
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+    ]);
+
+    expect(() => (app as any).onBecameQueueLeader()).not.toThrow();
+    expect(channel1.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+    expect(channel2.onBecameQueueLeader).toHaveBeenCalledTimes(1);
+  });
+
+  test('forEachChannelWorker runs every worker even when one throws, then rethrows aggregate error', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    // Build HL7 channels (instanceof must pass) with a stubbed worker. The middle
+    // worker throws on onWebSocketDisconnect.
+    const boom = new Error('worker-2 failed onWebSocketDisconnect');
+    function makeHl7ChannelWithWorker(impl: () => void): { channel: AgentHl7Channel; onWebSocketDisconnect: any } {
+      const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+      const onWebSocketDisconnect = vi.fn(impl);
+      (channel as any).worker = { onWebSocketDisconnect };
+      return { channel, onWebSocketDisconnect };
+    }
+    const worker1 = makeHl7ChannelWithWorker(() => undefined);
+    const worker2 = makeHl7ChannelWithWorker(() => {
+      throw boom;
+    });
+    const worker3 = makeHl7ChannelWithWorker(() => undefined);
+
+    // An HL7 channel with no worker is skipped (loop guards on `channel.worker`).
+    const channelWithoutWorker = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    (channelWithoutWorker as any).worker = undefined;
+    // A non-HL7 channel is skipped entirely, worker or not.
+    const nonHl7Channel = { worker: { onWebSocketDisconnect: vi.fn() } };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', worker1.channel],
+      ['hl7-2', worker2.channel],
+      ['hl7-no-worker', channelWithoutWorker],
+      ['non-hl7', nonHl7Channel],
+      ['hl7-3', worker3.channel],
+    ]);
+
+    let thrown: unknown;
+    try {
+      (app as any).forEachChannelWorker((worker: any) => worker.onWebSocketDisconnect());
+    } catch (err) {
+      thrown = err;
+    }
+
+    // We reached every worker despite worker2 throwing in the middle.
+    expect(worker1.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    expect(worker2.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    expect(worker3.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
+    // The non-HL7 channel's worker is never touched.
+    expect(nonHl7Channel.worker.onWebSocketDisconnect).not.toHaveBeenCalled();
+
+    // And we threw at the end with the collected errors as the cause.
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).cause).toEqual([boom]);
+  });
+
+  test('forEachChannelWorker does not throw when every worker callback succeeds', async () => {
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+
+    const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    const notify1 = vi.fn();
+    (channel1 as any).worker = { notify: notify1 };
+    const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
+    const notify2 = vi.fn();
+    (channel2 as any).worker = { notify: notify2 };
+
+    (app as any).channels = new Map<string, unknown>([
+      ['hl7-1', channel1],
+      ['hl7-2', channel2],
+    ]);
+
+    expect(() => (app as any).forEachChannelWorker((worker: any) => worker.notify())).not.toThrow();
+    expect(notify1).toHaveBeenCalledTimes(1);
+    expect(notify2).toHaveBeenCalledTimes(1);
   });
 
   test('Reload config', async () => {
@@ -1049,7 +1590,7 @@ describe('App', () => {
 
   test('Enable stats logging', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     // Create agent with an HL7 channel
     const state = {
@@ -1163,7 +1704,7 @@ describe('App', () => {
     };
 
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1454,7 +1995,7 @@ describe('App', () => {
     };
 
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -1742,7 +2283,7 @@ describe('App', () => {
     await app.start();
 
     // Spy on the app.log.warn method
-    const warnSpy = jest.spyOn(app.log, 'warn');
+    const warnSpy = vi.spyOn(app.log, 'warn');
 
     while (!state.mySocket) {
       await sleep(100);
@@ -1779,6 +2320,76 @@ describe('App', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
   }, 5000);
 
+  test('Agent transmit response while status is off returns disabled error', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      agentError: undefined as AgentError | undefined,
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:error') {
+          state.agentError = command;
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      status: 'off',
+      name: 'Test Agent',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // The agent is primary (no upgrade in progress) but disabled, so an inbound transmit response
+    // should be rejected with a disabled error rather than handed off to a channel.
+    const callback = getReferenceString(agent) + '-' + randomUUID();
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:response',
+          channel: 'test',
+          remote: 'mllp://localhost:9999',
+          contentType: ContentType.HL7_V2,
+          body: 'ACK',
+          callback,
+        } satisfies AgentTransmitResponse)
+      )
+    );
+
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+    while (!state.agentError) {
+      if (shouldThrow) {
+        throw new Error('Timeout');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    expect(state.agentError.callback).toStrictEqual(callback);
+    expect(state.agentError.body).toContain('Agent.status is currently set to off');
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  }, 5000);
+
   describe('Upgrade', () => {
     beforeEach(() => {
       const upgradeFilePath = resolve(__dirname, 'upgrade.json');
@@ -1788,7 +2399,7 @@ describe('App', () => {
     });
 
     test('Upgrade -- Not on Windows', async () => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'linux'));
+      vi.mocked(platform).mockReturnValue('linux');
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -1869,13 +2480,11 @@ describe('App', () => {
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
-
-      platformSpy.mockRestore();
     });
 
     test('Upgrade -- No version specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child!: MockChildProcess;
 
@@ -1886,19 +2495,17 @@ describe('App', () => {
         disconnectCalled: false,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2011,7 +2618,7 @@ describe('App', () => {
 
     test('Upgrade -- Version specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child!: MockChildProcess;
 
@@ -2022,20 +2629,18 @@ describe('App', () => {
         disconnectCalled: false,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2150,7 +2755,7 @@ describe('App', () => {
 
     test('Upgrade -- Invalid version', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2158,7 +2763,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
 
       function mockConnectionHandler(socket: Client): void {
@@ -2237,14 +2842,13 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Already on specified version', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2252,7 +2856,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
 
       function mockConnectionHandler(socket: Client): void {
@@ -2337,14 +2941,188 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
+      fetchSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrade -- Picks up a newer `latest` after upstream manifest changes', async () => {
+      // Regression test: `latest` must never be cached. The agent first issues an upgrade while
+      // already on the latest version (a no-op), then upstream publishes a new release that changes
+      // `latest.json`. A subsequent upgrade must re-fetch `latest`, observe the new version, and
+      // actually upgrade -- if `latest` were cached, the second request would still see the old
+      // version and incorrectly no-op until the process restarted.
+      clearReleaseCache();
+
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      let child: MockChildProcess | undefined;
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        upgradeResponseCount: 0,
+        agentError: undefined as AgentError | undefined,
+        disconnectCalled: false,
+      };
+
+      // The semver portion of the agent's current version -- `latest` initially resolves to this.
+      const currentVersion = MEDPLUM_VERSION.split('-')[0];
+      // The newer version that upstream will publish partway through the test.
+      const newVersion = '100.0.0';
+      // Mutable -- flipped to `newVersion` to simulate upstream publishing a new release.
+      let latestVersion = currentVersion;
+
+      vi.mocked(platform).mockReturnValue('win32');
+      // `latest.json` resolves to whatever `latestVersion` currently points at; concrete version
+      // URLs (e.g. the pre-spawn artifact check) return that same version's manifest.
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async (input: string | URL | Request) => {
+          if (!(typeof input === 'string' || input instanceof URL)) {
+            throw new Error('input must be string or URL object');
+          }
+          const url = input.toString();
+          const version = url.includes('/latest.json') ? latestVersion : newVersion;
+          return new Response(JSON.stringify(buildManifest(version)), {
+            headers: { 'content-type': 'application/json' },
+            status: 200,
+          });
+        })
+      );
+      vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.upgradeResponseCount++;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Each phase gets its own deadline; surfaces any agent error to aid debugging.
+      const waitForPhase = (predicate: () => boolean, description: string): Promise<void> =>
+        waitFor(
+          () => {
+            if (state.agentError) {
+              throw new Error(`Unexpected agent error while waiting for ${description}: ${state.agentError.body}`);
+            }
+            return predicate();
+          },
+          2500,
+          description
+        );
+
+      // Phase 1: agent is already on the latest version, so this upgrade is a no-op.
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentUpgradeRequest)
+      );
+
+      await waitForPhase(() => state.upgradeResponseCount >= 1, 'no-op upgrade response');
+
+      // No upgrade should have been spawned for the no-op
+      expect(spawnSpy).not.toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Attempted to upgrade to version ${currentVersion}, but agent is already on that version`
+        )
+      );
+
+      // Phase 2: upstream publishes a new release, changing what `latest.json` returns.
+      latestVersion = newVersion;
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback,
+        } satisfies AgentUpgradeRequest)
+      );
+
+      await waitForPhase(() => Boolean(child), 'child to spawn');
+
+      await sleep(100);
+      (child as MockChildProcess).emit('message', { type: 'STARTED' });
+      await waitForPhase(() => state.disconnectCalled, 'disconnect');
+
+      // The second request must re-fetch `latest`, see the new version, and actually upgrade
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
+        detached: true,
+        stdio: ['ignore', 42, 42, 'ipc'],
+      });
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: newVersion,
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
+      // Only the phase 1 no-op produced an upgrade response; phase 2 finalizes after restart
+      expect(state.upgradeResponseCount).toStrictEqual(1);
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Already on specified version (force upgrade)', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2355,20 +3133,18 @@ describe('App', () => {
 
       let child!: MockChildProcess;
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2489,7 +3265,7 @@ describe('App', () => {
 
     test('Upgrade -- Pre-4.2.4', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2497,7 +3273,7 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
 
       function mockConnectionHandler(socket: Client): void {
@@ -2579,14 +3355,13 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrade -- Pre-4.2.4, force = true', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       let child!: MockChildProcess;
 
@@ -2597,20 +3372,18 @@ describe('App', () => {
         disconnectCalled: false,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const platformSpy = vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
-      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-        jest.fn(() => {
-          child = new MockChildProcess();
-          child.onDisconnect = () => {
-            state.disconnectCalled = true;
-          };
-          return child;
-        })
-      );
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+      const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+      const rmSyncSpy = vi.mocked(rmSync).mockImplementation(vi.fn());
+      const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+        child = new MockChildProcess();
+        child.onDisconnect = () => {
+          state.disconnectCalled = true;
+        };
+        return child;
+      });
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2728,7 +3501,7 @@ describe('App', () => {
 
     test('Upgrade -- Error while starting upgrader', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2736,10 +3509,10 @@ describe('App', () => {
         agentError: undefined as AgentError | undefined,
       };
 
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
       const fetchSpy = mockFetchForUpgrader();
-      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(
-        jest.fn(() => {
+      const openSyncSpy = vi.mocked(openSync).mockImplementation(
+        vi.fn(() => {
           throw new Error('Unable to open file');
         })
       );
@@ -2818,17 +3591,16 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
       openSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+      const unlinkSyncSpy = vi.mocked(unlinkSync);
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
+      console.log = vi.fn();
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -2915,15 +3687,14 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is correct (Success)', async () => {
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+      const unlinkSyncSpy = vi.mocked(unlinkSync);
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -3008,15 +3779,14 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, failed to create agent PID', async () => {
-      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+      const unlinkSyncSpy = vi.mocked(unlinkSync);
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
-      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile').mockImplementation(() => {
+      console.log = vi.fn();
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile').mockImplementation(() => {
         throw new Error('Unable to create PID');
       });
 
@@ -3077,7 +3847,7 @@ describe('App', () => {
       });
 
       const app = new App(medplum, agent.id, LogLevel.INFO);
-      const infoSpy = jest.spyOn(app.log, 'info');
+      const infoSpy = vi.spyOn(app.log, 'info');
       const appStartPromise = app.start();
       appStartPromise.catch(console.error);
 
@@ -3124,14 +3894,263 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      unlinkSyncSpy.mockRestore();
       infoSpy.mockRestore();
       createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
+    test('Upgrading -- Ignores transmit requests until it becomes primary', async () => {
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID until
+      // we flip this flag, simulating the outgoing agent still owning the PID during the overlap.
+      let allowPrimary = false;
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+        if (appName === 'medplum-agent' && !allowPrimary) {
+          throw new Error('Unable to create PID');
+        }
+        return '/tmp/test.pid';
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:transmit:response':
+              state.transmitResponses.push(command);
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const listenerPort = await getFreePort();
+      const hl7Messages: Hl7Message[] = [];
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          hl7Messages.push(message);
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(listenerPort);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const appStartPromise = app.start();
+      appStartPromise.catch(console.error);
+
+      // Wait for the WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const transmitRequest = {
+        type: 'agent:transmit:request',
+        contentType: ContentType.HL7_V2,
+        body:
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r',
+        remote: `mllp://localhost:${listenerPort}`,
+        callback: getReferenceString(agent) + '-' + randomUUID(),
+      } satisfies AgentTransmitRequest;
+
+      // While non-primary, the transmit request should be dropped: the remote receives nothing and
+      // no response comes back. (The outgoing agent is still primary and handles it during overlap.)
+      state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
+      await sleep(500);
+      expect(hl7Messages).toHaveLength(0);
+      expect(state.transmitResponses).toHaveLength(0);
+
+      // Now let the agent win the PID and become primary. Wait until the PID is actually acquired
+      // (which sets isPrimary) before sending again, since dropped requests are not queued/replayed.
+      allowPrimary = true;
+      let shouldThrow = false;
+      let timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (!createPidFileSpy.mock.results.some((result) => result.type === 'return')) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for agent to become primary');
+        }
+        await sleep(50);
+      }
+      clearTimeout(timeout);
+
+      // The same request should now be forwarded to the remote and acknowledged.
+      state.mySocket.send(Buffer.from(JSON.stringify(transmitRequest)));
+
+      shouldThrow = false;
+      timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (hl7Messages.length === 0 || state.transmitResponses.length === 0) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for transmit to be forwarded after becoming primary');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(hl7Messages).toHaveLength(1);
+      expect(state.transmitResponses).toHaveLength(1);
+
+      await hl7Server.stop({ forceDrainTimeoutMs: 100 });
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      createPidFileSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrading -- Ignores transmit responses until it becomes primary', async () => {
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      // Keep the upgrading agent non-primary by failing to acquire the `medplum-agent` PID, simulating
+      // the outgoing agent still owning the PID during the overlap.
+      const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile').mockImplementation((appName: string) => {
+        if (appName === 'medplum-agent') {
+          throw new Error('Unable to create PID');
+        }
+        return '/tmp/test.pid';
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              break;
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.DEBUG);
+      const appStartPromise = app.start();
+      appStartPromise.catch(console.error);
+
+      // Wait for the WebSocket to connect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const debugSpy = vi.spyOn(app.log, 'debug');
+      const addToHl7QueueSpy = vi.spyOn(app, 'addToHl7Queue');
+
+      // While non-primary, an inbound transmit response should be dropped before any handling: it is
+      // not queued for a channel and produces no disabled/error response back to the server.
+      state.mySocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: 'test',
+            remote: 'mllp://localhost:9999',
+            contentType: ContentType.HL7_V2,
+            body: 'ACK',
+            callback: getReferenceString(agent) + '-' + randomUUID(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+
+      // Wait for the debug log indicating the response was ignored
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+      while (
+        !debugSpy.mock.calls.some((call) => String(call[0]).includes('Ignoring transmit response while not primary'))
+      ) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for transmit response to be ignored');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(addToHl7QueueSpy).not.toHaveBeenCalled();
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      debugSpy.mockRestore();
+      addToHl7QueueSpy.mockRestore();
+      createPidFileSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
     test('Upgrade -- Missing artifact for platform', async () => {
-      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      vi.mocked(platform).mockReturnValue('win32');
 
       // Manifest only has a Linux asset, no Windows asset
       const manifest = {
@@ -3144,8 +4163,8 @@ describe('App', () => {
         ],
       };
 
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+        vi.fn(async () => {
           return new Response(JSON.stringify(manifest), {
             headers: { 'content-type': 'application/json' },
             status: 200,
@@ -3222,8 +4241,160 @@ describe('App', () => {
         mockServer.stop(resolve);
       });
 
-      platformSpy.mockRestore();
       fetchSpy.mockRestore();
+    });
+
+    test('Upgrading -- deletes manifest before channel listeners finish binding (zero-downtime, no deadlock)', async () => {
+      // Regression test for the zero-downtime upgrade deadlock.
+      //
+      // During a real upgrade, the previous agent keeps listening on the channel ports until the
+      // installer stops it -- and the installer only stops it once this (new) agent deletes
+      // upgrade.json. So the new agent MUST delete the manifest while its listeners are still
+      // trying to bind; if it waited for the binds to finish first, it would deadlock: the ports
+      // never free, the manifest is never deleted, and both services run forever.
+      //
+      // We simulate that here: a blocker server holds the channel's port (standing in for the old
+      // agent still listening), and we only release it when upgrade.json is deleted (standing in for
+      // the installer stopping the old agent). If start() deferred manifest deletion until after the
+      // listeners bound, this test would deadlock and trip the timeout below.
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      const manifestPath = resolve(__dirname, 'upgrade.json');
+
+      // Occupy the channel's port to mimic the previous agent still listening on it.
+      const port = await getFreePort();
+      const blocker = net.createServer();
+      await new Promise<void>((res) => {
+        blocker.listen(port, res);
+      });
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+      // How many channels had bound (and thus registered themselves in `app.channels`) at the moment
+      // the manifest was deleted. The fix guarantees this is 0 -- the bind is deferred past deletion.
+      let channelsBoundAtManifestDeletion = -1;
+
+      writeFileSync(
+        manifestPath,
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+            case 'agent:error':
+              state.agentError = command;
+              break;
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+      const endpoint = await medplum.createResource<Endpoint>({
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: `mllp://0.0.0.0:${port}`,
+        connectionType: { code: ContentType.HL7_V2 },
+        payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+        channel: [
+          {
+            name: 'test',
+            endpoint: createReference(endpoint),
+            targetReference: createReference(bot),
+          },
+        ],
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+
+      const { unlinkSync: realUnlinkSync } = await vi.importActual<typeof NodeFs>('node:fs');
+      const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation((path) => {
+        if (path === manifestPath) {
+          // A channel only registers in `app.channels` once it has successfully bound, so this
+          // proves the manifest is deleted while the listener is still (re)trying to bind.
+          channelsBoundAtManifestDeletion = app.channels.size;
+          // Release the port, mimicking the installer stopping the old agent -- this is what finally
+          // lets the new agent's listener win the bind.
+          blocker.close();
+        }
+        realUnlinkSync(path);
+      });
+
+      // If the manifest-deletion / bind ordering regresses, start() never resolves; fail with a
+      // clear message instead of hanging until the vitest timeout.
+      let timeoutHandle: NodeJS.Timeout | undefined;
+      const deadlockTimeout = new Promise<never>((_resolve, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error('app.start() deadlocked: manifest not deleted before listeners bound')),
+          5000
+        );
+      });
+      try {
+        await expect(Promise.race([app.start(), deadlockTimeout])).resolves.toBeUndefined();
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
+
+      // The manifest was deleted while the listener was still unbound (deferred bind worked)...
+      expect(channelsBoundAtManifestDeletion).toBe(0);
+      expect(unlinkSyncSpy).toHaveBeenCalledWith(manifestPath);
+      // ...and once the port freed, the listener bound...
+      expect(app.channels.size).toBe(1);
+
+      // ...and the upgrade was finalized successfully (the response is delivered asynchronously
+      // over the mock WebSocket, so poll for it).
+      let waited = 0;
+      while (!state.gotAgentUpgradeResponse && waited < 3000) {
+        await sleep(50);
+        waited += 50;
+      }
+      expect(state.gotAgentUpgradeResponse).toBe(true);
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((res) => {
+        mockServer.stop(res);
+      });
+      if (blocker.listening) {
+        await new Promise<void>((res) => {
+          blocker.close(() => res());
+        });
+      }
+      console.log = originalConsoleLog;
     });
   });
 
@@ -3237,23 +4408,21 @@ describe('App', () => {
 
     let child!: MockChildProcess;
 
-    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
+    const unlinkSyncSpy = vi.mocked(unlinkSync);
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
-    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
-    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
     const fetchSpy = mockFetchForUpgrader();
-    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-      jest.fn(() => {
-        child = new MockChildProcess();
-        child.onDisconnect = () => {
-          state.disconnectCalled = true;
-        };
-        return child;
-      })
-    );
-    const isAppRunningSpy = jest
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
+    const isAppRunningSpy = vi
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation((appName: string) => appName === 'medplum-upgrading-agent');
 
@@ -3350,24 +4519,22 @@ describe('App', () => {
 
     let child!: MockChildProcess;
 
-    const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation();
+    const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation(vi.fn());
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
-    const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
-    const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
-    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
     const fetchSpy = mockFetchForUpgrader();
-    const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
-    const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
-      jest.fn(() => {
-        child = new MockChildProcess();
-        child.onDisconnect = () => {
-          state.disconnectCalled = true;
-        };
-        return child;
-      })
-    );
-    const isAppRunningSpy = jest
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
+    const isAppRunningSpy = vi
       .spyOn(pidModule, 'isAppRunning')
       .mockImplementation(
         (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
@@ -3485,9 +4652,160 @@ describe('App', () => {
     console.log = originalConsoleLog;
   });
 
+  test('Upgrading -- Upgrade in progress (force) with no manifest file, should not throw', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentUpgradeResponse: false,
+      agentError: undefined as AgentError | undefined,
+      disconnectCalled: false,
+    };
+
+    let child!: MockChildProcess;
+
+    const manifestPath = resolve(__dirname, 'upgrade.json');
+    const { existsSync: realExistsSync } = await vi.importActual<typeof NodeFs>('node:fs');
+    // Manifest does not exist on disk; the upgrade is only "in progress" because an upgrader process is running
+    const existsSyncSpy = vi
+      .mocked(existsSync)
+      .mockImplementation((path) => (path === manifestPath ? false : realExistsSync(path)));
+    // Mimic the real fs behavior: unlinking a non-existent file throws ENOENT.
+    // The fix must guard with existsSync so this is never reached for the missing manifest.
+    const unlinkSyncSpy = vi.mocked(unlinkSync).mockImplementation((path) => {
+      throw Object.assign(new Error(`ENOENT: no such file or directory, unlink '${String(path)}'`), {
+        code: 'ENOENT',
+      });
+    });
+    const originalConsoleLog = console.log;
+    console.log = vi.fn();
+    const createPidFileSpy = vi.spyOn(pidModule, 'createPidFile');
+    const openSyncSpy = vi.mocked(openSync).mockImplementation(vi.fn(() => 42));
+    const platformSpy = vi.mocked(platform).mockReturnValue('win32');
+    const fetchSpy = mockFetchForUpgrader();
+    const writeFileSyncSpy = vi.mocked(writeFileSync).mockImplementation(vi.fn());
+    const spawnSpy = vi.mocked(spawn).mockImplementation(function () {
+      child = new MockChildProcess();
+      child.onDisconnect = () => {
+        state.disconnectCalled = true;
+      };
+      return child;
+    });
+    // Report the upgrader process as running so the agent considers an upgrade "in progress",
+    // even though the manifest file does not exist (existsSync mocked to false above)
+    const isAppRunningSpy = vi
+      .spyOn(pidModule, 'isAppRunning')
+      .mockImplementation(
+        (appName: string) => appName === 'medplum-upgrading-agent' || appName === 'medplum-agent-upgrader'
+      );
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:upgrade:response':
+            if (command.statusCode !== 200) {
+              throw new Error('Invalid status code. Expected 200');
+            }
+            state.gotAgentUpgradeResponse = true;
+            break;
+
+          case 'agent:error':
+            state.agentError = command;
+            break;
+
+          default:
+            throw new Error('Unhandled message type');
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for the WebSocket to reconnect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    const callback = getReferenceString(agent) + '-' + randomUUID();
+
+    state.mySocket.send(
+      JSON.stringify({
+        type: 'agent:upgrade:request',
+        callback,
+        force: true,
+      } satisfies AgentUpgradeRequest)
+    );
+
+    let shouldThrow = false;
+    const timeout = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+
+    // eslint-disable-next-line no-unmodified-loop-condition
+    while (!child) {
+      if (shouldThrow) {
+        throw new Error('Timeout while waiting for child to spawn');
+      }
+      await sleep(100);
+    }
+
+    await sleep(100);
+    child.emit('message', { type: 'STARTED' });
+    while (!state.disconnectCalled) {
+      if (shouldThrow) {
+        throw new Error('Timeout while waiting for disconnect');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout);
+
+    // The upgrade should proceed without ever attempting to unlink the (non-existent) manifest
+    expect(unlinkSyncSpy).not.toHaveBeenCalledWith(manifestPath);
+    expect(state.agentError).toBeUndefined();
+    expect(spawnSpy).toHaveBeenCalled();
+    expect(child.disconnect).toHaveBeenCalled();
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    for (const spy of [
+      existsSyncSpy,
+      unlinkSyncSpy,
+      createPidFileSpy,
+      openSyncSpy,
+      platformSpy,
+      fetchSpy,
+      writeFileSyncSpy,
+      isAppRunningSpy,
+    ]) {
+      spy.mockReset();
+    }
+    console.log = originalConsoleLog;
+  });
+
   test('App#stop should close all persistent HL7 clients', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const state = {
       mySocket: undefined as Client | undefined,
@@ -3585,7 +4903,7 @@ describe('App', () => {
     expect(app.hl7Clients.size).toStrictEqual(2);
 
     // Spy on pool.closeAll() to verify it's called
-    const closeAllSpies = Array.from(app.hl7Clients.values()).map((pool) => jest.spyOn(pool, 'closeAll'));
+    const closeAllSpies = Array.from(app.hl7Clients.values()).map((pool) => vi.spyOn(pool, 'closeAll'));
 
     // Stop the app
     await app.stop();
@@ -3609,7 +4927,7 @@ describe('App', () => {
 
   test('Pool persists in hl7Clients after client error — only cleared on keepAlive change', async () => {
     const originalConsoleLog = console.log;
-    console.log = jest.fn();
+    console.log = vi.fn();
 
     const state = {
       mySocket: undefined as Client | undefined,
@@ -3732,12 +5050,12 @@ describe('App', () => {
     });
 
     console.log = originalConsoleLog;
-  });
+  }, 15_000);
 
   describe('Stats tracking for HL7 clients', () => {
     test('When keepAlive is off, clients should not track stats', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -3828,7 +5146,7 @@ describe('App', () => {
 
     test('When keepAlive is on, clients should track stats as messages are sent', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -3923,7 +5241,7 @@ describe('App', () => {
 
     test('When keepAlive goes from on to off, cleanup stats for all open clients', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4064,7 +5382,7 @@ describe('App', () => {
 
     test('When logStatsFreqSecs goes from on to off, pool keeps tracking stats (default-on)', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4176,7 +5494,7 @@ describe('App', () => {
 
     test('Pool tracks stats by default when keepAlive is on, regardless of logStatsFreqSecs', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4319,7 +5637,7 @@ describe('App', () => {
   describe('returnAck handling in pushMessage', () => {
     test('Uses default of FIRST when no returnAck options are specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4408,7 +5726,7 @@ describe('App', () => {
 
     test('Uses per-message returnAck when specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4498,7 +5816,7 @@ describe('App', () => {
 
     test('Uses defaultReturnAck from Device URL when per-message returnAck is not specified', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4587,7 +5905,7 @@ describe('App', () => {
 
     test('Per-message returnAck takes priority over defaultReturnAck from Device URL', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4676,7 +5994,7 @@ describe('App', () => {
 
     test('Invalid defaultReturnAck in Device URL logs warning and falls back to FIRST', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4774,7 +6092,7 @@ describe('App', () => {
 
     test('Invalid per-message returnAck returns 400 error', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4865,7 +6183,7 @@ describe('App', () => {
 
     test('parseReturnAck is case-insensitive for APPLICATION', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -4953,7 +6271,7 @@ describe('App', () => {
 
     test('parseReturnAck is case-insensitive for FIRST', async () => {
       const originalConsoleLog = console.log;
-      console.log = jest.fn();
+      console.log = vi.fn();
 
       const state = {
         mySocket: undefined as Client | undefined,
@@ -5283,10 +6601,10 @@ describe('App', () => {
 });
 
 class MockChildProcess extends EventEmitter implements ChildProcess {
-  send = jest.fn();
-  unref = jest.fn();
-  ref = jest.fn();
-  disconnect = jest.fn(() => {
+  send = vi.fn();
+  unref = vi.fn();
+  ref = vi.fn();
+  disconnect = vi.fn(() => {
     this.onDisconnect?.();
   });
   stdin = new Writable();

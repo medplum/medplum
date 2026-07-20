@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
+import type { Mock } from 'vitest';
 import { act, fireEvent, render } from '../test-utils/render';
 import { ScrollToTop } from './ScrollToTop';
 
 describe('ScrollToTop', () => {
   beforeEach(() => {
-    window.scrollTo = jest.fn();
+    window.scrollTo = vi.fn();
   });
 
   test('scrolls to top on route change', async () => {
@@ -22,7 +23,7 @@ describe('ScrollToTop', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
 
     // Clear mock calls
-    (window.scrollTo as jest.Mock).mockClear();
+    (window.scrollTo as Mock).mockClear();
 
     // Simulate navigation
     await act(() => fireEvent.click(container.querySelector('a') as HTMLAnchorElement));

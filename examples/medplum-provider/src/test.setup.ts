@@ -7,6 +7,8 @@ import '@testing-library/jest-dom';
 import { MemoryStorage, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import crypto from 'crypto';
+import { TextEncoder } from 'util';
 import { vi } from 'vitest';
 
 const { getComputedStyle } = window;
@@ -27,6 +29,14 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+Object.defineProperty(global, 'TextEncoder', {
+  value: TextEncoder,
+});
+
+Object.defineProperty(global.self, 'crypto', {
+  value: crypto.webcrypto,
+});
+
 class ResizeObserver {
   observe(): void {}
   unobserve(): void {}
@@ -38,6 +48,9 @@ window.ResizeObserver = ResizeObserver;
 // jsdom does not implement scrollIntoView
 // See: https://github.com/jsdom/jsdom/issues/1695#issuecomment-449931788
 Element.prototype.scrollIntoView = vi.fn();
+
+// jsdom does not implement scrollTo
+Element.prototype.scrollTo = vi.fn();
 
 // jsdom does not implement elementFromPoint (used by react-big-calendar)
 document.elementFromPoint = vi.fn().mockReturnValue(null);

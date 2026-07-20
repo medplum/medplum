@@ -34,6 +34,7 @@ import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
+import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
@@ -237,6 +238,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
+  apiRouter.use('/shl/', smartHealthLinkRouter);
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 
@@ -306,6 +308,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
+      fhirQuota: ctx?.fhirRateLimiter?.unitsConsumed,
     });
   });
 

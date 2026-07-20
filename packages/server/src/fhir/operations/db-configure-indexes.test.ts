@@ -50,7 +50,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -78,7 +78,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -106,7 +106,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -150,13 +150,13 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
 
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
 
     expect(asyncJob.output).toStrictEqual({
       resourceType: 'Parameters',
-      parameter: [
+      parameter: expect.toContainExactly([
         {
           name: 'action',
           part: [
@@ -177,7 +177,7 @@ describe('db-configure-indexes', () => {
             },
           ],
         },
-      ],
+      ]),
     });
   });
 
@@ -208,13 +208,13 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
 
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
 
     expect(asyncJob.output).toStrictEqual({
       resourceType: 'Parameters',
-      parameter: [
+      parameter: expect.toContainExactly([
         {
           name: 'action',
           part: [
@@ -264,7 +264,7 @@ describe('db-configure-indexes', () => {
             },
           ],
         },
-      ],
+      ]),
     });
   });
 
@@ -287,7 +287,7 @@ describe('db-configure-indexes', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [

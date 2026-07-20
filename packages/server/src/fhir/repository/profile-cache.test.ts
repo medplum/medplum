@@ -11,8 +11,6 @@ import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import { getRepoForLogin } from '../accesspolicy';
 
-jest.mock('hibp');
-
 describe('Repository profile cache', () => {
   const usCorePatientProfile = JSON.parse(
     readFileSync(resolve(__dirname, '../__test__/us-core-patient.json'), 'utf8')

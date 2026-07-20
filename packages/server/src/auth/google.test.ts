@@ -3,7 +3,9 @@
 import type { Practitioner, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import type * as Jose from 'jose';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
@@ -13,11 +15,11 @@ import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('jose', () => {
-  const original = jest.requireActual('jose');
+vi.mock('jose', async () => {
+  const original = await vi.importActual<typeof Jose>('jose');
   return {
     ...original,
-    jwtVerify: jest.fn((credential: string) => {
+    jwtVerify: vi.fn((credential: string) => {
       if (credential === 'invalid') {
         throw new Error('Verification failed');
       }
@@ -58,7 +60,7 @@ describe('Google Auth', () => {
         googleClientId: '',
         googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing googleClientId');
   });
@@ -71,7 +73,7 @@ describe('Google Auth', () => {
         googleClientId: '123',
         googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid googleClientId');
   });
@@ -81,7 +83,7 @@ describe('Google Auth', () => {
       googleClientId: getConfig().googleClientId,
       googleCredential: '',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing googleCredential');
   });
@@ -91,7 +93,7 @@ describe('Google Auth', () => {
       googleClientId: getConfig().googleClientId,
       googleCredential: 'invalid',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Verification failed');
   });
@@ -104,7 +106,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.code).toBeDefined();
   });
 
@@ -117,7 +119,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     const user = await getUserByEmail(email, undefined);
     expect(user).toBeUndefined();
@@ -135,7 +137,7 @@ describe('Google Auth', () => {
         createUser: true,
         projectId: 'new',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Registration is disabled');
 
     const user = await getUserByEmail(email, undefined);
@@ -152,7 +154,7 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Test', 'Test', email),
         createUser: true,
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
 
@@ -171,7 +173,7 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Test', 'Test', email),
         createUser: true,
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
 
@@ -196,7 +198,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
 
@@ -234,7 +236,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeDefined();
   });
 
@@ -272,7 +274,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Test', 'Test', email, 'https://example.com/picture.jpg'),
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeDefined();
 
     // Now re-fetch the profile
@@ -318,7 +320,7 @@ describe('Google Auth', () => {
         googleClientId: googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeDefined();
   });
 
@@ -361,7 +363,7 @@ describe('Google Auth', () => {
         googleClientId: googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeUndefined();
     expect(res2.body.login).toBeDefined();
     expect(res2.body.memberships).toBeDefined();
@@ -407,7 +409,7 @@ describe('Google Auth', () => {
         googleClientId: googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('Custom Google client wrong projectId', async () => {
@@ -448,7 +450,7 @@ describe('Google Auth', () => {
         googleClientId: googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0].details.text).toStrictEqual('Invalid googleClientId');
   });
 
@@ -475,7 +477,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Text', 'User', email),
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.code).toBeDefined();
   });
 
@@ -502,7 +504,7 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Text', 'User', email),
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toStrictEqual('Invalid projectId');
   });
 });

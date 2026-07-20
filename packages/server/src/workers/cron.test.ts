@@ -13,8 +13,6 @@ import type { CronJobData } from './cron';
 import { convertTimingToCron, execBot, getCronQueue } from './cron';
 import { findAndExecDispatchJob } from './test-utils';
 
-jest.mock('node-fetch');
-
 describe('Cron Worker', () => {
   let botProject: Project;
   let botRepo: Repository;

@@ -14,13 +14,16 @@ import type { Express } from 'express';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import type { Server } from 'node:http';
+import type { IncomingMessage, Server } from 'node:http';
 import request from 'superwstest';
+import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
+import * as redis from '../redis';
 import { initTestAuth, withTestContext } from '../test.setup';
+import { handleFhircastConnection } from './fhircast';
 
 describe('FHIRcast WebSocket', () => {
   describe('Basic flow', () => {
@@ -30,7 +33,7 @@ describe('FHIRcast WebSocket', () => {
     let accessToken: string;
 
     beforeAll(async () => {
-      jest.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+      vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
       app = express();
       config = await loadTestConfig();
       config.heartbeatEnabled = false;
@@ -96,7 +99,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj) => {
@@ -239,7 +242,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
 
             // Update report 2 -- add observation
@@ -300,7 +303,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -355,7 +358,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -410,7 +413,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -427,7 +430,7 @@ describe('FHIRcast WebSocket', () => {
               .get(`/fhircast/STU3/${topic}`)
               .set('Authorization', 'Bearer ' + accessToken);
 
-            expect(res2.status).toEqual(200);
+            expect(res2).toHaveStatus(200);
           })
           // TODO: Check context
           .exec(async () => {
@@ -472,7 +475,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -527,7 +530,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.body).toBeDefined();
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
@@ -584,7 +587,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(400);
+            expect(res2).toHaveStatus(400);
             expect(res2.body).toMatchObject(
               badRequest('Cannot delete a resource that is part of the original open context')
             );
@@ -631,7 +634,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res3.status).toBe(400);
+            expect(res3).toHaveStatus(400);
             expect(res3.body).toMatchObject(badRequest('Cannot delete resource not currently in the content bundle'));
             expect(res2.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
           })
@@ -659,7 +662,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-open'>) => {
@@ -694,7 +697,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
 
             // Close report 1 -- make sure empty context
@@ -732,7 +735,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-open'>) => {
@@ -748,7 +751,7 @@ describe('FHIRcast WebSocket', () => {
               .get(`/fhircast/STU3/${topic}`)
               .set('Authorization', 'Bearer ' + accessToken);
 
-            expect(res2.status).toEqual(200);
+            expect(res2).toHaveStatus(200);
             expect(res2.body).toMatchObject({ context: [], 'context.type': '' });
           })
           .close()
@@ -757,7 +760,7 @@ describe('FHIRcast WebSocket', () => {
 
     test('Invalid endpoint', () =>
       withTestContext(async () => {
-        const globalLoggerErrorSpy = jest.spyOn(globalLogger, 'error');
+        const globalLoggerErrorSpy = vi.spyOn(globalLogger, 'error');
         const topic = randomUUID();
         await request(server)
           .ws(`/ws/fhircast/${topic}`)
@@ -915,6 +918,74 @@ describe('FHIRcast WebSocket', () => {
           .sendJson({ ok: true })
           .close()
           .expectClosed();
+      }));
+  });
+
+  describe('Subscribe failure', () => {
+    test('Closes socket and logs when subscribe rejects', () =>
+      withTestContext(async () => {
+        const subscribeError = new Error('Connection is closed.');
+        const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: vi.fn().mockResolvedValue('project-id:my-topic'),
+        } as any);
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          status: 'ready',
+          subscribe: vi.fn().mockRejectedValue(subscribeError),
+          on: vi.fn(),
+          disconnect: vi.fn(),
+        } as any);
+        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+        const socket = { on: vi.fn(), send: vi.fn(), close: vi.fn() } as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await expect(handleFhircastConnection(socket, req)).resolves.toBeUndefined();
+          expect(errorSpy).toHaveBeenCalledWith('[FHIRcast]: Failed to subscribe to topic', {
+            err: subscribeError,
+          });
+          expect(socket.close).toHaveBeenCalled();
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          errorSpy.mockRestore();
+        }
+      }));
+
+    test('Logs and ignores a client message that is not valid JSON', () =>
+      withTestContext(async () => {
+        const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: vi.fn().mockResolvedValue('project-id:my-topic'),
+        } as any);
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: vi.fn().mockResolvedValue(undefined),
+          on: vi.fn(),
+          disconnect: vi.fn(),
+        } as any);
+        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+        const handlers: Record<string, (...args: any[]) => any> = {};
+        const socket = {
+          on: vi.fn((event: string, cb: (...args: any[]) => any) => {
+            handlers[event] = cb;
+          }),
+          send: vi.fn(),
+          close: vi.fn(),
+        } as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await handleFhircastConnection(socket, req);
+          // A malformed payload must be logged and swallowed, not crash the message handler
+          await handlers.message(Buffer.from('{ not valid json'));
+          expect(errorSpy).toHaveBeenCalledWith('[FHIRcast]: Failed to parse client message', {
+            err: expect.any(SyntaxError),
+          });
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          errorSpy.mockRestore();
+        }
       }));
   });
 });

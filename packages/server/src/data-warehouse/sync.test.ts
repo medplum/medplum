@@ -1,16 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
+import { vi } from 'vitest';
 import type { Expression } from '../fhir/sql';
-import { SqlBuilder } from '../fhir/sql';
+import { Condition, SqlBuilder } from '../fhir/sql';
+import type { DataWarehouseDestination } from './destination';
 import { LocalParquetWarehouseDestination } from './destination';
 import type { SyncOptions } from './sync';
 import { buildWarehouseSourcePredicate } from './sync';
-import { buildMaxLastUpdatedWatermarkPredicate, buildStartDatePredicate } from './warehouse-sql';
+import { buildStartDatePredicate } from './warehouse-sql';
 
-const tableSpec = { postgresTable: 'Patient_history', icebergTable: 'patient_history' };
+const tableSpec = { postgresTable: 'Patient_History', icebergTable: 'patient_history' };
 const namespace = 'default';
+const connection = {} as never;
 
 function appendPredicateSql(predicate: Expression): {
   sql: string;
@@ -34,16 +36,26 @@ function assertDefined<T>(value: T | undefined): asserts value is T {
 }
 
 describe('buildWarehouseSourcePredicate', () => {
-  test('returns undefined when destination has no predicate and startDate is omitted', () => {
+  test('returns undefined when destination has no predicate and startDate is omitted', async () => {
     const destination = new LocalParquetWarehouseDestination('/tmp/dw-sync-test');
-    const predicate = buildWarehouseSourcePredicate(makeSyncOptions({ destination }), tableSpec, namespace);
+    const predicate = await buildWarehouseSourcePredicate(
+      connection,
+      makeSyncOptions({ destination }),
+      tableSpec,
+      namespace
+    );
     expect(predicate).toBeUndefined();
   });
 
-  test('returns startDate predicate only when destination has no predicate', () => {
+  test('returns startDate predicate only when destination has no predicate', async () => {
     const startDate = '2024-01-01T00:00:00.000Z';
     const destination = new LocalParquetWarehouseDestination('/tmp/dw-sync-test');
-    const predicate = buildWarehouseSourcePredicate(makeSyncOptions({ destination, startDate }), tableSpec, namespace);
+    const predicate = await buildWarehouseSourcePredicate(
+      connection,
+      makeSyncOptions({ destination, startDate }),
+      tableSpec,
+      namespace
+    );
 
     assertDefined(predicate);
     expect(appendPredicateSql(predicate)).toStrictEqual({
@@ -52,30 +64,41 @@ describe('buildWarehouseSourcePredicate', () => {
     });
   });
 
-  test('returns destination watermark predicate when startDate is omitted', () => {
-    const destination = new S3TablesWarehouseDestination(
-      'us-east-1',
-      'arn:aws:s3tables:us-east-1:123456789012:bucket/test'
+  test('returns destination watermark predicate when startDate is omitted', async () => {
+    const watermark = '2024-06-01T12:00:00.000Z';
+    const destinationPredicate = new Condition('lastUpdated', '>', watermark);
+    const destination = new LocalParquetWarehouseDestination('/tmp/dw-sync-test') as DataWarehouseDestination;
+    vi.spyOn(destination, 'buildSourcePredicate').mockResolvedValue(destinationPredicate);
+
+    const predicate = await buildWarehouseSourcePredicate(
+      connection,
+      makeSyncOptions({ destination }),
+      tableSpec,
+      namespace
     );
-    const predicate = buildWarehouseSourcePredicate(makeSyncOptions({ destination }), tableSpec, namespace);
-    const expected = buildMaxLastUpdatedWatermarkPredicate('iceberg_catalog.default.patient_history');
 
     assertDefined(predicate);
-    expect(appendPredicateSql(predicate)).toStrictEqual(appendPredicateSql(expected));
+    expect(appendPredicateSql(predicate)).toStrictEqual(appendPredicateSql(destinationPredicate));
   });
 
-  test('ANDs destination watermark with startDate when both apply', () => {
+  test('ANDs destination watermark with startDate when both apply', async () => {
     const startDate = '2024-06-01T00:00:00.000Z';
-    const destination = new S3TablesWarehouseDestination(
-      'us-east-1',
-      'arn:aws:s3tables:us-east-1:123456789012:bucket/test'
+    const watermark = '2024-06-01T12:00:00.000Z';
+    const destinationPredicate = new Condition('lastUpdated', '>', watermark);
+    const destination = new LocalParquetWarehouseDestination('/tmp/dw-sync-test') as DataWarehouseDestination;
+    vi.spyOn(destination, 'buildSourcePredicate').mockResolvedValue(destinationPredicate);
+
+    const predicate = await buildWarehouseSourcePredicate(
+      connection,
+      makeSyncOptions({ destination, startDate }),
+      tableSpec,
+      namespace
     );
-    const predicate = buildWarehouseSourcePredicate(makeSyncOptions({ destination, startDate }), tableSpec, namespace);
 
     assertDefined(predicate);
     expect(appendPredicateSql(predicate)).toStrictEqual({
-      sql: `(((SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history") IS NULL OR "lastUpdated" > (SELECT MAX(last_updated) FROM "iceberg_catalog"."default"."patient_history")) AND "lastUpdated" >= $1)`,
-      values: [startDate],
+      sql: `("lastUpdated" > $1 AND "lastUpdated" >= $2)`,
+      values: [watermark, startDate],
     });
   });
 });

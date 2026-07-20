@@ -6,11 +6,11 @@ import { useDebouncedValue } from './useDebouncedValue';
 
 describe('useDebouncedValue', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('returns initial value immediately', () => {
@@ -18,7 +18,7 @@ describe('useDebouncedValue', () => {
     expect(result.current[0]).toBe('initial');
   });
 
-  test('debounces value updates by waitMs', () => {
+  test('debounces value updates by waitMs', async () => {
     const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200), {
       initialProps: { value: 'a' },
     });
@@ -26,13 +26,13 @@ describe('useDebouncedValue', () => {
     rerender({ value: 'b' });
     expect(result.current[0]).toBe('a');
 
-    act(() => {
-      jest.advanceTimersByTime(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
     });
     expect(result.current[0]).toBe('b');
   });
 
-  test('only applies the last value when updated rapidly', () => {
+  test('only applies the last value when updated rapidly', async () => {
     const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200), {
       initialProps: { value: 'a' },
     });
@@ -41,13 +41,13 @@ describe('useDebouncedValue', () => {
     rerender({ value: 'c' });
     rerender({ value: 'd' });
 
-    act(() => {
-      jest.advanceTimersByTime(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
     });
     expect(result.current[0]).toBe('d');
   });
 
-  test('cancel prevents the pending update', () => {
+  test('cancel prevents the pending update', async () => {
     const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200), {
       initialProps: { value: 'a' },
     });
@@ -57,8 +57,8 @@ describe('useDebouncedValue', () => {
       result.current[1](); // cancel
     });
 
-    act(() => {
-      jest.advanceTimersByTime(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
     });
     expect(result.current[0]).toBe('a');
   });
@@ -72,7 +72,7 @@ describe('useDebouncedValue', () => {
     expect(result.current[0]).toBe('b');
   });
 
-  test('leading: true suppresses subsequent rapid updates until cooldown elapses', () => {
+  test('leading: true suppresses subsequent rapid updates until cooldown elapses', async () => {
     const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200, { leading: true }), {
       initialProps: { value: 'a' },
     });
@@ -83,13 +83,13 @@ describe('useDebouncedValue', () => {
     rerender({ value: 'c' });
     expect(result.current[0]).toBe('b'); // still in cooldown — 'c' is queued
 
-    act(() => {
-      jest.advanceTimersByTime(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
     });
     expect(result.current[0]).toBe('c'); // queued value applied after cooldown
   });
 
-  test('leading: true resets cooldown after waitMs', () => {
+  test('leading: true resets cooldown after waitMs', async () => {
     const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 200, { leading: true }), {
       initialProps: { value: 'a' },
     });
@@ -99,8 +99,8 @@ describe('useDebouncedValue', () => {
     expect(result.current[0]).toBe('b');
 
     // Let the full cooldown elapse with no further updates
-    act(() => {
-      jest.advanceTimersByTime(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
     });
     // Cooldown should now be reset; the debounced value stays 'b' (no pending update)
     expect(result.current[0]).toBe('b');

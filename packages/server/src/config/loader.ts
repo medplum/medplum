@@ -10,7 +10,7 @@ import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
-import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
+import { addDefaults, isArrayConfig, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
 import { warnInvalidDataWarehouseConfig } from './validate-config';
 
 let cachedConfig: ServerConfig | undefined = undefined;
@@ -156,6 +156,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
+  config.rateLimitsEnabled = true;
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
@@ -257,6 +258,8 @@ function loadEnvConfig(): MedplumServerConfig {
       currConfig[key] = value === 'true';
     } else if (isObjectConfig(lookupKey) || isObjectConfig(key)) {
       currConfig[key] = JSON.parse(value ?? '');
+    } else if (isArrayConfig(lookupKey) || isArrayConfig(key)) {
+      currConfig[key] = value?.split(',').map((v) => v.trim());
     } else {
       currConfig[key] = value;
     }

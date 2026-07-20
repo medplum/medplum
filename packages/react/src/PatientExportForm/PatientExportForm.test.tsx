@@ -25,8 +25,8 @@ describe('PatientExportForm', () => {
 
   beforeAll(() => {
     // Mock URL.createObjectURL
-    URL.createObjectURL = jest.fn();
-    URL.revokeObjectURL = jest.fn();
+    URL.createObjectURL = vi.fn();
+    URL.revokeObjectURL = vi.fn();
 
     // Mock document.createEvent
     type MyDocument = typeof document & {
@@ -41,7 +41,7 @@ describe('PatientExportForm', () => {
       const result = (document as MyDocument).originalCreateElement(tagName, options);
       if (tagName === 'a') {
         // jsdom does not support click() or download attributes, so we will implement them here
-        result.click = jest.fn();
+        result.click = vi.fn();
       }
       return result;
     };

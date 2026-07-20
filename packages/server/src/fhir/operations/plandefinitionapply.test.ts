@@ -65,7 +65,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // 2. Create a PlanDefinition
     const res2 = await request(app)
@@ -83,7 +83,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     // 3. Create a Patient
     const res3 = await request(app)
@@ -94,7 +94,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const res4 = await request(app)
@@ -110,7 +110,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toStrictEqual('CarePlan');
     const carePlan = res4.body as WithId<CarePlan>;
 
@@ -118,7 +118,7 @@ describe('PlanDefinition apply', () => {
     const res5 = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     const requestGroup = res5.body as RequestGroup;
     expect(requestGroup.action).toHaveLength(1);
     const taskReference = requestGroup.action?.[0]?.resource?.reference;
@@ -128,7 +128,7 @@ describe('PlanDefinition apply', () => {
     const res6 = await request(app)
       .get(`/fhir/R4/${taskReference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body.resourceType).toStrictEqual('Task');
     const resultTask = res6.body as Task;
 
@@ -169,7 +169,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // 2. Create a PlanDefinition
     const res2 = await request(app)
@@ -187,7 +187,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     // 3. Create a Patient
     const res3 = await request(app)
@@ -198,7 +198,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Test' }],
       });
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
 
     // 4. Create an Encounter
     const res4 = await request(app)
@@ -214,7 +214,7 @@ describe('PlanDefinition apply', () => {
           display: 'emergency',
         },
       });
-    expect(res4.status).toBe(201);
+    expect(res4).toHaveStatus(201);
 
     // 5. Apply the PlanDefinition to create the Task and RequestGroup
     const res5 = await request(app)
@@ -234,14 +234,14 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.resourceType).toStrictEqual('CarePlan');
     const carePlan = res5.body as CarePlan;
 
     const resRG = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRG.status).toBe(200);
+    expect(resRG).toHaveStatus(200);
     expect(resRG.body.resourceType).toBe('RequestGroup');
     const requestGroup = resRG.body as RequestGroup;
     expect(requestGroup.action).toHaveLength(1);
@@ -268,7 +268,7 @@ describe('PlanDefinition apply', () => {
     const res7 = await request(app)
       .get(`/fhir/R4/Encounter/${res4.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
   });
 
   test('Unsupported content type', async () => {
@@ -281,14 +281,14 @@ describe('PlanDefinition apply', () => {
         title: 'Example Plan Definition',
         status: 'active',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'subject'"
     );
@@ -304,7 +304,7 @@ describe('PlanDefinition apply', () => {
         title: 'Example Plan Definition',
         status: 'active',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
@@ -313,7 +313,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'Patient',
       });
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'subject'"
     );
@@ -329,7 +329,7 @@ describe('PlanDefinition apply', () => {
         title: 'Example Plan Definition',
         status: 'active',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
@@ -339,7 +339,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Parameters',
         parameter: [],
       });
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Expected 1..* value(s) for input parameter subject, but 0 provided'
     );
@@ -360,7 +360,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const res3 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -370,7 +370,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
 
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
@@ -385,7 +385,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
   });
 
   test('ActivityDefinition ServiceRequest', async () => {
@@ -432,7 +432,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toBe('ActivityDefinition');
 
     const res2 = await request(app)
@@ -451,7 +451,7 @@ describe('PlanDefinition apply', () => {
         ],
       });
 
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('PlanDefinition');
     expect(res2.body.id).toBeDefined();
 
@@ -463,7 +463,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
 
     const res4 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
@@ -479,26 +479,26 @@ describe('PlanDefinition apply', () => {
         ],
       });
 
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toBe('CarePlan');
     const carePlan = res4.body as WithId<CarePlan>;
 
     const res5 = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.resourceType).toBe('RequestGroup');
 
     const res6 = await request(app)
       .get(`/fhir/R4/${(res5.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
 
     const resultTask = res6.body as Task;
     const res7 = await request(app)
       .get(`/fhir/R4/${resultTask.focus?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
     expect(res7.body.resourceType).toBe('ServiceRequest');
   });
 
@@ -512,7 +512,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Practitioner',
         name: [{ given: ['Dr. Jane'], family: 'Doe' }],
       });
-    expect(resPractitioner.status).toBe(201);
+    expect(resPractitioner).toHaveStatus(201);
     const practitioner = resPractitioner.body as WithId<Practitioner>;
 
     // 2. Create an ActivityDefinition with dynamicValue entries for performer and priority
@@ -539,7 +539,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resActivityDefinition.status).toBe(201);
+    expect(resActivityDefinition).toHaveStatus(201);
 
     // 3. Create a PlanDefinition
     const resPlanDefinition = await request(app)
@@ -557,7 +557,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resPlanDefinition.status).toBe(201);
+    expect(resPlanDefinition).toHaveStatus(201);
 
     // 4. Create a Patient
     const resPatient = await request(app)
@@ -568,7 +568,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(resPatient.status).toBe(201);
+    expect(resPatient).toHaveStatus(201);
 
     // 5. Apply with practitioner parameter
     const resApply = await request(app)
@@ -582,24 +582,24 @@ describe('PlanDefinition apply', () => {
           { name: 'practitioner', valueString: getReferenceString(practitioner) },
         ],
       });
-    expect(resApply.status).toBe(200);
+    expect(resApply).toHaveStatus(200);
     const carePlan = resApply.body as WithId<CarePlan>;
 
     // 6. Walk to the ServiceRequest
     const resRequestGroup = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRequestGroup.status).toBe(200);
+    expect(resRequestGroup).toHaveStatus(200);
 
     const resTask = await request(app)
       .get(`/fhir/R4/${(resRequestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resTask.status).toBe(200);
+    expect(resTask).toHaveStatus(200);
 
     const resServiceRequest = await request(app)
       .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resServiceRequest.status).toBe(200);
+    expect(resServiceRequest).toHaveStatus(200);
 
     // 7. Verify dynamicValue entries were applied
     const serviceRequest = resServiceRequest.body as ServiceRequest;
@@ -618,7 +618,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Organization',
         name: 'Main Lab Organization',
       });
-    expect(resOrganization.status).toBe(201);
+    expect(resOrganization).toHaveStatus(201);
     const organization = resOrganization.body as WithId<Organization>;
     const organizationReference = getReferenceString(organization);
 
@@ -656,7 +656,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resActivityDefinition.status).toBe(201);
+    expect(resActivityDefinition).toHaveStatus(201);
 
     // 3. Create a PlanDefinition
     const resPlanDefinition = await request(app)
@@ -674,7 +674,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resPlanDefinition.status).toBe(201);
+    expect(resPlanDefinition).toHaveStatus(201);
 
     // 4. Create a Patient
     const resPatient = await request(app)
@@ -685,7 +685,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(resPatient.status).toBe(201);
+    expect(resPatient).toHaveStatus(201);
 
     // 5. Apply with only the subject — performer/category come from the ActivityDefinition itself
     const resApply = await request(app)
@@ -696,24 +696,24 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
       });
-    expect(resApply.status).toBe(200);
+    expect(resApply).toHaveStatus(200);
     const carePlan = resApply.body as WithId<CarePlan>;
 
     // 6. Walk to the ServiceRequest
     const resRequestGroup = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRequestGroup.status).toBe(200);
+    expect(resRequestGroup).toHaveStatus(200);
 
     const resTask = await request(app)
       .get(`/fhir/R4/${(resRequestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resTask.status).toBe(200);
+    expect(resTask).toHaveStatus(200);
 
     const resServiceRequest = await request(app)
       .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resServiceRequest.status).toBe(200);
+    expect(resServiceRequest).toHaveStatus(200);
 
     // 7. Verify the hardcoded performer (organization) and category were applied
     const serviceRequest = resServiceRequest.body as ServiceRequest;
@@ -747,7 +747,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resActivityDefinition.status).toBe(201);
+    expect(resActivityDefinition).toHaveStatus(201);
 
     const resPlanDefinition = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
@@ -764,7 +764,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resPlanDefinition.status).toBe(201);
+    expect(resPlanDefinition).toHaveStatus(201);
 
     const resPatient = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -774,7 +774,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(resPatient.status).toBe(201);
+    expect(resPatient).toHaveStatus(201);
 
     const resApply = await request(app)
       .post(`/fhir/R4/PlanDefinition/${resPlanDefinition.body.id}/$apply`)
@@ -784,23 +784,23 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
       });
-    expect(resApply.status).toBe(200);
+    expect(resApply).toHaveStatus(200);
     const carePlan = resApply.body as WithId<CarePlan>;
 
     const resRequestGroup = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRequestGroup.status).toBe(200);
+    expect(resRequestGroup).toHaveStatus(200);
 
     const resTask = await request(app)
       .get(`/fhir/R4/${(resRequestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resTask.status).toBe(200);
+    expect(resTask).toHaveStatus(200);
 
     const resServiceRequest = await request(app)
       .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resServiceRequest.status).toBe(200);
+    expect(resServiceRequest).toHaveStatus(200);
 
     const serviceRequest = resServiceRequest.body as ServiceRequest;
     expect(serviceRequest.asNeededBoolean).toBe(true);
@@ -842,7 +842,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resActivityDefinition.status).toBe(201);
+    expect(resActivityDefinition).toHaveStatus(201);
 
     const resPlanDefinition = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
@@ -859,7 +859,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resPlanDefinition.status).toBe(201);
+    expect(resPlanDefinition).toHaveStatus(201);
 
     const resPatient = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -869,7 +869,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(resPatient.status).toBe(201);
+    expect(resPatient).toHaveStatus(201);
 
     const resApply = await request(app)
       .post(`/fhir/R4/PlanDefinition/${resPlanDefinition.body.id}/$apply`)
@@ -879,23 +879,23 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
       });
-    expect(resApply.status).toBe(200);
+    expect(resApply).toHaveStatus(200);
     const carePlan = resApply.body as WithId<CarePlan>;
 
     const resRequestGroup = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRequestGroup.status).toBe(200);
+    expect(resRequestGroup).toHaveStatus(200);
 
     const resTask = await request(app)
       .get(`/fhir/R4/${(resRequestGroup.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resTask.status).toBe(200);
+    expect(resTask).toHaveStatus(200);
 
     const resServiceRequest = await request(app)
       .get(`/fhir/R4/${(resTask.body as Task).focus?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resServiceRequest.status).toBe(200);
+    expect(resServiceRequest).toHaveStatus(200);
 
     const serviceRequest = resServiceRequest.body as ServiceRequest;
     expect(serviceRequest.asNeededCodeableConcept).toMatchObject(asNeededReason);
@@ -923,7 +923,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resActivityDefinition.status).toBe(201);
+    expect(resActivityDefinition).toHaveStatus(201);
 
     const resPlanDefinition = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
@@ -940,7 +940,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(resPlanDefinition.status).toBe(201);
+    expect(resPlanDefinition).toHaveStatus(201);
 
     const resPatient = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -950,7 +950,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(resPatient.status).toBe(201);
+    expect(resPatient).toHaveStatus(201);
 
     const resApply = await request(app)
       .post(`/fhir/R4/PlanDefinition/${resPlanDefinition.body.id}/$apply`)
@@ -960,7 +960,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
       });
-    expect(resApply.status).toBe(400);
+    expect(resApply).toHaveStatus(400);
     const outcome = resApply.body as OperationOutcome;
     expect(outcome.resourceType).toBe('OperationOutcome');
     expect(outcome.issue?.[0]?.details?.text).toContain('text/cql');
@@ -1027,7 +1027,7 @@ describe('PlanDefinition apply', () => {
         intent: 'order',
         priority: 'routine',
       });
-    expect(res1a.status).toBe(201);
+    expect(res1a).toHaveStatus(201);
 
     // 1b. Create a second ActivityDefinition with kind 'Task' to test task-elements extension works for non-ServiceRequest kinds
     const res1b = await request(app)
@@ -1071,7 +1071,7 @@ describe('PlanDefinition apply', () => {
         intent: 'order',
         priority: 'routine',
       });
-    expect(res1b.status).toBe(201);
+    expect(res1b).toHaveStatus(201);
 
     // 2. Create a PlanDefinition with both ActivityDefinitions
     const res2 = await request(app)
@@ -1093,7 +1093,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     // 3. Create a Patient
     const res3 = await request(app)
@@ -1106,7 +1106,7 @@ describe('PlanDefinition apply', () => {
         gender: 'female',
         birthDate: '1990-01-01',
       });
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
 
     // 4. Create a Practitioner
     const res4 = await request(app)
@@ -1136,7 +1136,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(201);
+    expect(res4).toHaveStatus(201);
 
     // 5. Create an Organization
     const res5 = await request(app)
@@ -1164,7 +1164,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res5.status).toBe(201);
+    expect(res5).toHaveStatus(201);
 
     // 6. Create an Encounter
     const res6 = await request(app)
@@ -1198,7 +1198,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res6.status).toBe(201);
+    expect(res6).toHaveStatus(201);
 
     // 7. Apply the PlanDefinition with all parameters
     const res7 = await request(app)
@@ -1226,14 +1226,14 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
     expect(res7.body.resourceType).toStrictEqual('CarePlan');
     const carePlan = res7.body as CarePlan;
 
     const resRG = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(resRG.status).toBe(200);
+    expect(resRG).toHaveStatus(200);
     expect(resRG.body.resourceType).toBe('RequestGroup');
     const requestGroup = resRG.body as RequestGroup;
     expect(requestGroup.action).toHaveLength(2);
@@ -1246,7 +1246,7 @@ describe('PlanDefinition apply', () => {
     const res8a = await request(app)
       .get(`/fhir/R4/${taskRef1}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8a.status).toBe(200);
+    expect(res8a).toHaveStatus(200);
     expect(res8a.body.resourceType).toStrictEqual('Task');
 
     const resultTask1 = res8a.body as Task;
@@ -1264,7 +1264,7 @@ describe('PlanDefinition apply', () => {
     const res8b = await request(app)
       .get(`/fhir/R4/${taskRef2}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8b.status).toBe(200);
+    expect(res8b).toHaveStatus(200);
     expect(res8b.body.resourceType).toStrictEqual('Task');
 
     const resultTask2 = res8b.body as Task;
@@ -1283,7 +1283,7 @@ describe('PlanDefinition apply', () => {
     const res9 = await request(app)
       .get(`/fhir/R4/${serviceRequestRef}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res9.status).toBe(200);
+    expect(res9).toHaveStatus(200);
     expect(res9.body.resourceType).toBe('ServiceRequest');
     expect(res9.body.subject).toMatchObject(createReference(res3.body as Patient));
     expect(res9.body.encounter).toMatchObject(createReference(res6.body));
@@ -1292,7 +1292,7 @@ describe('PlanDefinition apply', () => {
     const res10 = await request(app)
       .get(`/fhir/R4/Encounter/${res6.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res10.status).toBe(200);
+    expect(res10).toHaveStatus(200);
   });
 
   test('Populates instantiates link when PlanDefinition has url', async () => {
@@ -1316,7 +1316,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     // 2. Create a PlanDefinition
     const res2 = await request(app)
@@ -1335,7 +1335,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     const planDefinition = res2.body as PlanDefinition;
 
     // 3. Create a Patient
@@ -1347,7 +1347,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
         name: [{ given: ['Workflow'], family: 'Demo' }],
       });
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const res4 = await request(app)
@@ -1363,7 +1363,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toStrictEqual('CarePlan');
     const carePlan = res4.body as WithId<CarePlan>;
     expect(carePlan.instantiatesCanonical).toStrictEqual([planDefinition.url]);
@@ -1372,7 +1372,7 @@ describe('PlanDefinition apply', () => {
     const res5 = await request(app)
       .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     const requestGroup = res5.body as RequestGroup;
     expect(requestGroup.instantiatesCanonical).toStrictEqual([planDefinition.url]);
   });

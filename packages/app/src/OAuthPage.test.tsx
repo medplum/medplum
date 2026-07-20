@@ -16,7 +16,7 @@ describe('OAuthPage', () => {
     const user = userEvent.setup();
     await act(async () => {
       render(
-        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
+        <MedplumProvider medplum={medplum} navigate={vi.fn()}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <AppRoutes />
           </MemoryRouter>
@@ -39,7 +39,7 @@ describe('OAuthPage', () => {
   });
 
   test('Success', async () => {
-    locationUtils.assign = jest.fn();
+    locationUtils.assign = vi.fn();
 
     const user = await setup(
       '/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid+profile&state=abc&nonce=xyz'
@@ -82,7 +82,7 @@ describe('OAuthPage', () => {
       welcomeString: 'Test Client',
       logo: { contentType: 'image/png', url: 'https://example.com/logo.png', title: 'Test Logo' },
     };
-    jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
+    vi.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
@@ -94,7 +94,7 @@ describe('OAuthPage', () => {
 
   test('Fetch empty payload and render default info', async () => {
     const mockClientInfo = {};
-    jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
+    vi.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
@@ -106,7 +106,7 @@ describe('OAuthPage', () => {
     const mockClientInfo = {
       logo: { contentType: 'image/png', url: 'https://example.com/logo.png', title: 'Test Logo' },
     };
-    jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
+    vi.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
@@ -116,8 +116,8 @@ describe('OAuthPage', () => {
   });
 
   test('Do not fetch client info when client_id is medplum-cli', async () => {
-    jest.spyOn(medplum, 'get').mockReset();
-    const mockGet = jest.spyOn(medplum, 'get');
+    vi.spyOn(medplum, 'get').mockReset();
+    const mockGet = vi.spyOn(medplum, 'get');
     await setup('/oauth?client_id=medplum-cli');
     expect(mockGet).not.toHaveBeenCalled();
   });

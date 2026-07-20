@@ -4,6 +4,7 @@ import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { Span } from '@opentelemetry/api';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
+import { CompositePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
@@ -14,6 +15,7 @@ import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
+import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
 import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import type { MetricReader } from '@opentelemetry/sdk-metrics';
 import {
@@ -62,6 +64,10 @@ export function initOpenTelemetry(): void {
     metricReader = new PeriodicExportingMetricReader({ exporter });
   }
 
+  const propagator = new CompositePropagator({
+    propagators: [new AWSXRayPropagator(), new W3CTraceContextPropagator()],
+  });
+
   let traceExporter: SpanExporter | undefined = undefined;
   if (OTLP_TRACES_ENDPOINT) {
     traceExporter = new OTLPTraceExporter({ url: OTLP_TRACES_ENDPOINT });
@@ -71,6 +77,8 @@ export function initOpenTelemetry(): void {
     new RuntimeNodeInstrumentation(),
     new HttpInstrumentation({
       applyCustomAttributesOnSpan: httpResponseHook,
+      ignoreIncomingRequestHook: (req) => req.url === '/healthcheck',
+      requireParentforOutgoingSpans: true,
     }),
 
     new PgInstrumentation({
@@ -110,6 +118,7 @@ export function initOpenTelemetry(): void {
     instrumentations,
     metricReaders: metricReader ? [metricReader] : undefined,
     traceExporter,
+    textMapPropagator: propagator,
     views: [
       {
         instrumentType: InstrumentType.HISTOGRAM,

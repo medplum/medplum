@@ -72,6 +72,8 @@ Spaces requires the `ai` and `bots` features on your Medplum project. Both are d
 
 The Provider app's Spaces page short-circuits if either feature is missing, and the `$ai` operation rejects the request server-side if `ai` is not enabled.
 
+The optional `ai-realtime` feature enables voice input in the chat UI. See [Voice Input](#voice-input) below.
+
 ### Configure The OpenAI API Key
 
 Add your OpenAI key as a project secret named `OPENAI_API_KEY`. The `$ai` operation reads it from the project on every call and forwards it to OpenAI's chat completions endpoint. It is never sent to the client.
@@ -224,7 +226,32 @@ The summary and visualizer bots stream their output as Server-Sent Events from O
 
 ### Model Selection
 
-The Provider UI exposes a model selector in the chat input. The chosen model flows through to every bot via the `model` parameter and on to `$ai`. The dropdown contents are a UI concern; change it in [`ChatInput.tsx`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/pages/spaces/ChatInput.tsx) if you want to expose different models. The bots themselves are model-agnostic – they pass whatever string they are given.
+The Provider UI exposes a model selector in the chat input. The chosen model flows through to every bot via the `model` parameter and on to `$ai`. The bots themselves are model-agnostic – they pass whatever string they are given.
+
+The dropdown contents are driven by a project setting named `aiModels`, so admins can change the available models without editing code. Set it from the project admin **Settings** page (or via the `Project.setting` array) to a JSON-encoded array of `{ "value", "label" }` objects, where `value` is the model id sent to `$ai` and `label` is the display name:
+
+```json
+[
+  { "value": "gpt-5.5", "label": "GPT-5.5" },
+  { "value": "my-litellm-model", "label": "Custom (LiteLLM)" }
+]
+```
+
+When `aiModels` is unset or empty, the UI falls back to a built-in default list (see [`spaceModels.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/utils/spaceModels.ts)). Combined with the `LLM_BASE_URL` project secret on [`$ai`](/docs/ai/ai-operation), this lets you point Spaces at a LiteLLM proxy and expose that proxy's model names to users.
+
+:::caution[Model names must match your LiteLLM config]
+When routing through a LiteLLM proxy, each `value` must exactly match a `model_name` alias defined in the proxy's `config.yaml` – that field is LiteLLM's routing key. Neither the UI nor `$ai` validates the value; an unrecognized name surfaces as a failed AI call at request time, not a save error. The `label` is cosmetic. Keep the `aiModels` list in sync with the proxy config when you add or rename models.
+:::
+
+### Voice Input
+
+When the `ai-realtime` feature is enabled on the project, a microphone button appears in the chat input. Users can click it to dictate their message instead of typing. The speech is transcribed using `gpt-4o-transcribe` and submitted as a normal text message — the bots and agent loop are unaffected by whether the input arrived via keyboard or voice.
+
+Without `ai-realtime`, the microphone button is still visible in the Provider UI but is disabled with a tooltip explaining that the feature is not active. To enable it, add `ai-realtime` to the project's feature list. Contact info@medplum.com to have the feature enabled on your account.
+
+:::note
+Voice input is transcription-only (speech to text). Spaces does not support text-to-speech output.
+:::
 
 ## Customizing System Prompts
 

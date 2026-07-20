@@ -5,7 +5,6 @@ import {
   accepted,
   allOk,
   badRequest,
-  forbidden,
   getQueryString,
   getResourceTypes,
   OperationOutcomeError,
@@ -20,12 +19,12 @@ import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
 import { getConfig } from '../config/loader';
-import type { AuthenticatedRequestContext } from '../context';
-import { getAuthenticatedContext } from '../context';
+import { requireSuperAdmin } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
+import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidTableName } from '../fhir/sql';
@@ -513,7 +512,11 @@ superAdminRouter.post(
 
     const startTime = Date.now();
     const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-    await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+    await systemRepo.executeRawSql(
+      query,
+      undefined,
+      repoAccess.sqlWriteConfig({ source: 'superAdminRouter.tableSettings' })
+    );
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -564,7 +567,11 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
       const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-      await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+      await systemRepo.executeRawSql(
+        query,
+        undefined,
+        repoAccess.sqlWriteConfig({ source: 'superAdminRouter.vacuum' })
+      );
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,
@@ -601,14 +608,6 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
     };
   });
 });
-
-export function requireSuperAdmin(): AuthenticatedRequestContext {
-  const ctx = getAuthenticatedContext();
-  if (!ctx.project.superAdmin) {
-    throw new OperationOutcomeError(forbidden);
-  }
-  return ctx;
-}
 
 function requireAsync(req: Request): void {
   if (req.header('Prefer') !== 'respond-async') {

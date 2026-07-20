@@ -71,7 +71,7 @@ Once your Neutron project is created, you will need to set up credentials for th
 
 #### Photon Auth Token
 
-This app reads and writes from Neutron's API, which requires the auth token from your Nuetron project. Authentication is handled by bots, but the necessary secrets must be set up in your Medplum project.
+This app reads and writes from Neutron's API, which requires the auth token from your Neutron project. Authentication is handled by bots, but the necessary secrets must be set up in your Medplum project.
 
 These credentials can be accessed in your [Neutron project](https://app.neutron.health) by navigating to your project settings and clicking on the Developers Tab. Copy the Client ID and Client Secret from the Machine to Machine Application section. If this section does not appear in your settings, you will need to reach out to Photon Support at `support@photon.health` to ensure that it is properly set up.
 
@@ -81,7 +81,7 @@ Once you have copied your Client ID and Client Secret you will need to add these
 
 To enable Photon Elements you will need the Single Page Application Client ID and the Organization ID from your Neutron project. These can be found in the settings section of the [Neutron App](https://app.neutron.health). The Client ID is found in the Single Page Application section of the Developers tab, while the Organization ID is found in the Organization tab.
 
-Copy these values into the corresponding variables in the [config file](./src/config.ts) in this project's `src` directory. These values will link Photon elements to your project, allowing you to log in and authenticate to create prescriptions from within this demo.
+Copy these values into `PHOTON_CLIENT_ID` and `PHOTON_ORG_ID` in this project's `.env` file. These values will link Photon elements to your project, allowing you to log in and authenticate to create prescriptions from within this demo.
 
 #### Photon Webhooks
 

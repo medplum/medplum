@@ -50,6 +50,10 @@ function getTabs(resourceType: string): string[] {
     result.push('Tools');
   }
 
+  if (resourceType === 'User') {
+    result.push('Email');
+  }
+
   if (resourceType === 'Communication') {
     result.push('Payload');
   }

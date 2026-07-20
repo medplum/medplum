@@ -4,8 +4,9 @@ import type { TypedValue, WithId } from '@medplum/core';
 import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
-import type { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
+import { repoAccess } from '../repository/access-tracker';
+import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery, Union } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
@@ -118,12 +119,21 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('ConceptMap to import into must be specified', `Parameters.parameter.where(name = 'url')`)];
   }
 
-  await repo.withTransaction((db) => importConceptMap(db, conceptMap, params.mapping));
+  await repo.withTransaction(
+    async (txRepo) => {
+      // `importConceptMap` operates only on ConceptMap derivative tables
+      const db = txRepo.getDatabaseClient(
+        repoAccess.sqlWrite('ConceptMap', { source: 'conceptMapImportHandler.client' })
+      );
+      await importConceptMap(db, conceptMap, params.mapping);
+    },
+    { resourceTypes: ['ConceptMap'], source: 'conceptMapImportHandler' }
+  );
   return [allOk, conceptMap];
 }
 
 export async function importConceptMap(
-  db: PoolClient,
+  db: PgQueryable,
   conceptMap: WithId<ConceptMap>,
   mappings: readonly ConceptMapping[] = EMPTY
 ): Promise<void> {
@@ -262,7 +272,7 @@ function addRowsForMapping(
 }
 
 async function prepareMappingRows(
-  db: PoolClient,
+  db: PgQueryable,
   rows: MappingRow[]
 ): Promise<(MappingRow & { sourceSystem: number; targetSystem: number })[]> {
   if (!rows.length) {
@@ -310,7 +320,7 @@ async function prepareMappingRows(
 }
 
 async function writeMappingRows(
-  db: PoolClient,
+  db: PgQueryable,
   mappings: MappingRow[],
   attributes: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<void> {

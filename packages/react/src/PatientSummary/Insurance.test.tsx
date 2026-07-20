@@ -48,14 +48,14 @@ describe('PatientSummary - Insurance', () => {
   }
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
     await act(async () => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty when no coverages', async () => {
@@ -249,7 +249,7 @@ describe('PatientSummary - Insurance', () => {
   });
 
   test('Calls onClickResource when coverage item is clicked', async () => {
-    const mockOnClickResource = jest.fn();
+    const mockOnClickResource = vi.fn();
     const activeCoverages: Coverage[] = [
       {
         resourceType: 'Coverage',

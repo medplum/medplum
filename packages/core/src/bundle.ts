@@ -237,8 +237,8 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
 
     if (fullUrl && entry.resource) {
       findReferences(entry.resource, (reference: string) => {
-        // Add an incoming reference to the adjacency list
-        if (adjacencyList[reference]) {
+        // Skip self-references — a resource referencing itself is not a dependency ordering problem
+        if (reference !== fullUrl && adjacencyList[reference]) {
           adjacencyList[reference].push(fullUrl);
         }
       });

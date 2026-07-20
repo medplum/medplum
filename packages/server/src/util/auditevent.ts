@@ -4,9 +4,11 @@ import type { ProfileResource } from '@medplum/core';
 import { append, createReference, flatMapFilter, isResource, isResourceWithId, resolveId } from '@medplum/core';
 import type {
   AuditEvent,
+  AuditEventAgent,
   AuditEventAgentNetwork,
   AuditEventEntity,
   Bot,
+  ClientApplication,
   Coding,
   Extension,
   Practitioner,
@@ -35,6 +37,17 @@ import { globalLogger } from '../logger';
  * See: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_D.html
  */
 export const DicomCodeSystem = 'http://dicom.nema.org/resources/ontology/DCM';
+
+/**
+ * DICOM "Application" participant role, used to label an `AuditEvent.agent` that
+ * represents the authenticating software/application rather than a human user.
+ * See: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/sect_CID_402.html
+ */
+export const ApplicationAgentType: Coding = {
+  system: DicomCodeSystem,
+  code: '110150',
+  display: 'Application',
+};
 
 /**
  * AuditEvent type code system.
@@ -179,6 +192,13 @@ export function createAuditEvent(
     resource?: Resource | Reference;
     searchQuery?: string;
     durationMs?: number;
+    /**
+     * The authenticating ClientApplication, recorded as an additional non-requestor
+     * `agent[]` participant when it differs from `who` (the acting profile). This
+     * captures the delegated client on on-behalf-of and SMART-on-FHIR interactions,
+     * where the client would otherwise be absent from the audit trail.
+     */
+    client?: Reference<ClientApplication>;
   }
 ): AuditEvent {
   const config = getConfig();
@@ -205,6 +225,27 @@ export function createAuditEvent(
     extension = append(extension, buildDurationExtension(options.durationMs));
   }
 
+  const agent: AuditEventAgent[] = [
+    {
+      who: applyOptionalRedaction(who) as Reference<Practitioner>,
+      requestor: true,
+      network,
+    },
+  ];
+
+  // Record the authenticating ClientApplication as an additional non-requestor
+  // agent when it differs from the acting profile. This captures the delegated
+  // client on on-behalf-of and SMART-on-FHIR interactions, where it would
+  // otherwise be absent from the audit trail. When the client is itself the
+  // actor (e.g. client_credentials), it is already `agent[0]`, so skip it.
+  if (options?.client?.reference && options.client.reference !== who?.reference) {
+    agent.push({
+      who: applyOptionalRedaction(options.client) as Reference<ClientApplication>,
+      requestor: false,
+      type: { coding: [ApplicationAgentType] },
+    });
+  }
+
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: { project: projectId },
@@ -213,13 +254,7 @@ export function createAuditEvent(
     action: AuditEventActionLookup[subtype.code],
     recorded: new Date().toISOString(),
     source: { observer: { identifier: { value: config.baseUrl } } },
-    agent: [
-      {
-        who: applyOptionalRedaction(who) as Reference<Practitioner>,
-        requestor: true,
-        network,
-      },
-    ],
+    agent,
     outcome,
     outcomeDesc: options?.description,
     entity,
@@ -360,12 +395,10 @@ export async function createSubscriptionAuditEvent(
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  subscription?: Subscription,
+  outcomeDesc: string,
+  subscription: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const auditedEvent = subscription ?? resource;
-
   let extension: Extension[] | undefined;
   const tracingExt = buildTracingExtension();
   if (tracingExt) {
@@ -374,9 +407,9 @@ export async function createSubscriptionAuditEvent(
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: auditedEvent.meta?.project,
-      account: auditedEvent.meta?.account,
-      accounts: auditedEvent.meta?.accounts,
+      project: subscription.meta?.project,
+      account: subscription.meta?.account,
+      accounts: subscription.meta?.accounts,
     },
     period: {
       start: startTime,
@@ -388,12 +421,12 @@ export async function createSubscriptionAuditEvent(
     },
     agent: [
       {
-        type: { text: auditedEvent.resourceType },
+        type: { text: subscription.resourceType },
         requestor: false,
       },
     ],
     source: {
-      observer: applyOptionalRedaction(createReference(auditedEvent)) as Reference as Reference<Practitioner>,
+      observer: applyOptionalRedaction(createReference(subscription)) as Reference<Subscription>,
     },
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,

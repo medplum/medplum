@@ -111,13 +111,13 @@ describe('EncounterModal', () => {
 
   test('Form fields can be populated with values', async () => {
     const user = userEvent.setup();
-    const mockEncounter: Encounter = {
+    const mockEncounter = {
       resourceType: 'Encounter',
       id: 'encounter-456',
       status: 'in-progress',
       class: { code: 'AMB', display: 'Ambulatory' },
       subject: { reference: 'Patient/patient-123' },
-    };
+    } satisfies Encounter;
 
     vi.mocked(encounterUtils.createEncounter).mockResolvedValue(mockEncounter);
 
@@ -239,13 +239,13 @@ describe('EncounterModal', () => {
   });
 
   test('Navigates to created encounter on success', async () => {
-    const mockEncounter: Encounter = {
+    const mockEncounter = {
       resourceType: 'Encounter',
       id: 'new-encounter-789',
       status: 'in-progress',
       class: { code: 'AMB', display: 'Ambulatory' },
       subject: { reference: 'Patient/patient-123' },
-    };
+    } satisfies Encounter;
 
     vi.mocked(encounterUtils.createEncounter).mockResolvedValue(mockEncounter);
 

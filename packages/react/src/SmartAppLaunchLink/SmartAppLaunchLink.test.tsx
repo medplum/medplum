@@ -19,7 +19,7 @@ describe('SmartAppLaunchLink', () => {
   }
 
   test('Happy path', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     const medplum = new MockClient();
@@ -51,7 +51,7 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Includes patient identifier in SmartAppLaunch when launchIdentifierSystems is present', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     const medplum = new MockClient();
@@ -122,7 +122,7 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Does not include identifier in SmartAppLaunch when launchIdentifierSystems is absent', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     const medplum = new MockClient();
@@ -173,7 +173,7 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Does not include identifier in SmartAppLaunch when identifier not found on patient', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     const medplum = new MockClient();
@@ -230,7 +230,7 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Includes encounter identifier in SmartAppLaunch when launchIdentifierSystems includes Encounter', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     const medplum = new MockClient();
@@ -296,7 +296,7 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Includes both patient and encounter identifiers when both are configured', async () => {
-    const mockOpen = jest.fn();
+    const mockOpen = vi.fn();
     window.open = mockOpen;
 
     const medplum = new MockClient();

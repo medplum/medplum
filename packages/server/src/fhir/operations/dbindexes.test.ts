@@ -44,7 +44,7 @@ describe('dbgetginindexes', () => {
       .get('/fhir/R4/$db-indexes?tableName=')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject({
       resourceType: 'Parameters',
       parameter: [
@@ -61,7 +61,7 @@ describe('dbgetginindexes', () => {
       .get(`/fhir/R4/$db-indexes?tableName=${tableName}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
@@ -97,7 +97,7 @@ describe('dbgetginindexes', () => {
       .get(`/fhir/R4/$db-indexes?tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [

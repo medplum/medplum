@@ -27,7 +27,7 @@ describe('CMS 1500 PDF', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(fullAnswer);
-    expect(bundleRes.status).toBe(200);
+    expect(bundleRes).toHaveStatus(200);
     expect(bundleRes.body.resourceType).toBe('Bundle');
     expect(bundleRes.body.type).toBe('transaction-response');
 
@@ -35,7 +35,7 @@ describe('CMS 1500 PDF', () => {
       .get(`/fhir/R4/Claim?identifier=example-claim-cms1500`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
-    expect(searchRes.status).toBe(200);
+    expect(searchRes).toHaveStatus(200);
     expect(searchRes.body.resourceType).toBe('Bundle');
     expect(searchRes.body.entry.length).toBeGreaterThan(0);
 
@@ -58,7 +58,7 @@ describe('CMS 1500 PDF', () => {
       });
 
     expect(response).toBeDefined();
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
   });
@@ -69,7 +69,7 @@ describe('CMS 1500 PDF', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(fullAnswer);
-    expect(bundleRes.status).toBe(200);
+    expect(bundleRes).toHaveStatus(200);
     expect(bundleRes.body.resourceType).toBe('Bundle');
     expect(bundleRes.body.type).toBe('transaction-response');
 
@@ -77,7 +77,7 @@ describe('CMS 1500 PDF', () => {
       .get(`/fhir/R4/Claim?identifier=example-claim-cms1500`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
-    expect(searchRes.status).toBe(200);
+    expect(searchRes).toHaveStatus(200);
     expect(searchRes.body.resourceType).toBe('Bundle');
     expect(searchRes.body.entry.length).toBeGreaterThan(0);
 
@@ -91,7 +91,7 @@ describe('CMS 1500 PDF', () => {
       .set('Accept', 'application/fhir+json');
 
     expect(response).toBeDefined();
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
   });
@@ -102,7 +102,7 @@ describe('CMS 1500 PDF', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
 
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.resourceType).toBe('OperationOutcome');
     expect(response.body.issue[0].severity).toBe('error');
   });
@@ -117,7 +117,7 @@ describe('CMS 1500 PDF', () => {
         parameter: [{ name: 'resource' }],
       });
 
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.resourceType).toBe('OperationOutcome');
     expect(response.body.issue[0].severity).toBe('error');
   });

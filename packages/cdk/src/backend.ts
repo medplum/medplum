@@ -364,6 +364,30 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
+        // S3 Tables: Read table bucket config and write table data
+        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3tables.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            's3tables:CreateNamespace',
+            's3tables:CreateTable',
+            's3tables:GetNamespace',
+            's3tables:GetTable',
+            's3tables:GetTableBucket',
+            's3tables:GetTableData',
+            's3tables:GetTableEncryption',
+            's3tables:GetTableMetadataLocation',
+            's3tables:ListNamespaces',
+            's3tables:ListTables',
+            's3tables:PutTableData',
+            's3tables:UpdateTableMetadataLocation',
+          ],
+          resources: [
+            `arn:aws:s3tables:${region}:${accountNumber}:bucket/*`,
+            `arn:aws:s3tables:${region}:${accountNumber}:bucket/*/table/*`,
+          ],
+        }),
+
         // IAM: Pass role to innvoke lambda functions
         // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html
         new iam.PolicyStatement({
@@ -924,7 +948,7 @@ export class BackEnd extends Construct {
     const cluster = new elasticache.CfnReplicationGroup(this, `${id}Cluster`, {
       engine: options.engine ?? 'Redis',
       engineVersion: options.engineVersion ?? '6.x',
-      cacheNodeType: options.nodeType ?? 'cache.t2.medium',
+      cacheNodeType: options.nodeType ?? 'cache.t4g.medium',
       replicationGroupDescription: `${id}ReplicationGroup`,
       authToken: password.secretValueFromJson('password').toString(),
       transitEncryptionEnabled: true,

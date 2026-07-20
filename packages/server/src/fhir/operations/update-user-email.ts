@@ -17,7 +17,8 @@ import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
-import { getProjectSystemRepo } from '../repo';
+import type { Repository } from '../repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
@@ -86,74 +87,106 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
 
 async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
   const systemRepo = await getProjectSystemRepo(project);
-  return systemRepo.withTransaction(async () => {
-    let user = await systemRepo.readResource<User>('User', userId);
-    if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
-      throw new OperationOutcomeError(forbidden);
-    }
-    if (params.updateProfileTelecom && !user.project) {
-      throw new OperationOutcomeError(badRequest('Cannot update profile of server-scoped User'));
-    }
+  return systemRepo.withTransaction(
+    async (txRepo) => {
+      let user = await txRepo.readResource<User>('User', userId);
+      if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
+        throw new OperationOutcomeError(forbidden);
+      }
+      if (params.updateProfileTelecom && !user.project) {
+        throw new OperationOutcomeError(badRequest('Cannot update profile of server-scoped User'));
+      }
 
-    const oldEmail = user.email;
-    user.email = params.email;
-    user.emailVerified = false;
-    user = await systemRepo.updateResource(user);
+      const oldEmail = user.email;
+      user.email = params.email;
+      user.emailVerified = false;
+      user = await txRepo.updateResource(user);
 
-    if (!params.skipEmailVerification) {
-      const { id, secret } = await verifyEmail(user);
-      const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
+      if (!params.skipEmailVerification) {
+        const { id, secret } = await verifyEmail(txRepo, user);
+        const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 
-      await sendEmail(systemRepo, {
-        to: params.email,
-        subject: 'Medplum Email Address Updated',
-        text: [
-          'We received a request to update the email address associated with your Medplum account.',
-          '',
-          'Please click on the following link to verify your ability to receive emails:',
-          '',
-          url,
-          '',
-          'If you received this in error, you can safely ignore it.',
-          '',
-          'Thank you,',
-          'Medplum',
-          '',
-        ].join('\n'),
-      });
-    }
+        // Use the target user's own project for project-level SMTP configuration.
+        // A super admin may be operating across projects, so the caller's project is not authoritative.
+        let emailProject: WithId<Project> | undefined;
+        if (user.project) {
+          emailProject =
+            user.project.reference === getReferenceString(project)
+              ? project
+              : await getGlobalSystemRepo().readReference<Project>(user.project);
+        }
 
-    if (params.updateProfileTelecom && user.project?.reference) {
-      // Get membership for Project-scoped User
-      const membership = await systemRepo.searchOne<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        filters: [
-          { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
-          { code: 'project', operator: Operator.EQUALS, value: user.project.reference },
-        ],
-      });
+        await sendEmail(
+          txRepo,
+          {
+            to: params.email,
+            subject: 'Medplum Email Address Updated',
+            text: [
+              'We received a request to update the email address associated with your Medplum account.',
+              '',
+              'Please click on the following link to verify your ability to receive emails:',
+              '',
+              url,
+              '',
+              'If you received this in error, you can safely ignore it.',
+              '',
+              'Thank you,',
+              'Medplum',
+              '',
+            ].join('\n'),
+          },
+          emailProject
+        );
+      }
 
-      if (membership) {
-        const profile = await systemRepo.readReference(membership.profile);
-        if (profileTypesWithTelecom.includes(profile.resourceType)) {
-          let telecom = (profile as ProfileResource).telecom;
-          // Add new email if not already present
-          if (!telecom?.some((contact) => contact.system === 'email' && contact.value === params.email)) {
-            telecom = append(telecom, { use: 'work', system: 'email', value: params.email });
+      if (params.updateProfileTelecom && user.project?.reference) {
+        // Get membership for Project-scoped User
+        const membership = await txRepo.searchOne<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          filters: [
+            { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
+            { code: 'project', operator: Operator.EQUALS, value: user.project.reference },
+          ],
+        });
+
+        if (membership) {
+          const profile = await txRepo.readReference(membership.profile);
+          if (profileTypesWithTelecom.includes(profile.resourceType)) {
+            await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, params.email);
           }
-
-          // Mark instances of the previous email as old
-          const previous = telecom.find((contact) => contact.value === oldEmail && contact.system === 'email');
-          if (previous) {
-            previous.use = 'old';
-          }
-          (profile as ProfileResource).telecom = telecom;
-
-          await systemRepo.updateResource(profile);
         }
       }
-    }
 
-    return user;
-  });
+      return user;
+    },
+    {
+      resourceTypes: ['ProjectMembership', 'User', 'UserSecurityRequest', ...profileTypesWithTelecom],
+      source: 'updateUserEmail.updateUser',
+    }
+  );
+}
+
+async function updateProfileTelecom(
+  repo: Repository,
+  profile: WithId<ProfileResource>,
+  oldEmail: string | undefined,
+  newEmail: string
+): Promise<WithId<ProfileResource>> {
+  let telecom = profile.telecom;
+  // Add new email if not already present
+  if (!telecom?.some((contact) => contact.system === 'email' && contact.value === newEmail)) {
+    telecom = append(telecom, { use: 'work', system: 'email', value: newEmail });
+  }
+
+  // Mark instances of the previous email as old
+  if (oldEmail) {
+    for (const contact of telecom) {
+      if (contact.system === 'email' && contact.value === oldEmail) {
+        contact.use = 'old';
+      }
+    }
+  }
+  profile.telecom = telecom;
+
+  return repo.updateResource(profile);
 }

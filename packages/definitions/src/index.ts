@@ -1,13 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Bundle, Resource } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+const EMPTY: readonly [] = Object.freeze([]);
 
 export function readJson(filename: string): any {
   const filenamePath = resolve(getDataDir(), filename);
   return JSON.parse(readFileSync(filenamePath, 'utf8'));
+}
+
+export async function readJsonAsync(filename: string): Promise<any> {
+  const filenamePath = resolve(getDataDir(), filename);
+  const data = await readFile(filenamePath, 'utf8');
+  return JSON.parse(data);
 }
 
 let cachedDataDir: string | undefined = undefined;
@@ -54,3 +64,33 @@ export const SEARCH_PARAMETER_BUNDLE_FILES = [
   'fhir/r4/search-parameters-medplum.json',
   'fhir/r4/search-parameters-uscore.json',
 ];
+
+export const STRUCTURE_DEFINITION_BUNDLE_FILES = [
+  'fhir/r4/profiles-types.json',
+  'fhir/r4/profiles-resources.json',
+  'fhir/r4/profiles-medplum.json',
+  'fhir/r4/profiles-others.json',
+];
+
+export const TERMINOLOGY_BUNDLE_FILES = [
+  'fhir/r4/v2-tables.json',
+  'fhir/r4/v3-codesystems.json',
+  'fhir/r4/valuesets.json',
+  'fhir/r4/valuesets-medplum.json',
+  'fhir/r4/valuesets-medplum-generated.json',
+];
+
+export function getDefinitionResource<T extends Resource & { url?: string }>(
+  file: string,
+  resourceType: T['resourceType'],
+  url: string
+): T {
+  const bundle = readJson(file) as Bundle;
+  for (const entry of bundle.entry ?? EMPTY) {
+    const resource = entry.resource as Resource & { url: string };
+    if (resource?.resourceType === resourceType && resource.url === url) {
+      return resource as T;
+    }
+  }
+  throw new Error(`Missing definition resource: ${resourceType}?url=${url}`);
+}

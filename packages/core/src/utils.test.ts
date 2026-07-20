@@ -9,6 +9,7 @@ import type {
   ObservationDefinition,
   Patient,
   Resource,
+  Slot,
   User,
 } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
@@ -219,7 +220,65 @@ describe('Core Utils', () => {
         medicationCodeableConcept: { text: 'foo' },
       })
     ).toStrictEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationStatement',
+        status: 'active',
+        subject: { reference: 'Patient/123' },
+        medicationCodeableConcept: { coding: [{ display: 'Lisinopril 10 MG' }] },
+      })
+    ).toStrictEqual('Lisinopril 10 MG');
+    expect(
+      getDisplayString({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        description: 'Patient-shared health summary',
+        content: [{ attachment: { contentType: 'application/pdf', data: '...' } }],
+      })
+    ).toStrictEqual('Patient-shared health summary');
+    expect(
+      getDisplayString({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        type: { coding: [{ display: 'Patient summary Document' }] },
+        content: [{ attachment: { contentType: 'application/pdf', data: '...' } }],
+      })
+    ).toStrictEqual('Patient summary Document');
     expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toStrictEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'Appointment',
+        status: 'booked',
+        participant: [{ status: 'accepted' }],
+        serviceType: [{ text: 'Consultation' }],
+      })
+    ).toStrictEqual('Consultation');
+    expect(
+      getDisplayString({
+        resourceType: 'Appointment',
+        id: '123',
+        status: 'booked',
+        participant: [{ status: 'accepted' }],
+      })
+    ).toStrictEqual('Appointment/123');
+    expect(
+      getDisplayString({
+        resourceType: 'Slot',
+        id: '123',
+        status: 'free',
+        schedule: { reference: 'Schedule/123' },
+        start: '2021-06-01T12:00:00Z',
+        end: '2021-06-01T13:00:00Z',
+      })
+    ).toMatch(/2021.* - .*2021/);
+    expect(
+      getDisplayString({
+        resourceType: 'Slot',
+        id: '123',
+        status: 'free',
+        schedule: { reference: 'Schedule/123' },
+      } as Slot)
+    ).toStrictEqual('Slot/123');
     expect(
       getDisplayString({
         resourceType: 'Subscription',

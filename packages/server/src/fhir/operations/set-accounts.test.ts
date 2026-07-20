@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
   AsyncJob,
   Bundle,
@@ -52,14 +52,14 @@ describe('Patient Set Accounts Operation', () => {
       .post('/fhir/R4/Organization')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Organization' });
-    expect(orgRes.status).toBe(201);
+    expect(orgRes).toHaveStatus(201);
     organization1 = orgRes.body as Organization;
 
     const orgRes2 = await request(app)
       .post('/fhir/R4/Organization')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Organization' });
-    expect(orgRes2.status).toBe(201);
+    expect(orgRes2).toHaveStatus(201);
     organization2 = orgRes2.body as Organization;
 
     // Create patient
@@ -70,7 +70,7 @@ describe('Patient Set Accounts Operation', () => {
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
       } satisfies Patient);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     patient = res1.body as Patient;
 
     // Create observation
@@ -90,7 +90,7 @@ describe('Patient Set Accounts Operation', () => {
         },
         subject: createReference(patient),
       } satisfies Observation);
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     observation = res2.body as Observation;
 
     //Create a diagnostic report
@@ -110,7 +110,7 @@ describe('Patient Set Accounts Operation', () => {
           ],
         },
       } satisfies DiagnosticReport);
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     diagnosticReport = res3.body as DiagnosticReport;
   });
 
@@ -140,7 +140,7 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     const result = res3.body;
     expect(result.parameter?.[0].name).toBe('resourcesUpdated');
     expect(result.parameter?.[0].valueInteger).toBe(3); // Observation and DiagnosticReport
@@ -148,8 +148,9 @@ describe('Patient Set Accounts Operation', () => {
     //check if the accounts are updated on the patient
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     const updatedPatient = res4.body as Patient;
     expect(updatedPatient.meta?.accounts).toBeDefined();
     expect(updatedPatient.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
@@ -158,8 +159,9 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the observation
     const res5 = await request(app)
       .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     const updatedObservation = res5.body as Observation;
     expect(updatedObservation.meta?.accounts).toBeDefined();
     expect(updatedObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
@@ -168,8 +170,9 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the diagnostic report
     const res6 = await request(app)
       .get(`/fhir/R4/DiagnosticReport/${diagnosticReport.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     const updatedDiagnosticReport = res6.body as DiagnosticReport;
     expect(updatedDiagnosticReport.meta?.accounts).toBeDefined();
     expect(updatedDiagnosticReport.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
@@ -197,13 +200,13 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
     const numberResourcesUpdated = res7.body.parameter?.[0].valueInteger;
 
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const everything = res.body as Bundle;
     const allResources = everything.entry?.length ?? 0;
     const resourcesNotInCompartment = everything.entry?.filter((entry) => entry?.search?.mode !== 'match').length ?? 0;
@@ -225,7 +228,7 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('setAccountsHandler() called without an id', async () => {
@@ -259,7 +262,7 @@ describe('Patient Set Accounts Operation', () => {
         },
       } satisfies Communication);
 
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const communication = res1.body as Communication;
     expect(communication.meta?.security).toBeDefined();
 
@@ -280,12 +283,13 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res4 = await request(app)
       .get(`/fhir/R4/Communication/${communication.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     const updatedCommunication = res4.body as Communication;
     expect(updatedCommunication.meta?.accounts).toHaveLength(1);
     expect(updatedCommunication.meta?.security).toBeDefined();
@@ -304,7 +308,7 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     const result = res1.body;
     expect(result.parameter?.[0].name).toBe('resourcesUpdated');
     expect(result.parameter?.[0].valueInteger).toBe(1); // Observation only
@@ -312,8 +316,9 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the observation
     const res2 = await request(app)
       .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const updatedObservation = res2.body as Observation;
     expect(updatedObservation.meta?.accounts).toBeDefined();
     expect(updatedObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization2.id}`);
@@ -335,7 +340,7 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     const result2 = res3.body;
     expect(result2.parameter?.[0].name).toBe('resourcesUpdated');
     expect(result2.parameter?.[0].valueInteger).toBe(3); // Observation and DiagnosticReport included
@@ -343,8 +348,9 @@ describe('Patient Set Accounts Operation', () => {
     //check if the accounts are updated on the patient
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     const updatedPatient = res4.body as Patient;
     expect(updatedPatient.meta?.accounts).toBeDefined();
     expect(updatedPatient.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
@@ -352,18 +358,21 @@ describe('Patient Set Accounts Operation', () => {
     // Check if accounts are updated on the observation
     const res5 = await request(app)
       .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     const finalObservation = res5.body as Observation;
-    expect(finalObservation.meta?.accounts).toHaveLength(2);
-    expect(finalObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization2.id}`);
-    expect(finalObservation.meta?.accounts?.[1].reference).toBe(`Organization/${organization1.id}`);
+    expect(finalObservation.meta?.accounts).toStrictEqual([
+      { reference: getReferenceString(organization2) },
+      { reference: getReferenceString(organization1) },
+    ]);
 
     // Check if accounts are updated on the diagnostic report
     const res6 = await request(app)
       .get(`/fhir/R4/DiagnosticReport/${diagnosticReport.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     const updatedDiagnosticReport = res6.body as DiagnosticReport;
     expect(updatedDiagnosticReport.meta?.accounts).toBeDefined();
     expect(updatedDiagnosticReport.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
@@ -383,7 +392,7 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Supports async response', async () => {
@@ -409,7 +418,7 @@ describe('Patient Set Accounts Operation', () => {
           },
         ],
       });
-    expect(initRes.status).toBe(202);
+    expect(initRes).toHaveStatus(202);
     expect(initRes.headers['content-location']).toBeDefined();
 
     // Manually push through BullMQ job
@@ -436,11 +445,77 @@ describe('Patient Set Accounts Operation', () => {
     const statusRes = await request(app)
       .get(contentLocation.pathname)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(statusRes.status).toBe(200);
+    expect(statusRes).toHaveStatus(200);
     const resBody = statusRes.body as AsyncJob;
     expect(resBody.output?.parameter).toStrictEqual(
       expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
     );
+  });
+
+  test('Job aborts when AsyncJob.status is not continuable', async () => {
+    const queue = getSetAccountsQueue() as any;
+    queue.add.mockClear();
+
+    // Start the operation
+    const initRes = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(initRes).toHaveStatus(202);
+    expect(initRes.headers['content-location']).toBeDefined();
+    const jobUrlMatch = /job\/([^/]+)\/status/.exec(initRes.headers['content-location']);
+    const asyncJobId = jobUrlMatch?.[1];
+
+    // Cancel the job by updating AsyncJob.status
+    const cancelRes = await request(app)
+      .patch(`/fhir/R4/AsyncJob/${asyncJobId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send([{ op: 'replace', path: '/status', value: 'cancelled' }]);
+    expect(cancelRes).toHaveStatus(200);
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'SetAccountsJobData',
+      expect.objectContaining<Partial<SetAccountsJobData>>({ resourceType: 'Patient', id: patient.id })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await runInAuthenticatedContext(
+      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      undefined,
+      undefined,
+      { async: true },
+      () => execSetAccountsJob(job)
+    );
+
+    // Check that the job status doesn't update and no output is provided
+    const contentLocation = new URL(initRes.headers['content-location']);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes).toHaveStatus(200);
+    const resBody = statusRes.body as AsyncJob;
+    expect(resBody.status).toStrictEqual('cancelled');
+    expect(resBody.output?.parameter).toBeUndefined();
   });
 
   test('Removes account without extended header', async () => {
@@ -455,12 +530,13 @@ describe('Patient Set Accounts Operation', () => {
           { name: 'propagate', valueBoolean: false },
         ],
       });
-    expect(setTwo.status).toBe(200);
+    expect(setTwo).toHaveStatus(200);
 
     const get1 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(get1.status).toBe(200);
+    expect(get1).toHaveStatus(200);
     expect(get1.body.meta?.accounts?.map((r: any) => r.reference)).toEqual(
       expect.arrayContaining([`Organization/${organization1.id}`, `Organization/${organization2.id}`])
     );
@@ -475,13 +551,14 @@ describe('Patient Set Accounts Operation', () => {
           { name: 'propagate', valueBoolean: false },
         ],
       });
-    expect(setOne.status).toBe(200);
+    expect(setOne).toHaveStatus(200);
     expect(setOne.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 1 });
 
     const get2 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(get2.status).toBe(200);
+    expect(get2).toHaveStatus(200);
     const acctRefs = (get2.body.meta?.accounts ?? []).map((r: any) => r.reference);
     expect(acctRefs).toEqual([`Organization/${organization2.id}`]);
   });
@@ -510,7 +587,7 @@ describe('Patient Set Accounts Operation', () => {
         resourceType: 'Patient',
         meta: { accounts: [orgRef] },
       } satisfies Patient);
-    expect(patientRes.status).toBe(201);
+    expect(patientRes).toHaveStatus(201);
     const patient = patientRes.body as Patient;
     const patientRef = createReference(patient);
     expect(patient.meta?.accounts).toStrictEqual([orgRef]);
@@ -527,7 +604,7 @@ describe('Patient Set Accounts Operation', () => {
         code: { text: 'Lab report' },
         subject: patientRef,
       } satisfies DiagnosticReport);
-    expect(reportRes.status).toBe(201);
+    expect(reportRes).toHaveStatus(201);
     const diagnosticReport = reportRes.body as DiagnosticReport;
     expect(diagnosticReport.subject).toStrictEqual(patientRef);
     expect(diagnosticReport.meta?.compartment).toStrictEqual(expect.arrayContaining([orgRef, patientRef]));

@@ -11,6 +11,7 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
+  IconQrcode,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -22,6 +23,7 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
+import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
@@ -37,6 +39,7 @@ import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { CoveragePage } from './pages/patient/CoveragePage';
+import { DocumentsPage } from './pages/patient/DocumentsPage';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
@@ -48,15 +51,18 @@ import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
+import { RegisterPage } from './pages/RegisterPage';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
+import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage';
 import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 
@@ -86,7 +92,7 @@ export function App(): JSX.Element | null {
     return null;
   }
 
-  return (
+  const appShellContent = (
     <AppShell
       logo={<Logo size={24} />}
       pathname={location.pathname}
@@ -164,6 +170,7 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
+                  { icon: <IconQrcode />, label: 'SMART Health Link', href: '/smart-health-link' },
                 ],
               },
             ]
@@ -209,10 +216,14 @@ export function App(): JSX.Element | null {
                 {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
-                <Route path="ServiceRequest" element={<LabsPage />} />
-                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
+                <Route path="ServiceRequest" element={<LabsPage tab="open" />} />
+                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
+                <Route path="DiagnosticReport" element={<LabsPage tab="completed" />} />
+                <Route path="DiagnosticReport/:diagnosticReportId" element={<LabsPage tab="completed" />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
+                <Route path="DocumentReference" element={<DocumentsPage />} />
+                <Route path="DocumentReference/:documentId" element={<DocumentsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path="Coverage" element={<CoveragePage />} />
                 <Route path="Coverage/:coverageId" element={<CoveragePage />} />
@@ -238,9 +249,11 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
@@ -248,12 +261,14 @@ export function App(): JSX.Element | null {
                 <Route path="details" element={<ResourceDetailPage />} />
                 <Route path="edit" element={<ResourceEditPage />} />
                 <Route path="history" element={<ResourceHistoryPage />} />
+                <Route path="scheduling" element={<ResourceSchedulingPage />} />
               </Route>
               {hasDoseSpot && <Route path="/integrations/dosespot" element={<DoseSpotFavoritesPage />} />}
             </>
           ) : (
             <>
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="*" element={<Navigate to="/signin" replace />} />
             </>
           )}
@@ -261,4 +276,6 @@ export function App(): JSX.Element | null {
       </Suspense>
     </AppShell>
   );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
 }

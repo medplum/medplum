@@ -21,10 +21,11 @@ export interface RegisterFormProps {
   readonly recaptchaSiteKey?: string;
   readonly children?: ReactNode;
   readonly onSuccess: () => void;
+  readonly onSignIn?: () => void;
 }
 
 export function RegisterForm(props: RegisterFormProps): JSX.Element {
-  const { type, projectId, clientId, googleClientId, recaptchaSiteKey, onSuccess } = props;
+  const { type, projectId, clientId, googleClientId, recaptchaSiteKey, onSuccess, onSignIn } = props;
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(props.login);
   const [outcome, setOutcome] = useState<OperationOutcome>();
@@ -66,6 +67,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
           clientId={clientId}
           googleClientId={googleClientId}
           recaptchaSiteKey={recaptchaSiteKey}
+          onSignIn={onSignIn}
           handleAuthResponse={handleAuthResponse}
         >
           {props.children}

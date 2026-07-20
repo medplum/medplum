@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
-import { ContentType } from '@medplum/core';
+import { badRequest, ContentType, getStatus } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -98,7 +98,7 @@ describe('Execute', () => {
           }
         `,
       });
-    expect(streamingRes.status).toBe(201);
+    expect(streamingRes).toHaveStatus(201);
     streamingBot = streamingRes.body as Bot;
   });
 
@@ -114,7 +114,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
@@ -130,7 +130,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send({ message: 'hello' });
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
@@ -162,7 +162,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toContain('Failed to parse streaming headers');
     });
 
@@ -190,7 +190,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toContain('Lambda error: Unhandled');
     });
 
@@ -199,7 +199,6 @@ describe('Execute', () => {
       mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
         const encoder = new TextEncoder();
         const headersJson = JSON.stringify({
-          statusCode: 200,
           headers: { 'Content-Type': 'text/event-stream' },
         });
 
@@ -229,7 +228,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
       expect(res.text).toContain('data: Split test');
     });
@@ -239,14 +238,13 @@ describe('Execute', () => {
       // This happens when bot returns early (e.g., OperationOutcome error)
       mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
         const encoder = new TextEncoder();
+        const outcome = badRequest('Test error');
         const headersJson = JSON.stringify({
-          statusCode: 200,
+          nonStreamingResponse: true,
+          statusCode: getStatus(outcome),
           headers: { 'Content-Type': 'application/json' },
         });
-        const resultJson = JSON.stringify({
-          resourceType: 'OperationOutcome',
-          issue: [{ severity: 'error', code: 'invalid', details: { text: 'Test error' } }],
-        });
+        const resultJson = JSON.stringify(outcome);
 
         async function* createEventStream(): AsyncGenerator<{
           PayloadChunk?: { Payload: Uint8Array };
@@ -271,10 +269,81 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(400);
       expect(res.headers['content-type']).toBe('application/json');
       expect(res.body.resourceType).toBe('OperationOutcome');
       expect(res.body.issue[0].details.text).toBe('Test error');
+    });
+
+    test('Streaming wrapper generic JSON error preserves HTTP response', async () => {
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        const encoder = new TextEncoder();
+        const headersJson = JSON.stringify({
+          nonStreamingResponse: true,
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const errorJson = JSON.stringify({ errorType: 'Error', errorMessage: 'Something failed', stack: [] });
+
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { LogResult?: string };
+        }> {
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson + '\n') } };
+          yield { PayloadChunk: { Payload: encoder.encode(errorJson) } };
+          yield {
+            InvokeComplete: {
+              LogResult: `U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==`,
+            },
+          };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(500);
+      expect(res.headers['content-type']).toBe('application/json');
+      expect(res.body).toMatchObject({ errorType: 'Error', errorMessage: 'Something failed' });
+    });
+
+    test('Streaming execution with JSON content still streams', async () => {
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        const encoder = new TextEncoder();
+        const headersJson = JSON.stringify({}); // statusCode and headers optional
+
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { LogResult?: string };
+        }> {
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson + '\n{') } };
+          yield { PayloadChunk: { Payload: encoder.encode('"chunks":[') } };
+          yield { PayloadChunk: { Payload: encoder.encode('{"chunk":1},') } };
+          yield { PayloadChunk: { Payload: encoder.encode('{"chunk":2}]}') } };
+          yield {
+            InvokeComplete: {
+              LogResult: `U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==`,
+            },
+          };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(200);
+      expect(res.body).toStrictEqual({}); // since content-type is not application/json, supertest does not parse the body and leaves it as an empty object
+      expect(JSON.parse(res.text)).toStrictEqual({ chunks: [{ chunk: 1 }, { chunk: 2 }] });
     });
   });
 });

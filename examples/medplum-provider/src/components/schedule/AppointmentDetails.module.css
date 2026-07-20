@@ -1,0 +1,24 @@
+.AppointmentDetails {
+  /* If we have two adjacent `<Divider>` elements (such as when an interior
+   * component rendered `null`), hide the second divider */
+  > [role="separator"] + [role="separator"] {
+    display: none;
+  }
+}
+
+.metadata {
+  margin: 0;
+}
+
+.metadata dt {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 800;
+}
+
+.metadata dd + dt {
+  margin-top: var(--mantine-spacing-xs);
+}
+
+.metadata dd {
+  margin-inline-start: var(--mantine-spacing-lg);
+}
