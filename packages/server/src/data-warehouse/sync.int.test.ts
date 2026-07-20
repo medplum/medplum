@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/** Integration tests for sync.ts: Postgres (medplum_test) → syncData → fake S3 Iceberg. Worker wiring is tested in workers/data-warehouse-sync.test.ts; local Parquet e2e is in workers/data-warehouse-sync.int.test.ts. */
+/** Integration tests for sync.ts: Postgres (medplum_test) → syncData → fake S3 Iceberg. Worker wiring is tested in workers/data-warehouse-sync.worker.int.test.ts; local Parquet e2e is in workers/data-warehouse-sync.int.test.ts. */
 
 import { S3TablesWarehouseDestination } from '../cloud/aws/data-warehouse-destination';
 import { loadTestConfig } from '../config/loader';
