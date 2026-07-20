@@ -113,7 +113,7 @@ export function App(): JSX.Element | null {
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: `/Calendar/Schedule` },
-                  { icon: <IconCalendarWeek />, label: 'Scheduling', href: `/Scheduling` },
+                  { icon: <IconCalendarWeek />, label: 'Find & Book', href: `/Scheduling` },
                   {
                     icon: <IconMail />,
                     label: 'Messages',
