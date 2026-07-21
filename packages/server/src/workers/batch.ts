@@ -382,7 +382,16 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
         asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, identitySeq, authState, resultsThisRun);
+          await finalizeInterrupted(
+            logger,
+            systemRepo,
+            store,
+            asyncJob,
+            chunkSeq,
+            identitySeq,
+            authState,
+            resultsThisRun
+          );
           return;
         }
       }
