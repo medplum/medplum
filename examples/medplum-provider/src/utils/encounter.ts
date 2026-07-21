@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG, isResource } from '@medplum/core';
+import {
+  createReference,
+  getExtension,
+  getReferenceString,
+  HTTP_HL7_ORG,
+  isReference,
+  isResource,
+} from '@medplum/core';
 import type {
   Appointment,
   ChargeItem,
@@ -22,11 +29,12 @@ export async function createAppointment(
   medplum: MedplumClient,
   start: Date,
   end: Date,
-  patient: Patient,
+  patient: Patient | Reference<Patient>,
   practitioner: Practitioner | Reference<Practitioner>,
   schedule?: Schedule
 ): Promise<Appointment> {
   const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
+  const patientRef = isResource(patient) ? createReference(patient) : patient;
 
   // If we have a schedule reference, add a busy slot to prevent future
   // scheduling operations (such as $find or $book) from thinking this
@@ -50,7 +58,7 @@ export async function createAppointment(
     slot: slot ? [createReference(slot)] : undefined,
     participant: [
       {
-        actor: createReference(patient),
+        actor: patientRef,
         status: 'accepted',
       },
       {
@@ -67,14 +75,14 @@ export async function createEncounter(
   medplum: MedplumClient,
   classification: Coding,
   patient: Patient | Reference<Patient>,
-  planDefinition: PlanDefinition,
+  planDefinition: PlanDefinition | undefined,
   appointment: Appointment,
   practitioner: Practitioner | Reference<Practitioner>
 ): Promise<WithId<Encounter>> {
   const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
   const patientRef = isResource(patient) ? createReference(patient) : patient;
 
-  const encounter: WithId<Encounter> = await medplum.createResource({
+  const encounter = await medplum.createResource<Encounter>({
     resourceType: 'Encounter',
     status: 'planned',
     statusHistory: [],
@@ -96,16 +104,19 @@ export async function createEncounter(
 
   await medplum.createResource(clinicalImpressionData);
 
-  await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'subject', valueString: getReferenceString(patient) },
-      { name: 'encounter', valueString: getReferenceString(encounter) },
-      { name: 'practitioner', valueString: getReferenceString(practitioner) },
-    ],
-  });
+  if (planDefinition) {
+    await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'subject', valueString: getReferenceString(patient) },
+        { name: 'encounter', valueString: getReferenceString(encounter) },
+        { name: 'practitioner', valueString: getReferenceString(practitioner) },
+      ],
+    });
 
-  await createChargeItemFromPlanDefinition(medplum, encounter, patientRef, planDefinition);
+    await createChargeItemFromPlanDefinition(medplum, encounter, patientRef, planDefinition);
+  }
+
   await handleChargeItemsFromTasks(medplum, encounter, patientRef);
 
   return encounter;
@@ -279,4 +290,15 @@ export async function updateEncounterStatus(
   }
 
   return medplum.updateResource(updatedEncounter);
+}
+
+export function encounterUrl(encounter: WithId<Encounter>): string {
+  // If the encounter subject is a Patient, deep link to the encounter
+  // inside that patient's context
+  if (isReference(encounter.subject, 'Patient')) {
+    return `/${encounter.subject.reference}/${getReferenceString(encounter)}`;
+  }
+
+  // Otherwise, link to the ResourcePage to show basic info
+  return `/Encounter/${encounter.id}`;
 }

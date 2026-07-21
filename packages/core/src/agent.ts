@@ -83,12 +83,26 @@ export interface AgentUpgradeResponse extends BaseAgentMessage {
 export interface AgentLogsRequest extends BaseAgentRequestMessage {
   type: 'agent:logs:request';
   limit?: number;
+  /**
+   * Opaque pagination cursor. Pass the `nextBefore` value from a previous
+   * response to fetch the next (older) page; treat it as an opaque token rather
+   * than parsing it. Logs are read across all rotated log files, not just the
+   * most recent one.
+   */
+  before?: string;
 }
 
 export interface AgentLogsResponse extends BaseAgentMessage {
   type: 'agent:logs:response';
   statusCode: number;
   logs: LogMessage[];
+  /** Whether more (older) log entries exist beyond the ones returned in this page. */
+  hasMore: boolean;
+  /**
+   * Opaque cursor to pass as `before` in a subsequent request to fetch the next
+   * older page. Only present when `hasMore` is true.
+   */
+  nextBefore?: string;
 }
 
 export type AgentRttStats = {

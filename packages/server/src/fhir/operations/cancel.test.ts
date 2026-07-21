@@ -79,8 +79,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
   });
 
   test('Succeeds for a pending appointment', async () => {
@@ -91,8 +90,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
   });
 
   test('Returns cancelled appointment', async () => {
@@ -103,8 +101,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const updated = response.body as Appointment;
     expect(updated).toMatchObject({ resourceType: 'Appointment', id: appointment.id, status: 'cancelled' });
@@ -118,8 +115,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const remaining = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?_id=${slot.id}`));
     expect(remaining).toHaveLength(0);
@@ -134,8 +130,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
 
     const remaining = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?_id=${slot1.id},${slot2.id}`));
     expect(remaining).toHaveLength(0);
@@ -148,8 +143,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toEqual(200);
+    expect(response).toHaveStatus(200);
   });
 
   test.each(['cancelled', 'fulfilled', 'noshow', 'entered-in-error'] as Appointment['status'][])(
@@ -171,7 +165,7 @@ describe('Appointment/$cancel', () => {
           },
         ],
       });
-      expect(response.status).toEqual(400);
+      expect(response).toHaveStatus(400);
     }
   );
 
@@ -180,7 +174,7 @@ describe('Appointment/$cancel', () => {
       .post('/fhir/R4/Appointment/00000000-0000-0000-0000-000000000000/$cancel')
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(404);
+    expect(response).toHaveStatus(404);
   });
 
   test('Returns 400 when a referenced slot does not exist', async () => {
@@ -198,7 +192,7 @@ describe('Appointment/$cancel', () => {
       .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
       .set('Authorization', `Bearer ${project.accessToken}`);
 
-    expect(response.status).toEqual(400);
+    expect(response).toHaveStatus(400);
     expect(response.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'Loading slots failed' } }],

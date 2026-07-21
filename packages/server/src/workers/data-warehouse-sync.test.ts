@@ -58,20 +58,16 @@ function setupSyncDataMock(): MockInstance<typeof syncModule.syncData> {
   return vi.spyOn(syncModule, 'syncData').mockResolvedValue({
     tables: [
       {
-        icebergTable: 'patient_history',
-        postgresTable: 'Patient_History',
         destination: 'patient_history.parquet',
         rowsInserted: 1,
-        watermarkDurationMs: 0,
         syncDurationMs: 0,
+        watermarkDurationMs: 0,
       },
       {
-        icebergTable: 'observation_history',
-        postgresTable: 'Observation_History',
         destination: 'observation_history.parquet',
         rowsInserted: 0,
-        watermarkDurationMs: 0,
         syncDurationMs: 0,
+        watermarkDurationMs: 0,
       },
     ],
   });
@@ -375,9 +371,7 @@ describe('data-warehouse sync worker', () => {
         await options?.onProgress?.('Completed patient_history (1 rows, table 1/1)', {
           tablesCompleted: 1,
           tablesTotal: 1,
-          icebergTable: 'patient_history',
-          postgresTable: 'Patient_History',
-          destination: 'patient_history',
+          destination: 'patient_history.parquet',
           rowsInserted: 1,
         });
         return { tables: [] };
@@ -392,9 +386,7 @@ describe('data-warehouse sync worker', () => {
       expect(updateProgress).toHaveBeenCalledWith({
         tablesCompleted: 1,
         tablesTotal: 1,
-        icebergTable: 'patient_history',
-        postgresTable: 'Patient_History',
-        destination: 'patient_history',
+        destination: 'patient_history.parquet',
         rowsInserted: 1,
       });
     });

@@ -32,7 +32,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import type { ChangeEvent, JSX, MouseEvent } from 'react';
+import type { ChangeEvent, JSX, MouseEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
@@ -77,9 +77,27 @@ export class SearchClickEvent extends Event {
   }
 }
 
+/**
+ * An additional, computed column appended after the search-result columns.
+ *
+ * Unlike the columns derived from {@link SearchControlProps.search} fields, an
+ * additional column is not backed by a search parameter and has no sort/filter
+ * menu: it renders arbitrary content per row. Use it for values that must be
+ * computed or fetched separately from the searched resource (e.g. a related
+ * resource's status).
+ */
+export interface SearchControlAdditionalColumn {
+  /** The column header text. */
+  readonly name: string;
+  /** Renders the cell contents for the given row resource. */
+  readonly renderCell: (resource: Resource) => ReactNode;
+}
+
 export interface SearchControlProps {
   readonly search: SearchRequest;
   readonly checkboxesEnabled?: boolean;
+  /** Additional computed columns rendered after the search-result columns. */
+  readonly additionalColumns?: readonly SearchControlAdditionalColumn[];
   readonly hideToolbar?: boolean;
   readonly hideFilters?: boolean;
   readonly onLoad?: (e: SearchLoadEvent) => void;
@@ -418,6 +436,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 </Menu>
               </Table.Th>
             ))}
+            {props.additionalColumns?.map((col) => (
+              <Table.Th key={col.name}>
+                <Text fw={500} p={2}>
+                  {col.name}
+                </Text>
+              </Table.Th>
+            ))}
           </Table.Tr>
           {!props.hideFilters && (
             <Table.Tr>
@@ -432,6 +457,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     />
                   )}
                 </Table.Th>
+              ))}
+              {props.additionalColumns?.map((col) => (
+                <Table.Th key={col.name} />
               ))}
             </Table.Tr>
           )}
@@ -461,6 +489,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   )}
                   {fields.map((field) => (
                     <Table.Td key={field.name}>{renderValue(resource, field)}</Table.Td>
+                  ))}
+                  {props.additionalColumns?.map((col) => (
+                    <Table.Td key={col.name}>{col.renderCell(resource)}</Table.Td>
                   ))}
                 </Table.Tr>
               )

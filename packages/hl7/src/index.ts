@@ -5,4 +5,5 @@ export * from './client';
 export * from './connection';
 export * from './constants';
 export * from './events';
+export * from './free-port';
 export * from './server';

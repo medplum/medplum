@@ -73,23 +73,19 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
     return { queue: undefined, worker: undefined, name: DataWarehouseSyncQueueName };
   }
 
-  const defaultOptions = defaultQueueOptions(config);
+  const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<DataWarehouseSyncJobData>(DataWarehouseSyncQueueName, {
-    ...defaultOptions,
-    defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
+    ...queueOptions,
+    defaultJobOptions: { ...queueOptions.defaultJobOptions, attempts: 1 },
   });
 
-  const workerBullmq = getWorkerBullmqConfig(config, 'data-warehouse-sync') ?? {};
   const worker = new Worker<DataWarehouseSyncJobData>(
     DataWarehouseSyncQueueName,
     async (job) => processDataWarehouseSyncJob(config, job),
-    {
-      ...defaultOptions,
-      ...workerBullmq,
-      lockDuration: workerBullmq.lockDuration ?? DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
-      // Data warehouse sync is intentionally serialized.
-      concurrency: 1,
-    }
+    getWorkerBullmqConfig(config, 'data-warehouse-sync', queueOptions, {
+      lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
+      concurrency: 1, // Data warehouse sync is intentionally serialized.
+    })
   );
   addVerboseQueueLogging<DataWarehouseSyncJobData>(queue, worker, (job) => ({
     trigger: job.data.trigger,
@@ -168,12 +164,23 @@ export async function processDataWarehouseSyncJob(
         globalLogger.info('Skipping data warehouse sync; another sync is in progress', {
           jobId: job.id,
           trigger: job.data.trigger,
+          startDate: syncConfig?.startDate,
           subsystem: 'data-warehouse-sync',
         });
         return;
       }
 
       const syncOptions = getDataWarehouseSyncOptions(config);
+
+      globalLogger.info('Data warehouse sync starting', {
+        jobId: job.id,
+        trigger: job.data.trigger,
+        tablesTotal: syncOptions.warehouseSources.length,
+        startDate: syncOptions.startDate,
+        includeResourceTypes: syncOptions.includeResourceTypes,
+        excludeResourceTypes: syncOptions.excludeResourceTypes,
+        subsystem: 'data-warehouse-sync',
+      });
 
       const result = await syncData({
         ...syncOptions,
@@ -182,11 +189,11 @@ export async function processDataWarehouseSyncJob(
         },
       });
 
-      let watermarkDurationSeconds = 0;
       let syncDurationSeconds = 0;
+      let watermarkDurationSeconds = 0;
       for (const table of result.tables) {
-        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
         syncDurationSeconds += table.syncDurationMs / 1000;
+        watermarkDurationSeconds += table.watermarkDurationMs / 1000;
       }
 
       const tables = result.tables;
@@ -195,16 +202,27 @@ export async function processDataWarehouseSyncJob(
       const rowsInserted = tables.reduce((n, t) => n + t.rowsInserted, 0);
       const jobEndTime = new Date();
       const durationSeconds = (jobEndTime.getTime() - jobStartTime.getTime()) / 1000;
+
       globalLogger.info('Data warehouse sync completed', {
         jobId: job.id,
         trigger: job.data.trigger,
+        startDate: syncOptions.startDate,
         tablesSynced: tables.length,
         tablesWithRows,
         tablesEmpty,
         rowsInserted,
-        tableCounts: Object.fromEntries(tables.map((t) => [t.icebergTable, t.rowsInserted])),
-        watermarkDurationSeconds,
+        tableCounts: Object.fromEntries(tables.map((t) => [t.destination, t.rowsInserted])),
+        tableTimings: Object.fromEntries(
+          tables.map((t) => [
+            t.destination,
+            {
+              syncDurationMs: t.syncDurationMs,
+              watermarkDurationMs: t.watermarkDurationMs,
+            },
+          ])
+        ),
         syncDurationSeconds,
+        watermarkDurationSeconds,
         jobStartTime: jobStartTime.toISOString(),
         jobEndTime: jobEndTime.toISOString(),
         durationSeconds,
@@ -216,6 +234,7 @@ export async function processDataWarehouseSyncJob(
         trigger: job.data.trigger,
         destination: syncConfig?.destination,
         namespace: syncConfig?.namespace,
+        startDate: syncConfig?.startDate,
         err,
         subsystem: 'data-warehouse-sync',
       });

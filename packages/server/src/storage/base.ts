@@ -11,12 +11,14 @@ export type PresignedUrlOptions = {
   upload?: boolean;
 };
 
-export abstract class BaseBinaryStorage implements BinaryStorage {
+abstract class BaseBinaryStorage implements BinaryStorage {
   abstract writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void>;
 
   abstract readFile(key: string): Promise<Readable>;
 
   abstract copyFile(sourceKey: string, destinationKey: string): Promise<void>;
+
+  abstract deleteFile(key: string): Promise<void>;
 
   abstract getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string>;
 
@@ -42,3 +44,5 @@ export abstract class BaseBinaryStorage implements BinaryStorage {
     return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
 }
+
+export { BaseBinaryStorage };

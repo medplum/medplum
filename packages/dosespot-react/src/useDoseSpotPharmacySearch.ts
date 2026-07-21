@@ -10,7 +10,7 @@ export type UseDoseSpotPharmacySearchReturn = UsePharmacySearchReturn;
 /**
  * React hook that provides DoseSpot-specific pharmacy search and add-to-favorites functionality.
  *
- * Thin wrapper around the generic {@link usePharmacySearch} hook,
+ * Thin wrapper around the generic {@link @medplum/react-hooks#usePharmacySearch} hook,
  * pre-configured with DoseSpot bot identifiers.
  *
  * @returns An object with `searchPharmacies` and `addToFavorites` callbacks.

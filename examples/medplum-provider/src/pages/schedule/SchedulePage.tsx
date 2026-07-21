@@ -1,30 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Drawer, Group, Stack, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { ActionIcon, Alert, Box, Button, Center, Group, Loader, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import {
-  createReference,
-  EMPTY,
-  getReferenceString,
-  isDefined,
-  isReference,
-  isResourceWithId,
-  resolveId,
-} from '@medplum/core';
-import type { Appointment, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
-import { ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconSettings } from '@tabler/icons-react';
+import { createReference, isNotFound, normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
+import { OperationOutcomeAlert, ReferenceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Calendar } from '../../components/Calendar';
-import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
-import { CreateVisit } from '../../components/schedule/CreateVisit';
-import type { Range } from '../../types/scheduling';
+import { ScheduleDetails } from '../../components/schedule/ScheduleDetails';
 import { showErrorNotification } from '../../utils/notifications';
-import { mergeOverlappingSlots } from '../../utils/slots';
-import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
 
 /**
@@ -38,290 +24,211 @@ export function SchedulePage(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
   const project = medplum.getProject();
-
-  // Redirect to the current user's schedule if no id in the URL
-  useEffect(() => {
-    if (id || !profile?.id) {
-      return;
-    }
-    medplum
-      .searchOne('Schedule', { actor: getReferenceString(profile as WithId<Practitioner>) })
-      .then((foundSchedule) => {
-        if (foundSchedule?.id) {
-          navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.log);
-        } else {
-          medplum
-            .createResource({
-              resourceType: 'Schedule',
-              actor: [createReference(profile as WithId<Practitioner>)],
-              active: true,
-            })
-            .then((created) => {
-              navigate(`/Calendar/Schedule/${created.id}`, { replace: true })?.catch(console.log);
-            })
-            .catch(showErrorNotification);
-        }
-      })
-      .catch(showErrorNotification);
-  }, [id, profile, medplum, navigate]);
-  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
-  const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
   const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
-  const [range, setRange] = useState<Range | undefined>(undefined);
-  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
-  const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
 
-  const [appointmentSlot, setAppointmentSlot] = useState<Range>();
-  const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
+  const [selectedActor, setSelectedActor] = useState<Reference<Practitioner> | undefined>(
+    // When mounting, if no schedule was selected via the URL parameters, default
+    // to choosing the current profile.
+    !id && profile?.id ? createReference(profile) : undefined
+  );
+  const [loading, setLoading] = useState(true);
+  const [readOutcome, setReadOutcome] = useState<OperationOutcome | undefined>();
+  // Tracks the last ID whose fetch has settled (success or failure), so that
+  // isLoadingById clears even when readResource rejects and schedule stays stale.
+  const [resolvedId, setResolvedId] = useState<string | undefined>(undefined);
+
+  // True immediately when the URL id changes (derived, no extra render) and stays
+  // true until the fetch for that id settles or the schedule already matches.
+  const isLoadingById = Boolean(id) && schedule?.id !== id && resolvedId !== id;
+
+  // ReferenceInput does not take a `value` prop, so we use this stateful `key` to trigger
+  // it to remount and take new values from `initialValue` on demand. :confounded:
+  const [stateKey, setStateKey] = useState(0);
 
   // Load the schedule directly from the URL param
   useEffect(() => {
     if (!id) {
-      return;
+      return () => {};
     }
-    setSchedule(undefined);
-    medplum.readResource('Schedule', id).then(setSchedule).catch(showErrorNotification);
+    let active = true;
+    medplum
+      .readResource('Schedule', id)
+      .then((s) => {
+        if (active) {
+          setSchedule(s);
+          setReadOutcome(undefined);
+
+          // clear selection and bump state key to make the UI re-render showing
+          // a practitioner from the schedule we just loaded.
+          setSelectedActor(undefined);
+          setStateKey((prev) => prev + 1);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setSchedule(undefined);
+          setReadOutcome(normalizeOperationOutcome(err));
+
+          // avoid showing a different practitioner's name along side
+          // the error message. Clear the selected actor state and force a
+          // re-render.
+          setSelectedActor(undefined);
+          setStateKey((prev) => prev + 1);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+          setResolvedId(id);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [id, medplum]);
 
-  // Find slots visible in the current range
+  // Search for a schedule when the user picks an actor
   useEffect(() => {
-    if (!schedule || !range) {
+    if (!selectedActor?.reference) {
       return () => {};
     }
     let active = true;
-
     medplum
-      .searchResources('Slot', [
-        ['_count', '1000'],
-        ['schedule', getReferenceString(schedule)],
-        ['start', `ge${range.start.toISOString()}`],
-        ['start', `le${range.end.toISOString()}`],
-        ['status:not', 'entered-in-error'],
-      ])
-      .then((rawSlots) => active && setSlots(rawSlots))
-      .catch((error: unknown) => active && showErrorNotification(error));
-
-    return () => {
-      active = false;
-    };
-  }, [medplum, schedule, range]);
-
-  // Find appointments visible in the current range
-  useEffect(() => {
-    const actorRef = schedule?.actor?.[0]?.reference;
-    if (!actorRef || !range) {
-      return () => {};
-    }
-    let active = true;
-
-    medplum
-      .searchResources('Appointment', [
-        ['_count', '1000'],
-        ['actor', actorRef],
-        ['date', `ge${range.start.toISOString()}`],
-        ['date', `le${range.end.toISOString()}`],
-      ])
-      .then((appointments) => active && setAppointments(appointments))
-      .catch((error: unknown) => active && showErrorNotification(error));
-
-    return () => {
-      active = false;
-    };
-  }, [medplum, schedule, range]);
-
-  const practitioner = schedule?.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
-
-  // When a date/time interval is selected, set the event object and open the
-  // create appointment modal
-  const handleSelectInterval = useCallback(
-    (slot: Range) => {
-      if (!practitioner) {
-        showErrorNotification("Can't create visit without associated Practitioner");
-        return;
-      }
-
-      createAppointmentHandlers.open();
-      setAppointmentSlot(slot);
-    },
-    [createAppointmentHandlers, practitioner]
-  );
-
-  const handleSelectSlot = useCallback(
-    (slot: Slot) => {
-      if (!practitioner) {
-        showErrorNotification("Can't create visit without associated Practitioner");
-        return;
-      }
-
-      // When a "free" slot is selected, open the create appointment modal
-      if (slot.status === 'free') {
-        createAppointmentHandlers.open();
-        setAppointmentSlot({ start: new Date(slot.start), end: new Date(slot.end) });
-      }
-    },
-    [createAppointmentHandlers, practitioner]
-  );
-
-  const handleBookSuccess = useCallback(
-    (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
-      setAppointments((state) => [...(state ?? EMPTY), results.appointment]);
-      setAppointmentDetails(results.appointment);
-      appointmentDetailsHandlers.open();
-      setSlots((state) => results.slots.concat(state ?? EMPTY));
-    },
-    [appointmentDetailsHandlers]
-  );
-
-  // When an appointment is selected, navigate to the detail page
-  const handleSelectAppointment = useCallback(
-    async (appointment: Appointment) => {
-      if (!isResourceWithId(appointment)) {
-        showErrorNotification("Can't navigate to unsaved appointment");
-        return;
-      }
-      const reference = getReferenceString(appointment);
-
-      try {
-        const encounter = await medplum.searchOne('Encounter', [['appointment', reference]]);
-
-        if (!encounter) {
-          setAppointmentDetails(appointment);
-          appointmentDetailsHandlers.open();
+      .searchOne('Schedule', { actor: selectedActor.reference })
+      .then((foundSchedule) => {
+        if (!active) {
           return;
         }
-
-        const patient = encounter.subject;
-        if (patient?.reference) {
-          await navigate(`/${patient.reference}/Encounter/${encounter.id}`);
+        if (foundSchedule?.id) {
+          if (foundSchedule.id === id) {
+            // The found schedule is already displayed, so navigating would be a
+            // no-op and the ID-loading effect would never fire to clear the
+            // loading state. Settle here instead.
+            setSelectedActor(undefined);
+            setLoading(false);
+          } else {
+            // Loading ownership transfers to the ID-loading effect on navigation.
+            navigate(`/Calendar/Schedule/${foundSchedule.id}`, { replace: true })?.catch(console.error);
+          }
+        } else {
+          setSchedule(undefined);
+          setLoading(false);
         }
-      } catch (error) {
-        showErrorNotification(error);
-      }
-    },
-    [medplum, navigate, appointmentDetailsHandlers]
-  );
-
-  const handleAppointmentUpdate = useCallback(
-    (updated: WithId<Appointment>) => {
-      setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
-      if (updated.status === 'cancelled') {
-        appointmentDetailsHandlers.close();
-
-        // If the appointment was cancelled with `$cancel`, it also
-        // soft-deleted the related slots. Remove them from our local state.
-        if (updated.slot) {
-          const ids = new Set(updated.slot.map((ref) => resolveId(ref)).filter(isDefined));
-          setSlots((state) => state?.filter((slot) => slot.id && !ids.has(slot.id)));
+      })
+      .catch((err) => {
+        if (!active) {
+          return;
         }
-      }
-    },
-    [appointmentDetailsHandlers]
-  );
-
-  const handleSlotUpdate = useCallback((updated: WithId<Slot>) => {
-    setSlots((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-  }, []);
+        showErrorNotification(err);
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedActor, medplum, navigate, id]);
 
   const handleActorChange = useCallback(
     (ref: Reference | undefined) => {
-      if (!ref?.reference) {
-        return;
+      if (ref) {
+        setLoading(true);
+        setReadOutcome(undefined);
+        setSelectedActor(ref as Reference<Practitioner>);
+      } else {
+        setSelectedActor(undefined);
+        setSchedule(undefined);
+        setLoading(false);
+        if (id) {
+          navigate('/Calendar/Schedule')?.catch(console.error);
+        }
       }
-      medplum
-        .searchOne('Schedule', { actor: ref.reference })
-        .then((foundSchedule) => {
-          if (foundSchedule?.id) {
-            navigate(`/Calendar/Schedule/${foundSchedule.id}`)?.catch(console.error);
-          }
-        })
-        .catch(showErrorNotification);
     },
-    [medplum, navigate]
+    [navigate, id]
   );
+
+  const handleCreateScheduleForActor = useCallback(() => {
+    if (!selectedActor) {
+      return;
+    }
+    setLoading(true);
+    medplum
+      .createResource({
+        resourceType: 'Schedule',
+        actor: [selectedActor],
+        active: true,
+      })
+      .then((created) => {
+        // Loading ownership transfers to the ID-loading effect on navigation.
+        navigate(`/Calendar/Schedule/${created.id}`, { replace: true })?.catch(console.error);
+      })
+      .catch((err) => {
+        showErrorNotification(err);
+        setLoading(false);
+      });
+  }, [selectedActor, medplum, navigate]);
 
   const schedulingEnabled = project?.features?.includes('scheduling');
 
-  const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
+  let mainContent: JSX.Element | null = null;
+  if (loading || isLoadingById) {
+    mainContent = (
+      <Center flex={1}>
+        <Loader />
+      </Center>
+    );
+  } else if (readOutcome) {
+    // Special case some nicer UI for the most frequent error. Common scenario:
+    // changing project while on a permalink page for a Schedule resource, you
+    // suddenly don't have permission to see the resource you were just looking at.
+    if (isNotFound(readOutcome)) {
+      mainContent = (
+        <Alert color="red" icon={<IconAlertCircle />} title="Not Found" m="xl">
+          This schedule does not exist or you do not have permission to view it.
+        </Alert>
+      );
+    } else {
+      mainContent = <OperationOutcomeAlert outcome={readOutcome} m="xl" />;
+    }
+  } else if (schedule) {
+    mainContent = <ScheduleDetails schedule={schedule} />;
+  } else if (selectedActor) {
+    const noScheduleText = selectedActor.display
+      ? `No schedule found for ${selectedActor.display}.`
+      : 'No schedule found for this practitioner.';
+    mainContent = (
+      <Center flex={1}>
+        <Stack align="center" gap="md">
+          <Text c="dimmed">{noScheduleText}</Text>
+          <Button onClick={handleCreateScheduleForActor}>Create Schedule</Button>
+        </Stack>
+      </Center>
+    );
+  }
 
   return (
-    <>
-      <Stack p="sm" className={classes.page}>
-        <Group justify="space-between">
-          <Box w={320}>
-            <ReferenceInput
-              key={schedule?.id}
-              name="schedule-actor"
-              targetTypes={['Practitioner']}
-              placeholder="Switch schedule..."
-              defaultValue={schedule?.actor?.[0] as Reference<Practitioner>}
-              onChange={handleActorChange}
-            />
-          </Box>
-          {schedule && schedulingEnabled && (
-            <ActionIcon
-              variant="subtle"
-              aria-label="Schedule settings"
-              onClick={() => navigate(`/Calendar/Schedule/${schedule.id}/settings`)}
-            >
-              <IconSettings />
-            </ActionIcon>
-          )}
-        </Group>
-        <div className={classes.container}>
-          <Calendar
-            onSelectInterval={handleSelectInterval}
-            onSelectAppointment={handleSelectAppointment}
-            onSelectSlot={handleSelectSlot}
-            slots={mergedSlots}
-            appointments={appointments ?? []}
-            onRangeChange={setRange}
-            className={classes.calendar}
+    <Stack p="sm" className={classes.page}>
+      <Group justify="space-between">
+        <Box w={320}>
+          <ReferenceInput
+            key={stateKey}
+            name="schedule-actor"
+            targetTypes={['Practitioner']}
+            placeholder="Switch schedule..."
+            defaultValue={(schedule?.actor?.[0] ?? selectedActor) as Reference<Practitioner>}
+            onChange={handleActorChange}
+            disabled={isLoadingById}
           />
-
-          {schedule && range && (
-            <FindPane
-              key={schedule.id}
-              schedule={schedule}
-              range={range}
-              onSuccess={handleBookSuccess}
-              className={classes.findPane}
-            />
-          )}
-        </div>
-      </Stack>
-
-      {/* Modals */}
-      {practitioner && (
-        <Drawer
-          opened={createAppointmentOpened}
-          onClose={createAppointmentHandlers.close}
-          title="New Calendar Event"
-          position="right"
-          h="100%"
-        >
-          <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} practitioner={practitioner} />
-        </Drawer>
-      )}
-      <Drawer
-        opened={appointmentDetailsOpened}
-        onClose={appointmentDetailsHandlers.close}
-        title={
-          <Text size="xl" fw={700}>
-            Appointment Details
-          </Text>
-        }
-        position="right"
-        h="100%"
-      >
-        {appointmentDetails && (
-          <AppointmentDetails
-            appointment={appointmentDetails}
-            onAppointmentUpdate={handleAppointmentUpdate}
-            onSlotUpdate={handleSlotUpdate}
-          />
+        </Box>
+        {schedule && schedulingEnabled && (
+          <ActionIcon
+            variant="subtle"
+            aria-label="Schedule settings"
+            onClick={() => navigate(`/Calendar/Schedule/${id}/settings`)}
+          >
+            <IconSettings />
+          </ActionIcon>
         )}
-      </Drawer>
-    </>
+      </Group>
+      {mainContent}
+    </Stack>
   );
 }

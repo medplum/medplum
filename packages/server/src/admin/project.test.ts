@@ -4,19 +4,16 @@ import { createReference, getReferenceString } from '@medplum/core';
 import type { ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { addTestUser, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -46,8 +43,6 @@ describe('Project Admin routes', () => {
 
   beforeEach(() => {
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 
@@ -73,7 +68,7 @@ describe('Project Admin routes', () => {
         lastName: 'Jones',
         email: `bob${randomUUID()}@example.com`,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Get the project details
     // Make sure the new member is in the members list
@@ -83,7 +78,7 @@ describe('Project Admin routes', () => {
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended');
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.entry).toBeDefined();
     expect(res3.body.entry.length).toStrictEqual(3);
 
@@ -99,7 +94,7 @@ describe('Project Admin routes', () => {
       .get('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended');
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.resourceType).toStrictEqual('ProjectMembership');
     expect(res4.body.id).toBeDefined();
     expect(res4.body.meta.project).toStrictEqual(project.id);
@@ -112,7 +107,7 @@ describe('Project Admin routes', () => {
       .send({
         resourceType: 'Patient',
       });
-    expect(res5.status).toBe(403);
+    expect(res5).toHaveStatus(403);
 
     // Try a naughty request using a different membership
     const res6 = await request(app)
@@ -123,7 +118,7 @@ describe('Project Admin routes', () => {
         resourceType: 'ProjectMembership',
         id: randomUUID(),
       });
-    expect(res6.status).toBe(403);
+    expect(res6).toHaveStatus(403);
 
     // Promote the new member to admin
     const res7 = await request(app)
@@ -135,14 +130,14 @@ describe('Project Admin routes', () => {
         ...res4.body,
         admin: true,
       });
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
     expect(res7.body.meta?.author?.reference).toStrictEqual(owner?.profile?.reference);
 
     // Make sure the new member is an admin
     const res8 = await request(app)
       .get('/fhir/R4/ProjectMembership/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
     expect(res8.body.admin).toBe(true);
   });
 
@@ -167,13 +162,13 @@ describe('Project Admin routes', () => {
       .get('/admin/projects/' + aliceRegistration.project.id)
       .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
 
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Try to access Alice's project members using Alices's access token
     const membersRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
-    expect(membersRes.status).toBe(200);
+    expect(membersRes).toHaveStatus(200);
     const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
 
     // Try to access Alice's project using Bob's access token
@@ -182,7 +177,7 @@ describe('Project Admin routes', () => {
       .get('/admin/projects/' + aliceRegistration.project.id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
-    expect(res4.status).toBe(403);
+    expect(res4).toHaveStatus(403);
 
     // Try to access Alice's project members using Bob's access token
     // Should fail
@@ -190,7 +185,7 @@ describe('Project Admin routes', () => {
       .get('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
-    expect(res5.status).toBe(403);
+    expect(res5).toHaveStatus(403);
 
     // Try to edit Alice's project members using Bob's access token
     // Should fail
@@ -200,7 +195,7 @@ describe('Project Admin routes', () => {
       .type('json')
       .send({ resourceType: 'ProjectMembership' });
 
-    expect(res6.status).toBe(403);
+    expect(res6).toHaveStatus(403);
 
     // Try to create a new client in Alice's project using Alices's access token
     // Should succeed
@@ -213,7 +208,7 @@ describe('Project Admin routes', () => {
         name: 'Test client',
       });
 
-    expect(res9.status).toBe(201);
+    expect(res9).toHaveStatus(201);
 
     const clientId = res9.body.id;
 
@@ -223,7 +218,7 @@ describe('Project Admin routes', () => {
       .get('/fhir/R4/ClientApplication/' + clientId)
       .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
 
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
 
     // Try to read Alice's client using Bob's access token
     // Should fail
@@ -231,7 +226,7 @@ describe('Project Admin routes', () => {
       .get('/fhir/R4/ClientApplication/' + clientId)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
-    expect(res8.status).toBe(403);
+    expect(res8).toHaveStatus(403);
 
     // Try to create a new client in Alice's project using Bob's access token
     // Should fail
@@ -239,7 +234,7 @@ describe('Project Admin routes', () => {
       .post('/admin/projects/' + aliceRegistration.project.id + '/client')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
-    expect(res10.status).toBe(403);
+    expect(res10).toHaveStatus(403);
 
     // Try to delete Alice's project members using Bob's access token
     // Should fail
@@ -247,7 +242,7 @@ describe('Project Admin routes', () => {
       .delete('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
-    expect(res11.status).toBe(403);
+    expect(res11).toHaveStatus(403);
 
     // Try to create a bot using Bob's access token
     // Should fail
@@ -260,7 +255,7 @@ describe('Project Admin routes', () => {
         description: 'Alice bot description',
       });
 
-    expect(res12.status).toBe(403);
+    expect(res12).toHaveStatus(403);
 
     // Try to update secrets using Bob's access token
     // Should fail
@@ -275,7 +270,7 @@ describe('Project Admin routes', () => {
         },
       ]);
 
-    expect(res13.status).toBe(403);
+    expect(res13).toHaveStatus(403);
 
     // Try to update sites using Bob's access token
     // Should fail
@@ -290,7 +285,7 @@ describe('Project Admin routes', () => {
         },
       ]);
 
-    expect(res14.status).toBe(403);
+    expect(res14).toHaveStatus(403);
 
     // Try to update settings using Bob's access token
     // Should fail
@@ -305,7 +300,7 @@ describe('Project Admin routes', () => {
         },
       ]);
 
-    expect(res15.status).toBe(403);
+    expect(res15).toHaveStatus(403);
   });
 
   test('Delete membership', async () => {
@@ -330,7 +325,7 @@ describe('Project Admin routes', () => {
         lastName: 'Jones',
         email: `bob${randomUUID()}@example.com`,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Get the project details
     // Make sure the new member is in the members list
@@ -339,14 +334,14 @@ describe('Project Admin routes', () => {
     const res3 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.project).toBeDefined();
 
     // Try to access Alice's project members using Alices's access token
     const membersRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(membersRes.status).toBe(200);
+    expect(membersRes).toHaveStatus(200);
     const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
 
     const owner = members.find(
@@ -362,14 +357,14 @@ describe('Project Admin routes', () => {
     const res4 = await request(app)
       .get('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     // Now remove Bob as Alice
     // This should succeed
     const res5 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Get the project details
     // Make sure the new member is an admin
@@ -377,7 +372,7 @@ describe('Project Admin routes', () => {
     const res6 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body.project).toBeDefined();
 
     // Alice try to delete her own membership
@@ -385,7 +380,7 @@ describe('Project Admin routes', () => {
     const res7 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + owner.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(400);
+    expect(res7).toHaveStatus(400);
     expect(res7.body).toMatchObject({
       issue: [
         {
@@ -402,7 +397,7 @@ describe('Project Admin routes', () => {
     const res8 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + randomUUID())
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8.status).toBe(404);
+    expect(res8).toHaveStatus(404);
     expect(res8.body).toMatchObject({
       issue: [
         {
@@ -438,13 +433,13 @@ describe('Project Admin routes', () => {
         lastName: 'Patient',
         email: patientEmail,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Get the membership
     const membersRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(membersRes.status).toBe(200);
+    expect(membersRes).toHaveStatus(200);
     const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
     const patientMember = members.find(
       (m) => m.profile?.reference?.startsWith('Patient/') && !m.admin
@@ -460,7 +455,7 @@ describe('Project Admin routes', () => {
     const res3 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + patientMember.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Verify the User resource was also deleted
     await expect(systemRepo.readResource<User>('User', user.id)).rejects.toThrow();
@@ -490,13 +485,13 @@ describe('Project Admin routes', () => {
         email: practitionerEmail,
         scope: 'server',
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Get the membership
     const membersRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(membersRes.status).toBe(200);
+    expect(membersRes).toHaveStatus(200);
     const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
     const practitionerMember = members.find(
       (m) => m.profile?.reference?.startsWith('Practitioner/') && !m.admin
@@ -512,7 +507,7 @@ describe('Project Admin routes', () => {
     const res3 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + practitionerMember.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Verify the User resource was NOT deleted (still exists)
     const userAfterDelete = await systemRepo.readResource<User>('User', user.id);
@@ -541,13 +536,13 @@ describe('Project Admin routes', () => {
           valueString: 'test_value',
         },
       ]);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the secret was added
     const res3 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.project.secret).toHaveLength(1);
     expect(res3.body.project.secret[0].name).toStrictEqual('test_secret');
     expect(res3.body.project.secret[0].valueString).toStrictEqual('test_value');
@@ -557,7 +552,7 @@ describe('Project Admin routes', () => {
       .get('/fhir/R4/Project/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended');
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.meta.author).toMatchObject(createReference(profile));
   });
 
@@ -583,13 +578,13 @@ describe('Project Admin routes', () => {
           domain: ['example.com'],
         },
       ]);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the site was added
     const res3 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.project.site).toHaveLength(1);
     expect(res3.body.project.site[0].name).toStrictEqual('test_site');
   });
@@ -616,13 +611,13 @@ describe('Project Admin routes', () => {
           valueString: JSON.stringify([{ value: 'gpt-5.5', label: 'GPT-5.5' }]),
         },
       ]);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Verify the setting was added
     const res3 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.project.setting).toHaveLength(1);
     expect(res3.body.project.setting[0].name).toStrictEqual('aiModels');
     expect(res3.body.project.setting[0].valueString).toStrictEqual(
@@ -648,7 +643,7 @@ describe('Project Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Set password missing password', async () => {
@@ -661,7 +656,7 @@ describe('Project Admin routes', () => {
         password: '',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
   });
 
@@ -675,7 +670,7 @@ describe('Project Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
@@ -698,7 +693,7 @@ describe('Project Admin routes', () => {
         password: 'password123',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
@@ -712,7 +707,7 @@ describe('Project Admin routes', () => {
         password: 'new-password!@#',
       });
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
@@ -736,7 +731,7 @@ describe('Project Admin routes', () => {
         password: 'new-password!@#',
       });
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Reset MFA - success', async () => {
@@ -760,7 +755,7 @@ describe('Project Admin routes', () => {
         lastName: 'Lee',
         email: `dave${randomUUID()}@example.com`,
       });
-    expect(inviteRes.status).toBe(200);
+    expect(inviteRes).toHaveStatus(200);
 
     // inviteRes.body is the ProjectMembership resource directly
     const membershipId = inviteRes.body.id as string;
@@ -782,7 +777,7 @@ describe('Project Admin routes', () => {
       .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(resetRes.status).toBe(200);
+    expect(resetRes).toHaveStatus(200);
 
     // Verify user is no longer enrolled
     const updatedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
@@ -811,7 +806,7 @@ describe('Project Admin routes', () => {
         lastName: 'Mills',
         email: `frank${randomUUID()}@example.com`,
       });
-    expect(inviteRes.status).toBe(200);
+    expect(inviteRes).toHaveStatus(200);
 
     const membershipId = inviteRes.body.id as string;
 
@@ -819,8 +814,8 @@ describe('Project Admin routes', () => {
       .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(resetRes.status).toBe(400);
-    expect(resetRes.body.issue[0].details.text).toBe('User is not enrolled in MFA');
+    expect(resetRes).toHaveStatus(400);
+    expect(resetRes.body.issue[0].details.text).toBe('User is not enrolled in MFA method: totp');
   });
 
   test('Reset MFA - membership from different project is rejected', async () => {
@@ -854,7 +849,7 @@ describe('Project Admin routes', () => {
         lastName: 'Chen',
         email: `ivy${randomUUID()}@example.com`,
       });
-    expect(inviteRes.status).toBe(200);
+    expect(inviteRes).toHaveStatus(200);
 
     const membershipId = inviteRes.body.id as string;
 
@@ -864,7 +859,7 @@ describe('Project Admin routes', () => {
       .post(`/admin/projects/${projectA.id}/members/${membershipId}/mfa/reset`)
       .set('Authorization', 'Bearer ' + tokenA)
       .send();
-    expect(resetRes.status).toBe(404);
+    expect(resetRes).toHaveStatus(404);
   });
 
   test('Reset MFA - non-admin is rejected', async () => {
@@ -887,7 +882,7 @@ describe('Project Admin routes', () => {
         lastName: 'Page',
         email: `karen${randomUUID()}@example.com`,
       });
-    expect(inviteRes.status).toBe(200);
+    expect(inviteRes).toHaveStatus(200);
 
     const membershipId = inviteRes.body.id as string;
 
@@ -898,6 +893,245 @@ describe('Project Admin routes', () => {
       .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
       .set('Authorization', 'Bearer ' + nonAdminUser.accessToken)
       .send();
-    expect(resetRes.status).toBe(403);
+    expect(resetRes).toHaveStatus(403);
+  });
+
+  test('Reset MFA - invalid method is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Liam',
+        lastName: 'Neeson',
+        projectName: 'Liam Project',
+        email: `liam${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Mia',
+        lastName: 'Wong',
+        email: `mia${randomUUID()}@example.com`,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ method: 'sms' });
+    expect(resetRes).toHaveStatus(400);
+  });
+
+  test('Reset MFA - email method leaves TOTP and secret intact', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Nora',
+        lastName: 'Stone',
+        projectName: 'Nora Project',
+        email: `nora${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Omar',
+        lastName: 'Reed',
+        email: `omar${randomUUID()}@example.com`,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
+
+    // Enrolled in both TOTP and email
+    const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    await withTestContext(() =>
+      systemRepo.updateResource<User>({
+        ...invitedUser,
+        mfaEnrolled: true,
+        mfaMethod: ['totp', 'email'],
+        mfaSecret: 'TESTSECRET',
+      })
+    );
+
+    // Reset only the email method
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ method: 'email' });
+    expect(resetRes).toHaveStatus(200);
+
+    const updatedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    // Still enrolled in TOTP
+    expect(updatedUser.mfaEnrolled).toBe(true);
+    expect(updatedUser.mfaMethod).toStrictEqual(['totp']);
+    // Email-only reset does not rotate the authenticator secret
+    expect(updatedUser.mfaSecret).toBe('TESTSECRET');
+  });
+
+  test('Reset MFA - TOTP method leaves email enrolled and rotates secret', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Paula',
+        lastName: 'Vance',
+        projectName: 'Paula Project',
+        email: `paula${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Quinn',
+        lastName: 'Ryder',
+        email: `quinn${randomUUID()}@example.com`,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
+
+    const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    await withTestContext(() =>
+      systemRepo.updateResource<User>({
+        ...invitedUser,
+        mfaEnrolled: true,
+        mfaMethod: ['totp', 'email'],
+        mfaSecret: 'TESTSECRET',
+      })
+    );
+
+    // Default method is TOTP
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(resetRes).toHaveStatus(200);
+
+    const updatedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    // Still enrolled via email
+    expect(updatedUser.mfaEnrolled).toBe(true);
+    expect(updatedUser.mfaMethod).toStrictEqual(['email']);
+    // TOTP reset rotates the secret
+    expect(updatedUser.mfaSecret).not.toBe('TESTSECRET');
+  });
+
+  test('Reset MFA - method not enrolled is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Rosa',
+        lastName: 'Park',
+        projectName: 'Rosa Project',
+        email: `rosa${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Sam',
+        lastName: 'Tan',
+        email: `sam${randomUUID()}@example.com`,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+    const userId = (inviteRes.body.user.reference as string).split('/')[1];
+
+    // Enrolled only in TOTP
+    const systemRepo = getGlobalSystemRepo();
+    const invitedUser = await withTestContext(() => systemRepo.readResource<User>('User', userId));
+    await withTestContext(() =>
+      systemRepo.updateResource<User>({
+        ...invitedUser,
+        mfaEnrolled: true,
+        mfaMethod: ['totp'],
+        mfaSecret: 'TESTSECRET',
+      })
+    );
+
+    // Try to reset the email method the user is not enrolled in
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/mfa/reset`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ method: 'email' });
+    expect(resetRes).toHaveStatus(400);
+    expect(resetRes.body.issue[0].details.text).toBe('User is not enrolled in MFA method: email');
+  });
+
+  test('Reset password - sends email to member', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Tara',
+        lastName: 'Vale',
+        projectName: 'Tara Project',
+        email: `tara${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Uma',
+        lastName: 'West',
+        email: `uma${randomUUID()}@example.com`,
+        sendEmail: false,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/resetpassword`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(resetRes).toHaveStatus(200);
+  });
+
+  test('Reset password - non-admin is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Vera',
+        lastName: 'York',
+        projectName: 'Vera Project',
+        email: `vera${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const inviteRes = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Will',
+        lastName: 'Xu',
+        email: `will${randomUUID()}@example.com`,
+      });
+    expect(inviteRes).toHaveStatus(200);
+    const membershipId = inviteRes.body.id as string;
+
+    const nonAdminUser = await withTestContext(() => addTestUser(project));
+
+    const resetRes = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membershipId}/resetpassword`)
+      .set('Authorization', 'Bearer ' + nonAdminUser.accessToken)
+      .send();
+    expect(resetRes).toHaveStatus(403);
   });
 });

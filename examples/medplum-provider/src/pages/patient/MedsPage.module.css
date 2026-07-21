@@ -1,3 +1,22 @@
 .borderRight {
   border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
 }
+
+/*
+ * Cart rows lay a checkbox, the medication link, and a trash action in one
+ * no-wrap row. The MedplumLink renders an inline <a>; without forcing it to a
+ * full-width block the long medication name escapes this flex column and slides
+ * under the trash icon. `min-width: 0` + `overflow: hidden` lets the column
+ * shrink and the title's own ellipsis clamp, keeping the trash icon clear.
+ */
+.cartRowContent {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.cartRowContent a {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}

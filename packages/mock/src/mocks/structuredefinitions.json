@@ -12326,6 +12326,40 @@
           ]
         },
         {
+          "id": "Project.defaultAccessPolicies",
+          "path": "Project.defaultAccessPolicies",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Project.defaultAccessPolicies.profileType",
+          "path": "Project.defaultAccessPolicies.profileType",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Project.defaultAccessPolicies.accessPolicy",
+          "path": "Project.defaultAccessPolicies.accessPolicy",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }
+          ]
+        },
+        {
           "id": "Project.exportedResourceType",
           "path": "Project.exportedResourceType",
           "min": 0,

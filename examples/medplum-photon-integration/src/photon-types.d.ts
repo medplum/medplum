@@ -241,9 +241,7 @@ export type OrderEventType =
   | 'photon:order:error';
 
 type PrescriptionEventType =
-  | 'photon:prescription:created'
-  | 'photon:prescription:depleted'
-  | 'photon:prescription:expired';
+  'photon:prescription:created' | 'photon:prescription:depleted' | 'photon:prescription:expired';
 
 type OrderData = {
   id: string;

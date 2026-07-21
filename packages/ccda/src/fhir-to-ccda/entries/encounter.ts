@@ -45,8 +45,7 @@ export function createEncounterEntry(converter: FhirToCcdaConverter, encounter: 
           },
         })),
         entryRelationship: encounter.diagnosis?.map((d) => createEncounterDiagnosis(converter, d)).filter(Boolean) as
-          | CcdaEntryRelationship[]
-          | undefined,
+          CcdaEntryRelationship[] | undefined,
       },
     ],
   };

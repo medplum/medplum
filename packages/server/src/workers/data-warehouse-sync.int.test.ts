@@ -136,7 +136,6 @@ describe('processDataWarehouseSyncJob local destination (integration)', () => {
       expect.objectContaining({
         tablesCompleted: 1,
         tablesTotal: 1,
-        icebergTable,
         destination: expectedParquetPath,
         rowsInserted: 1,
       })

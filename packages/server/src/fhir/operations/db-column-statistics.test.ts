@@ -32,7 +32,7 @@ describe('getColumnStatisticsHandler', () => {
       .get('/fhir/R4/$db-column-statistics?tableName=')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject({
       resourceType: 'Parameters',
       parameter: [
@@ -49,7 +49,7 @@ describe('getColumnStatisticsHandler', () => {
       .get('/fhir/R4/$db-column-statistics?tableName=Patient')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject({
       resourceType: 'Parameters',
       parameter: [
@@ -93,7 +93,7 @@ describe('getColumnStatisticsHandler', () => {
         .get(`/fhir/R4/$db-column-statistics?tableName=${tableName}`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.body).toMatchObject({
         resourceType: 'Parameters',
         parameter: [
@@ -126,7 +126,7 @@ describe('getColumnStatisticsHandler', () => {
       .get(`/fhir/R4/$db-column-statistics?tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [

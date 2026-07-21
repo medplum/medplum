@@ -290,7 +290,7 @@
           {
             "id" : "Project.defaultPatientAccessPolicy",
             "path" : "Project.defaultPatientAccessPolicy",
-            "definition" : "The default access policy for patients using open registration.",
+            "definition" : "@deprecated Use defaultAccessPolicies instead. The default access policy for patients using open registration.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -571,6 +571,52 @@
               "path": "Project.defaultProfile.profile",
               "min": 1,
               "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies",
+            "path": "Project.defaultAccessPolicies",
+            "definition": "Default access policies to apply to project members by role when no explicit policy is provided.",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.defaultAccessPolicies",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies.profileType",
+            "path": "Project.defaultAccessPolicies.profileType",
+            "definition": "The member role this policy applies to.",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.defaultAccessPolicies.profileType",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/project-membership-profile-type"
+            }
+          },
+          {
+            "id": "Project.defaultAccessPolicies.accessPolicy",
+            "path": "Project.defaultAccessPolicies.accessPolicy",
+            "definition": "The access policy to apply to members of this role.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "Reference",
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }],
+            "base": {
+              "path": "Project.defaultAccessPolicies.accessPolicy",
+              "min": 1,
+              "max": "1"
             }
           },
           {
@@ -3483,7 +3529,7 @@
             "id": "JsonWebKey.kty",
             "path": "JsonWebKey.kty",
             "definition": "The family of cryptographic algorithms used with the key.",
-            "min": 1,
+            "min": 0,
             "max": "1",
             "type": [
               {
@@ -3492,7 +3538,7 @@
             ],
             "base": {
               "path": "JsonWebKey.kty",
-              "min": 1,
+              "min": 0,
               "max": "1"
             }
           },

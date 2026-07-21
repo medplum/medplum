@@ -6,6 +6,7 @@
 
 /* Import Open Color for standard color definitions. */
 @import 'open-color/open-color.css';
+@import './landing-tokens.css';
 
 /* You can override the default Infima variables here. */
 :root {

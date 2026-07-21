@@ -60,7 +60,7 @@ describe('Profile', () => {
     const res = await request(app).post('/auth/profile').type('json').send({
       profile: 'Practitioner/123',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing login');
   });
@@ -69,7 +69,7 @@ describe('Profile', () => {
     const res = await request(app).post('/auth/profile').type('json').send({
       login: '123',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing profile');
   });
@@ -82,7 +82,7 @@ describe('Profile', () => {
         login: randomUUID(),
         profile: getReferenceString(profile1),
       });
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Not found');
   });
@@ -93,7 +93,7 @@ describe('Profile', () => {
       email,
       password,
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
@@ -108,7 +108,7 @@ describe('Profile', () => {
       login: res1.body.login,
       profile: membership1.id,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login revoked');
   });
@@ -119,7 +119,7 @@ describe('Profile', () => {
       email,
       password,
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
@@ -134,7 +134,7 @@ describe('Profile', () => {
       login: res1.body.login,
       profile: membership1.id,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login granted');
   });
@@ -145,7 +145,7 @@ describe('Profile', () => {
       email,
       password,
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
 
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
@@ -162,7 +162,7 @@ describe('Profile', () => {
       login: res1.body.login,
       profile: membership1.id,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login profile already set');
   });
@@ -173,19 +173,20 @@ describe('Profile', () => {
       email,
       password,
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
-    expect(res1.body.memberships.length).toBe(2);
-    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile1))).toBeDefined();
-    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile2))).toBeDefined();
+    expect(res1.body.memberships.map((m: any) => m.profile.reference)).toContainExactly([
+      getReferenceString(profile1),
+      getReferenceString(profile2),
+    ]);
 
     const res2 = await request(app).post('/auth/profile').type('json').send({
       login: res1.body.login,
       profile: randomUUID(),
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Profile not found');
   });
@@ -206,7 +207,7 @@ describe('Profile', () => {
       email,
       password,
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
@@ -216,7 +217,7 @@ describe('Profile', () => {
       login: res1.body.login,
       profile: membership.id,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Invalid profile');
   });
@@ -227,19 +228,20 @@ describe('Profile', () => {
       email,
       password,
     });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
-    expect(res1.body.memberships.length).toBe(2);
-    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile1))).toBeDefined();
-    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile2))).toBeDefined();
+    expect(res1.body.memberships.map((m: any) => m.profile.reference)).toContainExactly([
+      getReferenceString(profile1),
+      getReferenceString(profile2),
+    ]);
 
     const res2 = await request(app).post('/auth/profile').type('json').send({
       login: res1.body.login,
       profile: res1.body.memberships[0].id,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeDefined();
   });
 
@@ -262,7 +264,7 @@ describe('Profile', () => {
       password,
     });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.memberships).toBeDefined();
     const updatedMembership = res2.body.memberships.find((p: any) => p.id === membership1.id);
     expect(updatedMembership).toBeDefined();

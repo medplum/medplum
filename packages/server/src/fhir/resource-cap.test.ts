@@ -51,22 +51,22 @@ describe('FHIR Resource Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const res2 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const res3 = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const res4 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res4.status).toBe(422);
+    expect(res4).toHaveStatus(422);
   });
 
   test('Allows requests above resource cap when rate limits are disabled', async () => {
@@ -85,13 +85,13 @@ describe('FHIR Resource Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const res2 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
   });
 
   test('Loads current count', async () => {
@@ -112,16 +112,16 @@ describe('FHIR Resource Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const res2 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toBe(422);
+    expect(res2).toHaveStatus(422);
 
     const res3 = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
   });
 
   test('Expunge counteracts create', async () => {
@@ -140,26 +140,26 @@ describe('FHIR Resource Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     const patient = res.body as Patient;
 
     const res2 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toBe(422);
+    expect(res2).toHaveStatus(422);
 
     const res3 = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$expunge`)
       .auth(accessToken, { type: 'bearer' })
       .send();
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const res4 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res4.status).toBe(201);
+    expect(res4).toHaveStatus(201);
   });
 
   test('Allows transaction under limit', async () => {
@@ -185,7 +185,7 @@ describe('FHIR Resource Limits', () => {
           { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Blocks oversized transaction bundle', async () => {
@@ -212,6 +212,6 @@ describe('FHIR Resource Limits', () => {
           { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
         ],
       } satisfies Bundle);
-    expect(res.status).toBe(422);
+    expect(res).toHaveStatus(422);
   });
 });
