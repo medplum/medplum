@@ -4,8 +4,10 @@ import { Box, Center, Loader } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { isReference } from '@medplum/core';
 import type { DiagnosticReport, Reference, ServiceRequest } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 import { LabOrderDetails } from './LabOrderDetails';
 import { LabResultDetails } from './LabResultDetails';
 
@@ -23,33 +25,61 @@ interface LabDetailPaneProps {
  */
 export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
   const { item } = props;
+  const medplum = useMedplum();
 
-  // A ServiceRequest is its own order. A DiagnosticReport may be based on one,
-  // in which case we prefer the order view over the raw result.
   const basedOnRef =
     item.resourceType === 'DiagnosticReport'
       ? item.basedOn?.find((ref): ref is Reference<ServiceRequest> => isReference(ref, 'ServiceRequest'))
       : undefined;
-  const order = useResource(item.resourceType === 'ServiceRequest' ? item : basedOnRef);
 
-  let content: JSX.Element;
-  if (order?.resourceType === 'ServiceRequest') {
-    content = <LabOrderDetails key={order.id} order={order} />;
-  } else if (item.resourceType === 'DiagnosticReport' && !basedOnRef) {
-    // DiagnosticReport with no associated order.
-    content = <LabResultDetails key={item.id} result={item} />;
-  } else {
-    // An order is expected but still loading; avoid flashing the result view.
-    content = (
-      <Center h="100%">
-        <Loader />
-      </Center>
-    );
-  }
+  const [order, setOrder] = useState<WithId<ServiceRequest>>();
+  const [loading, setLoading] = useState<boolean>(!!basedOnRef);
+
+  useEffect(() => {
+    let subscribed = true;
+    const fetchOrder = async (): Promise<void> => {
+      setOrder(undefined);
+      if (!basedOnRef) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const result = await medplum.readReference(basedOnRef);
+        if (subscribed) {
+          setOrder(result);
+        }
+      } catch (err) {
+        showErrorNotification(err);
+      } finally {
+        if (subscribed) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchOrder().catch(console.error);
+    return () => {
+      subscribed = false;
+    };
+  }, [medplum, basedOnRef]);
+
+  // The order to display: a ServiceRequest item is its own order.
+  const displayedOrder = item.resourceType === 'ServiceRequest' ? item : order;
 
   return (
     <Box h="100%" style={{ flex: 1, overflow: 'hidden' }}>
-      {content}
+      {loading ? (
+        <Center h="100%">
+          <Loader />
+        </Center>
+      ) : (
+        <>
+          {displayedOrder && <LabOrderDetails key={displayedOrder.id} order={displayedOrder} />}
+          {!displayedOrder && item.resourceType === 'DiagnosticReport' && (
+            <LabResultDetails key={item.id} result={item} />
+          )}
+        </>
+      )}
     </Box>
   );
 }
