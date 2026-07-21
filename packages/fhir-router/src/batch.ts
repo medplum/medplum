@@ -644,13 +644,14 @@ export class BatchProcessor {
       return;
     }
 
-    const n = this.state.position;
-    const entryIndex = bundleInfo.ordering[n];
+    const entryIndex = bundleInfo.ordering[this.state.position];
     const entry = entries[entryIndex];
     const rewritten = this.rewriteIdsInObject(entry);
     try {
-      this.setResult(entryIndex, await this.processBatchEntry(rewritten));
-      this.state.position = n + 1;
+      const result = await this.processBatchEntry(rewritten);
+      this.reconcileResolvedIdentity(entry, result);
+      this.setResult(entryIndex, result);
+      this.state.position++;
     } catch (err: any) {
       if (this.isTransaction()) {
         throw err;
@@ -659,7 +660,7 @@ export class BatchProcessor {
       this.state.errors.push(err.message);
       if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
         // Rate limit reached; terminate batch and finish to avoid further load on server
-        for (let i = n; i < bundleInfo.ordering.length; i++) {
+        for (let i = this.state.position; i < bundleInfo.ordering.length; i++) {
           this.setResult(bundleInfo.ordering[i], buildBundleResponse(err.outcome));
         }
         this.state.position = bundleInfo.ordering.length;
@@ -667,13 +668,33 @@ export class BatchProcessor {
       }
 
       this.setResult(entryIndex, buildBundleResponse(normalizeOperationOutcome(err)));
-      this.state.position = n + 1;
+      this.state.position++;
     }
   }
 
   private setResult(index: number, entry: BundleEntry): void {
     this.state.resultEntries[index] = entry;
     this.state.pendingIndices.push(index);
+  }
+
+  /**
+   * Reconciles the resolved-identity map with the resource actually persisted for an entry.
+   *
+   * Identities are resolved once during preprocessing and reused across transaction retries to
+   * maintain stable IDs (see {@link BatchProcessor.run}), but a conditional create or update
+   * transaction resolves against a search that is re-executed on every attempt.  If a matching
+   * resource appears between preprocessing (or a failed attempt) and the attempt that commits,
+   * the entry should resolve to that existing resource, not the one assigned during preprocessing.
+   * @param entry - The original Bundle entry that was processed.
+   * @param result - The response entry produced for it, carrying the persisted resource.
+   */
+  private reconcileResolvedIdentity(entry: BundleEntry, result: BundleEntry): void {
+    const placeholder = entry.fullUrl;
+    const resource = result.resource;
+    // Only update placeholders that were resolved during preprocessing
+    if (placeholder && this.resolvedIdentities[placeholder] && resource?.id) {
+      this.resolvedIdentities[placeholder] = getReferenceString(resource as WithId<Resource>);
+    }
   }
 
   /**

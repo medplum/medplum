@@ -1777,6 +1777,11 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
   const app = express();
   let accessToken: string;
 
+  const serializationErr = Object.assign(
+    new Error('could not serialize access due to read/write dependencies among transactions'),
+    { code: PostgresError.SerializationFailure }
+  );
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -1810,7 +1815,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
       const originalQuery = client.query.bind(client);
       let clientOpenedSerializableTx = false;
 
-      vi.spyOn(client, 'query').mockImplementation((text, values, callback) => {
+      vi.spyOn(client, 'query').mockImplementation(async (text, values, callback) => {
         if (typeof text === 'string') {
           if (text.startsWith('BEGIN ISOLATION LEVEL SERIALIZABLE')) {
             clientOpenedSerializableTx = true;
@@ -1819,11 +1824,7 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
             commitFailuresInjected++;
             // Surface the serialization failure to the retry loop WITHOUT actually committing.
             // The real transaction stays open; withTransaction's catch will ROLLBACK it.
-            return Promise.reject(
-              Object.assign(new Error('could not serialize access due to read/write dependencies among transactions'), {
-                code: PostgresError.SerializationFailure,
-              })
-            );
+            throw serializationErr;
           }
         }
         return (originalQuery as any)(text, values, callback);
@@ -1900,5 +1901,138 @@ describe('Transaction bundle SERIALIZABLE retry', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(coverageSearch).toHaveStatus(200);
     expect((coverageSearch.body as Bundle).entry).toHaveLength(2);
+  });
+
+  test('resolves identity of conditionally created resource to existing copy', async () => {
+    // Scenario: a transaction contains a conditional create (POST + If-None-Exist). Its uniqueness
+    // search finds nothing during the first attempt, so a new resource is staged — but the
+    // transaction hits a serialization conflict at COMMIT. Meanwhile another writer commits a
+    // resource that satisfies the same criteria. On retry, the conditional create re-executes its
+    // search (conditionalCreate runs the search inside its own transaction on every invocation) and
+    // now finds that resource, so it returns the existing match (200) instead of creating (201).
+    const identifier = randomUUID();
+    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const originalConnect = writerPool.connect.bind(writerPool);
+
+    let serializableBegins = 0;
+    let commitFailuresInjected = 0;
+    let conflictingPatientId: string | undefined;
+
+    // The pool reuses physical connections, so guard against re-wrapping a client's `query`; a
+    // second `vi.spyOn` would stack atop the first and fire the mock (and its side effects) twice
+    // per real query.
+    const wrappedClients = new WeakSet<PoolClient>();
+    vi.spyOn(writerPool, 'connect').mockImplementation(async (...args: any[]) => {
+      const client = (await (originalConnect as any)(...args)) as PoolClient;
+      if (wrappedClients.has(client)) {
+        return client;
+      }
+      wrappedClients.add(client);
+
+      const originalQuery = client.query.bind(client);
+      let clientOpenedSerializableTx = false;
+
+      vi.spyOn(client, 'query').mockImplementation(async (text, values, callback) => {
+        if (typeof text === 'string') {
+          if (text.startsWith('BEGIN')) {
+            // Track per-transaction whether this connection is running under SERIALIZABLE, so
+            // COMMIT injection only targets the batch's serializable transaction.
+            clientOpenedSerializableTx = text.startsWith('BEGIN ISOLATION LEVEL SERIALIZABLE');
+            if (clientOpenedSerializableTx) {
+              serializableBegins++;
+            }
+          } else if (text === 'COMMIT' && clientOpenedSerializableTx && commitFailuresInjected === 0) {
+            commitFailuresInjected++;
+            // The first attempt's own writes never commit (this COMMIT is rejected and rolled
+            // back), but the conflicting resource is committed on its own connection and persists,
+            // so the retry's re-executed conditional search finds it.
+            const conflictRes = await request(app)
+              .post('/fhir/R4/Patient')
+              .set('Authorization', 'Bearer ' + accessToken)
+              .set('Content-Type', ContentType.FHIR_JSON)
+              .send({
+                resourceType: 'Patient',
+                identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+                name: [{ family: 'Concurrent' }],
+              });
+            conflictingPatientId = (conflictRes.body as Patient).id;
+            throw serializationErr;
+          }
+        }
+        return (originalQuery as any)(text, values, callback);
+      });
+      return client;
+    });
+
+    const patientUrn = 'urn:uuid:' + randomUUID();
+
+    const res = await request(app)
+      .post('/fhir/R4/')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            // Conditional create requires a SERIALIZABLE transaction, which is what makes the batch
+            // eligible for the 40001-retry path being exercised here.
+            fullUrl: patientUrn,
+            request: { method: 'POST', url: 'Patient', ifNoneExist: `identifier=http://example.com/mrn|${identifier}` },
+            resource: {
+              resourceType: 'Patient',
+              identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+              name: [{ family: 'Batch-Created' }],
+            } satisfies Patient,
+          },
+          {
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              code: { text: 'Eye color' },
+              subject: { reference: patientUrn },
+              valueString: 'Hazel',
+            } satisfies Observation,
+          },
+        ],
+      } satisfies Bundle);
+
+    // The failure was injected exactly once, the transaction was retried (second BEGIN), and the
+    // conflicting resource was committed out-of-band.
+    expect(serializableBegins).toBe(2);
+    expect(commitFailuresInjected).toBe(1);
+    expect(conflictingPatientId).toBeDefined();
+
+    // The batch succeeds, and the conditional-create entry resolves to the concurrently-created
+    // resource: status 200 (matched existing) rather than 201 (created new).
+    expect(res).toHaveStatus(200);
+    const responseBundle = res.body as Bundle;
+    expect(responseBundle.type).toBe('transaction-response');
+    expect(responseBundle.entry).toHaveLength(2);
+
+    const patientEntry = responseBundle.entry?.[0];
+    expect(patientEntry?.response?.status).toBe('200');
+    expect(patientEntry?.response?.location).toContain(`Patient/${conflictingPatientId}`);
+    expect(patientEntry?.resource?.id).toStrictEqual(conflictingPatientId);
+
+    // The Observation is created new (201), and its subject reference — a urn:uuid placeholder for
+    // the conditionally-created Patient — must resolve to the concurrently-created resource, not the
+    // stale ID assigned during preprocessing.
+    const observationEntry = responseBundle.entry?.[1];
+    expect(observationEntry?.response?.status).toBe('201');
+    const observation = observationEntry?.resource as Observation;
+    expect(observation.subject).toStrictEqual({ reference: `Patient/${conflictingPatientId}` });
+
+    // The retry reused the existing match instead of creating a duplicate: exactly one Patient
+    // exists for the identifier, and it is the concurrently-created one.
+    const patientSearch = await request(app)
+      .get(`/fhir/R4/Patient?identifier=http://example.com/mrn|${identifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(patientSearch).toHaveStatus(200);
+    expect(patientSearch.body.entry).toHaveLength(1);
+    const foundPatient = patientSearch.body.entry[0].resource as Patient;
+    expect(foundPatient.id).toBe(conflictingPatientId);
+    expect(foundPatient.name).toStrictEqual([{ family: 'Concurrent' }]);
   });
 });
