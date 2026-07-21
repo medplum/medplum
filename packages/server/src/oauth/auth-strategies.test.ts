@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { JWTPayload, ProfileResource, WithId } from '@medplum/core';
-import { ContentType, getReferenceString, OAuthClientAssertionType, OAuthGrantType, OAuthTokenType } from '@medplum/core';
+import {
+  ContentType,
+  getReferenceString,
+  OAuthClientAssertionType,
+  OAuthGrantType,
+  OAuthTokenType,
+} from '@medplum/core';
 import type { ClientApplication, Patient, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
