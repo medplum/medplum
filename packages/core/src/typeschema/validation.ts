@@ -28,7 +28,7 @@ import type {
   SliceDiscriminator,
   SlicingRules,
 } from './types';
-import { getDataType, isResourceType, parseStructureDefinition } from './types';
+import { getDataType, isResourceType, parseStructureDefinition, tryGetProfile } from './types';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -161,15 +161,19 @@ class ResourceValidator implements CrawlerVisitor {
     this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);
     crawlTypedValue(this.root, this, { schema: this.schema, initialPath: this.schema.path });
 
-    for (const issue of this.issues) {
+    // The generic crawl and slice-content validation can surface the same problem twice,
+    // e.g. a missing required element restated by a matched slice
+    const issues = deduplicateIssues(this.issues);
+
+    for (const issue of issues) {
       if (issue.severity === 'error') {
         throw new OperationOutcomeError({
           resourceType: 'OperationOutcome',
-          issue: this.issues,
+          issue: issues,
         });
       }
     }
-    return this.issues;
+    return issues;
   }
 
   onExitObject(_path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
@@ -200,55 +204,137 @@ class ResourceValidator implements CrawlerVisitor {
 
     for (const value of propertyValues) {
       if (!this.checkPresence(value, element, path)) {
+        if (isAbsent(value)) {
+          // Required slices of an absent element are still violated
+          this.validateElementSlicing([], element, path);
+        }
         return;
       }
-      // Check cardinality
-      let values: TypedValueWithPath[];
-      if (element.isArray) {
-        if (!Array.isArray(value)) {
-          this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
-          return;
-        }
-        values = value;
-      } else {
-        if (Array.isArray(value)) {
-          this.issues.push(createStructureIssue(path, 'Expected single value for property'));
-          return;
-        }
-        values = [value];
-      }
-
-      if (values.length < element.min || values.length > element.max) {
-        this.issues.push(
-          createStructureIssue(
-            element.path,
-            `Invalid number of values: expected ${element.min}..${
-              Number.isFinite(element.max) ? element.max : '*'
-            }, but found ${values.length}`
-          )
-        );
+      const values = this.checkShapeAndCardinality(value, element, path);
+      if (!values) {
+        return;
       }
 
       if (!matchesSpecifiedValue(value, element)) {
         this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
       }
 
-      const sliceCounts: Record<string, number> | undefined = element.slicing
-        ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
-        : undefined;
       for (const value of values) {
         this.constraintsCheck(value, element);
         this.referenceTypeCheck(value, element);
         this.checkPropertyValue(value);
         this.collectValue(value, element);
-
-        const sliceName = checkSliceElement(value, element.slicing);
-        if (sliceName && sliceCounts) {
-          sliceCounts[sliceName] += 1;
-        }
       }
 
-      this.validateSlices(element.slicing?.slices, sliceCounts, path);
+      this.validateElementSlicing(values, element, path);
+    }
+  }
+
+  /**
+   * Checks the array-ness and cardinality of the given property value.
+   * @param value - The property value(s)
+   * @param element - The element schema the value must conform to
+   * @param path - The path of the property being validated
+   * @returns The values as an array, or undefined if the value has the wrong shape for the element
+   */
+  private checkShapeAndCardinality(
+    value: TypedValueWithPath | TypedValueWithPath[],
+    element: InternalSchemaElement,
+    path: string
+  ): TypedValueWithPath[] | undefined {
+    let values: TypedValueWithPath[];
+    if (element.isArray) {
+      if (!Array.isArray(value)) {
+        this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
+        return undefined;
+      }
+      values = value;
+    } else {
+      if (Array.isArray(value)) {
+        this.issues.push(createStructureIssue(path, 'Expected single value for property'));
+        return undefined;
+      }
+      values = [value];
+    }
+
+    if (values.length < element.min || values.length > element.max) {
+      this.issues.push(
+        createStructureIssue(
+          element.path,
+          `Invalid number of values: expected ${element.min}..${
+            Number.isFinite(element.max) ? element.max : '*'
+          }, but found ${values.length}`
+        )
+      );
+    }
+    return values;
+  }
+
+  /**
+   * Matches array values against the element's slices, validates the contents of each matched value
+   * against the slice's own element schemas, and checks per-slice cardinality.
+   * @param values - The values of the sliced element
+   * @param element - The element schema, possibly carrying slicing rules
+   * @param path - The path of the property being validated
+   */
+  private validateElementSlicing(values: TypedValueWithPath[], element: InternalSchemaElement, path: string): void {
+    const slicing = element.slicing;
+    if (!slicing?.slices?.length) {
+      return;
+    }
+
+    const sliceCounts: Record<string, number> = Object.fromEntries(slicing.slices.map((s) => [s.name, 0]));
+    for (const value of values) {
+      const slice = checkSliceElement(value, slicing);
+      if (slice) {
+        sliceCounts[slice.name] += 1;
+        this.validateSliceValue(slice, value);
+      } else if (slicing.rule === 'closed') {
+        this.issues.push(
+          createStructureIssue(value.path, `Value does not match any slice defined by closed slicing at ${path}`)
+        );
+      }
+    }
+
+    this.validateSlices(slicing.slices, sliceCounts, path);
+  }
+
+  /**
+   * Validates the contents of a value matched to a slice against the slice's own element schemas,
+   * e.g. the sub-extensions of a complex extension slice. Recurses through nested slicing
+   * (slice-within-a-slice) of arbitrary depth.
+   *
+   * Only presence, cardinality, fixed/pattern values, and nested slicing are checked here; other
+   * checks (primitive shape, constraints, terminology) are handled by the generic crawl of the value
+   * against its base type schema and are skipped to avoid duplicate issues.
+   * @param slice - The slice the value matched
+   * @param sliceValue - The matched value
+   */
+  private validateSliceValue(slice: SliceDefinition, sliceValue: TypedValueWithPath): void {
+    const elements = getSliceElements(slice);
+    for (const [key, element] of Object.entries(elements)) {
+      if (key.includes('.')) {
+        // Deep element constraints (e.g. 'coding.code') are used for discriminator matching;
+        // enforcing their cardinality requires per-parent context and is not yet supported
+        continue;
+      }
+      const elementPath = `${sliceValue.path}.${key}`;
+      for (const value of getNestedProperty(sliceValue, key, { withPath: true })) {
+        if (!this.checkPresence(value, element, elementPath)) {
+          if (isAbsent(value)) {
+            this.validateElementSlicing([], element, elementPath);
+          }
+          continue;
+        }
+        const values = this.checkShapeAndCardinality(value, element, elementPath);
+        if (!values) {
+          continue;
+        }
+        if (!matchesSpecifiedValue(value, element)) {
+          this.issues.push(createStructureIssue(elementPath, 'Value did not match expected pattern'));
+        }
+        this.validateElementSlicing(values, element, elementPath);
+      }
     }
   }
 
@@ -641,6 +727,23 @@ function isChoiceOfType(
   return undefined;
 }
 
+function isAbsent(value: TypedValueWithPath | TypedValueWithPath[]): boolean {
+  return !Array.isArray(value) && value.value === undefined;
+}
+
+function deduplicateIssues(issues: OperationOutcomeIssue[]): OperationOutcomeIssue[] {
+  const seen = new Set<string>();
+  const result: OperationOutcomeIssue[] = [];
+  for (const issue of issues) {
+    const key = `${issue.severity}|${issue.code}|${issue.expression?.join(',')}|${issue.details?.text}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(issue);
+    }
+  }
+  return result;
+}
+
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
   for (const [key, value] of Object.entries(obj)) {
     const propertyPath = `${path}.${key}`;
@@ -731,17 +834,39 @@ export function matchDiscriminant(
   return false;
 }
 
-function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): string | undefined {
+function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): SliceDefinition | undefined {
   for (const slice of slicingRules?.slices ?? EMPTY) {
+    const elements = getSliceElements(slice);
     if (
       slicingRules?.discriminator?.every((discriminator) =>
-        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
+        arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
+          matchDiscriminant(v, discriminator, slice, elements)
+        )
       )
     ) {
-      return slice.name;
+      return slice;
     }
   }
   return undefined;
+}
+
+/**
+ * Returns the element schemas describing the contents of a slice. When the slice defines no elements
+ * of its own but references a profile (e.g. a US Core style extension slice with `type[0].profile`
+ * pointing at a complex extension StructureDefinition), the referenced profile's elements are used
+ * if that profile is loaded.
+ * @param slice - The slice definition
+ * @returns The element schemas for the slice's contents
+ */
+function getSliceElements(slice: SliceDefinition): Record<string, InternalSchemaElement> {
+  if (isEmpty(slice.elements)) {
+    const profileUrl = slice.type?.find((t) => t.profile?.length)?.profile?.[0];
+    const profileSchema = profileUrl ? tryGetProfile(profileUrl) : undefined;
+    if (profileSchema) {
+      return profileSchema.elements;
+    }
+  }
+  return slice.elements;
 }
 
 function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedValue | undefined] {

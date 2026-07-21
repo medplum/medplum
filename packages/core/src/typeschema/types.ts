@@ -236,6 +236,13 @@ interface BackboneContext {
   parent?: BackboneContext;
 }
 
+interface SlicingContext {
+  field: SlicingRules;
+  current?: SliceDefinition;
+  path: string;
+  id: string;
+}
+
 /**
  * @experimental
  */
@@ -245,7 +252,11 @@ class StructureDefinitionParser {
   private readonly elementIndex: Record<string, ElementDefinition>;
   private index: number;
   private readonly resourceSchema: InternalTypeSchema;
-  private slicingContext: { field: SlicingRules; current?: SliceDefinition; path: string } | undefined;
+  // Stack of open slicing groups, innermost last. Element ids (not paths) disambiguate nesting:
+  // members of a group have ids starting with `id + ':'`, e.g. `Basic.extension:dateBounds.extension:startDate`
+  // belongs to the group opened at `Basic.extension:dateBounds.extension`, while sibling slices' nested
+  // groups share the same path (`Basic.extension.extension`).
+  private readonly slicingContexts: SlicingContext[];
   private readonly innerTypes: InternalTypeSchema[];
   private backboneContext: BackboneContext | undefined;
 
@@ -278,19 +289,30 @@ class StructureDefinitionParser {
       mandatoryProperties: new Set(),
     };
     this.innerTypes = [];
+    this.slicingContexts = [];
   }
 
   parse(): InternalTypeSchema {
     let element = this.next();
     while (element) {
+      // Pop slicing groups this element no longer belongs to, so slice starts and slice members
+      // always attach to the innermost enclosing group
+      this.popSlicingContexts(element);
       if (element.sliceName) {
         // Start of slice: this ElementDefinition defines the top-level element of a slice value
         this.parseSliceStart(element);
       } else if (element.id?.includes(':')) {
         // Slice element, part of some slice definition
-        if (this.slicingContext?.current) {
-          const path = elementPath(element, this.slicingContext.path);
-          this.slicingContext.current.elements[path] = this.parseElementDefinition(element);
+        const context = this.slicingContexts[this.slicingContexts.length - 1];
+        if (context?.current) {
+          const path = elementPath(element, context.path);
+          const field = this.parseElementDefinition(element);
+          context.current.elements[path] = field;
+          if (element.slicing && hasSupportedSlicingDiscriminators(element)) {
+            // Nested slicing, e.g. the sub-extensions of a complex extension sliced within
+            // a slice of `<resource>.extension`
+            this.enterSlice(element, field);
+          }
         }
       } else {
         // Normal field definition
@@ -341,13 +363,34 @@ class StructureDefinitionParser {
     if (this.isInnerType(element)) {
       this.enterInnerType(element);
     }
-    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path)) {
-      // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
-      // same slice group; otherwise, that group is finished and this is the start of a new field
-      this.slicingContext = undefined;
-    }
-    if (element.slicing && !this.slicingContext) {
+    if (element.slicing && this.slicingContexts.length === 0) {
       this.enterSlice(element, field);
+    }
+  }
+
+  /**
+   * Pops slicing groups that the given element is not a part of. An element belongs to the innermost
+   * group when its id extends the group's id with a slice marker (`<group id>:`), or when it is a
+   * plain (colon-free) descendant of the sliced element's path. Elements without ids fall back to
+   * path comparison, matching prior behavior for minimal snapshots.
+   * @param element - The element about to be processed
+   */
+  private popSlicingContexts(element: ElementDefinition): void {
+    while (this.slicingContexts.length > 0) {
+      const top = this.slicingContexts[this.slicingContexts.length - 1];
+      if (element.id) {
+        if (element.id.startsWith(top.id + ':')) {
+          // Slice start or slice member of this group
+          return;
+        }
+        if (!element.id.includes(':') && pathsCompatible(top.path, element.path)) {
+          // Plain child of the sliced element, e.g. Patient.identifier.system while Patient.identifier is sliced
+          return;
+        }
+      } else if (pathsCompatible(top.path, element.path)) {
+        return;
+      }
+      this.slicingContexts.pop();
     }
   }
 
@@ -377,7 +420,7 @@ class StructureDefinitionParser {
   }
 
   private enterSlice(element: ElementDefinition, field: InternalSchemaElement): void {
-    if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
+    if (hasDefaultExtensionSlice(element) && !this.isFollowedByOwnSlice(element)) {
       // Extensions are always sliced by URL; don't start slicing context if no slices follow
       return;
     }
@@ -395,7 +438,20 @@ class StructureDefinitionParser {
       ordered: element.slicing?.ordered ?? false,
       rule: element.slicing?.rules,
     };
-    this.slicingContext = { field: field.slicing, path: element.path ?? '' };
+    this.slicingContexts.push({ field: field.slicing, path: element.path ?? '', id: element.id ?? element.path ?? '' });
+  }
+
+  /**
+   * @param element - A sliced element (one carrying a `slicing` block)
+   * @returns True if the next element starts a slice of this element, rather than a slice
+   * of an enclosing group or an unrelated field
+   */
+  private isFollowedByOwnSlice(element: ElementDefinition): boolean {
+    const next = this.peek();
+    if (!next?.sliceName) {
+      return false;
+    }
+    return next.id && element.id ? next.id.startsWith(element.id + ':') : next.path === element.path;
   }
 
   private checkFieldExit(element: ElementDefinition | undefined = undefined): void {
@@ -461,17 +517,18 @@ class StructureDefinitionParser {
   }
 
   private parseSliceStart(element: ElementDefinition): void {
-    if (!this.slicingContext) {
+    const context = this.slicingContexts[this.slicingContexts.length - 1];
+    if (!context) {
       throw new Error(`Invalid slice start before discriminator: ${element.sliceName} (${element.id})`);
     }
 
-    this.slicingContext.current = {
+    context.current = {
       ...this.parseElementDefinition(element),
       name: element.sliceName ?? '',
       definition: element.definition,
       elements: {},
     };
-    this.slicingContext.field.slices.push(this.slicingContext.current);
+    context.field.slices.push(context.current);
   }
 
   private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
@@ -604,6 +661,18 @@ function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | un
   } else {
     return undefined;
   }
+}
+
+/**
+ * @param element - A sliced element (one carrying a `slicing` block)
+ * @returns True if all slicing discriminators are of types the parser supports. Nested slicing with
+ * unsupported discriminator types is skipped rather than rejected, since such profiles previously loaded
+ * (with the nested slicing ignored) and must continue to load.
+ */
+function hasSupportedSlicingDiscriminators(element: ElementDefinition): boolean {
+  return (element.slicing?.discriminator ?? []).every(
+    (d) => d.type === 'value' || d.type === 'pattern' || d.type === 'type'
+  );
 }
 
 function hasDefaultExtensionSlice(element: ElementDefinition): boolean {

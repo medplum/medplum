@@ -6,6 +6,7 @@ import type {
   Address,
   Appointment,
   AppointmentParticipant,
+  Basic,
   Binary,
   Bundle,
   CarePlan,
@@ -91,6 +92,10 @@ describe('FHIR resource validation', () => {
     smokingStatusProfile = JSON.parse(
       readFileSync(resolve(__dirname, '__test__', 'us-core-smoking-status.json'), 'utf8')
     );
+
+    // Load the us-core-race extension so slices referencing it by profile URL can be
+    // validated against its element schemas
+    loadDataType(JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-race.json'), 'utf8')));
   });
 
   test('Invalid resource', () => {
@@ -458,9 +463,10 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(patient, { profile: patientProfile })).not.toThrow();
   });
 
-  // This test is failing because we do not recursively validate extensions. In this case,
-  // US Core Race requires the `text` extension, so not having it should fail validation.
-  test.fails('Nested extensions are not yet validated', () => {
+  // US Core Race requires the `text` sub-extension; the extension's own StructureDefinition
+  // (referenced by the slice's type profile) is loaded in beforeAll, so its sub-extension
+  // slicing is enforced and the missing `text` fails validation.
+  test('Nested extensions are validated against the referenced extension profile', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       name: [{ given: ['New'], family: 'User' }],
@@ -483,6 +489,98 @@ describe('FHIR resource validation', () => {
       ],
     };
     expect(() => validateResource(patient, { profile: patientProfile })).toThrow();
+  });
+
+  describe('Nested slicing inlined in profile snapshot (slice-within-a-slice)', () => {
+    let nestedSliceProfile: StructureDefinition;
+
+    beforeAll(() => {
+      nestedSliceProfile = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__', 'nested-slice-profile.json'), 'utf8')
+      );
+    });
+
+    function basicWithExtensions(extension: Extension[]): Basic {
+      return { resourceType: 'Basic', code: { text: 'example' }, extension };
+    }
+
+    const dateBoundsUrl = 'http://example.com/StructureDefinition/date-bounds';
+
+    test('Conforming resource passes', () => {
+      const resource = basicWithExtensions([
+        {
+          url: dateBoundsUrl,
+          extension: [
+            { url: 'startDate', valueDate: '2026-07-16' },
+            { url: 'endDate', valueDate: '2026-07-24' },
+          ],
+        },
+      ]);
+      expect(() => validateResource(resource, { profile: nestedSliceProfile })).not.toThrow();
+    });
+
+    test('Conforming resource without optional nested slice passes', () => {
+      const resource = basicWithExtensions([
+        { url: dateBoundsUrl, extension: [{ url: 'startDate', valueDate: '2026-07-16' }] },
+      ]);
+      expect(() => validateResource(resource, { profile: nestedSliceProfile })).not.toThrow();
+    });
+
+    test('Missing required nested slice fails', () => {
+      const resource = basicWithExtensions([
+        { url: dateBoundsUrl, extension: [{ url: 'endDate', valueDate: '2026-07-24' }] },
+      ]);
+      expect(() => validateResource(resource, { profile: nestedSliceProfile })).toThrow(
+        /Incorrect number of values provided for slice 'startDate': expected 1\.\.1, but found 0/
+      );
+    });
+
+    test('Duplicated complex extension fails on the parent slice, not nested slices', () => {
+      const dateBounds: Extension = {
+        url: dateBoundsUrl,
+        extension: [{ url: 'startDate', valueDate: '2026-07-16' }],
+      };
+      const resource = basicWithExtensions([dateBounds, dateBounds]);
+      try {
+        validateResource(resource, { profile: nestedSliceProfile });
+        throw new Error('Expected validation to fail');
+      } catch (err) {
+        const issues = (err as OperationOutcomeError).outcome.issue;
+        const texts = issues.map((issue) => issue.details?.text ?? '');
+        expect(texts).toContainEqual(
+          expect.stringContaining(
+            "Incorrect number of values provided for slice 'dateBounds': expected 1..1, but found 2"
+          )
+        );
+        expect(texts).not.toContainEqual(expect.stringContaining("slice 'startDate'"));
+        expect(texts).not.toContainEqual(expect.stringContaining("slice 'endDate'"));
+      }
+    });
+
+    test('Nested slice value with wrong cardinality fails', () => {
+      const resource = basicWithExtensions([{ url: dateBoundsUrl, extension: [{ url: 'startDate' }] }]);
+      expect(() => validateResource(resource, { profile: nestedSliceProfile })).toThrow(/Missing required property/);
+    });
+
+    test('Value on complex extension constrained to 0..0 fails', () => {
+      const resource = basicWithExtensions([
+        {
+          url: dateBoundsUrl,
+          valueBase64Binary: 'dGVzdA==',
+          extension: [{ url: 'startDate', valueDate: '2026-07-16' }],
+        },
+      ]);
+      expect(() => validateResource(resource, { profile: nestedSliceProfile })).toThrow(
+        /Invalid number of values: expected 0\.\.0, but found 1/
+      );
+    });
+
+    test('Missing required complex extension fails', () => {
+      const resource = basicWithExtensions([]);
+      expect(() => validateResource(resource, { profile: nestedSliceProfile })).toThrow(
+        /Incorrect number of values provided for slice 'dateBounds': expected 1\.\.1, but found 0/
+      );
+    });
   });
 
   test('Valid resource with nulls in primitive extension', () => {

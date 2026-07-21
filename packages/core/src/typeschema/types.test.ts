@@ -432,4 +432,43 @@ describe('FHIR resource and data type representations', () => {
     expect(profile.elements['specialty']).toBeDefined();
     expect(profile.elements['specialty'].slicing?.slices.length).toBe(1);
   });
+
+  test('Profile with nested slicing (slice-within-a-slice)', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'nested-slice-profile.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.name).toBe('BasicWithDateBounds');
+
+    // Nested sub-extension slices must not be hoisted into the top-level slicing group
+    const extension = profile.elements['extension'];
+    expect(extension.slicing?.slices.map((s) => s.name)).toStrictEqual(['dateBounds']);
+
+    // The parent slice's own elements, including the url discriminator defined after the
+    // nested slices in the snapshot, belong to the parent slice
+    const dateBounds = extension.slicing?.slices[0];
+    expect(dateBounds?.min).toBe(1);
+    expect(dateBounds?.max).toBe(1);
+    expect(dateBounds?.elements['url'].fixed).toStrictEqual({
+      type: 'uri',
+      value: 'http://example.com/StructureDefinition/date-bounds',
+    });
+    expect(dateBounds?.elements['value[x]'].max).toBe(0);
+
+    // The nested slicing group is preserved on the slice's extension element
+    const nestedSlicing = dateBounds?.elements['extension'].slicing;
+    expect(nestedSlicing?.discriminator).toStrictEqual([{ type: 'value', path: 'url' }]);
+    expect(nestedSlicing?.slices.map((s) => s.name)).toStrictEqual(['startDate', 'endDate']);
+
+    // Nested slice sub-elements are keyed relative to the nested sliced element
+    const startDate = nestedSlicing?.slices[0];
+    expect(startDate?.min).toBe(1);
+    expect(startDate?.max).toBe(1);
+    expect(startDate?.elements['url'].fixed).toStrictEqual({ type: 'uri', value: 'startDate' });
+    expect(startDate?.elements['value[x]'].min).toBe(1);
+
+    const endDate = nestedSlicing?.slices[1];
+    expect(endDate?.min).toBe(0);
+    expect(endDate?.max).toBe(1);
+    expect(endDate?.elements['url'].fixed).toStrictEqual({ type: 'uri', value: 'endDate' });
+  });
 });
