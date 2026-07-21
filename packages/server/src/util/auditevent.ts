@@ -353,13 +353,13 @@ export async function createBotAuditEvent(
   };
 
   const config = getConfig();
-  // Always emit to logs — log emission cannot be disabled regardless of auditEventDestination
+  // Always emit to logs
   logAuditEvent({
     ...auditEvent,
     outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultBotOutputLength),
   });
   // Optionally write to the database (default if auditEventDestination is unset)
-  if ((bot.auditEventDestination ?? ['resource']).includes('resource')) {
+  if (!bot.auditEventDestination || bot.auditEventDestination.includes('resource')) {
     const systemRepo = await getProjectSystemRepo(runAs.project);
     await systemRepo.createResource<AuditEvent>({
       ...auditEvent,
