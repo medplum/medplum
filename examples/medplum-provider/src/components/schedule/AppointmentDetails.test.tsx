@@ -330,7 +330,7 @@ describe('AppointmentDetails', () => {
         expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
         expect(screen.getByLabelText(/Encounter Class/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
       });
     });
 
