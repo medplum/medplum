@@ -16,8 +16,8 @@ export type EventListener = (e: Event) => void;
 
 export type EventListenerErrorHandler = (error: unknown, event: Event) => void;
 
-export const defaultEventListenerErrorHandler: EventListenerErrorHandler = (error) => {
-  console.error('Unhandled error in event listener', error);
+export const defaultEventListenerErrorHandler: EventListenerErrorHandler = (error, event) => {
+  console.error(`Unhandled error in "${event.type}" event listener`, error);
 };
 
 export class EventTarget {

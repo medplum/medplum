@@ -105,7 +105,7 @@ describe('EventTarget', () => {
 
     // Test the default error handler
     expect(consoleError).toHaveBeenCalledTimes(1);
-    expect(consoleError).toHaveBeenCalledWith('Unhandled error in event listener', error);
+    expect(consoleError).toHaveBeenCalledWith('Unhandled error in "test" event listener', error);
   });
 
   test('With an eventListenerErrorHandler', () => {
