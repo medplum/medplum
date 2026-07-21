@@ -15,6 +15,7 @@ export * from './useQuestionnaireForm/useQuestionnaireForm';
 export * from './useQuestionnaireForm/utils';
 export * from './useResource/useResource';
 export * from './useResourceBoard/useResourceBoard';
+export * from './useResourceModified/useResourceModified';
 export * from './useSearch/useSearch';
 export * from './useSubscription/useSubscription';
 export * from './useSyncOrderSet/useSyncOrderSet';
