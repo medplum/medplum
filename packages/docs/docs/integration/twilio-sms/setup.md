@@ -6,7 +6,7 @@ sidebar_position: 1
 
 ## Step 1 — Install the integration
 
-A project admin invokes the `$twilio-sms-install` operation once per customer project, passing the Twilio credentials. This stores the required secrets and creates the webhook `ClientApplication`.
+A project admin invokes the `$twilio-sms-install` operation once in your project, passing the Twilio credentials. This stores the required secrets and creates the webhook `ClientApplication`.
 
 ```
 POST /fhir/R4/Project/$twilio-sms-install
@@ -58,7 +58,7 @@ POST /fhir/R4/Project/$twilio-sms-register-inbound
 }
 ```
 
-The phone number is normalized to E.164 before lookup — see [Phone Number Formats](/docs/integration/twilio-sms/sending-sms#phone-number-formats) for accepted input formats. This operation can be called multiple times for customers with multiple Twilio numbers.
+The phone number is normalized to E.164 before lookup — see [Phone Number Formats](/docs/integration/twilio-sms/sending-sms#phone-number-formats) for accepted input formats. This operation can be called multiple times to setup different Twilio numbers.
 
 ## Testing the Connection
 
