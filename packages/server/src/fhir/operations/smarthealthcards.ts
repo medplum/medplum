@@ -3,7 +3,7 @@
 import { allOk, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, Patient, Resource } from '@medplum/fhirtypes';
-import type { JWK, KeyLike, ProtectedHeaderParameters } from 'jose';
+import type { JWK, ProtectedHeaderParameters } from 'jose';
 import { CompactSign, compactVerify, decodeProtectedHeader, importJWK } from 'jose';
 import { promisify } from 'node:util';
 import { deflateRaw as deflateRawCb, inflateRaw as inflateRawCb } from 'node:zlib';
@@ -11,8 +11,9 @@ import QRCode from 'qrcode';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
+import type { KeyLike } from '../../oauth/keys';
 import { getJwks, getSigningKey } from '../../oauth/keys';
-import { validateOutboundUrl } from '../../util/url';
+import { safeFetch } from '../../util/url';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -406,7 +407,7 @@ async function getSmartHealthCardPublicKey(
   const localJwk = getJwks().keys.find((key) => key.kid === header.kid && key.alg === SHC_SIGNING_ALG);
   if (localJwk) {
     return {
-      publicKey: (await importJWK(localJwk, SHC_SIGNING_ALG)) as KeyLike,
+      publicKey: await importJWK(localJwk, SHC_SIGNING_ALG),
       issuerTrusted: issuer === getConfig().issuer,
     };
   }
@@ -416,7 +417,7 @@ async function getSmartHealthCardPublicKey(
   if (!externalJwk) {
     throw new Error('SMART Health Card key not found');
   }
-  return { publicKey: (await importJWK(externalJwk, SHC_SIGNING_ALG)) as KeyLike, issuerTrusted: false };
+  return { publicKey: await importJWK(externalJwk, SHC_SIGNING_ALG), issuerTrusted: false };
 }
 
 /**
@@ -426,9 +427,9 @@ async function getSmartHealthCardPublicKey(
  * @returns JWK array from the issuer JWKS document.
  */
 async function getExternalSmartHealthCardJwks(issuer: string): Promise<JWK[]> {
-  const issuerUrl = validateOutboundUrl(issuer);
+  const issuerUrl = new URL(issuer);
   const jwksUrl = new URL('/.well-known/jwks.json', issuerUrl);
-  const response = await fetch(jwksUrl, { redirect: 'error', signal: AbortSignal.timeout(5000) });
+  const response = await safeFetch(jwksUrl, { redirect: 'error', signal: AbortSignal.timeout(5000) });
   if (!response.ok) {
     throw new Error(`SMART Health Card issuer JWKS request failed: ${response.status}`);
   }

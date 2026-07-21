@@ -35,6 +35,12 @@
   box-shadow: 0px 8px 16px rgba(var(--oc-grape-8-rgb), 0.25), 0px -1px 16px rgba(var(--oc-grape-8-rgb), 0.5);
 }
 
+[data-theme='dark'] .dropdownTrigger:hover,
+[data-theme='dark'] .dropdownTriggerActive {
+  background-color: #1B1B1D;
+  color: var(--oc-grape-5);
+}
+
 .dropdownMenu {
   position: absolute;
   top: calc(100% + 0.5rem);

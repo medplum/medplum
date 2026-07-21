@@ -18,3 +18,9 @@ Send real-time eligibility and benefits checks (X12 270/271) using a [CoverageEl
 Submit professional claims (X12 837P) to payers from a [Claim](/docs/api/fhir/resources/claim) resource using the `$stedi-submit-claim` operation. On success, Stedi's correlation ID is written back onto the claim for tracking.
 
 - [Professional claims (837P)](/docs/integration/stedi/claim-submission/professional-claims)
+
+## Claim responses
+
+Ingest inbound claim responses — 277CA acknowledgments and 835 ERAs — via Stedi webhooks (primary) or an optional poller. Each report is stored verbatim as a [DocumentReference](/docs/api/fhir/resources/documentreference).
+
+- [Claim responses (277 / 835)](/docs/integration/stedi/claim-submission/claim-responses)

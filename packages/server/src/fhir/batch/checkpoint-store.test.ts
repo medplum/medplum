@@ -19,7 +19,7 @@ describe('BatchCheckpointStore', () => {
   function makeInitialState(): BatchInitialState {
     return {
       bundle: { resourceType: 'Bundle', type: 'batch', entry: [{ request: { method: 'GET', url: 'Patient' } }] },
-      bundleInfo: { ordering: [0], requiresStrongTransaction: false, updates: 0 },
+      bundleInfo: { ordering: [0], resourceTypes: new Set(['Patient']), requiresStrongTransaction: false, updates: 0 },
       resolvedIdentities: { 'urn:uuid:abc': 'Patient/123' },
       preprocessResults: {},
     };

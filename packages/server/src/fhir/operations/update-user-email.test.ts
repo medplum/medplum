@@ -62,7 +62,7 @@ describe('User/$update-email', () => {
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
     expect(updated.email).toStrictEqual(newEmail);
   });
@@ -95,7 +95,7 @@ describe('User/$update-email', () => {
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
 
     expect(updated.email).toStrictEqual(newEmail);
@@ -147,7 +147,7 @@ describe('User/$update-email', () => {
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Requires Project-scoped user', async () => {
@@ -177,7 +177,7 @@ describe('User/$update-email', () => {
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Cannot alter user from other Project', async () => {
@@ -208,7 +208,7 @@ describe('User/$update-email', () => {
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Permitted for Super Admin', async () => {
@@ -245,7 +245,7 @@ describe('User/$update-email', () => {
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const updated = res.body as User;
 
     expect(updated.email).toStrictEqual(newEmail);

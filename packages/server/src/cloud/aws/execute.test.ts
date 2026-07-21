@@ -71,7 +71,7 @@ describe('Execute', () => {
           }
         `,
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     bot = res.body as Bot;
   });
 
@@ -85,7 +85,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken)
       .send('input');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
   });
@@ -99,7 +99,7 @@ describe('Execute', () => {
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
   });
 
@@ -111,7 +111,7 @@ describe('Execute', () => {
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
   });
 
@@ -128,7 +128,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.HL7_V2)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(text);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
     expect(writeFileSpy).toHaveBeenCalledTimes(1);
 
@@ -154,7 +154,7 @@ describe('Execute', () => {
         name: 'Test Bot',
         code: '',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Execute the bot
@@ -163,7 +163,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
   });
 
   test('Unsupported runtime version', async () => {
@@ -176,7 +176,7 @@ describe('Execute', () => {
         name: 'Test Bot',
         runtimeVersion: 'unsupported',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Step 2: Publish the bot
@@ -192,7 +192,7 @@ describe('Execute', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Step 3: Execute the bot
     const res3 = await request(app)
@@ -200,7 +200,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
   });
 
   test('Get function name', async () => {
@@ -228,7 +228,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken)
       .send('input');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
   });
@@ -245,7 +245,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(outcome);
   });
 });

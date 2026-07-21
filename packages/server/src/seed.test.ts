@@ -9,6 +9,7 @@ import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
+import { repoAccess } from './fhir/repository/access-tracker';
 import { SelectQuery } from './fhir/sql';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
@@ -79,7 +80,9 @@ describe('Seed', () => {
       // and then vacuum the tables to clear any existing pending list entries.
       const actions: OutputAction[] = [];
       const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
-      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = repo.getDatabaseClient(
+        repoAccess.sqlWrite(['Appointment', 'Slot'], { source: 'seed.test.configureIndexes' })
+      );
       await configureGinIndexes(client, actions, tables, { fastUpdate: false });
       for (const table of tables) {
         await vacuumTable(client, actions, table);

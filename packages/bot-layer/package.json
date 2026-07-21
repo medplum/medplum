@@ -1,6 +1,6 @@
 {
   "name": "@medplum/bot-layer",
-  "version": "5.1.25",
+  "version": "5.1.26",
   "description": "Medplum Bot Lambda Layer",
   "keywords": [
     "medplum",
@@ -22,12 +22,12 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "dependencies": {
-    "@medplum/ccda": "5.1.25",
-    "@medplum/core": "5.1.25",
-    "@medplum/definitions": "5.1.25",
-    "fast-xml-parser": "5.9.3",
+    "@medplum/ccda": "5.1.26",
+    "@medplum/core": "5.1.26",
+    "@medplum/definitions": "5.1.26",
+    "fast-xml-parser": "5.10.1",
     "form-data": "4.0.6",
-    "jose": "5.10.0",
+    "jose": "6.2.3",
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.21",
@@ -40,9 +40,9 @@
     "@types/node-fetch": "2.6.13"
   },
   "peerDependencies": {
-    "@medplum/ccda": "5.1.25",
-    "@medplum/core": "5.1.25",
-    "@medplum/definitions": "5.1.25",
+    "@medplum/ccda": "5.1.26",
+    "@medplum/core": "5.1.26",
+    "@medplum/definitions": "5.1.26",
     "fast-xml-parser": "^5.0.9",
     "form-data": "^4.0.0",
     "jose": "^5.10.0",

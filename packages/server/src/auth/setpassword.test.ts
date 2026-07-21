@@ -20,7 +20,6 @@ import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -79,11 +78,11 @@ describe('Set Password', () => {
       email,
       recaptchaToken: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const userInfoRes1 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
-    expect(userInfoRes1.status).toBe(200);
+    expect(userInfoRes1).toHaveStatus(200);
     expect(userInfoRes1.body).toMatchObject({
       email,
       email_verified: false,
@@ -102,7 +101,7 @@ describe('Set Password', () => {
       secret,
       password: 'my-new-password',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Make sure that the user can login with the new password
     const res4 = await request(app).post('/auth/login').type('json').send({
@@ -110,7 +109,7 @@ describe('Set Password', () => {
       password: 'my-new-password',
       scope: 'openid',
     });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     const newAccessToken = res4.body.access_token as string;
 
     // Make sure that the PCR cannot be used again
@@ -119,15 +118,15 @@ describe('Set Password', () => {
       secret,
       password: 'bad-guys-trying-to-reuse-code',
     });
-    expect(res5.status).toBe(400);
+    expect(res5).toHaveStatus(400);
 
     // User must log in again
     const userInfoRes2 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${newAccessToken}`);
-    expect(userInfoRes2.status).toBe(401);
+    expect(userInfoRes2).toHaveStatus(401);
 
     // Make sure that previous active login was revoked
     const userInfoRes3 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${res.accessToken}`);
-    expect(userInfoRes3.status).toBe(401);
+    expect(userInfoRes3).toHaveStatus(401);
 
     // Ensure other Logins are also revoked
     const otherLogin = await getGlobalSystemRepo().readResource<Login>('Login', login.id);
@@ -166,7 +165,7 @@ describe('Set Password', () => {
       secret: usr.secret,
       password: 'my-new-password',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Make sure that the user can login with the new password
     const res4 = await request(app).post('/auth/login').type('json').send({
@@ -174,7 +173,7 @@ describe('Set Password', () => {
       password: 'my-new-password',
       scope: 'openid',
     });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
   });
 
   test('UserSecurityRequest invalid type', async () => {
@@ -209,7 +208,7 @@ describe('Set Password', () => {
       secret: usr.secret,
       password: 'my-new-password',
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
   });
 
   test('Wrong secret', async () => {
@@ -222,13 +221,13 @@ describe('Set Password', () => {
       password: 'password!@#',
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
       recaptchaToken: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
@@ -243,7 +242,7 @@ describe('Set Password', () => {
       secret: 'WRONG!',
       password: 'my-new-password',
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
   });
 
   test('Breached password', async () => {
@@ -256,13 +255,13 @@ describe('Set Password', () => {
       password: 'password!@#',
       recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
       recaptchaToken: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
     const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
@@ -281,7 +280,7 @@ describe('Set Password', () => {
       secret,
       password: 'breached',
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body).toMatchObject(badRequest('Password found in breach database'));
   });
 
@@ -294,7 +293,7 @@ describe('Set Password', () => {
         secret: generateSecret(16),
         password: 'my-new-password',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Missing secret', async () => {
@@ -303,7 +302,7 @@ describe('Set Password', () => {
       secret: '',
       password: 'my-new-password',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Missing password', async () => {
@@ -315,7 +314,7 @@ describe('Set Password', () => {
         secret: generateSecret(16),
         password: '',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Not found', async () => {
@@ -327,6 +326,6 @@ describe('Set Password', () => {
         secret: generateSecret(16),
         password: 'my-new-password',
       });
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 });

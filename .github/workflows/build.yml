@@ -41,7 +41,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -141,7 +141,7 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -277,7 +277,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -390,7 +390,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -444,7 +444,7 @@ jobs:
         # main and merge_group; for pull_request events, only runs when the PR head is on
         # this repo rather than a fork.
         if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
-        uses: SonarSource/sonarqube-scan-action@45f27363d4ff7d6b16baa0516490f10c52bdd5fc # master
+        uses: SonarSource/sonarqube-scan-action@7cdc154593ec10cd3c019fceab40f415f9218437 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -474,7 +474,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -552,7 +552,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -589,7 +589,46 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build Medplum
         run: npm run build:fast
+      - name: Smoke test npm run dev
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
+        run: |
+          pushd packages/server
+          setsid npm run dev > server-dev.log 2>&1 &
+          SERVER_PID=$!
+          popd
+
+          MAX_RETRIES=24
+          RETRY_COUNT=0
+
+          until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "Dev server process exited before healthcheck passed."
+              cat packages/server/server-dev.log
+              exit 1
+            fi
+
+            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+              echo "Max retries reached. Dev server not ready."
+              cat packages/server/server-dev.log
+              kill -- "-$SERVER_PID" 2>/dev/null || true
+              exit 1
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Waiting for healthcheck... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
+            sleep 5
+          done
+
+          echo "Healthcheck passed. Stopping dev server."
+          kill -- "-$SERVER_PID" 2>/dev/null || true
+          # wait only reaps the shell child; descendants may still hold port 8103
+          wait "$SERVER_PID" 2>/dev/null || true
+          # last resort if something is still listening
+          kill -9 -- "-$SERVER_PID" 2>/dev/null || true
       - name: Start server and app
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
         run: |
           pushd packages/server
           npm start > server.log 2>&1 &
@@ -597,8 +636,6 @@ jobs:
           pushd packages/app
           npm run preview > app.log 2>&1 &
           popd
-        env:
-          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Wait for deployment to be ready
         run: |
           # Add retry mechanism for deployment readiness check
@@ -655,7 +692,7 @@ jobs:
           # See: https://github.com/actions/setup-node/issues/328
           package-manager-cache: false
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:

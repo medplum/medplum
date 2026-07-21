@@ -595,6 +595,23 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  // Regression test for https://github.com/medplum/medplum/issues/8985:
+  // The default ElastiCache node type was `cache.t2.medium`, but AWS no longer
+  // allows creating new ElastiCache clusters on T2 instances, so fresh deploys
+  // failed. The default must be a current-generation node type.
+  test('Default cacheNodeType is a supported instance type', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumDefaultCacheNodeTypeStack',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.resourcePropertiesCountIs('AWS::ElastiCache::ReplicationGroup', { CacheNodeType: 'cache.t4g.medium' }, 1);
+  });
+
   // Regression test for https://github.com/medplum/medplum/issues/9287:
   // `loadBalancerLoggingPrefix` was being silently ignored because both
   // `BackEnd.createLoadBalancer` call sites passed `loadBalancerLoggingBucket`

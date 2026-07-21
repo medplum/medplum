@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
+import { MedplumProvider } from '@medplum/react';
+import { MemoryRouter } from 'react-router';
+import { act, fireEvent, render, renderAppRoutes, screen, waitFor } from '../test-utils/render';
+import { MemberTable } from './MembersTable';
 
 const medplum = new MockClient();
 
@@ -109,5 +112,95 @@ describe('MemberTable (Users page)', () => {
     await waitFor(() => {
       expect(screen.queryByText('Invite New User')).not.toBeInTheDocument();
     });
+  });
+
+  // Fresh, isolated client whose Project/123 allows the given MFA methods. Used to
+  // avoid cross-test caching of the shared `admin/projects/123` response.
+  async function setupMfaClient(allowedMfaMethods: string): Promise<MockClient> {
+    const client = new MockClient();
+    client.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: { reference: 'Practitioner/124' },
+      project: { reference: 'Project/123' },
+    });
+    const project = await client.readResource('Project', '123');
+    await client.updateResource({
+      ...project,
+      setting: [{ name: 'allowedMfaMethods', valueString: allowedMfaMethods }],
+    });
+    return client;
+  }
+
+  test("Shows MFA enrollment columns reflecting each member's enrolled factors", async () => {
+    // Project allows both authenticator and email MFA.
+    const client = await setupMfaClient('totp,email');
+    // The member (User/123) is enrolled in TOTP but not email.
+    const batchSpy = vi.spyOn(client, 'executeBatch').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: { resourceType: 'User', id: '123', firstName: 'Alice', lastName: 'Smith', mfaMethod: ['totp'] } },
+      ],
+    });
+
+    renderAppRoutes(client, '/admin/users');
+    await screen.findAllByTestId('search-control-row');
+
+    expect(await screen.findByText('MFA: Authenticator')).toBeInTheDocument();
+    expect(screen.getByText('MFA: Email')).toBeInTheDocument();
+    expect((await screen.findAllByText('Enrolled')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Not enrolled').length).toBeGreaterThan(0);
+
+    batchSpy.mockRestore();
+  });
+
+  test('Omits the Email MFA column when the project does not allow email MFA', async () => {
+    const client = await setupMfaClient('totp');
+    const batchSpy = vi
+      .spyOn(client, 'executeBatch')
+      .mockResolvedValue({ resourceType: 'Bundle', type: 'batch-response', entry: [] });
+
+    renderAppRoutes(client, '/admin/users');
+    await screen.findAllByTestId('search-control-row');
+
+    expect(await screen.findByText('MFA: Authenticator')).toBeInTheDocument();
+    expect(screen.queryByText('MFA: Email')).not.toBeInTheDocument();
+
+    batchSpy.mockRestore();
+  });
+
+  test('Does not show MFA enrollment columns when showMfaEnrollment is not set', async () => {
+    const batchSpy = vi.spyOn(medplum, 'executeBatch');
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter>
+          <MemberTable profileTypeOptions={[{ label: 'Practitioner', value: 'Practitioner' }]} fields={['user']} />
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+
+    await screen.findAllByTestId('search-control-row');
+    expect(screen.queryByText('MFA: Authenticator')).not.toBeInTheDocument();
+    expect(screen.queryByText('MFA: Email')).not.toBeInTheDocument();
+    // No member Users are fetched when the columns are disabled.
+    expect(batchSpy).not.toHaveBeenCalled();
+    batchSpy.mockRestore();
+  });
+
+  test('Shows custom toolbar content even without segmented control or toolbarLeft', async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter>
+          <MemberTable
+            profileTypeOptions={[{ label: 'Practitioner', value: 'Practitioner' }]}
+            fields={['user']}
+            toolbarRight={<span>Right note</span>}
+          />
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+
+    expect(await screen.findByText('Right note')).toBeInTheDocument();
   });
 });

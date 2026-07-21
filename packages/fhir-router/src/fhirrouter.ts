@@ -55,9 +55,7 @@ export type FhirResponseOptions = {
 };
 
 export type FhirResponse =
-  | [OperationOutcome]
-  | [OperationOutcome, Resource]
-  | [OperationOutcome, Resource, FhirResponseOptions];
+  [OperationOutcome] | [OperationOutcome, Resource] | [OperationOutcome, Resource, FhirResponseOptions];
 
 export type FhirRouteOptions = {
   batch?: boolean;
@@ -298,9 +296,7 @@ async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise
 
 /** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
 export type RestInteraction =
-  | CapabilityStatementRestInteraction['code']
-  | CapabilityStatementRestResourceInteraction['code']
-  | 'operation';
+  CapabilityStatementRestInteraction['code'] | CapabilityStatementRestResourceInteraction['code'] | 'operation';
 
 export type FhirRouteMetadata = {
   interaction: RestInteraction;

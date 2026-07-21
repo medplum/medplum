@@ -41,7 +41,7 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Set password' }));
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Set password' }));
     });
 
     expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('SetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Set password' }));
     });
 
     await act(async () => {

@@ -252,7 +252,7 @@ describe('OAuth2 Token', () => {
     const res = await request(app).post('/oauth2/token').type('json').send({
       foo: 'bar',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Unsupported content type');
   });
 
@@ -261,7 +261,7 @@ describe('OAuth2 Token', () => {
       grant_type: '',
       code: 'fake-code',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing grant_type');
   });
@@ -271,7 +271,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'xyz',
       code: 'fake-code',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Unsupported grant_type');
   });
@@ -282,7 +282,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
@@ -293,7 +293,7 @@ describe('OAuth2 Token', () => {
       client_id: '',
       client_secret: 'big-long-string',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing client_id');
   });
@@ -304,7 +304,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: '',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing client_secret');
   });
@@ -315,7 +315,7 @@ describe('OAuth2 Token', () => {
       client_id: randomUUID(),
       client_secret: 'big-long-string',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
   });
@@ -326,7 +326,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: 'wrong-client-id',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid secret');
   });
@@ -337,7 +337,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.retiringSecret,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
@@ -350,7 +350,7 @@ describe('OAuth2 Token', () => {
       .send({
         grant_type: 'client_credentials',
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
@@ -359,7 +359,7 @@ describe('OAuth2 Token', () => {
     const res = await request(app).post('/oauth2/token').type('form').set('Authorization', 'Bearer xyz').send({
       grant_type: 'client_credentials',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid authorization header');
   });
@@ -382,7 +382,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .set('Authorization', 'Basic ' + header)
       .send();
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Token for client empty secret', async () => {
@@ -402,7 +402,7 @@ describe('OAuth2 Token', () => {
       client_id: badClient.id,
       client_secret: 'wrong-client-secret',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
   });
@@ -421,7 +421,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
   });
@@ -435,7 +435,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
   });
@@ -449,7 +449,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
@@ -462,19 +462,19 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     const accessToken = res.body.access_token;
     expect(accessToken).toBeDefined();
 
     const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`).send();
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     // Disable membership, access should be denied after
     await systemRepo.updateResource<ProjectMembership>({ ...membership, active: false });
 
     const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`).send();
-    expect(res2.status).toBe(401);
+    expect(res2).toHaveStatus(401);
   });
 
   test('Client credentials IP address restriction', async () => {
@@ -498,7 +498,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
     expect(res1.body.error).toBe('invalid_request');
     expect(res1.body.error_description).toBe('IP address not allowed');
 
@@ -509,7 +509,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.error).toBeUndefined();
     expect(res2.body.access_token).toBeDefined();
   });
@@ -520,7 +520,7 @@ describe('OAuth2 Token', () => {
       code: '',
       code_verifier: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing code');
   });
@@ -531,7 +531,7 @@ describe('OAuth2 Token', () => {
       code: 'xyzxyz',
       code_verifier: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid code');
   });
@@ -543,7 +543,7 @@ describe('OAuth2 Token', () => {
       code: '',
       code_verifier: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing code');
   });
@@ -554,7 +554,7 @@ describe('OAuth2 Token', () => {
       code: '',
       code_verifier: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid authorization header');
   });
@@ -564,13 +564,13 @@ describe('OAuth2 Token', () => {
       email,
       password,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.error).toBe('invalid_request');
     expect(res2.body.error_description).toBe('Missing verification context');
   });
@@ -582,13 +582,13 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.error).toBe('invalid_request');
     expect(res2.body.error_description).toBe('Missing code verifier');
   });
@@ -601,14 +601,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid profile email',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid profile email');
     expect(res2.body.expires_in).toBe(3600);
@@ -628,7 +628,7 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid profile email',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app)
       .post('/oauth2/token')
@@ -639,7 +639,7 @@ describe('OAuth2 Token', () => {
         code: res.body.code,
         code_verifier: 'incorrect',
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.access_token).toBeUndefined();
   });
 
@@ -651,13 +651,13 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -672,7 +672,7 @@ describe('OAuth2 Token', () => {
       email,
       password,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -680,7 +680,7 @@ describe('OAuth2 Token', () => {
       client_id: pkceOptionalClient.id,
       client_secret: 'wrong',
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.error).toBe('invalid_request');
     expect(res2.body.error_description).toBe('Invalid secret');
   });
@@ -691,7 +691,7 @@ describe('OAuth2 Token', () => {
       email,
       password,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -699,7 +699,7 @@ describe('OAuth2 Token', () => {
       client_id: pkceOptionalClient.id,
       client_secret: pkceOptionalClient.retiringSecret,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.error).toBeUndefined();
     expect(res2.body.access_token).toBeDefined();
   });
@@ -710,7 +710,7 @@ describe('OAuth2 Token', () => {
       email,
       password,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -718,7 +718,7 @@ describe('OAuth2 Token', () => {
       client_id: pkceOptionalClient.id,
       client_secret: pkceOptionalClient.secret,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -734,7 +734,7 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Find the login
     const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
@@ -754,7 +754,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.error).toBe('invalid_grant');
     expect(res2.body.error_description).toBe('Token revoked');
   });
@@ -767,14 +767,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       remember: true,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -791,14 +791,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
@@ -815,14 +815,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -839,7 +839,7 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -847,7 +847,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -862,7 +862,7 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -870,7 +870,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.error).toBe('invalid_request');
     expect(res2.body.error_description).toBe('Invalid client');
   });
@@ -882,14 +882,14 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -901,7 +901,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('invalid_grant');
     expect(res3.body.error_description).toBe('Token already granted');
   });
@@ -911,7 +911,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: '',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid refresh token');
   });
@@ -921,7 +921,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid refresh token');
   });
@@ -934,14 +934,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -953,7 +953,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.token_type).toBe('Bearer');
     expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
@@ -969,14 +969,14 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -988,7 +988,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid refresh token',
@@ -1003,14 +1003,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1027,7 +1027,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: invalidRefreshToken,
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid refresh token',
@@ -1046,14 +1046,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'S256',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: codeHash, // sending hash, should be code
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
   });
 
   test('Refresh token success with S256 code', async () => {
@@ -1068,14 +1068,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'S256',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: code,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1087,7 +1087,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.token_type).toBe('Bearer');
     expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
@@ -1104,14 +1104,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1136,7 +1136,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('invalid_grant');
     expect(res3.body.error_description).toBe('Token revoked');
   });
@@ -1161,14 +1161,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.refresh_token).toBeDefined();
 
     // Find the login
@@ -1191,7 +1191,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('access_denied');
     expect(res3.body.error_description).toBe('Profile not active');
   });
@@ -1205,14 +1205,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1228,7 +1228,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'refresh_token',
         refresh_token: res2.body.refresh_token,
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.token_type).toBe('Bearer');
     expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
@@ -1246,14 +1246,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1269,7 +1269,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'refresh_token',
         refresh_token: res2.body.refresh_token,
       });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('invalid_request');
     expect(res3.body.error_description).toBe('Invalid authorization header');
   });
@@ -1283,14 +1283,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1306,7 +1306,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'refresh_token',
         refresh_token: res2.body.refresh_token,
       });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('invalid_grant');
     expect(res3.body.error_description).toBe('Incorrect client');
   });
@@ -1320,14 +1320,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1343,7 +1343,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'refresh_token',
         refresh_token: res2.body.refresh_token,
       });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('invalid_grant');
     expect(res3.body.error_description).toBe('Incorrect client secret');
   });
@@ -1364,7 +1364,7 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // 2) Get tokens with grant_type=authorization_code
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -1372,7 +1372,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1385,7 +1385,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.token_type).toBe('Bearer');
     expect(res3.body.scope).toBe('openid offline_access');
     expect(res3.body.expires_in).toBe(3600);
@@ -1398,7 +1398,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res3.body.refresh_token,
     });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.token_type).toBe('Bearer');
     expect(res4.body.scope).toBe('openid offline_access');
     expect(res4.body.expires_in).toBe(3600);
@@ -1411,7 +1411,7 @@ describe('OAuth2 Token', () => {
       grant_type: 'refresh_token',
       refresh_token: res2.body.refresh_token,
     });
-    expect(res5.status).toBe(400);
+    expect(res5).toHaveStatus(400);
     expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
   });
 
@@ -1434,7 +1434,7 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -1444,7 +1444,7 @@ describe('OAuth2 Token', () => {
       scope: 'openid offline_access',
     });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(60);
@@ -1498,7 +1498,7 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -1508,7 +1508,7 @@ describe('OAuth2 Token', () => {
       scope: 'openid offline_access',
     });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -1573,7 +1573,7 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Get tokens
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -1581,7 +1581,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.patient).toStrictEqual(testPatient.profile.id);
@@ -1614,7 +1614,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
@@ -1640,7 +1640,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Client not found',
@@ -1666,7 +1666,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Client must have a JWK Set URL',
@@ -1700,7 +1700,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid client assertion audience',
@@ -1734,7 +1734,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid client assertion issuer',
@@ -1768,7 +1768,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid client assertion signature',
@@ -1803,7 +1803,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(jwtVerify).toHaveBeenCalledTimes(3);
   });
 
@@ -1834,7 +1834,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(jwtVerify).toHaveBeenCalledTimes(2);
   });
 
@@ -1865,7 +1865,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: 'urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer',
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Unsupported client assertion type',
@@ -1878,7 +1878,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: '', // empty JWT
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid client assertion',
@@ -1891,7 +1891,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: OAuthClientAssertionType.JwtBearer,
       client_assertion: 'foo', // not a valid JWT
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid client assertion',
@@ -1916,7 +1916,7 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -1925,7 +1925,7 @@ describe('OAuth2 Token', () => {
       client_secret: client.secret,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.patient).toBeDefined();
     expect(res2.body.encounter).toBeDefined();
   });
@@ -1972,7 +1972,7 @@ describe('OAuth2 Token', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
 
       const res2 = await request(app).post('/oauth2/token').type('form').send({
         grant_type: 'authorization_code',
@@ -1981,7 +1981,7 @@ describe('OAuth2 Token', () => {
         client_secret: client.secret,
         code_verifier: 'xyz',
       });
-      expect(res2.status).toBe(200);
+      expect(res2).toHaveStatus(200);
       // When identifier is present, it should be returned instead of the FHIR resource ID
       expect(res2.body[responseField]).toBe(externalId);
     }
@@ -1995,7 +1995,7 @@ describe('OAuth2 Token', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -2004,7 +2004,7 @@ describe('OAuth2 Token', () => {
       client_secret: client.secret,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('IP address block', async () => {
@@ -2013,7 +2013,7 @@ describe('OAuth2 Token', () => {
       email,
       password,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toStrictEqual('IP address not allowed');
   });
 
@@ -2026,7 +2026,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -2041,7 +2041,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -2065,7 +2065,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthConfigClientId,
       subject_token: 'opaque-token',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(res.body.expires_in).toBe(3600);
     const claims = (await verifyJwt(res.body.access_token)).payload;
@@ -2093,7 +2093,7 @@ describe('OAuth2 Token', () => {
       client_id: externalIdentityProvider.clientId,
       subject_token: 'opaque-token',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
   });
@@ -2115,7 +2115,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthConfigClientId,
       subject_token: 'opaque-token',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith('https://server-config.example.com/oauth2/userinfo', expect.anything());
   });
@@ -2127,7 +2127,7 @@ describe('OAuth2 Token', () => {
       client_id: randomUUID(),
       subject_token: 'opaque-token',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -2151,7 +2151,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       subject_token: 'opaque-token',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -2177,7 +2177,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: 'opaque-token',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/oauth2/userinfo', expect.anything());
   });
@@ -2206,7 +2206,7 @@ describe('OAuth2 Token', () => {
       subject_token: 'opaque-token',
       membership_id: otherMembership.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(res.body.project.reference).toBe(`Project/${otherProject.id}`);
   });
@@ -2223,7 +2223,7 @@ describe('OAuth2 Token', () => {
       subject_token: 'opaque-token',
       membership_id: randomUUID(),
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid membership');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -2251,7 +2251,7 @@ describe('OAuth2 Token', () => {
     } finally {
       readResourceSpy.mockRestore();
     }
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid membership');
     expect(fetchMock).not.toHaveBeenCalled();
@@ -2266,7 +2266,7 @@ describe('OAuth2 Token', () => {
       client_id: gcipAuthClient.id,
       subject_token: 'firebase-token',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(fetch).toHaveBeenCalledWith(
       'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
@@ -2311,7 +2311,7 @@ describe('OAuth2 Token', () => {
       client_id: gcipSubjectAuthClient.id,
       subject_token: 'firebase-token',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -2324,7 +2324,7 @@ describe('OAuth2 Token', () => {
       client_id: gcipAuthClient.id,
       subject_token: 'firebase-token',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Failed to verify code - invalid user info response');
   });
 
@@ -2337,7 +2337,7 @@ describe('OAuth2 Token', () => {
       client_id: gcipAuthClient.id,
       subject_token: 'firebase-token',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
   });
 
@@ -2348,7 +2348,7 @@ describe('OAuth2 Token', () => {
       client_id: gcipMissingKeyClient.id,
       subject_token: 'firebase-token',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Missing user info API key - check your identity provider configuration');
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -2362,7 +2362,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
@@ -2376,7 +2376,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(429);
+    expect(res).toHaveStatus(429);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Too Many Requests');
   });
@@ -2388,7 +2388,7 @@ describe('OAuth2 Token', () => {
       client_id: '',
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
   });
@@ -2400,7 +2400,7 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: '',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid subject_token');
   });
@@ -2412,13 +2412,14 @@ describe('OAuth2 Token', () => {
       client_id: externalAuthClient.id,
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid subject_token_type');
   });
 
   test('Token exchange invalid external URL', async () => {
     fetchMock.mockClear();
+    fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: OAuthGrantType.TokenExchange,
@@ -2426,10 +2427,10 @@ describe('OAuth2 Token', () => {
       client_id: invalidAuthClient.id,
       subject_token: 'xyz',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(fetchMock).toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {
@@ -2439,7 +2440,7 @@ describe('OAuth2 Token', () => {
       client_secret: client.secret,
       scope: 'openid fhircast/Patient-open.read',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
     expect(res.body['hub.topic']).toBeDefined();
@@ -2452,7 +2453,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
     expect(res.body['hub.topic']).not.toBeDefined();
@@ -2482,14 +2483,14 @@ describe('OAuth2 Token', () => {
       codeChallengeMethod: 'plain',
       scope: 'openid offline_access', // Request offline_access access
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
@@ -2526,14 +2527,14 @@ describe('OAuth2 Token', () => {
       scope: 'openid', // Do not request offline_access access
       clientId: client.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -2551,7 +2552,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'client_credentials',
         client_id: randomUUID(),
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toStrictEqual('invalid_request');
     expect(res.body.error_description).toBe('Error reading client: Not found');
   });
@@ -2565,7 +2566,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'client_credentials',
         client_id: client.id,
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toStrictEqual('invalid_request');
     expect(res.body.error_description).toBe('Client does not have a configured certificate trust store');
   });
@@ -2591,7 +2592,7 @@ describe('OAuth2 Token', () => {
         grant_type: 'client_credentials',
         client_id: client.id,
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
   });
@@ -2601,7 +2602,7 @@ describe('OAuth2 Token', () => {
       grant_type: OAuthGrantType.PreAuthorizedCode,
       'pre-authorized_code': 'big-long-string',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing client_id');
   });
@@ -2611,7 +2612,7 @@ describe('OAuth2 Token', () => {
       grant_type: OAuthGrantType.PreAuthorizedCode,
       client_id: client.id,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Missing pre-authorized_code');
   });
@@ -2622,7 +2623,7 @@ describe('OAuth2 Token', () => {
       'pre-authorized_code': 'big-long-string',
       client_id: 'invalid-client-id',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_client');
     expect(res.body.error_description).toBe('Invalid client');
   });
@@ -2633,7 +2634,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       'pre-authorized_code': 'invalid-code',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid pre-authorized_code');
   });
@@ -2662,7 +2663,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       'pre-authorized_code': preAuthorizedCode,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_grant');
     expect(res.body.error_description).toBe('Pre-authorized code expired');
   });
@@ -2685,7 +2686,7 @@ describe('OAuth2 Token', () => {
       .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
       .type('json')
       .send({ clientId: client.id });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.preAuthorizedCode).toBeDefined();
     expect(res.body.code).toBeUndefined();
 
@@ -2696,7 +2697,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       'pre-authorized_code': res.body.preAuthorizedCode,
     });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
     expect(res1.body.error).toBe('invalid_request');
     expect(res1.body.error_description).toBe('IP address not allowed');
 
@@ -2707,7 +2708,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       'pre-authorized_code': res.body.preAuthorizedCode,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.error).toBeUndefined();
     expect(res2.body.access_token).toBeDefined();
   });
@@ -2721,7 +2722,7 @@ describe('OAuth2 Token', () => {
       .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
       .type('json')
       .send({ clientId: client.id });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.preAuthorizedCode).toBeDefined();
     expect(res.body.code).toBeUndefined();
 
@@ -2730,7 +2731,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       'pre-authorized_code': res.body.preAuthorizedCode,
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
@@ -2744,7 +2745,7 @@ describe('OAuth2 Token', () => {
       client_id: client.id,
       'pre-authorized_code': res.body.preAuthorizedCode,
     });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('invalid_grant');
     expect(res3.body.error_description).toBe('Token already granted');
   });

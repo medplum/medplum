@@ -712,12 +712,12 @@ describe('Database migrations', () => {
           const queueAdd = getQueueAddSpy();
 
           if (expectedToFailOrPass === 'pass') {
-            expect(res2.status).toStrictEqual(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-location']).toBeDefined();
 
             expect(queueAdd).toHaveBeenCalledTimes(1);
           } else {
-            expect(res2.status).toStrictEqual(400);
+            expect(res2).toHaveStatus(400);
 
             const queueAdd = getQueueAddSpy();
             expect(queueAdd).not.toHaveBeenCalled();
@@ -735,7 +735,7 @@ describe('Database migrations', () => {
             .type('json')
             .send({ dataVersion });
 
-          expect(res1.status).toStrictEqual(400);
+          expect(res1).toHaveStatus(400);
           expect(res1.headers['content-location']).not.toBeDefined();
           expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
         }
@@ -755,7 +755,7 @@ describe('Database migrations', () => {
         // nothing to do, so no AsyncJob was created and no content-location header
         // should be set
         expect(res1.body).toMatchObject(allOk);
-        expect(res1.status).toStrictEqual(200);
+        expect(res1).toHaveStatus(200);
         expect(res1.headers['content-location']).not.toBeDefined();
       });
     });
@@ -773,7 +773,7 @@ describe('Database migrations', () => {
           .type('json')
           .send({ dataVersion: 1337 });
 
-        expect(res1.status).toStrictEqual(200);
+        expect(res1).toHaveStatus(200);
         expect(res1.body).toMatchObject(allOk);
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
       });
@@ -785,7 +785,7 @@ describe('Database migrations', () => {
           .type('json')
           .send({ dataVersion });
 
-        expect(res1.status).toStrictEqual(400);
+        expect(res1).toHaveStatus(400);
         expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
       });
     });
@@ -812,7 +812,7 @@ describe('Database migrations', () => {
           .type('json');
 
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
-        expect(res1.status).toStrictEqual(200);
+        expect(res1).toHaveStatus(200);
         expect(res1.headers['content-location']).not.toBeDefined();
       });
 
@@ -843,7 +843,7 @@ describe('Database migrations', () => {
           },
         });
 
-        expect(res1.status).toStrictEqual(202);
+        expect(res1).toHaveStatus(202);
         expect(res1.headers['content-location']).toBeDefined();
       });
     });
