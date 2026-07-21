@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SubscriptionEmitter, generateId } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import { MockClient, TestProject } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
 import { StrictMode, useCallback, useState } from 'react';
@@ -91,14 +91,16 @@ describe('useSubscription()', () => {
 
   function setup(
     children: ReactNode,
-    strict = false
+    options?: { strict?: boolean; client?: MockClient }
   ): {
     unmount: ReturnType<typeof render>['unmount'];
     rerender: (element: JSX.Element) => void;
   } {
+    const strict = options?.strict ?? false;
+    const client = options?.client ?? medplum;
     const defaultWrapper = (children: ReactNode): JSX.Element => (
       <MemoryRouter>
-        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+        <MedplumProvider medplum={client}>{children}</MedplumProvider>
       </MemoryRouter>
     );
 
@@ -179,7 +181,7 @@ describe('useSubscription()', () => {
     const emitter = medplum.getSubscriptionManager().addCriteria('Communication');
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    setup(<TestComponent criteria="Communication" />, true);
+    setup(<TestComponent criteria="Communication" />, { strict: true });
     await advanceDebounce(5000);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
     expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
@@ -551,6 +553,17 @@ describe('useSubscription()', () => {
 
     getProfileSpy.mockRestore();
     subscribeSpy.mockRestore();
+  });
+
+  test('Is a no-op when the active project is missing the `websocket-subscriptions` feature', async () => {
+    const client = new MockClient({ project: { ...TestProject, features: [] } });
+    const subscribeSpy = vi.spyOn(client, 'subscribeToCriteria');
+
+    setup(<TestComponent criteria="Communication" />, { client });
+
+    // No subscription should be created while the feature is disabled
+    expect(subscribeSpy).not.toHaveBeenCalled();
+    expect(client.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 
   test('WebSocket disconnects and reconnects', async () => {
