@@ -87,6 +87,11 @@ export interface ReentrantBatchJobData extends BaseBatchJobData {
   readonly position?: number;
   /** Number of result chunks written to durable storage so far. */
   readonly chunkSeq?: number;
+  /**
+   * Number of identity-reconciliation chunks written to durable storage so far. Written only when a
+   * checkpoint produced a non-empty identity delta, so this advances independently of `chunkSeq`.
+   */
+  readonly identitySeq?: number;
 
   // Configurable checkpoint cadence. A checkpoint is taken whenever EITHER threshold is reached,
   // whichever comes first (see the replay-window note above). Left unset, the defaults below apply.
@@ -168,7 +173,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
       } finally {
         const logger = getBatchLogger(job.data.asyncJobId, job.id);
         const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
-        await store.cleanup(job.data.chunkSeq ?? 0);
+        await store.cleanup(job.data.chunkSeq ?? 0, job.data.identitySeq ?? 0);
       }
     });
     addVerboseQueueLogging<BatchJobData>(queue, worker, (job) => {
@@ -260,6 +265,9 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const store = new BatchCheckpointStore(job.data.asyncJobId, logger);
   let asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   let chunkSeq = job.data.chunkSeq ?? 0;
+  // Number of identity-reconciliation chunks written so far (advances independently of chunkSeq;
+  // see ReentrantBatchJobData.identitySeq). Tracked for durable persistence and for cleanup.
+  let identitySeq = job.data.identitySeq ?? 0;
   // Chunks below this sequence were persisted by previous runs of this job and exist only in
   // durable storage. Results checkpointed during this run are additionally kept in memory
   // (resultsThisRun) so completion can assemble the response without re-reading chunks this run
@@ -268,7 +276,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
+    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, identitySeq, authState, resultsThisRun);
     return;
   }
 
@@ -299,15 +307,31 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       processor = new BatchProcessor(router, userRepo, bundle, req);
       initialState = await processor.preprocess();
       await store.saveInitialState(initialState);
+      // Seed the resolved-identity stream at chunk 0 with the preprocess-time map. Written before
+      // the marker advances so a resumed worker can always reconstruct identities; identitySeq
+      // starts at 1 so reconciliation deltas append after the seed.
+      await store.saveIdentityChunk(0, processor.getResolvedIdentities());
       position = 0;
       chunkSeq = 0;
-      await job.updateData({ ...job.data, position, chunkSeq });
+      identitySeq = 1;
+      await job.updateData({ ...job.data, position, chunkSeq, identitySeq });
     } else {
-      // Resume: rehydrate the processor from durably-persisted state.
-      initialState = await store.loadInitialState();
+      // Resume: rehydrate the processor from durably-persisted state. Reconstruct the current
+      // resolved-identity map from its chunk stream — chunk 0 (the preprocess seed) plus any
+      // reconciliation deltas (e.g. a conditional create that matched a concurrently-created
+      // resource) — and pass it to fromState; the initial-state snapshot itself stays immutable.
+      const loaded = await store.loadInitialState();
+      initialState = loaded.state;
+      const identities = await store.loadAllIdentities(identitySeq);
+      // Back-compat: a job preprocessed before identities moved to their own stream has the seed in
+      // state.json and no seed chunk. Layer any newer delta chunks over that legacy seed (deltas
+      // win) so reconciliations written after resuming under the new code are not lost.
+      const resolvedIdentities = loaded.legacyResolvedIdentities
+        ? Object.assign(Object.create(null), loaded.legacyResolvedIdentities, identities)
+        : identities;
       position = job.data.position;
-      processor = BatchProcessor.fromState(router, userRepo, req, initialState, position);
-      logger.info('resuming from checkpoint', { position, chunkSeq });
+      processor = BatchProcessor.fromState(router, userRepo, req, initialState, resolvedIdentities, position);
+      logger.info('resuming from checkpoint', { position, chunkSeq, identitySeq });
     }
 
     const checkpointEntries = job.data.checkpointEntries ?? defaultCheckpointEntries;
@@ -315,10 +339,12 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     let sinceCheckpoint = 0;
     let lastCheckpointTime = Date.now();
 
-    // Flush results produced since the last checkpoint to durable storage, THEN advance the durable
-    // progress marker. This ordering guarantees the marker never moves past an unpersisted result.
-    // The chunk lets a future worker resuming after a crash reconstruct these results; it is also
-    // mirrored into resultsThisRun so this run can assemble from memory without re-reading it.
+    // Flush results (and any identity reconciliations) produced since the last checkpoint to
+    // durable storage, THEN advance the durable progress marker. This ordering guarantees the
+    // marker never moves past an unpersisted result or identity update — so a resumed worker that
+    // reprocesses an entry referencing a reconciled identity always sees the reconciled value. The
+    // chunks let a future worker resuming after a crash reconstruct these; results are also mirrored
+    // into resultsThisRun so this run can assemble from memory without re-reading them.
     const checkpoint = async (): Promise<void> => {
       const pending = processor.takePendingResults();
       if (pending) {
@@ -326,8 +352,16 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
         chunkSeq++;
         Object.assign(resultsThisRun, pending);
       }
-      await job.updateData({ ...job.data, position: processor.getPosition(), chunkSeq });
-      logger.info('checkpoint', { position: processor.getPosition(), chunkSeq });
+      // Identity updates only arise alongside a result in the same window, but the write is driven
+      // off its own value so a delta is never stranded even if that ever changes. Written only when
+      // non-empty (divergences are rare), so identitySeq advances independently of chunkSeq.
+      const identityUpdates = processor.takePendingIdentityUpdates();
+      if (identityUpdates) {
+        await store.saveIdentityChunk(identitySeq, identityUpdates);
+        identitySeq++;
+      }
+      await job.updateData({ ...job.data, position: processor.getPosition(), chunkSeq, identitySeq });
+      logger.info('checkpoint', { position: processor.getPosition(), chunkSeq, identitySeq });
       sinceCheckpoint = 0;
       lastCheckpointTime = Date.now();
     };
@@ -348,7 +382,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
         asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
+          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, identitySeq, authState, resultsThisRun);
           return;
         }
       }
@@ -381,7 +415,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       resourceType: 'Parameters',
       parameter: [{ name: 'results', valueReference: createReference(binary) }],
     });
-    await store.cleanup(chunkSeq);
+    await store.cleanup(chunkSeq, identitySeq);
   } catch (err) {
     // DelayedError means the job was intentionally re-queued; propagate for BullMQ to handle
     // Assume job data and state have been updated before the throw, so no cleanup is needed.
@@ -417,7 +451,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
         });
       }
     } finally {
-      await store.cleanup(chunkSeq);
+      await store.cleanup(chunkSeq, identitySeq);
     }
   }
 }
@@ -432,6 +466,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * @param store - The checkpoint store.
  * @param asyncJob - The (refreshed) AsyncJob, in a terminal/cancelled state.
  * @param chunkSeq - The number of result chunks written so far.
+ * @param identitySeq - The number of identity chunks written so far (for cleanup).
  * @param authState - The auth state captured when the batch was submitted.
  * @param inMemoryResults - Result entries produced during this run, i.e. checkpointed during this run.
  */
@@ -441,6 +476,7 @@ async function finalizeInterrupted(
   store: BatchCheckpointStore,
   asyncJob: WithId<AsyncJob>,
   chunkSeq: number,
+  identitySeq: number,
   authState: Readonly<AuthState>,
   inMemoryResults: Record<number, BundleEntry>
 ): Promise<void> {
@@ -448,7 +484,7 @@ async function finalizeInterrupted(
     logger.info('Async batch job cancelled mid-flight; making partial results available', {
       status: asyncJob.status,
     });
-    const initialState = await store.loadInitialState();
+    const { state: initialState } = await store.loadInitialState();
     const userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
     const repo = await getBatchUserRepo(authState, userConfig);
     const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq, inMemoryResults);
@@ -466,7 +502,7 @@ async function finalizeInterrupted(
       error: normalizeErrorString(err),
     });
   } finally {
-    await store.cleanup(chunkSeq);
+    await store.cleanup(chunkSeq, identitySeq);
   }
 }
 

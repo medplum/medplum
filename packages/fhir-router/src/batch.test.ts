@@ -1434,23 +1434,37 @@ describe('Batch', () => {
       // Simulate persisting the initial state to durable storage and reloading it.
       const durableState: BatchInitialState = JSON.parse(JSON.stringify(initialState));
       Object.assign(results, durableState.preprocessResults);
+      // The resolved-identity map lives apart from the (immutable) initial-state snapshot: the
+      // preprocess-time seed and the reconciliations produced afterward are the identity chunk
+      // stream the async batch worker persists and reloads via loadAllIdentities. Round-trip both
+      // through JSON to simulate that persistence.
+      const seedIdentities: Record<string, string> = JSON.parse(JSON.stringify(processor.getResolvedIdentities()));
+      const identityOverrides: Record<string, string> = Object.create(null);
 
       let processed = 0;
       let crashed = false;
       while (processor.hasMoreEntries()) {
         await processor.processNextEntry();
-        // Checkpoint: persist newly produced results and the advanced progress marker.
+        // Checkpoint: persist newly produced results, any identity reconciliations, and the
+        // advanced progress marker.
         const pending = processor.takePendingResults();
         assert(pending);
         Object.assign(results, pending);
+        const identityUpdates = processor.takePendingIdentityUpdates();
+        if (identityUpdates) {
+          Object.assign(identityOverrides, JSON.parse(JSON.stringify(identityUpdates)));
+        }
         processed++;
 
         if (crashAfter !== undefined && !crashed && processed === crashAfter && processor.hasMoreEntries()) {
           crashed = true;
           // Simulate a crash and resume: rehydrate a fresh processor from the durable state at the
-          // last checkpointed position. Prior results live in `results` (durable storage).
+          // last checkpointed position. Prior results live in `results` (durable storage), and the
+          // resolved-identity map is reconstructed from the seed plus checkpointed reconciliations.
           const position = processor.getPosition();
-          processor = BatchProcessor.fromState(router, repo, req, JSON.parse(JSON.stringify(durableState)), position);
+          const reloaded: BatchInitialState = JSON.parse(JSON.stringify(durableState));
+          const resolvedIdentities = { ...seedIdentities, ...identityOverrides };
+          processor = BatchProcessor.fromState(router, repo, req, reloaded, resolvedIdentities, position);
         }
       }
 
@@ -1514,10 +1528,140 @@ describe('Batch', () => {
       expect((observationEntry?.resource as Observation)?.subject?.reference).toStrictEqual(patientRef);
     });
 
+    /**
+     * Builds and preprocesses a (conditional-create Patient + referencing Observation) batch,
+     * then creates a matching Patient so the conditional create diverges when executed: at
+     * preprocess time there is no match (the placeholder resolves to a freshly generated id), but
+     * at execution time the concurrently-created Patient matches. Processes only the conditional
+     * create (entry 0), returning everything needed to drive a resume of the referencing entry.
+     *
+     * Each call uses fresh identifiers/placeholders so its Observation gets a distinct assigned id
+     * — the positive and negative resumes can then both create against the shared repo without
+     * colliding on that id.
+     * @returns The durable initial-state snapshot, the preprocess-time identity seed, the
+     *   preprocessing-assigned reference, the concurrently-created match reference, the checkpointed
+     *   identity update, the placeholder URN, and the resume position (index of the referencing
+     *   Observation entry).
+     */
+    async function setupConditionalCreateDivergence(): Promise<{
+      durableState: BatchInitialState;
+      seedIdentities: Record<string, string>;
+      preprocessRef: string;
+      existingRef: string;
+      identityUpdate: Record<string, string>;
+      placeholder: string;
+      position: number;
+    }> {
+      const identifier = randomUUID();
+      const placeholder = 'urn:uuid:' + randomUUID();
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            fullUrl: placeholder,
+            request: { method: 'POST', url: 'Patient', ifNoneExist: 'identifier=http://example.com/mrn|' + identifier },
+            resource: {
+              resourceType: 'Patient',
+              identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+            },
+          },
+          {
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              code: { text: 'test' },
+              subject: { reference: placeholder },
+            },
+          },
+        ],
+      };
+
+      const processor = new BatchProcessor(router, repo, bundle, req);
+      const initialState = await processor.preprocess();
+      // Snapshot the durable state and the identity seed immediately (as the worker's
+      // saveInitialState + seed chunk write do), so the captured preprocessing id is not later
+      // mutated in place by reconciliation.
+      const durableState: BatchInitialState = JSON.parse(JSON.stringify(initialState));
+      const seedIdentities: Record<string, string> = JSON.parse(JSON.stringify(processor.getResolvedIdentities()));
+      const preprocessRef = seedIdentities[placeholder];
+
+      // A concurrent writer now creates a resource that satisfies the conditional-create criteria.
+      const existing = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+      });
+      const existingRef = getReferenceString(existing);
+
+      // Process the conditional create: it now matches the concurrently-created resource, and the
+      // reconciliation is surfaced as a pending identity update to be checkpointed.
+      await processor.processNextEntry();
+      const pending = processor.takePendingResults();
+      assert(pending);
+      const identityUpdate = { [placeholder]: existingRef };
+      return {
+        durableState,
+        seedIdentities,
+        preprocessRef,
+        existingRef,
+        identityUpdate,
+        placeholder,
+        position: processor.getPosition(),
+      };
+    }
+
+    test('Conditional-create divergence survives serialize -> fromState -> resume', async () => {
+      // A conditional create whose match appears only after preprocessing must, on resume, resolve
+      // to the matched resource — not the ID assigned during preprocessing. This exercises the
+      // reconciled-identity update being checkpointed and rehydrated (as the async batch worker
+      // does via saveIdentityChunk/loadAllIdentities).
+      const s = await setupConditionalCreateDivergence();
+      expect(s.preprocessRef).toMatch(/^Patient\//);
+      expect(s.existingRef).not.toStrictEqual(s.preprocessRef);
+      expect(s.position).toStrictEqual(1);
+
+      // Resume with the reconstructed identity map (seed + checkpointed reconciliation, as the
+      // worker rebuilds via loadAllIdentities): the Observation's placeholder reference resolves to
+      // the concurrently-created Patient.
+      const reloaded: BatchInitialState = JSON.parse(JSON.stringify(s.durableState));
+      const resolvedIdentities = { ...s.seedIdentities, ...s.identityUpdate };
+      const resumed = BatchProcessor.fromState(router, repo, req, reloaded, resolvedIdentities, s.position);
+      const results: Record<number, BundleEntry> = Object.create(null);
+      while (resumed.hasMoreEntries()) {
+        await resumed.processNextEntry();
+        const p = resumed.takePendingResults();
+        assert(p);
+        Object.assign(results, p);
+      }
+      expect((results[1]?.resource as Observation)?.subject?.reference).toStrictEqual(s.existingRef);
+    });
+
+    test('Conditional-create divergence: stale identities (no checkpointed update) resolve to the wrong id', async () => {
+      // Negative control proving the checkpointed reconciliation is load-bearing: resuming with only
+      // the STALE seed identities (what happens WITHOUT persisting the reconciliation delta) leaves
+      // the placeholder pointing at the never-created preprocessing id. Note fromState no longer
+      // mutates initialState, so durableState can be passed directly without a defensive clone.
+      const s = await setupConditionalCreateDivergence();
+
+      const stale = BatchProcessor.fromState(router, repo, req, s.durableState, s.seedIdentities, s.position);
+      const results: Record<number, BundleEntry> = Object.create(null);
+      while (stale.hasMoreEntries()) {
+        await stale.processNextEntry();
+        const p = stale.takePendingResults();
+        assert(p);
+        Object.assign(results, p);
+      }
+      const reference = (results[1]?.resource as Observation)?.subject?.reference;
+      expect(reference).toStrictEqual(s.preprocessRef);
+      expect(reference).not.toStrictEqual(s.existingRef);
+    });
+
     test('Resume does not reprocess already-completed entries', async () => {
       const bundle = makeReferenceBundle();
       const processor = new BatchProcessor(router, repo, bundle, req);
       const initialState = await processor.preprocess();
+      const seedIdentities = processor.getResolvedIdentities();
 
       // Process the first entry, then take its results (checkpoint) and record the position.
       await processor.processNextEntry();
@@ -1531,7 +1675,7 @@ describe('Batch', () => {
 
       // Rehydrate at the checkpointed position and finish. The resumed processor must only
       // produce results for the remaining entries, never re-producing the first entry.
-      const resumed = BatchProcessor.fromState(router, repo, req, initialState, resumePosition);
+      const resumed = BatchProcessor.fromState(router, repo, req, initialState, seedIdentities, resumePosition);
       const producedIndices = new Set<number>();
       while (resumed.hasMoreEntries()) {
         await resumed.processNextEntry();
