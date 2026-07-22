@@ -68,14 +68,14 @@ describe('Verify email handler', () => {
           id: usr.id,
           secret: usr.secret.slice(0, -1),
         });
-      expect(res1.status).toBe(400);
+      expect(res1).toHaveStatus(400);
 
       // Successfully verify email
       const res2 = await request(app).post('/auth/verifyemail').type('json').send({
         id: usr.id,
         secret: usr.secret,
       });
-      expect(res2.status).toBe(200);
+      expect(res2).toHaveStatus(200);
 
       // Check that the security request was marked as used
       const afterVerifyResult = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', usr.id);
@@ -90,7 +90,7 @@ describe('Verify email handler', () => {
         id: usr.id,
         secret: usr.secret,
       });
-      expect(res3.status).toBe(400);
+      expect(res3).toHaveStatus(400);
     }));
 
   test('Incorrect UserSecurityRequest.type', async () => {
@@ -99,13 +99,13 @@ describe('Verify email handler', () => {
       id: invite.id,
       secret: invite.secret,
     });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
 
     const reset = await createUserSecurityRequest(systemRepo, user, 'reset');
     const res2 = await request(app).post('/auth/verifyemail').type('json').send({
       id: reset.id,
       secret: reset.secret,
     });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
   });
 });

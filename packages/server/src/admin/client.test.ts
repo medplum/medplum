@@ -43,7 +43,7 @@ describe('Client admin', () => {
         name: 'Alice personal client',
         description: 'Alice client description',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('ClientApplication');
     expect(res2.body.id).toBeDefined();
     expect(res2.body.secret).toHaveLength(64);
@@ -52,7 +52,7 @@ describe('Client admin', () => {
     const res3 = await request(app)
       .get('/fhir/R4/ClientApplication/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.resourceType).toBe('ClientApplication');
     expect(res3.body.id).toBe(res2.body.id);
 
@@ -62,7 +62,7 @@ describe('Client admin', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({ foo: 'bar' });
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
   });
 
   test('Create client as superadmin - verify projectID', async () => {
@@ -78,7 +78,7 @@ describe('Client admin', () => {
         description: 'A client for testing creating a client with superadmin privileges.',
       });
 
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect((res.body as ClientApplication).resourceType).toBe('ClientApplication');
     expect((res.body as ClientApplication).id).toBeDefined();
 
@@ -86,7 +86,7 @@ describe('Client admin', () => {
     const res2 = await request(app)
       .get('/fhir/R4/ProjectMembership?profile=' + getReferenceString(res.body as ClientApplication))
       .set('Authorization', 'Bearer ' + superAdminAccessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toBe('Bundle');
 
     // Find the membership

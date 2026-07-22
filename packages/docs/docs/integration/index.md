@@ -101,6 +101,12 @@ Medplum supports the following first party integrations.
       <td>Send and receive faxes via FHIR Communication resources</td>
       <td><a href="/docs/integration/efax">eFax Integration</a></td>
     </tr>
+    <tr>
+      <td><a href="https://www.twilio.com/">Twilio SMS</a></td>
+      <td>Communications</td>
+      <td>Send and receive SMS messages via FHIR Communication resources</td>
+      <td><a href="/docs/integration/twilio-sms">Twilio SMS Integration</a></td>
+    </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Billing</strong></td>
     </tr>

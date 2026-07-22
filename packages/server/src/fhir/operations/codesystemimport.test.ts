@@ -55,14 +55,14 @@ describe('CodeSystem $import', () => {
       .get(`/fhir/R4/CodeSystem?url=${snomedJSON.url}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(resS.status).toStrictEqual(200);
+    expect(resS).toHaveStatus(200);
 
     for (const entry of resS.body.entry ?? EMPTY) {
       const resD = await request(app)
         .delete(`/fhir/R4/CodeSystem/${entry.resource.id}`)
         .set('Authorization', 'Bearer ' + accessToken)
         .send();
-      expect(resD.status).toStrictEqual(200);
+      expect(resD).toHaveStatus(200);
     }
 
     const res = await request(app)
@@ -70,7 +70,7 @@ describe('CodeSystem $import', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(snomedJSON);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     snomed = res.body as CodeSystem;
   });
 
@@ -91,7 +91,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '315306007', display: 'Examination by method (procedure)' } },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -111,7 +111,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
 
     const coding = await assertCodeExists(snomed.id, '37931006');
     expect(coding.isSynonym).toBe(false);
@@ -158,7 +158,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     await assertCodeExists(snomed.id, '702707005');
     const target = await assertCodeExists(snomed.id, '118690002');
@@ -178,7 +178,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '1', display: 'Aspirin' } },
         ],
       });
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].code).toStrictEqual('invalid');
   });
 
@@ -201,7 +201,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res2.status).toStrictEqual(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0].code).toStrictEqual('invalid');
   });
 
@@ -225,7 +225,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res2.status).toStrictEqual(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0].code).toStrictEqual('invalid');
   });
 
@@ -242,7 +242,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '184598004', display: 'Needle biopsy of brain (procedure)' } },
         ],
       });
-    expect(res2.status).toStrictEqual(403);
+    expect(res2).toHaveStatus(403);
     expect(res2.body.issue[0].code).toStrictEqual('forbidden');
   });
 
@@ -259,7 +259,7 @@ describe('CodeSystem $import', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(snomedJSON);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -272,7 +272,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '184598004', display: 'Needle biopsy of brain (procedure)' } },
         ],
       });
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     await assertCodeExists(res.body.id, '184598004');
   });
 
@@ -294,7 +294,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: 'NIBL', display: 'nibling' } },
         ],
       });
-    expect(res2.status).toStrictEqual(400);
+    expect(res2).toHaveStatus(400);
   });
 
   test('Imports concepts and synonym designations', async () => {
@@ -324,7 +324,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
 
     const coding = await assertCodeExists(snomed.id, '37931006');
     expect(coding.isSynonym).toBe(false);
@@ -349,7 +349,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(resCreate.status).toStrictEqual(200);
+    expect(resCreate).toHaveStatus(200);
 
     const resUpsert = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -362,7 +362,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '12345', display: 'Test code' } },
         ],
       });
-    expect(resUpsert.status).toStrictEqual(200);
+    expect(resUpsert).toHaveStatus(200);
 
     const resProperty = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -382,7 +382,7 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(resProperty.status).toStrictEqual(200);
+    expect(resProperty).toHaveStatus(200);
 
     const coding = await assertCodeExists(snomed.id, '12345');
     const result = await assertPropertyExists(snomed.id, '12345', 'parent', '98765');
@@ -405,7 +405,7 @@ describe('CodeSystem $import', () => {
           ],
         },
       });
-    expect(resValueSet.status).toStrictEqual(201);
+    expect(resValueSet).toHaveStatus(201);
     const valueSet = resValueSet.body as ValueSet;
 
     const resExpand = await request(app)
@@ -413,7 +413,7 @@ describe('CodeSystem $import', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
-    expect(resExpand.status).toStrictEqual(200);
+    expect(resExpand).toHaveStatus(200);
     const expanded = resExpand.body as ValueSet;
     expect(expanded.expansion?.contains).toHaveLength(1);
   });

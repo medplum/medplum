@@ -5,7 +5,7 @@
   "prBodyTemplate": "{{{table}}}{{{warnings}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
   "dependencyDashboard": false,
   "automerge": false,
-  "minimumReleaseAge": "3 days",
+  "minimumReleaseAge": "7 days",
   "separateMajorMinor": false,
   "statusCheckNames": {
     "minimumReleaseAge": null

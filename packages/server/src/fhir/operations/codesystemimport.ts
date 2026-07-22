@@ -5,7 +5,8 @@ import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperation
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
+import { getLogger } from '../../logger';
+import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -104,10 +105,16 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   }
 
   try {
-    await repo.withTransaction(async (txRepo) => {
-      const db = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-      await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
-    });
+    await repo.withTransaction(
+      async (txRepo) => {
+        // `importCodeSystem` operates only on CodeSystem derivative tables
+        const db = txRepo.getDatabaseClient(
+          repoAccess.sqlWrite('CodeSystem', { source: 'codeSystemImportHandler.client' })
+        );
+        await importCodeSystem(db, codeSystem, params.concept, params.property, params.designation);
+      },
+      { resourceTypes: ['CodeSystem'], source: 'codeSystemImportHandler' }
+    );
   } catch (err) {
     return [normalizeOperationOutcome(err)];
   }
@@ -163,6 +170,14 @@ export async function importCodeSystem(
     }
     const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
     await query.execute(db);
+  }
+
+  if ((concepts?.length ?? 0) > 1000 || (properties?.length ?? 0) > 1000 || (designations?.length ?? 0) > 1000) {
+    getLogger().warn('Oversized CodeSystem import', {
+      concepts: concepts?.length ?? 0,
+      properties: properties?.length ?? 0,
+      designations: designations?.length ?? 0,
+    });
   }
 }
 

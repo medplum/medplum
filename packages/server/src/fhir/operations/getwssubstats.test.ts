@@ -30,7 +30,7 @@ describe('$get-ws-sub-stats', () => {
     const res = await request(app)
       .get('/fhir/R4/$get-ws-sub-stats')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Returns empty stats when no subscriptions exist for test key prefix', async () => {
@@ -39,7 +39,7 @@ describe('$get-ws-sub-stats', () => {
     const res = await request(app)
       .get('/fhir/R4/$get-ws-sub-stats')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const params = res.body as Parameters;
     const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
@@ -69,7 +69,7 @@ describe('$get-ws-sub-stats', () => {
       const res = await request(app)
         .get('/fhir/R4/$get-ws-sub-stats')
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
 
       const params = res.body as Parameters;
       const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
@@ -132,7 +132,7 @@ describe('$get-ws-sub-stats', () => {
       const res = await request(app)
         .get('/fhir/R4/$get-ws-sub-stats')
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
 
       const params = res.body as Parameters;
       const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;

@@ -60,22 +60,22 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.1075.0",
-    "@aws-sdk/client-cloudformation": "3.1075.0",
-    "@aws-sdk/client-cloudfront": "3.1075.0",
-    "@aws-sdk/client-ecs": "3.1075.0",
-    "@aws-sdk/client-s3": "3.1075.0",
-    "@aws-sdk/client-ssm": "3.1075.0",
-    "@aws-sdk/client-sts": "3.1075.0",
-    "@aws-sdk/types": "3.973.13",
+    "@aws-sdk/client-acm": "3.1089.0",
+    "@aws-sdk/client-cloudformation": "3.1089.0",
+    "@aws-sdk/client-cloudfront": "3.1089.0",
+    "@aws-sdk/client-ecs": "3.1089.0",
+    "@aws-sdk/client-s3": "3.1089.0",
+    "@aws-sdk/client-ssm": "3.1089.0",
+    "@aws-sdk/client-sts": "3.1089.0",
+    "@aws-sdk/types": "3.974.2",
     "@medplum/core": "5.1.26",
     "@medplum/hl7": "5.1.26",
     "commander": "12.1.0",
     "dotenv": "17.4.2",
     "fast-glob": "3.3.3",
-    "iconv-lite": "0.7.2",
+    "iconv-lite": "0.7.3",
     "semver": "7.8.5",
-    "tar": "7.5.17"
+    "tar": "7.5.20"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.1.26",

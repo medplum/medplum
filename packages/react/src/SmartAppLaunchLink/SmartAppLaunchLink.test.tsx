@@ -5,17 +5,12 @@ import type { ClientApplication, Encounter, Patient } from '@medplum/fhirtypes';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SmartAppLaunchLink } from './SmartAppLaunchLink';
 
 describe('SmartAppLaunchLink', () => {
   function setup(children: ReactNode, medplum: MockClient): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-      </MemoryRouter>
-    );
+    render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
   }
 
   test('Happy path', async () => {

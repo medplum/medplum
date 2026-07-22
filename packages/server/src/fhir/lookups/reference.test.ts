@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Observation, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { Observation, Patient, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { DatabaseMode } from '../../database';
 import { getGlobalSystemRepo } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import { lookupTables } from '../searchparameter';
-import type { ReferenceTableRow } from './reference';
+import type { PgQueryable } from '../sql';
 import { ReferenceTable } from './reference';
 
 describe('ReferenceTable', () => {
@@ -30,8 +30,8 @@ describe('ReferenceTable', () => {
     await shutdownApp();
   });
 
-  function sortFn(a: ReferenceTableRow, b: ReferenceTableRow): number {
-    return a.code.localeCompare(b.code);
+  function getReferenceTestClient(resourceTypes: ResourceType | ResourceType[]): PgQueryable {
+    return systemRepo.getDatabaseClient(repoAccess.sqlWrite(resourceTypes));
   }
 
   describe('getColumnName', () => {
@@ -42,14 +42,14 @@ describe('ReferenceTable', () => {
 
   describe('getExistingRows', () => {
     test('returns empty array for empty resources', async () => {
-      const rows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), []);
+      const rows = await refTable.getExistingRows(getReferenceTestClient('Observation'), []);
       expect(rows).toEqual([]);
     });
   });
 
   describe('batchInsertRows', () => {
     test('returns early for empty values without querying DB', async () => {
-      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = getReferenceTestClient('Observation');
       const querySpy = vi.spyOn(client, 'query');
 
       await refTable.batchInsertRows(client, 'Observation', []);
@@ -61,7 +61,7 @@ describe('ReferenceTable', () => {
 
   describe('batchIndexResources', () => {
     test('returns early for empty resources array', async () => {
-      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = getReferenceTestClient('Observation');
       const querySpy = vi.spyOn(client, 'query');
 
       // Should not throw and should return early
@@ -83,9 +83,8 @@ describe('ReferenceTable', () => {
         code: { coding: [{ system: 'http://loinc.org', code: '3141-9' }] },
       });
 
-      const createRows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
-      expect(createRows).toHaveLength(2);
-      expect(createRows.sort(sortFn)).toStrictEqual([
+      const createRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
+      expect(createRows).toContainExactly([
         {
           resourceId: obs.id,
           code: 'patient',
@@ -104,9 +103,8 @@ describe('ReferenceTable', () => {
         encounter: { reference: 'Encounter/' + encounterId },
       });
 
-      const updateRows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
-      expect(updateRows).toHaveLength(3);
-      expect(updateRows.sort(sortFn)).toStrictEqual([
+      const updateRows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
+      expect(updateRows).toContainExactly([
         {
           resourceId: obs.id,
           code: 'encounter',
@@ -125,7 +123,7 @@ describe('ReferenceTable', () => {
       ]);
 
       await systemRepo.deleteResource('Observation', obs.id);
-      const deleteRows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
+      const deleteRows = await refTable.getExistingRows(getReferenceTestClient('Observation'), [obs]);
       expect(deleteRows).toHaveLength(0);
     });
 
@@ -143,7 +141,11 @@ describe('ReferenceTable', () => {
       };
 
       await expect(
-        refTable.batchIndexResources(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs, patient], true)
+        refTable.batchIndexResources(
+          getReferenceTestClient([obs.resourceType, patient.resourceType]),
+          [obs, patient],
+          true
+        )
       ).rejects.toThrow('batchIndexResources must be called with resources of the same type: Patient vs Observation');
     });
 
@@ -163,9 +165,8 @@ describe('ReferenceTable', () => {
         status: 'final', // Change something else, not the reference
       });
 
-      const rows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
-      expect(rows).toHaveLength(2);
-      expect(rows.sort(sortFn)).toStrictEqual([
+      const rows = await refTable.getExistingRows(getReferenceTestClient(obs.resourceType), [obs]);
+      expect(rows).toContainExactly([
         {
           resourceId: obs.id,
           code: 'patient',
@@ -197,11 +198,11 @@ describe('ReferenceTable', () => {
 
       // This should process all resources with yielding between batches
       await expect(
-        refTable.batchIndexResources(systemRepo.getDatabaseClient(DatabaseMode.WRITER), resources, true, batchSize)
+        refTable.batchIndexResources(getReferenceTestClient(resources[0].resourceType), resources, true, batchSize)
       ).resolves.toBeUndefined();
 
       // Verify at least one resource was indexed
-      const rows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [resources[0]]);
+      const rows = await refTable.getExistingRows(getReferenceTestClient(resources[0].resourceType), [resources[0]]);
       expect(rows.length).toBeGreaterThan(0);
     });
   });
@@ -220,9 +221,9 @@ describe('ReferenceTable', () => {
         throw extractError;
       });
 
-      await expect(
-        refTable.batchIndexResources(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs], true)
-      ).rejects.toThrow('Test extraction error');
+      await expect(refTable.batchIndexResources(getReferenceTestClient(obs.resourceType), [obs], true)).rejects.toThrow(
+        'Test extraction error'
+      );
 
       extractValuesSpy.mockRestore();
     });
@@ -248,7 +249,9 @@ describe('ReferenceTable', () => {
 
       // The requester reference uses a local reference to contained resource
       // This tests that references are properly extracted
-      const rows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [serviceRequest]);
+      const rows = await refTable.getExistingRows(getReferenceTestClient(serviceRequest.resourceType), [
+        serviceRequest,
+      ]);
       expect(rows.length).toBeGreaterThan(0);
 
       // Verify the subject reference was indexed (patient reference)
@@ -264,7 +267,7 @@ describe('ReferenceTable', () => {
         name: [{ text: 'Test Patient' }],
       });
 
-      const rows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [patient]);
+      const rows = await refTable.getExistingRows(getReferenceTestClient(patient.resourceType), [patient]);
       // Patient with no references should have no reference rows
       expect(rows).toHaveLength(0);
     });

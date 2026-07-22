@@ -23,6 +23,7 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
+import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
@@ -91,7 +92,7 @@ export function App(): JSX.Element | null {
     return null;
   }
 
-  return (
+  const appShellContent = (
     <AppShell
       logo={<Logo size={24} />}
       pathname={location.pathname}
@@ -275,4 +276,6 @@ export function App(): JSX.Element | null {
       </Suspense>
     </AppShell>
   );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
 }

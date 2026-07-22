@@ -1,0 +1,58 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--landing-surface-inset);
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotRed {
+  background: #ff5f57;
+}
+
+.dotYellow {
+  background: #febc2e;
+}
+
+.dotGreen {
+  background: #28c840;
+}
+
+.address {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--landing-surface-elevated);
+  border: 1px solid var(--landing-border);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 10.5px;
+  color: var(--landing-color-muted);
+}
+
+.address svg {
+  color: var(--oc-gray-6);
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .address svg {
+  color: var(--oc-green-4);
+}
