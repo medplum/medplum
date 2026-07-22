@@ -1,0 +1,93 @@
+.container {
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+}
+
+.hourAxis {
+  position: relative;
+  height: 14px;
+  margin-left: 96px;
+}
+
+.hourLabel {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.laneRow {
+  min-height: 32px;
+}
+
+.laneLabel {
+  width: 88px;
+  flex: 0 0 88px;
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 28px;
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-gray-1);
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  .track {
+    background: var(--mantine-color-dark-6);
+  }
+}
+
+.gridline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--mantine-color-gray-3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .gridline {
+    background: var(--mantine-color-dark-4);
+  }
+}
+
+.busyBlock {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: var(--mantine-color-gray-6);
+}
+
+.candidateBlock {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: var(--mantine-color-teal-6);
+  outline: 2px solid var(--mantine-color-teal-8);
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+.legendSwatchBusy,
+.legendSwatchCandidate {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legendSwatchBusy {
+  background: var(--mantine-color-gray-6);
+}
+
+.legendSwatchCandidate {
+  background: var(--mantine-color-teal-6);
+  outline: 2px solid var(--mantine-color-teal-8);
+  outline-offset: -1px;
+}

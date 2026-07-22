@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Stack, Text } from '@mantine/core';
+import { Button, Stack, Text, Textarea, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
@@ -19,6 +19,7 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
+  Reference,
   Slot,
 } from '@medplum/fhirtypes';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
@@ -31,10 +32,19 @@ import {
   SchedulingPlanDefinitionURI,
   SchedulingTransientIdentifier,
 } from '../../utils/scheduling';
+import { ComboDayView } from './ComboDayView';
 
 type BookAppointmentFormProps = {
   appointment: Appointment;
   healthcareService: HealthcareService;
+  // When provided, renders the combo's scoped 3-lane day-view above the
+  // patient picker (spec §4.3) — omitted for the legacy single-schedule flow.
+  comboActors?: { ref: Reference; label: string }[];
+  // Pre-fills the patient picker below when the admin already selected a
+  // patient in the criteria panel before searching — still just a default,
+  // not locked in: the picker remains editable in case the wrong patient
+  // carried over or the admin wants to book for someone else instead.
+  defaultPatient?: WithId<Patient>;
   onSuccess?: (result: {
     appointment: WithId<Appointment>;
     slots: WithId<Slot>[];
@@ -45,10 +55,10 @@ type BookAppointmentFormProps = {
 
 export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
-  const [patient, setPatient] = useState<WithId<Patient> | undefined>(undefined);
+  const { appointment, healthcareService, comboActors, defaultPatient, onSuccess } = props;
+  const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
+  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const { appointment, healthcareService, onSuccess } = props;
 
   const bookEncounter = useCallback(
     async (appointment: WithId<Appointment>): Promise<WithId<Encounter> | undefined> => {
@@ -103,6 +113,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
       // merge patient into participants list
       const booking = {
         ...appointment,
+        comment: reason || undefined,
         participant: [
           ...appointment.participant,
           {
@@ -151,7 +162,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
         setLoading(false);
       }
     },
-    [medplum, appointment, bookEncounter, onSuccess]
+    [medplum, appointment, reason, bookEncounter, onSuccess]
   );
 
   const handleSubmit = useCallback(async () => {
@@ -174,12 +185,33 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
     <Form onSubmit={handleSubmit}>
       <Stack gap="md">
         <Text size="lg">{formatPeriod({ start: props.appointment.start, end: props.appointment.end })}</Text>
+
+        {comboActors && comboActors.length > 0 && (
+          <Stack gap="xs">
+            <Title order={5}>Resources at this time</Title>
+            <ComboDayView
+              actors={comboActors}
+              candidateStart={props.appointment.start as string}
+              candidateEnd={props.appointment.end as string}
+            />
+          </Stack>
+        )}
+
         <ResourceInput<WithId<Patient>>
           label="Patient"
           resourceType="Patient"
           name="Patient-id"
           required={true}
+          defaultValue={defaultPatient}
           onChange={choosePatient}
+          disabled={loading}
+        />
+
+        <Textarea
+          label="Reason / comment"
+          placeholder="Optional"
+          value={reason}
+          onChange={(e) => setReason(e.currentTarget.value)}
           disabled={loading}
         />
 

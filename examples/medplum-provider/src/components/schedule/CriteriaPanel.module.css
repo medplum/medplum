@@ -1,0 +1,17 @@
+.dateRange {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+
+.dateInput {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border-radius: var(--mantine-radius-sm);
+  border: 1px solid var(--mantine-color-default-border);
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  padding: 0 var(--mantine-spacing-xs);
+  font-size: var(--mantine-font-size-sm);
+}
