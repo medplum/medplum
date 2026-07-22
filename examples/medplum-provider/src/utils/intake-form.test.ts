@@ -10,6 +10,9 @@ const mockAnswers = {
   dob: { valueDate: '1990-01-01' },
   phone: { valueString: '555-5555' },
   ssn: { valueString: '123-45-6789' },
+  'national-id': { valueString: 'NAT-123456' },
+  'passport-number': { valueString: 'P1234567' },
+  'birth-certificate-number': { valueString: 'BCFN-98765' },
   street: { valueString: '1 Main St' },
   city: { valueString: 'Springfield' },
   state: { valueCoding: { code: 'CA' } },
@@ -65,6 +68,22 @@ const mockIntakeUtils = vi.hoisted(() => ({
     veteran: 'veteran-url',
   },
   getGroupRepeatedAnswers: vi.fn((_, __, groupId) => {
+    if (groupId === 'emergency-contact') {
+      return [
+        {
+          'emergency-contact-first-name': { valueString: 'Morgan' },
+          'emergency-contact-last-name': { valueString: 'Doe' },
+          'emergency-contact-phone': { valueString: '555-1212' },
+          'emergency-contact-relationship': {
+            valueCoding: {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+              code: 'N',
+              display: 'Next of Kin',
+            },
+          },
+        },
+      ];
+    }
     if (groupId === 'coverage-information') {
       return [
         {
@@ -127,6 +146,27 @@ describe('onboardPatient', () => {
 
     expect(patient.id).toBe('patient-1');
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Patient' }));
+    const createdPatient = createSpy.mock.calls.find(([resource]) => resource.resourceType === 'Patient')?.[0] as Patient;
+    expect(createdPatient.identifier).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ system: 'http://hl7.org/fhir/sid/us-ssn', value: '123-45-6789' }),
+        expect.objectContaining({ value: 'NAT-123456', type: expect.objectContaining({ text: 'National unique individual identifier' }) }),
+        expect.objectContaining({ value: 'P1234567', type: expect.objectContaining({ text: 'Passport number' }) }),
+        expect.objectContaining({ value: 'BCFN-98765', type: expect.objectContaining({ text: 'Birth Certificate File Number' }) }),
+      ])
+    );
+    expect(createdPatient.contact).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: expect.objectContaining({ family: 'Doe' }),
+          relationship: [
+            expect.objectContaining({
+              coding: [expect.objectContaining({ code: 'N', display: 'Next of Kin' })],
+            }),
+          ],
+        }),
+      ])
+    );
     expect(mockIntakeUtils.addExtension).toHaveBeenCalledWith(
       expect.objectContaining({}),
       'race-url',

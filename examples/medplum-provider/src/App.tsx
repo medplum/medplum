@@ -4,17 +4,17 @@ import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
-  IconApps,
-  IconBook2,
-  IconCalendarEvent,
-  IconClipboardCheck,
-  IconMail,
-  IconPill,
-  IconPrinter,
-  IconQrcode,
-  IconSettingsAutomation,
-  IconUserPlus,
-  IconUsers,
+    IconApps,
+    IconBook2,
+    IconCalendarEvent,
+    IconClipboardCheck,
+    IconMail,
+    IconPill,
+    IconPrinter,
+    IconQrcode,
+    IconSettingsAutomation,
+    IconUserPlus,
+    IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
@@ -222,6 +222,7 @@ export function App(): JSX.Element | null {
                 <Route path="DiagnosticReport/:diagnosticReportId" element={<LabsPage tab="completed" />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
+                <Route path="MedicationStatement/:medicationStatementId" element={<MedicationsPage />} />
                 <Route path="DocumentReference" element={<DocumentsPage />} />
                 <Route path="DocumentReference/:documentId" element={<DocumentsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />

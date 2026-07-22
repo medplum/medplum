@@ -20,6 +20,7 @@ import {
 } from '@mantine/core';
 import type { MedicationOrderDrugInput, MedplumClient, WithId } from '@medplum/core';
 import {
+  addProfileToResource,
   buildMedicationRequestResponseLostStatusReason,
   createReference,
   getCodeBySystem,
@@ -72,6 +73,8 @@ import {
 import { ScriptSurePracticeSwitcher, useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderSetTabPanel } from './OrderSetTabPanel';
+
+const MEDICATION_REQUEST_PROFILE_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest';
 
 function todayYmd(): string {
   return new Date().toISOString().slice(0, 10);
@@ -938,40 +941,43 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
     const qtyUnit =
       sigOptions.length > 0 && sigOptions[sigIndex] ? sigOptions[sigIndex].quantityQualifier : manualQtyQualifier;
 
-    return {
-      resourceType: 'MedicationRequest',
-      status: 'draft',
-      intent: 'order',
-      subject: createReference(patient),
-      requester: createReference(requester),
-      authoredOn: writtenDateYmd,
-      medicationCodeableConcept: medicationToCodeableConcept(selectedFormat, termMedication),
-      substitution: { allowedBoolean: useSubstitution },
-      reasonReference: primaryCondition?.id ? [{ reference: `Condition/${primaryCondition.id}` }] : undefined,
-      insurance: coverage?.id ? [{ reference: `Coverage/${coverage.id}` }] : undefined,
-      dosageInstruction: [
-        {
-          text: sigLine3,
-          patientInstruction: patientInstruction.trim() || undefined,
+    return addProfileToResource(
+      {
+        resourceType: 'MedicationRequest',
+        status: 'draft',
+        intent: 'order',
+        subject: createReference(patient),
+        requester: createReference(requester),
+        authoredOn: writtenDateYmd,
+        medicationCodeableConcept: medicationToCodeableConcept(selectedFormat, termMedication),
+        substitution: { allowedBoolean: useSubstitution },
+        reasonReference: primaryCondition?.id ? [{ reference: `Condition/${primaryCondition.id}` }] : undefined,
+        insurance: coverage?.id ? [{ reference: `Coverage/${coverage.id}` }] : undefined,
+        dosageInstruction: [
+          {
+            text: sigLine3,
+            patientInstruction: patientInstruction.trim() || undefined,
+          },
+        ],
+        note: notesPharmacist.trim() ? [{ text: notesPharmacist.trim() }] : undefined,
+        dispenseRequest: {
+          quantity: { value: q, unit: qtyUnit },
+          numberOfRepeatsAllowed: refill,
+          expectedSupplyDuration: {
+            value: daysSupply,
+            unit: 'days',
+            system: 'http://unitsofmeasure.org',
+            code: 'd',
+          },
+          validityPeriod: {
+            start: writtenDateYmd,
+            ...(fillDateYmd.trim() ? { end: fillDateYmd.trim() } : {}),
+          },
+          performer: pharmacyOrg?.id ? createReference(pharmacyOrg) : undefined,
         },
-      ],
-      note: notesPharmacist.trim() ? [{ text: notesPharmacist.trim() }] : undefined,
-      dispenseRequest: {
-        quantity: { value: q, unit: qtyUnit },
-        numberOfRepeatsAllowed: refill,
-        expectedSupplyDuration: {
-          value: daysSupply,
-          unit: 'days',
-          system: 'http://unitsofmeasure.org',
-          code: 'd',
-        },
-        validityPeriod: {
-          start: writtenDateYmd,
-          ...(fillDateYmd.trim() ? { end: fillDateYmd.trim() } : {}),
-        },
-        performer: pharmacyOrg?.id ? createReference(pharmacyOrg) : undefined,
       },
-    };
+      MEDICATION_REQUEST_PROFILE_URL
+    );
   };
 
   /** Clears the medication selection so the prescriber can add the next cart line. */

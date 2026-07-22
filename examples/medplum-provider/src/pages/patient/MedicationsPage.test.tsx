@@ -8,7 +8,7 @@ import type {
   MedicationCheckoutResponse,
   WithId,
 } from '@medplum/core';
-import type { Bundle, MedicationRequest } from '@medplum/fhirtypes';
+import type { Bundle, MedicationDispense, MedicationRequest, MedicationStatement } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
@@ -81,6 +81,27 @@ function emptyMrBundle(total = 0, entries: WithId<MedicationRequest>[] = []): Bu
   };
 }
 
+function emptyMsBundle(total = 0, entries: WithId<MedicationStatement>[] = []): Bundle<WithId<MedicationStatement>> {
+  return {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    total,
+    entry: entries.map((resource) => ({ resource })),
+  };
+}
+
+function emptyDispenseBundle(
+  total = 0,
+  entries: WithId<MedicationDispense>[] = []
+): Bundle<WithId<MedicationDispense>> {
+  return {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    total,
+    entry: entries.map((resource) => ({ resource })),
+  };
+}
+
 function paramsString(call: unknown): string {
   // Mock calls are typed as `unknown[]`, but our `medplum.search('MedicationRequest', params)`
   // call always passes a `URLSearchParams` instance — cast through a narrow helper so the lint
@@ -121,6 +142,10 @@ async function setup(url: string, medplum = new MockClient()): Promise<SetupHand
             <Routes>
               <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
               <Route path="/Patient/:patientId/MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
+              <Route
+                path="/Patient/:patientId/MedicationStatement/:medicationStatementId"
+                element={<MedicationsPage />}
+              />
             </Routes>
           </MantineProvider>
         </MemoryRouter>
@@ -169,9 +194,9 @@ describe('MedicationsPage', () => {
     await waitFor(() => {
       expect(searchSpy).toHaveBeenCalled();
     });
-    const lastCall = searchSpy.mock.calls.at(-1);
-    expect(lastCall?.[0]).toBe('MedicationRequest');
-    const params = paramsString(lastCall?.[1]);
+    const medicationRequestCall = searchSpy.mock.calls.find((call) => call[0] === 'MedicationRequest');
+    expect(medicationRequestCall).toBeDefined();
+    const params = paramsString(medicationRequestCall?.[1]);
     expect(params).toContain('status=active%2Con-hold%2Cunknown');
     expect(params).toContain('_count=20');
     expect(params).toContain('_sort=-_lastUpdated');
@@ -185,7 +210,9 @@ describe('MedicationsPage', () => {
     await waitFor(() => {
       expect(searchSpy).toHaveBeenCalled();
     });
-    const params = paramsString(searchSpy.mock.calls.at(-1)?.[1]);
+    const medicationRequestCall = searchSpy.mock.calls.find((call) => call[0] === 'MedicationRequest');
+    expect(medicationRequestCall).toBeDefined();
+    const params = paramsString(medicationRequestCall?.[1]);
     expect(params).toContain('status=draft');
   });
 
@@ -454,5 +481,83 @@ describe('MedicationsPage', () => {
 
     expect(await screen.findByText('Atorvastatin 20 mg tablet')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Checkout/ })).not.toBeInTheDocument();
+  });
+
+  test('Includes patient medication history from MedicationStatement records', async () => {
+    const medplum = new MockClient();
+    const activePrescription: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'mr-active',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Atorvastatin 20 mg tablet' },
+      meta: { lastUpdated: '2024-01-02T00:00:00Z' },
+    };
+    const patientMedication: WithId<MedicationStatement> = {
+      resourceType: 'MedicationStatement',
+      id: 'ms-active',
+      status: 'active',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Aspirin 81 mg tablet' },
+      effectiveDateTime: '2024-01-03',
+      meta: { lastUpdated: '2024-01-03T00:00:00Z' },
+    };
+    vi.spyOn(medplum, 'search').mockImplementation((async (resourceType: string) => {
+      if (resourceType === 'MedicationStatement') {
+        return emptyMsBundle(1, [patientMedication]);
+      }
+      return emptyMrBundle(1, [activePrescription]);
+    }) as unknown as typeof medplum.search);
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`, medplum);
+
+    expect(await screen.findByText('Aspirin 81 mg tablet')).toBeInTheDocument();
+    expect(screen.getByText('Atorvastatin 20 mg tablet')).toBeInTheDocument();
+    expect(screen.getByText('Medication')).toBeInTheDocument();
+    expect(screen.getByText('Prescription')).toBeInTheDocument();
+  });
+
+  test('Shows linked MedicationDispense fulfillment events for the selected prescription', async () => {
+    const medplum = new MockClient();
+    const activePrescription: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'mr-active',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Atorvastatin 20 mg tablet' },
+    };
+    const dispense: WithId<MedicationDispense> = {
+      resourceType: 'MedicationDispense',
+      id: 'dispense-1',
+      status: 'completed',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      authorizingPrescription: [{ reference: 'MedicationRequest/mr-active' }],
+      quantity: { value: 30, unit: 'tablet' },
+      daysSupply: { value: 30, unit: 'days' },
+      whenHandedOver: '2024-02-03',
+      performer: [{ actor: { reference: 'Organization/pharmacy-1', display: 'Main Street Pharmacy' } }],
+    };
+    const searchSpy = vi.spyOn(medplum, 'search').mockImplementation((async (resourceType: string) => {
+      if (resourceType === 'MedicationDispense') {
+        return emptyDispenseBundle(1, [dispense]);
+      }
+      if (resourceType === 'MedicationStatement') {
+        return emptyMsBundle(0);
+      }
+      return emptyMrBundle(1, [activePrescription]);
+    }) as unknown as typeof medplum.search);
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/mr-active`, medplum);
+
+    expect(await screen.findByText('Fulfillment')).toBeInTheDocument();
+    expect(screen.getByText('Handed over Feb 3, 2024')).toBeInTheDocument();
+    expect(screen.getByText('Quantity: 30 tablet')).toBeInTheDocument();
+    expect(screen.getByText('Dispenser: Main Street Pharmacy')).toBeInTheDocument();
+
+    const dispenseCall = searchSpy.mock.calls.find((call) => call[0] === 'MedicationDispense');
+    expect(dispenseCall).toBeDefined();
+    expect(paramsString(dispenseCall?.[1])).toContain('prescription=MedicationRequest%2Fmr-active');
   });
 });

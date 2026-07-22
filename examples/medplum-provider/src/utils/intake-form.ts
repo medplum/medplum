@@ -34,6 +34,7 @@ export async function onboardPatient(
   response: QuestionnaireResponse
 ): Promise<Patient> {
   const answers = getQuestionnaireAnswers(response);
+  const identifierTypeSystem = 'http://terminology.hl7.org/CodeSystem/v2-0203';
 
   let patient: Patient = {
     resourceType: 'Patient',
@@ -65,37 +66,22 @@ export async function onboardPatient(
     patient.telecom = [{ system: 'phone', value: answers['phone'].valueString }];
   }
 
-  if (answers['ssn']?.valueString) {
-    patient.identifier = [
-      {
-        type: {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-              code: 'SS',
-            },
-          ],
-        },
-        system: 'http://hl7.org/fhir/sid/us-ssn',
-        value: answers['ssn'].valueString,
-      },
-    ];
-  }
+  addIdentifier(patient, answers['ssn']?.valueString, identifierTypeSystem, 'SS', 'Social Security Number', 'http://hl7.org/fhir/sid/us-ssn');
+  addIdentifier(patient, answers['national-id']?.valueString, identifierTypeSystem, 'NI', 'National unique individual identifier');
+  addIdentifier(patient, answers['passport-number']?.valueString, identifierTypeSystem, 'PPN', 'Passport number');
+  addIdentifier(
+    patient,
+    answers['birth-certificate-number']?.valueString,
+    identifierTypeSystem,
+    'BCFN',
+    'Birth Certificate File Number'
+  );
 
   const emergencyContacts = getGroupRepeatedAnswers(questionnaire, response, 'emergency-contact');
   for (const contact of emergencyContacts ?? EMPTY) {
+    const relationship = contact['emergency-contact-relationship']?.valueCoding;
     patient.contact = append(patient.contact, {
-      relationship: [
-        {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-              code: 'EP',
-              display: 'Emergency contact person',
-            },
-          ],
-        },
-      ],
+      relationship: relationship ? [{ coding: [relationship] }] : undefined,
       name: getHumanName(contact, 'emergency-contact-'),
       telecom: [{ system: 'phone', value: contact['emergency-contact-phone']?.valueString }],
     });
@@ -266,4 +252,32 @@ export async function onboardPatient(
   );
 
   return patient;
+}
+
+function addIdentifier(
+  patient: Patient,
+  value: string | undefined,
+  typeSystem: string,
+  typeCode: string,
+  typeDisplay: string,
+  system?: string
+): void {
+  if (!value) {
+    return;
+  }
+
+  patient.identifier = append(patient.identifier, {
+    type: {
+      coding: [
+        {
+          system: typeSystem,
+          code: typeCode,
+          display: typeDisplay,
+        },
+      ],
+      text: typeDisplay,
+    },
+    system,
+    value,
+  });
 }

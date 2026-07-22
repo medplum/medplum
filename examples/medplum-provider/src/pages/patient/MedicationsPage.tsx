@@ -24,20 +24,20 @@ import {
   DOSESPOT_PATIENT_SYNC_BOT,
   DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
 } from '@medplum/dosespot-react';
-import type { MedicationRequest } from '@medplum/fhirtypes';
+import type { MedicationDispense, MedicationRequest, MedicationStatement, Resource } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import {
-  SCRIPTSURE_IFRAME_BOT,
-  SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
-  useScriptSureCart,
-  useScriptSureOrderMedication,
+    SCRIPTSURE_IFRAME_BOT,
+    SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
+    useScriptSureCart,
+    useScriptSureOrderMedication,
 } from '@medplum/scriptsure-react';
 import { IconPlus, IconShoppingCart, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { MedicationRequestDetails } from '../../components/meds/MedicationRequestDetails';
-import type { MedTab } from '../../components/meds/MedListItem';
+import type { MedicationListResource, MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
 import { MedSelectEmpty } from '../../components/meds/MedSelectEmpty';
 import { PrescriptionIFrameModal } from '../../components/meds/PrescriptionIFrameModal';
@@ -62,6 +62,11 @@ const TAB_TO_STATUS_PARAM: Record<MedTab, string> = {
   completed: 'completed,stopped,cancelled,entered-in-error',
 };
 
+const TAB_TO_MEDICATION_STATEMENT_STATUS_PARAM: Partial<Record<MedTab, string>> = {
+  active: 'active,intended,on-hold,unknown',
+  completed: 'completed,stopped,not-taken,entered-in-error',
+};
+
 const STATUS_PARAM_TO_TAB: Record<string, MedTab> = {
   'active,on-hold,unknown': 'active',
   draft: 'draft',
@@ -71,7 +76,7 @@ const STATUS_PARAM_TO_TAB: Record<string, MedTab> = {
 const DEFAULT_TAB: MedTab = 'active';
 
 export function MedicationsPage(): JSX.Element {
-  const { patientId, medicationRequestId } = useParams();
+  const { patientId, medicationRequestId, medicationStatementId } = useParams();
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
@@ -120,7 +125,7 @@ export function MedicationsPage(): JSX.Element {
     [setSearchParams]
   );
 
-  const [orders, setOrders] = useState<MedicationRequest[]>([]);
+  const [orders, setOrders] = useState<MedicationListResource[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
@@ -148,7 +153,8 @@ export function MedicationsPage(): JSX.Element {
   }, [iframeUrl]);
   /** MR id for iframe session + polling when URL/detail selection lags behind a new order. */
   const [iframePollMrId, setIframePollMrId] = useState<string | undefined>();
-  const [fetchedOrder, setFetchedOrder] = useState<MedicationRequest | undefined>();
+  const [fetchedOrder, setFetchedOrder] = useState<MedicationListResource | undefined>();
+  const [selectedMedicationDispenses, setSelectedMedicationDispenses] = useState<MedicationDispense[]>([]);
   /** Draft MR ids the MedCart checkout modal polls for sync after a cart checkout. */
   const [cartWatchIds, setCartWatchIds] = useState<string[]>([]);
   /** Count of draft (cart) MedicationRequests for the patient, shown in the order modal. */
@@ -158,13 +164,22 @@ export function MedicationsPage(): JSX.Element {
   /** MR id whose "remove from cart" request is in flight (drives the row spinner). */
   const [removingId, setRemovingId] = useState<string | undefined>();
 
+  const selectedResourceType = medicationStatementId ? 'MedicationStatement' : medicationRequestId ? 'MedicationRequest' : undefined;
+  const selectedMedicationId = medicationStatementId ?? medicationRequestId;
+
   const orderFromList = useMemo(
-    () => (medicationRequestId ? orders.find((mr) => mr.id === medicationRequestId) : undefined),
-    [medicationRequestId, orders]
+    () =>
+      selectedMedicationId && selectedResourceType
+        ? orders.find((mr) => mr.resourceType === selectedResourceType && mr.id === selectedMedicationId)
+        : undefined,
+    [selectedMedicationId, selectedResourceType, orders]
   );
 
-  const currentOrder = medicationRequestId
-    ? (orderFromList ?? (fetchedOrder?.id === medicationRequestId ? fetchedOrder : undefined))
+  const currentOrder = selectedMedicationId
+    ? (orderFromList ??
+      (fetchedOrder?.resourceType === selectedResourceType && fetchedOrder?.id === selectedMedicationId
+        ? fetchedOrder
+        : undefined))
     : undefined;
 
   const patient = usePatient();
@@ -179,26 +194,56 @@ export function MedicationsPage(): JSX.Element {
       return;
     }
     try {
-      const params = new URLSearchParams({
+      const count = String(offset + PAGE_SIZE);
+      const medicationRequestParams = new URLSearchParams({
         subject: patientReference,
         status: statusParam,
-        _count: String(PAGE_SIZE),
-        _offset: String(offset),
+        _count: count,
+        _offset: '0',
         _sort: '-_lastUpdated',
         _total: 'accurate',
         _fields:
           '_lastUpdated,status,intent,medicationCodeableConcept,dosageInstruction,dispenseRequest,subject,requester,authoredOn,identifier,extension',
       });
-      const bundle = await medplum.search('MedicationRequest', params, { cache: 'no-cache' });
-      const entries: MedicationRequest[] = [];
-      for (const entry of bundle.entry ?? []) {
+      const medicationStatementStatus = TAB_TO_MEDICATION_STATEMENT_STATUS_PARAM[activeTab];
+      const medicationStatementSearch = medicationStatementStatus
+        ? medplum.search(
+            'MedicationStatement',
+            new URLSearchParams({
+              subject: patientReference,
+              status: medicationStatementStatus,
+              _count: count,
+              _offset: '0',
+              _sort: '-_lastUpdated',
+              _total: 'accurate',
+              _fields:
+                '_lastUpdated,status,medicationCodeableConcept,dosage,subject,informationSource,effectiveDateTime,dateAsserted,reasonCode,note,identifier',
+            }),
+            { cache: 'no-cache' }
+          )
+        : undefined;
+      const [medicationRequestBundle, medicationStatementBundle] = await Promise.all([
+        medplum.search('MedicationRequest', medicationRequestParams, { cache: 'no-cache' }),
+        medicationStatementSearch,
+      ]);
+      const entries: MedicationListResource[] = [];
+      for (const entry of medicationRequestBundle.entry ?? []) {
         if (entry.resource?.resourceType === 'MedicationRequest') {
           entries.push(entry.resource);
         }
       }
-      setOrders(entries);
-      if (typeof bundle.total === 'number') {
-        setTotal(bundle.total);
+      for (const entry of medicationStatementBundle?.entry ?? []) {
+        if (entry.resource?.resourceType === 'MedicationStatement') {
+          entries.push(entry.resource);
+        }
+      }
+      entries.sort(compareMedicationResourcesByLastUpdatedDescending);
+      setOrders(entries.slice(offset, offset + PAGE_SIZE));
+      if (
+        typeof medicationRequestBundle.total === 'number' ||
+        typeof medicationStatementBundle?.total === 'number'
+      ) {
+        setTotal((medicationRequestBundle.total ?? 0) + (medicationStatementBundle?.total ?? 0));
       } else {
         // Fallback for servers that omit `total`: assume "at least this many" so paging
         // controls remain visible if the current page is full.
@@ -207,7 +252,7 @@ export function MedicationsPage(): JSX.Element {
     } catch (error) {
       showErrorNotification(error);
     }
-  }, [medplum, patientReference, statusParam, offset]);
+  }, [medplum, patientReference, statusParam, offset, activeTab]);
 
   const fetchData = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -230,18 +275,18 @@ export function MedicationsPage(): JSX.Element {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const getOrderUrl = useCallback(
-    (order: MedicationRequest): string => {
-      return `/Patient/${patientId}/MedicationRequest/${order.id}`;
+    (order: MedicationListResource): string => {
+      return `/Patient/${patientId}/${order.resourceType}/${order.id}`;
     },
     [patientId]
   );
 
   useEffect(() => {
     let cancelled = false;
-    if (medicationRequestId && !orderFromList) {
+    if (selectedMedicationId && selectedResourceType && !orderFromList) {
       medplum
-        .readResource('MedicationRequest', medicationRequestId)
-        .then((mr) => {
+        .readResource(selectedResourceType, selectedMedicationId)
+        .then((mr: MedicationRequest | MedicationStatement) => {
           if (!cancelled) {
             setFetchedOrder(mr);
           }
@@ -251,7 +296,42 @@ export function MedicationsPage(): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [medicationRequestId, orderFromList, medplum]);
+  }, [selectedMedicationId, selectedResourceType, orderFromList, medplum]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (currentOrder?.resourceType !== 'MedicationRequest' || !currentOrder.id) {
+      setSelectedMedicationDispenses([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+    medplum
+      .search(
+        'MedicationDispense',
+        {
+          prescription: `MedicationRequest/${currentOrder.id}`,
+          _count: '20',
+          _sort: '-_lastUpdated',
+          _fields: 'status,medicationCodeableConcept,quantity,daysSupply,whenPrepared,whenHandedOver,performer,authorizingPrescription',
+        },
+        { cache: 'no-cache' }
+      )
+      .then((bundle) => {
+        if (cancelled) {
+          return;
+        }
+        const dispenses = (bundle.entry ?? [])
+          .map((entry) => entry.resource)
+          .filter((resource): resource is MedicationDispense => resource?.resourceType === 'MedicationDispense')
+          .sort(compareMedicationDispensesDescending);
+        setSelectedMedicationDispenses(dispenses);
+      })
+      .catch(showErrorNotification);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentOrder, medplum]);
 
   useEffect(() => {
     if (!hasDoseSpot || !patient?.id) {
@@ -327,7 +407,7 @@ export function MedicationsPage(): JSX.Element {
   );
 
   const handleOpenScriptSureFromDetails = useCallback(async (): Promise<void> => {
-    if (!patientId || !currentOrder?.id) {
+    if (!patientId || !currentOrder?.id || currentOrder.resourceType !== 'MedicationRequest') {
       return;
     }
     try {
@@ -366,7 +446,7 @@ export function MedicationsPage(): JSX.Element {
       });
       return res?.url ?? iframeUrlRef.current;
     }
-    const mrId = iframePollMrId ?? currentOrder?.id;
+    const mrId = iframePollMrId ?? (currentOrder?.resourceType === 'MedicationRequest' ? currentOrder.id : undefined);
     if (!mrId) {
       return iframeUrlRef.current;
     }
@@ -587,13 +667,16 @@ export function MedicationsPage(): JSX.Element {
   // The MedCart widget URL carries a fresh session token from `$checkout-medications`
   // and re-running checkout would re-submit the cart, so that mode never refreshes.
   // Other modes refresh the single-order/chart session token in place.
-  const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId || currentOrder?.id);
+  const canRefreshLaunchUrl =
+    !isCartCheckoutMode &&
+    Boolean(iframePollMrId || (currentOrder?.resourceType === 'MedicationRequest' && currentOrder.id));
   const modalRefreshLaunchUrl = canRefreshLaunchUrl ? refreshLaunchUrl : undefined;
   let medicationRequestIdsToWatch: string[] | undefined;
   if (isCartCheckoutMode) {
     medicationRequestIdsToWatch = cartWatchIds;
   } else {
-    const singleWatchId = iframePollMrId ?? currentOrder?.id;
+    const singleWatchId =
+      iframePollMrId ?? (currentOrder?.resourceType === 'MedicationRequest' ? currentOrder.id : undefined);
     medicationRequestIdsToWatch = singleWatchId ? [singleWatchId] : undefined;
   }
 
@@ -647,7 +730,11 @@ export function MedicationsPage(): JSX.Element {
                 {!loading &&
                   orders.length > 0 &&
                   orders.map((item, index) => {
-                    const showCartRow = hasScriptSure && activeTab === 'draft' && typeof item.id === 'string';
+                    const showCartRow =
+                      hasScriptSure &&
+                      activeTab === 'draft' &&
+                      item.resourceType === 'MedicationRequest' &&
+                      typeof item.id === 'string';
                     const row = (
                       <MedListItem
                         item={item}
@@ -736,6 +823,7 @@ export function MedicationsPage(): JSX.Element {
             <MedicationRequestDetails
               key={currentOrder.id}
               medicationRequest={currentOrder}
+              medicationDispenses={selectedMedicationDispenses}
               medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
               onOpenInScriptSure={() => handleOpenScriptSureFromDetails().catch(showErrorNotification)}
             />
@@ -779,6 +867,16 @@ export function MedicationsPage(): JSX.Element {
       />
     </Box>
   );
+}
+
+function compareMedicationResourcesByLastUpdatedDescending(a: Resource, b: Resource): number {
+  return (b.meta?.lastUpdated ?? '').localeCompare(a.meta?.lastUpdated ?? '');
+}
+
+function compareMedicationDispensesDescending(a: MedicationDispense, b: MedicationDispense): number {
+  const aDate = a.whenHandedOver ?? a.whenPrepared ?? a.meta?.lastUpdated ?? '';
+  const bDate = b.whenHandedOver ?? b.whenPrepared ?? b.meta?.lastUpdated ?? '';
+  return bDate.localeCompare(aDate);
 }
 
 function EmptyMedsState({ activeTab }: { activeTab: MedTab }): JSX.Element {

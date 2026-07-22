@@ -18,6 +18,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { OrderMedicationPage } from './OrderMedicationPage';
 
 const ORDER_MEDICATION_REJECTION = new Error('bot rejected');
+const MEDICATION_REQUEST_PROFILE_URL = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest';
 const orderMedicationMock = vi.fn();
 const searchMedicationsMock = vi.fn();
 
@@ -127,6 +128,7 @@ describe('OrderMedicationPage', () => {
       return r?.resourceType === 'MedicationRequest' && r?.status === 'draft';
     });
     expect(createdMrCall).toBeDefined();
+    expect((createdMrCall?.[0] as MedicationRequest).meta?.profile).toContain(MEDICATION_REQUEST_PROFILE_URL);
 
     // ...and then *soft*-deleted via updateResource — flipped to status='unknown' with the
     // canonical 'response-not-received' statusReason so vendor webhooks can reconcile later.
@@ -211,9 +213,9 @@ describe('OrderMedicationPage', () => {
         (c) => (c[0] as { resourceType?: string })?.resourceType === 'MedicationRequest'
       );
       expect(mrCall).toBeDefined();
-      expect((mrCall?.[0] as MedicationRequest).medicationCodeableConcept?.text).toBe(
-        'Jentadueto 12.5 mg-500 mg tablet'
-      );
+      const medicationRequest = mrCall?.[0] as MedicationRequest;
+      expect(medicationRequest.meta?.profile).toContain(MEDICATION_REQUEST_PROFILE_URL);
+      expect(medicationRequest.medicationCodeableConcept?.text).toBe('Jentadueto 12.5 mg-500 mg tablet');
     });
   });
 
@@ -273,6 +275,7 @@ describe('OrderMedicationPage', () => {
     const passedMr = onAddedToCart.mock.calls[0][0] as MedicationRequest;
     expect(passedMr.resourceType).toBe('MedicationRequest');
     expect(passedMr.status).toBe('draft');
+    expect(passedMr.meta?.profile).toContain(MEDICATION_REQUEST_PROFILE_URL);
   });
 
   test('does not show Add to cart when onAddedToCart is not provided', async () => {

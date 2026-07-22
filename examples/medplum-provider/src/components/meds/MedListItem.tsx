@@ -3,31 +3,35 @@
 import { Badge, Group, Stack, Text } from '@mantine/core';
 import type { MedicationOrderExtensions } from '@medplum/core';
 import { formatCodeableConcept, formatDate, formatHumanName, getPendingMedicationOrderStatus } from '@medplum/core';
-import type { MedicationRequest, Practitioner } from '@medplum/fhirtypes';
+import type { MedicationRequest, MedicationStatement, Practitioner } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import classes from './MedListItem.module.css';
 
 export type MedTab = 'active' | 'draft' | 'completed';
+export type MedicationListResource = MedicationRequest | MedicationStatement;
 
 interface MedListItemProps {
-  item: MedicationRequest;
-  selectedItem: MedicationRequest | undefined;
+  item: MedicationListResource;
+  selectedItem: MedicationListResource | undefined;
   activeTab: MedTab;
   /**
    * Returns the URL the row should link to. Invoked during render, so callers
    * must keep it pure (memoize with `useCallback` to avoid extra renders).
    */
-  getItemUrl: (item: MedicationRequest) => string;
+  getItemUrl: (item: MedicationListResource) => string;
   medicationOrderExtensions: MedicationOrderExtensions;
 }
 
 export function MedListItem(props: MedListItemProps): JSX.Element {
   const { item, selectedItem, activeTab, getItemUrl, medicationOrderExtensions } = props;
-  const isSelected = selectedItem?.id === item.id;
-  const requester = useResource(item.requester) as Practitioner | undefined;
-  const pendingStatus = getPendingMedicationOrderStatus(item, medicationOrderExtensions);
+  const isSelected = selectedItem?.resourceType === item.resourceType && selectedItem?.id === item.id;
+  const requester = useResource(item.resourceType === 'MedicationRequest' ? item.requester : undefined) as
+    | Practitioner
+    | undefined;
+  const pendingStatus =
+    item.resourceType === 'MedicationRequest' ? getPendingMedicationOrderStatus(item, medicationOrderExtensions) : undefined;
 
   return (
     <MedplumLink to={getItemUrl(item)} underline="never">
@@ -44,6 +48,9 @@ export function MedListItem(props: MedListItemProps): JSX.Element {
               {getMedicationDisplay(item)}
             </Text>
             <Group gap={4}>
+              <Badge size="sm" color={item.resourceType === 'MedicationRequest' ? 'blue' : 'teal'} variant="light">
+                {item.resourceType === 'MedicationRequest' ? 'Prescription' : 'Medication'}
+              </Badge>
               {pendingStatus && (
                 <Badge size="sm" color="violet" variant="light">
                   ScriptSure: {pendingStatus}
@@ -65,8 +72,8 @@ export function MedListItem(props: MedListItemProps): JSX.Element {
   );
 }
 
-function getMedicationDisplay(mr: MedicationRequest): string {
-  return formatCodeableConcept(mr.medicationCodeableConcept) || 'Medication order';
+function getMedicationDisplay(medication: MedicationListResource): string {
+  return formatCodeableConcept(medication.medicationCodeableConcept) || 'Medication';
 }
 
 const getStatusColor = (status: string | undefined): string => {
@@ -110,12 +117,18 @@ const getStatusDisplayText = (status: string | undefined): string => {
   }
 };
 
-const getSubText = (item: MedicationRequest, requester: Practitioner | undefined): string => {
-  const date = formatDate(item.authoredOn || item.meta?.lastUpdated);
-  const dosage = item.dosageInstruction?.[0]?.text;
+const getSubText = (item: MedicationListResource, requester: Practitioner | undefined): string => {
+  const date =
+    item.resourceType === 'MedicationRequest'
+      ? formatDate(item.authoredOn || item.meta?.lastUpdated)
+      : formatDate(item.effectiveDateTime || item.dateAsserted || item.meta?.lastUpdated);
+  const dosage = item.dosage?.[0]?.text;
   const dosagePart = dosage ? ` · ${dosage}` : '';
-  if (requester?.resourceType === 'Practitioner') {
+  if (item.resourceType === 'MedicationRequest' && requester?.resourceType === 'Practitioner') {
     return `${date} · ${formatHumanName(requester.name?.[0])}${dosagePart}`;
+  }
+  if (item.resourceType === 'MedicationStatement') {
+    return `${date} · patient medication history${dosagePart}`;
   }
   return `${date}${dosagePart}`;
 };

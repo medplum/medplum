@@ -2,29 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import {
-  addProfileToResource,
-  createReference,
-  getReferenceString,
-  HTTP_HL7_ORG,
-  HTTP_TERMINOLOGY_HL7_ORG,
-  LOINC,
-  SNOMED,
+    addProfileToResource,
+    createReference,
+    getReferenceString,
+    HTTP_HL7_ORG,
+    HTTP_TERMINOLOGY_HL7_ORG,
+    LOINC,
+    SNOMED,
 } from '@medplum/core';
 import type {
-  Address,
-  CodeableConcept,
-  Coding,
-  Consent,
-  HumanName,
-  Observation,
-  Organization,
-  Patient,
-  Questionnaire,
-  QuestionnaireItem,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
-  Reference,
+    Address,
+    CodeableConcept,
+    Coding,
+    Consent,
+    HumanName,
+    Observation,
+    Organization,
+    Patient,
+    Questionnaire,
+    QuestionnaireItem,
+    QuestionnaireResponse,
+    QuestionnaireResponseItem,
+    QuestionnaireResponseItemAnswer,
+    Reference,
 } from '@medplum/fhirtypes';
 
 export const PROFILE_URLS: Record<string, string> = {
@@ -33,6 +33,7 @@ export const PROFILE_URLS: Record<string, string> = {
   Coverage: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-coverage`,
   Immunization: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-immunization`,
   MedicationRequest: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationrequest`,
+  MedicationStatement: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationstatement`,
   Patient: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`,
   ObservationSexualOrientation: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-observation-sexual-orientation`,
   ObservationSmokingStatus: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-smokingstatus`,
@@ -387,7 +388,7 @@ export async function addAllergy(
 }
 
 /**
- * Adds a MedicationRequest resource
+ * Adds a MedicationStatement resource for a patient-reported/current medication.
  *
  * @param medplum - The Medplum client
  * @param patient - The patient beneficiary of the medication
@@ -409,14 +410,13 @@ export async function addMedication(
 
   await medplum.upsertResource(
     {
-      resourceType: 'MedicationRequest',
+      resourceType: 'MedicationStatement',
       meta: {
-        profile: [PROFILE_URLS.MedicationRequest],
+        profile: [PROFILE_URLS.MedicationStatement],
       },
       subject: createReference(patient),
       status: 'active',
-      intent: 'order',
-      requester: createReference(patient),
+      informationSource: createReference(patient),
       medicationCodeableConcept: { coding: [code] },
       note: note ? [{ text: note }] : undefined,
     },

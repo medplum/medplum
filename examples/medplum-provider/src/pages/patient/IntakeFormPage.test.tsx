@@ -40,6 +40,24 @@ const simpleQuestionnaire: Questionnaire = {
           required: true,
         },
         {
+          linkId: 'national-id',
+          text: 'National ID Number',
+          type: 'string',
+          required: true,
+        },
+        {
+          linkId: 'passport-number',
+          text: 'Passport Number',
+          type: 'string',
+          required: true,
+        },
+        {
+          linkId: 'birth-certificate-number',
+          text: 'Birth Certificate Number',
+          type: 'string',
+          required: true,
+        },
+        {
           linkId: 'gender-identity',
           text: 'Gender Identity',
           type: 'choice',
@@ -57,6 +75,12 @@ const simpleQuestionnaire: Questionnaire = {
           linkId: 'emergency-contact-first-name',
           text: 'First Name',
           type: 'string',
+        },
+        {
+          linkId: 'emergency-contact-relationship',
+          text: 'Relationship to Patient',
+          type: 'choice',
+          answerValueSet: 'http://hl7.org/fhir/ValueSet/patient-contactrelationship',
         },
       ],
     },
@@ -199,8 +223,12 @@ describe('IntakeFormPage', () => {
     expect(lastNameInputs[0]).toBeInTheDocument();
 
     expect(screen.getByRole('textbox', { name: /Social Security Number/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /National ID Number/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Passport Number/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Birth Certificate Number/i })).toBeInTheDocument();
     const genderIdentityLabels = screen.getAllByText(/Gender Identity/i);
     expect(genderIdentityLabels.length).toBeGreaterThan(0);
+    expect(screen.getByText(/Relationship to Patient/i)).toBeInTheDocument();
   });
 
   test('Renders demographic group section', async () => {

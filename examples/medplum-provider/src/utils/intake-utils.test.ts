@@ -1,35 +1,35 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type {
-  Coding,
-  Organization,
-  Patient,
-  Questionnaire,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-  Reference,
+    Coding,
+    Organization,
+    Patient,
+    Questionnaire,
+    QuestionnaireResponse,
+    QuestionnaireResponseItemAnswer,
+    Reference,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
-  addAllergy,
-  addCondition,
-  addConsent,
-  addCoverage,
-  addExtension,
-  addFamilyMemberHistory,
-  addImmunization,
-  addLanguage,
-  addMedication,
-  addPharmacy,
-  convertDateToDateTime,
-  findQuestionnaireItem,
-  getGroupRepeatedAnswers,
-  getHumanName,
-  getPatientAddress,
-  observationCategoryMapping,
-  observationCodeMapping,
-  upsertObservation,
+    addAllergy,
+    addCondition,
+    addConsent,
+    addCoverage,
+    addExtension,
+    addFamilyMemberHistory,
+    addImmunization,
+    addLanguage,
+    addMedication,
+    addPharmacy,
+    convertDateToDateTime,
+    findQuestionnaireItem,
+    getGroupRepeatedAnswers,
+    getHumanName,
+    getPatientAddress,
+    observationCategoryMapping,
+    observationCodeMapping,
+    upsertObservation,
 } from './intake-utils';
 
 describe('intake utils', () => {
@@ -603,16 +603,16 @@ describe('intake utils', () => {
       expect(upsertSpy).not.toHaveBeenCalled();
     });
 
-    test('addMedication upserts when code present', async () => {
+    test('addMedication upserts patient-reported medication history when code present', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       await addMedication(medplum, patient, {
         'medication-code': { valueCoding: { system: 'http://example.com', code: 'aspirin' } },
       });
       expect(upsertSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          resourceType: 'MedicationRequest',
+          resourceType: 'MedicationStatement',
           status: 'active',
-          intent: 'order',
+          informationSource: expect.objectContaining({ reference: `Patient/${patient.id}` }),
         }),
         expect.any(Object)
       );

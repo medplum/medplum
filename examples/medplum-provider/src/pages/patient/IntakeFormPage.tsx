@@ -272,6 +272,24 @@ const defaultQuestionnaire: Questionnaire = {
           required: true,
         },
         {
+          linkId: 'national-id',
+          text: 'National ID Number',
+          type: 'string',
+          required: true,
+        },
+        {
+          linkId: 'passport-number',
+          text: 'Passport Number',
+          type: 'string',
+          required: true,
+        },
+        {
+          linkId: 'birth-certificate-number',
+          text: 'Birth Certificate Number',
+          type: 'string',
+          required: true,
+        },
+        {
           linkId: 'race',
           text: 'Race',
           type: 'choice',
@@ -323,6 +341,13 @@ const defaultQuestionnaire: Questionnaire = {
           linkId: 'emergency-contact-phone',
           text: 'Phone',
           type: 'string',
+        },
+        {
+          linkId: 'emergency-contact-relationship',
+          text: 'Relationship to Patient',
+          type: 'choice',
+          answerValueSet: 'http://hl7.org/fhir/ValueSet/patient-contactrelationship',
+          required: true,
         },
       ],
     },

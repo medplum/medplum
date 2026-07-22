@@ -10,7 +10,15 @@ import {
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
 } from '@medplum/core';
-import type { Dosage, MedicationRequest, Patient, Practitioner, Quantity } from '@medplum/fhirtypes';
+import type {
+  Dosage,
+  MedicationDispense,
+  MedicationRequest,
+  MedicationStatement,
+  Patient,
+  Practitioner,
+  Quantity,
+} from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { IconExternalLink, IconMaximize } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -18,7 +26,8 @@ import { useNavigate } from 'react-router';
 import { getQuantityQualifierLabel } from './quantity-qualifiers';
 
 interface MedicationRequestDetailsProps {
-  medicationRequest: MedicationRequest;
+  medicationRequest: MedicationRequest | MedicationStatement;
+  medicationDispenses?: MedicationDispense[];
   medicationOrderExtensions: MedicationOrderExtensions;
   onOpenInScriptSure: () => void;
 }
@@ -111,14 +120,25 @@ function DetailRow(props: { label: string; children: ReactNode }): JSX.Element {
 }
 
 export function MedicationRequestDetails(props: MedicationRequestDetailsProps): JSX.Element {
-  const { medicationRequest, medicationOrderExtensions, onOpenInScriptSure } = props;
+  const { medicationRequest, medicationDispenses = [], medicationOrderExtensions, onOpenInScriptSure } = props;
   const navigate = useNavigate();
-  const requesterRes = useResource(medicationRequest.requester) as Practitioner | undefined;
+  const requesterRes = useResource(
+    medicationRequest.resourceType === 'MedicationRequest' ? medicationRequest.requester : medicationRequest.informationSource
+  ) as Practitioner | Patient | undefined;
   const patientRes = useResource(medicationRequest.subject) as Patient | undefined;
 
-  const pendingId = getPendingMedicationOrderId(medicationRequest, medicationOrderExtensions);
-  const pendingStatus = getPendingMedicationOrderStatus(medicationRequest, medicationOrderExtensions);
-  const storedIframeUrl = getMedicationOrderIframeUrl(medicationRequest, medicationOrderExtensions);
+  const pendingId =
+    medicationRequest.resourceType === 'MedicationRequest'
+      ? getPendingMedicationOrderId(medicationRequest, medicationOrderExtensions)
+      : undefined;
+  const pendingStatus =
+    medicationRequest.resourceType === 'MedicationRequest'
+      ? getPendingMedicationOrderStatus(medicationRequest, medicationOrderExtensions)
+      : undefined;
+  const storedIframeUrl =
+    medicationRequest.resourceType === 'MedicationRequest'
+      ? getMedicationOrderIframeUrl(medicationRequest, medicationOrderExtensions)
+      : undefined;
 
   const medText =
     medicationRequest.medicationCodeableConcept?.text ||
@@ -126,16 +146,24 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
     '—';
 
   const requesterName =
-    medicationRequest.requester?.display ||
-    (requesterRes?.resourceType === 'Practitioner' ? formatHumanName(requesterRes.name?.[0]) : undefined);
+    medicationRequest.resourceType === 'MedicationRequest'
+      ? medicationRequest.requester?.display ||
+        (requesterRes?.resourceType === 'Practitioner' ? formatHumanName(requesterRes.name?.[0]) : undefined)
+      : medicationRequest.informationSource?.display ||
+        (requesterRes?.resourceType === 'Patient'
+          ? formatHumanName(requesterRes.name?.[0])
+          : requesterRes?.resourceType === 'Practitioner'
+            ? formatHumanName(requesterRes.name?.[0])
+            : undefined);
 
-  const dispQty = medicationRequest.dispenseRequest?.quantity;
+  const dispQty =
+    medicationRequest.resourceType === 'MedicationRequest' ? medicationRequest.dispenseRequest?.quantity : undefined;
   const rawQualifier = dispQty?.unit?.trim() || dispQty?.code?.trim();
   const qualifierHint = getQuantityQualifierTooltip(rawQualifier);
 
   const openFullRecord = (): void => {
     if (medicationRequest.id) {
-      navigate(`/MedicationRequest/${medicationRequest.id}`)?.catch(console.error);
+      navigate(`/${medicationRequest.resourceType}/${medicationRequest.id}`)?.catch(console.error);
     }
   };
 
@@ -151,7 +179,7 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
               <Text size="sm" c="dimmed">
                 {medicationRequest.id && (
                   <>
-                    MedicationRequest/{medicationRequest.id}
+                    {medicationRequest.resourceType}/{medicationRequest.id}
                     {' · '}
                   </>
                 )}
@@ -177,7 +205,12 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
 
           <Group justify="space-between" align="center">
             <Text size="sm" c="dimmed">
-              Ordered {formatDate(medicationRequest.authoredOn || medicationRequest.meta?.lastUpdated)}
+              {medicationRequest.resourceType === 'MedicationRequest' ? 'Ordered' : 'Recorded'}{' '}
+              {formatDate(
+                medicationRequest.resourceType === 'MedicationRequest'
+                  ? medicationRequest.authoredOn || medicationRequest.meta?.lastUpdated
+                  : medicationRequest.effectiveDateTime || medicationRequest.dateAsserted || medicationRequest.meta?.lastUpdated
+              )}
             </Text>
             <Badge size="lg" color={medicationStatusColor(medicationRequest.status)} variant="light">
               {medicationRequest.status ?? 'unknown'}
@@ -185,11 +218,20 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
           </Group>
 
           <Text size="sm" c="dimmed">
-            Intent: {medicationRequest.intent ?? '—'}
-            {medicationRequest.priority ? ` · Priority: ${medicationRequest.priority}` : ''}
-            {medicationRequest.reportedBoolean !== undefined
-              ? ` · Reported (secondary record): ${medicationRequest.reportedBoolean ? 'yes' : 'no'}`
-              : ''}
+            {medicationRequest.resourceType === 'MedicationRequest' ? (
+              <>
+                Intent: {medicationRequest.intent ?? '—'}
+                {medicationRequest.priority ? ` · Priority: ${medicationRequest.priority}` : ''}
+                {medicationRequest.reportedBoolean !== undefined
+                  ? ` · Reported (secondary record): ${medicationRequest.reportedBoolean ? 'yes' : 'no'}`
+                  : ''}
+              </>
+            ) : (
+              <>
+                Medication history
+                {medicationRequest.taken ? ` · Taken: ${medicationRequest.taken}` : ''}
+              </>
+            )}
           </Text>
 
           {(pendingStatus || pendingId) && (
@@ -235,7 +277,7 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
             )}
 
             {requesterName && (
-              <DetailRow label="Requester">
+              <DetailRow label={medicationRequest.resourceType === 'MedicationRequest' ? 'Requester' : 'Information source'}>
                 <Text size="sm">{requesterName}</Text>
               </DetailRow>
             )}
@@ -250,74 +292,114 @@ export function MedicationRequestDetails(props: MedicationRequestDetailsProps): 
               </DetailRow>
             )}
 
-            {medicationRequest.dosageInstruction?.map((d, i) => formatDosageLine(d, i))}
+            {(medicationRequest.resourceType === 'MedicationRequest'
+              ? medicationRequest.dosageInstruction
+              : medicationRequest.dosage
+            )?.map((d, i) => formatDosageLine(d, i))}
 
-            <DetailRow label="Dispense">
-              <>
-                {dispQty && (
-                  <Group gap="xs" align="center" wrap="wrap">
-                    <Text size="sm">
-                      <Text span fw={600}>
-                        Quantity:{' '}
-                      </Text>
-                      {formatQuantityWithQualifier(dispQty)}
-                    </Text>
-                    {qualifierHint && (
-                      <Tooltip label={qualifierHint} multiline w={280} withArrow>
-                        <Text size="xs" c="dimmed" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
-                          What is this code?
+            {medicationRequest.resourceType === 'MedicationRequest' && (
+              <DetailRow label="Dispense">
+                <>
+                  {dispQty && (
+                    <Group gap="xs" align="center" wrap="wrap">
+                      <Text size="sm">
+                        <Text span fw={600}>
+                          Quantity:{' '}
                         </Text>
-                      </Tooltip>
-                    )}
-                  </Group>
-                )}
-                {medicationRequest.dispenseRequest?.validityPeriod && (
-                  <Text size="sm">
-                    Validity:{' '}
-                    {medicationRequest.dispenseRequest.validityPeriod.start
-                      ? formatDate(medicationRequest.dispenseRequest.validityPeriod.start)
-                      : '?'}
-                    {' – '}
-                    {medicationRequest.dispenseRequest.validityPeriod.end
-                      ? formatDate(medicationRequest.dispenseRequest.validityPeriod.end)
-                      : '?'}
-                  </Text>
-                )}
-                {medicationRequest.dispenseRequest?.expectedSupplyDuration?.value !== undefined && (
-                  <Text size="sm">
-                    <Text span fw={600}>
-                      Days supply:{' '}
-                    </Text>
-                    {medicationRequest.dispenseRequest.expectedSupplyDuration.value}{' '}
-                    {medicationRequest.dispenseRequest.expectedSupplyDuration.unit === 'days' ||
-                    medicationRequest.dispenseRequest.expectedSupplyDuration.code === 'd'
-                      ? 'days'
-                      : (medicationRequest.dispenseRequest.expectedSupplyDuration.unit ??
-                        medicationRequest.dispenseRequest.expectedSupplyDuration.code ??
-                        '')}
-                  </Text>
-                )}
-                {medicationRequest.dispenseRequest?.numberOfRepeatsAllowed !== undefined && (
-                  <Text size="sm">Refills allowed: {medicationRequest.dispenseRequest.numberOfRepeatsAllowed}</Text>
-                )}
-                {medicationRequest.dispenseRequest?.performer && (
-                  <Text size="sm">
-                    Intended dispenser:{' '}
-                    {medicationRequest.dispenseRequest.performer.display ||
-                      medicationRequest.dispenseRequest.performer.reference}
-                  </Text>
-                )}
-                {!dispQty &&
-                  medicationRequest.dispenseRequest?.numberOfRepeatsAllowed === undefined &&
-                  !medicationRequest.dispenseRequest?.validityPeriod && (
-                    <Text size="sm" c="dimmed">
-                      —
+                        {formatQuantityWithQualifier(dispQty)}
+                      </Text>
+                      {qualifierHint && (
+                        <Tooltip label={qualifierHint} multiline w={280} withArrow>
+                          <Text size="xs" c="dimmed" style={{ cursor: 'help', textDecoration: 'underline dotted' }}>
+                            What is this code?
+                          </Text>
+                        </Tooltip>
+                      )}
+                    </Group>
+                  )}
+                  {medicationRequest.dispenseRequest?.validityPeriod && (
+                    <Text size="sm">
+                      Validity:{' '}
+                      {medicationRequest.dispenseRequest.validityPeriod.start
+                        ? formatDate(medicationRequest.dispenseRequest.validityPeriod.start)
+                        : '?'}
+                      {' – '}
+                      {medicationRequest.dispenseRequest.validityPeriod.end
+                        ? formatDate(medicationRequest.dispenseRequest.validityPeriod.end)
+                        : '?'}
                     </Text>
                   )}
-              </>
-            </DetailRow>
+                  {medicationRequest.dispenseRequest?.expectedSupplyDuration?.value !== undefined && (
+                    <Text size="sm">
+                      <Text span fw={600}>
+                        Days supply:{' '}
+                      </Text>
+                      {medicationRequest.dispenseRequest.expectedSupplyDuration.value}{' '}
+                      {medicationRequest.dispenseRequest.expectedSupplyDuration.unit === 'days' ||
+                      medicationRequest.dispenseRequest.expectedSupplyDuration.code === 'd'
+                        ? 'days'
+                        : (medicationRequest.dispenseRequest.expectedSupplyDuration.unit ??
+                          medicationRequest.dispenseRequest.expectedSupplyDuration.code ??
+                          '')}
+                    </Text>
+                  )}
+                  {medicationRequest.dispenseRequest?.numberOfRepeatsAllowed !== undefined && (
+                    <Text size="sm">Refills allowed: {medicationRequest.dispenseRequest.numberOfRepeatsAllowed}</Text>
+                  )}
+                  {medicationRequest.dispenseRequest?.performer && (
+                    <Text size="sm">
+                      Intended dispenser:{' '}
+                      {medicationRequest.dispenseRequest.performer.display ||
+                        medicationRequest.dispenseRequest.performer.reference}
+                    </Text>
+                  )}
+                  {!dispQty &&
+                    medicationRequest.dispenseRequest?.numberOfRepeatsAllowed === undefined &&
+                    !medicationRequest.dispenseRequest?.validityPeriod && (
+                      <Text size="sm" c="dimmed">
+                        —
+                      </Text>
+                    )}
+                </>
+              </DetailRow>
+            )}
 
-            {medicationRequest.substitution && (
+            {medicationRequest.resourceType === 'MedicationRequest' && medicationDispenses.length > 0 && (
+              <DetailRow label="Fulfillment">
+                {medicationDispenses.map((dispense, index) => (
+                  <Paper key={dispense.id ?? index} withBorder p="sm">
+                    <Stack gap={4}>
+                      <Group gap="xs" justify="space-between" align="center">
+                        <Text size="sm" fw={600}>
+                          {dispense.whenHandedOver
+                            ? `Handed over ${formatDate(dispense.whenHandedOver)}`
+                            : dispense.whenPrepared
+                              ? `Prepared ${formatDate(dispense.whenPrepared)}`
+                              : 'Dispense event'}
+                        </Text>
+                        <Badge size="sm" color={medicationDispenseStatusColor(dispense.status)} variant="light">
+                          {dispense.status}
+                        </Badge>
+                      </Group>
+                      {dispense.quantity && <Text size="sm">Quantity: {formatQuantityWithQualifier(dispense.quantity)}</Text>}
+                      {dispense.daysSupply?.value !== undefined && (
+                        <Text size="sm">
+                          Days supply: {dispense.daysSupply.value}{' '}
+                          {dispense.daysSupply.unit ?? dispense.daysSupply.code ?? ''}
+                        </Text>
+                      )}
+                      {dispense.performer?.[0]?.actor && (
+                        <Text size="sm" c="dimmed">
+                          Dispenser: {dispense.performer[0].actor.display ?? dispense.performer[0].actor.reference}
+                        </Text>
+                      )}
+                    </Stack>
+                  </Paper>
+                ))}
+              </DetailRow>
+            )}
+
+            {medicationRequest.resourceType === 'MedicationRequest' && medicationRequest.substitution && (
               <DetailRow label="Substitution">
                 <Text size="sm">
                   {formatSubstitutionAllowed(medicationRequest.substitution.allowedBoolean)}
@@ -394,6 +476,25 @@ function medicationStatusColor(status: string | undefined): string {
       return 'green';
     case 'unknown':
       return 'gray';
+    default:
+      return 'gray';
+  }
+}
+
+function medicationDispenseStatusColor(status: MedicationDispense['status']): string {
+  switch (status) {
+    case 'completed':
+      return 'green';
+    case 'in-progress':
+    case 'preparation':
+      return 'blue';
+    case 'on-hold':
+      return 'orange';
+    case 'cancelled':
+    case 'declined':
+    case 'entered-in-error':
+    case 'stopped':
+      return 'red';
     default:
       return 'gray';
   }
