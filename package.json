@@ -29,6 +29,7 @@
   "overrides": {
     "esbuild": "0.28.1",
     "typescript": "6.0.3",
+    "uuid": "14.0.1",
     "vite": "8.1.5",
     "whatwg-url": "14.0.0"
   },
