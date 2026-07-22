@@ -48,13 +48,7 @@ function buildDocx(slug, markdownBody, tmpDir) {
   fs.writeFileSync(tmpMd, content);
 
   const outDocx = path.join(OUT_DIR, `${slug}.docx`);
-  sh('pandoc', [
-    tmpMd,
-    '--from=markdown-implicit_figures',
-    `--reference-doc=${REFERENCE_DOCX}`,
-    '-o',
-    outDocx,
-  ]);
+  sh('pandoc', [tmpMd, '--from=markdown-implicit_figures', `--reference-doc=${REFERENCE_DOCX}`, '-o', outDocx]);
   return outDocx;
 }
 
