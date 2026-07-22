@@ -1,19 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Group, Loader, Stack, Tooltip } from '@mantine/core';
+import { Button, Divider, Group, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
   EMPTY,
   formatDateTime,
-  formatHumanName,
   getExtension,
   getReferenceString,
+  isDefined,
   isOk,
   isReference,
   isResource,
+  parseReference,
+  resolveId,
 } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Patient, Slot } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
   Form,
@@ -21,9 +23,10 @@ import {
   OperationOutcomeAlert,
   ResourceAvatar,
   ResourceInput,
+  ResourceName,
   useMedplum,
 } from '@medplum/react';
-import { useResource, useSearchOne } from '@medplum/react-hooks';
+import { useSearchOne } from '@medplum/react-hooks';
 import { IconFileCheck, IconNotes, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -49,14 +52,13 @@ function ServiceTypeDisplay(props: { value: CodeableConcept }): JSX.Element {
 
 type UpdateAppointmentFormProps = {
   appointment: WithId<Appointment>;
-  onUpdate: (appointment: WithId<Appointment>) => void;
 };
 
 function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient | undefined>(undefined);
 
-  const { appointment, onUpdate } = props;
+  const { appointment } = props;
   const handleSubmit = useCallback(async () => {
     if (!patient) {
       return;
@@ -72,15 +74,12 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
       ],
     } satisfies Appointment;
 
-    let result: WithId<Appointment>;
     try {
-      result = await medplum.updateResource(updated);
+      await medplum.updateResource(updated);
     } catch (error) {
       showErrorNotification(error);
-      return;
     }
-    onUpdate?.(result);
-  }, [medplum, patient, appointment, onUpdate]);
+  }, [medplum, patient, appointment]);
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -101,25 +100,21 @@ function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   );
 }
 
-export function AppointmentDetails(props: {
-  appointment: WithId<Appointment>;
-  onAppointmentUpdate: (appointment: WithId<Appointment>) => void;
-  onSlotUpdate: (slot: WithId<Slot>) => void;
-}): JSX.Element {
-  const { appointment, onAppointmentUpdate, onSlotUpdate } = props;
+export function AppointmentDetails(props: { appointment: WithId<Appointment> }): JSX.Element {
+  const { appointment } = props;
   const medplum = useMedplum();
 
-  const [encounter, encounterLoading, encounterOutcome] = useSearchOne('Encounter', {
-    appointment: getReferenceString(appointment),
-  });
-
-  // Extract references to a Patient and a Practitioner from `Appointment.participants`; we expect
-  // one of each.
-  const participants = props.appointment.participant.map((p) => p.actor);
-  const patientRef = participants.find((r) => isReference<Patient>(r, 'Patient'));
-  const practitionerRef = participants.find((r) => isReference<Practitioner>(r, 'Practitioner'));
-
-  const patient = useResource(patientRef);
+  const [encounter, encounterLoading, encounterOutcome] = useSearchOne(
+    'Encounter',
+    {
+      appointment: getReferenceString(appointment),
+    },
+    {
+      // Disable debouncer for faster encounter loading. This search is not driven by
+      // keyboard input and so won't benefit from debouncing.
+      debounceMs: 0,
+    }
+  );
 
   const cancellable =
     appointment.status === 'booked' || appointment.status === 'pending' || appointment.status === 'proposed';
@@ -132,15 +127,27 @@ export function AppointmentDetails(props: {
       const updated = await medplum.post<WithId<Appointment>>(
         medplum.fhirUrl('Appointment', appointment.id, '$cancel')
       );
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
-      onAppointmentUpdate(updated);
+      // $cancel is a custom operation, so the client cannot classify its modifications
+      // itself; announce them to invalidate caches and notify interested components.
+      medplum.notifyResourceModified({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: updated.id,
+        resource: updated,
+      });
+
+      // The $cancel operation soft-deletes the appointment's slots, but does
+      // not return any kind of tombstone for them, so we read the remaining
+      // pointers from the appointment resource and mark them as deleted.
+      updated.slot?.forEach((slot) => {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id: resolveId(slot) });
+      });
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setCancelLoading(false);
     }
-  }, [medplum, appointment, onAppointmentUpdate]);
+  }, [medplum, appointment]);
 
   const confirmable = appointment.status === 'pending';
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -154,40 +161,69 @@ export function AppointmentDetails(props: {
       const updated = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
         medplum.fhirUrl('Appointment', appointment.id, '$confirm')
       );
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
       const updatedResources = updated.entry?.map((entry) => entry.resource) ?? EMPTY;
       const updatedAppointment = updatedResources.find((res) => isResource<Appointment>(res, 'Appointment'));
       const updatedSlots = updatedResources.filter((res) => isResource<Slot>(res, 'Slot'));
-      if (updatedAppointment) {
-        onAppointmentUpdate(updatedAppointment);
-      }
-      for (const updatedSlot of updatedSlots) {
-        onSlotUpdate(updatedSlot);
-      }
+      // $confirm is a custom operation, so the client cannot classify its modifications
+      // itself; announce them to invalidate caches and notify interested components.
+      medplum.notifyResourceModified({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: updatedAppointment?.id,
+        resource: updatedAppointment,
+      });
+      updatedSlots.forEach((slot) => {
+        medplum.notifyResourceModified({
+          resourceType: 'Slot',
+          operation: 'update',
+          id: slot.id,
+          resource: slot,
+        });
+      });
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setConfirmLoading(false);
     }
-  }, [medplum, appointment, confirmable, onAppointmentUpdate, onSlotUpdate]);
+  }, [medplum, appointment, confirmable]);
+
+  const sortedParticipants = appointment.participant
+    .map((participant) => {
+      const actor = participant.actor;
+      if (!isReference(actor)) {
+        return undefined;
+      }
+      const [resourceType] = parseReference(actor);
+      return { actor, resourceType };
+    })
+    .filter(isDefined)
+    .sort((a, b) => (a.resourceType === 'Patient' ? 0 : 1) - (b.resourceType === 'Patient' ? 0 : 1));
+
+  // If there is a "Patient" participant, we sorted it to the front of the list, so we can
+  // check just the first entry.
+  const hasPatient = sortedParticipants[0]?.resourceType === 'Patient';
 
   return (
     <Stack gap="md" className={classes.AppointmentDetails}>
       <Divider />
 
-      {!patientRef && <UpdateAppointmentForm appointment={props.appointment} onUpdate={props.onAppointmentUpdate} />}
+      {!hasPatient && <UpdateAppointmentForm appointment={props.appointment} />}
 
-      {!!patient && (
-        <Group align="center" gap="sm">
-          <MedplumLink to={patient}>
-            <ResourceAvatar value={patient} size={48} radius={48} />
-          </MedplumLink>
-          <MedplumLink to={patient} fw={800} size="lg">
-            {formatHumanName(patient.name?.[0])}
-          </MedplumLink>
-        </Group>
-      )}
+      {sortedParticipants.map(({ actor, resourceType }, index) => {
+        return (
+          <Group align="center" gap="sm" key={`${actor.reference ?? ''}_${index}`}>
+            <MedplumLink to={actor} tabIndex={-1}>
+              <ResourceAvatar value={actor} size={48} radius={48} />
+            </MedplumLink>
+            <div>
+              <ResourceName value={actor} size="lg" fw={800} link />
+              <Text size="xs" c="dimmed">
+                {resourceType}
+              </Text>
+            </div>
+          </Group>
+        );
+      })}
 
       <Divider />
 
@@ -217,11 +253,9 @@ export function AppointmentDetails(props: {
           <Loader size="sm" />
         </Group>
       )}
-      {encounterOutcome && !isOk(encounterOutcome) && (
-        <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
-      )}
-      {patientRef && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
-        <CreateEncounterForm appointment={appointment} patientRef={patientRef} practitionerRef={practitionerRef} />
+      <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
+      {hasPatient && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
+        <CreateEncounterForm appointment={appointment} />
       )}
 
       <Divider />

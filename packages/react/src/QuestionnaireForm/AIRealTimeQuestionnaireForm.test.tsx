@@ -4,7 +4,6 @@ import type { Project, Questionnaire, QuestionnaireResponse } from '@medplum/fhi
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, useWhisper } from '@medplum/react-hooks';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router';
 import type { Mock, MockInstance } from 'vitest';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { AIRealTimeQuestionnaireFormProps } from './AIRealTimeQuestionnaireForm';
@@ -99,11 +98,9 @@ async function setup(
 
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <AIRealTimeQuestionnaireForm questionnaire={sampleQuestionnaire} {...props} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <AIRealTimeQuestionnaireForm questionnaire={sampleQuestionnaire} {...props} />
+      </MedplumProvider>
     );
   });
 

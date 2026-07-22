@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Stack, Title } from '@mantine/core';
+import { Alert, Button, Stack, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Coding, Patient, PlanDefinition, Practitioner, Reference } from '@medplum/fhirtypes';
+import { isReference } from '@medplum/core';
+import type { Appointment, Coding, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { CodingInput, Form, ResourceInput, useMedplum } from '@medplum/react';
-import { IconAlertSquareRounded } from '@tabler/icons-react';
+import { IconAlertSquareRounded, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { createEncounter, encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
@@ -15,30 +16,30 @@ import { PlanDefinitionSummary } from '../plandefinition/PlanDefinitionSummary';
 
 export interface CreateEncounterFormProps {
   appointment: WithId<Appointment>;
-  patientRef: Reference<Patient>;
-  practitionerRef: Reference<Practitioner> | undefined;
 }
 
 export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Element {
-  const { patientRef, practitionerRef } = props;
   const medplum = useMedplum();
   const navigate = useNavigate();
 
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
 
-  const handleSubmit = useCallback(async () => {
-    if (!practitionerRef) {
-      showNotification({
-        color: 'yellow',
-        icon: <IconAlertSquareRounded />,
-        title: 'Error',
-        message: 'Appointment has no Practitioner participant',
-      });
-      return;
-    }
+  const patientRefs = useMemo(
+    () => props.appointment.participant.map((p) => p.actor).filter((actor) => isReference<Patient>(actor, 'Patient')),
+    [props.appointment.participant]
+  );
 
-    if (!encounterClass || !planDefinition) {
+  const practitionerRefs = useMemo(
+    () =>
+      props.appointment.participant
+        .map((p) => p.actor)
+        .filter((actor) => isReference<Practitioner>(actor, 'Practitioner')),
+    [props.appointment.participant]
+  );
+
+  const handleSubmit = useCallback(async () => {
+    if (!encounterClass) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
@@ -52,17 +53,41 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
       const encounter = await createEncounter(
         medplum,
         encounterClass,
-        patientRef,
+        patientRefs[0],
         planDefinition,
         props.appointment,
-        practitionerRef
+        practitionerRefs[0]
       );
 
       navigate(encounterUrl(encounter))?.catch(console.error);
     } catch (err) {
       showErrorNotification(err);
     }
-  }, [medplum, patientRef, encounterClass, planDefinition, props.appointment, navigate, practitionerRef]);
+  }, [medplum, encounterClass, planDefinition, props.appointment, navigate, patientRefs, practitionerRefs]);
+
+  const warnings: string[] = [];
+
+  if (practitionerRefs.length > 1) {
+    warnings.push('Too many Practitioners to create Encounter.');
+  }
+  if (practitionerRefs.length === 0) {
+    warnings.push('No Practitioner to create Encounter.');
+  }
+  if (patientRefs.length > 1) {
+    warnings.push('Too many Patients to create Encounter.');
+  }
+  if (patientRefs.length === 0) {
+    warnings.push('No Patient to create Encounter.');
+  }
+  if (warnings.length) {
+    return (
+      <Alert color="yellow" icon={<IconInfoCircle />} title="Can't create Encounter">
+        {warnings.map((warning) => (
+          <div key={warning}>{warning}</div>
+        ))}
+      </Alert>
+    );
+  }
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -73,7 +98,7 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
           name="practitioner"
           resourceType="Practitioner"
           label="Practitioner"
-          defaultValue={practitionerRef}
+          defaultValue={practitionerRefs[0]}
           disabled={true}
           required={true}
         />
@@ -92,13 +117,12 @@ export function CreateEncounterForm(props: CreateEncounterFormProps): JSX.Elemen
           resourceType="PlanDefinition"
           label="Care template"
           onChange={setPlanDefinition}
-          required={true}
         />
 
         <PlanDefinitionSummary planDefinition={planDefinition} />
 
-        <Button fullWidth type="submit" disabled={!planDefinition || !encounterClass}>
-          Apply
+        <Button fullWidth type="submit" disabled={!encounterClass}>
+          Continue
         </Button>
       </Stack>
     </Form>

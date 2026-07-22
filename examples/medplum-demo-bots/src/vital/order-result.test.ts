@@ -86,8 +86,7 @@ describe('Create Order Bot', () => {
 
     // Patient
     const patient = bundle.entry?.find((e: any) => e.resource.resourceType === 'Patient') as
-      | BundleEntry<Patient>
-      | undefined;
+      BundleEntry<Patient> | undefined;
     expect(patient?.resource).toStrictEqual(ctx.patient);
   });
 

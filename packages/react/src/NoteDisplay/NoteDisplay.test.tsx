@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import type { NoteDisplayProps } from './NoteDisplay';
 import { NoteDisplay } from './NoteDisplay';
@@ -12,11 +11,9 @@ const medplum = new MockClient();
 describe('NoteDisplay', () => {
   function setup(args: NoteDisplayProps): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <NoteDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <NoteDisplay {...args} />
+      </MedplumProvider>
     );
   }
 

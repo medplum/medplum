@@ -99,7 +99,7 @@ describe('Deploy', () => {
         resourceType: 'Binary',
         contentType: ContentType.JAVASCRIPT,
       } satisfies Binary);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const binary = res1.body as Binary;
 
@@ -112,7 +112,7 @@ describe('Deploy', () => {
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
 
     const bot = res2.body as Bot;
 
@@ -125,14 +125,14 @@ describe('Deploy', () => {
         ...bot,
         executableCode: { url: `Binary/${binary.id}` },
       });
-    expect(res2b.status).toBe(200);
+    expect(res2b).toHaveStatus(200);
 
     // Step 4: Deploy the bot
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     expect(readBinarySpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -169,7 +169,7 @@ describe('Deploy', () => {
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -181,7 +181,7 @@ describe('Deploy', () => {
       .send({
         code,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(deployMocks.deployLambda).toHaveBeenCalledWith(
       expect.objectContaining({
         resourceType: 'Bot',
@@ -210,7 +210,7 @@ describe('Deploy', () => {
         }
         `,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -220,7 +220,7 @@ describe('Deploy', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: '' });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0].details.text).toStrictEqual('Bot missing executable code');
   });
 
@@ -243,7 +243,7 @@ describe('Deploy', () => {
         runtimeVersion: 'awslambda',
         code,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -253,7 +253,7 @@ describe('Deploy', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(deployMocks.deployLambda).toHaveBeenCalled();
 
     // Verify the response includes both the OK status and the warning
@@ -285,7 +285,7 @@ describe('Deploy', () => {
         runAsUser: true,
         code,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const bot = res1.body as Bot;
 
@@ -297,7 +297,7 @@ describe('Deploy', () => {
       .send({
         code,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(deployMocks.deployLambda).toHaveBeenCalled();
 
     // Verify no warning is returned since runAsUser bypasses the ProjectMembership check
@@ -327,7 +327,7 @@ describe('Deploy', () => {
         name: 'Alice personal bot',
         description: 'Alice bot description',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
     expect(res2.body.sourceCode).toBeDefined();
@@ -346,7 +346,7 @@ describe('Deploy', () => {
         }
         `,
       });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
   });
 });

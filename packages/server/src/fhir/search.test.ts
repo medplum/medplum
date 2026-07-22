@@ -58,18 +58,16 @@ import type { MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
 import type { ChainedSearchLink } from './search';
 import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
-
-vi.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
@@ -2756,7 +2754,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      const expected = [
+      expect(
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([
         `match:Patient/${patient.id}`,
         `include:Patient/${linked1.id}`,
         `include:Patient/${linked2.id}`,
@@ -2764,11 +2764,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         `include:Organization/${organization1.id}`,
         `include:Practitioner/${practitioner1.id}`,
         `include:Practitioner/${practitioner2.id}`,
-      ].sort();
-
-      expect(
-        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
-      ).toStrictEqual(expected);
+      ]);
     }));
 
   test('_include with target type', () =>
@@ -2809,8 +2805,8 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       // The Task is included; the referenced AuditEvent is not, because its type
       // does not match the include target type.
       expect(
-        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
-      ).toStrictEqual([`include:Task/${task.id}`, `match:AuditEvent/${auditEvent.id}`].sort());
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([`include:Task/${task.id}`, `match:AuditEvent/${auditEvent.id}`]);
     }));
 
   test('_revinclude with target type', () =>
@@ -2839,8 +2835,8 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         revInclude: [{ resourceType: 'AuditEvent', searchParam: 'entity', targetType: 'Task' }],
       });
       expect(
-        matched.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
-      ).toStrictEqual([`include:AuditEvent/${auditEvent.id}`, `match:Task/${task.id}`].sort());
+        matched.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([`include:AuditEvent/${auditEvent.id}`, `match:Task/${task.id}`]);
 
       // Target type Patient does not match the Task base result: nothing is reverse included.
       const notMatched = await repo.search({
@@ -2980,7 +2976,9 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      const expected = [
+      expect(
+        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`)
+      ).toContainExactly([
         `match:Patient/${patient.id}`,
         `include:Patient/${linked1.id}`,
         `include:Patient/${linked2.id}`,
@@ -2988,11 +2986,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         `include:Observation/${observation2.id}`,
         `include:Observation/${observation3.id}`,
         `include:Observation/${observation4.id}`,
-      ].sort();
-
-      expect(
-        bundle.entry?.map((e) => `${e.search?.mode}:${e.resource?.resourceType}/${e.resource?.id}`).sort()
-      ).toStrictEqual(expected);
+      ]);
     }));
 
   test('_include depth limit', () =>
@@ -3930,8 +3924,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ],
       });
 
-      expect(result.entry).toHaveLength(2);
-      expect(getEntryIds(result)).toStrictEqual(expect.arrayContaining([observation1.id, observation2.id]));
+      expect(getEntryIds(result)).toContainExactly([observation1.id, observation2.id]);
 
       // Patients with observations performed by themselves with an ID equal to observation1.id
       const result2 = await repo.search(
@@ -4562,7 +4555,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       }
 
       expect(pageSizes).toStrictEqual([2, 2, 1]);
-      expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
+      expect(seenIds).toContainExactly(expectedIds);
     }));
 
   test('Binary search not allowed', async () =>
@@ -5144,9 +5137,10 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         ]);
 
         // Second patient has one ServiceRequest and one Observation
-        expect(
-          result[getReferenceString(patients[1])].map((r) => r.resourceType).sort((a, b) => a.localeCompare(b))
-        ).toStrictEqual(['Observation', 'ServiceRequest']);
+        expect(result[getReferenceString(patients[1])].map((r) => r.resourceType)).toContainExactly([
+          'Observation',
+          'ServiceRequest',
+        ]);
 
         // Third patient has only Observations
         expect(result[getReferenceString(patients[2])].map((r) => r.resourceType)).toStrictEqual([
@@ -5268,7 +5262,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         }
 
         expect(seenIds.length).toBe(50);
-        expect(seenIds.sort()).toStrictEqual(expectedIds.sort());
+        expect(seenIds).toContainExactly(expectedIds);
       }));
 
     test('V1 cursor is not parsed as V2', () =>
@@ -5409,9 +5403,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80')
         );
-        expect(result.entry).toHaveLength(2);
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        expect(result.entry?.map((e) => e.resource?.valueQuantity?.value)).toContainExactly([85, 90]);
       }));
 
     test('With units', async () =>
@@ -5419,9 +5411,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80|http://unitsofmeasure.org|kg')
         );
-        expect(result.entry).toHaveLength(2);
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toContainExactly([85, 90]);
       }));
 
     test('Approximately', async () =>
@@ -5429,10 +5419,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         const result = await repo.search(
           parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=ap80|http://unitsofmeasure.org|kg')
         );
-        expect(result.entry).toHaveLength(3);
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 75)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 80)).toBeDefined();
-        expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+        expect(result.entry?.map((e: any) => e.resource?.valueQuantity?.value)).toContainExactly([75, 80, 85]);
       }));
   });
 
@@ -5474,7 +5461,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   describe('discourage sequential scans', () => {
     let querySpy: MockInstance;
     beforeEach(() => {
-      querySpy = vi.spyOn(repo.getDatabaseClient(DatabaseMode.READER), 'query');
+      querySpy = vi.spyOn(repo.getDatabaseClient(repoAccess.sqlReadConfig()), 'query');
     });
 
     afterEach(() => {
@@ -5496,8 +5483,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringContaining('SET enable_seqscan = off'));
       expect(querySpy).toHaveBeenNthCalledWith(2, expect.stringContaining('SELECT'), expect.anything());
       expect(querySpy).toHaveBeenNthCalledWith(3, expect.stringContaining('RESET enable_seqscan'));
-
-      querySpy.mockRestore();
     });
 
     test('config.fhirSearchMinLimit', async () => {
@@ -5512,7 +5497,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
-      querySpy.mockClear();
     });
   });
 });
@@ -5823,7 +5807,7 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
         new SelectQuery('Patient').column('__version').where('id', '=', id);
 
       // patient1 at OLDER_VERSION, patient2 at Repository.VERSION
-      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const client = systemRepo.getDatabaseClient(repoAccess.sqlWrite('Patient'));
       const OLDER_VERSION = Repository.VERSION - 1;
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient1.id]);
       expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(OLDER_VERSION);

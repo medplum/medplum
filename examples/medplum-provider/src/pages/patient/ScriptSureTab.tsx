@@ -8,9 +8,11 @@ import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
+import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 
 export function ScriptSureTab(): JSX.Element {
   const { patientId } = useParams();
+  const { selectedOrganization } = useScriptSurePractice();
   const syncedRef = useRef(false);
   const iframeLoadedRef = useRef(false);
 
@@ -27,6 +29,7 @@ export function ScriptSureTab(): JSX.Element {
 
   const iframeUrl = useScriptSureIFrame({
     patientId,
+    organization: selectedOrganization,
     onPatientSyncSuccess: () => {
       syncedRef.current = true;
       checkAndNotify();
