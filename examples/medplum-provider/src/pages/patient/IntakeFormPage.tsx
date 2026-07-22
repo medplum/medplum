@@ -7,16 +7,15 @@ import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@m
 import {
   AIRealTimeQuestionnaireForm,
   Document,
-  isValueSetUnavailableError,
   Loading,
   useMedplum,
   useMedplumProfile,
+  useValueSetAvailabilities,
 } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
-import { showErrorNotification } from '../../utils/notifications';
 
 const voiceInstructions = (
   <ul>
@@ -47,72 +46,25 @@ export function IntakeFormPage({
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const [unavailableValueSets, setUnavailableValueSets] = useState<ValueSetInfo[]>([]);
-  const [checkingValueSets, setCheckingValueSets] = useState(false);
   const questionnaire = propQuestionnaire ?? defaultQuestionnaire;
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    let isActive = true;
-
-    async function checkValueSets(): Promise<void> {
-      if (!isActive || skipValueSetCheck) {
-        return;
-      }
-      setCheckingValueSets(true);
-
-      if (!questionnaire) {
-        if (isActive) {
-          setCheckingValueSets(false);
-        }
-        return;
-      }
-
-      const allValueSets = extractValueSets(questionnaire.item);
-      const uniqueValueSets = new Map<string, ValueSetInfo>();
-      for (const vs of allValueSets) {
-        if (!uniqueValueSets.has(vs.url)) {
-          uniqueValueSets.set(vs.url, vs);
-        }
-      }
-      const valueSets = Array.from(uniqueValueSets.values());
-
-      const unavailable: ValueSetInfo[] = [];
-
-      await Promise.allSettled(
-        valueSets.map(async (vs) => {
-          if (abortController.signal.aborted) {
-            return;
-          }
-          const isUnavailable = await isValueSetUnavailable(medplum, vs.url, abortController.signal);
-          if (isUnavailable && !abortController.signal.aborted) {
-            unavailable.push(vs);
-          }
-        })
-      );
-
-      if (isActive && !abortController.signal.aborted) {
-        setUnavailableValueSets(unavailable);
+  // Every value set referenced by the questionnaire, deduplicated by URL (keeping the first
+  // question that referenced it, for the "unavailable" list below).
+  const valueSets = useMemo<ValueSetInfo[]>(() => {
+    if (skipValueSetCheck) {
+      return [];
+    }
+    const unique = new Map<string, ValueSetInfo>();
+    for (const vs of extractValueSets(questionnaire?.item)) {
+      if (!unique.has(vs.url)) {
+        unique.set(vs.url, vs);
       }
     }
+    return Array.from(unique.values());
+  }, [skipValueSetCheck, questionnaire]);
 
-    checkValueSets()
-      .catch((error) => {
-        if (isActive && !abortController.signal.aborted) {
-          showErrorNotification(error);
-        }
-      })
-      .finally(() => {
-        if (isActive) {
-          setCheckingValueSets(false);
-        }
-      });
-
-    return () => {
-      isActive = false;
-      abortController.abort();
-    };
-  }, [medplum, skipValueSetCheck, questionnaire]);
+  const { loading: checkingValueSets, unavailable } = useValueSetAvailabilities(valueSets.map((vs) => vs.url));
+  const unavailableValueSets = valueSets.filter((vs) => unavailable.includes(vs.url));
 
   const handleOnSubmit = useCallback(
     async (response: QuestionnaireResponse) => {
@@ -189,29 +141,6 @@ function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueS
   }
 
   return result;
-}
-
-/**
- * Probes a valueset with a filter-free, count-limited expansion to decide whether it is available.
- * Only a permanent 400/404 counts as unavailable; a transient failure (429/5xx/network) is ignored
- * so a blip doesn't flag an otherwise-working valueset. Repeat probes are deduplicated by the
- * MedplumClient request cache.
- * @param medplum - The Medplum client instance.
- * @param url - The valueset URL to probe.
- * @param signal - Abort signal to cancel the probe.
- * @returns True if the valueset is known to be unavailable.
- */
-async function isValueSetUnavailable(
-  medplum: ReturnType<typeof useMedplum>,
-  url: string,
-  signal: AbortSignal
-): Promise<boolean> {
-  try {
-    await medplum.valueSetExpand({ url, count: 1 }, { signal });
-    return false;
-  } catch (err) {
-    return isValueSetUnavailableError(err);
-  }
 }
 
 const defaultQuestionnaire: Questionnaire = {

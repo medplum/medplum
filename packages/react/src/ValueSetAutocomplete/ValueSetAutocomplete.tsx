@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Text } from '@mantine/core';
+import { Group, Stack, Text } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
@@ -149,16 +149,15 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
  * Stacks two pieces of field text on separate lines, dropping either if absent.
  * @param first - The first node (e.g. a consumer-supplied error or description).
  * @param second - The second node (e.g. the unavailable/search-error note).
- * @returns Both nodes separated by a line break, or whichever one is present.
+ * @returns Both nodes stacked with spacing, or whichever one is present.
  */
 function combineNodes(first: ReactNode, second: ReactNode): ReactNode {
   if (first && second) {
     return (
-      <>
+      <Stack gap="xs">
         {first}
-        <br />
         {second}
-      </>
+      </Stack>
     );
   }
   return first || second;
