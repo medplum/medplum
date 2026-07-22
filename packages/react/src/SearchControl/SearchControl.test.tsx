@@ -5,7 +5,6 @@ import { Operator } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { SearchControlProps } from './SearchControl';
 import { SearchControl } from './SearchControl';
@@ -32,9 +31,7 @@ describe('SearchControl', () => {
     }
     const { rerender: _rerender } = await act(async () =>
       render(<SearchControl {...props} />, ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
       ))
     );
     return {

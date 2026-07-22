@@ -4,7 +4,6 @@ import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Patient } from '@medplum/fhirtypes';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen, waitFor } from '../test-utils/render';
 import type { DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 import { DefaultResourceTimeline } from './DefaultResourceTimeline';
@@ -15,11 +14,9 @@ describe('DefaultResourceTimeline', () => {
   async function setup(args: DefaultResourceTimelineProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <DefaultResourceTimeline {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <DefaultResourceTimeline {...args} />
+        </MedplumProvider>
       );
     });
   }

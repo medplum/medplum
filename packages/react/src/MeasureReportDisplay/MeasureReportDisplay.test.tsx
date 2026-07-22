@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import type { MeasureReportDisplayProps } from './MeasureReportDisplay';
 import { MeasureReportDisplay } from './MeasureReportDisplay';
@@ -12,11 +11,9 @@ const medplum = new MockClient();
 async function setup(args: MeasureReportDisplayProps): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MeasureReportDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <MeasureReportDisplay {...args} />
+      </MedplumProvider>
     );
   });
 }

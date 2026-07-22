@@ -5,7 +5,6 @@ import { createReference } from '@medplum/core';
 import type { Attachment, Bundle, Encounter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { ResourceTimelineProps } from './ResourceTimeline';
 import { ResourceTimeline } from './ResourceTimeline';
@@ -28,11 +27,9 @@ describe('ResourceTimeline', () => {
   async function setup<T extends Resource>(args: ResourceTimelineProps<T>): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <ResourceTimeline {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ResourceTimeline {...args} />
+        </MedplumProvider>
       );
     });
   }

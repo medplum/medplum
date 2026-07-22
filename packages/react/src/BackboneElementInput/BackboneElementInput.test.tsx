@@ -4,7 +4,6 @@ import type { InternalSchemaElement, TypeInfo } from '@medplum/core';
 import { globalSchema, loadDataType } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen, within } from '../test-utils/render';
 import type { BackboneElementInputProps } from './BackboneElementInput';
 import { BackboneElementInput } from './BackboneElementInput';
@@ -66,11 +65,9 @@ describe('BackboneElementInput', () => {
   async function setup(args: BackboneElementInputProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <BackboneElementInput {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <BackboneElementInput {...args} />
+        </MedplumProvider>
       );
     });
   }

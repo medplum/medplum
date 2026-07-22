@@ -5,7 +5,6 @@ import type { MedicationRequest, MedicationStatement } from '@medplum/fhirtypes'
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import { Medications } from './Medications';
 
@@ -14,11 +13,7 @@ const medplum = new MockClient();
 describe('PatientSummary - Medications', () => {
   async function setup(children: ReactNode): Promise<void> {
     await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
+      render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
     });
   }
 
