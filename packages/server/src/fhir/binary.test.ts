@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, Logger, createReference } from '@medplum/core';
 import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Duplex } from 'stream';
 import { Readable } from 'stream';
 import request from 'supertest';
+import { vi } from 'vitest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -32,13 +33,13 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
     const res2 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.text).toStrictEqual('Hello world');
 
     // Read as FHIR JSON
@@ -46,7 +47,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.resourceType).toBe('Binary');
   });
 
@@ -54,7 +55,40 @@ describe('Binary', () => {
     const res = await request(app)
       .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333737')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
+  });
+
+  test('Read binary without stored content', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Binary', contentType: ContentType.TEXT });
+    expect(res).toHaveStatus(201);
+
+    const binary = res.body as Binary;
+    const loggerErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+    try {
+      const res2 = await request(app)
+        .get('/fhir/R4/Binary/' + binary.id)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Accept', ContentType.JSON);
+      expect(res2).toHaveStatus(404);
+      expect(res2.headers['content-type']).toContain(ContentType.FHIR_JSON);
+      expect(res2.headers.etag).toBeUndefined();
+      expect(res2.headers['last-modified']).toBeUndefined();
+      expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Error reading Binary content',
+        expect.objectContaining({
+          binary: `Binary/${binary.id}`,
+          err: expect.any(Error),
+          versionId: binary.meta?.versionId,
+        })
+      );
+    } finally {
+      loggerErrorSpy.mockRestore();
+    }
   });
 
   test('Update and read binary', async () => {
@@ -63,7 +97,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
     const res2 = await request(app)
@@ -71,12 +105,12 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world 2');
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toStrictEqual('Hello world 2');
   });
 
@@ -87,7 +121,7 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Origin', 'http://localhost:3000')
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect(res.headers['access-control-allow-origin']).toBe('http://localhost:3000');
   });
 
@@ -98,7 +132,7 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Content-Encoding', 'fake')
       .send('Hello world');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Deflate', async () => {
@@ -108,13 +142,13 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Content-Encoding', 'deflate')
       .send(await createBufferForStream('Hello world', zlib.createDeflate()));
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
     const res2 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.text).toStrictEqual('Hello world');
   });
 
@@ -125,13 +159,13 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Content-Encoding', 'gzip')
       .send(await createBufferForStream('Hello world', zlib.createGzip()));
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
     const res2 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.text).toStrictEqual('Hello world');
   });
 
@@ -141,7 +175,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
     const res2 = await request(app)
@@ -150,12 +184,12 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Content-Encoding', 'gzip')
       .send(await createBufferForStream('Hello world 2', zlib.createGzip()));
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toStrictEqual('Hello world 2');
   });
 
@@ -185,7 +219,7 @@ describe('Binary', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const result = res.body as Bundle;
     expect(result).toBeDefined();
@@ -211,7 +245,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
 
@@ -220,7 +254,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const patient = res1.body;
 
@@ -229,13 +263,13 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ ...binary, securityContext: createReference(patient) });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.securityContext.reference).toStrictEqual(`Patient/${patient.id}`);
   });
 
@@ -245,7 +279,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
     const res2 = await request(app)
@@ -256,13 +290,13 @@ describe('Binary', () => {
         ...binary,
         data: 'Hello, world!', // Invalid: not encoded as base64Binary
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.data).toBeUndefined();
   });
 
@@ -272,7 +306,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world');
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const binary = res.body;
 
@@ -282,12 +316,12 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.text).toStrictEqual('{"resourceType":"Patient"}');
   });
 
@@ -297,7 +331,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/x-msdownload')
       .send('Hello world');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
 
     const res2 = await request(app)
@@ -306,7 +340,7 @@ describe('Binary', () => {
       .set('Content-Type', 'application/octet-stream')
       .query({ _filename: 'foo.exe' })
       .send('Hello world');
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
   });
 });

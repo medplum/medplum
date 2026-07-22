@@ -46,17 +46,17 @@ describe('FHIR Rate Limits', () => {
 
     // Allow first request
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
 
     // Block next request
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
-    expect(res2.status).toBe(429);
+    expect(res2).toHaveStatus(429);
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
 
     // Block subsequent request
     const res3 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
-    expect(res3.status).toBe(429);
+    expect(res3).toHaveStatus(429);
     expect(res3.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
@@ -69,7 +69,7 @@ describe('FHIR Rate Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(429);
+    expect(res).toHaveStatus(429);
   });
 
   test('Allows requests when rate limits are disabled', async () => {
@@ -82,7 +82,7 @@ describe('FHIR Rate Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect(res.get('ratelimit')).toBeUndefined();
   });
 
@@ -99,7 +99,7 @@ describe('FHIR Rate Limits', () => {
         type: 'batch',
         entry: [{ request: { method: 'GET', url: 'Patient' } }],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Blocks oversized transaction bundle', async () => {
@@ -119,7 +119,7 @@ describe('FHIR Rate Limits', () => {
         type: 'transaction',
         entry: [{ request: { method: 'GET', url: 'Patient' } }, { request: { method: 'GET', url: 'Practitioner' } }],
       } satisfies Bundle);
-    expect(res.status).toBe(429);
+    expect(res).toHaveStatus(429);
   });
 
   test('Reports multiple, in-progress rate limits', async () => {
@@ -129,13 +129,13 @@ describe('FHIR Rate Limits', () => {
     ({ accessToken } = await createTestProject({ withAccessToken: true }));
 
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.get('ratelimit')).toStrictEqual('"requests";r=99;t=60, "fhirInteractions";r=480;t=60');
 
     await sleep(1000);
 
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.get('ratelimit')).toStrictEqual('"requests";r=98;t=59, "fhirInteractions";r=460;t=59');
   });
 
@@ -152,7 +152,7 @@ describe('FHIR Rate Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
   });
 
   test('Respects ProjectMembership setting override', async () => {
@@ -179,7 +179,7 @@ describe('FHIR Rate Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
   });
 
   test('Respects Project level limit', async () => {
@@ -204,14 +204,14 @@ describe('FHIR Rate Limits', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(loginRes.status).toBe(200);
+    expect(loginRes).toHaveStatus(200);
 
     const tokenRes = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: loginRes.body.code,
       code_verifier: 'xyz',
     });
-    expect(tokenRes.status).toBe(200);
+    expect(tokenRes).toHaveStatus(200);
     expect(tokenRes.body.access_token).toBeDefined();
     const otherToken = tokenRes.body.access_token;
 
@@ -219,13 +219,13 @@ describe('FHIR Rate Limits', () => {
       .post('/fhir/R4/Patient')
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
 
     const res2 = await request(app)
       .post('/fhir/R4/Patient')
       .auth(otherToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toBe(429);
+    expect(res2).toHaveStatus(429);
   });
 
   test('Tracks active consumer in sorted set after FHIR activity', async () => {
@@ -235,7 +235,7 @@ describe('FHIR Rate Limits', () => {
 
     // Make a FHIR request to trigger rate limit consumption
     const res = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Check the active consumer sorted set for the current minute bucket
     const redis = getRateLimitRedis();
@@ -255,7 +255,7 @@ describe('FHIR Rate Limits', () => {
     const { accessToken, project, membership } = await createTestProject({ withAccessToken: true, withClient: true });
 
     const res = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Check that the next minute bucket also has the membership
     const redis = getRateLimitRedis();
@@ -311,11 +311,11 @@ describe('FHIR Rate Limits', () => {
 
     // Make a request that consumes the entire quota
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Make another request that gets rate limited
     const res2 = await request(app).get('/fhir/R4/Patient').auth(accessToken, { type: 'bearer' }).send();
-    expect(res2.status).toBe(429);
+    expect(res2).toHaveStatus(429);
 
     // The membership should still appear in the active set
     const redis = getRateLimitRedis();

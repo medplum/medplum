@@ -3,7 +3,6 @@
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SmokingStatus } from './SmokingStatus';
 
@@ -12,11 +11,7 @@ const medplum = new MockClient();
 describe('PatientSummary - SmokingStatus', () => {
   async function setup(children: ReactNode): Promise<void> {
     await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
+      render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
     });
   }
 

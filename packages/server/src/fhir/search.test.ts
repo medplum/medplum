@@ -69,8 +69,6 @@ import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
 
-vi.mock('hibp');
-
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
 describe.each<Project['features']>([undefined, ['range-search']])('project-scoped Repository w/ %j', (features) => {

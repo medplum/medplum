@@ -3,9 +3,9 @@
 import { Drawer, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
-import { EMPTY, getReferenceString, isDefined, isReference, isResourceWithId, resolveId } from '@medplum/core';
+import { getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useResourceModified } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -37,6 +37,79 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
   const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
 
+  // The predicates that scope this calendar's data. Both the searches below and the
+  // `useResourceModified` handlers use these so the optimistic updates stay consistent
+  // with what a refetch would return.
+  const scheduleRef = getReferenceString(schedule);
+  const actorRef = schedule.actor[0]?.reference;
+
+  // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
+  // slots created when booking a visit from the FindPane or soft-deleted when cancelling
+  // one from the appointment details drawer.
+  useResourceModified('Slot', (event) => {
+    if (event.operation === 'delete') {
+      // Deletes don't carry a resource, only the id of what went away.
+      if (event.id) {
+        setSlots((state) => state?.filter((slot) => slot.id !== event.id));
+      }
+      return;
+    }
+
+    const slot = event.resource;
+    if (!slot) {
+      return;
+    }
+    // Ignore slots that belong to a different schedule than the one shown here.
+    if (slot.schedule.reference !== scheduleRef) {
+      return;
+    }
+
+    setSlots((state) => {
+      // `create` prepends the new slot; `update`/`patch` replace it in place and leave
+      // an unloaded range untouched.
+      if (event.operation === 'create') {
+        const current = state ?? [];
+        return current.some((existing) => existing.id === slot.id) ? current : [slot, ...current];
+      }
+      return state?.map((existing) => (existing.id === slot.id ? slot : existing));
+    });
+  });
+
+  // Likewise keep the calendar's appointments in sync with any Appointment this client
+  // modifies, and mirror the change into the open appointment details drawer.
+  useResourceModified('Appointment', (event) => {
+    if (event.operation === 'delete') {
+      if (event.id) {
+        setAppointments((state) => state?.filter((appointment) => appointment.id !== event.id));
+        setAppointmentDetails((existing) => (existing?.id === event.id ? undefined : existing));
+      }
+      return;
+    }
+
+    const appointment = event.resource;
+    if (!appointment) {
+      return;
+    }
+    // Ignore appointments that don't involve this schedule's actor, mirroring the
+    // `actor` filter used by the search below.
+    if (!actorRef || !appointment.participant.some((p) => p.actor?.reference === actorRef)) {
+      return;
+    }
+
+    setAppointments((state) => {
+      if (event.operation === 'create') {
+        const current = state ?? [];
+        return current.some((existing) => existing.id === appointment.id) ? current : [...current, appointment];
+      }
+      return state?.map((existing) => (existing.id === appointment.id ? appointment : existing));
+    });
+    setAppointmentDetails((existing) => (existing?.id === appointment.id ? appointment : existing));
+    // A cancelled appointment can no longer be acted on, so close its details drawer.
+    if (appointment.status === 'cancelled') {
+      appointmentDetailsHandlers.close();
+    }
+  });
+
   useEffect(() => {
     if (!range) {
       return () => {};
@@ -46,7 +119,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     medplum
       .searchResources('Slot', [
         ['_count', '1000'],
-        ['schedule', getReferenceString(schedule)],
+        ['schedule', scheduleRef],
         ['start', `ge${range.start.toISOString()}`],
         ['start', `le${range.end.toISOString()}`],
         ['status:not', 'entered-in-error'],
@@ -57,11 +130,10 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     return () => {
       active = false;
     };
-  }, [medplum, schedule, range]);
+  }, [medplum, scheduleRef, range]);
 
   // Find appointments visible in the current range
   useEffect(() => {
-    const actorRef = schedule.actor[0]?.reference;
     if (!actorRef || !range) {
       return () => {};
     }
@@ -80,7 +152,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     return () => {
       active = false;
     };
-  }, [medplum, schedule, range]);
+  }, [medplum, actorRef, range]);
 
   const practitioner = schedule.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
 
@@ -115,12 +187,12 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [createAppointmentHandlers, practitioner]
   );
 
+  // The calendar's slots and appointments update through the `useResourceModified`
+  // subscriptions above; this callback only handles the UI response to a successful booking.
   const handleBookSuccess = useCallback(
     (results: { appointment: WithId<Appointment>; slots: Slot[] }) => {
-      setAppointments((state) => [...(state ?? EMPTY), results.appointment]);
       setAppointmentDetails(results.appointment);
       appointmentDetailsHandlers.open();
-      setSlots((state) => results.slots.concat(state ?? EMPTY));
     },
     [appointmentDetailsHandlers]
   );
@@ -157,28 +229,6 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     },
     [medplum, navigate]
   );
-
-  const handleAppointmentUpdate = useCallback(
-    (updated: WithId<Appointment>) => {
-      setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
-      if (updated.status === 'cancelled') {
-        appointmentDetailsHandlers.close();
-
-        // If the appointment was cancelled with `$cancel`, it also
-        // soft-deleted the related slots. Remove them from our local state.
-        if (updated.slot) {
-          const ids = new Set(updated.slot.map((ref) => resolveId(ref)).filter(isDefined));
-          setSlots((state) => state?.filter((slot) => slot.id && !ids.has(slot.id)));
-        }
-      }
-    },
-    [appointmentDetailsHandlers]
-  );
-
-  const handleSlotUpdate = useCallback((updated: WithId<Slot>) => {
-    setSlots((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
-  }, []);
 
   const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
 
@@ -234,13 +284,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
         position="right"
         h="100%"
       >
-        {appointmentDetails && (
-          <AppointmentDetails
-            appointment={appointmentDetails}
-            onAppointmentUpdate={handleAppointmentUpdate}
-            onSlotUpdate={handleSlotUpdate}
-          />
-        )}
+        {appointmentDetails && <AppointmentDetails appointment={appointmentDetails} />}
       </Drawer>
     </>
   );

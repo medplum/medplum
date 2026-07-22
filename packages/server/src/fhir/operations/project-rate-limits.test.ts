@@ -4,17 +4,14 @@ import { getReferenceString } from '@medplum/core';
 import type { Parameters, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import type { RegisterResponse } from '../../auth/register';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { addTestUser, setupRecaptchaMock, withTestContext } from '../../test.setup';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -54,8 +51,6 @@ describe('Project $rate-limits operation', () => {
 
   beforeEach(() => {
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 
@@ -67,7 +62,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const body = res.body as Parameters;
     expect(body.resourceType).toBe('Parameters');
 
@@ -100,7 +95,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${fresh.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${fresh.accessToken}`);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const body = res.body as Parameters;
     const membershipParams = getParametersByName(body, 'membership');
     // The $rate-limits call itself consumes quota (recordSearch), so the caller appears as an active consumer
@@ -112,7 +107,7 @@ describe('Project $rate-limits operation', () => {
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', `Bearer ${admin.accessToken}`)
       .set('X-Medplum', 'extended');
-    expect(membershipsRes.status).toBe(200);
+    expect(membershipsRes).toHaveStatus(200);
 
     const memberships = membershipsRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
     const targetId = memberships[0].id;
@@ -121,7 +116,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${targetId}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const body = res.body as Parameters;
     const membershipParams = getParametersByName(body, 'membership');
     expect(membershipParams).toHaveLength(1);
@@ -135,7 +130,7 @@ describe('Project $rate-limits operation', () => {
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', `Bearer ${admin.accessToken}`)
       .set('X-Medplum', 'extended');
-    expect(membershipsRes.status).toBe(200);
+    expect(membershipsRes).toHaveStatus(200);
 
     const memberships = membershipsRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
     const ids = memberships.slice(0, 2).map((m: ProjectMembership) => m.id);
@@ -144,7 +139,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${ids[0]}&membershipId=${ids[1]}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const body = res.body as Parameters;
     const membershipParams = getParametersByName(body, 'membership');
     expect(membershipParams).toHaveLength(2);
@@ -163,7 +158,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const body = res.body as Parameters;
     expect(getParametersByName(body, 'project')).toHaveLength(1);
   });
@@ -175,7 +170,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits`)
       .set('Authorization', `Bearer ${nonAdmin.accessToken}`);
 
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Returns badRequest when a membership ID cannot be read', async () => {
@@ -183,7 +178,7 @@ describe('Project $rate-limits operation', () => {
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', `Bearer ${admin.accessToken}`)
       .set('X-Medplum', 'extended');
-    expect(membershipsRes.status).toBe(200);
+    expect(membershipsRes).toHaveStatus(200);
     const validId = (membershipsRes.body.entry[0].resource as ProjectMembership).id;
 
     const missingId = randomUUID();
@@ -191,7 +186,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${validId}&membershipId=${missingId}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue?.[0]?.details?.text).toContain(missingId);
     expect(res.body.issue?.[0]?.details?.text).toContain('1 memberships');
   });
@@ -241,7 +236,7 @@ describe('Project $rate-limits operation', () => {
       .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${memberMembership.id}`)
       .set('Authorization', `Bearer ${admin.accessToken}`);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const body = res.body as Parameters;
     const membershipParams = getParametersByName(body, 'membership');
     expect(membershipParams).toHaveLength(1);

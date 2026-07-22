@@ -3,7 +3,6 @@
 import type { Identifier, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
 import { PatientHeader } from './PatientHeader';
 import { getDefaultColor } from './PatientHeader.utils';
@@ -13,11 +12,9 @@ const medplum = new MockClient();
 describe('PatientHeader', () => {
   function setup(patient: Patient): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <PatientHeader patient={patient} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <PatientHeader patient={patient} />
+      </MedplumProvider>
     );
   }
 

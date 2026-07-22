@@ -4,7 +4,6 @@ import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Observation, Reference } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import {
   HealthGorillaDiagnosticReport,
   HealthGorillaObservation1,
@@ -78,23 +77,23 @@ const syntheaReport: DiagnosticReport = {
 const medplum = new MockClient();
 
 describe('DiagnosticReportDisplay', () => {
+  let exampleReport: DiagnosticReport;
+
   function setup(args: DiagnosticReportDisplayProps): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <DiagnosticReportDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <DiagnosticReportDisplay {...args} />
+      </MedplumProvider>
     );
   }
 
   beforeAll(async () => {
     const obs = await medplum.createResource(CreatinineObservation);
-    const report = {
+    exampleReport = await medplum.createResource<DiagnosticReport>({
       ...ExampleReport,
+      id: undefined,
       result: [createReference(obs)],
-    };
-    await medplum.updateResource(report);
+    });
   });
 
   test('Renders by value', async () => {
@@ -157,7 +156,7 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders performer', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
 
     expect(screen.getByText('Test Organization')).not.toBeNull();
@@ -166,7 +165,7 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders performer organization address', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
 
     // See packages/mock/src/mocks/alice.ts for the TestOrganization address
@@ -175,7 +174,7 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders observation category', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('Day 2')).toBeDefined();
@@ -183,14 +182,14 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders observation note', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
     expect(screen.getByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).not.toBeNull();
   });
 
   test('Hide observation note', async () => {
     await act(async () => {
-      setup({ value: ExampleReport, hideObservationNotes: true });
+      setup({ value: exampleReport, hideObservationNotes: true });
     });
     expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });

@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { JWTPayload, ProfileResource, WithId } from '@medplum/core';
-import { ContentType, getReferenceString, OAuthClientAssertionType, OAuthGrantType, OAuthTokenType } from '@medplum/core';
+import {
+  ContentType,
+  getReferenceString,
+  OAuthClientAssertionType,
+  OAuthGrantType,
+  OAuthTokenType,
+} from '@medplum/core';
 import type { ClientApplication, Patient, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -130,7 +136,9 @@ describe('Native password login', () => {
     // token for real rather than merely decoding it (see the `vi.mock('jose', ...)` comment
     // at the top of this file for why that distinction matters here).
     const tamperedToken = tokenRes.body.access_token.slice(0, -5) + 'AAAAA';
-    const tamperedRes = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer ' + tamperedToken);
+    const tamperedRes = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + tamperedToken);
     expect(tamperedRes.status).toBe(401);
 
     const patient = buildPatient();
