@@ -5,7 +5,6 @@ import type { Organization, Patient } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { PharmacyDialogBaseProps } from './Pharmacies';
 import { Pharmacies } from './Pharmacies';
@@ -32,11 +31,7 @@ function MockPharmacyDialog(props: PharmacyDialogBaseProps): JSX.Element {
 
 async function setup(children: ReactNode): Promise<void> {
   await act(async () => {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-      </MemoryRouter>
-    );
+    render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
   });
 }
 
@@ -252,11 +247,9 @@ describe('PatientSummary - Pharmacies', () => {
   test('Returns empty fragment when patient is null', async () => {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <Pharmacies patient={null as unknown as Patient} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Pharmacies patient={null as unknown as Patient} />
+        </MedplumProvider>
       );
     });
 
