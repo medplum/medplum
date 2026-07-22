@@ -6,7 +6,6 @@ import { Operator, globalSchema } from '@medplum/core';
 import type { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 import type { SearchPopupMenuProps } from './SearchPopupMenu';
@@ -27,16 +26,14 @@ describe('SearchPopupMenu', () => {
     } as SearchPopupMenuProps;
 
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <Menu closeOnItemClick={false}>
-            <Menu.Target>
-              <Button>Toggle menu</Button>
-            </Menu.Target>
-            <SearchPopupMenu {...props} />
-          </Menu>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <Menu closeOnItemClick={false}>
+          <Menu.Target>
+            <Button>Toggle menu</Button>
+          </Menu.Target>
+          <SearchPopupMenu {...props} />
+        </Menu>
+      </MedplumProvider>
     );
 
     await toggleMenu();

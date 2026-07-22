@@ -3,7 +3,6 @@
 import { locationUtils, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
 import { fireEvent, render, screen } from '../test-utils/render';
 import { MedplumLink } from './MedplumLink';
 
@@ -29,11 +28,9 @@ const medplum = new MedplumClient({
 
 function setup(ui: ReactElement): void {
   render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum} navigate={vi.fn()}>
-        {ui}
-      </MedplumProvider>
-    </MemoryRouter>
+    <MedplumProvider medplum={medplum} navigate={vi.fn()}>
+      {ui}
+    </MedplumProvider>
   );
 }
 

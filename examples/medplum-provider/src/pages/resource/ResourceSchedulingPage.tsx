@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Group, Input, Loader, Stack, Title } from '@mantine/core';
-import { EMPTY, getExtensionValue, isOk, normalizeErrorString } from '@medplum/core';
+import { EMPTY, getExtensionValue } from '@medplum/core';
 import type {
   Coding,
   Extension,
@@ -11,7 +11,7 @@ import type {
   Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { CodingInput, Form, ReferenceInput, SubmitButton } from '@medplum/react';
+import { CodingInput, Form, OperationOutcomeAlert, ReferenceInput, SubmitButton } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -136,21 +136,10 @@ export function ResourceSchedulingPage(): JSX.Element | null {
     return <Loader />;
   }
 
-  if (outcome && !isOk(outcome)) {
-    return (
-      <Alert color="red" icon={<IconAlertCircle />}>
-        {normalizeErrorString(outcome)}
-      </Alert>
-    );
-  }
-
-  if (!resource) {
-    return (
-      <Alert color="red" icon={<IconAlertCircle />}>
-        Error loading resource.
-      </Alert>
-    );
-  }
-
-  return <HealthcareServiceSchedulingForm service={resource as HealthcareService} />;
+  return (
+    <>
+      <OperationOutcomeAlert outcome={outcome} />
+      {resource && <HealthcareServiceSchedulingForm service={resource as HealthcareService} />}
+    </>
+  );
 }

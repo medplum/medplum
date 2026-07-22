@@ -58,7 +58,7 @@ export const FOUNDATIONS: FoundationItem[] = [
     body: 'Real-time event notifications through FHIR Subscriptions in two flavors: rest-hook webhooks for server-to-server delivery, and WebSocket events for live clients. Retry, HMAC signing, and audit logging are built in.',
   },
   {
-    name: 'Medplum Bridge',
+    name: 'Medplum Agent',
     icon: 'IconAntenna',
     short: 'On-prem bridge to the cloud',
     body: 'An on-site connection to the cloud. Medplum software runs on-premise inside your firewall and tunnels HL7v2 and DICOM to the cloud over encrypted WebSockets—a modern alternative to legacy interface engines.',
