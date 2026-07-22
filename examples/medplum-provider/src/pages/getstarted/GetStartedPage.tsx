@@ -251,7 +251,8 @@ export function GetStartedPage(): JSX.Element {
                     A simple note template for a first patient visit that includes tasks and questionnaires.
                   </Text>
                   <Text size="xs" c="dimmed" mb="sm">
-                    Note: a Care Template (aka PlanDefinition FHIR resource) is required for creating visits.
+                    Note: a Care Template (aka PlanDefinition FHIR resource) is optional, but tasks from it will be
+                    automatically added to a visit if one is selected.
                   </Text>
                 </Stack>
                 <Button
