@@ -12,6 +12,7 @@ const config: StorybookConfig = {
     '../src/**/*.mdx',
     '../src/**/*.stories.@(js|jsx|ts|tsx)',
     '../../react/src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../../react-scheduling/src/**/*.stories.@(js|jsx|ts|tsx)',
   ],
   addons: ['@storybook/addon-links', '@storybook/addon-docs', '@vueless/storybook-dark-mode'],
   staticDirs: ['../public'],
