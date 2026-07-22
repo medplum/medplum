@@ -3,15 +3,15 @@
 import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type {
-  CodeableConcept,
-  Encounter,
-  Flag,
-  Observation,
-  Patient,
-  Quantity,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
+    CodeableConcept,
+    Encounter,
+    Flag,
+    Observation,
+    Patient,
+    Quantity,
+    QuestionnaireResponse,
+    QuestionnaireResponseItem,
+    QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
 
 const LOINC = 'http://loinc.org';
