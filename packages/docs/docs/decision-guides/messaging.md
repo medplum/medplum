@@ -7,7 +7,7 @@ download_slug: messaging
 
 # Messaging & Communications Decision Guide
 
-**For Reference**: [https://www.medplum.com/docs/communications](https://www.medplum.com/docs/communications)
+_Companion to the [Messaging & Communications](https://www.medplum.com/docs/communications) docs._
 
 ## Section 1: Use Case & Participants
 

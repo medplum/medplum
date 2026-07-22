@@ -7,7 +7,7 @@ download_slug: intake
 
 # Intake & Registration Decision Guide
 
-For Reference: [https://www.medplum.com/docs/intake](https://www.medplum.com/docs/intake)
+_Companion to the [Intake & Registration](https://www.medplum.com/docs/intake) docs._
 
 ## Section 1: Use Case & Participants
 

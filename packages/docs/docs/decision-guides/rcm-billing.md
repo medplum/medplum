@@ -7,7 +7,7 @@ download_slug: rcm-billing
 
 # RCM & Billing Decision Guide
 
-**For Reference**: [Billing](https://www.medplum.com/docs/billing)
+_Companion to the [Billing](https://www.medplum.com/docs/billing) docs._
 
 ## Section 1: Use Case & Participants
 

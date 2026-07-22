@@ -7,7 +7,7 @@ download_slug: e-prescribe
 
 # E-Prescribe Decision Guide
 
-**For Reference**: [E-Prescribe (eRx)](https://www.medplum.com/docs/medications/e-prescibe)
+_Companion to the [E-Prescribe (eRx)](https://www.medplum.com/docs/medications/e-prescibe) docs._
 
 E-prescribing in Medplum runs through an integration with an e-prescribing vendor connected to the SureScripts network. This space is less about the FHIR data model than a sequence of **integration and enrollment decisions**: how much prescribing UI you build, whether you send controlled substances, and how prescribers get enrolled and verified. This guide moves from those high-level decisions down to feature detail.
 

@@ -7,7 +7,7 @@ download_slug: charting
 
 # Charting Decision Guide
 
-**For Reference:** [Medplum Charting docs](https://www.medplum.com/docs/charting) (covers SOAP Notes, Representing Diagnoses, Capturing Vital Signs, Allergies & Intolerances) · [Medplum Provider Visits](https://www.medplum.com/docs/provider/visits) · [Structured Data Capture](https://www.medplum.com/docs/questionnaires/structured-data-capture) · [PlanDefinition `$apply`](https://www.medplum.com/docs/api/fhir/operations/plandefinition-apply) · [QuestionnaireResponse `$extract`](https://www.medplum.com/docs/api/fhir/operations/extract)
+_Companion to the [Charting](https://www.medplum.com/docs/charting) docs (SOAP notes, diagnoses, vitals, allergies), plus [Provider Visits](https://www.medplum.com/docs/provider/visits), [Structured Data Capture](https://www.medplum.com/docs/questionnaires/structured-data-capture), [`PlanDefinition $apply`](https://www.medplum.com/docs/api/fhir/operations/plandefinition-apply), and [`QuestionnaireResponse $extract`](https://www.medplum.com/docs/api/fhir/operations/extract)._
 
 ---
 

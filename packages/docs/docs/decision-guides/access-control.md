@@ -7,7 +7,7 @@ download_slug: access-control
 
 # Access Control Decision Guide
 
-**For Reference**: [https://www.medplum.com/docs/access](https://www.medplum.com/docs/access)
+_Companion to the [Authorization and Access Control](https://www.medplum.com/docs/access) docs._
 
 ## Section 1: Use Case & Participants
 
