@@ -299,6 +299,10 @@ export const medplumEslintConfig = [
       '**/webpack.config.*',
       '**/*.png.ts',
       '**/packages/definitions/src/fhir/**',
+      // Standalone tsx-run demo/seed scripts, not part of the app build —
+      // never covered by app-level type/lint strictness before they lived
+      // in-repo, and not worth retrofitting one-off scripts to meet it.
+      'examples/medplum-provider/seed-data/**',
     ],
   },
   coreConfig,
