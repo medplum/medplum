@@ -8,6 +8,7 @@ import {
   allOk,
   applyPatch,
   badRequest,
+  conflict,
   created,
   deepClone,
   evalFhirPath,
@@ -272,18 +273,33 @@ export abstract class FhirRepository {
     search.count = 2;
     search.sortRules = undefined;
 
+    // 1. Optimistic Search
+    const matches = await this.searchResources(search);
+    if (matches.length === 1) {
+      const existing = matches[0];
+      if (!options?.assignedId && resource.id && resource.id !== existing.id) {
+        throw new OperationOutcomeError(
+          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+        );
+      }
+      return { resource: existing, outcome: allOk };
+    } else if (matches.length > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    }
+
+    // 2. Fallback to SERIALIZABLE transaction only if no match found
     return this.withTransaction(
       async (txRepo) => {
-        const matches = await txRepo.searchResources(search);
-        if (matches.length === 1) {
-          const existing = matches[0];
+        const txMatches = await txRepo.searchResources(search);
+        if (txMatches.length === 1) {
+          const existing = txMatches[0];
           if (!options?.assignedId && resource.id && resource.id !== existing.id) {
             throw new OperationOutcomeError(
               badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
             );
           }
-          return { resource: matches[0], outcome: allOk };
-        } else if (matches.length > 1) {
+          return { resource: txMatches[0], outcome: allOk };
+        } else if (txMatches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
         }
 
@@ -328,10 +344,40 @@ export abstract class FhirRepository {
     search.count = 2;
     search.sortRules = undefined;
 
+    // 1. Optimistic Search
+    const matches = await this.searchResources(search);
+    if (matches.length === 1) {
+      const existing = matches[0];
+      if (resource.id && resource.id !== existing.id) {
+        throw new OperationOutcomeError(
+          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+        );
+      }
+
+      // Perform the update in a standard (non-serializable) transaction
+      return this.withTransaction(
+        async (txRepo) => {
+          const txMatches = await txRepo.searchResources(search);
+          if (txMatches.length === 1) {
+            const updated = await txRepo.updateResource({ ...resource, id: txMatches[0].id }, options);
+            return { resource: updated, outcome: allOk };
+          }
+          throw new OperationOutcomeError(conflict('Resource state changed during update'));
+        },
+        {
+          resourceTypes: getSearchResourceTypes(search),
+          serializable: false,
+        }
+      );
+    } else if (matches.length > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    }
+
+    // 2. Fallback to SERIALIZABLE transaction only if no match found
     return this.withTransaction(
       async (txRepo) => {
-        const matches = await txRepo.searchResources(search);
-        if (matches.length === 0) {
+        const txMatches = await txRepo.searchResources(search);
+        if (txMatches.length === 0) {
           if (resource.id && !options?.assignedId) {
             throw new OperationOutcomeError(
               badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
@@ -339,11 +385,11 @@ export abstract class FhirRepository {
           }
           const createdResource = await txRepo.createResource(resource, options);
           return { resource: createdResource, outcome: created };
-        } else if (matches.length > 1) {
+        } else if (txMatches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
         }
 
-        const existing = matches[0];
+        const existing = txMatches[0];
         if (resource.id && resource.id !== existing.id) {
           throw new OperationOutcomeError(
             badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
@@ -353,7 +399,10 @@ export abstract class FhirRepository {
         const updated = await txRepo.updateResource({ ...resource, id: existing.id }, options);
         return { resource: updated, outcome: allOk };
       },
-      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
+      {
+        resourceTypes: getSearchResourceTypes(search),
+        serializable: true,
+      }
     );
   }
 
@@ -375,19 +424,31 @@ export abstract class FhirRepository {
     search.count = 2;
     search.sortRules = undefined;
 
+    // 1. Optimistic Search
+    const matches = await this.searchResources(search);
+    if (matches.length > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    } else if (!matches.length) {
+      return;
+    }
+
+    // 2. Perform the delete in a standard (non-serializable) transaction
     await this.withTransaction(
       async (txRepo) => {
-        const matches = await txRepo.searchResources(search);
-        if (matches.length > 1) {
+        const txMatches = await txRepo.searchResources(search);
+        if (txMatches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
-        } else if (!matches.length) {
+        } else if (!txMatches.length) {
           return;
         }
 
-        const resource = matches[0];
+        const resource = txMatches[0];
         await txRepo.deleteResource(resource.resourceType, resource.id);
       },
-      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
+      {
+        resourceTypes: getSearchResourceTypes(search),
+        serializable: false,
+      }
     );
   }
 
@@ -396,19 +457,31 @@ export abstract class FhirRepository {
     search.count = 2;
     search.sortRules = undefined;
 
+    // 1. Optimistic Search
+    const matches = await this.searchResources(search);
+    if (matches.length > 1) {
+      throw new OperationOutcomeError(multipleMatches);
+    } else if (!matches.length) {
+      throw new OperationOutcomeError(notFound);
+    }
+
+    // 2. Perform the patch in a standard (non-serializable) transaction
     return this.withTransaction(
       async (txRepo) => {
-        const matches = await txRepo.searchResources(search);
-        if (matches.length > 1) {
+        const txMatches = await txRepo.searchResources(search);
+        if (txMatches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
-        } else if (!matches.length) {
+        } else if (!txMatches.length) {
           throw new OperationOutcomeError(notFound);
         }
 
-        const resource = matches[0];
+        const resource = txMatches[0];
         return txRepo.patchResource(resource.resourceType, resource.id, patch);
       },
-      { serializable: true, resourceTypes: getSearchResourceTypes(search) }
+      {
+        resourceTypes: getSearchResourceTypes(search),
+        serializable: false,
+      }
     );
   }
 }
