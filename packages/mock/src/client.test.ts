@@ -858,12 +858,12 @@ describe('MockClient', () => {
     expect(homer.name[0].family).toStrictEqual('Simpson');
   });
 
-  test('setProfile()', async () => {
+  test('.mock.setProfile()', async () => {
     const medplum = new MockClient({ profile: null });
     expect(medplum.getProfile()).toBeUndefined();
     const callback = vi.fn();
     medplum.addEventListener('change', callback);
-    medplum.setProfile(DrAliceSmith);
+    medplum.mock.setProfile(DrAliceSmith);
     expect(medplum.getProfile()).toStrictEqual(DrAliceSmith);
     expect(callback).toHaveBeenCalledTimes(1);
   });
@@ -900,11 +900,11 @@ describe('MockClient', () => {
     const medplum = new MockClient();
     const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
-    medplum.setAgentAvailable(false);
+    medplum.mock.setAgentAvailable(false);
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).rejects.toThrow(
       OperationOutcomeError
     );
-    medplum.setAgentAvailable(true);
+    medplum.mock.setAgentAvailable(true);
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
   });
 
