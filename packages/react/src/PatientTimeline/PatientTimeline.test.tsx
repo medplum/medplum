@@ -3,7 +3,6 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { PatientTimelineProps } from './PatientTimeline';
 import { PatientTimeline } from './PatientTimeline';
@@ -14,11 +13,9 @@ describe('PatientTimeline', () => {
   async function setup(args: PatientTimelineProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <PatientTimeline {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <PatientTimeline {...args} />
+        </MedplumProvider>
       );
     });
   }

@@ -5,7 +5,6 @@ import { createReference } from '@medplum/core';
 import type { Period, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { SchedulerProps, SlotSearchFunction } from './Scheduler';
 import { Scheduler } from './Scheduler';
@@ -14,11 +13,9 @@ const medplum = new MockClient();
 
 function setup(props: SchedulerProps): void {
   render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        <Scheduler {...props} />
-      </MedplumProvider>
-    </MemoryRouter>
+    <MedplumProvider medplum={medplum}>
+      <Scheduler {...props} />
+    </MedplumProvider>
   );
 }
 

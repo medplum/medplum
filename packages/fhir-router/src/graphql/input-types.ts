@@ -3,17 +3,17 @@
 import type { InternalSchemaElement } from '@medplum/core';
 import { capitalize, getDataType, isResourceType } from '@medplum/core';
 import type { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
-import type { GraphQLInputFieldConfig, GraphQLInputFieldConfigMap, GraphQLInputType } from 'graphql';
+import type { GraphQLInputFieldConfig, GraphQLInputFieldConfigMap, GraphQLNullableInputType } from 'graphql';
 import { GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLString } from 'graphql';
 import { typeCache } from './utils';
 
-const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
+const inputTypeCache: Record<string, GraphQLNullableInputType | undefined> = {
   ...typeCache,
 };
 
 let patchOperationInputType: GraphQLInputObjectType | undefined;
 
-export function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInputType {
+export function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLNullableInputType {
   let result = inputTypeCache[inputType];
   if (!result) {
     result = buildGraphQLInputType(inputType, nameSuffix);
@@ -23,7 +23,7 @@ export function getGraphQLInputType(inputType: string, nameSuffix: string): Grap
   return result;
 }
 
-function buildGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
+function buildGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLNullableInputType {
   const schema = getDataType(resourceType);
   return new GraphQLInputObjectType({
     name: resourceType + nameSuffix,
@@ -83,7 +83,7 @@ function buildInputPropertyField(
     fieldConfig.type = new GraphQLList(new GraphQLNonNull(getGraphQLInputType(typeName, nameSuffix)));
   }
   if (elementDefinition.min > 0 && !key.endsWith('[x]')) {
-    fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
+    fieldConfig.type = new GraphQLNonNull(fieldConfig.type as GraphQLNullableInputType);
   }
 
   const propertyName = (key.split('.').pop() as string).replace('[x]', capitalize(elementDefinitionType.code));
@@ -91,20 +91,18 @@ function buildInputPropertyField(
 }
 
 export function getPatchOperationInputType(): GraphQLInputObjectType {
-  if (!patchOperationInputType) {
-    patchOperationInputType = new GraphQLInputObjectType({
-      name: 'PatchOperationInput',
-      description: 'A JSON Patch operation as per RFC 6902',
-      fields: {
-        op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
-        path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
-        value: {
-          type: GraphQLString,
-          description:
-            'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)',
-        },
+  patchOperationInputType ??= new GraphQLInputObjectType({
+    name: 'PatchOperationInput',
+    description: 'A JSON Patch operation as per RFC 6902',
+    fields: {
+      op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
+      path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
+      value: {
+        type: GraphQLString,
+        description:
+          'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)',
       },
-    });
-  }
+    },
+  });
   return patchOperationInputType;
 }

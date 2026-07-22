@@ -5,7 +5,6 @@ import type * as MedplumCore from '@medplum/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import type { Mocked } from 'vitest';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { LinkTabs } from './LinkTabs';
@@ -38,13 +37,11 @@ describe('LinkTabs', () => {
     tabs: ['Overview', 'Timeline', 'Details'],
   };
 
-  function setup(props = {}, initialUrl = '/patient/123/overview'): void {
+  function setup(props = {}): void {
     render(
-      <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
-        <MedplumProvider medplum={medplum} navigate={navigateMock}>
-          <LinkTabs {...defaultProps} {...props} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum} navigate={navigateMock}>
+        <LinkTabs {...defaultProps} {...props} />
+      </MedplumProvider>
     );
   }
 

@@ -3,7 +3,6 @@
 import type { QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
 import { act, render, screen } from '../test-utils/render';
 import { QuestionnaireResponseDisplay } from './QuestionnaireResponseDisplay';
 
@@ -11,11 +10,9 @@ const medplum = new MockClient();
 
 function setup(questionnaireResponse: QuestionnaireResponse | { reference: string; display?: string }): void {
   render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        <QuestionnaireResponseDisplay questionnaireResponse={questionnaireResponse} />
-      </MedplumProvider>
-    </MemoryRouter>
+    <MedplumProvider medplum={medplum}>
+      <QuestionnaireResponseDisplay questionnaireResponse={questionnaireResponse} />
+    </MedplumProvider>
   );
 }
 
