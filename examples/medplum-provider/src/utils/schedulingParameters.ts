@@ -4,6 +4,30 @@ import { getReferenceString } from '@medplum/core';
 import type { Extension, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import { SchedulingParametersURI } from './scheduling';
 
+type DurationUnit = 'h' | 'min' | 'd' | 'wk';
+
+function durationExtensionToMinutes(ext: Extension | undefined): number | undefined {
+  const duration = ext?.valueDuration;
+  if (duration?.value === undefined) {
+    return undefined;
+  }
+  switch (duration.unit as DurationUnit) {
+    case 'wk':
+      return duration.value * 60 * 24 * 7;
+    case 'd':
+      return duration.value * 60 * 24;
+    case 'h':
+      return duration.value * 60;
+    case 'min':
+    default:
+      return duration.value;
+  }
+}
+
+function minutesToDurationExtension(url: string, minutes: number): Extension {
+  return { url, valueDuration: { value: minutes, unit: 'min' } };
+}
+
 /**
  * Client-side parse/serialize for `Schedule.extension[SchedulingParameters].availability`
  * (spec §4.1, §8) — the highest-risk new piece of the Calendar & Availability
@@ -223,6 +247,168 @@ export function setScheduleAvailability(
     ],
   };
 
+  const extensions = [...(schedule.extension ?? [])];
+  if (index >= 0) {
+    extensions[index] = newExtension;
+  } else {
+    extensions.push(newExtension);
+  }
+
+  return { ...schedule, extension: extensions };
+}
+
+/**
+ * Client-side parse/serialize for the visit-type-level `SchedulingParameters`
+ * fields on a `HealthcareService` (spec §4, §10 — the "genuinely new work,
+ * highest-risk piece" for the Configuration screen's Visit Types tab).
+ * Mirrors `packages/server/src/fhir/operations/utils/scheduling-parameters.ts`'s
+ * `getHealthcareServiceSchedulingParameters`. Per that file's `exactlyZero`
+ * validation, a HealthcareService's extension must NOT carry `service` or
+ * `availability` sub-extensions (those are Schedule-level only) — this
+ * helper never reads or writes them.
+ */
+export type VisitTypeSchedulingParams = {
+  duration?: number; // minutes — required by $find/$book, but left optional here so a not-yet-configured visit type can round-trip
+  bufferBefore: number; // minutes
+  bufferAfter: number; // minutes
+  alignmentInterval: number; // minutes ("appointments can start every N min")
+  alignmentOffset: number; // minutes
+  timezone?: string;
+};
+
+// Mirrors the server's SERVICE_DEFAULTS (scheduling-parameters.ts) for the
+// fields this screen exposes.
+export const VISIT_TYPE_SCHEDULING_DEFAULTS: Omit<VisitTypeSchedulingParams, 'duration' | 'timezone'> = {
+  bufferBefore: 0,
+  bufferAfter: 0,
+  alignmentInterval: 60,
+  alignmentOffset: 0,
+};
+
+/**
+ * Reads the visit-type-level scheduling fields off a HealthcareService's
+ * SchedulingParameters extension, applying the same defaults the server
+ * falls back to when a field (or the whole extension) is absent.
+ * @param healthcareService - The visit type to read from.
+ * @returns The parsed duration/buffer/alignment/timezone parameters.
+ */
+export function getVisitTypeSchedulingParams(healthcareService: HealthcareService): VisitTypeSchedulingParams {
+  const extension = getExtensionsByUrl(healthcareService, SchedulingParametersURI)[0];
+  if (!extension) {
+    return { ...VISIT_TYPE_SCHEDULING_DEFAULTS };
+  }
+  const get = (url: string): Extension | undefined => getExtensionsByUrl(extension, url)[0];
+  return {
+    duration: durationExtensionToMinutes(get('duration')),
+    bufferBefore: durationExtensionToMinutes(get('bufferBefore')) ?? VISIT_TYPE_SCHEDULING_DEFAULTS.bufferBefore,
+    bufferAfter: durationExtensionToMinutes(get('bufferAfter')) ?? VISIT_TYPE_SCHEDULING_DEFAULTS.bufferAfter,
+    alignmentInterval:
+      durationExtensionToMinutes(get('alignmentInterval')) ?? VISIT_TYPE_SCHEDULING_DEFAULTS.alignmentInterval,
+    alignmentOffset: durationExtensionToMinutes(get('alignmentOffset')) ?? VISIT_TYPE_SCHEDULING_DEFAULTS.alignmentOffset,
+    timezone: get('timezone')?.valueCode,
+  };
+}
+
+/**
+ * Serializes visit-type-level scheduling fields into a new HealthcareService
+ * SchedulingParameters extension, replacing whatever extension is there
+ * today (there's nothing else legally allowed inside it per the server's
+ * `exactlyZero` checks for `service`/`availability`, so a full replace is
+ * safe — unlike the Schedule-level helpers, which must preserve sibling
+ * sub-extensions). Save via a normal `medplum.updateResource`.
+ * @param healthcareService - The visit type to update.
+ * @param params - The new duration/buffer/alignment/timezone parameters.
+ * @returns A new HealthcareService object with the extension replaced (does not mutate the input).
+ */
+export function setVisitTypeSchedulingParams(
+  healthcareService: HealthcareService,
+  params: VisitTypeSchedulingParams
+): HealthcareService {
+  const subExtensions: Extension[] = [];
+  if (params.duration !== undefined) {
+    subExtensions.push(minutesToDurationExtension('duration', params.duration));
+  }
+  subExtensions.push(minutesToDurationExtension('bufferBefore', params.bufferBefore));
+  subExtensions.push(minutesToDurationExtension('bufferAfter', params.bufferAfter));
+  subExtensions.push(minutesToDurationExtension('alignmentInterval', params.alignmentInterval));
+  subExtensions.push(minutesToDurationExtension('alignmentOffset', params.alignmentOffset));
+  if (params.timezone) {
+    subExtensions.push({ url: 'timezone', valueCode: params.timezone });
+  }
+
+  const newExtension: Extension = { url: SchedulingParametersURI, extension: subExtensions };
+  const extensions = (healthcareService.extension ?? []).filter((e) => e.url !== SchedulingParametersURI);
+  extensions.push(newExtension);
+  return { ...healthcareService, extension: extensions };
+}
+
+/**
+ * Per-resource buffer (turnover/cleanup) override for a Room/Device's own
+ * Schedule (spec §8 Tab 2, §10) — the ONLY per-resource override allowed.
+ * Duration and alignment must never be set here: `$find`'s
+ * `extractCommonParameters`/`assertAllMatch` throws `badRequest` if they
+ * differ across the schedules in a multi-resource combo, so those two stay
+ * visit-type-level only (Tab 1).
+ */
+export type ResourceBufferOverride = {
+  bufferBefore?: number;
+  bufferAfter?: number;
+};
+
+/**
+ * Reads a Room/Device Schedule's per-resource buffer override for a given
+ * visit type, if any.
+ * @param schedule - The Schedule to read from.
+ * @param healthcareService - The visit type this override applies to.
+ * @returns The buffer override, or an empty object if none is set (inherits the visit type's defaults).
+ */
+export function getScheduleBufferOverride(
+  schedule: Schedule,
+  healthcareService: Reference<HealthcareService> | (HealthcareService & { id: string })
+): ResourceBufferOverride {
+  const { extension } = findSchedulingParametersExtension(schedule, healthcareService);
+  if (!extension) {
+    return {};
+  }
+  return {
+    bufferBefore: durationExtensionToMinutes(getExtensionsByUrl(extension, 'bufferBefore')[0]),
+    bufferAfter: durationExtensionToMinutes(getExtensionsByUrl(extension, 'bufferAfter')[0]),
+  };
+}
+
+/**
+ * Serializes a per-resource buffer override onto a Room/Device's Schedule,
+ * leaving every other sub-extension (service, availability, and — though
+ * this screen never writes them — duration/alignment) untouched. Save via a
+ * normal `medplum.updateResource`.
+ * @param schedule - The Schedule to update.
+ * @param healthcareService - The visit type this override applies to.
+ * @param override - The new buffer override (an undefined field clears that buffer, falling back to the visit type's default).
+ * @returns A new Schedule object with the extension patched (does not mutate the input).
+ */
+export function setScheduleBufferOverride(
+  schedule: Schedule,
+  healthcareService: Reference<HealthcareService> | (HealthcareService & { id: string }),
+  override: ResourceBufferOverride
+): Schedule {
+  const serviceRef = getReferenceString(healthcareService);
+  const { index, extension } = findSchedulingParametersExtension(schedule, healthcareService);
+
+  const otherSubExtensions = (extension?.extension ?? []).filter(
+    (e) => e.url !== 'bufferBefore' && e.url !== 'bufferAfter'
+  );
+  const subExtensions: Extension[] = [...otherSubExtensions];
+  if (!subExtensions.some((e) => e.url === 'service')) {
+    subExtensions.push({ url: 'service', valueReference: { reference: serviceRef } });
+  }
+  if (override.bufferBefore !== undefined) {
+    subExtensions.push(minutesToDurationExtension('bufferBefore', override.bufferBefore));
+  }
+  if (override.bufferAfter !== undefined) {
+    subExtensions.push(minutesToDurationExtension('bufferAfter', override.bufferAfter));
+  }
+
+  const newExtension: Extension = { url: SchedulingParametersURI, extension: subExtensions };
   const extensions = [...(schedule.extension ?? [])];
   if (index >= 0) {
     extensions[index] = newExtension;

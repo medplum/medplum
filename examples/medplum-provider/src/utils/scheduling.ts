@@ -1,9 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { generateId, getExtension, getIdentifier, parseReference, resolveId, setIdentifier } from '@medplum/core';
+import {
+  generateId,
+  getExtension,
+  getExtensionValue,
+  getIdentifier,
+  getReferenceString,
+  parseReference,
+  resolveId,
+  setIdentifier,
+} from '@medplum/core';
 import type {
   Appointment,
+  CodeableConcept,
   HealthcareService,
   Identifier,
   Reference,
@@ -12,9 +22,17 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { isCodeableReferenceLikeTo } from './servicetype';
+import { isCodeableReferenceLikeTo, ServiceTypeReferenceURI, toCodeableReferenceLike } from './servicetype';
 
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
+// `$find` requires every actor (Practitioner/Location/Device) referenced by
+// a Schedule to carry this extension — server throws `No timezone specified`
+// otherwise (verified live). Seeded actors already carry it; anything
+// created through the Configuration screen must set it too.
+export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
+// Single practice timezone (spec §2, §10 — no real multi-timezone support is
+// verified anywhere in this app).
+export const PRACTICE_TIMEZONE = 'America/Los_Angeles';
 const MedplumSchedulingTransientIdentifierURI = 'https://medplum.com/fhir/scheduling-transient-id';
 export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
@@ -81,6 +99,54 @@ export function resolveResourcePools(
     }
   }
   return pools;
+}
+
+/**
+ * Adds or removes a `Schedule.serviceType` entry for the given visit type
+ * (Configuration screen spec §5, §8) — the single eligibility relation
+ * shared by the Visit Types tab (editing it grouped by visit type) and the
+ * Providers & Resources tab (editing it grouped by provider). Both are plain
+ * reads/writes of this one field; there's no separate sync layer.
+ * @param schedule - The provider/room/device Schedule to update.
+ * @param healthcareService - The visit type to add/remove eligibility for.
+ * @param eligible - Whether this Schedule should be eligible to fulfill the visit type.
+ * @returns A new Schedule object with `serviceType` patched (does not mutate the input).
+ */
+export function setScheduleServiceTypeEligibility(
+  schedule: Schedule,
+  healthcareService: WithId<HealthcareService>,
+  eligible: boolean
+): Schedule {
+  const serviceRef = getReferenceString(healthcareService);
+  const withoutThisService = (schedule.serviceType ?? []).filter((concept: CodeableConcept) => {
+    const ref = getExtensionValue(concept, ServiceTypeReferenceURI) as Reference | undefined;
+    return ref?.reference !== serviceRef;
+  });
+  if (!eligible) {
+    return { ...schedule, serviceType: withoutThisService };
+  }
+  return { ...schedule, serviceType: [...withoutThisService, ...toCodeableReferenceLike(healthcareService)] };
+}
+
+/**
+ * Per-actor-type counts of Schedules eligible for a visit type (spec §8's
+ * completeness badge — "2 providers · 1 room · 1 device") — a thin wrapper
+ * over `resolveResourcePools` so the Configuration screen and Find & Book
+ * always agree on what "eligible" means.
+ * @param schedules - All candidate Schedules to consider.
+ * @param healthcareService - The visit type being counted.
+ * @returns The number of eligible Schedules per actor resourceType.
+ */
+export function countEligibleResources(
+  schedules: Schedule[],
+  healthcareService: WithId<HealthcareService>
+): Record<'Practitioner' | 'Location' | 'Device', number> {
+  const pools = resolveResourcePools(schedules, healthcareService);
+  return {
+    Practitioner: pools.Practitioner?.length ?? 0,
+    Location: pools.Location?.length ?? 0,
+    Device: pools.Device?.length ?? 0,
+  };
 }
 
 export type ResourceCombo = {

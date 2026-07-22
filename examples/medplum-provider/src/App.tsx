@@ -4,6 +4,7 @@ import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
+  IconAdjustments,
   IconApps,
   IconBook2,
   IconCalendarEvent,
@@ -29,6 +30,10 @@ import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
+import { ConfigurationPage } from './pages/configuration/ConfigurationPage';
+import { ProvidersResourcesTab } from './pages/configuration/ProvidersResourcesTab';
+import { RoomsDevicesTab } from './pages/configuration/RoomsDevicesTab';
+import { VisitTypesTab } from './pages/configuration/VisitTypesTab';
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { FaxPage } from './pages/fax/FaxPage';
@@ -155,6 +160,7 @@ export function App(): JSX.Element | null {
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
+                  { icon: <IconAdjustments />, label: 'Configuration', href: '/Configuration' },
                   ...(hasDoseSpot
                     ? [
                         {
@@ -255,6 +261,12 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id/settings" element={<ScheduleSettingsPage />} />
               <Route path="/Scheduling" element={<SchedulingPage />} />
+              <Route path="/Configuration" element={<ConfigurationPage />}>
+                <Route index element={<Navigate to="visit-types" replace />} />
+                <Route path="visit-types" element={<VisitTypesTab />} />
+                <Route path="rooms" element={<RoomsDevicesTab />} />
+                <Route path="providers" element={<ProvidersResourcesTab />} />
+              </Route>
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/register" element={<RegisterPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}

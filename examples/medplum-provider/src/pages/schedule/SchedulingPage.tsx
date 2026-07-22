@@ -165,9 +165,18 @@ export function SchedulingPage(): JSX.Element {
   });
   useNotifyOnError(allSchedulesOutcome);
 
+  // Deactivation enforcement (Configuration spec §2, §4, §10) — a deactivated
+  // visit type/provider/room/device must actually disappear from booking,
+  // not just from Configuration's own lists. Deactivating a resource always
+  // flips its backing Schedule's `active` to false (Configuration spec §6),
+  // so filtering here covers providers/rooms/devices uniformly despite their
+  // different native active/status fields. Additive: identical to today's
+  // behavior when nothing is deactivated.
+  const activeSchedules = useMemo(() => (allSchedules ?? []).filter((s) => s.active !== false), [allSchedules]);
+
   const pools = useMemo(
-    () => (healthcareService ? resolveResourcePools(allSchedules ?? [], healthcareService) : {}),
-    [allSchedules, healthcareService]
+    () => (healthcareService ? resolveResourcePools(activeSchedules, healthcareService) : {}),
+    [activeSchedules, healthcareService]
   );
 
   const filteredPools = useMemo(() => filterPoolsByCriteria(pools, criteria), [pools, criteria]);
@@ -254,6 +263,7 @@ export function SchedulingPage(): JSX.Element {
             key={healthcareService?.id}
             name="healthcareService"
             resourceType="HealthcareService"
+            searchCriteria={{ active: 'true' }}
             defaultValue={healthcareService}
             onChange={setHealthcareService}
             placeholder="Visit type"
