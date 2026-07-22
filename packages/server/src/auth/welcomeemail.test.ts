@@ -87,8 +87,16 @@ describe('Welcome email', () => {
       const html = welcomeEmailHtml(CTX);
       expect(html).toContain('<strong>Hamilton Project</strong>');
       // A nested list produces two <ul> elements (outer + nested).
-      expect((html.match(/<ul>/g) ?? []).length).toBe(2);
+      expect((html.match(/<ul[\s>]/g) ?? []).length).toBe(2);
       expect(html).not.toContain('**');
+    });
+
+    test('Uses toned-down, left-aligned styling', () => {
+      const html = welcomeEmailHtml(CTX);
+      // No centered column.
+      expect(html).not.toContain('margin: 0 auto');
+      // Tightened list indentation rather than the deep browser default.
+      expect(html).toContain('padding-left: 20px');
     });
 
     test('Auto-links URLs', () => {

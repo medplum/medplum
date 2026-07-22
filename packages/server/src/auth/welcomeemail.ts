@@ -102,9 +102,15 @@ export function welcomeEmailHtml(ctx: WelcomeEmailContext): string {
     projectName: escapeHtml(ctx.projectName),
     firstName: ctx.firstName ? escapeHtml(ctx.firstName) : undefined,
   };
-  const body = marked.parse(welcomeEmailMarkdown(safeCtx), { gfm: true, breaks: true, async: false });
-  // Inline styles only — many email clients strip <head>/<style>. Keep it minimal.
-  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto;">${body}</div>`;
+  // marked's default lists indent deeply; tighten them with inline styles so the
+  // email reads plainly instead of heavily "designed". Inline styles only —
+  // many email clients strip <head>/<style>.
+  const body = marked
+    .parse(welcomeEmailMarkdown(safeCtx), { gfm: true, breaks: true, async: false })
+    .replace(/<ul>/g, '<ul style="margin: 4px 0; padding-left: 20px;">')
+    .replace(/<li>/g, '<li style="margin: 2px 0;">');
+  // Left-aligned, capped width, no centering — minimal chrome.
+  return `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.5; color: #1f2937; max-width: 640px;">${body}</div>`;
 }
 
 /**
