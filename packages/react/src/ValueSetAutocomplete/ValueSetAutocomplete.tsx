@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack, Text } from '@mantine/core';
+import { Box, Group, Text } from '@mantine/core';
 import type { ValueSetExpandParams } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
@@ -146,7 +146,11 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 }
 
 /**
- * Stacks two pieces of field text on separate lines, dropping either if absent.
+ * Stacks two pieces of field text, dropping either if absent. The second node is a block-level
+ * `span` with a top margin so it always starts on its own line and stays visually separated even
+ * when the first node's text wraps — with no extra spacing when only one node is present. A `span`
+ * (rather than a `div`/`Stack`) keeps this valid inside Mantine's description/error slots, which
+ * render as a `<p>` and cannot legally contain block elements.
  * @param first - The first node (e.g. a consumer-supplied error or description).
  * @param second - The second node (e.g. the unavailable/search-error note).
  * @returns Both nodes stacked with spacing, or whichever one is present.
@@ -154,10 +158,12 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 function combineNodes(first: ReactNode, second: ReactNode): ReactNode {
   if (first && second) {
     return (
-      <Stack gap="xs">
+      <>
         {first}
-        {second}
-      </Stack>
+        <Box component="span" display="block" mt="xs">
+          {second}
+        </Box>
+      </>
     );
   }
   return first || second;

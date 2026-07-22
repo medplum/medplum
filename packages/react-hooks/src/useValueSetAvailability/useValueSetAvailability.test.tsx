@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, OperationOutcomeError, serverError } from '@medplum/core';
+import { badRequest, OperationOutcomeError, ReadablePromise, serverError } from '@medplum/core';
+import type { ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
@@ -17,11 +18,21 @@ const OTHER = 'http://example.com/other';
 
 function setup(): { medplum: MockClient; wrapper: ({ children }: { children: ReactNode }) => JSX.Element } {
   const medplum = new MockClient();
-  vi.spyOn(medplum, 'valueSetExpand').mockImplementation(async (params) => {
+  vi.spyOn(medplum, 'valueSetExpand').mockImplementation((params) => {
     if (params.url === MISSING) {
-      throw new OperationOutcomeError(badRequest(`ValueSet ${MISSING} not found`));
+      // Reject via the promise (not a synchronous throw) so the hook's `.then().catch()` probe
+      // chain catches it, matching how a real 400 surfaces.
+      return new ReadablePromise<ValueSet>(
+        Promise.reject(new OperationOutcomeError(badRequest(`ValueSet ${MISSING} not found`)))
+      );
     }
-    return { resourceType: 'ValueSet', status: 'active', expansion: { contains: [] } };
+    return new ReadablePromise<ValueSet>(
+      Promise.resolve({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: { timestamp: new Date().toISOString(), contains: [] },
+      })
+    );
   });
   function wrapper({ children }: { children: ReactNode }): JSX.Element {
     return <MedplumProvider medplum={medplum}>{children}</MedplumProvider>;
