@@ -833,6 +833,184 @@ describe('Batch and Transaction processing', () => {
     expect(res).toHaveStatus(412);
   });
 
+  test('Batch FHIRPath PATCH with stale ifMatch fails and does not modify resource', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    // Change the version so the captured versionId is stale
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('412');
+
+    // The stale precondition must have prevented the patch from being applied
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+    expect((reread.body as Patient).gender).toBeUndefined();
+  });
+
+  test('Batch FHIRPath PATCH with current ifMatch succeeds and persists', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('200');
+
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect((reread.body as Patient).gender).toStrictEqual('female');
+  });
+
+  test('Transaction PATCH with stale ifMatch rolls back the whole transaction', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    // Bump the version so the captured versionId is stale
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const orgIdentifier = randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          // A create that must be rolled back when the later PATCH fails its precondition
+          request: { method: 'POST', url: 'Organization' },
+          resource: { resourceType: 'Organization', identifier: [{ value: orgIdentifier }] },
+        },
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res).toHaveStatus(412);
+
+    // The Organization created in the first entry must have been rolled back
+    const search = await request(app)
+      .get(`/fhir/R4/Organization?identifier=${orgIdentifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(search).toHaveStatus(200);
+    expect((search.body as Bundle).entry?.length ?? 0).toStrictEqual(0);
+  });
+
   test('Conditional update (create-as-update) in transaction', async () => {
     const careTeamIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();

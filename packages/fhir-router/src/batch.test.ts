@@ -749,6 +749,129 @@ describe('Batch', () => {
     expect(updated.managingOrganization?.reference).toStrictEqual(getReferenceString(createdOrg));
   });
 
+  describe('If-Match preconditions', () => {
+    test('Batch FHIRPath PATCH with matching If-Match succeeds', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', active: false });
+      const version = patient.meta?.versionId as string;
+      expect(version).toBeDefined();
+
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'PATCH', url: 'Patient/' + patient.id, ifMatch: `W/"${version}"` },
+            resource: {
+              resourceType: 'Parameters',
+              parameter: [
+                {
+                  name: 'operation',
+                  part: [
+                    { name: 'type', valueCode: 'add' },
+                    { name: 'path', valueString: 'Patient' },
+                    { name: 'name', valueString: 'birthDate' },
+                    { name: 'value', valueDate: '1990-05-15' },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const results = bundle.entry as BundleEntry[];
+      expect(results[0].response?.status).toStrictEqual('200');
+      expect((results[0].resource as Patient).birthDate).toStrictEqual('1990-05-15');
+    });
+
+    test('Batch FHIRPath PATCH with stale If-Match fails with 412', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', active: false });
+
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'PATCH', url: 'Patient/' + patient.id, ifMatch: 'W/"stale-version"' },
+            resource: {
+              resourceType: 'Parameters',
+              parameter: [
+                {
+                  name: 'operation',
+                  part: [
+                    { name: 'type', valueCode: 'add' },
+                    { name: 'path', valueString: 'Patient' },
+                    { name: 'name', valueString: 'birthDate' },
+                    { name: 'value', valueDate: '1990-05-15' },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const results = bundle.entry as BundleEntry[];
+      expect(results[0].response?.status).toStrictEqual('412');
+
+      // The patch must NOT have been applied
+      const unchanged = await repo.readResource<Patient>('Patient', patient.id);
+      expect(unchanged.birthDate).toBeUndefined();
+      expect(unchanged.meta?.versionId).toStrictEqual(patient.meta?.versionId);
+    });
+
+    test('Batch PUT with stale If-Match fails with 412', async () => {
+      // Regression guard: If-Match already applies to update (PUT) entries
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', active: false });
+
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'PUT', url: 'Patient/' + patient.id, ifMatch: 'W/"stale-version"' },
+            resource: { resourceType: 'Patient', id: patient.id, active: true },
+          },
+        ],
+      });
+
+      const results = bundle.entry as BundleEntry[];
+      expect(results[0].response?.status).toStrictEqual('412');
+      const unchanged = await repo.readResource<Patient>('Patient', patient.id);
+      expect(unchanged.active).toStrictEqual(false);
+    });
+
+    test('Transaction PATCH with stale If-Match fails the whole transaction', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', active: false });
+
+      await expect(
+        processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [
+            {
+              request: { method: 'PATCH', url: 'Patient/' + patient.id, ifMatch: 'W/"stale-version"' },
+              resource: {
+                resourceType: 'Parameters',
+                parameter: [
+                  {
+                    name: 'operation',
+                    part: [
+                      { name: 'type', valueCode: 'add' },
+                      { name: 'path', valueString: 'Patient' },
+                      { name: 'name', valueString: 'birthDate' },
+                      { name: 'value', valueDate: '1990-05-15' },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+    });
+  });
+
   test('JSONPath error messages', async () => {
     const serviceRequest = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',

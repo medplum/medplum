@@ -174,7 +174,8 @@ export abstract class FhirRepository {
   abstract patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[] | Parameters
+    patch: Operation[] | Parameters,
+    options?: UpdateResourceOptions
   ): Promise<WithId<T>>;
 
   /**
@@ -394,7 +395,11 @@ export abstract class FhirRepository {
     );
   }
 
-  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+  async conditionalPatch(
+    search: SearchRequest,
+    patch: Operation[],
+    options?: UpdateResourceOptions
+  ): Promise<WithId<Resource>> {
     // Limit search to optimize DB query
     search.count = 2;
     search.sortRules = undefined;
@@ -409,7 +414,7 @@ export abstract class FhirRepository {
         }
 
         const resource = matches[0];
-        return txRepo.patchResource(resource.resourceType, resource.id, patch);
+        return txRepo.patchResource(resource.resourceType, resource.id, patch, options);
       },
       { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
@@ -542,7 +547,8 @@ export class MemoryRepository extends FhirRepository {
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[] | Parameters
+    patch: Operation[] | Parameters,
+    options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     const resource = await this.readResource<T>(resourceType, id);
 
@@ -567,7 +573,7 @@ export class MemoryRepository extends FhirRepository {
       delete resource.meta.lastUpdated;
     }
 
-    return this.updateResource(resource);
+    return this.updateResource(resource, options);
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
