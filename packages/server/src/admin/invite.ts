@@ -141,7 +141,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
         return txRepo.conditionalCreate(userResource, searchRequest);
       },
-      { serializable: true }
+      {
+        resourceTypes: ['ProjectMembership', 'User'],
+        source: 'inviteUser.upsertUser',
+        serializable: true,
+      }
     );
     user = result;
     existingUser = !isCreated(outcome);
@@ -425,6 +429,16 @@ async function upsertProjectMembership(
     }
   }
 
+  // Apply default membership policy for Practitioner invites, based on whether the member is
+  // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
+  if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    }
+  }
+
   if (request.forceNewMembership) {
     return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
@@ -459,7 +473,11 @@ async function upsertProjectMembership(
         return createProjectMembership(txRepo, user, project, profile, partialMembership);
       }
     },
-    { serializable: true }
+    {
+      resourceTypes: ['ProjectMembership', profile.resourceType],
+      source: 'upsertProjectMembership',
+      serializable: true,
+    }
   );
 
   return membership;

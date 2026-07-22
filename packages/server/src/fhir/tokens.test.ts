@@ -780,7 +780,7 @@ describe('Non-strict mode', () => {
         ],
       });
       //TODO what is actually the expected behavior here?
-      expect(toSortedIdentifierValues(res)).toStrictEqual([]);
+      expect(toIdentifierValues(res)).toContainExactly([]);
     }));
 
   test('Handle malformed value', () =>
@@ -810,7 +810,7 @@ describe('Non-strict mode', () => {
         ],
       });
       //TODO what is actually the expected behavior here?
-      expect(toSortedIdentifierValues(res)).toStrictEqual([undefined]);
+      expect(toIdentifierValues(res)).toContainExactly([undefined]);
     }));
 });
 
@@ -994,7 +994,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(res)).toStrictEqual(toSorted(expected));
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<[string, Conditions[]]>([
@@ -1012,7 +1012,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(resEquals)).toStrictEqual(toSorted(expected));
+    expect(toIdentifierValues(resEquals)).toContainExactly(expected);
 
     const resContains = await repo.search<Condition>({
       resourceType: 'Condition',
@@ -1024,7 +1024,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
+    expect(toIdentifierValues(resContains)).toContainExactly([]);
   });
 
   test.each<[string, string, Conditions[]]>([
@@ -1043,7 +1043,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(res)).toStrictEqual(toSorted(expected));
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<[string, Conditions[]]>([
@@ -1060,7 +1060,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(res)).toStrictEqual(expected);
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<[string, string, Conditions[]]>([
@@ -1086,7 +1086,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(res)).toStrictEqual(expected);
+    expect(toIdentifierValues(res)).toContainExactly(expected);
   });
 
   test.each<string>([val1, val1.slice(0, 3)])('code :contains beginning of value %s', async (value) => {
@@ -1100,7 +1100,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
+    expect(toIdentifierValues(resContains)).toContainExactly([]);
   });
 
   test.each<[string]>([[val1.slice(1, 3)], [val2.slice(1, 3)]])(`code :contains middle of value %s`, async (value) => {
@@ -1116,7 +1116,7 @@ describe('Condition.code token queries', () => {
     });
     // Token columns don't support :contains on `code`
     // Token lookup tables don't support infix queries
-    expect(toSortedIdentifierValues(resContains).length).toBe(0);
+    expect(toIdentifierValues(resContains).length).toBe(0);
   });
 
   test.each<[string, Conditions[]]>([
@@ -1135,7 +1135,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected);
+    expect(toIdentifierValues(resContains)).toContainExactly(expected);
   });
 
   describe('code :text search for special chars', () => {
@@ -1427,15 +1427,4 @@ describe('buildTokens', () => {
 
 function toIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
   return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string) ?? [];
-}
-
-function toSortedIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
-  return toSorted(toIdentifierValues(bundle));
-}
-
-// Array.prototype.toSorted isn't available in Node 18, so write our own
-function toSorted<T extends string>(array: T[]): T[] {
-  const newArray = Array.from(array);
-  newArray.sort((a, b) => a.localeCompare(b));
-  return newArray;
 }

@@ -102,7 +102,7 @@ describe('PackageRelease $install', () => {
       .set('Authorization', 'Bearer ' + nonAdminAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Success for admin user', async () => {
@@ -159,14 +159,14 @@ describe('PackageRelease $install', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app)
       .get(`/fhir/R4/PackageInstallation?version=${packageRelease.version}`)
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const installations = res2.body.entry.map((e: any) => e.resource) as PackageInstallation[];
     expect(installations.length).toBe(1);
     expect(installations[0].status).toBe('installed');
@@ -236,7 +236,7 @@ describe('PackageRelease $install', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const installations = res2.body.entry.map((e: any) => e.resource) as PackageInstallation[];
     expect(installations.length).toBe(1);
     expect(installations[0].status).toBe('error');
@@ -250,6 +250,6 @@ describe('PackageRelease $install', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 });

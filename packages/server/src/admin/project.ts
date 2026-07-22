@@ -6,9 +6,13 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
+import { resetPassword } from '../auth/resetpassword';
 import { setPassword } from '../auth/setpassword';
+import type { MfaMethod } from '../auth/utils';
+import { getEnrolledMfaMethods } from '../auth/utils';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
+import { reconcileDefaultAccessPolicy } from '../fhir/accesspolicy';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
@@ -128,7 +132,10 @@ projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request
     sendOutcome(res, forbidden);
     return;
   }
-  const result = await ctx.repo.updateResource(resource);
+  // Keep the default access policy in sync when the admin flag is toggled, so an upgraded
+  // admin isn't left restricted by the Practitioner default (and vice versa).
+  const reconciled = reconcileDefaultAccessPolicy(ctx.project, resource as ProjectMembership);
+  const result = await ctx.repo.updateResource(reconciled);
   res.json(result);
 });
 
@@ -152,30 +159,27 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
   // Check if the user is project-scoped (has a project field matching the current project)
   if (user.project?.reference === getReferenceString(ctx.project)) {
     // Wrap search and delete operations in a transaction
-    await systemRepo.withTransaction(async (txRepo) => {
-      // Check if there are other ProjectMemberships for this user
-      // (search before deleting to get accurate count)
-      const otherMemberships = await txRepo.searchResources<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        filters: [
-          {
-            code: 'user',
-            operator: Operator.EQUALS,
-            value: getReferenceString(user),
-          },
-        ],
-        count: 2,
-      });
+    await systemRepo.withTransaction(
+      async (txRepo) => {
+        // Check if there are other ProjectMemberships for this user
+        // (search before deleting to get accurate count)
+        const otherMemberships = await txRepo.searchResources<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
+          count: 2,
+        });
 
-      // Delete the ProjectMembership
-      await txRepo.deleteResource('ProjectMembership', membershipId);
+        // Delete the ProjectMembership
+        await txRepo.deleteResource('ProjectMembership', membershipId);
 
-      // Delete the User resource if it's project-scoped and this was their only membership
-      // (project-scoped users should only have memberships in one project)
-      if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
-        await txRepo.deleteResource('User', user.id);
-      }
-    });
+        // Delete the User resource if it's project-scoped and this was their only membership
+        // (project-scoped users should only have memberships in one project)
+        if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
+          await txRepo.deleteResource('User', user.id);
+        }
+      },
+      { resourceTypes: ['ProjectMembership', 'User'], source: 'projectAdmin.deleteMember' }
+    );
   } else {
     // User is not project-scoped, just delete the ProjectMembership
     await ctx.repo.deleteResource('ProjectMembership', membershipId);
@@ -186,10 +190,92 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
 
 /**
  * Handles requests to "/admin/projects/{projectId}/members/{membershipId}/mfa/reset"
- * Allows a project admin to reset MFA enrollment for a member who has lost access to their authenticator.
- * The user will need to re-enroll in MFA on their next login (if mfaRequired is set) or via the security page.
+ * Allows a project admin to reset MFA for a member who has lost access to a factor.
+ *
+ * The optional `method` field ('totp' | 'email') selects which factor to reset and
+ * defaults to 'totp' for backwards compatibility: TOTP was historically the only MFA
+ * method, so an empty body continues to reset TOTP, fully un-enrolling legacy users who
+ * have no `mfaMethod` recorded. Any other enrolled factors are left in place.
+ *
+ * Unlike the self-service `/auth/mfa/disable` endpoint, this does not require the user to
+ * prove control of a factor (the caller is a verified project admin) and does not enforce
+ * the "cannot remove the last factor when MFA is required" guard — the whole point of an
+ * admin reset is to recover a user who has lost their factor. Such a user will be forced
+ * to re-enroll on next login when MFA is required.
  */
-projectAdminRouter.post('/:projectId/members/:membershipId/mfa/reset', async (req: Request, res: Response) => {
+projectAdminRouter.post(
+  '/:projectId/members/:membershipId/mfa/reset',
+  [body('method').optional().isIn(['totp', 'email']).withMessage('Method must be "totp" or "email"')],
+  async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const ctx = getAuthenticatedContext();
+    const membershipId = req.params.membershipId as string;
+    const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+
+    if (membership.project?.reference !== getReferenceString(ctx.project)) {
+      sendOutcome(res, forbidden);
+      return;
+    }
+
+    const method: MfaMethod = (req.body.method as MfaMethod | undefined) ?? 'totp';
+
+    const systemRepo = ctx.systemRepo;
+    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+
+    const enrolled = getEnrolledMfaMethods(user);
+    if (!enrolled.includes(method)) {
+      sendOutcome(res, badRequest(`User is not enrolled in MFA method: ${method}`));
+      return;
+    }
+
+    const remaining = enrolled.filter((m) => m !== method);
+    await systemRepo.updateResource<User>({
+      ...user,
+      mfaEnrolled: remaining.length > 0,
+      mfaMethod: remaining,
+      // Rotate the authenticator secret when TOTP is reset so a lost/stolen device's
+      // authenticator entry cannot be re-used. Email-only resets leave the secret intact.
+      ...(method === 'totp' ? { mfaSecret: authenticator.generateSecret() } : {}),
+    });
+
+    if (user.email) {
+      const methodLabel = method === 'totp' ? 'authenticator app (TOTP)' : 'email-based';
+      await sendEmail(
+        systemRepo,
+        {
+          to: user.email,
+          subject: 'Your multi-factor authentication has been reset',
+          text: [
+            `Hello ${user.firstName ?? user.email},`,
+            '',
+            `A project administrator has reset your ${methodLabel} multi-factor authentication (MFA).`,
+            remaining.length > 0
+              ? 'Your other MFA methods remain active.'
+              : 'You will need to re-enroll the next time you sign in.',
+            '',
+            'If you did not expect this change, please contact your administrator immediately.',
+          ].join('\n'),
+        },
+        ctx.project
+      );
+    }
+
+    sendOutcome(res, allOk);
+  }
+);
+
+/**
+ * Handles requests to "/admin/projects/{projectId}/members/{membershipId}/resetpassword"
+ * Allows a project admin to send a password reset email to a member. This creates a
+ * single-use UserSecurityRequest and emails the member a link to set a new password,
+ * mirroring the self-service `/auth/resetpassword` flow but scoped to a known member.
+ */
+projectAdminRouter.post('/:projectId/members/:membershipId/resetpassword', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
   const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
@@ -202,36 +288,34 @@ projectAdminRouter.post('/:projectId/members/:membershipId/mfa/reset', async (re
   const systemRepo = ctx.systemRepo;
   const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
 
-  if (!user.mfaEnrolled && !user.mfaSecret) {
-    sendOutcome(res, badRequest('User is not enrolled in MFA'));
+  if (!user.email) {
+    sendOutcome(res, badRequest('User does not have an email address'));
     return;
   }
 
-  await systemRepo.updateResource<User>({
-    ...user,
-    mfaEnrolled: false,
-    // Rotate the secret so the old authenticator app entry cannot be re-used
-    mfaSecret: authenticator.generateSecret(),
-  });
-
-  if (user.email) {
-    await sendEmail(
-      systemRepo,
-      {
-        to: user.email,
-        subject: 'Your multi-factor authentication has been reset',
-        text: [
-          `Hello ${user.firstName ?? user.email},`,
-          '',
-          'A project administrator has reset your multi-factor authentication (MFA) enrollment.',
-          'You will need to re-enroll the next time you sign in.',
-          '',
-          'If you did not expect this change, please contact your administrator immediately.',
-        ].join('\n'),
-      },
-      ctx.project
-    );
-  }
+  const url = await resetPassword(systemRepo, user, 'reset');
+  await sendEmail(
+    systemRepo,
+    {
+      to: user.email,
+      subject: 'Medplum Password Reset',
+      text: [
+        `Hello ${user.firstName ?? user.email},`,
+        '',
+        'A project administrator has requested a password reset for your account.',
+        '',
+        'Please click on the following link to set a new password:',
+        '',
+        url,
+        '',
+        'If you did not expect this, please contact your administrator.',
+        '',
+        'Thank you,',
+        'Medplum',
+      ].join('\n'),
+    },
+    ctx.project
+  );
 
   sendOutcome(res, allOk);
 });

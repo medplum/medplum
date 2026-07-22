@@ -74,13 +74,12 @@ describe('fetchHealthiePatients', () => {
       });
     });
 
-    mockFetch.mockImplementationOnce(
-      (): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { users: mockPatients } }),
-          ok: true,
-          status: 200,
-        })
+    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: { users: mockPatients } }),
+        ok: true,
+        status: 200,
+      })
     );
 
     const result = await fetchHealthiePatients(healthieClient);

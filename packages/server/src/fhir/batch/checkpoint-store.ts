@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
 import { ContentType, normalizeErrorString } from '@medplum/core';
-import type { BatchInitialState } from '@medplum/fhir-router';
-import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import type { BatchInitialState, BundlePreprocessInfo } from '@medplum/fhir-router';
+import type { Bundle, BundleEntry, ResourceType } from '@medplum/fhirtypes';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 
@@ -97,10 +97,16 @@ export class BatchCheckpointStore {
 
   /**
    * Persists the initial state produced by preprocessing. Written once, before processing entries.
+   * `bundleInfo.resourceTypes` is a `Set`, which `JSON.stringify` would silently drop, so it is
+   * persisted as an array and revived in {@link loadInitialState}.
    * @param state - The durable initial state.
    */
   async saveInitialState(state: BatchInitialState): Promise<void> {
-    await this.writeFile(this.stateKey(), ContentType.JSON, JSON.stringify(state));
+    const persisted: PersistedInitialState = {
+      ...state,
+      bundleInfo: { ...state.bundleInfo, resourceTypes: Array.from(state.bundleInfo.resourceTypes) },
+    };
+    await this.writeFile(this.stateKey(), ContentType.JSON, JSON.stringify(persisted));
   }
 
   /**
@@ -108,7 +114,11 @@ export class BatchCheckpointStore {
    * @returns The durable initial state.
    */
   async loadInitialState(): Promise<BatchInitialState> {
-    return JSON.parse(await this.readFile(this.stateKey())) as BatchInitialState;
+    const persisted = JSON.parse(await this.readFile(this.stateKey())) as PersistedInitialState;
+    return {
+      ...persisted,
+      bundleInfo: { ...persisted.bundleInfo, resourceTypes: new Set(persisted.bundleInfo.resourceTypes) },
+    };
   }
 
   /**
@@ -199,6 +209,12 @@ export class BatchCheckpointStore {
       });
     }
   }
+}
+
+/** The JSON-safe on-disk form of {@link BatchInitialState}. */
+interface PersistedInitialState extends Omit<BatchInitialState, 'bundleInfo'> {
+  // TODO{v5.2} make resourceTypes required
+  bundleInfo: Omit<BundlePreprocessInfo, 'resourceTypes'> & { resourceTypes?: ResourceType[] };
 }
 
 interface RunWithConcurrencyOptions {

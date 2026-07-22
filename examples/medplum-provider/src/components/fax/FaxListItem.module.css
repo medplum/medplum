@@ -27,10 +27,6 @@
   background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-4));
 }
 
-.itemWrapper.hideDivider::after {
-  background: transparent;
-}
-
 .contentContainer {
   transition: background 0.2s;
   cursor: pointer;

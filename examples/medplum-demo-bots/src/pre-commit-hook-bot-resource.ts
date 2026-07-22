@@ -27,8 +27,8 @@ const HAPI_SERVER = 'http://hapi-server:8080';
 
 /** HTTP methods used for HAPI FHIR operations */
 enum HTTP_VERBS {
-  'PUT', // Create or update patient
-  'DELETE', // Delete patient
+  PUT, // Create or update patient
+  DELETE, // Delete patient
 }
 
 /**

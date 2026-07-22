@@ -38,7 +38,7 @@ describe('Expunge', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
   });
 
   test('Expunge single resource', async () => {
@@ -62,7 +62,7 @@ describe('Expunge', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Expect the patient to be removed from both tables
     expect(await existsInDatabase('Patient', patient.id)).toBe(false);
@@ -136,7 +136,7 @@ describe('Expunge', () => {
       .set('X-Medplum', 'extended')
       .send({});
     if (opts.outcome === 'success') {
-      expect(res.status).toBe(202);
+      expect(res).toHaveStatus(202);
 
       // Project expunge destroys the caller's client/membership; poll with super admin credentials.
       const pollAccessToken = opts.superAdmin ? accessTokenToUse : superAdminAccessToken;
@@ -157,7 +157,7 @@ describe('Expunge', () => {
       expect(await existsInDatabase('ClientApplication', linkedClient.id)).toBe(linkedResourcesExist);
       expect(await existsInDatabase('ProjectMembership', linkedMembership.id)).toBe(linkedResourcesExist);
     } else {
-      expect(res.status).toBe(403);
+      expect(res).toHaveStatus(403);
     }
   });
 
@@ -190,7 +190,7 @@ describe('Expunge', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send({});
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
 
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
     // The job must complete cleanly: the Expunger iterates every resource type, and
@@ -224,7 +224,7 @@ describe('Expunge', () => {
       .send({});
     // The async job is accepted, but the project-scoped repo never finds the
     // foreign patient, so it is left untouched.
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
 
     await waitForAsyncJob(res.headers['content-location'], app, accessToken);
 

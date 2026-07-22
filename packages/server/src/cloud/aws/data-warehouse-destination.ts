@@ -15,11 +15,11 @@ import {
   buildManagedIcebergQualifiedTable,
   buildManagedIcebergSetupQueries,
   buildSelectFromHistoryTableQuery,
+  fetchIcebergWatermark,
   runParameterizedWarehouseSql,
-  runParameterizedWarehouseSqlReadAll,
 } from '../../data-warehouse/warehouse-sql';
 import type { Expression } from '../../fhir/sql';
-import { Condition, SelectQuery, SqlBuilder } from '../../fhir/sql';
+import { Condition } from '../../fhir/sql';
 import { createS3TablesClient, tableExists } from './data-warehouse-client';
 
 export class S3TablesWarehouseDestination implements DataWarehouseDestination {
@@ -61,13 +61,8 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     namespace: string
   ): Promise<Expression | undefined> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(namespace, tableSpec.icebergTable);
-    const safeQualifiedTableName = qualifiedIceberg.split('.').join('"."');
-    const watermarkQuery = new SqlBuilder();
-    watermarkQuery.appendExpression(new SelectQuery(safeQualifiedTableName).raw('MAX(last_updated) AS watermark'));
-    const result = await runParameterizedWarehouseSqlReadAll(connection, watermarkQuery);
-    const row = result.getRowObjectsJson()[0] as { watermark?: string | null } | undefined;
-    const watermark = row?.watermark ?? null;
-    if (watermark === null) {
+    const watermark = await fetchIcebergWatermark(connection, qualifiedIceberg);
+    if (!watermark) {
       return undefined;
     }
 

@@ -66,7 +66,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount1.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body.resourceType).toStrictEqual('Patient');
       expect(res1.headers.location).toContain('Patient');
       expect(res1.headers.location).toContain(res1.body.id);
@@ -82,7 +82,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', basicAuth)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount1.profile));
-      expect(res2.status).toBe(200);
+      expect(res2).toHaveStatus(200);
 
       const patient2 = res2.body;
       expect(patient2.resourceType).toBe('Patient');
@@ -98,7 +98,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res3.status).toBe(201);
+      expect(res3).toHaveStatus(201);
       expect(res3.body.resourceType).toStrictEqual('Patient');
       expect(res3.headers.location).toContain('Patient');
       expect(res3.headers.location).toContain(res3.body.id);
@@ -114,7 +114,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', basicAuth)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile));
-      expect(res4.status).toBe(200);
+      expect(res4).toHaveStatus(200);
 
       const patient4 = res4.body;
       expect(patient4.resourceType).toBe('Patient');
@@ -129,7 +129,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', basicAuth)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile));
-      expect(res5.status).toBe(404);
+      expect(res5).toHaveStatus(404);
 
       // Try to read the second patient on behalf of test account 1
       // This should fail because the patient was created on behalf of test account 2
@@ -138,7 +138,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', basicAuth)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount1.profile));
-      expect(res6.status).toBe(404);
+      expect(res6).toHaveStatus(404);
     }));
 
   test('Set meta onBehalfOf with client credentials', () =>
@@ -182,7 +182,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount1.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body.resourceType).toStrictEqual('Patient');
       expect(res1.headers.location).toContain('Patient');
       expect(res1.headers.location).toContain(res1.body.id);
@@ -198,7 +198,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount1.profile));
-      expect(res2.status).toBe(200);
+      expect(res2).toHaveStatus(200);
 
       const patient2 = res2.body;
       expect(patient2.resourceType).toBe('Patient');
@@ -214,7 +214,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res3.status).toBe(201);
+      expect(res3).toHaveStatus(201);
       expect(res3.body.resourceType).toStrictEqual('Patient');
       expect(res3.headers.location).toContain('Patient');
       expect(res3.headers.location).toContain(res3.body.id);
@@ -230,7 +230,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile));
-      expect(res4.status).toBe(200);
+      expect(res4).toHaveStatus(200);
 
       const patient4 = res4.body;
       expect(patient4.resourceType).toBe('Patient');
@@ -245,7 +245,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile));
-      expect(res5.status).toBe(404);
+      expect(res5).toHaveStatus(404);
 
       // Try to read the second patient on behalf of test account 1
       // This should fail because the patient was created on behalf of test account 2
@@ -254,7 +254,7 @@ describe('On Behalf Of', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('X-Medplum', 'extended')
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount1.profile));
-      expect(res6.status).toBe(404);
+      expect(res6).toHaveStatus(404);
     }));
 
   test('Forbidden for non-admin', () =>
@@ -278,7 +278,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject<OperationOutcome>({
         resourceType: 'OperationOutcome',
         issue: [
@@ -318,7 +318,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(adminAccount2.client))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(400);
+      expect(res1).toHaveStatus(400);
       expect(res1.body).toMatchObject<OperationOutcome>({
         resourceType: 'OperationOutcome',
         issue: [
@@ -366,7 +366,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(res1.body.resourceType).toStrictEqual('Patient');
 
       const patient1 = res1.body as Patient;
@@ -389,7 +389,7 @@ describe('On Behalf Of', () => {
           resourceType: 'Patient',
           meta: {},
         });
-      expect(res2.status).toBe(201);
+      expect(res2).toHaveStatus(201);
       expect(res2.body.resourceType).toStrictEqual('Patient');
 
       const patient2 = res2.body as Patient;
@@ -415,7 +415,7 @@ describe('On Behalf Of', () => {
             account: { reference: 'Organization/' + randomUUID() },
           },
         });
-      expect(res3.status).toBe(201);
+      expect(res3).toHaveStatus(201);
       expect(res3.body.resourceType).toStrictEqual('Patient');
 
       const patient3 = res3.body as Patient;

@@ -63,7 +63,7 @@ describe('Patient Summary Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Organization' });
-    expect(orgRes.status).toBe(201);
+    expect(orgRes).toHaveStatus(201);
     const organization = orgRes.body as WithId<Organization>;
 
     // Create practitioner
@@ -72,7 +72,7 @@ describe('Patient Summary Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
-    expect(practRes.status).toBe(201);
+    expect(practRes).toHaveStatus(201);
     const practitioner = practRes.body as WithId<Practitioner>;
 
     // Create patient
@@ -90,7 +90,7 @@ describe('Patient Summary Operation', () => {
         ],
         managingOrganization: createReference(organization),
       } satisfies Patient);
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const patient = res1.body as WithId<Patient>;
 
     // Create observation
@@ -106,7 +106,7 @@ describe('Patient Summary Operation', () => {
         subject: createReference(patient),
         performer: [createReference(practitioner), createReference(organization)],
       } satisfies Observation);
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     const observation = res2.body as WithId<Observation>;
 
     // Create condition
@@ -123,14 +123,14 @@ describe('Patient Summary Operation', () => {
         subject: createReference(patient),
         recorder: createReference(practitioner),
       } satisfies Condition);
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     const condition = res3.body as WithId<Condition>;
 
     // Execute the operation
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$summary`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     const result = res4.body as WithId<Bundle>;
     expect(result.type).toBe('document');
@@ -286,16 +286,14 @@ describe('Patient Summary Operation', () => {
         ['activity', LOINC_RESULTS_SECTION],
       ];
 
-      const everything = categories.map(
-        (category, index): WithId<Observation> => ({
-          resourceType: 'Observation',
-          id: `obs${index}`,
-          subject,
-          status: 'final',
-          category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
-          code: { text: 'test' },
-        })
-      );
+      const everything = categories.map((category, index): WithId<Observation> => ({
+        resourceType: 'Observation',
+        id: `obs${index}`,
+        subject,
+        status: 'final',
+        category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
+        code: { text: 'test' },
+      }));
 
       const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();

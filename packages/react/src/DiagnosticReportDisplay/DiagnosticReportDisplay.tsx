@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, List, Stack, Text, Title } from '@mantine/core';
+import { Divider, Group, List, Stack, Text, Title } from '@mantine/core';
 import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import type {
   Annotation,
@@ -13,8 +13,9 @@ import type {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
@@ -95,49 +96,81 @@ interface DiagnosticReportHeaderProps {
 }
 
 function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
+  const showSubject = Boolean(value.subject && !hideSubject);
+  const hasLeftColumn = showSubject || Boolean(value.resultsInterpreter?.length);
+  const hasRightColumn = Boolean(value.performer?.length || value.issued || value.status);
   return (
-    <Group mt="md" gap={30}>
-      {value.subject && !hideSubject && (
-        <div>
-          <Text size="xs" tt="uppercase" c="dimmed">
-            Subject
-          </Text>
-          <ResourceBadge value={value.subject} link={true} />
-        </div>
+    <Group mt="md" gap="xl" align="stretch" wrap="nowrap">
+      {hasLeftColumn && (
+        <Stack gap="md" style={{ flex: 1 }}>
+          {showSubject && (
+            <HeaderField label="Subject">
+              <ResourceBadge value={value.subject} link={true} />
+            </HeaderField>
+          )}
+          {value.resultsInterpreter?.map((interpreter) => (
+            <HeaderField key={interpreter.reference} label="Interpreter">
+              <ResourceBadge value={interpreter} link={true} />
+            </HeaderField>
+          ))}
+        </Stack>
       )}
-      {value.resultsInterpreter?.map((interpreter) => (
-        <div key={interpreter.reference}>
-          <Text size="xs" tt="uppercase" c="dimmed">
-            Interpreter
-          </Text>
-          <ResourceBadge value={interpreter} link={true} />
-        </div>
-      ))}
-      {value.performer?.map((performer) => (
-        <div key={performer.reference}>
-          <Text size="xs" tt="uppercase" c="dimmed">
-            Performer
-          </Text>
-          <ResourceBadge value={performer} link={true} />
-        </div>
-      ))}
-      {value.issued && (
-        <div>
-          <Text size="xs" tt="uppercase" c="dimmed">
-            Issued
-          </Text>
-          <Text>{formatDateTime(value.issued)}</Text>
-        </div>
-      )}
-      {value.status && (
-        <div>
-          <Text size="xs" tt="uppercase" c="dimmed">
-            Status
-          </Text>
-          <StatusBadge status={value.status} />
-        </div>
+      {hasLeftColumn && hasRightColumn && <Divider orientation="vertical" />}
+      {hasRightColumn && (
+        <Stack gap="md" style={{ flex: 1 }}>
+          {value.performer?.map((performer) => (
+            <HeaderField key={performer.reference} label="Performer">
+              <PerformerDisplay value={performer} />
+            </HeaderField>
+          ))}
+          {value.issued && (
+            <HeaderField label="Issued">
+              <Text>{formatDateTime(value.issued)}</Text>
+            </HeaderField>
+          )}
+          {value.status && (
+            <HeaderField label="Status">
+              <StatusBadge status={value.status} />
+            </HeaderField>
+          )}
+        </Stack>
       )}
     </Group>
+  );
+}
+
+interface HeaderFieldProps {
+  readonly label: string;
+  readonly children: ReactNode;
+}
+
+function HeaderField({ label, children }: HeaderFieldProps): JSX.Element {
+  return (
+    <Group gap="md" align="flex-start" wrap="nowrap">
+      <Text c="dimmed" w={110} style={{ flexShrink: 0 }}>
+        {label}
+      </Text>
+      <div>{children}</div>
+    </Group>
+  );
+}
+
+interface PerformerDisplayProps {
+  readonly value: NonNullable<DiagnosticReport['performer']>[number];
+}
+
+function PerformerDisplay({ value }: PerformerDisplayProps): JSX.Element {
+  const performer = useResource(value);
+  const address = performer?.resourceType === 'Organization' ? performer.address?.[0] : undefined;
+  return (
+    <>
+      <ResourceBadge value={value} link={true} />
+      {address && (
+        <Text size="sm" c="dimmed" mt={4} ml={34}>
+          <AddressDisplay value={address} />
+        </Text>
+      )}
+    </>
   );
 }
 

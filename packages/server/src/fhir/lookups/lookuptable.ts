@@ -44,7 +44,7 @@ export type TableJoin = {
  *   2) Human Names - structured names on Patients, Practitioners, and other person resource types
  *   3) Contact Points - email addresses and phone numbers
  */
-export abstract class LookupTable {
+abstract class LookupTable {
   /**
    * Returns the unique name of the lookup table.
    * @param resourceType - The resource type.
@@ -310,3 +310,5 @@ export abstract class LookupTable {
     await deleteLookupRows.execute(client);
   }
 }
+
+export { LookupTable };

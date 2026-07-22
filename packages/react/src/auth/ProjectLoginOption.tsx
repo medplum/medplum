@@ -26,7 +26,7 @@ export function ProjectLoginOption(props: ProjectLoginOptionProps): JSX.Element 
         <Text size="sm" fw={500} truncate>
           {projectTitle}
         </Text>
-        <Text size="xs" c="dimmed" truncate>
+        <Text size="xs" className={classes.subtitle} truncate>
           {profileDisplay}
         </Text>
       </div>

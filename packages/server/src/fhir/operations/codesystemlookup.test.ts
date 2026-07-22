@@ -90,7 +90,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testCodeSystem);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     codeSystem = res.body as CodeSystem;
   });
 
@@ -110,7 +110,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '1' },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -140,7 +140,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '2' },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
@@ -175,7 +175,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -205,7 +205,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: 'wrong code' },
         ],
       });
-    expect(res.status).toStrictEqual(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
@@ -221,7 +221,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: '1' }],
       });
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'No code system specified' } }],
@@ -238,7 +238,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       });
-    expect(res.status).toStrictEqual(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: `CodeSystem ${codeSystem.url} not found` } }],
@@ -256,7 +256,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(updatedCodeSystem);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     const codeSystem = res.body as CodeSystem;
 
     const res2 = await request(app)
@@ -270,7 +270,7 @@ describe('CodeSystem lookup', () => {
           { name: 'version', valueString: '3.1.4' },
         ],
       });
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -311,14 +311,14 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(completeCodeSystem);
-    expect(completeRes.status).toStrictEqual(201);
+    expect(completeRes).toHaveStatus(201);
 
     const exampleRes = await request(app)
       .post('/fhir/R4/CodeSystem')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(exampleCodeSystem);
-    expect(exampleRes.status).toStrictEqual(201);
+    expect(exampleRes).toHaveStatus(201);
 
     // A code that only exists in the "complete" CodeSystem should be found
     const foundRes = await request(app)
@@ -332,7 +332,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: 'complete-only' },
         ],
       });
-    expect(foundRes.status).toStrictEqual(200);
+    expect(foundRes).toHaveStatus(200);
     expect(foundRes.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -354,7 +354,7 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: 'example-only' },
         ],
       });
-    expect(notFoundRes.status).toStrictEqual(404);
+    expect(notFoundRes).toHaveStatus(404);
   });
 
   test('Excludes retired CodeSystem from selection', async () => {
@@ -371,7 +371,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(retiredCodeSystem);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
 
     // The retired CodeSystem should not be selected, so the lookup fails to find it
     const lookupRes = await request(app)
@@ -386,7 +386,7 @@ describe('CodeSystem lookup', () => {
         ],
       });
     // The retired CodeSystem is filtered out, so no CodeSystem is found for the URL (400)
-    expect(lookupRes.status).toStrictEqual(400);
+    expect(lookupRes).toHaveStatus(400);
   });
 
   test('GET endpoint', async () => {
@@ -395,7 +395,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -419,7 +419,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -443,7 +443,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
@@ -459,7 +459,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { code: '1' } }],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -486,7 +486,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: 'incorrect', code: '1' } }],
       });
-    expect(res.status).toStrictEqual(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
@@ -535,7 +535,7 @@ describe('CodeSystem lookup', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$lookup`)
@@ -545,7 +545,7 @@ describe('CodeSystem lookup', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: '1' }],
       });
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
@@ -618,7 +618,7 @@ describe('CodeSystem lookup', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
