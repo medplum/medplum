@@ -32,12 +32,21 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
       ? item.basedOn?.find((ref): ref is Reference<ServiceRequest> => isReference(ref, 'ServiceRequest'))
       : undefined;
 
-  const [order, setOrder] = useState<WithId<ServiceRequest>>();
+  // A ServiceRequest item is its own order; a DiagnosticReport's order is
+  // fetched from its basedOn reference.
+  const [order, setOrder] = useState<WithId<ServiceRequest> | undefined>(
+    item.resourceType === 'ServiceRequest' ? item : undefined
+  );
   const [loading, setLoading] = useState<boolean>(!!basedOnRef);
 
   useEffect(() => {
     let subscribed = true;
     const fetchOrder = async (): Promise<void> => {
+      if (item.resourceType === 'ServiceRequest') {
+        setOrder(item);
+        setLoading(false);
+        return;
+      }
       setOrder(undefined);
       if (!basedOnRef) {
         setLoading(false);
@@ -61,23 +70,18 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
     return () => {
       subscribed = false;
     };
-  }, [medplum, basedOnRef]);
-
-  // The order to display: a ServiceRequest item is its own order.
-  const displayedOrder = item.resourceType === 'ServiceRequest' ? item : order;
+  }, [medplum, item, basedOnRef]);
 
   return (
-    <Box h="100%" style={{ flex: 1, overflow: 'hidden' }}>
+    <Box h="100%" flex={1} style={{ overflow: 'hidden' }}>
       {loading ? (
         <Center h="100%">
           <Loader />
         </Center>
       ) : (
         <>
-          {displayedOrder && <LabOrderDetails key={displayedOrder.id} order={displayedOrder} />}
-          {!displayedOrder && item.resourceType === 'DiagnosticReport' && (
-            <LabResultDetails key={item.id} result={item} />
-          )}
+          {order && <LabOrderDetails key={order.id} order={order} />}
+          {!order && item.resourceType === 'DiagnosticReport' && <LabResultDetails key={item.id} result={item} />}
         </>
       )}
     </Box>
