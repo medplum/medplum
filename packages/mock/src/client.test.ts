@@ -7,6 +7,7 @@ import {
   ClientStorage,
   ContentType,
   getReferenceString,
+  getWebSocketUrl,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MemoryStorage,
@@ -946,6 +947,76 @@ describe('MockClient', () => {
     });
     expect(attachment).toBeDefined();
     expect(attachment.url).toBeDefined();
+  });
+
+  test('mock.withSeeding()', async () => {
+    const medplum = new MockClient();
+    const lastUpdated = '2020-01-01T14:00:00Z';
+    const result = await medplum.mock.withSeeding(() =>
+      medplum.createResource({
+        resourceType: 'Patient',
+        meta: { lastUpdated },
+      })
+    );
+    expect(result.meta).toHaveProperty('lastUpdated', lastUpdated);
+  });
+
+  test('mock.setSubscriptionManager()', async () => {
+    const medplum = new MockClient();
+    const manager = new MockSubscriptionManager(medplum, getWebSocketUrl(medplum.getBaseUrl(), '/ws/subscriptions-r4'));
+    medplum.mock.setSubscriptionManager(manager);
+    expect(medplum.getSubscriptionManager()).toBe(manager);
+  });
+
+  test('mock.setProfile()', () => {
+    const medplum = new MockClient();
+    const profile = { resourceType: 'Practitioner' } as const;
+    medplum.mock.setProfile(profile);
+    expect(medplum.getProfile()).toBe(profile);
+  });
+
+  test('mock.setAgentAvailable()', () => {
+    const medplum = new MockClient();
+    expect(() => medplum.mock.setAgentAvailable(true)).not.toThrow();
+    expect(() => medplum.mock.setAgentAvailable(false)).not.toThrow();
+  });
+
+  // To be removed in Medlpum v6; https://github.com/medplum/medplum/issues/9945
+  describe('deprecated methods', () => {
+    test('withSeeding()', async () => {
+      const medplum = new MockClient();
+      const lastUpdated = '2020-01-01T14:00:00Z';
+      const result = await medplum.withSeeding(() =>
+        medplum.createResource({
+          resourceType: 'Patient',
+          meta: { lastUpdated },
+        })
+      );
+      expect(result.meta).toHaveProperty('lastUpdated', lastUpdated);
+    });
+
+    test('setSubscriptionManager()', () => {
+      const medplum = new MockClient();
+      const manager = new MockSubscriptionManager(
+        medplum,
+        getWebSocketUrl(medplum.getBaseUrl(), '/ws/subscriptions-r4')
+      );
+      medplum.setSubscriptionManager(manager);
+      expect(medplum.getSubscriptionManager()).toBe(manager);
+    });
+
+    test('setProfile()', () => {
+      const medplum = new MockClient();
+      const profile = { resourceType: 'Practitioner' } as const;
+      medplum.setProfile(profile);
+      expect(medplum.getProfile()).toBe(profile);
+    });
+
+    test('setAgentAvailable()', () => {
+      const medplum = new MockClient();
+      expect(() => medplum.setAgentAvailable(true)).not.toThrow();
+      expect(() => medplum.setAgentAvailable(false)).not.toThrow();
+    });
   });
 });
 
