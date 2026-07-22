@@ -5,6 +5,7 @@ import { readJson } from '@medplum/definitions';
 import type { Bundle, Patient } from '@medplum/fhirtypes';
 import type { TypedValue } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
+import type { FhirPathPatch } from './patch';
 import { fhirpathPatchTypedValue, parseFhirPathPatchParameters } from './patch';
 import { toTypedValue } from './utils';
 
@@ -224,6 +225,21 @@ describe('FHIRPath Patch', () => {
           },
         ])
       ).toThrow('Index out of bounds for insert');
+    });
+
+    test.each<[string, FhirPathPatch]>([
+      ['missing', { type: 'insert', path: 'Patient.name[0].given', value: { type: 'string', value: 'X' } } as any],
+      [
+        'undefined',
+        {
+          type: 'insert',
+          path: 'Patient.name[0].given',
+          index: undefined as any,
+          value: { type: 'string', value: 'X' },
+        },
+      ],
+    ])('Error on insert with %s index', (_, patch) => {
+      expect(() => fhirpathPatchTypedValue(value, [patch])).toThrow('No index present');
     });
 
     test('Move within array', () => {

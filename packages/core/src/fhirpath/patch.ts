@@ -122,6 +122,9 @@ export function fhirpathPatchTypedValue(original: TypedValue, patch: FhirPathPat
         break;
       }
       case 'insert': {
+        if (typeof op.index !== 'number') {
+          throw new Error(`No index present for insert operation at path '${op.path}'`);
+        }
         const basePath = assertCollectionBasePath(results, op);
         // Construct pointer to array index
         const ptr = Pointer.fromJSON(pathToJSONPointer(basePath));
