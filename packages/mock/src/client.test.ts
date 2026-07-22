@@ -433,7 +433,12 @@ describe('MockClient', () => {
     const result = await client.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result).toBeDefined();
 
+    const originalConsoleLog = console.log;
     console.log = vi.fn();
+    onTestFinished(() => {
+      console.log = originalConsoleLog;
+    });
+
     const client2 = new MockClient({ debug: true });
     const result2 = await client2.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result2).toBeDefined();
