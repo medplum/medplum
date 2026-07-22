@@ -4,8 +4,8 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { MedicationOrderRequest, MedicationOrderResponse } from '@medplum/core';
 import {
-  MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
-  MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+    MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
+    MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
 } from '@medplum/core';
 import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';

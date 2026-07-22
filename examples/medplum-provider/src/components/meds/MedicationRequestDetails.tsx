@@ -3,21 +3,21 @@
 import { Badge, Button, Divider, Group, Paper, ScrollArea, Stack, Text, Tooltip } from '@mantine/core';
 import type { MedicationOrderExtensions } from '@medplum/core';
 import {
-  formatCodeableConcept,
-  formatDate,
-  formatHumanName,
-  getMedicationOrderIframeUrl,
-  getPendingMedicationOrderId,
-  getPendingMedicationOrderStatus,
+    formatCodeableConcept,
+    formatDate,
+    formatHumanName,
+    getMedicationOrderIframeUrl,
+    getPendingMedicationOrderId,
+    getPendingMedicationOrderStatus,
 } from '@medplum/core';
 import type {
-  Dosage,
-  MedicationDispense,
-  MedicationRequest,
-  MedicationStatement,
-  Patient,
-  Practitioner,
-  Quantity,
+    Dosage,
+    MedicationDispense,
+    MedicationRequest,
+    MedicationStatement,
+    Patient,
+    Practitioner,
+    Quantity,
 } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import { IconExternalLink, IconMaximize } from '@tabler/icons-react';

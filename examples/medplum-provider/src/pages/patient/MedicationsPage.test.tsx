@@ -3,10 +3,10 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type {
-  MedicationCartManageResponse,
-  MedicationCheckoutRequest,
-  MedicationCheckoutResponse,
-  WithId,
+    MedicationCartManageResponse,
+    MedicationCheckoutRequest,
+    MedicationCheckoutResponse,
+    WithId,
 } from '@medplum/core';
 import type { Bundle, MedicationDispense, MedicationRequest, MedicationStatement } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';

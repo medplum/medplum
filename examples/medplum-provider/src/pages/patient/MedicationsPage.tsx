@@ -1,28 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  ActionIcon,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Group,
-  Modal,
-  Pagination,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
+    ActionIcon,
+    Box,
+    Button,
+    Divider,
+    Flex,
+    Group,
+    Modal,
+    Pagination,
+    Paper,
+    ScrollArea,
+    Skeleton,
+    Stack,
+    Tabs,
+    Text,
+    Tooltip,
 } from '@mantine/core';
 import { hideNotification, showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString } from '@medplum/core';
 import {
-  DOSESPOT_MEDICATION_HISTORY_BOT,
-  DOSESPOT_PATIENT_SYNC_BOT,
-  DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
+    DOSESPOT_MEDICATION_HISTORY_BOT,
+    DOSESPOT_PATIENT_SYNC_BOT,
+    DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
 } from '@medplum/dosespot-react';
 import type { MedicationDispense, MedicationRequest, MedicationStatement, Resource } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
