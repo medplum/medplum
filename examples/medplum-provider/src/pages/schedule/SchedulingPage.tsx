@@ -34,7 +34,7 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { ReferenceDisplay, ResourceInput, useMedplum } from '@medplum/react';
+import { OperationOutcomeAlert, ReferenceDisplay, ResourceInput, useMedplum } from '@medplum/react';
 import { useResourceModified, useSearchResources } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -42,7 +42,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
-import { useNotifyOnError } from '../../hooks/useNotifyOnError';
 import { useSchedulingResources } from '../../hooks/useSchedulingResources';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
@@ -190,7 +189,6 @@ export function SchedulingPage(): JSX.Element | null {
   const [allSchedules, allSchedulesLoading, allSchedulesOutcome] = useSearchResources<'Schedule'>('Schedule', {
     _count: 100,
   });
-  useNotifyOnError(allSchedulesOutcome);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -376,6 +374,7 @@ export function SchedulingPage(): JSX.Element | null {
         </Box>
         <Grid gutter="md">
           <Grid.Col span={3}>
+            <OperationOutcomeAlert outcome={allSchedulesOutcome} mb="sm" />
             <ActorChooser
               schedules={allSchedules ?? []}
               selected={actors}
