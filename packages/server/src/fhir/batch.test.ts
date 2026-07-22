@@ -211,6 +211,56 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.[5]?.resource).toBeUndefined();
   });
 
+  test('FHIRPath Patch in batch', async () => {
+    const created = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'PATCH', url: 'Patient/' + patient.id },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'unknown' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    const results = res.body as Bundle;
+    expect(results.entry?.[0]?.response?.status).toStrictEqual('200');
+    expect(results.entry?.[0]?.resource).toMatchObject<Patient>({ resourceType: 'Patient', gender: 'unknown' });
+
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+    expect(reread.body).toMatchObject<Patient>({ resourceType: 'Patient', gender: 'unknown' });
+  });
+
   test('Transaction success', async () => {
     const id1 = randomUUID();
     const id2 = randomUUID();

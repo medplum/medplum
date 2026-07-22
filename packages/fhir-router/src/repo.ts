@@ -11,6 +11,7 @@ import {
   created,
   deepClone,
   evalFhirPath,
+  fhirpathPatchTypedValue,
   generateId,
   getSearchResourceTypes,
   globalSchema,
@@ -18,8 +19,10 @@ import {
   multipleMatches,
   normalizeOperationOutcome,
   notFound,
+  parseFhirPathPatchParameters,
   preconditionFailed,
   stringify,
+  toTypedValue,
 } from '@medplum/core';
 import type { Bundle, OperationOutcome, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 
@@ -549,8 +552,8 @@ export class MemoryRepository extends FhirRepository {
         if (patchResult.length > 0) {
           throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
         }
-      } else {
-        throw new Error('MemoryRepository does not support FHIRPath Patch');
+      } else if (patch.parameter) {
+        fhirpathPatchTypedValue(toTypedValue(resource), parseFhirPathPatchParameters(patch));
       }
     } catch (err) {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));

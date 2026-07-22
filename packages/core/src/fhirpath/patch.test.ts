@@ -5,7 +5,7 @@ import { readJson } from '@medplum/definitions';
 import type { Bundle, Patient } from '@medplum/fhirtypes';
 import type { TypedValue } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { fhirpathPatchTypedValue } from './patch';
+import { fhirpathPatchTypedValue, parseFhirPathPatchParameters } from './patch';
 import { toTypedValue } from './utils';
 
 describe('FHIRPath Patch', () => {
@@ -298,6 +298,60 @@ describe('FHIRPath Patch', () => {
           },
         ])
       ).toThrow('Source index out of bounds for move');
+    });
+  });
+
+  describe('parseFhirPathPatchParameters', () => {
+    test('Parses all operation types and value parts', () => {
+      const ops = parseFhirPathPatchParameters({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'add' },
+              { name: 'path', valueString: 'Patient' },
+              { name: 'name', valueString: 'birthDate' },
+              { name: 'value', valueDate: '1990-05-15' },
+            ],
+          },
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'move' },
+              { name: 'path', valueString: 'Patient.name[0].given' },
+              { name: 'source', valueInteger: 0 },
+              { name: 'destination', valueInteger: 1 },
+            ],
+          },
+          // Non-operation parameters are ignored
+          { name: 'other', valueString: 'ignored' },
+        ],
+      });
+
+      expect(ops).toStrictEqual([
+        { type: 'add', path: 'Patient', name: 'birthDate', value: { type: 'Date', value: '1990-05-15' } },
+        { type: 'move', path: 'Patient.name[0].given', source: 0, destination: 1 },
+      ]);
+    });
+
+    test('Round-trips through fhirpathPatchTypedValue', () => {
+      const ops = parseFhirPathPatchParameters({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'operation',
+            part: [
+              { name: 'type', valueCode: 'add' },
+              { name: 'path', valueString: 'Patient' },
+              { name: 'name', valueString: 'birthDate' },
+              { name: 'value', valueDate: '1990-05-15' },
+            ],
+          },
+        ],
+      });
+      fhirpathPatchTypedValue(value, ops);
+      expect((value.value as Patient).birthDate).toStrictEqual('1990-05-15');
     });
   });
 });

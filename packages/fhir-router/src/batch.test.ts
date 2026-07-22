@@ -21,6 +21,7 @@ import type {
   DiagnosticReport,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   Practitioner,
   SearchParameter,
@@ -655,6 +656,97 @@ describe('Batch', () => {
     expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toStrictEqual(
       'Decoded PATCH body must be an array'
     );
+  });
+
+  test('Process batch FHIRPath patch', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      active: false,
+    });
+
+    const bundle = await processBatch(req, repo, router, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'PATCH', url: 'Patient/' + patient.id },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'birthDate' },
+                  { name: 'value', valueDate: '1990-05-15' },
+                ],
+              },
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'replace' },
+                  { name: 'path', valueString: 'Patient.active' },
+                  { name: 'value', valueBoolean: true },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const results = bundle.entry as BundleEntry[];
+    expect(results).toHaveLength(1);
+    expect(results[0].response?.status).toStrictEqual('200');
+    const updated = results[0].resource as Patient;
+    expect(updated.birthDate).toStrictEqual('1990-05-15');
+    expect(updated.active).toStrictEqual(true);
+  });
+
+  test('Process batch FHIRPath patch rewrites local references', async () => {
+    // A FHIRPath patch whose value is a Reference to a resource created
+    // earlier in the same Bundle via a urn:uuid placeholder. The placeholder must be
+    // rewritten to the real resource reference when the Parameters is passed through.
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const orgUrn = 'urn:uuid:' + randomUUID();
+
+    const bundle = await processBatch(req, repo, router, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: orgUrn,
+          request: { method: 'POST', url: 'Organization' },
+          resource: { resourceType: 'Organization', name: 'Acme' },
+        },
+        {
+          request: { method: 'PATCH', url: 'Patient/' + patient.id },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'managingOrganization' },
+                  { name: 'value', valueReference: { reference: orgUrn } },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const results = bundle.entry as BundleEntry[];
+    expect(results).toHaveLength(2);
+    expect(results[0].response?.status).toStrictEqual('201');
+    const createdOrg = results[0].resource as Organization;
+    expect(results[1].response?.status).toStrictEqual('200');
+    const updated = results[1].resource as Patient;
+    expect(updated.managingOrganization?.reference).toStrictEqual(getReferenceString(createdOrg));
   });
 
   test('JSONPath error messages', async () => {

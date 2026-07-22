@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { Pointer } from '../patch';
 import type { PatchOptions } from '../patch/patch';
 import { add, move, remove, replace } from '../patch/patch';
@@ -18,6 +19,60 @@ export type FhirPathPatch =
   | { type: 'move'; path: string; source: number; destination: number };
 
 const ADD_OPTIONS: Readonly<PatchOptions> = Object.freeze({ implicitArrayCreation: true });
+
+/**
+ * Parses a FHIRPath Patch `Parameters` resource into the array of operations consumed by
+ * {@link fhirpathPatchTypedValue}. Each repeating `operation` parameter is decoded from its
+ * `part` entries (`type`, `path`, `name`, `value`, `index`, `source`, `destination`), where
+ * the polymorphic `value[x]` part becomes a {@link TypedValue}.
+ * @param parameters - The FHIRPath Patch Parameters resource.
+ * @returns The parsed FHIRPath Patch operations.
+ */
+export function parseFhirPathPatchParameters(parameters: Parameters): FhirPathPatch[] {
+  const operations: FhirPathPatch[] = [];
+  for (const param of parameters.parameter ?? []) {
+    if (param.name !== 'operation') {
+      continue;
+    }
+    const op: Record<string, unknown> = {};
+    for (const part of param.part ?? []) {
+      switch (part.name) {
+        case 'type':
+          op.type = part.valueCode;
+          break;
+        case 'path':
+          op.path = part.valueString;
+          break;
+        case 'name':
+          op.name = part.valueString;
+          break;
+        case 'index':
+          op.index = part.valueInteger;
+          break;
+        case 'source':
+          op.source = part.valueInteger;
+          break;
+        case 'destination':
+          op.destination = part.valueInteger;
+          break;
+        case 'value':
+          op.value = getTypedValueFromPart(part);
+          break;
+      }
+    }
+    operations.push(op as FhirPathPatch);
+  }
+  return operations;
+}
+
+function getTypedValueFromPart(part: ParametersParameter): TypedValue | undefined {
+  for (const key of Object.keys(part)) {
+    if (key.startsWith('value')) {
+      return { type: key.substring(5), value: part[key as keyof ParametersParameter] };
+    }
+  }
+  return undefined;
+}
 
 export function fhirpathPatchTypedValue(original: TypedValue, patch: FhirPathPatch[]): void {
   for (const op of patch) {
