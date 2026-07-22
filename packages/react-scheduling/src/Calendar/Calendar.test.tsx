@@ -3,7 +3,7 @@
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent } from '../test-utils/render';
-import type { Range } from '../types/scheduling';
+import type { DateTimeRange } from '../types';
 import { Calendar } from './Calendar';
 
 describe('Calendar', () => {
@@ -61,7 +61,7 @@ describe('Calendar', () => {
     onSelectSlot?: (slot: Slot) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
     onDoubleClickAppointment?: (appointment: Appointment) => void;
-    onRangeChange?: (range: Range) => void;
+    onRangeChange?: (range: DateTimeRange) => void;
   } = {}): ReturnType<typeof render> => {
     return render(
       <Calendar

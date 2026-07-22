@@ -21,6 +21,7 @@ import {
   addProfileToResource,
   arrayBufferToBase64,
   arrayBufferToHex,
+  assertNever,
   calculateAge,
   calculateAgeString,
   capitalize,
@@ -1820,5 +1821,52 @@ describe('isDefined', () => {
     const input: (number | null | undefined)[] = [0, undefined, 1, null, 2];
     const result: number[] = input.filter(isDefined);
     expect(result).toEqual([0, 1, 2]);
+  });
+});
+
+describe('assertNever', () => {
+  test('throws with the unexpected value in the message', () => {
+    expect(() => {
+      // @ts-expect-error Testing assertNever violation
+      assertNever('oops');
+    }).toThrow('Unexpected value: oops');
+  });
+
+  test('triggers typescript error when a union type is not fully handled', () => {
+    type MyUnion = 'a' | 'b' | 'c';
+
+    function handle(arg1: MyUnion): number {
+      if (arg1 === 'a') {
+        return 1;
+      }
+
+      if (arg1 === 'b') {
+        return 2;
+      }
+
+      // @ts-expect-error We didn't handle `c` from the union, so this assertion is flagged by the type checker
+      return assertNever(arg1);
+    }
+
+    expect(handle('a')).toBe(1);
+    expect(() => handle('c')).toThrow('Unexpected value: c');
+  });
+
+  test('is usable as an exhaustive check in a switch statement', () => {
+    type AB = 'a' | 'b';
+
+    function handle(x: AB): number {
+      switch (x) {
+        case 'a':
+          return 1;
+        case 'b':
+          return 2;
+        default:
+          return assertNever(x);
+      }
+    }
+
+    expect(handle('a')).toBe(1);
+    expect(handle('b')).toBe(2);
   });
 });
