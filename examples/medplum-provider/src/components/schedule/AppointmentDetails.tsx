@@ -253,9 +253,7 @@ export function AppointmentDetails(props: { appointment: WithId<Appointment> }):
           <Loader size="sm" />
         </Group>
       )}
-      {encounterOutcome && !isOk(encounterOutcome) && (
-        <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
-      )}
+      <OperationOutcomeAlert outcome={encounterOutcome} title="Loading Encounter failed" />
       {hasPatient && !encounter && !encounterLoading && encounterOutcome && isOk(encounterOutcome) && (
         <CreateEncounterForm appointment={appointment} />
       )}
