@@ -52,6 +52,15 @@ describe('MockClient', () => {
     });
   });
 
+  afterEach(() => {
+    // MockClient defaults to the shared jsdom `globalThis.localStorage`, so an
+    // `activeLogin` persisted by a login-flow test (e.g. `processCode`) bleeds
+    // into later tests. A subsequent `new MockClient()` would then resume that
+    // login and fire a background `auth/me` request, emitting stray debug logs
+    // after the test has finished. Clearing storage between tests isolates them.
+    localStorage.clear();
+  });
+
   test('Simple route', async () => {
     const client = new MockClient();
     const result = await client.get('fhir/R4/Patient/123');
