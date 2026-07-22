@@ -8,9 +8,9 @@
 // authors never have to hand-tune source dashes.
 
 const PAGE_WIDTH_TWIPS = 9360; // Letter, 1" margins
-const CHARS_PER_TWIP_INVERSE = 105; // ~avg Poppins char width at 10pt body text, in twips
-const CELL_PADDING_TWIPS = 260; // ~2 x default cell margin
-const MIN_COL_TWIPS = 450; // floor so single-glyph columns (#, checkmarks) stay usable
+const CHAR_WIDTH_TWIPS = 140; // ~avg glyph width at 10-11pt bold header text, in twips
+const CELL_PADDING_TWIPS = 320; // ~2 x default cell margin, plus a little slack
+const MIN_COL_TWIPS = 450; // absolute floor, only hit for single-glyph columns (#, checkmarks)
 const MAX_COL_TWIPS = 5760; // 4", so one column can't swallow the whole table
 
 function stripTags(xml) {
@@ -37,19 +37,44 @@ function columnWidths(headerCells, bodyCellsByColumn) {
     return { maxLen, maxWord };
   });
 
+  // Every column's hard floor: whatever it takes to hold its own longest word
+  // on one line. This must never be violated, even when columns are shrunk
+  // to fit the page — that's exactly the invariant "no word gets split" means.
+  const minWidths = stats.map(({ maxWord }) => Math.max(MIN_COL_TWIPS, maxWord * CHAR_WIDTH_TWIPS + CELL_PADDING_TWIPS));
+
   // Desired width: fit the typical (not longest-ever) content on ~1-2 lines.
-  const desired = stats.map(({ maxLen, maxWord }) => {
-    const contentWidth = Math.min(maxLen, 40) * CHARS_PER_TWIP_INVERSE + CELL_PADDING_TWIPS;
-    const minForLongestWord = maxWord * CHARS_PER_TWIP_INVERSE + CELL_PADDING_TWIPS;
-    return Math.min(MAX_COL_TWIPS, Math.max(MIN_COL_TWIPS, contentWidth, minForLongestWord));
-  });
+  const desired = stats.map(({ maxLen }, i) =>
+    Math.min(MAX_COL_TWIPS, Math.max(minWidths[i], Math.min(maxLen, 40) * CHAR_WIDTH_TWIPS + CELL_PADDING_TWIPS))
+  );
 
-  const total = desired.reduce((a, b) => a + b, 0);
-  const scale = PAGE_WIDTH_TWIPS / total;
+  const totalDesired = desired.reduce((a, b) => a + b, 0);
 
-  // Scale to fill the page width, but never scale a column below its minimum.
-  let widths = desired.map((w) => Math.round(w * scale));
-  widths = widths.map((w, i) => Math.max(w, MIN_COL_TWIPS));
+  let widths;
+  if (totalDesired <= PAGE_WIDTH_TWIPS) {
+    // Room to spare: grow every column proportionally to fill the page.
+    // Growing can never violate a minimum, so this is always safe.
+    const extra = PAGE_WIDTH_TWIPS - totalDesired;
+    widths = desired.map((w) => w + (extra * w) / totalDesired);
+  } else {
+    // Too tight: shrink, but only ever eat into each column's slack above its
+    // own minimum — proportionally, so wide columns give up more than narrow
+    // ones — never below the minimum itself.
+    const slack = desired.map((w, i) => w - minWidths[i]);
+    const totalSlack = slack.reduce((a, b) => a + b, 0);
+    const deficit = totalDesired - PAGE_WIDTH_TWIPS;
+    if (totalSlack > 0 && deficit <= totalSlack) {
+      widths = desired.map((w, i) => w - slack[i] * (deficit / totalSlack));
+    } else {
+      // Pathological case: even every column at its bare minimum doesn't fit
+      // (e.g. far too many columns for the page). Degrade gracefully rather
+      // than throw — scale minimums down uniformly instead of crashing.
+      const totalMin = minWidths.reduce((a, b) => a + b, 0);
+      const scale = totalMin > 0 ? PAGE_WIDTH_TWIPS / totalMin : 1;
+      widths = minWidths.map((w) => w * scale);
+    }
+  }
+
+  widths = widths.map((w) => Math.round(w));
 
   // Reconcile rounding drift against the exact page width on the last column.
   const drift = PAGE_WIDTH_TWIPS - widths.reduce((a, b) => a + b, 0);

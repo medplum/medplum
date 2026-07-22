@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fixTableWidths } from './lib/docx-table-widths.mjs';
 import { ensureTrailingParagraph } from './lib/docx-trailing-paragraph.mjs';
+import { preventRowSplitting } from './lib/docx-row-split.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = path.join(__dirname, '..', 'docs', 'decision-guides');
@@ -59,6 +60,7 @@ function postProcessDocx(docxPath) {
   const documentXmlPath = path.join(extractDir, 'word', 'document.xml');
   let xml = fs.readFileSync(documentXmlPath, 'utf8');
   xml = fixTableWidths(xml);
+  xml = preventRowSplitting(xml);
   xml = ensureTrailingParagraph(xml);
   fs.writeFileSync(documentXmlPath, xml);
 
