@@ -22,8 +22,16 @@ import { mockFetchJson } from '../test.setup.fetch';
 // against a remote JWKS (Google's public certs, or a client's configured jwksUri). Mocking
 // the network fetch is not viable here — jose's Node build fetches JWKS via raw node:http(s),
 // bypassing any `globalThis.fetch` mock — so, matching the existing convention in
-// google.test.ts and oauth/token.test.ts, `jwtVerify` itself is replaced to decode the JWT's
-// claims without performing real signature verification.
+// google.test.ts and oauth/token.test.ts, `jwtVerify` is wrapped to decode-only for THOSE two
+// external-JWKS cases specifically.
+//
+// `jwtVerify` is also how Medplum verifies its own issued access tokens on every FHIR request
+// (oauth/keys.ts `verifyJwt` -> `jwtVerify(token, getKeyForHeader, verifyOptions)`), and that
+// path must keep doing real signature verification — otherwise every `/fhir/R4` call in this
+// file would "pass" on a merely well-formed token rather than a genuinely valid one. The two
+// cases are told apart by the shape of the key argument: `createRemoteJWKSet(...)` (used only
+// by the Google/private_key_jwt paths) returns a function with a `coolingDown` property that a
+// plain local key-resolver function (like `getKeyForHeader`) does not have.
 vi.mock('jose', async (importOriginal) => {
   const core: { parseJWTPayload: (token: string) => JWTPayload } = await vi.importActual('@medplum/core');
   const original = await importOriginal<typeof Jose>();
@@ -31,9 +39,15 @@ vi.mock('jose', async (importOriginal) => {
     ...original,
     // token.ts destructures `customFetch` from 'jose' unconditionally; the installed jose
     // version here predates that export, so provide a stand-in symbol to satisfy the access —
-    // its actual behavior is irrelevant since `jwtVerify` below never consults it for real.
+    // its actual behavior is irrelevant since remote-JWKS verification is stubbed out below.
     customFetch: (original as { customFetch?: symbol }).customFetch ?? Symbol('customFetch'),
-    jwtVerify: vi.fn(async (credential: string) => ({ payload: core.parseJWTPayload(credential) })),
+    jwtVerify: vi.fn(async (jwt: string, keyOrKeySet: unknown, options?: Jose.JWTVerifyOptions) => {
+      const isRemoteJwks = typeof keyOrKeySet === 'function' && 'coolingDown' in keyOrKeySet;
+      if (!isRemoteJwks) {
+        return original.jwtVerify(jwt, keyOrKeySet as Jose.KeyLike, options);
+      }
+      return { payload: core.parseJWTPayload(jwt) };
+    }),
   };
 });
 
@@ -112,6 +126,13 @@ describe('Native password login', () => {
     expect(tokenRes.body.profile.reference).toMatch(/^Practitioner\//);
     expect(decodeJwt(tokenRes.body.access_token).aud).toBe(config.issuer);
 
+    // A tampered signature must be rejected — proves FHIR calls in this file verify the
+    // token for real rather than merely decoding it (see the `vi.mock('jose', ...)` comment
+    // at the top of this file for why that distinction matters here).
+    const tamperedToken = tokenRes.body.access_token.slice(0, -5) + 'AAAAA';
+    const tamperedRes = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer ' + tamperedToken);
+    expect(tamperedRes.status).toBe(401);
+
     const patient = buildPatient();
     const fhirRes = await request(app)
       .post('/fhir/R4/Patient')
@@ -179,7 +200,7 @@ describe('External/OIDC login', () => {
     const callbackUrl = `/auth/external?code=${randomUUID()}&state=${encodeURIComponent(state)}`;
 
     // Mock the external identity provider's token endpoint response
-    const idToken = 'header.' + Buffer.from(JSON.stringify({ email }), 'ascii').toString('base64') + '.signature';
+    const idToken = 'header.' + Buffer.from(JSON.stringify({ email }), 'ascii').toString('base64url') + '.signature';
     fetchMock.mockImplementation(() => mockFetchJson({ id_token: idToken }));
 
     const callbackRes = await request(app).get(callbackUrl);
@@ -584,4 +605,16 @@ describe('Client credentials via private_key_jwt (machine-to-machine)', () => {
     expect(fhirRes.status).toBe(201);
     expect(fhirRes.body.name).toMatchObject(patient.name as object);
   });
+});
+
+// A single file-level restore, run once after every describe above has finished. Restoring
+// each `vi.spyOn(globalThis, 'fetch')` individually (e.g. in its own describe's `afterAll`) is
+// unsafe here: `vi.spyOn` layers over whatever is currently installed, and since all `describe`
+// bodies (and their `vi.spyOn` calls) run up front during collection — before any `beforeAll`/
+// `test`/`afterAll` executes — a later describe's spy already sits on top of an earlier one by
+// the time tests run. Restoring the earlier spy mid-run clobbers `globalThis.fetch` out from
+// under the later, still-active spy. Restoring only after everything in the file has run avoids
+// that ordering hazard entirely.
+afterAll(() => {
+  vi.restoreAllMocks();
 });
