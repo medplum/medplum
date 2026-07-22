@@ -21,11 +21,16 @@ import type { Range } from '../types/scheduling';
 import { assertNever } from '../utils/assert';
 import classes from './Calendar.module.css';
 
-type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
+export type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
 
-function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
+// `includeCancelled` defaults to false to preserve `Calendar.tsx`/
+// `ScheduleDetails.tsx`'s existing behavior unchanged (spec §7, §9
+// regression requirement). The new multi-actor Calendar screen passes
+// `true` — cancelled appointments must stay visible there, greyed/struck
+// (spec §4.5), not hidden.
+export function appointmentsToEvents(appointments: Appointment[], includeCancelled = false): EventInput[] {
   return appointments
-    .filter((appointment) => appointment.status !== 'cancelled' && appointment.start && appointment.end)
+    .filter((appointment) => (includeCancelled || appointment.status !== 'cancelled') && appointment.start && appointment.end)
     .map((appointment) => {
       // Find the patient among the participants to use as title
       const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
@@ -47,7 +52,7 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
     });
 }
 
-function slotsToEvents(slots: Slot[]): EventInput[] {
+export function slotsToEvents(slots: Slot[]): EventInput[] {
   return slots.map((slot) => ({
     id: slot.id,
     start: slot.start,
@@ -58,6 +63,42 @@ function slotsToEvents(slots: Slot[]): EventInput[] {
     className: cx(classes.slot, classes[slot.status]),
     display: 'background',
   }));
+}
+
+// Shared by Calendar.tsx (single-actor) and ResourceCalendar.tsx (multi-actor
+// swimlanes) — drops slots that are just the busy-side-effect of an
+// appointment already being rendered, and never shows "entered-in-error"
+// slots.
+export function appointmentsAndSlotsToEvents(
+  appointments: Appointment[],
+  slots: Slot[],
+  includeCancelled = false
+): EventInput[] {
+  const appointmentIndex = appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
+    (appointment.slot ?? EMPTY).forEach((slotRef) => {
+      const key = getReferenceString(slotRef);
+      if (key) {
+        acc[key] = appointment;
+      }
+    });
+    return acc;
+  }, {});
+
+  const filteredSlots = slots.filter((slot) => {
+    if (slot.status === 'entered-in-error') {
+      return false;
+    }
+    const key = getReferenceString(slot);
+    if (key && appointmentIndex[key]) {
+      const appointment = appointmentIndex[key];
+      if (slot.start === appointment.start && slot.end === appointment.end) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  return [...appointmentsToEvents(appointments, includeCancelled), ...slotsToEvents(filteredSlots)];
 }
 
 export function Calendar(props: {
@@ -111,34 +152,10 @@ export function Calendar(props: {
     }
   }, []);
 
-  const events = useMemo(() => {
-    const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
-      (appointment.slot ?? EMPTY).forEach((slotRef) => {
-        const key = getReferenceString(slotRef);
-        if (key) {
-          acc[key] = appointment;
-        }
-      });
-      return acc;
-    }, {});
-
-    const filteredSlots = props.slots.filter((slot) => {
-      // never show "entered-in-error" slots on the calendar
-      if (slot.status === 'entered-in-error') {
-        return false;
-      }
-      const key = getReferenceString(slot);
-      if (key && appointmentIndex[key]) {
-        const appointment = appointmentIndex[key];
-        if (slot.start === appointment.start && slot.end === appointment.end) {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    return [...appointmentsToEvents(props.appointments), ...slotsToEvents(filteredSlots)];
-  }, [props.appointments, props.slots]);
+  const events = useMemo(
+    () => appointmentsAndSlotsToEvents(props.appointments, props.slots),
+    [props.appointments, props.slots]
+  );
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, props.className)}>

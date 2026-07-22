@@ -1,0 +1,110 @@
+.wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  flex-shrink: 0;
+}
+
+.body {
+  flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--mantine-spacing-md);
+}
+
+/* Legend lives beside the calendar, not above it — easier to scan a short
+ * vertical list than a wrapping horizontal row, and it doesn't eat into the
+ * calendar's vertical space (which matters for keeping this the same size
+ * as the Availability calendar). */
+.legend {
+  flex-shrink: 0;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  padding-top: var(--mantine-spacing-xs);
+  overflow-y: auto;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--mantine-font-size-xs);
+}
+
+.legendSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.calendarHost {
+  flex-grow: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Per-actor color palette, one hue family per actor *type* (not just per
+ * actor) so switching the View-by lens is visually obvious at a glance —
+ * Providers are blues, Rooms are grapes/purples, Devices are ambers/oranges
+ * — before you even read the legend. Each class sets the CSS vars the shared
+ * `.event`/`.eventInner` rules in Calendar.module.css consume (status is
+ * layered on top as a non-fill overlay — see .pendingOverlay/.cancelledOverlay).
+ * Six shades per family; the actor filter is expected to keep the visible
+ * set small enough to stay distinguishable (a deliberate demo-scale
+ * tradeoff vs. true resource swimlanes). */
+.practitioner0 { --cal-background-color: light-dark(var(--mantine-color-blue-5), var(--mantine-color-blue-7)); --cal-color: var(--mantine-color-white); }
+.practitioner1 { --cal-background-color: light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-9)); --cal-color: var(--mantine-color-white); }
+.practitioner2 { --cal-background-color: light-dark(var(--mantine-color-cyan-5), var(--mantine-color-cyan-7)); --cal-color: var(--mantine-color-white); }
+.practitioner3 { --cal-background-color: light-dark(var(--mantine-color-cyan-7), var(--mantine-color-cyan-9)); --cal-color: var(--mantine-color-white); }
+.practitioner4 { --cal-background-color: light-dark(var(--mantine-color-indigo-5), var(--mantine-color-indigo-7)); --cal-color: var(--mantine-color-white); }
+.practitioner5 { --cal-background-color: light-dark(var(--mantine-color-indigo-7), var(--mantine-color-indigo-9)); --cal-color: var(--mantine-color-white); }
+
+.location0 { --cal-background-color: light-dark(var(--mantine-color-grape-5), var(--mantine-color-grape-7)); --cal-color: var(--mantine-color-white); }
+.location1 { --cal-background-color: light-dark(var(--mantine-color-grape-7), var(--mantine-color-grape-9)); --cal-color: var(--mantine-color-white); }
+.location2 { --cal-background-color: light-dark(var(--mantine-color-violet-5), var(--mantine-color-violet-7)); --cal-color: var(--mantine-color-white); }
+.location3 { --cal-background-color: light-dark(var(--mantine-color-violet-7), var(--mantine-color-violet-9)); --cal-color: var(--mantine-color-white); }
+.location4 { --cal-background-color: light-dark(var(--mantine-color-pink-5), var(--mantine-color-pink-7)); --cal-color: var(--mantine-color-white); }
+.location5 { --cal-background-color: light-dark(var(--mantine-color-pink-7), var(--mantine-color-pink-9)); --cal-color: var(--mantine-color-white); }
+
+.device0 { --cal-background-color: light-dark(var(--mantine-color-orange-5), var(--mantine-color-orange-7)); --cal-color: var(--mantine-color-white); }
+.device1 { --cal-background-color: light-dark(var(--mantine-color-orange-7), var(--mantine-color-orange-9)); --cal-color: var(--mantine-color-white); }
+.device2 { --cal-background-color: light-dark(var(--mantine-color-yellow-6), var(--mantine-color-yellow-8)); --cal-color: var(--mantine-color-dark-9); }
+.device3 { --cal-background-color: light-dark(var(--mantine-color-red-5), var(--mantine-color-red-7)); --cal-color: var(--mantine-color-white); }
+.device4 { --cal-background-color: light-dark(var(--mantine-color-red-7), var(--mantine-color-red-9)); --cal-color: var(--mantine-color-white); }
+.device5 { --cal-background-color: light-dark(var(--mantine-color-yellow-8), var(--mantine-color-yellow-9)); --cal-color: var(--mantine-color-white); }
+
+/* Unconfirmed / pending: keep the actor hue, add a dashed outline + a
+ * diagonal stripe overlay so "tentative" reads without a color change. */
+.pendingOverlay {
+  position: relative;
+  border: 1px dashed var(--cal-color) !important;
+}
+.pendingOverlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.35) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
+/* Cancelled: keep the actor hue (so you can still tell whose it was) but
+ * fade + strike through. Stays visible on the roster (spec §4.5). */
+.cancelledOverlay {
+  opacity: 0.5;
+}
+.cancelledOverlay .eventTitle {
+  text-decoration: line-through;
+}

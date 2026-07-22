@@ -1,0 +1,14 @@
+.wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  flex-shrink: 0;
+}
+
+.calendarHost {
+  flex-grow: 1;
+  min-height: 0;
+}

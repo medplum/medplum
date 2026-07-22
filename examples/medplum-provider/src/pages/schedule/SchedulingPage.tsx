@@ -9,7 +9,8 @@ import { ResourceInput, useMedplum } from '@medplum/react';
 import { useSearchResources } from '@medplum/react-hooks';
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import type { BookingConfirmedResult } from '../../components/schedule/BookingConfirmedModal';
 import { BookingConfirmedModal } from '../../components/schedule/BookingConfirmedModal';
@@ -23,6 +24,7 @@ import { useMultiResourceFind } from '../../hooks/useMultiResourceFind';
 import { useNotifyOnError } from '../../hooks/useNotifyOnError';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import { cartesianCombos, localDayKey, resolveResourcePools } from '../../utils/scheduling';
+import { showErrorNotification } from '../../utils/notifications';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_COMBOS = 20;
@@ -103,9 +105,60 @@ export function SchedulingPage(): JSX.Element {
   const [chosenSlot, setChosenSlot] = useState<ComboSlot>();
   const [criteriaPatient, setCriteriaPatient] = useState<WithId<Patient>>();
   const [bookingConfirmed, setBookingConfirmed] = useState<BookingConfirmedResult>();
+  // When arriving via the Calendar screen's Reschedule action, this holds the
+  // original appointment reference. Defer-cancel (spec §4.6, revised): the
+  // original stays booked and is cancelled only after a *new* booking
+  // succeeds (see onSuccess below), so an abandoned reschedule loses nothing.
+  const [rescheduleRef, setRescheduleRef] = useState<string>();
 
+  const [searchParams] = useSearchParams();
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
   const [criteria, setCriteria] = useState<Criteria>(() => defaultCriteria(earliestSchedulable));
+
+  // Optional pre-fill from the Calendar screen (all additive — absent on the
+  // normal Find & Book entry point, so nothing changes there):
+  //  - reschedule: `healthcareService` + `patient` + `reschedule` (original ref)
+  //  - click-to-search from an empty calendar slot: `date` + `timeOfDay` +
+  //    one of `provider`/`room`/`device`. These pre-fill *search criteria*,
+  //    never appointment fields, so visit-type rules can't be bypassed.
+  useEffect(() => {
+    const prefillServiceRef = searchParams.get('healthcareService');
+    if (prefillServiceRef) {
+      medplum
+        .readReference<WithId<HealthcareService>>({ reference: prefillServiceRef })
+        .then(setHealthcareService)
+        .catch(() => {
+          // Best-effort — fall back to the normal blank-start flow if the
+          // referenced resource no longer exists.
+        });
+    }
+    const prefillPatientRef = searchParams.get('patient');
+    if (prefillPatientRef) {
+      medplum
+        .readReference<WithId<Patient>>({ reference: prefillPatientRef })
+        .then(setCriteriaPatient)
+        .catch(() => {});
+    }
+    setRescheduleRef(searchParams.get('reschedule') ?? undefined);
+
+    const date = searchParams.get('date');
+    const timeOfDay = searchParams.get('timeOfDay');
+    const provider = searchParams.get('provider');
+    const room = searchParams.get('room');
+    const device = searchParams.get('device');
+    if (date || timeOfDay || provider || room || device) {
+      setCriteria((prev) => ({
+        ...prev,
+        ...(date && { dateStart: date, dateEnd: date }),
+        ...(timeOfDay === 'morning' || timeOfDay === 'afternoon' ? { timeOfDay } : {}),
+        ...(provider && { provider }),
+        ...(room && { room }),
+        ...(device && { device }),
+      }));
+    }
+    // Consult the URL once, on mount — the page's own controls own state after.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [medplum]);
 
   const [allSchedules, allSchedulesLoading, allSchedulesOutcome] = useSearchResources<'Schedule'>('Schedule', {
     _count: 100,
@@ -190,6 +243,12 @@ export function SchedulingPage(): JSX.Element {
   return (
     <>
       <Stack gap="md" p="md">
+        {rescheduleRef && (
+          <Alert color="blue" title="Rescheduling">
+            Search for a new time and book it. The original appointment stays booked until you confirm the new one — if
+            you leave without rebooking, nothing changes.
+          </Alert>
+        )}
         <Box w={320}>
           <ResourceInput<WithId<HealthcareService>>
             key={healthcareService?.id}
@@ -281,6 +340,26 @@ export function SchedulingPage(): JSX.Element {
             defaultPatient={criteriaPatient}
             onSuccess={(result) => {
               bookingDrawerHandlers.close();
+              // Defer-cancel completion: the new booking succeeded, so now
+              // release the original appointment being rescheduled (if any).
+              // Doing it here — not before the rebook — is what makes an
+              // abandoned reschedule non-destructive (spec §4.6, revised).
+              if (rescheduleRef) {
+                const [, originalId] = rescheduleRef.split('/');
+                medplum
+                  .post(medplum.fhirUrl('Appointment', originalId, '$cancel'))
+                  .catch((err) => {
+                    // New appointment already exists; surface the failure so
+                    // the admin can cancel the original manually rather than
+                    // silently leaving two active appointments.
+                    showErrorNotification(err);
+                  })
+                  .finally(() => {
+                    medplum.invalidateSearches('Appointment');
+                    medplum.invalidateSearches('Slot');
+                  });
+                setRescheduleRef(undefined);
+              }
               medplum.invalidateSearches('Appointment');
               medplum.invalidateSearches('Slot');
               setBookingConfirmed({

@@ -1,0 +1,8 @@
+.row {
+  min-height: 34px;
+}
+
+.dayCheck {
+  width: 130px;
+  flex-shrink: 0;
+}

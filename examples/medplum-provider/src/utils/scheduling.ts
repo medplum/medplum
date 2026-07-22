@@ -1,8 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { generateId, getExtension, getIdentifier, parseReference, setIdentifier } from '@medplum/core';
-import type { HealthcareService, Identifier, Reference, Resource, ResourceType, Schedule } from '@medplum/fhirtypes';
+import { generateId, getExtension, getIdentifier, parseReference, resolveId, setIdentifier } from '@medplum/core';
+import type {
+  Appointment,
+  HealthcareService,
+  Identifier,
+  Reference,
+  Resource,
+  ResourceType,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { isCodeableReferenceLikeTo } from './servicetype';
 
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
@@ -112,4 +121,33 @@ export function cartesianCombos(
     key: schedules.map((s) => s.id).join('+'),
     schedules,
   }));
+}
+
+/**
+ * Filters a Slot list down to genuine standalone blocks (OOO/holiday/
+ * maintenance) by excluding any `busy-unavailable` Slot that's actually a
+ * buffer-before/buffer-after side effect of a real appointment. `$book`/
+ * `$hold` persist those buffer windows as real `busy-unavailable` Slot
+ * resources referenced by the appointment's own `slot` array — they aren't
+ * distinguishable by status alone, only by "is this slot referenced by an
+ * appointment already being rendered." Without this filter, every booked
+ * appointment with a buffer grows an extra "Blocked" background event next
+ * to it on both the roster and the availability calendar.
+ * @param slots - Candidate Slots (any status) for the visible range.
+ * @param appointments - Appointments in the same range, whose `.slot[]` references the buffer/busy Slots to exclude.
+ * @returns Only the `busy-unavailable` Slots not referenced by any given appointment.
+ */
+export function filterStandaloneBlocks(slots: Slot[], appointments: Appointment[]): WithId<Slot>[] {
+  const referencedSlotIds = new Set<string>();
+  for (const appointment of appointments) {
+    for (const ref of appointment.slot ?? []) {
+      const id = resolveId(ref);
+      if (id) {
+        referencedSlotIds.add(id);
+      }
+    }
+  }
+  return slots.filter(
+    (slot): slot is WithId<Slot> => slot.status === 'busy-unavailable' && !!slot.id && !referencedSlotIds.has(slot.id)
+  );
 }

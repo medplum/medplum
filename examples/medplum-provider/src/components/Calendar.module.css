@@ -104,13 +104,38 @@
   --cal-color: light-dark(var(--mantine-color-blue-8), var(--mantine-color-blue-6));
   --cal-background-color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
 
-  /* pending: outlined with border color */
+  /* pending/unconfirmed: outlined + a genuine striped fill (spec §4.5) */
   border: 1px solid var(--cal-color);
+  background-image: repeating-linear-gradient(
+    45deg,
+    light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9)),
+    light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9)) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.appointment.cancelled {
+  --cal-color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
+  --cal-background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-gray-8));
+  opacity: 0.65;
+}
+.appointment.cancelled .eventTitle,
+.appointment.cancelled .eventInner {
+  text-decoration: line-through;
 }
 
 .slot.free {
   --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
   --cal-background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
+}
+
+/* Availability-mode "open hours" background: deliberately low-alpha so the
+ * hour grid lines still read through it (a solid fill hid the grid). Used
+ * only by the time-off calendar, so the single-schedule page is untouched. */
+.availabilityFree {
+  --cal-color: light-dark(var(--mantine-color-green-9), var(--mantine-color-green-1));
+  --cal-background-color: light-dark(rgba(64, 192, 87, 0.12), rgba(64, 192, 87, 0.18));
 }
 
 .event,
