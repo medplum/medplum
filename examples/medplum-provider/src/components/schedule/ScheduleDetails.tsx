@@ -47,7 +47,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     setAppointmentDetails(event.resource);
 
     // If the selected appointment was cancelled or deleted, close the drawer.
-    if (!event || event.resource?.status === 'cancelled') {
+    if (event.operation === 'delete' || event.resource?.status === 'cancelled') {
       appointmentDetailsHandlers.close();
     }
   });

@@ -35,14 +35,15 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { ReferenceDisplay, ResourceInput, useMedplum } from '@medplum/react';
-import { useSearchResources } from '@medplum/react-hooks';
+import { useResourceModified, useSearchResources } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 import { useNotifyOnError } from '../../hooks/useNotifyOnError';
+import { useSchedulingResources } from '../../hooks/useSchedulingResources';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { assertNever } from '../../utils/assert';
@@ -110,52 +111,6 @@ function slotToEvent(slot: Slot): EventInput {
     interactive: true,
     extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
   };
-}
-
-type ScheduleSlotsLoaderProps = {
-  scheduleRef: string;
-  range: Range;
-  onResult: (scheduleRef: string, slots: WithId<Slot>[], loading: boolean) => void;
-};
-
-function ScheduleSlotsLoader({ scheduleRef, range, onResult }: ScheduleSlotsLoaderProps): null {
-  const [slots, loading, outcome] = useSearchResources('Slot', [
-    ['_count', '1000'],
-    ['schedule', scheduleRef],
-    ['start', `ge${range.start.toISOString()}`],
-    ['start', `le${range.end.toISOString()}`],
-    ['status:not', 'entered-in-error'],
-  ]);
-  useNotifyOnError(outcome);
-
-  useEffect(() => {
-    onResult(scheduleRef, slots ?? [], loading);
-  }, [scheduleRef, slots, loading, onResult]);
-
-  return null;
-}
-
-type ActorAppointmentsLoaderProps = {
-  actorRef: string;
-  range: Range;
-  onResult: (actorRef: string, appointments: WithId<Appointment>[], loading: boolean) => void;
-};
-
-function ActorAppointmentsLoader({ actorRef, range, onResult }: ActorAppointmentsLoaderProps): null {
-  const [appointments, loading, outcome] = useSearchResources('Appointment', [
-    ['_count', '1000'],
-    ['actor', actorRef],
-    ['date', `ge${range.start.toISOString()}`],
-    ['date', `le${range.end.toISOString()}`],
-    ['status:not', 'cancelled'],
-  ]);
-  useNotifyOnError(outcome);
-
-  useEffect(() => {
-    onResult(actorRef, appointments ?? [], loading);
-  }, [actorRef, appointments, loading, onResult]);
-
-  return null;
 }
 
 type ActorChooserProps = {
@@ -254,51 +209,43 @@ export function SchedulingPage(): JSX.Element | null {
           const ref = getReferenceString(actor);
           return ref && actors.includes(ref);
         })
-      ),
+      ) ?? [],
     [allSchedules, actors]
   );
 
-  // Slots are fetched per-schedule via ScheduleSlotsLoader components rendered below.
-  const [slotsMap, setSlotsMap] = useState<Map<string, WithId<Slot>[]>>(new Map());
-  const [loadingScheduleRefs, setLoadingScheduleRefs] = useState<Set<string>>(new Set());
+  const schedulingResources = useSchedulingResources(selectedSchedules, range);
+  const loading = schedulingResources.loading || allSchedulesLoading;
 
-  const handleSlotResult = useCallback((scheduleRef: string, slots: WithId<Slot>[], loading: boolean) => {
-    setSlotsMap((prev) => new Map(prev).set(scheduleRef, slots));
-    setLoadingScheduleRefs((prev) => {
-      const next = new Set(prev);
-      if (loading) {
-        next.add(scheduleRef);
-      } else {
-        next.delete(scheduleRef);
+  const slotsMap = useMemo(() => {
+    const result = new Map<string, WithId<Slot>[]>();
+    schedulingResources.slots?.forEach((slot) => {
+      const key = getReferenceString(slot.schedule);
+      if (!key) {
+        return;
       }
-      return next;
+      result.getOrInsert(key, []).push(slot);
     });
-  }, []);
+    return result;
+  }, [schedulingResources.slots]);
 
-  // Appointments are fetched per-actor via ActorAppointmentsLoader components rendered below.
-  const [appointmentsMap, setAppointmentsMap] = useState<Map<string, WithId<Appointment>[]>>(new Map());
-  const [loadingActorRefs, setLoadingActorRefs] = useState<Set<string>>(new Set());
-
-  const handleAppointmentResult = useCallback(
-    (actorRef: string, appointments: WithId<Appointment>[], loading: boolean) => {
-      setAppointmentsMap((prev) => new Map(prev).set(actorRef, appointments));
-      setLoadingActorRefs((prev) => {
-        const next = new Set(prev);
-        if (loading) {
-          next.add(actorRef);
-        } else {
-          next.delete(actorRef);
+  const appointmentsMap = useMemo(() => {
+    const result = new Map<string, WithId<Appointment>[]>();
+    schedulingResources.appointments?.forEach((appointment) => {
+      appointment.participant.forEach((participant) => {
+        if (participant.actor) {
+          const key = getReferenceString(participant.actor);
+          if (!key) {
+            return;
+          }
+          result.getOrInsert(key, []).push(appointment);
         }
-        return next;
       });
-    },
-    []
-  );
+    });
+    return result;
+  }, [schedulingResources.appointments]);
 
   // Q: SchedulePage.tsx merged overlapping slots on a single calendar into a
   // single display slot; is that desirable in the multi-calendar view?
-
-  const loading = allSchedulesLoading || loadingScheduleRefs.size > 0 || loadingActorRefs.size > 0;
 
   const eventSources = useMemo(() => {
     return actors.flatMap((actor) => {
@@ -394,69 +341,15 @@ export function SchedulingPage(): JSX.Element | null {
 
   const [chosenAppointment, setChosenAppointment] = useState<Appointment>();
 
-  const handleAppointmentUpdate = useCallback(
-    (updated: WithId<Appointment>) => {
-      console.log('appointment update', updated);
-      setAppointmentsMap((prev) => {
-        const next = new Map(prev);
-        updated.participant?.forEach((p) => {
-          const actorRef = p.actor ? getReferenceString(p.actor) : undefined;
-          console.log(actorRef, actorRef && actors.includes(actorRef));
-          if (actorRef && actors.includes(actorRef)) {
-            const appointments = next.get(actorRef) ?? [];
-            const existing = appointments.filter((apt) => apt.id !== updated.id);
-            next.set(actorRef, [...existing, updated]);
-          }
-        });
-        return next;
-      });
-
-      setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
-      if (updated.status === 'cancelled') {
-        const cancelledSlotRefs = new Set((updated.slot ?? []).map((ref) => getReferenceString(ref)).filter(isDefined));
-        if (cancelledSlotRefs.size > 0) {
-          setSlotsMap((prev) => {
-            const next = new Map(prev);
-            next.forEach((slots, scheduleRef) => {
-              next.set(
-                scheduleRef,
-                slots.filter((slot) => !cancelledSlotRefs.has(getReferenceString(slot)))
-              );
-            });
-            return next;
-          });
-        }
-        appointmentDetailsHandlers.close();
-      }
-    },
-    [appointmentDetailsHandlers, actors]
-  );
-
-  const handleSlotUpdates = useCallback((updated: WithId<Slot>[]) => {
-    setSlotsMap((prev) => {
-      const next = new Map(prev);
-      updated.forEach((slot) => {
-        const scheduleRef = getReferenceString(slot.schedule);
-        if (scheduleRef) {
-          const slots = next.get(scheduleRef) ?? [];
-          const existing = slots.filter((x) => x.id !== slot.id);
-          next.set(scheduleRef, [...existing, slot]);
-        }
-      });
-      return next;
-    });
-  }, []);
-
-  const handleBookSuccess = useCallback(
-    (results: { appointment: WithId<Appointment>; slots: WithId<Slot>[] }) => {
-      bookingDrawerHandlers.close();
-      const { appointment } = results;
-
-      handleAppointmentUpdate(appointment);
-      handleSlotUpdates(results.slots);
-    },
-    [bookingDrawerHandlers, handleAppointmentUpdate, handleSlotUpdates]
-  );
+  useResourceModified('Appointment', (event) => {
+    if (event.id !== appointmentDetails?.id) {
+      return;
+    }
+    setAppointmentDetails(event.resource);
+    if (event.resource?.status === 'cancelled') {
+      appointmentDetailsHandlers.close();
+    }
+  });
 
   const handleEventClick = (info: EventClickInfo): void => {
     const ext = info.event.extendedProps as ExtendedEvent;
@@ -472,21 +365,7 @@ export function SchedulingPage(): JSX.Element | null {
 
   return (
     <>
-      {range &&
-        selectedSchedules?.map((schedule) => {
-          const ref = getReferenceString(schedule);
-          return <ScheduleSlotsLoader key={ref} scheduleRef={ref} range={range} onResult={handleSlotResult} />;
-        })}
-      {range &&
-        actors.map((actorRef) => (
-          <ActorAppointmentsLoader
-            key={actorRef}
-            actorRef={actorRef}
-            range={range}
-            onResult={handleAppointmentResult}
-          />
-        ))}
-      <Stack gap="md" p="md">
+      <Stack gap="md" p="sm">
         <Box w={320}>
           <ResourceInput<WithId<HealthcareService>>
             name="healthcareService"
@@ -575,7 +454,7 @@ export function SchedulingPage(): JSX.Element | null {
         {chosenAppointment && healthcareService && (
           <BookAppointmentForm
             appointment={chosenAppointment}
-            onSuccess={handleBookSuccess}
+            onSuccess={bookingDrawerHandlers.close}
             healthcareService={healthcareService}
           />
         )}
@@ -590,13 +469,7 @@ export function SchedulingPage(): JSX.Element | null {
         }
         position="right"
       >
-        {appointmentDetails && (
-          <AppointmentDetails
-            appointment={appointmentDetails}
-            onAppointmentUpdate={handleAppointmentUpdate}
-            onSlotUpdate={(slot) => handleSlotUpdates([slot])}
-          />
-        )}
+        {appointmentDetails && <AppointmentDetails appointment={appointmentDetails} />}
       </Drawer>
     </>
   );
