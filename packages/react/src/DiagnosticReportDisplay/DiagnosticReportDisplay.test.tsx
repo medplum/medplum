@@ -4,7 +4,6 @@ import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Observation, Reference } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import {
   HealthGorillaDiagnosticReport,
   HealthGorillaObservation1,
@@ -82,11 +81,9 @@ describe('DiagnosticReportDisplay', () => {
 
   function setup(args: DiagnosticReportDisplayProps): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <DiagnosticReportDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <DiagnosticReportDisplay {...args} />
+      </MedplumProvider>
     );
   }
 

@@ -9,7 +9,6 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
 import type { BaseChatProps } from './BaseChat';
 import { BaseChat } from './BaseChat';
@@ -97,10 +96,10 @@ describe('BaseChat', () => {
   ): Promise<{ rerender: (props: TestComponentProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<TestComponent {...props} />, ({ children }) => (
-        <MemoryRouter>
+        <MedplumProvider medplum={medplum ?? defaultMedplum}>
           <Notifications />
-          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+          {children}
+        </MedplumProvider>
       ))
     );
     return {

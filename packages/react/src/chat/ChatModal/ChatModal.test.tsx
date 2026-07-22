@@ -3,7 +3,6 @@
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
 import type { ChatModalProps } from './ChatModal';
 import { ChatModal } from './ChatModal';
@@ -30,9 +29,7 @@ describe('ChatModal', () => {
   ): Promise<{ rerender: (props?: TestComponentProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<TestComponent {...props} />, ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
       ))
     );
     return {

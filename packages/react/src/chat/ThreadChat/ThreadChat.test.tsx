@@ -8,7 +8,6 @@ import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mo
 // eslint-disable-next-line import/named
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import type { ThreadChatProps } from './ThreadChat';
 import { ThreadChat } from './ThreadChat';
@@ -146,9 +145,7 @@ describe('ThreadChat', () => {
   ): Promise<{ rerender: (props: ThreadChatProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<ThreadChat {...props} />, ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
       ))
     );
     return {
