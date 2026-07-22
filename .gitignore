@@ -12,6 +12,7 @@ node_modules/
 .failed
 prettier-fmt.err
 prettier-fmt1.err
+.idea
 
 # Output
 dist/
