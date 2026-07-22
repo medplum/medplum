@@ -32,6 +32,16 @@ function sh(cmd, args) {
   execFileSync(cmd, args, { stdio: 'inherit' });
 }
 
+// Some build environments (e.g. Vercel's sandbox, which has no root/apt-get)
+// don't have pandoc/LibreOffice installed and never will. Missing tools
+// there should degrade to "no downloads this build," not fail the whole
+// docs build — the docs site itself doesn't depend on these files existing.
+// A tool that IS present but fails for some other reason (bad markdown, a
+// real pandoc/LibreOffice error) should still fail loudly.
+function isMissingToolError(err) {
+  return err.code === 'ENOENT';
+}
+
 function buildDocx(slug, markdownBody, tmpDir) {
   const tmpMd = path.join(tmpDir, `${slug}.md`);
   const content = `![Medplum](${WORDMARK_PNG})\n\n${markdownBody}`;
@@ -68,10 +78,10 @@ function buildPdf(docxPath, slug) {
   try {
     sh('soffice', ['--headless', '--convert-to', 'pdf', '--outdir', OUT_DIR, docxPath]);
   } catch (err) {
+    if (!isMissingToolError(err)) throw err;
     console.warn(
-      `[build-decision-guides] Skipping PDF for "${slug}" — LibreOffice ("soffice") is not available locally.\n` +
-        `  The .docx download still built. CI installs LibreOffice, so the PDF is generated there.\n` +
-        `  Original error: ${err.message}`
+      `[build-decision-guides] Skipping PDF for "${slug}" — LibreOffice ("soffice") is not available in this environment.\n` +
+        `  The .docx download still built. Production CI installs LibreOffice, so the PDF is generated there.`
     );
   }
 }
@@ -85,22 +95,35 @@ function main() {
     .map((f) => f.replace(/\.md$/, ''));
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'decision-guide-md-'));
+  let built = 0;
   for (const slug of slugs) {
     const raw = fs.readFileSync(path.join(DOCS_DIR, `${slug}.md`), 'utf8');
     const body = stripFrontMatter(raw);
 
-    console.log(`[build-decision-guides] ${slug}: markdown -> docx`);
-    const docxPath = buildDocx(slug, body, tmpDir);
+    let docxPath;
+    try {
+      console.log(`[build-decision-guides] ${slug}: markdown -> docx`);
+      docxPath = buildDocx(slug, body, tmpDir);
 
-    console.log(`[build-decision-guides] ${slug}: applying table widths + layout fixes`);
-    postProcessDocx(docxPath);
+      console.log(`[build-decision-guides] ${slug}: applying table widths + layout fixes`);
+      postProcessDocx(docxPath);
+    } catch (err) {
+      if (!isMissingToolError(err)) throw err;
+      console.warn(
+        `[build-decision-guides] Skipping "${slug}" — pandoc/unzip/zip is not available in this environment.\n` +
+          `  The docs page itself is unaffected; only the .docx/.pdf downloads are skipped this build.\n` +
+          `  Production CI installs these tools, so the downloads are generated there.`
+      );
+      continue;
+    }
 
     console.log(`[build-decision-guides] ${slug}: docx -> pdf`);
     buildPdf(docxPath, slug);
+    built += 1;
   }
   fs.rmSync(tmpDir, { recursive: true, force: true });
 
-  console.log(`[build-decision-guides] Done — ${slugs.length} guide(s) built to ${OUT_DIR}`);
+  console.log(`[build-decision-guides] Done — ${built}/${slugs.length} guide(s) built to ${OUT_DIR}`);
 }
 
 main();
