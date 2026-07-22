@@ -4,6 +4,10 @@ sidebar_position: 0
 
 # Referral Management
 
+:::tip[Planning this workflow?]
+The [Referrals Decision Guide](/docs/decision-guides/referrals) walks through requirements questions and FHIR modeling decisions for referrals — use it alongside these docs.
+:::
+
 Building out a referral management experience requires composing multiple FHIR resources into a workflow that meets the requirements of both referring and receiving providers. There are three primary interactions that developers should consider when building out a custom referral management solution:
 
 - **Capturing referral requests** from the referring provider

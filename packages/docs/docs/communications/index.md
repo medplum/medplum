@@ -4,6 +4,10 @@ sidebar_position: 0
 
 # Messaging & Communications
 
+:::tip[Planning this workflow?]
+The [Messaging & Communications Decision Guide](/docs/decision-guides/messaging) walks through requirements questions and FHIR modeling decisions for messaging — use it alongside these docs.
+:::
+
 FHIR supports messaging workflows through the [Communication](/docs/api/fhir/resources/communication) resource. This resource allows your system to manage message content and metadata in a format independent of its medium (email, SMS, chat, etc.). For more information on the data model, see [Messaging Data Model](/docs/communications/messaging-data-model).
 
 These [Communications](/docs/api/fhir/resources/communication) can also be structured to support a variety of use cases, including:
