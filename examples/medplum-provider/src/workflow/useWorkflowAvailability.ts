@@ -27,18 +27,15 @@ async function findMissingDependencies(
   medplum: MedplumClient,
   dependencies: readonly WorkflowDependency[]
 ): Promise<WorkflowDependency[]> {
-  const results = await Promise.all(
-    dependencies.map(async (dependency) => {
-      try {
-        const bot = await medplum.searchOne('Bot', { identifier: dependency.identifier });
-        return bot ? undefined : dependency;
-      } catch {
-        // A transient failure shouldn't block the workflow; treat the dependency as present.
-        return undefined;
-      }
-    })
+  const results = await Promise.allSettled(
+    dependencies.map((dependency) => medplum.searchOne('Bot', { identifier: dependency.identifier }))
   );
-  return results.filter((dependency): dependency is WorkflowDependency => dependency !== undefined);
+  // A dependency is missing only when its probe succeeded and found no bot. A rejected probe is a
+  // transient failure and shouldn't block the workflow, so we treat it as present.
+  return dependencies.filter((_, index) => {
+    const result = results[index];
+    return result.status === 'fulfilled' && !result.value;
+  });
 }
 
 export interface WorkflowAvailability {
