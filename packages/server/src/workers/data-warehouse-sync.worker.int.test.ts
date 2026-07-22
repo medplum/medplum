@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Unit tests for `data-warehouse-sync.ts` (BullMQ worker wiring only).
+ * Integration tests for `data-warehouse-sync.ts` (BullMQ worker wiring only).
  *
  * Covers config resolution (`getDataWarehouseSyncOptions`), scheduler upsert/remove,
  * worker initialization, and `processDataWarehouseSyncJob` delegating to `syncData` with
