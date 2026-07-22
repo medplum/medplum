@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, Logger, createReference } from '@medplum/core';
 import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Duplex } from 'stream';
 import { Readable } from 'stream';
 import request from 'supertest';
+import { vi } from 'vitest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -55,6 +56,39 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/2e9dfab6-a3af-4e5b-9324-483b4c333737')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(404);
+  });
+
+  test('Read binary without stored content', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Binary', contentType: ContentType.TEXT });
+    expect(res).toHaveStatus(201);
+
+    const binary = res.body as Binary;
+    const loggerErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+    try {
+      const res2 = await request(app)
+        .get('/fhir/R4/Binary/' + binary.id)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Accept', ContentType.JSON);
+      expect(res2).toHaveStatus(404);
+      expect(res2.headers['content-type']).toContain(ContentType.FHIR_JSON);
+      expect(res2.headers.etag).toBeUndefined();
+      expect(res2.headers['last-modified']).toBeUndefined();
+      expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Error reading Binary content',
+        expect.objectContaining({
+          binary: `Binary/${binary.id}`,
+          err: expect.any(Error),
+          versionId: binary.meta?.versionId,
+        })
+      );
+    } finally {
+      loggerErrorSpy.mockRestore();
+    }
   });
 
   test('Update and read binary', async () => {
