@@ -4,7 +4,11 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
-import { buildPgConnectionURI, DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT } from './config';
+import {
+  buildPgConnectionURI,
+  DEFAULT_DW_DATABASE_APPLICATION_NAME,
+  DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
+} from './config';
 import { buildDuckdbPostgresAttachQuery } from './warehouse-sql';
 
 /**
@@ -57,7 +61,7 @@ describe('config (integration)', () => {
     }
   }, 30_000);
 
-  test('buildPostgresConnectionUriFromMedplumDatabaseConfig connects via DuckDB with expected statement_timeout', async () => {
+  test('buildPostgresConnectionUriFromMedplumDatabaseConfig connects via DuckDB with expected session settings', async () => {
     const connStr = buildPgConnectionURI({
       host,
       port,
@@ -73,10 +77,11 @@ describe('config (integration)', () => {
       await connection.run('INSTALL postgres; LOAD postgres;');
       await connection.run(buildDuckdbPostgresAttachQuery(connStr, 'pgprobe'));
       const res = await connection.runAndReadAll(
-        "SELECT * FROM postgres_query('pgprobe', 'SELECT current_setting(''statement_timeout'') AS t');"
+        "SELECT * FROM postgres_query('pgprobe', 'SELECT current_setting(''statement_timeout'') AS t, current_setting(''application_name'') AS application_name');"
       );
-      const row = res.getRowObjectsJson()[0] as { t: string };
+      const row = res.getRowObjectsJson()[0] as { t: string; application_name: string };
       expect(row.t).toBe('3s');
+      expect(row.application_name).toBe(DEFAULT_DW_DATABASE_APPLICATION_NAME);
     } finally {
       connection.closeSync();
       instance.closeSync();

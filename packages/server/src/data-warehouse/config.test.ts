@@ -20,6 +20,7 @@ vi.mock('@medplum/core', async () => {
 });
 
 let DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT: typeof DataWarehouseConfig.DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT;
+let DEFAULT_DW_DATABASE_APPLICATION_NAME: typeof DataWarehouseConfig.DEFAULT_DW_DATABASE_APPLICATION_NAME;
 let appendMedplumDatabaseSslSearchParams: typeof DataWarehouseConfig.appendMedplumDatabaseSslSearchParams;
 let buildPgConnectionURI: typeof DataWarehouseConfig.buildPgConnectionURI;
 let getWarehouseSyncPostgresTableNames: typeof DataWarehouseConfig.getWarehouseSyncPostgresTableNames;
@@ -29,6 +30,7 @@ beforeAll(async () => {
   vi.resetModules();
   ({
     DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT,
+    DEFAULT_DW_DATABASE_APPLICATION_NAME,
     appendMedplumDatabaseSslSearchParams,
     buildPgConnectionURI,
     getWarehouseSyncPostgresTableNames,
@@ -52,6 +54,7 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
     expect(parsed.pathname).toBe('/medplum');
     expect(parsed.username).toBe('medplum');
     expect(parsed.password).toBe('secret');
+    expect(parsed.searchParams.get('application_name')).toBe(DEFAULT_DW_DATABASE_APPLICATION_NAME);
     expect(parsed.searchParams.get('options')).toBe(`-c statement_timeout=${DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT}`);
   });
 
