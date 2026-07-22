@@ -1,12 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
+import { ContentType, concatUrls, getStatus, isCreated, notFound } from '@medplum/core';
 import type { FhirResponseOptions } from '@medplum/fhir-router';
 import type { Binary, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
+import { pipeline } from 'node:stream/promises';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
+import { getLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
+import { sendOutcome } from './outcomes';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 
 export function isFhirJsonContentType(req: Request): boolean {
@@ -31,13 +34,38 @@ export function sendResponseHeaders(_req: Request, res: Response, outcome: Opera
   res.status(getStatus(outcome));
 }
 
-export async function sendBinaryResponse(res: Response, binaryResource: Binary): Promise<void> {
-  res.contentType(binaryResource.contentType);
-  if (binaryResource.data) {
-    res.send(Buffer.from(binaryResource.data, 'base64'));
-  } else {
+export async function sendBinaryResponse(
+  req: Request,
+  res: Response,
+  outcome: OperationOutcome,
+  binaryResource: Binary
+): Promise<void> {
+  try {
+    if (binaryResource.data) {
+      sendResponseHeaders(req, res, outcome, binaryResource);
+      res.contentType(binaryResource.contentType);
+      res.send(Buffer.from(binaryResource.data, 'base64'));
+      return;
+    }
+
     const stream = await getBinaryStorage().readBinary(binaryResource);
-    stream.pipe(res);
+    sendResponseHeaders(req, res, outcome, binaryResource);
+    res.contentType(binaryResource.contentType);
+    await pipeline(stream, res);
+  } catch (err) {
+    getLogger().error('Error reading Binary content', {
+      err,
+      binary: binaryResource.id ? `Binary/${binaryResource.id}` : undefined,
+      versionId: binaryResource.meta?.versionId,
+    });
+    if (!res.headersSent) {
+      res.removeHeader('ETag');
+      res.removeHeader('Last-Modified');
+      res.removeHeader('Content-Type');
+      sendOutcome(res, notFound);
+      return;
+    }
+    throw err;
   }
 }
 
@@ -48,8 +76,6 @@ export async function sendFhirResponse(
   body: Resource,
   options?: FhirResponseOptions
 ): Promise<void> {
-  sendResponseHeaders(req, res, outcome, body);
-
   if (
     body.resourceType === 'Binary' &&
     ((req.method === 'GET' && !req.get('Accept')?.startsWith(ContentType.FHIR_JSON)) || options?.forceRawBinaryResponse)
@@ -57,9 +83,11 @@ export async function sendFhirResponse(
     // When the read request has some other type in the Accept header,
     // then the content should be returned with the content type stated in the resource in the Content-Type header.
     // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
-    await sendBinaryResponse(res, body);
+    await sendBinaryResponse(req, res, outcome, body);
     return;
   }
+
+  sendResponseHeaders(req, res, outcome, body);
 
   let result = body;
 
