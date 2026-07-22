@@ -19,7 +19,10 @@ export default {
 function makeClient(): MockClient {
   const medplum = new MockClient();
   const originalExpand = medplum.valueSetExpand.bind(medplum);
-  medplum.valueSetExpand = (async (params: Parameters<typeof originalExpand>[0], options?: Parameters<typeof originalExpand>[1]) => {
+  medplum.valueSetExpand = (async (
+    params: Parameters<typeof originalExpand>[0],
+    options?: Parameters<typeof originalExpand>[1]
+  ) => {
     if (params.url?.includes('missing')) {
       throw new OperationOutcomeError(badRequest(`ValueSet ${params.url} not found`));
     }
