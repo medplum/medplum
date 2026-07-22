@@ -809,7 +809,6 @@ describe('MockClient', () => {
     });
 
     const membership = await medplum.get('admin/projects/123/members/456');
-    console.log(membership);
     expect(membership).toMatchObject<ProjectMembership>({
       resourceType: 'ProjectMembership',
       id: '456',
