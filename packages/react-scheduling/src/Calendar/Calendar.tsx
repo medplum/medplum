@@ -17,7 +17,7 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { Range } from '../types/scheduling';
+import type { Range } from '../types';
 import { assertNever } from '../utils/assert';
 import classes from './Calendar.module.css';
 
