@@ -319,5 +319,46 @@ describe('MemoryRepository', () => {
       const results = await Promise.all([p1, p2]);
       expect(results.map((r) => r.outcome.id)).toEqual(['created', 'ok']);
     });
+
+    test('conditionalUpdate', async () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        id: 'update-test',
+        active: true,
+      };
+
+      const c1 = await repo.conditionalUpdate(patient, parseSearchRequest('Patient?_id=update-test'), { assignedId: true });
+      expect(c1.outcome.id).toBe('created');
+
+      patient.active = false;
+      const u1 = await repo.conditionalUpdate(patient, parseSearchRequest('Patient?_id=update-test'), { assignedId: true });
+      expect(u1.outcome.id).toBe('ok');
+      expect(u1.resource.active).toBe(false);
+    });
+
+    test('conditionalDelete', async () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        id: 'delete-test',
+      };
+      await repo.createResource(patient);
+
+      await expect(repo.conditionalDelete(parseSearchRequest('Patient?_id=delete-test'))).resolves.toBeUndefined();
+      await expect(repo.conditionalDelete(parseSearchRequest('Patient?_id=delete-test'))).resolves.toBeUndefined(); // second delete is no-op
+    });
+
+    test('conditionalPatch', async () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        id: 'patch-test',
+        active: true,
+      };
+      await repo.createResource(patient);
+
+      const patched = (await repo.conditionalPatch(parseSearchRequest('Patient?_id=patch-test'), [
+        { op: 'replace', path: '/active', value: false },
+      ])) as Patient;
+      expect(patched.active).toBe(false);
+    });
   });
 });
