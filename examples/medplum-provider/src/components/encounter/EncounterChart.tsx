@@ -12,10 +12,12 @@ import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResour
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
+import { isMchEncounter } from '../../utils/mch';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
 import { EncounterHeader } from './EncounterHeader';
+import { MchVisitTab } from './MchVisitTab';
 import { SignAddendum } from './SignAddendum';
 
 const FHIR_ACT_REASON_SYSTEM = 'http://terminology.hl7.org/CodeSystem/v3-ActReason';
@@ -216,6 +218,8 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
     return <Loading />;
   }
 
+  const showMchTab = isMchEncounter(encounter);
+
   return (
     <>
       <Stack justify="space-between" gap={0}>
@@ -226,6 +230,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           onStatusChange={handleEncounterStatusChange}
           onTabChange={handleTabChange}
           onSign={handleSign}
+          showMchTab={showMchTab}
         />
         <Box p="md">
           {activeTab === 'notes' && (
@@ -256,6 +261,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               ))}
             </Stack>
           )}
+          {activeTab === 'mch' && showMchTab && <MchVisitTab patient={patientResource} encounter={encounter} />}
           {activeTab === 'details' && (
             <BillingTab
               encounter={encounter}

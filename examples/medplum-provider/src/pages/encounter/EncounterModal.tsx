@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
+import { Box, Button, Card, Grid, Modal, Select, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { isResource, normalizeErrorString } from '@medplum/core';
 import type { Coding, Encounter, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router';
 import { PlanDefinitionSummary } from '../../components/plandefinition/PlanDefinitionSummary';
 import { usePatient } from '../../hooks/usePatient';
 import { createAppointment, createEncounter } from '../../utils/encounter';
+import { createOrGetActivePregnancyEpisode, getMchEncounterPreset, MCH_ENCOUNTER_PRESETS } from '../../utils/mch';
 import classes from './EncounterModal.module.css';
 
 export const EncounterModal = (): JSX.Element => {
@@ -22,6 +23,7 @@ export const EncounterModal = (): JSX.Element => {
   const [start, setStart] = useState<Date | undefined>();
   const [end, setEnd] = useState<Date | undefined>();
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
+  const [mchPresetId, setMchPresetId] = useState<string | null>(null);
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +49,10 @@ export const EncounterModal = (): JSX.Element => {
     setIsLoading(true);
 
     try {
+      const mchPreset = getMchEncounterPreset(mchPresetId ?? undefined);
+      const pregnancyEpisode = mchPreset?.pregnancyRelated
+        ? await createOrGetActivePregnancyEpisode(medplum, patient)
+        : undefined;
       const appointment = await createAppointment(medplum, start, end, patient, practitioner);
       const encounter = await createEncounter(
         medplum,
@@ -54,7 +60,11 @@ export const EncounterModal = (): JSX.Element => {
         patient,
         planDefinitionData,
         appointment,
-        practitioner
+        practitioner,
+        {
+          encounterType: mchPreset?.encounterType,
+          episodeOfCare: pregnancyEpisode,
+        }
       );
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
@@ -114,6 +124,22 @@ export const EncounterModal = (): JSX.Element => {
                   required={true}
                   onChange={(value) => {
                     setEnd(new Date(value));
+                  }}
+                />
+
+                <Select
+                  label="MCH visit type"
+                  placeholder="Generic encounter"
+                  clearable={true}
+                  data={MCH_ENCOUNTER_PRESETS.map((preset) => ({ value: preset.id, label: preset.label }))}
+                  value={mchPresetId}
+                  onChange={(value) => {
+                    setMchPresetId(value);
+                    const preset = getMchEncounterPreset(value ?? undefined);
+                    if (preset) {
+                      setEncounterClass(preset.encounterClass);
+                      setStatus('planned');
+                    }
                   }}
                 />
 

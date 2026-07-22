@@ -19,6 +19,7 @@ interface EncounterHeaderProps {
   onTabChange?: (tab: string) => void;
   onSign?: (practitioner: Reference<Practitioner>, lock: boolean) => void;
   onSignLock?: (practitioner: Reference<Practitioner>) => void;
+  showMchTab?: boolean;
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
@@ -29,6 +30,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     onStatusChange,
     onTabChange,
     onSign,
+    showMchTab = false,
   } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
   const [activeTab, setActiveTab] = useState('notes');
@@ -200,6 +202,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             onChange={handleTabChange}
             data={[
               { label: 'Note & Tasks', value: 'notes' },
+              ...(showMchTab ? [{ label: 'MCH', value: 'mch' }] : []),
               { label: 'Details & Billing', value: 'details' },
             ]}
             fullWidth

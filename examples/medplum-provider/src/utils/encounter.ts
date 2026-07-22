@@ -13,8 +13,10 @@ import type {
   Appointment,
   ChargeItem,
   ClinicalImpression,
+  CodeableConcept,
   Coding,
   Encounter,
+  EpisodeOfCare,
   Patient,
   PlanDefinition,
   Practitioner,
@@ -24,6 +26,11 @@ import type {
   Slot,
   Task,
 } from '@medplum/fhirtypes';
+
+export interface CreateEncounterOptions {
+  encounterType?: CodeableConcept;
+  episodeOfCare?: EpisodeOfCare | Reference<EpisodeOfCare>;
+}
 
 export async function createAppointment(
   medplum: MedplumClient,
@@ -77,10 +84,16 @@ export async function createEncounter(
   patient: Patient | Reference<Patient>,
   planDefinition: PlanDefinition | undefined,
   appointment: Appointment,
-  practitioner: Practitioner | Reference<Practitioner>
+  practitioner: Practitioner | Reference<Practitioner>,
+  options: CreateEncounterOptions = {}
 ): Promise<WithId<Encounter>> {
   const practitionerRef = isResource(practitioner) ? createReference(practitioner) : practitioner;
   const patientRef = isResource(patient) ? createReference(patient) : patient;
+  const episodeOfCareRef = options.episodeOfCare
+    ? isReference(options.episodeOfCare)
+      ? options.episodeOfCare
+      : createReference(options.episodeOfCare)
+    : undefined;
 
   const encounter = await medplum.createResource<Encounter>({
     resourceType: 'Encounter',
@@ -88,7 +101,9 @@ export async function createEncounter(
     statusHistory: [],
     classHistory: [],
     class: classification,
+    type: options.encounterType ? [options.encounterType] : undefined,
     subject: patientRef,
+    episodeOfCare: episodeOfCareRef ? [episodeOfCareRef] : undefined,
     appointment: [createReference(appointment)],
     participant: [{ individual: practitionerRef }],
   });
