@@ -28,6 +28,7 @@ export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ss
     params.set('sslkey', ssl.key);
   }
 
+  // libpq defaults sslmode to "prefer". Other modes are disable,allow,require,verify-ca,verify-full
   if (ssl.rejectUnauthorized === true && ssl.ca) {
     params.set('sslmode', 'verify-full');
     params.set('sslrootcert', ssl.ca);
