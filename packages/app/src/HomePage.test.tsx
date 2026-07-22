@@ -40,6 +40,12 @@ describe('HomePage', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
+  test('Renders resource type header', async () => {
+    await setup('/Bot');
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(screen.getByText('Bot')).toBeInTheDocument();
+  });
+
   test('Renders with resourceType and fields', async () => {
     await setup('/Patient?_fields=id,_lastUpdated,name,birthDate,gender');
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();

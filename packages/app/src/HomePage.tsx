@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper } from '@mantine/core';
+import { Paper, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@medplum/core';
@@ -45,6 +45,9 @@ export function HomePage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
+      <Text p="xs" pb={0} fw={500}>
+        {search.resourceType}
+      </Text>
       <SearchControl
         checkboxesEnabled={true}
         search={search}
