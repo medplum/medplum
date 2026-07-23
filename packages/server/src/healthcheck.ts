@@ -4,7 +4,7 @@ import { MEDPLUM_VERSION } from '@medplum/core';
 import type { Request, Response } from 'express';
 import os from 'node:os';
 import type { PoolClient } from 'pg';
-import { DatabaseMode, getDatabasePool } from './database';
+import { DatabaseMode, getDatabasePool, setReservedDatabaseConnectionCount } from './database';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
 import type { RedisWithoutDuplicate } from './redis';
@@ -19,6 +19,7 @@ let writerConn: PoolClient | undefined;
 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
   writerConn ??= await getReservedDatabaseConnection(DatabaseMode.WRITER);
+  setReservedDatabaseConnectionCount(DatabaseMode.WRITER, 1);
   let startTime = Date.now();
   const postgresWriterOk = await testPostgres(writerConn);
   const writerRoundtripMs = Date.now() - startTime;
@@ -29,6 +30,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 
   if (hasSeparateReaderPool()) {
     readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
+    setReservedDatabaseConnectionCount(DatabaseMode.READER, 1);
     startTime = Date.now();
     await testPostgres(readerConn);
     const readerRoundtripMs = Date.now() - startTime;
@@ -75,8 +77,10 @@ async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolCl
 export function cleanupReservedDatabaseConnections(): void {
   writerConn?.release(true);
   writerConn = undefined;
+  setReservedDatabaseConnectionCount(DatabaseMode.WRITER, 0);
   readerConn?.release(true);
   readerConn = undefined;
+  setReservedDatabaseConnectionCount(DatabaseMode.READER, 0);
 }
 
 function hasSeparateReaderPool(): boolean {

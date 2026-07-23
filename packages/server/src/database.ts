@@ -5,6 +5,7 @@ import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
 import type { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
+import { instrumentDatabasePool } from './database-metrics';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -24,6 +25,10 @@ export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
+const reservedDatabaseConnectionCounts: Record<DatabaseMode, number> = {
+  reader: 0,
+  writer: 0,
+};
 
 export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
@@ -37,20 +42,32 @@ export function getDatabasePool(mode: DatabaseMode): Pool {
   return pool;
 }
 
+export function getReservedDatabaseConnectionCount(mode: DatabaseMode): number {
+  return reservedDatabaseConnectionCounts[mode];
+}
+
+export function setReservedDatabaseConnectionCount(mode: DatabaseMode, count: number): void {
+  reservedDatabaseConnectionCounts[mode] = count;
+}
+
 export const locks = {
   migration: 1,
   dataWarehouseSync: 2,
 };
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
-  pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
+  pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint, DatabaseMode.WRITER);
 
   if (serverConfig.database.runMigrations !== false) {
     await runMigrations(pool);
   }
 
   if (serverConfig.readonlyDatabase) {
-    readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
+    readonlyPool = await initPool(
+      serverConfig.readonlyDatabase,
+      serverConfig.readonlyDatabaseProxyEndpoint,
+      DatabaseMode.READER
+    );
   }
 }
 
@@ -82,10 +99,15 @@ function initPoolConfig(
   return poolConfig;
 }
 
-async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Promise<Pool> {
+async function initPool(
+  config: MedplumDatabaseConfig,
+  proxyEndpoint: string | undefined,
+  mode: DatabaseMode
+): Promise<Pool> {
   const poolConfig = initPoolConfig(config, proxyEndpoint);
 
   const pool = new Pool(poolConfig);
+  instrumentDatabasePool(pool, mode);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
@@ -130,6 +152,9 @@ export async function closeDatabase(): Promise<void> {
     await readonlyPool.end();
     readonlyPool = undefined;
   }
+
+  reservedDatabaseConnectionCounts.writer = 0;
+  reservedDatabaseConnectionCounts.reader = 0;
 }
 
 async function runMigrations(pool: Pool): Promise<void> {

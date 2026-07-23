@@ -10,6 +10,7 @@ import * as cronModule from '../workers/cron';
 import * as downloadModule from '../workers/download';
 import * as setAccountsModule from '../workers/set-accounts';
 import * as subscriptionModule from '../workers/subscription';
+import * as metricsModule from './metrics';
 import {
   cleanupOtelHeartbeat,
   getGauge,
@@ -166,6 +167,41 @@ describe('OpenTelemetry', () => {
 
     cleanupOtelHeartbeat();
     getDatabasePoolSpy.mockRestore();
+  });
+
+  test('Heartbeat listener records reserved database connections per pool', async () => {
+    process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+    const writerPool = { totalCount: 3, idleCount: 1, waitingCount: 0 } as Pool;
+    const readerPool = { totalCount: 2, idleCount: 1, waitingCount: 0 } as Pool;
+    const getDatabasePoolSpy = vi
+      .spyOn(databaseModule, 'getDatabasePool')
+      .mockImplementation((mode) => (mode === databaseModule.DatabaseMode.WRITER ? writerPool : readerPool));
+    const getReservedDatabaseConnectionCountSpy = vi
+      .spyOn(databaseModule, 'getReservedDatabaseConnectionCount')
+      .mockImplementation((mode) => (mode === databaseModule.DatabaseMode.WRITER ? 1 : 0));
+    const setGaugeSpy = vi.spyOn(metricsModule, 'setGauge').mockImplementation(() => true);
+
+    try {
+      initOtelHeartbeat();
+      heartbeat.dispatchEvent({ type: 'heartbeat' });
+      await sleep(0);
+
+      expect(setGaugeSpy).toHaveBeenCalledWith(
+        'medplum.db.reservedConnections',
+        1,
+        expect.objectContaining({ attributes: expect.objectContaining({ dbInstanceType: 'writer' }) })
+      );
+      expect(setGaugeSpy).toHaveBeenCalledWith(
+        'medplum.db.reservedConnections',
+        0,
+        expect.objectContaining({ attributes: expect.objectContaining({ dbInstanceType: 'reader' }) })
+      );
+    } finally {
+      cleanupOtelHeartbeat();
+      setGaugeSpy.mockRestore();
+      getReservedDatabaseConnectionCountSpy.mockRestore();
+      getDatabasePoolSpy.mockRestore();
+    }
   });
 
   test('Heartbeat listener skips queue collection when queues return undefined', async () => {

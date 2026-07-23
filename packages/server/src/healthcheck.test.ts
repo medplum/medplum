@@ -6,6 +6,7 @@ import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
+import { DatabaseMode, getReservedDatabaseConnectionCount } from './database';
 import * as otel from './otel/otel';
 
 const app = express();
@@ -66,6 +67,8 @@ describe('Health check', () => {
     expect(res).toHaveStatus(200);
 
     expect(setGaugeSpy).toHaveBeenCalledTimes(6);
+    expect(getReservedDatabaseConnectionCount(DatabaseMode.WRITER)).toBe(1);
+    expect(getReservedDatabaseConnectionCount(DatabaseMode.READER)).toBe(1);
   });
 
   test('Get /healthcheck when OTel is enabled and read and write instance are the same', async () => {
@@ -79,5 +82,7 @@ describe('Health check', () => {
     expect(res).toHaveStatus(200);
 
     expect(setGaugeSpy).toHaveBeenCalledTimes(5);
+    expect(getReservedDatabaseConnectionCount(DatabaseMode.WRITER)).toBe(1);
+    expect(getReservedDatabaseConnectionCount(DatabaseMode.READER)).toBe(0);
   });
 });

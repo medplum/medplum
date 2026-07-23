@@ -7,6 +7,7 @@ import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { recordDatabaseTransaction } from '../../database-metrics';
 import { getLogger } from '../../logger';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
@@ -529,10 +530,11 @@ export class RepositoryConnection implements Disposable {
         error = operationOutcomeError;
 
         // Ensure transaction is rolled back before attempting any retry
+        const isRetryable = isRetryableTransactionError(operationOutcomeError);
         if (txScope) {
-          await this.rollbackTransaction(txScope, operationOutcomeError);
+          await this.rollbackTransaction(txScope, operationOutcomeError, isRetryable);
         }
-        if (this.transactionDepth || !isRetryableTransactionError(operationOutcomeError)) {
+        if (this.transactionDepth || !isRetryable) {
           break; // Fall through to throw statement outside of the loop
         }
       } finally {
@@ -672,6 +674,7 @@ export class RepositoryConnection implements Disposable {
       if (this.currentScope.kind === 'transaction') {
         assert(this.currentScope.state === 'committing');
         await conn.query('COMMIT');
+        recordDatabaseTransaction('committed');
         this.currentScope.state = 'post-commit';
         this.finishTransactionIdleTracking('committed');
 
@@ -706,7 +709,7 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  private async rollbackTransaction(txScope: Scope, error: Error): Promise<void> {
+  private async rollbackTransaction(txScope: Scope, error: Error, isRetryable: boolean): Promise<void> {
     return this.withConnectionStateLock(async () => {
       // Tolerate being called after state has already been reset (e.g. when a prior
       // cleanup path in commit/rollback fully aborted the transaction on a dead connection).
@@ -723,6 +726,7 @@ export class RepositoryConnection implements Disposable {
           await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
         }
       } catch (rollbackErr) {
+        recordDatabaseTransaction('rollback_failed');
         if (isOuter) {
           this.finishTransactionIdleTracking('rolled_back');
         }
@@ -751,6 +755,7 @@ export class RepositoryConnection implements Disposable {
         return;
       }
       if (isOuter) {
+        recordDatabaseTransaction(isRetryable ? 'retryable_rollback' : 'rolled_back');
         this.finishTransactionIdleTracking('rolled_back');
       }
       // accept active: e.g. withTransaction callback threw

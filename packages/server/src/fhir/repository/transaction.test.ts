@@ -19,6 +19,7 @@ import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
+import * as databaseMetrics from '../../database-metrics';
 import { getLogger } from '../../logger';
 import { createTestProject, spyOnQuery, waitFor, withTestContext } from '../../test.setup';
 import * as workersModule from '../../workers';
@@ -303,6 +304,77 @@ describe('FHIR Repo Transactions', () => {
       }
     })
   );
+
+  test('Records transaction metric outcomes', async () => {
+    const recordTransactionSpy = vi.spyOn(databaseMetrics, 'recordDatabaseTransaction').mockImplementation(() => true);
+
+    try {
+      const committedClient = {
+        query: vi.fn(async () => ({ rows: [] })),
+        release: vi.fn(),
+      } as unknown as PoolClient;
+      await createBorrowedRepo(committedClient).withTransaction(async () => undefined, {
+        resourceTypes: [],
+        source: 'test.metrics.committed',
+      });
+      expect(recordTransactionSpy).toHaveBeenLastCalledWith('committed');
+
+      recordTransactionSpy.mockClear();
+      const rolledBackClient = {
+        query: vi.fn(async () => ({ rows: [] })),
+        release: vi.fn(),
+      } as unknown as PoolClient;
+      await expect(
+        createBorrowedRepo(rolledBackClient).withTransaction(
+          async () => {
+            throw new Error('work failed');
+          },
+          { resourceTypes: [], source: 'test.metrics.rolledBack' }
+        )
+      ).rejects.toThrow('work failed');
+      expect(recordTransactionSpy).toHaveBeenLastCalledWith('rolled_back');
+
+      recordTransactionSpy.mockClear();
+      let shouldRetry = true;
+      await repo.withTransaction(
+        async () => {
+          if (shouldRetry) {
+            shouldRetry = false;
+            throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
+          }
+        },
+        { resourceTypes: [], source: 'test.metrics.retryableRollback' }
+      );
+      expect(recordTransactionSpy.mock.calls).toStrictEqual([['retryable_rollback'], ['committed']]);
+
+      recordTransactionSpy.mockClear();
+      const rollbackFailedClient = {
+        query: vi.fn(async (sql: string) => {
+          if (sql === 'ROLLBACK') {
+            throw new Error('rollback failed');
+          }
+          return { rows: [] };
+        }),
+        release: vi.fn(),
+      } as unknown as PoolClient;
+      const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => undefined);
+      try {
+        await expect(
+          createBorrowedRepo(rollbackFailedClient).withTransaction(
+            async () => {
+              throw new Error('work failed');
+            },
+            { resourceTypes: [], source: 'test.metrics.rollbackFailed' }
+          )
+        ).rejects.toThrow('work failed');
+        expect(recordTransactionSpy.mock.calls).toStrictEqual([['rollback_failed']]);
+      } finally {
+        warnSpy.mockRestore();
+      }
+    } finally {
+      recordTransactionSpy.mockRestore();
+    }
+  });
 
   test('saved AuditEvents from transaction post-commit do not trip transaction scope guard', () =>
     withTestContext(async () => {
