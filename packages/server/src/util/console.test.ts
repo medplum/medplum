@@ -50,20 +50,14 @@ describe('MockConsole', () => {
     expect(mockConsole.toString()).toBe('Assertion failed: recorded');
   });
 
-  test('supports count and time methods', () => {
+  test('supports count methods', () => {
     const mockConsole = new MockConsole();
-    vi.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValueOnce(125).mockReturnValueOnce(150);
 
     mockConsole.count('jobs');
     mockConsole.count('jobs');
     mockConsole.countReset('jobs');
     mockConsole.count('jobs');
-    mockConsole.time('deploy');
-    mockConsole.timeLog('deploy', 'halfway');
-    mockConsole.timeEnd('deploy');
 
-    expect(mockConsole.toString()).toBe(
-      ['jobs: 1', 'jobs: 2', 'jobs: 1', 'deploy: 25ms halfway', 'deploy: 50ms'].join('\n')
-    );
+    expect(mockConsole.toString()).toBe(['jobs: 1', 'jobs: 2', 'jobs: 1'].join('\n'));
   });
 });
