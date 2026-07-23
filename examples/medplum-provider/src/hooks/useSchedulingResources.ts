@@ -74,11 +74,11 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
     }
 
     setSlots((state) => {
-      // `create` prepends the new slot; `update`/`patch` replace it in place and leave
+      // `create` appends the new slot; `update`/`patch` replace it in place and leave
       // an unloaded range untouched.
       if (event.operation === 'create') {
         const current = state ?? [];
-        return current.some((existing) => existing.id === slot.id) ? current : [slot, ...current];
+        return current.some((existing) => existing.id === slot.id) ? current : [...current, slot];
       }
       return state?.map((existing) => (existing.id === slot.id ? slot : existing));
     });

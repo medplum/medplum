@@ -283,7 +283,7 @@ describe('useSchedulingSlots', () => {
         });
       });
 
-      expect(result.current.slots).toEqual([created, slotA]);
+      expect(result.current.slots).toEqual([slotA, created]);
     });
 
     test('ignores a created Slot for an untracked schedule', async () => {
