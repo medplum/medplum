@@ -16,6 +16,7 @@ import type {
   BundleEntry,
   BundleEntryRequest,
   OperationOutcome,
+  Parameters,
   ParametersParameter,
   Resource,
   ResourceType,
@@ -747,7 +748,15 @@ export class BatchProcessor {
 
       body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
     } else if (patchResource?.resourceType === 'Parameters') {
+      if (isFhirPathPatchParameters(patchResource)) {
+        // FHIRPath Patch: pass the Parameters resource through unchanged so that
+        // repo.patchResource applies it via fhirpathPatchTypedValue, matching the
+        // standalone PATCH code path. rewriteIds recurses through the operation
+        // parts, rewriting any local bundle references embedded in values.
+        return this.rewriteIds(patchResource);
+      }
       if (patchResource.parameter) {
+        // JSON Patch expressed as Parameters (operations use a `op` part)
         body = [];
         for (const param of patchResource.parameter) {
           if (param.name === 'operation') {
@@ -842,6 +851,20 @@ export class BatchProcessor {
   private isTransaction(): boolean {
     return this.bundle.type === 'transaction' && Boolean(this.req.config?.transactions);
   }
+}
+
+/**
+ * Determines whether a PATCH Parameters resource represents a FHIRPath Patch rather than a JSON Patch.
+ * FHIRPath Patch operations carry a `type` part (add/insert/delete/replace/move), whereas JSON Patch
+ * expressed as Parameters carries an `op` part. This lets the batch processor pass FHIRPath patches
+ * through unchanged to `repo.patchResource`, which applies them via `fhirpathPatchTypedValue`.
+ * @param parameters - The Parameters resource from a PATCH Bundle entry.
+ * @returns True if the Parameters resource is a FHIRPath Patch.
+ */
+function isFhirPathPatchParameters(parameters: Parameters): boolean {
+  return Boolean(
+    parameters.parameter?.some((p) => p.name === 'operation' && p.part?.some((part) => part.name === 'type'))
+  );
 }
 
 function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): BundleEntry {
