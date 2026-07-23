@@ -19,6 +19,7 @@ import {
   withPoolClient,
 } from '../database';
 import { globalLogger } from '../logger';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
@@ -167,6 +168,9 @@ export async function processDataWarehouseSyncJob(
           startDate: syncConfig?.startDate,
           subsystem: 'data-warehouse-sync',
         });
+        incrementCounter('medplum.datawarehouse.job.count', {
+          attributes: { result: 'skipped', trigger: job.data.trigger },
+        });
         return;
       }
 
@@ -227,6 +231,13 @@ export async function processDataWarehouseSyncJob(
         jobEndTime: jobEndTime.toISOString(),
         durationSeconds,
         subsystem: 'data-warehouse-sync',
+      });
+
+      incrementCounter('medplum.datawarehouse.job.count', {
+        attributes: { result: 'success', trigger: job.data.trigger },
+      });
+      recordHistogramValue('medplum.datawarehouse.job.duration', durationSeconds, {
+        attributes: { trigger: job.data.trigger },
       });
     } catch (err) {
       globalLogger.error('Data warehouse sync failed', {

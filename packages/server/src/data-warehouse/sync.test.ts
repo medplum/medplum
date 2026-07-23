@@ -1,13 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { DuckDBInstance } from '@duckdb/node-api';
+import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import type { Expression } from '../fhir/sql';
 import { Condition, SqlBuilder } from '../fhir/sql';
+import * as otelModule from '../otel/otel';
 import type { DataWarehouseDestination } from './destination';
 import { LocalParquetWarehouseDestination } from './destination';
 import type { SyncOptions } from './sync';
-import { buildWarehouseSourcePredicate } from './sync';
+import { buildWarehouseSourcePredicate, syncData } from './sync';
 import { buildStartDatePredicate } from './warehouse-sql';
 
 const tableSpec = { postgresTable: 'Patient_History', icebergTable: 'patient_history' };
@@ -100,5 +103,73 @@ describe('buildWarehouseSourcePredicate', () => {
       sql: `("lastUpdated" > $1 AND "lastUpdated" >= $2)`,
       values: [watermark, startDate],
     });
+  });
+});
+
+describe('syncData OpenTelemetry metrics', () => {
+  let createSpy: MockInstance<(typeof DuckDBInstance)['create']>;
+  let recordHistogramValueSpy: MockInstance<typeof otelModule.recordHistogramValue>;
+  let incrementCounterSpy: MockInstance<typeof otelModule.incrementCounter>;
+
+  beforeEach(() => {
+    const duckConnection = {
+      run: vi.fn().mockResolvedValue(undefined),
+      closeSync: vi.fn(),
+    };
+    createSpy = vi.spyOn(DuckDBInstance, 'create').mockResolvedValue({
+      connect: vi.fn().mockResolvedValue(duckConnection),
+      closeSync: vi.fn(),
+    } as never);
+    recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+    incrementCounterSpy = vi.spyOn(otelModule, 'incrementCounter').mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    createSpy.mockRestore();
+    recordHistogramValueSpy.mockRestore();
+    incrementCounterSpy.mockRestore();
+  });
+
+  function makeMockDestination(rowsInserted: number): DataWarehouseDestination {
+    return {
+      type: 'local',
+      getSetupQueries: () => [],
+      getPostgresAttachQueries: () => [],
+      ensureTargetExists: vi.fn().mockResolvedValue(undefined),
+      buildSourcePredicate: vi.fn().mockResolvedValue(undefined),
+      writeRows: vi.fn().mockResolvedValue(rowsInserted),
+      getDestinationName: (spec) => spec.icebergTable,
+    };
+  }
+
+  test('records table sync histograms and counters', async () => {
+    const destination = makeMockDestination(5);
+
+    const result = await syncData(
+      makeSyncOptions({
+        destination,
+        database: { host: 'localhost', port: 5432, dbname: 'medplum', username: 'medplum', password: 'medplum' },
+      })
+    );
+
+    expect(result.tables).toHaveLength(1);
+    expect(result.tables[0]).toMatchObject({
+      destination: 'patient_history',
+      rowsInserted: 5,
+    });
+
+    const attrs = { attributes: { table: 'patient_history' } };
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.table.syncDuration',
+      expect.any(Number),
+      attrs
+    );
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.table.watermarkDuration',
+      expect.any(Number),
+      attrs
+    );
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.datawarehouse.table.rowsInserted', 5, attrs);
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.table.count', attrs);
   });
 });

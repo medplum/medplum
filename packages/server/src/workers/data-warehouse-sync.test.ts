@@ -29,6 +29,7 @@ import { buildPgConnectionURI } from '../data-warehouse/config';
 import * as syncModule from '../data-warehouse/sync';
 import * as database from '../database';
 import { locks } from '../database';
+import * as otelModule from '../otel/otel';
 import {
   DataWarehouseSyncQueueName,
   DataWarehouseSyncSchedulerId,
@@ -333,6 +334,7 @@ describe('data-warehouse sync worker', () => {
 
     test('skips sync when advisory lock is not available', async () => {
       vi.spyOn(database, 'acquireAdvisoryLock').mockResolvedValueOnce(false);
+      const incrementCounterSpy = vi.spyOn(otelModule, 'incrementCounter').mockImplementation(() => true);
 
       await processDataWarehouseSyncJob(config, {
         id: 'job-1',
@@ -342,6 +344,27 @@ describe('data-warehouse sync worker', () => {
 
       expect(syncModule.syncData).not.toHaveBeenCalled();
       expect(database.releaseAdvisoryLock).not.toHaveBeenCalled();
+      expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.job.count', {
+        attributes: { result: 'skipped', trigger: 'scheduler' },
+      });
+    });
+
+    test('records job count and duration metrics on successful sync', async () => {
+      const incrementCounterSpy = vi.spyOn(otelModule, 'incrementCounter').mockImplementation(() => true);
+      const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+
+      await processDataWarehouseSyncJob(config, {
+        id: 'job-1',
+        data: { trigger: 'scheduler' },
+        updateProgress: vi.fn(),
+      } as any);
+
+      expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.job.count', {
+        attributes: { result: 'success', trigger: 'scheduler' },
+      });
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.datawarehouse.job.duration', expect.any(Number), {
+        attributes: { trigger: 'scheduler' },
+      });
     });
 
     test('calls syncData with resolved database config', async () => {
