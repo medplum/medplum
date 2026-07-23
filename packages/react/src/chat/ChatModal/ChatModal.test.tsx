@@ -45,7 +45,7 @@ describe('ChatModal', () => {
     expect(screen.queryByRole('button', { name: 'Open chat' })).not.toBeInTheDocument();
 
     act(() => {
-      medplum.setProfile(DrAliceSmith);
+      medplum.mock.setProfile(DrAliceSmith);
     });
 
     await rerender();

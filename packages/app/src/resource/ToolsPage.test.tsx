@@ -223,7 +223,7 @@ describe('ToolsPage', () => {
   });
 
   test('Displays error notification whenever agent unreachable', async () => {
-    medplum.setAgentAvailable(false);
+    medplum.mock.setAgentAvailable(false);
 
     // load agent tools page
     setup(`/${getReferenceString(agent)}/tools`);
@@ -237,7 +237,7 @@ describe('ToolsPage', () => {
 
     await expect(screen.findByText('Timeout')).resolves.toBeInTheDocument();
 
-    medplum.setAgentAvailable(true);
+    medplum.mock.setAgentAvailable(true);
   });
 
   test('Setting count for ping', async () => {
