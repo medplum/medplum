@@ -15,26 +15,26 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **1.1 Who is messaging whom?**
 
-- Patient ↔ provider  
-- Provider ↔ provider  
-- Care team internally (no patient in the thread)  
-- System/automated → patient (one-way notifications)  
+- Patient ↔ provider
+- Provider ↔ provider
+- Care team internally (no patient in the thread)
+- System/automated → patient (one-way notifications)
 - Some combination of the above
 
 *Why it matters: different participant types affect access control, thread structure, and whether a patient subject is always required on a thread.*
 
 **1.2 What is the primary purpose of messaging in their product?**
 
-- Clinical care coordination (e.g. async visits, follow-ups)  
-- Patient engagement / support  
-- Internal operational communication  
+- Clinical care coordination (e.g. async visits, follow-ups)
+- Patient engagement / support
+- Internal operational communication
 - Outbound notifications only (reminders, results)
 
 *Why it matters: determines how much of the feature set is actually needed and whether async encounters/billing will come up.*
 
 **1.3 Is this a new build or replacing something they have today?**
 
-- If replacing: what are they replacing, and what are the gaps that drove this?  
+- If replacing: what are they replacing, and what are the gaps that drove this?
 - If new: is messaging central to the product or additive?
 
 *Why it matters: existing systems often carry assumptions about data model or UX that will surface as requirements. Knowing this early prevents surprises.*
@@ -68,8 +68,8 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Are threads always tied to a specific patient, or do you need internal/admin threads with no patient context?  
-- Are threads 1:1 only, or do you need group conversations with more than two participants?  
+- Are threads always tied to a specific patient, or do you need internal/admin threads with no patient context?
+- Are threads 1:1 only, or do you need group conversations with more than two participants?
 - Do threads need to be tagged or categorized (e.g. by specialty, product line, urgency)? If so, do tags need to be combinable (e.g. a thread tagged both "cardiology" and "urgent")?
 
 **What the answers drive:**
@@ -89,7 +89,7 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Do new messages need to appear in real time without a page refresh?  
+- Do new messages need to appear in real time without a page refresh?
 - Is this needed for the patient-facing app, the provider-facing app, or both?
 
 **What the answers drive:**
@@ -106,9 +106,9 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Do messages get assigned to specific providers, to a pool/queue by role, or both?  
-- Can threads be reassigned or escalated after initial assignment?  
-- After reassignment, does the previous owner need to retain visibility of the thread?  
+- Do messages get assigned to specific providers, to a pool/queue by role, or both?
+- Can threads be reassigned or escalated after initial assignment?
+- After reassignment, does the previous owner need to retain visibility of the thread?
 - Do you need a structured audit trail of who owned a thread and why it was rerouted?
 
 **What the answers drive:**
@@ -129,8 +129,8 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Are threads ever group conversations (more than 2 participants)?  
-- Do you need to query unread counts via API — e.g. a badge count or a list of all unread threads for a user?  
+- Are threads ever group conversations (more than 2 participants)?
+- Do you need to query unread counts via API — e.g. a badge count or a list of all unread threads for a user?
 - Do unread counts need to be tracked per-recipient in a group thread?
 
 **What the answers drive:**
@@ -147,7 +147,7 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- What file types need to be supported?  
+- What file types need to be supported?
 - Do attachments need to be searchable or referenceable as clinical documents — e.g. queryable by patient or document type — or are they just files to download within a message?
 
 **What the answers drive:**
@@ -164,8 +164,8 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Can sent messages be corrected or retracted after sending?  
-- If so, does the original message content need to be discoverable via search (e.g. "show all edited messages"), or is it sufficient for the history to exist but not be directly queryable?  
+- Can sent messages be corrected or retracted after sending?
+- If so, does the original message content need to be discoverable via search (e.g. "show all edited messages"), or is it sufficient for the history to exist but not be directly queryable?
 - Do users need to save a draft and return to it across sessions or devices, or is per-device/browser draft storage acceptable?
 
 **What the answers drive:**
@@ -184,9 +184,9 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Are there events that should trigger automated messages (e.g. new lab result, appointment reminder)?  
-- Are there SLA or response-time requirements (e.g. all messages responded to within 4 hours)?  
-- Do providers have out-of-office or availability states that should affect routing?  
+- Are there events that should trigger automated messages (e.g. new lab result, appointment reminder)?
+- Are there SLA or response-time requirements (e.g. all messages responded to within 4 hours)?
+- Do providers have out-of-office or availability states that should affect routing?
 - Do you need to report on SLA compliance or response time metrics?
 
 **What the answers drive:**
@@ -204,9 +204,9 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Which channels — SMS, email, other?  
-- Is this outbound-only (notify the patient) or does the patient reply back into the thread?  
-- If inbound replies are needed, how is the patient identified from an incoming message (e.g. phone number, email address)?  
+- Which channels — SMS, email, other?
+- Is this outbound-only (notify the patient) or does the patient reply back into the thread?
+- If inbound replies are needed, how is the patient identified from an incoming message (e.g. phone number, email address)?
 - Does the external provider (e.g. Twilio) have its own conversation ID that can be stored for thread matching?
 
 **What the answers drive:**
@@ -226,9 +226,9 @@ These questions establish the "who and why" before scoping any features. The ans
 
 **Questions:**
 
-- Does the customer intend to bill for messaging-based care?  
-- How do you define a "session" — one thread per session, grouped by day, or patient-initiated?  
-- Can a single messaging session involve multiple patients (e.g. a parent asking about two children)?  
+- Does the customer intend to bill for messaging-based care?
+- How do you define a "session" — one thread per session, grouped by day, or patient-initiated?
+- Can a single messaging session involve multiple patients (e.g. a parent asking about two children)?
 - Do you need to capture diagnosis codes, service type, or other clinical details per encounter?
 
 **What the answers drive:**

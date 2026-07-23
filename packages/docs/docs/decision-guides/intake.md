@@ -13,26 +13,26 @@ _Companion to the [Intake & Registration](https://www.medplum.com/docs/intake) d
 
 **1.1 Who completes intake, and in what setting?**
 
-- Patient self-service (portal, mobile, kiosk)  
-- Staff-assisted (registration desk, rooming, phone, paper-to-digital)  
+- Patient self-service (portal, mobile, kiosk)
+- Staff-assisted (registration desk, rooming, phone, paper-to-digital)
 - Mixed (patient starts online, staff verifies in person)
 
 *Why: determines the auth model and whether an intake response may exist before the patient record is created (3.1, 3.2).*
 
 **1.2 When does intake happen relative to identity and scheduling?**
 
-- Before the patient record exists (greenfield / new patient signup)  
-- After scheduling, pre-visit (patient exists, no visit yet)  
-- At check-in or during the visit  
+- Before the patient record exists (greenfield / new patient signup)
+- After scheduling, pre-visit (patient exists, no visit yet)
+- At check-in or during the visit
 - Episodic updates only (existing patient, not tied to a visit)
 
 *Why: drives whether intake creates or updates a patient record, when responses get tied to a patient, and whether intake tasks link to a visit (3.1, 3.8).*
 
 **1.3 How are returning patients and duplicates handled?**
 
-- Always create a new patient record on intake (rare; only if you have a separate dedup pipeline downstream)  
-- Look up by identifier (e.g. MRN, email, phone) and update if found  
-- Run a demographic candidate search and confirm with staff before merge  
+- Always create a new patient record on intake (rare; only if you have a separate dedup pipeline downstream)
+- Look up by identifier (e.g. MRN, email, phone) and update if found
+- Run a demographic candidate search and confirm with staff before merge
 - Mixed – different rules for patient self-service vs staff-assisted
 
 *Why: drives 3.1 and must align with your org-wide dedup policy.*
@@ -43,9 +43,9 @@ _Companion to the [Intake & Registration](https://www.medplum.com/docs/intake) d
 
 **1.5 What other systems must intake feed or read from?**
 
-- Eligibility / insurance verification (e.g. Stedi, clearinghouse 270/271)  
-- Practice management or legacy EHR (write-back of demographics or coverage)  
-- Prefill sources (Patient Access API, Payer-to-Payer API, partner EHR, HIE/TEFCA) — see 3.3  
+- Eligibility / insurance verification (e.g. Stedi, clearinghouse 270/271)
+- Practice management or legacy EHR (write-back of demographics or coverage)
+- Prefill sources (Patient Access API, Payer-to-Payer API, partner EHR, HIE/TEFCA) — see 3.3
 - Referrals (intake initiated by an inbound referral – see the Referrals guide)
 
 *Why: surfaces integration boundaries that affect prefill (3.3), post-intake automation (3.7), and which actions live inside one intake workflow vs separate workflows.*
@@ -94,9 +94,9 @@ Decide whether intake creates a new patient record, updates an existing one, or 
 
 **Questions:**
 
-- Does the patient record exist before intake is filled out, after, or sometimes either?  
-- Do you run an identifier lookup, a demographic match search, both, or neither before creating a new patient record?  
-- When a match is ambiguous, does the intake response stay unlinked until a human confirms, or does the system pick the best candidate automatically?  
+- Does the patient record exist before intake is filled out, after, or sometimes either?
+- Do you run an identifier lookup, a demographic match search, both, or neither before creating a new patient record?
+- When a match is ambiguous, does the intake response stay unlinked until a human confirms, or does the system pick the best candidate automatically?
 - For self-service flows, can a patient submit intake before authenticating, and how is that response later associated with an account?
 
 | Situation | Approach |
@@ -114,8 +114,8 @@ Decide whether intake uses one universal form or several, whether the same form 
 
 **Questions:**
 
-- One intake form for everyone, or different forms by visit type, program, or language?  
-- Same form for patient self-service and staff-assisted, or separate forms tuned to each audience?  
+- One intake form for everyone, or different forms by visit type, program, or language?
+- Same form for patient self-service and staff-assisted, or separate forms tuned to each audience?
 - If you offer conversational or voice intake, does the transcript land in the same data shape as the form, or in a separate pipeline?
 
 | Situation | Approach |
@@ -135,9 +135,9 @@ Decide whether intake starts blank or arrives pre-populated, where prefill data 
 
 **Questions:**
 
-- Does the form start blank, prefilled from data you already hold (returning patient, prior visit), or prefilled from an external source?  
-- Which external sources are in scope (insurance card OCR, Patient Access API, Payer-to-Payer API, partner EHR, TEFCA/QHIN, state or regional HIE)?  
-- When prefilled data and patient input disagree, who wins — the source, the patient, or staff?  
+- Does the form start blank, prefilled from data you already hold (returning patient, prior visit), or prefilled from an external source?
+- Which external sources are in scope (insurance card OCR, Patient Access API, Payer-to-Payer API, partner EHR, TEFCA/QHIN, state or regional HIE)?
+- When prefilled data and patient input disagree, who wins — the source, the patient, or staff?
 - Does the patient see prefilled values and explicitly confirm, or is prefill silent?
 
 | Situation | Approach |
@@ -157,9 +157,9 @@ Decide where extraction logic lives: on the form itself (declarative SDC rules) 
 
 **Questions:**
 
-- Does extraction need conditional logic (only create a subscriber/guardian record when the subscriber is not the patient, only create a consent record when the patient agreed)?  
-- Does extraction need to call external APIs (eligibility, address validation, geocoding) during processing?  
-- When intake is resubmitted (annual update, correction), what should happen to existing allergies, medications, conditions, and coverage records?  
+- Does extraction need conditional logic (only create a subscriber/guardian record when the subscriber is not the patient, only create a consent record when the patient agreed)?
+- Does extraction need to call external APIs (eligibility, address validation, geocoding) during processing?
+- When intake is resubmitted (annual update, correction), what should happen to existing allergies, medications, conditions, and coverage records?
 - Will non-engineers update the form, and how often?
 
 | Situation | Approach |
@@ -181,9 +181,9 @@ Decide how insurance is modeled, especially when the subscriber is not the patie
 
 **Questions:**
 
-- Are multiple coverages (primary / secondary) captured at intake, or only primary?  
-- Is the subscriber sometimes someone other than the patient (e.g. a parent's plan covering a child)?  
-- Do you capture insurance card images, and where do they live?  
+- Are multiple coverages (primary / secondary) captured at intake, or only primary?
+- Is the subscriber sometimes someone other than the patient (e.g. a parent's plan covering a child)?
+- Do you capture insurance card images, and where do they live?
 - Are payers pre-loaded as a curated directory, or created on demand?
 
 | Situation | Approach |
@@ -202,9 +202,9 @@ Decide which consent types are captured, how they're modeled, and what triggers 
 
 **Questions:**
 
-- Which consent types are required at first intake vs deferred (HIPAA, treatment, financial, telehealth, research)?  
-- Are some consents conditional on patient attributes (minor, state of residence, payer)?  
-- What triggers re-consent (annual update, policy change, new clinic site)?  
+- Which consent types are required at first intake vs deferred (HIPAA, treatment, financial, telehealth, research)?
+- Are some consents conditional on patient attributes (minor, state of residence, payer)?
+- What triggers re-consent (annual update, policy change, new clinic site)?
 - Does intake need to capture electronic signature artifacts (image, attestation timestamp)?
 
 | Situation | Approach |
@@ -226,10 +226,10 @@ Decide what happens after intake is submitted: which automations fire, when elig
 
 **Questions:**
 
-- Does one workflow do everything (extract \+ notify \+ verify eligibility \+ create exception tasks), or do you split concerns into multiple workflows wired to different triggers?  
-- Should intake processing re-run when the response is updated, or only on first submit?  
-- When does eligibility verification run – during form completion, on submit, or async after intake is committed?  
-- Which post-intake actions are required to mark intake "done" vs nice-to-have side effects?  
+- Does one workflow do everything (extract \+ notify \+ verify eligibility \+ create exception tasks), or do you split concerns into multiple workflows wired to different triggers?
+- Should intake processing re-run when the response is updated, or only on first submit?
+- When does eligibility verification run – during form completion, on submit, or async after intake is committed?
+- Which post-intake actions are required to mark intake "done" vs nice-to-have side effects?
 - When eligibility, address validation, or another external call fails, does that block intake or surface an exception task?
 
 | Situation | Approach |
@@ -252,9 +252,9 @@ Decide whether intake is a single form or a multi-step workflow with several tas
 
 **Questions:**
 
-- Is intake completed by one person in one session, or split across roles (patient fills demographics, MA captures vitals, provider reviews)?  
-- Does intake need to appear as tasks in the provider's visit chart?  
-- Are some intake steps non-form work (e.g. lab orders, imaging) that should be modeled as orders rather than questionnaires?  
+- Is intake completed by one person in one session, or split across roles (patient fills demographics, MA captures vitals, provider reviews)?
+- Does intake need to appear as tasks in the provider's visit chart?
+- Are some intake steps non-form work (e.g. lab orders, imaging) that should be modeled as orders rather than questionnaires?
 - Will the same intake template be reused across visit types or programs?
 
 | Situation | Approach |
@@ -274,9 +274,9 @@ Decide what "intake is done" means for your operations, how that signal is repre
 
 **Questions:**
 
-- Is "intake complete" a single moment (form submitted) or a composite state (extraction succeeded \+ eligibility verified \+ required consents on file)?  
-- Which downstream workflows are gated on intake completion (scheduling, clinical, billing)?  
-- For incomplete intake (patient bailed mid-form, required field missing), how is that surfaced and worked?  
+- Is "intake complete" a single moment (form submitted) or a composite state (extraction succeeded \+ eligibility verified \+ required consents on file)?
+- Which downstream workflows are gated on intake completion (scheduling, clinical, billing)?
+- For incomplete intake (patient bailed mid-form, required field missing), how is that surfaced and worked?
 - Are partial / draft intakes a supported state, or only completed submissions?
 
 | Situation | Approach |

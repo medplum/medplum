@@ -13,16 +13,16 @@ _Companion to the [Authorization and Access Control](https://www.medplum.com/doc
 
 **1.1 Who are the users?**
 
-- Patients only  
-- Providers / staff / partners (clients or outside vendors) only  
+- Patients only
+- Providers / staff / partners (clients or outside vendors) only
 - Both
 
 **1.2 What is your organizational structure?**
 
-- Single organization  
-- Multiple locations of one organization  
-- Multiple independent organizations (MSO-style)  
-- Departments or service lines within one organization  
+- Single organization
+- Multiple locations of one organization
+- Multiple independent organizations (MSO-style)
+- Departments or service lines within one organization
 - Combination
 
 *Why: biggest driver of downstream design. If single org with no internal isolation, skip Section 2\.*
@@ -43,8 +43,8 @@ Isolation uses **compartments** (`meta.compartment`) matched by parameterized ac
 
 **Questions:**
 
-- Internal term for tenants? (clinics, programs, sites, accounts)  
-- Grouping is organizational, functional, or per-patient?  
+- Internal term for tenants? (clinics, programs, sites, accounts)
+- Grouping is organizational, functional, or per-patient?
 - Is there an organizational hierarchy (e.g., region → clinic)?
 
 | Situation | Approach |
@@ -55,8 +55,8 @@ Isolation uses **compartments** (`meta.compartment`) matched by parameterized ac
 
 **Hierarchy pattern** (if tenants nest, e.g., region → clinic):
 
-- Patients are tagged only at the **lowest level** they belong to.  
-- Practitioners enrolled at an intermediary level get one `ProjectMembership.access` entry per lowest-level tenant under it (iteratively expanded).  
+- Patients are tagged only at the **lowest level** they belong to.
+- Practitioners enrolled at an intermediary level get one `ProjectMembership.access` entry per lowest-level tenant under it (iteratively expanded).
 - Adding a new lowest-level tenant requires a workflow to update every practitioner membership at or above that intermediary.
 
 ---
@@ -65,7 +65,7 @@ Isolation uses **compartments** (`meta.compartment`) matched by parameterized ac
 
 **Questions:**
 
-- Can a patient be enrolled in more than one tenant at a time?  
+- Can a patient be enrolled in more than one tenant at a time?
 - Are practitioners isolated to their tenant, or visible across all tenants (global directory)?
 
 | Situation | Approach |
@@ -87,8 +87,8 @@ For each role: name it, scope it (which tenants, if multi-tenant), say what reso
 
 **Questions:**
 
-- What are the role names? (physician, RN, MA, front desk, billing, care coordinator, medical director)  
-- *If multi-tenant:* for each role, which tenants does it cover? (one, several, all)  
+- What are the role names? (physician, RN, MA, front desk, billing, care coordinator, medical director)
+- *If multi-tenant:* for each role, which tenants does it cover? (one, several, all)
 - Any oversight roles that need visibility across all tenants without per-tenant enrollment?
 
 | Role scope | Modeling approach |
@@ -110,7 +110,7 @@ Test: *if this token leaked, should the attacker reach both scopes?* No → sepa
 
 **Questions:**
 
-- For each role: which resource types does it read / write / search / delete?  
+- For each role: which resource types does it read / write / search / delete?
 - Any partial FHIR interactions? (create-only, read-without-search, etc.)
 
 | Situation | Approach |
@@ -160,9 +160,9 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 **Questions:**
 
-- Who invites/removes users and manages memberships?  
-- Who manages Bots, ClientApplications, AccessPolicies?  
-- Any super admin needs? (project creation via API, overwriting protected fields)  
+- Who invites/removes users and manages memberships?
+- Who manages Bots, ClientApplications, AccessPolicies?
+- Any super admin needs? (project creation via API, overwriting protected fields)
 - Should admins be blocked from clinical data?
 
 | Situation | Approach |
@@ -189,9 +189,9 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 **Questions:**
 
-- Self-registration or staff-invite?  
-- Are caregivers / proxies needed? (parents, adult children, guardians)  
-- One caregiver with multiple patients? One patient with multiple caregivers?  
+- Self-registration or staff-invite?
+- Are caregivers / proxies needed? (parents, adult children, guardians)
+- One caregiver with multiple patients? One patient with multiple caregivers?
 - How is the caregiver relationship established and revoked?
 
 | Situation | Approach |
@@ -213,8 +213,8 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 **Questions:**
 
-- Patient-context launch, provider-context launch, or standalone?  
-- Which scopes?  
+- Patient-context launch, provider-context launch, or standalone?
+- Which scopes?
 - Offline access needed?
 
 | Situation | Approach |
@@ -235,7 +235,7 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 **Questions:**
 
-- Restrict by IP range? (VPN, on-prem devices)  
+- Restrict by IP range? (VPN, on-prem devices)
 - Any roles that bypass?
 
 | Situation | Approach |
@@ -254,8 +254,8 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 **Questions:**
 
-- When does a patient get enrolled in a tenant? (registration, first appointment, referral, insurance, geography)  
-- Who is authorized to move a patient between tenants?  
+- When does a patient get enrolled in a tenant? (registration, first appointment, referral, insurance, geography)
+- Who is authorized to move a patient between tenants?
 - On transfer: do records follow the patient, stay with the original tenant, or become shared?
 
 | Situation | Approach |
@@ -274,9 +274,9 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 **Questions:**
 
-- Terminology (CodeSystems, ValueSets) shared or tenant-specific?  
-- Questionnaires shared or per-tenant?  
-- PlanDefinitions / ActivityDefinitions global or per-tenant?  
+- Terminology (CodeSystems, ValueSets) shared or tenant-specific?
+- Questionnaires shared or per-tenant?
+- PlanDefinitions / ActivityDefinitions global or per-tenant?
 - Any resources shared across projects (not just tenants)?
 
 | Situation | Approach |

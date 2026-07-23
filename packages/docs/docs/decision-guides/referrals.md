@@ -13,33 +13,33 @@ _Companion to the [Referral Management](https://www.medplum.com/docs/careplans/r
 
 **1.1 Which side(s) of the referral lifecycle do you build for?**
 
-- Outbound only – you originate referrals to others  
-- Inbound only – you receive referrals from others  
+- Outbound only – you originate referrals to others
+- Inbound only – you receive referrals from others
 - Both
 
 *Why: determines which Section 3 deep dives apply.*
 
 **1.2 Who interacts with referrals, and is the patient part of the workflow?**
 
-- Sending side: which roles author, edit, and send referrals (clinicians, MAs, coordinators, intake staff)?  
-- Receiving side: which roles triage, accept, and work referrals on intake?  
+- Sending side: which roles author, edit, and send referrals (clinicians, MAs, coordinators, intake staff)?
+- Receiving side: which roles triage, accept, and work referrals on intake?
 - Patient: do patients see referrals, get notified, or take action (e.g. view in portal, self-schedule, decline)?
 
 *Why: drives how forms are designed (3.2), who notes are written for (3.4), who owns the work (3.7), and whether patient-facing content is in scope.*
 
 **1.3 Where do receiving providers live relative to your tenant?**
 
-- Inside your tenant only  
-- Partner tenants or organizations  
-- External organizations without FHIR connectivity  
+- Inside your tenant only
+- Partner tenants or organizations
+- External organizations without FHIR connectivity
 - Some combination
 
 *Why: drives how recipients are stored and selected (3.3), and which outbound channels you support (3.5).*
 
 **1.4 Is this a new build or replacing/extending something, and what other systems must it work with?**
 
-- If replacing: what system or workflow, and what gaps drove the change?  
-- If new: is referrals central to the product or additive?  
+- If replacing: what system or workflow, and what gaps drove the change?
+- If new: is referrals central to the product or additive?
 - What other systems will referrals flow to or from (source EHR, downstream EHRs at receivers, billing, HIE, payer portals, include DirectMessage)?
 
 *Why: surfaces migration needs and integration boundaries that affect outbound channels (3.5), inbound intake (3.6), and matching of patient and provider records across systems.*
@@ -90,9 +90,9 @@ Each referral is one `ServiceRequest`. Decide how you classify it, how urgency i
 
 **Questions:**
 
-- How do you classify referrals (specialty, service, program), using standard codes, your own list, or both?  
-- What urgency options do users pick, and should they match triage and reporting?  
-- Do you show a referral number or reference beyond the system id?  
+- How do you classify referrals (specialty, service, program), using standard codes, your own list, or both?
+- What urgency options do users pick, and should they match triage and reporting?
+- Do you show a referral number or reference beyond the system id?
 - Is the referral final at send/commit, or do you need a draft first?
 
 | Situation | Approach |
@@ -113,8 +113,8 @@ Decide how referral intake is structured in the UI – one flow vs several by sp
 
 **Questions:**
 
-- Do you use one referral intake flow for everyone, or different flows by specialty, service, or program?  
-- Which fields must be chosen from lists or structured inputs (e.g. specialty, recipient, urgency), which allow free text, and what is required before the referral can be sent?  
+- Do you use one referral intake flow for everyone, or different flows by specialty, service, or program?
+- Which fields must be chosen from lists or structured inputs (e.g. specialty, recipient, urgency), which allow free text, and what is required before the referral can be sent?
 - Must every referral tie to the visit where it was created, or can referrals start without a linked visit (e.g. intake, triage, outreach)?
 
 | Situation | Approach |
@@ -134,8 +134,8 @@ Decide who users may send a referral *to* (person vs site vs queue) and where yo
 
 **Questions:**
 
-- Can a referral go to a specific clinician, to a site, department, or queue, or either, depending on referral type?  
-- Is your recipient directory edited and stored in Medplum, synced from another system, or mixed?  
+- Can a referral go to a specific clinician, to a site, department, or queue, or either, depending on referral type?
+- Is your recipient directory edited and stored in Medplum, synced from another system, or mixed?
 - Should the recipient picker show or filter by in-network status for the patient's coverage – and where does that network status come from (synced payer provider directory, internal preferred-provider list, or a real-time eligibility query)?
 
 | Situation | Approach |
@@ -154,7 +154,7 @@ Decide what leaves with the referral, how much is automated versus curated at se
 
 **Questions:**
 
-- What clinical material must travel with the referral (reason for referral, problems or diagnoses, key meds and allergies, recent labs or imaging, coverage), and what should be filled in automatically versus selected or edited by the sender before send?  
+- What clinical material must travel with the referral (reason for referral, problems or diagnoses, key meds and allergies, recent labs or imaging, coverage), and what should be filled in automatically versus selected or edited by the sender before send?
 - Should internal staff-only notes appear on the referral, or only content intended for the receiving provider and the patient?
 
 | Situation | Approach |
@@ -171,10 +171,10 @@ Decide how referrals leave your product – whether recipients get structured ex
 
 **Questions:**
 
-- Do any recipients accept referrals through structured exchange with your system, or only as documents (e.g. PDF or care-summary packages)?  
-- What outbound channels do you plan to use? (e.g., secure email, fax, API?)  
-- For each outbound channel you plan to use, what do you actually send or generate – structured data export, PDF, care-summary document, or a mix?  
-- Is the outbound channel the same for every recipient (e.g. always fax) or does it vary per recipient – and if it varies, where does that preference live (recipient directory, referral type, picked at send time)?  
+- Do any recipients accept referrals through structured exchange with your system, or only as documents (e.g. PDF or care-summary packages)?
+- What outbound channels do you plan to use? (e.g., secure email, fax, API?)
+- For each outbound channel you plan to use, what do you actually send or generate – structured data export, PDF, care-summary document, or a mix?
+- Is the outbound channel the same for every recipient (e.g. always fax) or does it vary per recipient – and if it varies, where does that preference live (recipient directory, referral type, picked at send time)?
 - For each channel, do you need to confirm delivery, retry on failure, and show send history to staff – and what counts as "successfully sent"?
 
 | Situation | Approach |
@@ -193,10 +193,10 @@ Decide how inbound referrals get created, reviewed, and matched to patients.
 
 **Questions:**
 
-- Which channels feed referrals into your product (e.g. automated exchange with a partner, fax or scanned documents, imported files or care-summary packages, typed in by staff)?  
-- For each channel, does a referral become active in your system automatically, or only after staff review or cleanup?  
-- When inbound patient information is incomplete or inconsistent, how do you find or confirm the correct patient record?  
-- After accepting (or declining) a new inbound referral, do you need to send an acknowledgment or response back to the originator – and through what path?  
+- Which channels feed referrals into your product (e.g. automated exchange with a partner, fax or scanned documents, imported files or care-summary packages, typed in by staff)?
+- For each channel, does a referral become active in your system automatically, or only after staff review or cleanup?
+- When inbound patient information is incomplete or inconsistent, how do you find or confirm the correct patient record?
+- After accepting (or declining) a new inbound referral, do you need to send an acknowledgment or response back to the originator – and through what path?
 - When the same referral arrives more than once (e.g. fax \+ secure inbox), how do you detect and handle duplicates?
 
 | Situation | Approach |
@@ -218,10 +218,10 @@ After a referral is created or accepted, decide how it gets to the right person,
 
 **Questions:**
 
-- Who picks up a new referral first – an intake pool, a department queue, or an assigned coordinator (+ how does assignment logic work) – and how is ownership tracked and reassigned over time?  
-- Does the referral need to confirm in-network status or covered benefits for the patient's plan before scheduling – and is that check separate from prior auth, or rolled into the same eligibility request?  
-- Does the referral need to clear an authorization or coverage check before scheduling, and how do you track that authorization through to approval or denial?  
-- When the referral becomes an actual visit (appointment, procedure, completed encounter), how do you tie that visit back to the originating referral?  
+- Who picks up a new referral first – an intake pool, a department queue, or an assigned coordinator (+ how does assignment logic work) – and how is ownership tracked and reassigned over time?
+- Does the referral need to confirm in-network status or covered benefits for the patient's plan before scheduling – and is that check separate from prior auth, or rolled into the same eligibility request?
+- Does the referral need to clear an authorization or coverage check before scheduling, and how do you track that authorization through to approval or denial?
+- When the referral becomes an actual visit (appointment, procedure, completed encounter), how do you tie that visit back to the originating referral?
 - Do you track aging or service-level expectations on open referrals (e.g. days since received, days pending an action), and how do staff find work that is overdue?
 
 | Situation | Approach |
@@ -242,8 +242,8 @@ Decide how you track a referral from request through completion – or cancellat
 
 **Questions:**
 
-- Which milestones matter enough to show and operate on (e.g. sent, accepted, scheduled, completed, cancelled)?  
-- How do you standardize labels for those milestones so reports, queues, and integrations all use the same meanings?  
+- Which milestones matter enough to show and operate on (e.g. sent, accepted, scheduled, completed, cancelled)?
+- How do you standardize labels for those milestones so reports, queues, and integrations all use the same meanings?
 - If a referral is cancelled or the recipient changes, do you revise the existing referral or create a new one?
 
 | Situation | Approach |
@@ -260,8 +260,8 @@ Decide what should come back after the referral is acted on, how those items att
 
 **Questions:**
 
-- After the referral goes out, what do you expect back – structured results (e.g. labs or imaging), a consult or visit summary, documents or letters, several of those, or nothing beyond tracking the referral itself?  
-- When results or documents arrive, how do you attach them to the correct referral – including when human confirmation is needed?  
+- After the referral goes out, what do you expect back – structured results (e.g. labs or imaging), a consult or visit summary, documents or letters, several of those, or nothing beyond tracking the referral itself?
+- When results or documents arrive, how do you attach them to the correct referral – including when human confirmation is needed?
 - What marks the referral complete for your operations – the referring organization, the receiving one, both, or different definitions for each?
 
 | Situation | Approach |

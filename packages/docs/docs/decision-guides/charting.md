@@ -15,28 +15,28 @@ _Companion to the [Charting](https://www.medplum.com/docs/charting) docs (SOAP n
 
 ### 1.1 What care setting and specialty?
 
-- Primary care  
-- Urgent care  
-- Specialty (cardiology, dermatology, orthopedics, etc.)  
-- Behavioral health  
+- Primary care
+- Urgent care
+- Specialty (cardiology, dermatology, orthopedics, etc.)
+- Behavioral health
 - Multi-specialty / mixed
 
 *Why it matters: care settings have different visit templates and charting needs. Behavioral health leans on standardized screening instruments; primary care emphasizes vitals and preventive care; specialty care often runs on protocol-driven order sets. Shapes every Visit Template in §2.1.*
 
 ### 1.2 What types of encounters will be charted?
 
-- In-person visits  
-- Telehealth visits  
-- Async / messaging-based encounters  
-- Group visits  
+- In-person visits
+- Telehealth visits
+- Async / messaging-based encounters
+- Group visits
 - Some combination
 
 *Why it matters: encounter types may need distinct Visit Templates. Async encounters chart differently — the Subjective section may come from a messaging thread. Group visits raise the question of one note per patient vs. a shared note.*
 
 ### 1.3 What are clinicians used to today, and what do they want to keep consistent?
 
-- What EHR or charting tool are clinicians coming from?  
-- What note formats or workflows do they want to preserve?  
+- What EHR or charting tool are clinicians coming from?
+- What note formats or workflows do they want to preserve?
 - What gaps drove the move?
 
 *Why it matters: charting changes have high adoption risk. Knowing what clinicians expect to stay the same is as important as knowing what to improve.*
@@ -53,12 +53,12 @@ The recommended baseline is one Visit Template (PlanDefinition) per distinct vis
 
 **Questions:**
 
-- What are the distinct visit types? (annual wellness, acute sick, behavioral health intake, post-op follow-up, specialty consult, etc.)  
-- For each visit type, what does the clinician do during the encounter?  
-  - Measurements (vitals — BP, HR, weight, BMI, temp, SpO2)  
-  - Screening instruments (PHQ-9, GAD-7, AUDIT, fall risk, pediatric screens)  
-  - Orders (labs, imaging, referrals, prescriptions)  
-  - Narrative documentation  
+- What are the distinct visit types? (annual wellness, acute sick, behavioral health intake, post-op follow-up, specialty consult, etc.)
+- For each visit type, what does the clinician do during the encounter?
+  - Measurements (vitals — BP, HR, weight, BMI, temp, SpO2)
+  - Screening instruments (PHQ-9, GAD-7, AUDIT, fall risk, pediatric screens)
+  - Orders (labs, imaging, referrals, prescriptions)
+  - Narrative documentation
   - Review of patient history (problem list, allergies, meds)
 
 **What the answers drive:**
@@ -85,7 +85,7 @@ If visit types share most of their structure: factor common pieces into shared Q
 
 **Questions:**
 
-- For each visit type from §2.1, what mix of structured forms vs. free-text does the workflow require?  
+- For each visit type from §2.1, what mix of structured forms vs. free-text does the workflow require?
 - Are orders placed inline within the chart, or in a separate orders area?
 
 **What the answers drive:**
@@ -120,9 +120,9 @@ The standard pattern: mark `ClinicalImpression.status = completed` and create a 
 
 **Questions:**
 
-- Is co-signing required (attending co-signs resident, provider co-signs scribe)?  
-- Should signing lock immediately, or leave a post-sign editable window?  
-- Will amendments be possible / needed after a chart is locked?  
+- Is co-signing required (attending co-signs resident, provider co-signs scribe)?
+- Should signing lock immediately, or leave a post-sign editable window?
+- Will amendments be possible / needed after a chart is locked?
 - Is a queryable audit trail of every signing event required?
 
 **What the answers drive:**

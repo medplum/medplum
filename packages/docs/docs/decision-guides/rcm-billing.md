@@ -13,18 +13,18 @@ _Companion to the [Billing](https://www.medplum.com/docs/billing) docs._
 
 **1.1 What is your reimbursement model?**
 
-- Insurance / claims-based – you bill payers and reconcile their responses  
-- Patient self-pay / cash – patients pay you directly; no payer claim  
-- Value-based / capitation – per-member-per-month or risk-based  
+- Insurance / claims-based – you bill payers and reconcile their responses
+- Patient self-pay / cash – patients pay you directly; no payer claim
+- Value-based / capitation – per-member-per-month or risk-based
 - Some combination
 
 *Why: Claims-based reads every lane; self-pay skips the Charge → Claim → Payer lane; value-based leans on Foundations and the Value-Based lane (3.11).*
 
 **1.2 How much of the revenue cycle runs in Medplum vs. delegated?**
 
-- **Clearinghouse-direct** – Medplum runs the cycle; the clearinghouse is transport. You own scrubbing, denials, and remittance posting. The most complete documented path.  
-- **RCM-automation partner** – you send encounter and charge data and delegate the back end; scrubbing, payer routing, denials, resubmission, patient collections, and reporting run on the partner's platform. The integration surface is claim submission; the partner's billing tasks sync back into Medplum as `Task`s.  
-- **Documents only (no electronic claims)** – you don't run claims through a clearinghouse or RCM partner. Generate a CMS-1500 PDF for the occasional paper/portal payer, or hand patients a superbill to self-submit for out-of-network reimbursement. Common for cash-pay and OON practices (see 1.1); also a per-payer fallback you can layer onto any engine above.  
+- **Clearinghouse-direct** – Medplum runs the cycle; the clearinghouse is transport. You own scrubbing, denials, and remittance posting. The most complete documented path.
+- **RCM-automation partner** – you send encounter and charge data and delegate the back end; scrubbing, payer routing, denials, resubmission, patient collections, and reporting run on the partner's platform. The integration surface is claim submission; the partner's billing tasks sync back into Medplum as `Task`s.
+- **Documents only (no electronic claims)** – you don't run claims through a clearinghouse or RCM partner. Generate a CMS-1500 PDF for the occasional paper/portal payer, or hand patients a superbill to self-submit for out-of-network reimbursement. Common for cash-pay and OON practices (see 1.1); also a per-payer fallback you can layer onto any engine above.
 - **External Practice Management (PM) / billing system** – Medplum is the clinical source of truth; charges or claims hand off to an existing PM/billing system that owns the rest.
 
 *In one line: a clearinghouse moves your claims; an RCM platform runs your revenue cycle. Either way Medplum owns the front half (coverage, charge capture, claim assembly); the paths diverge on the back half.*
@@ -52,25 +52,25 @@ _Companion to the [Billing](https://www.medplum.com/docs/billing) docs._
 
 **1.3 Who does the billing work, and is the patient part of it?**
 
-- Charge capture: clinicians at point of care, or back-office entry?  
-- Coding and claim work: dedicated coders/billers, or automated with exception review?  
-- Accounts receivable (AR) follow-up: who works denials, aging, and patient balances?  
+- Charge capture: clinicians at point of care, or back-office entry?
+- Coding and claim work: dedicated coders/billers, or automated with exception review?
+- Accounts receivable (AR) follow-up: who works denials, aging, and patient balances?
 - Patient: do patients see estimates, statements, or pay online?
 
 *Why: drives charge-capture design (3.5), who works denials and AR (3.8, 3.10), and whether patient-facing billing is in scope (3.9).*
 
 **1.4 Where does coding happen, and how automated is it?**
 
-- Auto-derived from clinical data (visit type, orders, procedures)?  
-- Coder-reviewed before the claim is built?  
+- Auto-derived from clinical data (visit type, orders, procedures)?
+- Coder-reviewed before the claim is built?
 - Fully manual?
 
 *Why: drives the coding and review model in charge capture (3.5) and where scrubbing exceptions surface (3.6).*
 
 **1.5 New build or replacing/extending, and what else must billing touch?**
 
-- If replacing: what billing/PM system, and what gaps drove the change?  
-- If new: is billing core to the product (you're building an RCM/billing product) or additive (a clinical app that also needs to bill)?  
+- If replacing: what billing/PM system, and what gaps drove the change?
+- If new: is billing core to the product (you're building an RCM/billing product) or additive (a clinical app that also needs to bill)?
 - What other systems must billing read from or write to (clinical/EHR source, PM, clearinghouse, accounting/GL, payment processor, payer portals)?
 
 *Why: surfaces integration boundaries and the source-of-truth split behind 1.2, 3.6, and 3.7. Core-to-product builds tend to own the cycle (a clearinghouse); additive builds tend to delegate (an RCM partner or external PM).*
@@ -124,9 +124,9 @@ How you represent a patient's insurance (the coverage stack, the subscriber, pay
 
 **Questions:**
 
-- Do patients commonly have more than one coverage, and must you bill them in order?  
-- Is the subscriber sometimes someone other than the patient?  
-- Is your payer list curated in Medplum, synced, or created on demand?  
+- Do patients commonly have more than one coverage, and must you bill them in order?
+- Is the subscriber sometimes someone other than the patient?
+- Is your payer list curated in Medplum, synced, or created on demand?
 - What cost-sharing (copay, coinsurance, deductible) do you need for estimates and patient billing?
 
 | Situation | Approach |
@@ -147,9 +147,9 @@ Decide whether you track a patient financial account that rolls charges, claims,
 
 **Questions:**
 
-- Do you need a single balance rolling up charges, payer payments, adjustments, and patient payments?  
-- Is the account scoped per patient, per visit, or per episode?  
-- Do you track payer and patient responsibility separately on the same account?  
+- Do you need a single balance rolling up charges, payer payments, adjustments, and patient payments?
+- Is the account scoped per patient, per visit, or per episode?
+- Do you track payer and patient responsibility separately on the same account?
 - Must the account reconcile against an external accounting/GL system?
 
 | Situation | Approach |
@@ -171,9 +171,9 @@ Decide whether you verify coverage before service, what you ask the payer, and w
 
 **Questions:**
 
-- What must you confirm: active coverage, covered service, in-network status, or benefit/cost detail?  
-- When does the check run: scheduling, check-in, or batch pre-visit?  
-- Do you re-check on a cadence for ongoing patients?  
+- What must you confirm: active coverage, covered service, in-network status, or benefit/cost detail?
+- When does the check run: scheduling, check-in, or batch pre-visit?
+- Do you re-check on a cadence for ongoing patients?
 - Who works failed or ambiguous checks?
 
 | Situation | Approach |
@@ -193,9 +193,9 @@ Decide whether services need payer authorization before they happen, how you tra
 
 **Questions:**
 
-- Do any services require prior authorization before scheduling or delivery?  
-- How do you check whether auth is required, and track a submitted auth to approval/denial?  
-- Must scheduling be gated until authorization clears?  
+- Do any services require prior authorization before scheduling or delivery?
+- How do you check whether auth is required, and track a submitted auth to approval/denial?
+- Must scheduling be gated until authorization clears?
 - Do you owe patients a cost estimate before service (e.g. a Good-Faith Estimate)?
 
 | Situation | Approach |
@@ -219,9 +219,9 @@ Decide what gets billed, where the codes come from, and how each line is priced.
 
 **Questions:**
 
-- What generates a charge: a completed encounter, an order/procedure, a fulfilled service?  
-- Where do codes come from (CPT/HCPCS, ICD-10, modifiers): auto-derived, coder-reviewed, or manual (1.4)?  
-- Is pricing a single fee schedule, or does it vary by payer contract?  
+- What generates a charge: a completed encounter, an order/procedure, a fulfilled service?
+- Where do codes come from (CPT/HCPCS, ICD-10, modifiers): auto-derived, coder-reviewed, or manual (1.4)?
+- Is pricing a single fee schedule, or does it vary by payer contract?
 - Who reviews coding before a claim is built, and how do exceptions surface?
 
 | Situation | Approach |
@@ -240,9 +240,9 @@ Decide how you build a valid claim from charges and coverage, and how it leaves 
 
 **Questions:**
 
-- Are you billing as an organization or an individual provider?  
-- Which submission path(s), and does it vary by payer (electronic for most, paper/portal for some)?  
-- What validation must pass before submission, and where do failures surface?  
+- Are you billing as an organization or an individual provider?
+- Which submission path(s), and does it vary by payer (electronic for most, paper/portal for some)?
+- What validation must pass before submission, and where do failures surface?
 - Do you submit secondary claims after the primary pays (coordination of benefits)?
 
 | Situation | Approach |
@@ -264,9 +264,9 @@ Decide how you ingest what the payer sends back (the *277CA* acknowledgment, acc
 
 **Questions:**
 
-- How do responses arrive: webhook push, polling, or partner API?  
-- How do you match a response to the originating claim?  
-- How do payer payments and adjustments post to the account?  
+- How do responses arrive: webhook push, polling, or partner API?
+- How do you match a response to the originating claim?
+- How do payer payments and adjustments post to the account?
 - What share posts automatically vs. needs review?
 
 | Situation | Approach |
@@ -286,9 +286,9 @@ Decide how you work claims the payer rejects or denies: correcting and resubmitt
 
 **Questions:**
 
-- Do you work front-end rejections (277CA) differently from adjudicated denials (835)?  
-- When you fix and resend, is it a corrected claim or a fresh submission?  
-- Do you track appeals (deadlines, supporting documentation, outcome)?  
+- Do you work front-end rejections (277CA) differently from adjudicated denials (835)?
+- When you fix and resend, is it a corrected claim or a fresh submission?
+- Do you track appeals (deadlines, supporting documentation, outcome)?
 - How do staff find claims that need work?
 
 | Situation | Approach |
@@ -309,9 +309,9 @@ Decide how you bill patients for their share (copays, coinsurance, deductibles, 
 
 **Questions:**
 
-- What balances do you bill: post-adjudication responsibility, self-pay, or both?  
-- Do you issue statements, and on what cadence?  
-- Do you take online payment / card on file, through which processor?  
+- What balances do you bill: post-adjudication responsibility, self-pay, or both?
+- Do you issue statements, and on what cadence?
+- Do you take online payment / card on file, through which processor?
 - For out-of-network patients, do you provide a superbill instead of billing the payer?
 
 | Situation | Approach |
@@ -329,9 +329,9 @@ Decide how you track where every claim and balance sits, and how staff find work
 
 **Questions:**
 
-- What lifecycle states matter (e.g. draft → submitted → accepted → paid → denied → closed)?  
-- How do you standardize states so queues, reports, and integrations agree?  
-- Do you track aging (days since submission, days pending) and AR buckets?  
+- What lifecycle states matter (e.g. draft → submitted → accepted → paid → denied → closed)?
+- How do you standardize states so queues, reports, and integrations agree?
+- Do you track aging (days since submission, days pending) and AR buckets?
 - How do staff find overdue or stuck claims and balances?
 
 | Situation | Approach |
@@ -353,9 +353,9 @@ Value-based care isn't a claims pipeline; it splits into measurement (quality, g
 
 **Questions:**
 
-- Which contracts are capitated or risk-based, and which members are attributed to you?  
-- Which quality measures (eCQM, HEDIS, stars) are you accountable for?  
-- Do you still submit claims or encounter data when capitated (for risk adjustment and measurement)?  
+- Which contracts are capitated or risk-based, and which members are attributed to you?
+- Which quality measures (eCQM, HEDIS, stars) are you accountable for?
+- Do you still submit claims or encounter data when capitated (for risk adjustment and measurement)?
 - How are capitation payments and any shared-savings settlement reconciled?
 
 | Situation | Approach |
