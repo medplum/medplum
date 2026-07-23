@@ -11,6 +11,7 @@
     "build:all": "turbo run build",
     "build:docs": "turbo run build --filter=@medplum/docs",
     "build:fast": "turbo run build --filter=@medplum/app --filter=@medplum/server",
+    "run_fast": "npm run dev --workspace=@medplum/server && npm run dev --workspace=@medplum/app",
     "clean": "turbo run clean",
     "lint": "turbo run lint --filter=!@medplum/docs",
     "lint:fix": "turbo run lint:fix --filter=!@medplum/docs",
