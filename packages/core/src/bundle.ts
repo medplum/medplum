@@ -63,14 +63,16 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
         resource: entry.resource,
       })),
     },
-    (key, value) => referenceReplacer(key, value, idToUuid),
+    function (this: unknown, key, value) {
+      return referenceReplacer(this, key, value, idToUuid);
+    },
     2
   );
   return reorderBundle(JSON.parse(jsonString) as Bundle);
 }
 
-function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if ((key === 'reference' || key === 'url') && typeof value === 'string') {
+function referenceReplacer(parent: unknown, key: string, value: unknown, idToUuid: Record<string, string>): unknown {
+  if ((key === 'reference' || (key === 'url' && isAttachment(parent))) && typeof value === 'string') {
     let id;
     if (value.includes('/')) {
       id = value.split('/')[1];
@@ -89,6 +91,22 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
     }
   }
   return value;
+}
+
+function isAttachment(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const attachment = value as Record<string, unknown>;
+  return (
+    'contentType' in attachment ||
+    'language' in attachment ||
+    'data' in attachment ||
+    'size' in attachment ||
+    'hash' in attachment ||
+    'title' in attachment ||
+    'creation' in attachment
+  );
 }
 
 /**
