@@ -444,10 +444,7 @@ function applyExpansionFilters(
     // use the partial (system, lower(code)) WHERE "synonymOf" IS NULL index, keeping the code branch
     // index-driven and its candidate set small. The display branch intentionally still matches
     // synonym rows, so alternate terms remain searchable.
-    const codeCondition = new Conjunction([
-      codeMatch,
-      new Condition(new Column('Coding', 'synonymOf'), '=', null),
-    ]);
+    const codeCondition = new Conjunction([codeMatch, new Condition(new Column('Coding', 'synonymOf'), '=', null)]);
     query
       .whereExpr(
         new Disjunction([
