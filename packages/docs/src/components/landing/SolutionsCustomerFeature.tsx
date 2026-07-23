@@ -18,10 +18,7 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
   // treatment (the big heading slot) doesn't fit a fabricated example.
   const showName = !customer.illustrativeMockup && !(customer.logoSrc && customer.logoHasName);
   return (
-    <div
-      id={customer.id}
-      className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}
-    >
+    <div id={customer.id} className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}>
       <div className={styles.header}>
         {customer.logoSrc && (
           <img
