@@ -65,12 +65,12 @@ describe('MCP Routes', () => {
 
   test('Unauthenticated streamable HTTP', async () => {
     const res = await request(app).get('/mcp/stream');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Unauthenticated SSE', async () => {
     const res = await request(app).get('/mcp/sse');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('SSE missing sessionId query param', async () => {
@@ -78,7 +78,7 @@ describe('MCP Routes', () => {
       .post('/mcp/sse')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ jsonrpc: '2.0', method: 'notifications/initialized' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('SSE missing JSON-RPC body', async () => {
@@ -86,7 +86,7 @@ describe('MCP Routes', () => {
       .post(`/mcp/sse?sessionId=${randomUUID()}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ foo: 'bar' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('clampSearchCount', () => {

@@ -291,5 +291,33 @@ describe('MemoryRepository', () => {
       expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
       expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
     });
+
+    test('concurrent conditionalCreate', async () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        id: 'abcde',
+      };
+
+      const p1 = repo.conditionalCreate(patient, parseSearchRequest('Patient?_id=abcde'));
+      const p2 = repo.conditionalCreate(patient, parseSearchRequest('Patient?_id=abcde'));
+
+      await expect(p1).resolves.toMatchObject({
+        resource: patient,
+        outcome: {
+          resourceType: 'OperationOutcome',
+          id: 'created',
+        },
+      });
+      await expect(p2).resolves.toMatchObject({
+        resource: patient,
+        outcome: {
+          resourceType: 'OperationOutcome',
+          id: 'ok',
+        },
+      });
+
+      const results = await Promise.all([p1, p2]);
+      expect(results.map((r) => r.outcome.id)).toEqual(['created', 'ok']);
+    });
   });
 });

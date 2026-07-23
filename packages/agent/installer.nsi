@@ -369,6 +369,63 @@ Function InstallApp
 
 FunctionEnd
 
+# Determine whether a file should be preserved during uninstall (gh #3672):
+# a bare "*.log", or a numbered rotation "*.log.1" through "*.log.999".
+# All checks work off a fixed 8-char tail (wide enough for "*.log.999") so
+# cost is independent of the file name's overall length. The tiers are
+# ordered by expected frequency: a bare ".log" is checked first, then a
+# single-digit rotation, and only then do we exhaustively check the
+# remaining (less common) two- and three-digit rotations.
+#
+# Input:  $1 = file name (left unmodified)
+# Output: $2 = 1 if the file should be kept, 0 if it should be deleted
+Function un.IsLogFile
+    Push $3  # Loop counter for the numeric suffix (10..999)
+    Push $4  # Candidate suffix string, e.g. ".log.42"
+    Push $5  # Length of the candidate suffix
+    Push $6  # Last up to 8 characters of the file name
+    Push $7  # Tail of $6, sliced to the length being compared
+
+    StrCpy $2 0
+    StrCpy $6 $1 "" -8
+
+    StrCpy $7 $6 "" -4
+    ${If} $7 == ".log"
+        StrCpy $2 1
+    ${Else}
+        StrCpy $7 $6 "" -6
+        ${If} $7 == ".log.1"
+        ${OrIf} $7 == ".log.2"
+        ${OrIf} $7 == ".log.3"
+        ${OrIf} $7 == ".log.4"
+        ${OrIf} $7 == ".log.5"
+        ${OrIf} $7 == ".log.6"
+        ${OrIf} $7 == ".log.7"
+        ${OrIf} $7 == ".log.8"
+        ${OrIf} $7 == ".log.9"
+            StrCpy $2 1
+        ${Else}
+            StrCpy $3 10
+            ${DoWhile} $3 <= 999
+                StrCpy $4 ".log.$3"
+                StrLen $5 $4
+                StrCpy $7 $6 $5 -$5
+                ${If} $7 == $4
+                    StrCpy $2 1
+                    ${Break}
+                ${EndIf}
+                IntOp $3 $3 + 1
+            ${Loop}
+        ${EndIf}
+    ${EndIf}
+
+    Pop $7
+    Pop $6
+    Pop $5
+    Pop $4
+    Pop $3
+FunctionEnd
+
 # Start the uninstaller
 Section Uninstall
     DetailPrint "Stopping and deleting all old Medplum Agent services..."
@@ -381,8 +438,42 @@ Section Uninstall
     # Uninstall the Start menu shortcuts
     RMDir /r /REBOOTOK "$SMPROGRAMS\${APP_NAME}"
 
-    # Delete the files
-    RMDir /r /REBOOTOK "$INSTDIR"
+    # Delete the files, but preserve any rotated log files (see un.IsLogFile)
+    Push $0  # File handle
+    Push $1  # File name
+    Push $2  # Keep flag (1 = keep, 0 = delete), set by un.IsLogFile
+
+    ClearErrors
+    FindFirst $0 $1 "$INSTDIR\*.*"
+
+    ${DoWhile} $1 != ""
+        # Skip the "." and ".." directory entries
+        ${If} $1 != "."
+        ${AndIf} $1 != ".."
+            Call un.IsLogFile
+            ${If} $2 == 1
+                DetailPrint "Keeping log file: $1"
+            ${Else}
+                Delete /REBOOTOK "$INSTDIR\$1"
+                ${If} ${Errors}
+                    DetailPrint "Warning: Could not delete $1 (may be in use)"
+                    ClearErrors
+                ${EndIf}
+            ${EndIf}
+        ${EndIf}
+
+        FindNext $0 $1
+    ${Loop}
+
+    FindClose $0
+
+    Pop $2
+    Pop $1
+    Pop $0
+
+    # Remove the install directory only if it is now empty
+    # (i.e. no log files were left behind)
+    RMDir "$INSTDIR"
 
     # Unregister the program
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"

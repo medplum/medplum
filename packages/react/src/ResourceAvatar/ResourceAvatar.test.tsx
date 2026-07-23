@@ -3,7 +3,6 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import type { ResourceAvatarProps } from './ResourceAvatar';
 import { ResourceAvatar } from './ResourceAvatar';
@@ -15,11 +14,9 @@ describe('ResourceAvatar', () => {
   async function setup(args: ResourceAvatarProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <ResourceAvatar {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ResourceAvatar {...args} />
+        </MedplumProvider>
       );
     });
   }

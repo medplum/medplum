@@ -8,6 +8,7 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -25,7 +26,11 @@ export const newUserValidator = makeValidationMiddleware([
     .withMessage('Valid email address between 3 and 72 characters is required')
     .isLength({ min: 3, max: 72 })
     .withMessage('Valid email address between 3 and 72 characters is required'),
-  body('password').isByteLength({ min: 8, max: 72 }).withMessage('Password must be between 8 and 72 characters'),
+  body('password')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    .isByteLength({ max: MAX_PASSWORD_LENGTH })
+    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
 ]);
 
 /**

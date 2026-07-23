@@ -10,14 +10,16 @@ import type {
 } from '../../data-warehouse/destination';
 import type { DuckdbConnection } from '../../data-warehouse/warehouse-sql';
 import {
+  buildDuckdbPostgresAttachQuery,
   buildInsertIntoSelectQuery,
   buildManagedIcebergQualifiedTable,
   buildManagedIcebergSetupQueries,
-  buildMaxLastUpdatedWatermarkPredicate,
   buildSelectFromHistoryTableQuery,
+  fetchIcebergWatermark,
   runParameterizedWarehouseSql,
 } from '../../data-warehouse/warehouse-sql';
 import type { Expression } from '../../fhir/sql';
+import { Condition } from '../../fhir/sql';
 import { createS3TablesClient, tableExists } from './data-warehouse-client';
 
 export class S3TablesWarehouseDestination implements DataWarehouseDestination {
@@ -33,12 +35,44 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     this.s3TablesClient = createS3TablesClient(s3Region);
   }
 
-  getSetupQueries(connectionString: string): string[] {
+  getSetupQueries(): string[] {
     return buildManagedIcebergSetupQueries({
-      connectionString,
       s3Region: this.s3Region,
       awsS3TableArn: this.awsS3TableArn,
     });
+  }
+
+  /*
+   * DuckDB session settings for managed Iceberg sync connections.
+   *
+   * These are connection-scoped (`SET` without `GLOBAL`) and must run on every
+   * DuckDB connection that reads or writes Iceberg / Postgres.
+   */
+  getConnectionSetupQueries(): string[] {
+    return [
+      /*
+       * the default is 524288, which can take a LOT of memory since we're copying
+       * JSON content data
+       */
+      'SET partitioned_write_flush_threshold = 10000;',
+      /*
+       * Misleading option.  This is to allow duckdb to insert into a "sorted table", which is really a hint anyway.
+       * https://github.com/duckdb/duckdb-iceberg/issues/851
+       * https://github.com/duckdb/duckdb-iceberg/pull/992
+       */
+      'SET unsafe_iceberg_ignore_sort_order=true',
+      /*
+       * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
+       * the default connection pool settings are very aggressive; many connections, much parallelism
+       * That's not what we want for a sync process on a timer; we want to be gentle on our reader instances
+       */
+      'SET threads = 1',
+      'SET pg_use_ctid_scan = false',
+    ];
+  }
+
+  getPostgresAttachQueries(connectionString: string): string[] {
+    return [buildDuckdbPostgresAttachQuery(connectionString)];
   }
 
   async ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void> {
@@ -50,12 +84,18 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     }
   }
 
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression {
+  async buildSourcePredicate(
+    connection: DuckdbConnection,
+    tableSpec: WarehouseSourceTable,
+    namespace: string
+  ): Promise<Expression | undefined> {
     const qualifiedIceberg = buildManagedIcebergQualifiedTable(namespace, tableSpec.icebergTable);
-    // Incremental sync: only Postgres rows newer than the latest row already in Iceberg.
-    // When the Iceberg table is empty (or MAX is NULL), `lastUpdated > NULL` would be unknown for every row,
-    // so we treat a NULL watermark as "no high-water mark" and include all source rows instead of a sentinel timestamp.
-    return buildMaxLastUpdatedWatermarkPredicate(qualifiedIceberg);
+    const watermark = await fetchIcebergWatermark(connection, qualifiedIceberg);
+    if (!watermark) {
+      return undefined;
+    }
+
+    return new Condition('lastUpdated', '>', watermark);
   }
 
   async writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number> {

@@ -37,7 +37,10 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
+  config.dispatchEnabled ??= true;
+  config.subscriptionsEnabled ??= true;
   config.autoDownloadEnabled ??= true;
+  config.serverScopedSubscriptionsEnabled ??= false;
   config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
   config.inlineAttachmentsMaxTotalBytes ??= 0;
   // History:
@@ -105,12 +108,16 @@ type DefaultConfigKeys =
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
+  | 'dispatchEnabled'
+  | 'subscriptionsEnabled'
+  | 'autoDownloadEnabled'
   | 'rateLimitsEnabled'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota'
   | 'aiRealtimeTranscriptionUrl'
-  | 'asyncDelayScaling';
+  | 'asyncDelayScaling'
+  | 'serverScopedSubscriptionsEnabled';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
@@ -167,8 +174,7 @@ export function isFloatConfig(_key: string): boolean {
 }
 
 const booleanKeys = new Set([
-  'allowInsecureExternalAuthUrl',
-  'allowInsecureRestHookUrl',
+  'allowUnsafeOutbound',
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
@@ -183,6 +189,7 @@ const booleanKeys = new Set([
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
+  'serverScopedSubscriptionsEnabled',
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',

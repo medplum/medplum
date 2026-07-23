@@ -19,11 +19,13 @@ import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
 import { getConfig } from '../config/loader';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { requireSuperAdmin } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
+import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidTableName } from '../fhir/sql';
@@ -284,7 +286,11 @@ superAdminRouter.post(
   '/setpassword',
   [
     body('email').isEmail().withMessage('Valid email address is required'),
-    body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
+    body('password')
+      .isLength({ min: MIN_PASSWORD_LENGTH })
+      .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+      .isByteLength({ max: MAX_PASSWORD_LENGTH })
+      .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
   ],
   async (req: Request, res: Response) => {
     const { repo } = requireSuperAdmin();
@@ -511,7 +517,11 @@ superAdminRouter.post(
 
     const startTime = Date.now();
     const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-    await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+    await systemRepo.executeRawSql(
+      query,
+      undefined,
+      repoAccess.sqlWriteConfig({ source: 'superAdminRouter.tableSettings' })
+    );
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -562,7 +572,11 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
       const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-      await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
+      await systemRepo.executeRawSql(
+        query,
+        undefined,
+        repoAccess.sqlWriteConfig({ source: 'superAdminRouter.vacuum' })
+      );
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

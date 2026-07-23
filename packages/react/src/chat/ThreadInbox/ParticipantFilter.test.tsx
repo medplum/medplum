@@ -41,7 +41,7 @@ describe('ParticipantFilter', () => {
     selectedParticipants: Reference<Patient | Practitioner>[] = []
   ): Promise<UserEvent> => {
     if (medplum.getProfile() === DrAliceSmith) {
-      medplum.setProfile(mockPractitioner);
+      medplum.mock.setProfile(mockPractitioner);
     }
 
     await medplum.updateResource(mockPractitioner as WithId<Practitioner>);
@@ -450,7 +450,7 @@ describe('ParticipantFilter', () => {
 
   test('handles no profile (logged out state)', async () => {
     const medplum = new MockClient();
-    medplum.setProfile(undefined);
+    medplum.mock.setProfile(undefined);
 
     const user = await setup(medplum);
 

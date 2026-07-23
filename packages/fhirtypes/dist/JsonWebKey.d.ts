@@ -105,7 +105,7 @@ export interface JsonWebKey {
   /**
    * The family of cryptographic algorithms used with the key.
    */
-  kty: string;
+  kty?: string;
 
   /**
    * How the key was meant to be used; sig represents the signature.

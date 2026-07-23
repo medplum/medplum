@@ -95,13 +95,11 @@ fi
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 # eslint - version 10 is incompatible with some plugins we use, holding back until we can upgrade all at once and test
 # hibp - version 15 is ESM-only and we can't use it until we configure Jest/Babel to work with ESM packages
-# jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # otplib - version 13+ requires ESM, holding back until server supports ESM
-# temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
 # @mantine/* - version 9 has a few small backwards-incompatible changes, namely affecting at least our `PatientSummary` component, which would make it hard to support both Mantine 8 and 9 simultaneously
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp jose node-fetch npm zod otplib temporal-polyfill @mantine/*"
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/*"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

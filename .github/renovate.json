@@ -5,34 +5,42 @@
   "prBodyTemplate": "{{{table}}}{{{warnings}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
   "dependencyDashboard": false,
   "automerge": false,
-  "minimumReleaseAge": "3 days",
+  "minimumReleaseAge": "7 days",
   "separateMajorMinor": false,
   "statusCheckNames": {
     "minimumReleaseAge": null
   },
   "packageRules": [
     {
-      "description": "Dockerfile",
-      "matchManagers": ["dockerfile"],
-      "groupName": "dependencies",
-      "groupSlug": "all",
-      "pinDigests": false
-    },
-    {
-      "description": "DHI Dockerfile",
+      "description": "DHI images",
       "matchManagers": ["dockerfile"],
       "matchDatasources": ["docker"],
       "matchPackageNames": ["dhi.io/node"],
       "versioning": "docker",
-      "groupName": "dependencies",
-      "groupSlug": "all",
+      "groupName": "DHI images",
+      "groupSlug": "dhi-images",
+      "pinDigests": false,
+      "minimumReleaseAge": "3 days",
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
+      "description": "Docker images",
+      "matchManagers": ["dockerfile"],
+      "excludePackageNames": ["dhi.io/node"],
+      "groupName": "Docker images",
+      "groupSlug": "docker-images",
       "pinDigests": false
+    },
+    {
+      "description": "Ignore setup-node runtime versions",
+      "matchPackageNames": ["actions/node-versions"],
+      "enabled": false
     },
     {
       "description": "GitHub Actions",
       "matchManagers": ["github-actions"],
-      "groupName": "dependencies",
-      "groupSlug": "all",
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
       "pinDigests": true
     }
   ]

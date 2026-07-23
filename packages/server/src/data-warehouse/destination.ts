@@ -23,9 +23,32 @@ export interface DestinationQueryContext {
 
 export interface DataWarehouseDestination {
   readonly type: DataWarehouseDestinationType;
-  getSetupQueries(connectionString: string): string[];
+  /**
+   * DuckDB instance setup (extensions, secrets, ATTACH) that does not require Postgres.
+   * Run once per DuckDB instance; shared by later connections from that instance.
+   */
+  getSetupQueries(): string[];
+  /**
+   * DuckDB session settings (`SET ...`) that are connection-scoped.
+   * Run on every connection opened from the instance.
+   */
+  getConnectionSetupQueries(): string[];
+  /**
+   * ATTACH Postgres is DuckDB's way of connecting to a database. run after all destination-side state (e.g. watermarks) has been resolved,
+   * It is intentionally not done at the beginning of sync because we want to avoid
+   * any potential idle-connection issues while watermarks from Icebergare are being read.
+   */
+  getPostgresAttachQueries(connectionString: string): string[];
+  /**
+   * Verifies (or creates) the destination target for a source table.
+   * Called per table during watermark collection, before reading that table's watermark.
+   */
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
-  buildSourcePredicate(tableSpec: WarehouseSourceTable, namespace: string): Expression | undefined;
+  buildSourcePredicate(
+    connection: DuckdbConnection,
+    tableSpec: WarehouseSourceTable,
+    namespace: string
+  ): Promise<Expression | undefined>;
   writeRows(connection: DuckdbConnection, context: DestinationQueryContext): Promise<number>;
   /**
    * For local destinations, use the path to the Parquet file
@@ -42,7 +65,15 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
     this.basePath = basePath;
   }
 
-  getSetupQueries(connectionString: string): string[] {
+  getSetupQueries(): string[] {
+    return [];
+  }
+
+  getConnectionSetupQueries(): string[] {
+    return [];
+  }
+
+  getPostgresAttachQueries(connectionString: string): string[] {
     return ['INSTALL postgres', 'LOAD postgres', buildDuckdbPostgresAttachQuery(connectionString)];
   }
 
@@ -50,7 +81,11 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
     mkdirSync(this.basePath, { recursive: true });
   }
 
-  buildSourcePredicate(_tableSpec: WarehouseSourceTable, _namespace: string): undefined {
+  async buildSourcePredicate(
+    _connection: DuckdbConnection,
+    _tableSpec: WarehouseSourceTable,
+    _namespace: string
+  ): Promise<undefined> {
     /* TODO: Support incremental local sync by deriving a watermark from existing parquet output.
      * For now we always export all source rows because the local destination does not yet read prior parquet state.
      */

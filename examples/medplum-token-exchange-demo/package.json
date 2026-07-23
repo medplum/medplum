@@ -1,6 +1,6 @@
 {
   "name": "medplum-token-exchange-demo",
-  "version": "5.1.23",
+  "version": "5.1.26",
   "description": "Medplum Token Exchange Demo",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -19,11 +19,11 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@medplum/core": "5.1.23",
-    "@medplum/eslint-config": "5.1.23",
-    "@types/node": "22.19.21",
+    "@medplum/core": "5.1.26",
+    "@medplum/eslint-config": "5.1.26",
+    "@types/node": "22.20.1",
     "dotenv": "17.4.2",
-    "tsx": "4.22.4",
+    "tsx": "4.23.1",
     "typescript": "6.0.3"
   },
   "packageManager": "npm@10.9.8",
