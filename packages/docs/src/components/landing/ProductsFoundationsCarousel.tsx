@@ -349,7 +349,7 @@ function SubscriptionsExample(): JSX.Element {
   );
 }
 
-/* Medplum Bridge — layered composition: a raw HL7v2 ADT message in the dark code panel
+/* Medplum Agent — layered composition: a raw HL7v2 ADT message in the dark code panel
    (the legacy format arriving on-prem), with a connection diagram floating over it —
    on-prem tunneling to the cloud over an encrypted link, with message flow and delivery
    confirmation. Mirrors /docs/agent (HL7v2 / DICOM tunneled to the cloud). */
@@ -380,7 +380,7 @@ function BridgeExample(): JSX.Element {
           <span className={styles.rowHeadIcon}>
             <IconAntenna size={16} stroke={1.75} aria-hidden />
           </span>
-          <span className={styles.rowHeadTitle}>Medplum Bridge</span>
+          <span className={styles.rowHeadTitle}>Medplum Agent</span>
           <span className={styles.floatStatus}>Connected</span>
         </div>
 
@@ -652,7 +652,7 @@ const FOUNDATION_MEDIA: Record<string, JSX.Element> = {
   'Medplum Component Library': <ComponentLibraryExample />,
   Bots: <BotsExample />,
   Subscriptions: <SubscriptionsExample />,
-  'Medplum Bridge': <BridgeExample />,
+  'Medplum Agent': <BridgeExample />,
   'Medplum Auth': <AuthExample />,
   'Access Control': <AccessControlExample />,
   'Multi-Tenancy': <MultiTenancyExample />,

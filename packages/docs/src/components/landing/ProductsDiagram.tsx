@@ -683,7 +683,7 @@ function ProductsDiagram() {
             </div>
           </div>
 
-          {/* RIGHT: External IDP → Medplum Bridge → Integrations box. */}
+          {/* RIGHT: External IDP → Medplum Agent → Integrations box. */}
           <div
             style={{
               display: 'flex',
@@ -701,14 +701,14 @@ function ProductsDiagram() {
               compact
             />
 
-            {/* Medplum Bridge — Medplum software that runs on-prem, so it lives OUTSIDE the
+            {/* Medplum Agent — Medplum software that runs on-prem, so it lives OUTSIDE the
                hosted-platform boundary but is styled Medplum-managed (grape). */}
             <Card
               nodeRef={refs.bridge}
               kind="extensible"
               icon="arrowsUpDown"
               iconRotate={90}
-              name="Medplum Bridge"
+              name="Medplum Agent"
               sub="On-prem · HL7 / DICOM"
               extensible
               compact

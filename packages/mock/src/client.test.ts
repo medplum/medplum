@@ -52,6 +52,16 @@ describe('MockClient', () => {
     });
   });
 
+  afterEach(() => {
+    // MockClient defaults to the shared jsdom `globalThis.localStorage`, so an
+    // `activeLogin` persisted by a login-flow test (e.g. `processCode`) bleeds
+    // into later tests. A subsequent `new MockClient()` would then resume that
+    // login and fire a background `auth/me` request, emitting stray debug logs
+    // after the test has finished. Clearing storage between tests isolates them.
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
   test('Simple route', async () => {
     const client = new MockClient();
     const result = await client.get('fhir/R4/Patient/123');
@@ -286,12 +296,10 @@ describe('MockClient', () => {
   });
 
   test('Debug mode', async () => {
-    const originalConsoleLog = console.log;
-    console.log = vi.fn();
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const client = new MockClient({ debug: true });
     await client.get('not-found');
-    expect(console.log).toHaveBeenCalled();
-    console.log = originalConsoleLog;
+    expect(consoleLog).toHaveBeenCalled();
   });
 
   test('mockFetchOverride -- Missing one of router, repo, or client throws', () => {
@@ -433,11 +441,11 @@ describe('MockClient', () => {
     const result = await client.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result).toBeDefined();
 
-    console.log = vi.fn();
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const client2 = new MockClient({ debug: true });
     const result2 = await client2.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result2).toBeDefined();
-    expect(console.log).toHaveBeenCalled();
+    expect(consoleLog).toHaveBeenCalled();
   });
 
   test('Read resource', async () => {
@@ -804,7 +812,6 @@ describe('MockClient', () => {
     });
 
     const membership = await medplum.get('admin/projects/123/members/456');
-    console.log(membership);
     expect(membership).toMatchObject<ProjectMembership>({
       resourceType: 'ProjectMembership',
       id: '456',

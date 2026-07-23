@@ -5,15 +5,15 @@ sidebar_label: Matching
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/patient-deduplication/matching.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Tabs from '@theme/Tabs';
 
 # Matching {/* #matching-rules */}
 
 The best deduplication systems use a library of matching rules with different strengths and weaknesses. While the effectiveness of different patient matching rules will vary depending on the clinical context, here we suggest some rules to get you started.
 
-:::tip Built-in matching
-Medplum provides a built-in [Patient $match](/docs/api/fhir/operations/patient-match) operation that scores candidates using weighted demographics (identifier, phone, email, name, birth date, gender). It's a good starting point before building custom matching rules.
+:::tip[Built-in matching]
+Medplum provides a built-in [Patient $match](/docs/api/fhir/operations/patient-match) operation based on the **CMS Patient Matching framework**. Rather than an ad-hoc weighted heuristic, it compares a fixed set of identity factors (name, birth date, phone, email, SSN/ITIN, and identifiers) against approved attribute combinations. It's a good starting point before building custom matching rules.
 :::
 
 These have been trialed in previous deduplication projects, and are rated by their false positive rates (i.e. incorrect matches) and false negative rates (i.e. missed matches). Note that three matching identifiers is the standard.
