@@ -5,7 +5,6 @@ import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as reactHooks from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen, userEvent, waitFor } from '../../test-utils/render';
 import { ThreadInbox } from './ThreadInbox';
 
@@ -69,11 +68,9 @@ describe('ThreadInbox', () => {
           />
         </>,
         ({ children }) => (
-          <MemoryRouter>
-            <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-              {children}
-            </MedplumProvider>
-          </MemoryRouter>
+          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+            {children}
+          </MedplumProvider>
         )
       );
 

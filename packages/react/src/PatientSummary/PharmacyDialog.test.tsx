@@ -6,7 +6,6 @@ import type { Organization } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import type { Mock } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { PharmacyDialog } from './PharmacyDialog';
@@ -16,11 +15,7 @@ const medplum = new MockClient();
 describe('PharmacyDialog', () => {
   async function setup(children: ReactNode): Promise<void> {
     await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
+      render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
     });
   }
 

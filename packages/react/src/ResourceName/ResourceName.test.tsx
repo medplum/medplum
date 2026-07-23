@@ -3,7 +3,6 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
 import type { ResourceNameProps } from './ResourceName';
 import { ResourceName } from './ResourceName';
@@ -13,11 +12,9 @@ const medplum = new MockClient();
 describe('ResourceName', () => {
   function setup(args: ResourceNameProps): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ResourceName {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <ResourceName {...args} />
+      </MedplumProvider>
     );
   }
 

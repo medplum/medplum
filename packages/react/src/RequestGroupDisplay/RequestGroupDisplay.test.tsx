@@ -3,7 +3,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { RequestGroupDisplay } from './RequestGroupDisplay';
 
@@ -11,11 +10,7 @@ const medplum = new MockClient();
 
 async function setup(ui: ReactElement): Promise<void> {
   await act(async () => {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>{ui}</MedplumProvider>
-      </MemoryRouter>
-    );
+    render(<MedplumProvider medplum={medplum}>{ui}</MedplumProvider>);
   });
 }
 

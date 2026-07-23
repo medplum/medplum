@@ -7,6 +7,9 @@ import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from '../config/
 /** Default Postgres `statement_timeout` applied to DuckDB-attached connections (milliseconds). */
 export const DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT = 60_000 * 5; // 5 minutes
 
+/** Default Postgres `application_name` applied to DuckDB-attached connections. */
+export const DEFAULT_DW_DATABASE_APPLICATION_NAME = 'medplum-dw';
+
 /**
  * Appends libpq-compatible SSL query parameters for DuckDB `ATTACH (TYPE postgres)`.
  *
@@ -25,6 +28,7 @@ export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ss
     params.set('sslkey', ssl.key);
   }
 
+  // libpq defaults sslmode to "prefer". Other modes are disable,allow,require,verify-ca,verify-full
   if (ssl.rejectUnauthorized === true && ssl.ca) {
     params.set('sslmode', 'verify-full');
     params.set('sslrootcert', ssl.ca);
@@ -35,7 +39,8 @@ export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ss
 
 /**
  * Builds a PostgreSQL URI for DuckDB `ATTACH (TYPE postgres)` from {@link MedplumDatabaseConfig},
- * including `options=-c statement_timeout=...` and TLS via `sslmode` / cert paths from {@link MedplumDatabaseConfig.ssl}.
+ * including `application_name`, `options=-c statement_timeout=...`, and TLS via `sslmode` / cert paths from
+ * {@link MedplumDatabaseConfig.ssl}.
  *
  * @param db - Medplum database settings; host, dbname, username, and password must be set.
  * @returns A PostgreSQL connection URI (`postgresql://...`).
@@ -62,6 +67,7 @@ export function buildPgConnectionURI(db: MedplumDatabaseConfig): string {
 
   const timeout = db.queryTimeout ?? DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT;
   const searchParams = new URLSearchParams();
+  searchParams.set('application_name', DEFAULT_DW_DATABASE_APPLICATION_NAME);
   searchParams.set('options', '-c statement_timeout=' + String(timeout));
   appendMedplumDatabaseSslSearchParams(searchParams, db.ssl);
   // libpq / DuckDB postgres attach do not treat '+' as space in query values; use encodeURIComponent.
