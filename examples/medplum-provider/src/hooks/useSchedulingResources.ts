@@ -8,6 +8,18 @@ import { useEffect, useState } from 'react';
 import type { Range } from '../types/scheduling';
 import { showErrorNotification } from '../utils/notifications';
 
+// Whether an instant falls within the loaded range, matching the inclusive `ge`/`le`
+// bounds of the searches below. Used to keep created resources from a live update out of
+// state when they fall outside the range of the hook — a refetch wouldn't return
+// them, so appending them would drift from what the search reflects.
+function isWithinRange(instant: string | undefined, range: Range | undefined): boolean {
+  if (!instant || !range) {
+    return false;
+  }
+  const time = new Date(instant).getTime();
+  return time >= range.start.getTime() && time <= range.end.getTime();
+}
+
 export interface UseSchedulingResourcesResult {
   appointments: WithId<Appointment>[] | undefined;
   slots: WithId<Slot>[] | undefined;
@@ -74,9 +86,12 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
     }
 
     setSlots((state) => {
-      // `create` appends the new slot; `update`/`patch` replace it in place and leave
-      // an unloaded range untouched.
+      // `create` appends the new slot when it lands in hook's `range`; `update`/`patch`
+      // replace it in place and leave an unloaded range untouched.
       if (event.operation === 'create') {
+        if (!isWithinRange(slot.start, range)) {
+          return state;
+        }
         const current = state ?? [];
         return current.some((existing) => existing.id === slot.id) ? current : [...current, slot];
       }
@@ -184,6 +199,9 @@ export function useSchedulingAppointments(
 
     setAppointments((state) => {
       if (event.operation === 'create') {
+        if (!isWithinRange(appointment.start, range)) {
+          return state;
+        }
         const current = state ?? [];
         return current.some((existing) => existing.id === appointment.id) ? current : [...current, appointment];
       }

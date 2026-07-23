@@ -286,6 +286,31 @@ describe('useSchedulingSlots', () => {
       expect(result.current.slots).toEqual([slotA, created]);
     });
 
+    test('ignores a created Slot that falls outside the range', async () => {
+      configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
+      const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE);
+      await waitFor(() => expect(result.current.slots).toEqual([slotA]));
+
+      // Same tracked schedule, but its start is past the range's end, so a refetch
+      // wouldn't return it.
+      const outside: WithId<Slot> = {
+        ...slotA,
+        id: 'slot-outside',
+        start: '2024-02-15T10:00:00.000Z',
+        end: '2024-02-15T10:30:00.000Z',
+      };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Slot',
+          operation: 'create',
+          id: outside.id,
+          resource: outside,
+        });
+      });
+
+      expect(result.current.slots).toEqual([slotA]);
+    });
+
     test('ignores a created Slot for an untracked schedule', async () => {
       configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
       const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE);
@@ -536,6 +561,7 @@ describe('useSchedulingAppointments', () => {
         resourceType: 'Appointment',
         id: 'appt-new',
         status: 'booked',
+        start: '2024-01-15T10:00:00.000Z',
         participant: [{ actor: { reference: 'Practitioner/pract-a' }, status: 'accepted' }],
       };
       act(() => {
@@ -548,6 +574,32 @@ describe('useSchedulingAppointments', () => {
       });
 
       expect(result.current.appointments).toEqual([apptA, created]);
+    });
+
+    test('ignores a created Appointment that falls outside the range', async () => {
+      configureSearch({ appointmentsByActor: { 'Practitioner/pract-a': [apptA] } });
+      const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE);
+      await waitFor(() => expect(result.current.appointments).toEqual([apptA]));
+
+      // Tracked actor, but its start is past the range's end, so a refetch wouldn't
+      // return it.
+      const outside: WithId<Appointment> = {
+        resourceType: 'Appointment',
+        id: 'appt-outside',
+        status: 'booked',
+        start: '2024-02-15T10:00:00.000Z',
+        participant: [{ actor: { reference: 'Practitioner/pract-a' }, status: 'accepted' }],
+      };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: outside.id,
+          resource: outside,
+        });
+      });
+
+      expect(result.current.appointments).toEqual([apptA]);
     });
 
     test('ignores a created Appointment whose actor is not tracked', async () => {
