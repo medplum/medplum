@@ -40,6 +40,7 @@ import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
 import { showErrorNotification } from '../../utils/notifications';
+import { WorkflowGate } from '../../workflow/WorkflowGate';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(
@@ -62,6 +63,14 @@ export interface OrderLabsPageProps {
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
+  return (
+    <WorkflowGate workflow="order-labs">
+      <OrderLabsPageContent {...props} />
+    </WorkflowGate>
+  );
+}
+
+function OrderLabsPageContent(props: OrderLabsPageProps): JSX.Element {
   const { patient: defaultPatient, encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();
