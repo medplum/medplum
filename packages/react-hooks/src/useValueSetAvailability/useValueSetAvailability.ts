@@ -54,7 +54,7 @@ export function useValueSetAvailabilities(urls: readonly (string | undefined)[])
   // array literal every render, so we derive downstream memo and effect dependencies from this
   // string rather than the array identity.
   const key = Array.from(new Set(urls.filter((u): u is string => Boolean(u))))
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .join('\n');
   const uniqueUrls = useMemo(() => (key === '' ? EMPTY_URLS : key.split('\n')), [key]);
 
