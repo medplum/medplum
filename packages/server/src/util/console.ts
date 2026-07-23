@@ -3,7 +3,6 @@
 export class MockConsole {
   readonly messages: string[] = [];
   private readonly counts = new Map<string, number>();
-  private readonly timers = new Map<string, number>();
 
   log(...params: any[]): void {
     this.messages.push(params.join(' '));
@@ -71,25 +70,6 @@ export class MockConsole {
 
   groupEnd(): void {
     // No-op; indentation is not tracked in captured bot logs.
-  }
-
-  time(label = 'default'): void {
-    this.timers.set(label, Date.now());
-  }
-
-  timeEnd(label = 'default'): void {
-    const start = this.timers.get(label);
-    if (start !== undefined) {
-      this.log(`${label}: ${Date.now() - start}ms`);
-      this.timers.delete(label);
-    }
-  }
-
-  timeLog(label = 'default', ...params: any[]): void {
-    const start = this.timers.get(label);
-    if (start !== undefined) {
-      this.log(`${label}: ${Date.now() - start}ms`, ...params);
-    }
   }
 
   toString(): string {
