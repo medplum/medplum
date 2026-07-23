@@ -11,13 +11,17 @@ export interface GuideDownloadsProps {
 export default function GuideDownloads({ slug }: GuideDownloadsProps): ReactNode {
   return (
     <div className={styles.downloads}>
-      <a className={styles.downloadButton} href={`/decision-guides/${slug}.pdf`} download>
-        <IconDownload size={18} />
-        Download PDF
+      <span className={styles.label}>Download:</span>
+      <a className={styles.downloadLink} href={`/decision-guides/${slug}.pdf`} download>
+        <IconDownload size={14} />
+        PDF
       </a>
-      <a className={styles.downloadButton} href={`/decision-guides/${slug}.docx`} download>
-        <IconDownload size={18} />
-        Download Word
+      <span className={styles.divider} aria-hidden="true">
+        ·
+      </span>
+      <a className={styles.downloadLink} href={`/decision-guides/${slug}.docx`} download>
+        <IconDownload size={14} />
+        Word
       </a>
     </div>
   );

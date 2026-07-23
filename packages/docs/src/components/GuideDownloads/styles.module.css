@@ -3,27 +3,34 @@
 
 .downloads {
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  font-size: 0.85rem;
 }
 
-.downloadButton {
+.label {
+  color: var(--ifm-color-emphasis-600);
+}
+
+.divider {
+  color: var(--ifm-color-emphasis-400);
+}
+
+.downloadLink {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--ifm-button-border-radius);
-  border: 1px solid var(--ifm-color-primary);
-  color: var(--ifm-color-primary);
+  gap: 0.25rem;
+  color: var(--ifm-color-emphasis-700);
   font-weight: 600;
-  font-size: 0.9rem;
   text-decoration: none;
-  transition: background-color var(--ifm-transition-fast);
 }
 
-.downloadButton:hover {
-  background-color: var(--ifm-color-primary);
-  color: var(--ifm-button-color, #fff);
-  text-decoration: none;
+.downloadLink:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: underline;
 }
