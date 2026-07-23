@@ -39,8 +39,9 @@ export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ss
 
 /**
  * Builds a PostgreSQL URI for DuckDB `ATTACH (TYPE postgres)` from {@link MedplumDatabaseConfig},
- * including `application_name`, `options=-c statement_timeout=...`, and TLS via `sslmode` / cert paths from
- * {@link MedplumDatabaseConfig.ssl}.
+ * including `application_name`, `connect_timeout`, `options=-c statement_timeout=...`, and TLS via `sslmode` /
+ * cert paths from {@link MedplumDatabaseConfig.ssl}. Pool-only settings such as `minConnections`,
+ * `maxConnections`, and `idleTimeoutMillis` do not apply to this standalone connection URI.
  *
  * @param db - Medplum database settings; host, dbname, username, and password must be set.
  * @returns A PostgreSQL connection URI (`postgresql://...`).
@@ -69,6 +70,9 @@ export function buildPgConnectionURI(db: MedplumDatabaseConfig): string {
   const searchParams = new URLSearchParams();
   searchParams.set('application_name', DEFAULT_DW_DATABASE_APPLICATION_NAME);
   searchParams.set('options', '-c statement_timeout=' + String(timeout));
+  if (db.connectionTimeoutMillis !== undefined) {
+    searchParams.set('connect_timeout', String(Math.floor(db.connectionTimeoutMillis / 1000)));
+  }
   appendMedplumDatabaseSslSearchParams(searchParams, db.ssl);
   // libpq / DuckDB postgres attach do not treat '+' as space in query values; use encodeURIComponent.
   url.search = Array.from(searchParams.entries())

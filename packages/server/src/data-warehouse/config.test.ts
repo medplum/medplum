@@ -56,6 +56,7 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
     expect(parsed.password).toBe('secret');
     expect(parsed.searchParams.get('application_name')).toBe(DEFAULT_DW_DATABASE_APPLICATION_NAME);
     expect(parsed.searchParams.get('options')).toBe(`-c statement_timeout=${DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT}`);
+    expect(parsed.searchParams.has('connect_timeout')).toBe(false);
   });
 
   test('uses custom queryTimeout in options', () => {
@@ -67,6 +68,17 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
       queryTimeout: 3000,
     });
     expect(new URL(uri).searchParams.get('options')).toBe('-c statement_timeout=3000');
+  });
+
+  test('converts connectionTimeoutMillis to libpq connect_timeout seconds', () => {
+    const uri = buildPgConnectionURI({
+      host: 'db.example.com',
+      dbname: 'medplum',
+      username: 'medplum',
+      password: 'secret',
+      connectionTimeoutMillis: 10_999,
+    });
+    expect(new URL(uri).searchParams.get('connect_timeout')).toBe('10');
   });
 
   test('percent-encodes special characters in password', () => {
