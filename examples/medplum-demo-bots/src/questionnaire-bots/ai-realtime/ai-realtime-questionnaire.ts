@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import { createReference, isValidDate } from '@medplum/core';
 import type {
   Parameters,
   Questionnaire,
@@ -8,6 +9,7 @@ import type {
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  ResourceType,
 } from '@medplum/fhirtypes';
 
 const DEFAULT_MODEL = 'gpt-5.4-nano';
@@ -32,7 +34,9 @@ Field value rules:
 - string fields: the value as a string.
 - boolean fields: true or false.
 - integer/decimal fields: a number.
-- date fields: "yyyy-MM-dd". dateTime fields: ISO 8601. Convert any spoken date.
+- date fields: "yyyy-MM-dd". Convert any spoken date.
+- dateTime fields: ISO 8601 (e.g. "2024-03-05T14:30:00Z"); a date alone is fine if no time was said.
+- time fields: 24-hour "HH:mm".
 - choice fields with an "options" list: the value MUST be one of the option "value" strings.
 - choice fields without options: the user's answer as natural text (it is matched to a terminology server afterwards).
 - reference fields: the name of the thing the user said (e.g. a pharmacy or insurance company name).
@@ -64,7 +68,7 @@ Important guidelines:
 - If the user's input does not change any answers, return { "item": [] }.
 - Do NOT wrap the JSON in markdown code fences.`;
 
-type FieldType = 'string' | 'date' | 'dateTime' | 'boolean' | 'integer' | 'decimal' | 'choice' | 'reference';
+type FieldType = 'string' | 'date' | 'dateTime' | 'time' | 'boolean' | 'integer' | 'decimal' | 'choice' | 'reference';
 
 interface FieldOption {
   value: string;
@@ -138,7 +142,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Parameters
 
   let mergedItems: QuestionnaireResponseItem[];
   if (flat) {
-    const { changedItems, clears } = await buildChangedItems(medplum, schema, flat);
+    const { changedItems, clears } = await buildChangedItems(medplum, schema, flat, existingResponse?.item ?? []);
     mergedItems = mergeResponseItems(existingResponse?.item ?? [], changedItems, repeatingLinkIds);
     mergedItems = applyClears(mergedItems, clears, repeatingLinkIds);
   } else {
@@ -328,16 +332,20 @@ function toFlatField(item: QuestionnaireItem, path: string[], groupText: string 
   }
   if (type === 'choice') {
     if (item.answerOption) {
-      field.options = item.answerOption
-        .map(optionFromAnswerOption)
-        .filter((o): o is FieldOption => o !== undefined);
+      field.options = item.answerOption.map(optionFromAnswerOption).filter((o): o is FieldOption => o !== undefined);
     } else if (item.answerValueSet) {
       field.valueSet = item.answerValueSet;
     }
   }
   if (type === 'reference') {
     const ext = item.extension?.find((e) => e.url === REFERENCE_RESOURCE_EXTENSION);
-    field.referenceTarget = ext?.valueCodeableConcept?.coding?.[0]?.code ?? 'Organization';
+    const target = ext?.valueCodeableConcept?.coding?.[0]?.code;
+    if (!target) {
+      // Without a declared target type the reference can't be resolved safely — guessing a
+      // type risks linking the wrong resource, so the field is left out of the flat schema.
+      return undefined;
+    }
+    field.referenceTarget = target;
   }
   return field;
 }
@@ -351,6 +359,8 @@ function mapFieldType(type: string | undefined): FieldType | undefined {
       return 'date';
     case 'dateTime':
       return 'dateTime';
+    case 'time':
+      return 'time';
     case 'boolean':
       return 'boolean';
     case 'integer':
@@ -367,7 +377,9 @@ function mapFieldType(type: string | undefined): FieldType | undefined {
   }
 }
 
-function optionFromAnswerOption(option: NonNullable<QuestionnaireItem['answerOption']>[number]): FieldOption | undefined {
+function optionFromAnswerOption(
+  option: NonNullable<QuestionnaireItem['answerOption']>[number]
+): FieldOption | undefined {
   if (option.valueCoding) {
     const coding = option.valueCoding;
     return {
@@ -507,6 +519,9 @@ function answerToPlain(field: FlatField, answer: QuestionnaireResponseItemAnswer
   if (answer.valueDateTime !== undefined) {
     return answer.valueDateTime;
   }
+  if (answer.valueTime !== undefined) {
+    return answer.valueTime;
+  }
   if (answer.valueCoding) {
     // Fields with inline options are keyed by code (what the model is told to emit);
     // valueSet-backed fields use display text (what the model naturally produces).
@@ -532,14 +547,17 @@ function answerToPlain(field: FlatField, answer: QuestionnaireResponseItemAnswer
  * @param medplum - The Medplum client (for valueSet and reference resolution).
  * @param schema - The flat schema entries.
  * @param flat - The model's flat output.
+ * @param existingItems - The existing response items, mined for reusable answers.
  * @returns The changed item tree and the effective clear list.
  */
 async function buildChangedItems(
   medplum: MedplumClient,
   schema: FlatEntry[],
-  flat: FlatModelOutput
+  flat: FlatModelOutput,
+  existingItems: QuestionnaireResponseItem[]
 ): Promise<{ changedItems: QuestionnaireResponseItem[]; clears: Set<string> }> {
   const byLinkId = new Map<string, FlatEntry>(schema.map((e) => [e.linkId, e]));
+  const reuse = buildAnswerReuseMap(existingItems);
   const changedItems: QuestionnaireResponseItem[] = [];
   const clears = new Set<string>(flat.clear.filter((linkId) => byLinkId.has(linkId)));
 
@@ -555,7 +573,7 @@ async function buildChangedItems(
         if (!instance || typeof instance !== 'object' || Array.isArray(instance)) {
           continue;
         }
-        const item = await buildGroupInstance(medplum, entry, instance as Record<string, unknown>);
+        const item = await buildGroupInstance(medplum, entry, instance as Record<string, unknown>, reuse);
         if (item) {
           built.push(item);
         }
@@ -569,7 +587,7 @@ async function buildChangedItems(
         clears.add(entry.linkId);
       }
     } else {
-      const answers = await toAnswers(medplum, entry, value);
+      const answers = await toAnswers(medplum, entry, value, reuse);
       if (answers.length > 0) {
         insertNested(changedItems, entry.path, { linkId: entry.linkId, answer: answers });
       }
@@ -582,7 +600,8 @@ async function buildChangedItems(
 async function buildGroupInstance(
   medplum: MedplumClient,
   group: FlatRepeatingGroup,
-  values: Record<string, unknown>
+  values: Record<string, unknown>,
+  reuse: Map<string, QuestionnaireResponseItemAnswer>
 ): Promise<QuestionnaireResponseItem | undefined> {
   const instance: QuestionnaireResponseItem = { linkId: group.linkId, item: [] };
   for (const field of group.fields) {
@@ -590,7 +609,7 @@ async function buildGroupInstance(
     if (value === undefined || value === null) {
       continue;
     }
-    const answers = await toAnswers(medplum, field, value);
+    const answers = await toAnswers(medplum, field, value, reuse);
     if (answers.length > 0) {
       insertNested(instance.item as QuestionnaireResponseItem[], field.path, {
         linkId: field.linkId,
@@ -624,12 +643,13 @@ function insertNested(root: QuestionnaireResponseItem[], path: string[], leaf: Q
 async function toAnswers(
   medplum: MedplumClient,
   field: FlatField,
-  value: unknown
+  value: unknown,
+  reuse: Map<string, QuestionnaireResponseItemAnswer>
 ): Promise<QuestionnaireResponseItemAnswer[]> {
   const values = field.repeats && Array.isArray(value) ? value : [value];
   const answers: QuestionnaireResponseItemAnswer[] = [];
   for (const v of values) {
-    const answer = await toAnswer(medplum, field, v);
+    const answer = await toAnswer(medplum, field, v, reuse);
     if (answer) {
       answers.push(answer);
     }
@@ -638,21 +658,69 @@ async function toAnswers(
 }
 
 /**
+ * Maps `linkId|value` (lowercased display or code) to the existing answer, so a value the user
+ * did not change keeps its original coding/reference verbatim instead of being re-resolved —
+ * re-resolution can shift a carried-over answer to a neighboring code.
+ * @param items - The existing response items.
+ * @returns The reuse map.
+ */
+function buildAnswerReuseMap(items: QuestionnaireResponseItem[]): Map<string, QuestionnaireResponseItemAnswer> {
+  const map = new Map<string, QuestionnaireResponseItemAnswer>();
+  const visit = (list: QuestionnaireResponseItem[]): void => {
+    for (const item of list) {
+      for (const answer of item.answer ?? []) {
+        for (const key of answerReuseKeys(answer)) {
+          map.set(`${item.linkId}|${key}`, answer);
+        }
+      }
+      if (item.item) {
+        visit(item.item);
+      }
+    }
+  };
+  visit(items);
+  return map;
+}
+
+function answerReuseKeys(answer: QuestionnaireResponseItemAnswer): string[] {
+  const keys: string[] = [];
+  if (answer.valueCoding) {
+    if (answer.valueCoding.display) {
+      keys.push(answer.valueCoding.display.toLowerCase());
+    }
+    if (answer.valueCoding.code) {
+      keys.push(answer.valueCoding.code.toLowerCase());
+    }
+  } else if (answer.valueReference?.display) {
+    keys.push(answer.valueReference.display.toLowerCase());
+  }
+  return keys;
+}
+
+/**
  * Deterministically converts a flat value to a typed FHIR answer. This is the safety boundary:
  * whatever the model produced, only well-formed answers of the question's type come out.
  * @param medplum - The Medplum client.
  * @param field - The flat field.
  * @param value - The model-provided value.
+ * @param reuse - Existing answers keyed by `linkId|value`, reused verbatim on carry-over.
  * @returns The typed answer, or undefined if the value can't be converted.
  */
 async function toAnswer(
   medplum: MedplumClient,
   field: FlatField,
-  value: unknown
+  value: unknown,
+  reuse: Map<string, QuestionnaireResponseItemAnswer>
 ): Promise<QuestionnaireResponseItemAnswer | undefined> {
   const str = String(value).trim();
   if (!str) {
     return undefined;
+  }
+  if (field.type === 'choice' || field.type === 'reference') {
+    const existing = reuse.get(`${field.linkId}|${str.toLowerCase()}`);
+    if (existing) {
+      return existing;
+    }
   }
   switch (field.type) {
     case 'boolean':
@@ -665,24 +733,29 @@ async function toAnswer(
       const n = Number(str);
       return Number.isFinite(n) ? { valueDecimal: n } : undefined;
     }
-    case 'date':
-      return /^\d{4}-\d{2}-\d{2}/.test(str) ? { valueDate: str.slice(0, 10) } : undefined;
-    case 'dateTime':
-      if (!/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    case 'date': {
+      const date = new Date(str);
+      return isValidDate(date) ? { valueDate: date.toISOString().slice(0, 10) } : undefined;
+    }
+    case 'dateTime': {
+      const date = new Date(str);
+      return isValidDate(date) ? { valueDateTime: date.toISOString() } : undefined;
+    }
+    case 'time': {
+      // Same parse as dateTime, anchored to an arbitrary date (the trick core's formatTime uses,
+      // since Date can't parse a bare time), keeping only the HH:mm:ss part of the ISO string.
+      const date = new Date(`2000-01-01T${str}Z`);
+      return isValidDate(date) ? { valueTime: date.toISOString().slice(11, 19) } : undefined;
+    }
+    case 'reference': {
+      const target = field.referenceTarget;
+      if (!target) {
         return undefined;
       }
-      return { valueDateTime: str.length <= 10 ? `${str}T00:00:00Z` : str };
-    case 'reference': {
-      const target = field.referenceTarget ?? 'Organization';
       try {
-        const resource = await medplum.searchOne(target as 'Organization', { name: str });
+        const resource = await medplum.searchOne(target as ResourceType, { name: str });
         if (resource?.id) {
-          return {
-            valueReference: {
-              reference: `${target}/${resource.id}`,
-              display: (resource as { name?: string }).name ?? str,
-            },
-          };
+          return { valueReference: createReference(resource) };
         }
       } catch {
         // fall through: unresolved references are dropped rather than guessed
@@ -701,10 +774,16 @@ async function toAnswer(
       }
       if (field.valueSet) {
         try {
-          const vs = await medplum.valueSetExpand({ url: field.valueSet, filter: str, count: 1 });
-          const first = vs.expansion?.contains?.[0];
-          if (first) {
-            return { valueCoding: { system: first.system, code: first.code, display: first.display } };
+          const vs = await medplum.valueSetExpand({ url: field.valueSet, filter: str, count: 10 });
+          const contains = vs.expansion?.contains ?? [];
+          const lower = str.toLowerCase();
+
+          const best =
+            contains.find((c) => c.display?.toLowerCase() === lower) ??
+            contains.find((c) => c.display?.toLowerCase().startsWith(lower)) ??
+            contains[0];
+          if (best) {
+            return { valueCoding: { system: best.system, code: best.code, display: best.display } };
           }
         } catch {
           // fall through to string

@@ -20,6 +20,8 @@ const questionnaire: Questionnaire = {
         { linkId: 'first-name', text: 'First Name', type: 'string' },
         { linkId: 'last-name', text: 'Last Name', type: 'string' },
         { linkId: 'dob', text: 'Date of Birth', type: 'date' },
+        { linkId: 'last-visit', text: 'Last Visit', type: 'dateTime' },
+        { linkId: 'preferred-call-time', text: 'Preferred Call Time', type: 'time' },
         { linkId: 'age', text: 'Age', type: 'integer' },
         { linkId: 'veteran', text: 'Veteran', type: 'boolean' },
         { linkId: 'state', text: 'State', type: 'choice', answerValueSet: 'http://example.com/states' },
@@ -42,6 +44,21 @@ const questionnaire: Questionnaire = {
       item: [{ linkId: 'ec-name', text: 'Name', type: 'string' }],
     },
     {
+      linkId: 'allergies',
+      text: 'Allergies',
+      type: 'group',
+      repeats: true,
+      item: [
+        {
+          linkId: 'allergy-substance',
+          text: 'Substance',
+          type: 'choice',
+          answerValueSet: 'http://example.com/substances',
+        },
+        { linkId: 'allergy-reaction', text: 'Reaction', type: 'string' },
+      ],
+    },
+    {
       linkId: 'pharmacy',
       text: 'Pharmacy',
       type: 'reference',
@@ -52,6 +69,7 @@ const questionnaire: Questionnaire = {
         },
       ],
     },
+    { linkId: 'referring-provider', text: 'Referring Provider', type: 'reference' },
   ],
 };
 
@@ -260,7 +278,7 @@ test('ValueSet-backed choice resolves via $expand with the value as filter', asy
   const result = await handler(medplum, buildEvent('I live in California'));
   const qr = parseResult(result);
 
-  expect(expandSpy).toHaveBeenCalledWith({ url: 'http://example.com/states', filter: 'California', count: 1 });
+  expect(expandSpy).toHaveBeenCalledWith({ url: 'http://example.com/states', filter: 'California', count: 10 });
   expect(qr.item).toEqual([
     {
       linkId: 'demographics',
@@ -269,6 +287,105 @@ test('ValueSet-backed choice resolves via $expand with the value as filter', asy
           linkId: 'state',
           answer: [{ valueCoding: { system: 'https://www.usps.com/', code: 'CA', display: 'California' } }],
         },
+      ],
+    },
+  ]);
+});
+
+test('$expand resolution prefers an exact display match over the first (over-specific) hit', async () => {
+  const medplum = new MockClient();
+  stubAi(medplum, {
+    updates: { allergies: [{ 'allergy-substance': 'Penicillin', 'allergy-reaction': 'Hives' }] },
+  });
+  vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+    resourceType: 'ValueSet',
+    status: 'active',
+    expansion: {
+      timestamp: '2026-01-01T00:00:00Z',
+      contains: [
+        {
+          system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+          code: '466553',
+          display: 'penicillin G benzathine / penicillin G procaine',
+        },
+        { system: 'http://snomed.info/sct', code: '764146007', display: 'Penicillin' },
+      ],
+    },
+  });
+
+  const result = await handler(medplum, buildEvent("I'm allergic to penicillin, reaction is hives"));
+  const qr = parseResult(result);
+
+  expect(qr.item).toEqual([
+    {
+      linkId: 'allergies',
+      item: [
+        {
+          linkId: 'allergy-substance',
+          answer: [{ valueCoding: { system: 'http://snomed.info/sct', code: '764146007', display: 'Penicillin' } }],
+        },
+        { linkId: 'allergy-reaction', answer: [{ valueString: 'Hives' }] },
+      ],
+    },
+  ]);
+});
+
+test('Carried-over coding is reused verbatim, not re-resolved through $expand', async () => {
+  const medplum = new MockClient();
+  const sulfonamide = { system: 'http://snomed.info/sct', code: '387406002', display: 'Sulfonamide' };
+  const existing: QuestionnaireResponse = {
+    resourceType: 'QuestionnaireResponse',
+    status: 'in-progress',
+    item: [
+      {
+        linkId: 'allergies',
+        item: [
+          { linkId: 'allergy-substance', answer: [{ valueCoding: sulfonamide }] },
+          { linkId: 'allergy-reaction', answer: [{ valueString: 'Rash' }] },
+        ],
+      },
+    ],
+  };
+  // The model carries the existing instance over (as display text) and adds a new one.
+  stubAi(medplum, {
+    updates: {
+      allergies: [
+        { 'allergy-substance': 'Sulfonamide', 'allergy-reaction': 'Rash' },
+        { 'allergy-substance': 'Penicillin', 'allergy-reaction': 'Hives' },
+      ],
+    },
+  });
+  const expandSpy = vi.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+    resourceType: 'ValueSet',
+    status: 'active',
+    expansion: {
+      timestamp: '2026-01-01T00:00:00Z',
+      contains: [{ system: 'http://snomed.info/sct', code: '764146007', display: 'Penicillin' }],
+    },
+  });
+
+  const result = await handler(medplum, buildEvent('Also allergic to penicillin, hives', existing));
+  const qr = parseResult(result);
+
+  // Sulfonamide keeps its ORIGINAL coding; only the new value hits $expand.
+  expect(expandSpy).toHaveBeenCalledTimes(1);
+  expect(expandSpy).toHaveBeenCalledWith({ url: 'http://example.com/substances', filter: 'Penicillin', count: 10 });
+  expect(qr.item).toEqual([
+    {
+      linkId: 'allergies',
+      item: [
+        { linkId: 'allergy-substance', answer: [{ valueCoding: sulfonamide }] },
+        { linkId: 'allergy-reaction', answer: [{ valueString: 'Rash' }] },
+      ],
+    },
+    {
+      linkId: 'allergies',
+      item: [
+        {
+          linkId: 'allergy-substance',
+          answer: [{ valueCoding: { system: 'http://snomed.info/sct', code: '764146007', display: 'Penicillin' } }],
+        },
+        { linkId: 'allergy-reaction', answer: [{ valueString: 'Hives' }] },
       ],
     },
   ]);
@@ -306,6 +423,69 @@ test('Reference field resolves by name search on the target resource type', asyn
       answer: [{ valueReference: { reference: 'Organization/org-1', display: 'CVS Main Street' } }],
     },
   ]);
+});
+
+test('Dates and times are stored in the same shapes QuestionnaireForm inputs produce', async () => {
+  const medplum = new MockClient();
+  stubAi(medplum, {
+    updates: {
+      dob: '1990-04-15',
+      'last-visit': '2024-03-05T14:30:00Z',
+      'preferred-call-time': '14:30',
+    },
+  });
+
+  const result = await handler(
+    medplum,
+    buildEvent('Born April 15 1990, last visit March 5th 2024 at 2:30 pm UTC, call me at 2:30 pm')
+  );
+  const qr = parseResult(result);
+
+  expect(qr.item).toEqual([
+    {
+      linkId: 'demographics',
+      item: [
+        // <input type="date"> shape, stored as-is.
+        { linkId: 'dob', answer: [{ valueDate: '1990-04-15' }] },
+        // DateTimeInput shape: new Date(...).toISOString().
+        { linkId: 'last-visit', answer: [{ valueDateTime: '2024-03-05T14:30:00.000Z' }] },
+        // Date-parsed with an anchor date, HH:mm:ss slice of the ISO string.
+        { linkId: 'preferred-call-time', answer: [{ valueTime: '14:30:00' }] },
+      ],
+    },
+  ]);
+});
+
+test('Non-form-shaped dates and unparseable dateTimes are dropped', async () => {
+  const medplum = new MockClient();
+  stubAi(medplum, {
+    updates: {
+      dob: 'sometime in spring',
+      'last-visit': 'yesterday',
+      'preferred-call-time': '2:30 pm',
+    },
+  });
+
+  const result = await handler(medplum, buildEvent('Born sometime in spring, last visit yesterday, call at 2:30 pm'));
+  const qr = parseResult(result);
+
+  expect(qr.item).toEqual([]);
+});
+
+test('Reference item without a declared target type is excluded — never resolved by a guessed type', async () => {
+  const medplum = new MockClient();
+  const postSpy = stubAi(medplum, { updates: { 'referring-provider': 'Dr. Smith Medical' } });
+  const searchSpy = vi.spyOn(medplum, 'searchOne');
+
+  const result = await handler(medplum, buildEvent('My referring provider is Dr. Smith Medical'));
+  const qr = parseResult(result);
+
+  // Not in the flat schema (so not offered to the model), and the update is dropped, not guessed.
+  const aiParams = postSpy.mock.calls[0][1] as Parameters;
+  const messages = JSON.parse(aiParams.parameter?.find((p) => p.name === 'messages')?.valueString as string);
+  expect(messages[1].content).not.toContain('referring-provider');
+  expect(searchSpy).not.toHaveBeenCalled();
+  expect(qr.item).toEqual([]);
 });
 
 test('Unresolved reference and unknown linkIds are dropped, invalid numbers rejected', async () => {
