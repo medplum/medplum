@@ -29,6 +29,9 @@ export const FhirQuotaCost = {
 /**
  * Resolves the effective per-user FHIR quota for a project membership.
  * Precedence: UserConfiguration `fhirQuota` option, then project `userFhirQuota`, then server default.
+ * @param project - The project whose system settings may define a default user quota.
+ * @param userConfig - Optional user configuration that may override the quota.
+ * @returns The effective per-user FHIR quota points.
  */
 export function getUserFhirQuota(
   project: AuthState['project'] | undefined,
@@ -42,6 +45,8 @@ export function getUserFhirQuota(
 /**
  * Resolves the project-wide FHIR quota.
  * Uses `totalFhirQuota` when set; otherwise project default user quota × 10 (ignores per-user overrides).
+ * @param project - The project whose system settings define the project quota.
+ * @returns The effective project-wide FHIR quota points.
  */
 export function getProjectFhirQuota(project: AuthState['project'] | undefined): number {
   const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
