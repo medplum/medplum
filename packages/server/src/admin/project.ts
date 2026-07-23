@@ -10,6 +10,7 @@ import { resetPassword } from '../auth/resetpassword';
 import { setPassword } from '../auth/setpassword';
 import type { MfaMethod } from '../auth/utils';
 import { getEnrolledMfaMethods } from '../auth/utils';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { reconcileDefaultAccessPolicy } from '../fhir/accesspolicy';
@@ -31,7 +32,11 @@ projectAdminRouter.post(
   '/setpassword',
   [
     body('email').isEmail().withMessage('Valid email address is required'),
-    body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
+    body('password')
+      .isLength({ min: MIN_PASSWORD_LENGTH })
+      .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+      .isByteLength({ max: MAX_PASSWORD_LENGTH })
+      .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
