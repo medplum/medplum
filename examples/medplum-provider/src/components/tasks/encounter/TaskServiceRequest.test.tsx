@@ -5,6 +5,7 @@ import type { DiagnosticReport, ServiceRequest, Task } from '@medplum/fhirtypes'
 import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import type { ReactNode } from 'react';
 import { useParams } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../../../test-utils/render';
@@ -17,6 +18,12 @@ vi.mock('@medplum/health-gorilla-react', async () => {
     useHealthGorillaLabOrder: vi.fn(),
   };
 });
+
+// The Order Labs workflow gate is exercised in WorkflowGate.test.tsx; here we render the form
+// directly so these tests aren't coupled to dependency-probe timing.
+vi.mock('../../../workflow/WorkflowGate', () => ({
+  WorkflowGate: ({ children }: { children: ReactNode }) => children,
+}));
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router');

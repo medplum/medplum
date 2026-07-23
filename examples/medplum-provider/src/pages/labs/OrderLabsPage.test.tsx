@@ -5,6 +5,7 @@ import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import * as notifications from '../../utils/notifications';
@@ -32,6 +33,12 @@ vi.mock('@mantine/notifications', () => ({
 
 vi.mock('../../utils/notifications', () => ({
   showErrorNotification: vi.fn(),
+}));
+
+// The workflow gate is exercised in WorkflowGate.test.tsx; here we render the form directly so these
+// tests aren't coupled to dependency-probe timing.
+vi.mock('../../workflow/WorkflowGate', () => ({
+  WorkflowGate: ({ children }: { children: ReactNode }) => children,
 }));
 
 import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
