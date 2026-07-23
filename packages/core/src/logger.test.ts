@@ -115,6 +115,74 @@ describe('Logger', () => {
     );
   });
 
+  test('Error with circular reference in custom property', () => {
+    // Simulates an AbortError referencing an IncomingMessage -> TLSSocket -> ClientRequest cycle
+    const incomingMessage: Record<string, any> = { readable: true };
+    const clientRequest: Record<string, any> = { res: incomingMessage };
+    const tlsSocket: Record<string, any> = { _httpMessage: clientRequest };
+    incomingMessage.socket = tlsSocket;
+
+    const abortError = new Error('The operation was aborted') as any;
+    abortError.name = 'AbortError';
+    abortError.response = incomingMessage;
+
+    expect(() => testLogger.error('Unhandled promise rejection', abortError)).not.toThrow();
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'ERROR',
+        msg: 'Unhandled promise rejection',
+        error: 'AbortError: The operation was aborted',
+        response: expect.objectContaining({
+          readable: true,
+          socket: expect.objectContaining({
+            _httpMessage: expect.objectContaining({ res: '[Circular]' }),
+          }),
+        }),
+      })
+    );
+  });
+
+  test('Circular reference in data', () => {
+    const data: Record<string, any> = { foo: 'bar' };
+    data.self = data;
+
+    expect(() => testLogger.info('Circular data', data)).not.toThrow();
+    // Logger.log shallow-copies data, so the original object reappears one level down
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Circular data',
+        foo: 'bar',
+        self: { foo: 'bar', self: '[Circular]' },
+      })
+    );
+  });
+
+  test('Repeated non-circular references are preserved', () => {
+    const shared = { id: '123' };
+
+    testLogger.info('Shared references', { first: shared, second: shared });
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Shared references',
+        first: { id: '123' },
+        second: { id: '123' },
+      })
+    );
+  });
+
+  test('Falls back to minimal log message when serialization throws', () => {
+    testLogger.info('Unserializable data', { value: BigInt(1) });
+    expect(testOutput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'INFO',
+        msg: 'Unserializable data',
+        loggerError: expect.stringContaining('BigInt'),
+      })
+    );
+  });
+
   test('parseLogLevel', () => {
     expect(parseLogLevel('DEbug')).toBe(LogLevel.DEBUG);
     expect(parseLogLevel('INFO')).toBe(LogLevel.INFO);
