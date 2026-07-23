@@ -432,17 +432,23 @@ function applyExpansionFilters(
   }
 
   if (params.filter) {
+    const codeCondition = new Condition(new Column('Coding', 'code'), '=', params.filter);
+    // Below 3 characters the `display ILIKE '%filter%'` branch cannot use the trigram GIN index (a substring needs
+    // at least one full trigram), forcing a sequential scan of the entire CodeSystem. Match code only in that case;
+    // at 3+ characters, also search display substrings via the trigram index.
+    const predicate =
+      params.filter.length >= 3
+        ? new Disjunction([
+            codeCondition,
+            new Conjunction(
+              params.filter
+                .split(/\s+/g)
+                .map((filter) => new Condition('display', 'ILIKE', `%${escapeLikeString(filter)}%`))
+            ),
+          ])
+        : codeCondition;
     query
-      .whereExpr(
-        new Disjunction([
-          new Condition(new Column('Coding', 'code'), '=', params.filter),
-          new Conjunction(
-            params.filter
-              .split(/\s+/g)
-              .map((filter) => new Condition('display', 'ILIKE', `%${escapeLikeString(filter)}%`))
-          ),
-        ])
-      )
+      .whereExpr(predicate)
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
         true

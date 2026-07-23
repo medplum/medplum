@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { Parameters, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
+import type { CodeSystem, Parameters, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -304,6 +304,109 @@ describe('ValueSet validate-code', () => {
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
     expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
+  });
+
+  test('Validates code against an include with multiple filters', async () => {
+    // A single include carrying both a hierarchy filter and a property filter: a code must satisfy BOTH,
+    // exercising the combined single-query path.
+    const multiSystem = 'http://example.com/multi-filter-' + randomUUID();
+    const codeSystem = {
+      resourceType: 'CodeSystem',
+      url: multiSystem,
+      status: 'active',
+      content: 'complete',
+      hierarchyMeaning: 'is-a',
+      property: [{ code: 'kind', type: 'code' }],
+      concept: [
+        {
+          code: 'ROOT',
+          display: 'Root',
+          concept: [
+            { code: 'CHILD1', display: 'Child One', property: [{ code: 'kind', valueCode: 'primary' }] },
+            { code: 'CHILD2', display: 'Child Two', property: [{ code: 'kind', valueCode: 'secondary' }] },
+          ],
+        },
+      ],
+    } satisfies CodeSystem;
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(codeSystem);
+    expect(csRes).toHaveStatus(201);
+
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/multi-filter-vs-' + randomUUID(),
+        status: 'active',
+        compose: {
+          include: [
+            {
+              system: multiSystem,
+              filter: [
+                { property: 'concept', op: 'descendent-of', value: 'ROOT' },
+                { property: 'kind', op: '=', value: 'primary' },
+              ],
+            },
+          ],
+        },
+      } satisfies ValueSet);
+    expect(vsRes).toHaveStatus(201);
+    const vs = vsRes.body as ValueSet;
+
+    const validate = async (code: string): Promise<boolean> => {
+      const res = await request(app)
+        .post(`/fhir/R4/ValueSet/$validate-code`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'url', valueUri: vs.url },
+            { name: 'coding', valueCoding: { system: multiSystem, code } },
+          ],
+        });
+      expect(res).toHaveStatus(200);
+      return (res.body as Parameters).parameter?.find((p) => p.name === 'result')?.valueBoolean === true;
+    };
+
+    // CHILD1 is a descendant of ROOT and has kind=primary → satisfies both filters.
+    expect(await validate('CHILD1')).toBe(true);
+    // CHILD2 is a descendant of ROOT but kind=secondary → fails the property filter.
+    expect(await validate('CHILD2')).toBe(false);
+    // ROOT satisfies the property vacuously (no kind) and is excluded by descendent-of → fails.
+    expect(await validate('ROOT')).toBe(false);
+
+    // A CodeableConcept with several codes is validated in a single batched query; the matching code is found
+    // regardless of its position, and its display is returned.
+    const cc = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: vs.url },
+          {
+            name: 'codeableConcept',
+            valueCodeableConcept: {
+              coding: [
+                { system: multiSystem, code: 'ROOT' },
+                { system: multiSystem, code: 'CHILD2' },
+                { system: multiSystem, code: 'CHILD1' },
+              ],
+            },
+          },
+        ],
+      });
+    expect(cc).toHaveStatus(200);
+    const ccOut = cc.body as Parameters;
+    expect(ccOut.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(ccOut.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('Child One');
   });
 
   test('Falls back to validating system URL when CodeSystem unavailable', async () => {

@@ -1456,13 +1456,62 @@ describe('Expand', () => {
     expect(vsRes).toHaveStatus(201);
 
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=ID`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=accepted`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'MSG_INVALID_ID', display: 'ID not accepted', system: codeSystem.url },
+    ]);
+  });
+
+  test('Short filter (< 3 chars) does not match display substrings', async () => {
+    // Below 3 characters the display-substring branch is dropped (the trigram index can't serve a sub-trigram
+    // substring), so a 2-char filter matches only exact codes, never display substrings.
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'complete',
+      status: 'active',
+      concept: [
+        { code: 'HT', display: 'Alpha' },
+        { code: 'HTX', display: 'Beta' }, // display contains 'et' but code does not
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    expect(
+      await request(app)
+        .post('/fhir/R4/CodeSystem')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(codeSystem)
+    ).toHaveStatus(201);
+    expect(
+      await request(app)
+        .post('/fhir/R4/ValueSet')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(valueSet)
+    ).toHaveStatus(201);
+
+    // 'et' is a substring of display 'Beta' (code HTX) but of no code → no matches.
+    const displayOnly = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=et`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(displayOnly).toHaveStatus(200);
+    expect((displayOnly.body.expansion as ValueSetExpansion).contains ?? []).toHaveLength(0);
+
+    // The exact 2-char code 'HT' still matches.
+    const codeMatch = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=HT`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(codeMatch).toHaveStatus(200);
+    expect((codeMatch.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'HT', display: 'Alpha', system: codeSystem.url },
     ]);
   });
 
