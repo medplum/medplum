@@ -54,6 +54,35 @@
   color: var(--oc-yellow-2);
 }
 
+/* Illustrative-mockup header: a real title + a grape "Illustrative" tag, instead
+   of the yellow "customer coming soon" badge (there is no specific customer
+   inbound — it's a "here's what you could build" concept). */
+.illustrativeTitle {
+  font-family: var(--landing-font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--landing-color-heading);
+}
+
+.illustrativeTag {
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-label-size);
+  font-weight: var(--landing-label-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--landing-radius-chip);
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .illustrativeTag {
+  background: rgba(var(--oc-grape-9-rgb), 0.4);
+  color: var(--oc-grape-2);
+}
+
 .screenshotFrame {
   border: 1px solid var(--landing-border);
   border-radius: var(--landing-radius-card);
@@ -68,6 +97,19 @@
 
 .placeholder .screenshotFrame {
   border-style: dashed;
+  box-shadow: none;
+}
+
+/* The illustrative payer mockup is technically a placeholder card, but it should
+   read as a real product screenshot — so keep the solid border + glow of a real
+   .screenshotFrame instead of the dashed, shadowless placeholder treatment.
+   Higher specificity than `.placeholder .screenshotFrame` + later in source. */
+.placeholder .illustrativeFrame {
+  border-style: solid;
+  box-shadow: 0px 8px 40px rgba(var(--oc-violet-2-rgb), 0.5);
+}
+
+[data-theme='dark'] .placeholder .illustrativeFrame {
   box-shadow: none;
 }
 

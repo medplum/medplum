@@ -23,7 +23,7 @@ function Logos(): JSX.Element {
       <img src="/img/logos/tia.svg" width={146} height={28} alt="Tia" />
       <img src="/img/logos/color.svg" width={89} height={29} alt="Color" />
       <img src="/img/logos/seen-health.svg" width={116} height={38} alt="Seen Health" />
-      <img src="/img/logos/quilted-health.svg" width={75} height={86} alt="Quilted Health" />
+      <img src="/img/logos/quilted-health.png" width={92} height={32} alt="Quilted Health" />
       <img src="/img/logos/cdc.svg" width={65} height={51} alt="CDC" />
       <img src="/img/logos/remo.svg" width={87} height={24} alt="Remo" />
       <img src="/img/logos/imagine.svg" width={119} height={51} alt="Imagine Pediatrics" />

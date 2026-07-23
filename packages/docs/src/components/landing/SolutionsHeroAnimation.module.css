@@ -43,7 +43,7 @@
 }
 
 .in .tileInner {
-  animation: flip 16s ease-in-out infinite;
+  animation: flip 20s ease-in-out infinite;
 }
 
 .face {
@@ -91,18 +91,27 @@
   }
 }
 
-/* Hold the front a long while, flip once to the back, hold, then flip home.
-   Long dwells keep the grid calm — only a tile or two is ever mid-flip. */
+/* Two-phase wave, not a continuous flutter: every tile flips to its back face
+   early in its own (delayed) 20s lap and STAYS there — combined with the
+   per-tile stagger in the component (20s / tile count), tiles flip to the
+   back one at a time, left-to-right/top-to-bottom. Only once the last tile
+   has flipped (and briefly held) does the same sweep run again to flip every
+   tile back to front, in the same order. A short front-facing pause closes
+   the loop before it repeats. The 95% flip-back start is calculated to land
+   safely after the last tile's flip-out completes — don't move it without
+   re-checking that gap (see the component's FLIP_DURATION_S/TILE stagger). */
 @keyframes flip {
   0%,
-  34% {
+  1% {
     transform: rotateY(0deg);
   }
-  42%,
-  76% {
+  3% {
     transform: rotateY(180deg);
   }
-  84%,
+  95% {
+    transform: rotateY(180deg);
+  }
+  97%,
   100% {
     transform: rotateY(360deg);
   }

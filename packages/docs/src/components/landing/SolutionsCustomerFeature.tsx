@@ -20,21 +20,34 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
   return (
     <div id={customer.id} className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}>
       <div className={styles.header}>
-        {customer.logoSrc && (
-          <img
-            src={customer.logoSrc}
-            alt={customer.name}
-            className={styles.logo}
-            style={customer.logoScale ? { height: `${42 * customer.logoScale}px` } : undefined}
-            loading="lazy"
-          />
-        )}
-        {showName && <span className={styles.name}>{customer.name}</span>}
-        {customer.isPlaceholder && (
-          <span className={styles.placeholderBadge}>Example &mdash; customer coming soon</span>
+        {customer.illustrativeMockup ? (
+          <>
+            <span className={styles.illustrativeTitle}>What you could build</span>
+            <span className={styles.illustrativeTag}>Illustrative</span>
+          </>
+        ) : (
+          <>
+            {customer.logoSrc && (
+              <img
+                src={customer.logoSrc}
+                alt={customer.name}
+                className={styles.logo}
+                style={
+                  customer.logoScale
+                    ? { height: `${42 * customer.logoScale}px`, maxWidth: `${220 * customer.logoScale}px` }
+                    : undefined
+                }
+                loading="lazy"
+              />
+            )}
+            {showName && <span className={styles.name}>{customer.name}</span>}
+            {customer.isPlaceholder && (
+              <span className={styles.placeholderBadge}>Example &mdash; customer coming soon</span>
+            )}
+          </>
         )}
       </div>
-      <div className={styles.screenshotFrame}>
+      <div className={`${styles.screenshotFrame} ${customer.illustrativeMockup ? styles.illustrativeFrame : ''}`}>
         <div className={styles.browserBar}>
           <span />
           <span />

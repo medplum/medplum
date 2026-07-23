@@ -110,7 +110,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         screenshotSrc: '/img/solutions/everself-screenshot.png',
         screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
         valueStatement:
-          'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs — organizing every appointment, note, message, lab, and device reading into one longitudinal timeline, with integrated communications, multi-site scheduling, and a triaged provider inbox, on a data structure they own and can build AI into.',
+          'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs, unifying scheduling, charting, messaging, labs, and device data across multiple sites into a single patient record — with a triaged inbox that helps a lean care team manage a growing patient panel.',
         quote: {
           text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
           attribution: 'Petch Jirapinyo',
@@ -141,6 +141,11 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         name: 'Summer Health',
         logoSrc: '/img/logos/summer-health.svg',
         logoHasName: true,
+        // Summer Health's wordmark is unusually wide (~9.5:1) — its render is
+        // width-bound by the logo's max-width cap, not the height, so this
+        // needs a much larger scale than a normal-aspect wordmark to actually
+        // grow (see the maxWidth scaling in SolutionsCustomerFeature.tsx).
+        logoScale: 2.25,
         valueStatement:
           'Summer Health built a custom pediatric EHR and patient portal on Medplum in just 16 weeks, giving parents 24/7 SMS-based access to pediatricians with AI-assisted encounter documentation and full family and caregiver access controls.',
         caseStudyUrl: '/blog/summer-case-study',
@@ -148,8 +153,9 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
       {
         id: 'quilted-health',
         name: 'Quilted Health',
-        logoSrc: '/img/logos/quilted-health.svg',
+        logoSrc: '/img/logos/quilted-health.png',
         logoHasName: true,
+        logoScale: 1.35,
         valueStatement:
           'Quilted Health runs patient engagement for its maternity care centers on Medplum — appointment reminders, in-portal messaging, and SMS notifications that keep patients connected to their care team between visits.',
       },
@@ -227,6 +233,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         name: 'Imagine Pediatrics',
         logoSrc: '/img/logos/imagine.svg',
         logoHasName: true,
+        logoScale: 2.2,
         valueStatement:
           'Imagine Pediatrics runs multidisciplinary care coordination for medically complex children on Medplum, using structured intake and clinical documentation across a rapidly growing patient population.',
       },
@@ -252,8 +259,9 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
       {
         id: 'pictionhealth',
         name: 'Pictionhealth',
-        logoSrc: '/img/logos/pictionhealth.svg',
+        logoSrc: '/img/logos/pictionhealth.png',
         logoHasName: true,
+        logoScale: 1.35,
         valueStatement:
           'Pictionhealth built a teledermatology EHR on Medplum that runs its full care model — asynchronous dermatology review through nurse-practitioner visits — with automated claims submission through a live Candid Health integration and lab ordering through Health Gorilla.',
       },

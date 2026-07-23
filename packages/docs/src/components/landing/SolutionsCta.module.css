@@ -8,6 +8,23 @@
   background: var(--oc-grape-1);
   color: var(--landing-color-heading);
   padding: 6rem 0 4rem;
+  position: relative;
+}
+
+/* Soft seam into the CTA band. Kept INSIDE the section's own top edge (fading the
+   page surface down into the band) rather than extending above it — the sticky
+   category nav occupies the region just above this section at full scroll, and an
+   upward-extending fade would overlap it. --landing-surface adapts per theme, so
+   no dark override is needed. */
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: linear-gradient(to bottom, var(--landing-surface), transparent);
+  pointer-events: none;
 }
 
 .inner {
