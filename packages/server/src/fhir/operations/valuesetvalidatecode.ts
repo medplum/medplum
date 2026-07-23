@@ -15,7 +15,6 @@ import type {
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
-import { Column, SelectQuery, SqlFunction } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { hydrateCodeSystemProperties } from './expand';
@@ -130,18 +129,12 @@ async function findIncludedCode(
     );
     await hydrateCodeSystemProperties(db, codeSystem);
 
-    // Validate every candidate code against all filters in a single query, rather than one query per candidate
-    // (and previously one per filter). The first candidate present in the result, in input order, is the match.
-    const query = buildFilterQuery(
-      candidates.map((c) => c.code),
-      include.filter,
-      codeSystem
-    );
-    if (query) {
-      const matched = new Set<string>((await query.execute(db)).map((row) => row.code));
-      const found = candidates.find((c) => matched.has(c.code));
-      if (found) {
-        return found;
+    for (const coding of candidates) {
+      const filterResults = await Promise.all(
+        include.filter.map((filter) => satisfies(coding.code, filter, codeSystem))
+      );
+      if (filterResults.every(Boolean)) {
+        return coding;
       }
     }
   } else {
@@ -151,65 +144,44 @@ async function findIncludedCode(
   return undefined;
 }
 
-/**
- * Builds a single query selecting whichever of the given codes satisfy every filter, combining the filters as
- * AND-ed predicates. Returns undefined when a filter can never be satisfied (unknown op or missing property), in
- * which case no code belongs to the include.
- * @param codes - The codes being validated; all are checked in one query.
- * @param filters - The filters from the ValueSet include, all of which must be satisfied.
- * @param codeSystem - The CodeSystem the codes are drawn from, with hydrated property IDs.
- * @returns A query selecting the codes that satisfy all filters, or undefined if none can.
- */
-function buildFilterQuery(
-  codes: string[],
-  filters: ValueSetComposeIncludeFilter[],
+async function satisfies(
+  code: string,
+  filter: ValueSetComposeIncludeFilter,
   codeSystem: WithId<CodeSystem>
-): SelectQuery | undefined {
-  const { logger } = getAuthenticatedContext();
-  const query = selectCoding(codeSystem.id, ...codes);
+): Promise<boolean> {
+  const { logger, repo } = getAuthenticatedContext();
+  const db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'valuesetvalidatecode.satisfies' }));
+  let query = selectCoding(codeSystem.id, code);
 
-  for (const filter of filters) {
-    switch (filter.op) {
-      case '=':
-      case 'in': {
-        const property = codeSystem.property?.find((p) => p.code === filter.property);
-        if (!property?.id) {
-          return undefined;
-        }
-        addPropertyFilter(query, filter, property as WithId<CodeSystemProperty>);
-        break;
+  switch (filter.op) {
+    case '=':
+    case 'in': {
+      const property = codeSystem.property?.find((p) => p.code === filter.property);
+      if (!property?.id) {
+        return false;
       }
-      case 'is-a':
-      case 'descendent-of': {
-        const parentProperty = getParentProperty(codeSystem);
-        if (!parentProperty.id) {
-          return undefined;
-        }
-        // Correlated EXISTS walking up from the candidate's own row, so the ancestry check composes with the
-        // other filters on the same query rather than requiring a separate round-trip.
-        const base = new SelectQuery('Coding', undefined, 'origin')
-          .column('id')
-          .column('code')
-          .column('synonymOf')
-          .where(new Column('origin', 'system'), '=', codeSystem.id)
-          .where(new Column('origin', 'code'), '=', new Column(query.effectiveTableName, 'code'));
-        const ancestorQuery = findAncestor(
-          base,
-          codeSystem,
-          parentProperty as WithId<CodeSystemProperty>,
-          filter.value
-        );
-        query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
-        if (filter.op !== 'is-a') {
-          query.where('code', '!=', filter.value);
-        }
-        break;
-      }
-      default:
-        logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
-        return undefined; // Unknown filter type, don't make DB query with incorrect filters
+      query = addPropertyFilter(query, filter, property as WithId<CodeSystemProperty>);
+      break;
     }
+    case 'is-a':
+    case 'descendent-of': {
+      if (filter.op !== 'is-a') {
+        query.where('code', '!=', filter.value);
+      }
+
+      // Recursively find parents until one matches
+      const parentProperty = getParentProperty(codeSystem);
+      if (!parentProperty.id) {
+        return false;
+      }
+      query = findAncestor(query, codeSystem, parentProperty as WithId<CodeSystemProperty>, filter.value);
+      break;
+    }
+    default:
+      logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
+      return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  return query;
+  const results = await query.execute(db);
+  return results.length > 0;
 }
