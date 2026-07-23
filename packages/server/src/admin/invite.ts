@@ -31,6 +31,7 @@ import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
@@ -55,6 +56,12 @@ export const inviteValidator = makeValidationMiddleware([
     .optional()
     .matches(/^Patient\/[^/]+$/)
     .withMessage('Patient must be a reference to a Patient resource'),
+  body('password')
+    .optional()
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    .isByteLength({ max: MAX_PASSWORD_LENGTH })
+    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
