@@ -5,6 +5,8 @@
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  /* Anchor jumps from the category nav's customer sub-links must clear the fixed navbar. */
+  scroll-margin-top: calc(var(--ifm-navbar-height) + 24px);
 }
 
 .header {

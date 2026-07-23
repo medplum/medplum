@@ -3,7 +3,9 @@
 
 .section {
   font-family: var(--landing-font-display);
-  background: var(--oc-grape-0);
+  /* Distinct from the category nav's active-pill background (--oc-grape-0) so the
+     two don't visually merge when the sticky nav's last pill sits over this band. */
+  background: var(--oc-grape-1);
   color: var(--landing-color-heading);
   padding: 6rem 0 4rem;
 }

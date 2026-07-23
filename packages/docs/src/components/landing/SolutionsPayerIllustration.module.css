@@ -1,0 +1,138 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Static, fabricated mockup — no real data, no screenshot asset. Sits inside the
+   same .screenshotFrame browser-chrome as real product screenshots. */
+.mockup {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  aspect-ratio: 16 / 9;
+  background: var(--landing-surface);
+  font-family: var(--landing-font-display);
+}
+
+.list {
+  padding: 1.25rem;
+  border-right: 1px solid var(--landing-border);
+  overflow: hidden;
+}
+
+.listHeading,
+.detailHeading {
+  margin: 0 0 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--landing-color-muted);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--landing-divider);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.rowMember {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--landing-color-heading);
+}
+
+.rowProcedure {
+  font-size: 0.75rem;
+  color: var(--landing-color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusPill {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.1875rem 0.625rem;
+  border-radius: var(--landing-radius-chip);
+  white-space: nowrap;
+}
+
+.statusPending {
+  background: var(--oc-yellow-1);
+  color: var(--oc-yellow-9);
+}
+
+.statusApproved {
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-9);
+}
+
+.statusDenied {
+  background: var(--landing-surface-muted);
+  color: var(--landing-color-muted);
+}
+
+[data-theme='dark'] .statusPending {
+  background: rgba(var(--oc-yellow-9-rgb), 0.35);
+  color: var(--oc-yellow-2);
+}
+
+[data-theme='dark'] .statusApproved {
+  background: var(--oc-grape-1);
+  color: var(--oc-grape-9);
+}
+
+.detail {
+  padding: 1.25rem;
+  background: var(--landing-surface-inset);
+}
+
+.detailFields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detailField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.detailField dt {
+  font-size: 0.6875rem;
+  color: var(--landing-color-muted);
+}
+
+.detailField dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--landing-color-heading);
+}
+
+@media screen and (max-width: 600px) {
+  .mockup {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .list {
+    border-right: none;
+    border-bottom: 1px solid var(--landing-border);
+  }
+}

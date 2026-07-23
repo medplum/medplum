@@ -40,6 +40,10 @@ export interface CustomerFeature {
   metrics?: CustomerMetric[];
   caseStudyUrl?: string;
   isPlaceholder?: boolean;
+  /** Renders a static illustrative mockup component instead of a screenshot/video/empty frame. */
+  illustrativeMockup?: boolean;
+  /** CTA shown on a placeholder card, e.g. inviting a partner to build the category. */
+  placeholderCta?: { label: string; url: string };
 }
 
 export interface AcceleratorCallout {
@@ -133,16 +137,21 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     learnMoreUrl: '/solutions/patient-portal',
     customers: [
       {
-        id: 'placeholder-patient-engagement-1',
-        name: 'Consumer health brand',
+        id: 'summer-health',
+        name: 'Summer Health',
+        logoSrc: '/img/logos/summer-health.svg',
+        logoHasName: true,
         valueStatement:
-          'Built a patient app covering intake, messaging, and refills — with every interaction landing in the same record their care team works from.',
-        quote: {
-          text: 'Placeholder quote about launching a patient experience quickly and iterating on it weekly.',
-          attribution: 'John Smith',
-          title: 'Head of Product',
-        },
-        isPlaceholder: true,
+          'Summer Health built a custom pediatric EHR and patient portal on Medplum in just 16 weeks, giving parents 24/7 SMS-based access to pediatricians with AI-assisted encounter documentation and full family and caregiver access controls.',
+        caseStudyUrl: '/blog/summer-case-study',
+      },
+      {
+        id: 'quilted-health',
+        name: 'Quilted Health',
+        logoSrc: '/img/logos/quilted-health.svg',
+        logoHasName: true,
+        valueStatement:
+          'Quilted Health runs patient engagement for its maternity care centers on Medplum — appointment reminders, in-portal messaging, and SMS notifications that keep patients connected to their care team between visits.',
       },
     ],
   },
@@ -187,12 +196,20 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     imageSrc: '/img/solutions/population-health.webp',
     customers: [
       {
-        id: 'placeholder-population-health-1',
-        name: 'Screening program operator',
+        id: 'color',
+        name: 'Color',
+        logoSrc: '/img/logos/color.svg',
+        logoHasName: true,
         valueStatement:
-          'Runs population-scale screening programs with automated outreach, results routing, and reporting — from one platform.',
-        metrics: [{ value: '1M+', label: 'patients under management' }],
-        isPlaceholder: true,
+          "Color built its Virtual Cancer Clinic on Medplum, screening and managing hundreds of thousands of covered lives for employers and health plans, with automated care pathways that schedule each patient's next screening as soon as the prior one is complete.",
+      },
+      {
+        id: 'vanna',
+        name: 'Vanna',
+        logoSrc: '/img/logos/vanna.svg',
+        logoHasName: true,
+        valueStatement:
+          'Vanna delivers value-based care to a population living with serious mental illness, using Medplum to power care coordination between community coaches and members, detect gaps in care, and track outcomes by cohort under payer value-based contracts.',
       },
     ],
   },
@@ -206,16 +223,20 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     imageSrc: '/img/solutions/care-management.webp',
     customers: [
       {
-        id: 'placeholder-clinical-operations-1',
-        name: 'Value-based care group',
+        id: 'imagine-pediatrics',
+        name: 'Imagine Pediatrics',
+        logoSrc: '/img/logos/imagine.svg',
+        logoHasName: true,
         valueStatement:
-          'Coordinates care managers, providers, and patients through shared queues and care plans — replacing a patchwork of trackers and inboxes.',
-        quote: {
-          text: 'Placeholder quote about care managers getting time back for patients instead of admin.',
-          attribution: 'John Smith',
-          title: 'Chief Medical Officer',
-        },
-        isPlaceholder: true,
+          'Imagine Pediatrics runs multidisciplinary care coordination for medically complex children on Medplum, using structured intake and clinical documentation across a rapidly growing patient population.',
+      },
+      {
+        id: 'tia',
+        name: 'Tia',
+        logoSrc: '/img/logos/tia.svg',
+        logoHasName: true,
+        valueStatement:
+          "Tia runs its own network of multi-disciplinary clinics — primary care, gynecology, mental health, and metabolic and skin health — on a custom EHR it's building on Medplum, unifying its care teams' documentation and prescribing workflows on a single platform.",
       },
     ],
   },
@@ -229,11 +250,12 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     imageSrc: '/img/solutions/rcm.webp',
     customers: [
       {
-        id: 'placeholder-rcm-1',
-        name: 'Billing platform company',
+        id: 'pictionhealth',
+        name: 'Pictionhealth',
+        logoSrc: '/img/logos/pictionhealth.svg',
+        logoHasName: true,
         valueStatement:
-          'Automates charge capture and claims workflows with custom routing and business rules that fit their financial operations.',
-        isPlaceholder: true,
+          'Pictionhealth built a teledermatology EHR on Medplum that runs its full care model — asynchronous dermatology review through nurse-practitioner visits — with automated claims submission through a live Candid Health integration and lab ordering through Health Gorilla.',
       },
     ],
   },
@@ -246,11 +268,13 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     icon: 'IconBuildingBank',
     customers: [
       {
-        id: 'placeholder-payer-solutions-1',
-        name: 'Risk-bearing organization',
+        id: 'payer-solutions-illustrative',
+        name: 'Illustrative example',
+        illustrativeMockup: true,
         valueStatement:
-          'Manages member data, utilization review, and provider collaboration on one platform — with interoperability built in rather than bolted on.',
+          "No customer has built this yet — here's what a payer solution on Medplum could look like: utilization management, member eligibility, and provider data management, all on FHIR from day one.",
         isPlaceholder: true,
+        placeholderCta: { label: 'Partner with us to build this', url: 'mailto:hello@medplum.com' },
       },
     ],
   },

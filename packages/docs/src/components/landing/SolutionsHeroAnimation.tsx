@@ -15,12 +15,12 @@ const PLACEHOLDER = 'placeholder' as const;
 type Face = Logo | typeof PLACEHOLDER;
 
 // Each tile holds at most two faces and flips once from front to back, then back
-// again, on a slow cadence. We have 16 logos for 9 tiles (18 faces), so two backs
+// again, on a slow cadence. We have 15 logos for 9 tiles (18 faces), so three backs
 // are placeholders rather than repeated logos.
 const TILES: { front: Logo; back: Face }[] = [
   {
     front: { src: '/img/logos/ro.svg', alt: 'Ro' },
-    back: { src: '/img/logos/thirty-madison.webp', alt: 'Thirty Madison' },
+    back: PLACEHOLDER,
   },
   {
     front: { src: '/img/logos/rad-ai.svg', alt: 'Rad AI' },
@@ -73,7 +73,7 @@ export function SolutionsHeroAnimation(): JSX.Element {
       <div className={styles.grid}>
         {TILES.map((tile, i) => (
           <div key={i} className={styles.tile} style={{ animationDelay: `${i * 60}ms` }}>
-            <div className={styles.tileInner} style={{ animationDelay: `${2 + i * 0.4}s` }}>
+            <div className={styles.tileInner} style={{ animationDelay: `${0.5 + i * 1}s` }}>
               <div className={styles.face}>
                 <Face face={tile.front} />
               </div>

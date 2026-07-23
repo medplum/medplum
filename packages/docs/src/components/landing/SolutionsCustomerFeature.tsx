@@ -5,6 +5,7 @@ import { IconArrowRight, IconPhoto } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import type { CustomerFeature } from '../../data/solutions-content';
 import styles from './SolutionsCustomerFeature.module.css';
+import { SolutionsPayerIllustration } from './SolutionsPayerIllustration';
 import { TestimonialHeader } from './TestimonialHeader';
 
 export interface SolutionsCustomerFeatureProps {
@@ -13,8 +14,14 @@ export interface SolutionsCustomerFeatureProps {
 
 export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): JSX.Element {
   const { customer } = props;
+  // An illustrative mockup has no customer name to show — a normal customer-name
+  // treatment (the big heading slot) doesn't fit a fabricated example.
+  const showName = !customer.illustrativeMockup && !(customer.logoSrc && customer.logoHasName);
   return (
-    <div className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}>
+    <div
+      id={customer.id}
+      className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}
+    >
       <div className={styles.header}>
         {customer.logoSrc && (
           <img
@@ -25,7 +32,7 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
             loading="lazy"
           />
         )}
-        {!(customer.logoSrc && customer.logoHasName) && <span className={styles.name}>{customer.name}</span>}
+        {showName && <span className={styles.name}>{customer.name}</span>}
         {customer.isPlaceholder && (
           <span className={styles.placeholderBadge}>Example &mdash; customer coming soon</span>
         )}
@@ -36,7 +43,9 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
           <span />
           <span />
         </div>
-        {customer.videoSrc ? (
+        {customer.illustrativeMockup ? (
+          <SolutionsPayerIllustration />
+        ) : customer.videoSrc ? (
           <video
             className={styles.screenshot}
             src={customer.videoSrc}
@@ -93,6 +102,11 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
         {customer.caseStudyUrl && (
           <Link to={customer.caseStudyUrl} className={styles.caseStudyLink}>
             Read the case study <IconArrowRight size={16} stroke={2.5} aria-hidden />
+          </Link>
+        )}
+        {customer.isPlaceholder && customer.placeholderCta && (
+          <Link to={customer.placeholderCta.url} className={styles.caseStudyLink}>
+            {customer.placeholderCta.label} <IconArrowRight size={16} stroke={2.5} aria-hidden />
           </Link>
         )}
       </div>
