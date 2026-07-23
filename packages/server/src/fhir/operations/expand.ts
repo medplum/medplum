@@ -462,7 +462,11 @@ function applyExpansionFilters(
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
         true
-      );
+      )
+      // Final tiebreaker so the overall order is deterministic: the relevance keys above tie for many
+      // rows (e.g. every code-prefix hit has display similarity 0), and without a stable key the
+      // remaining order is arbitrary, which makes offset-based pagination skip or duplicate rows.
+      .orderBy(new Column('Coding', 'code'));
   }
 
   if (params.displayLanguage) {
