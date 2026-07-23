@@ -15,9 +15,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { preventRowSplitting } from './lib/docx-row-split.mjs';
 import { fixTableWidths } from './lib/docx-table-widths.mjs';
 import { ensureTrailingParagraph } from './lib/docx-trailing-paragraph.mjs';
-import { preventRowSplitting } from './lib/docx-row-split.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = path.join(__dirname, '..', 'docs', 'decision-guides');

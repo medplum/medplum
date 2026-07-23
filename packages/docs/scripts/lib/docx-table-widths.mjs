@@ -40,7 +40,9 @@ function columnWidths(headerCells, bodyCellsByColumn) {
   // Every column's hard floor: whatever it takes to hold its own longest word
   // on one line. This must never be violated, even when columns are shrunk
   // to fit the page — that's exactly the invariant "no word gets split" means.
-  const minWidths = stats.map(({ maxWord }) => Math.max(MIN_COL_TWIPS, maxWord * CHAR_WIDTH_TWIPS + CELL_PADDING_TWIPS));
+  const minWidths = stats.map(({ maxWord }) =>
+    Math.max(MIN_COL_TWIPS, maxWord * CHAR_WIDTH_TWIPS + CELL_PADDING_TWIPS)
+  );
 
   // Desired width: fit the typical (not longest-ever) content on ~1-2 lines.
   const desired = stats.map(({ maxLen }, i) =>
