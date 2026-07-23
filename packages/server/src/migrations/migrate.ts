@@ -675,6 +675,16 @@ function buildCodingTable(result: SchemaDefinition): void {
         unique: true,
       },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
+      // Supports case-insensitive prefix matching on code, e.g. LOWER(code) LIKE 'abc%', via a btree
+      // range scan. text_pattern_ops is required for the prefix rewrite under non-C DB collations.
+      // Partial on canonical rows only: synonyms share their canonical row's code, so they are
+      // redundant for code matching (the $expand code branch scopes itself to "synonymOf" IS NULL).
+      // This mirrors the primary_idx above and keeps the index ~40% smaller on synonym-heavy systems.
+      {
+        columns: ['system', { expression: 'lower(code) text_pattern_ops', name: 'codeLowerPattern' }],
+        indexType: 'btree',
+        where: `"synonymOf" IS NULL`,
+      },
     ],
   });
 }

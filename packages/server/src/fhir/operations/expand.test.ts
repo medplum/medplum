@@ -824,6 +824,230 @@ describe('Expand', () => {
     });
   });
 
+  describe('Code prefix filter', () => {
+    // Flat CodeSystem for prefix/exact/escaping tests. Displays are deliberately Greek letters so
+    // they never contain the code-shaped filter strings — this isolates the code-matching branch
+    // from the display ILIKE branch.
+    const flatCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'HT', display: 'Alpha' },
+        { code: 'HTX', display: 'Beta' },
+        { code: 'HTXY', display: 'Gamma' },
+        { code: 'A_B', display: 'Delta' },
+        { code: 'AXB', display: 'Epsilon' },
+      ],
+    };
+    const flatValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: flatCodeSystem.url }] },
+    };
+
+    // Hierarchical CodeSystem for prefix-with-hierarchy tests. Codes share the 'MED' prefix so a
+    // prefix filter is meaningful; displays again avoid the filter substrings.
+    const hierarchyCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'MED',
+          display: 'Alpha',
+          concept: [
+            { code: 'MED100', display: 'Beta' },
+            { code: 'MED200', display: 'Gamma' },
+          ],
+        },
+      ],
+    };
+    const isaValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [{ system: hierarchyCodeSystem.url, filter: [{ property: 'code', op: 'is-a', value: 'MED' }] }],
+      },
+    };
+    const descendentValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [
+          { system: hierarchyCodeSystem.url, filter: [{ property: 'code', op: 'descendent-of', value: 'MED' }] },
+        ],
+      },
+    };
+
+    // CodeSystem with a synonym (designation) to exercise the canonical-only code branch. The code
+    // 'SYN100' matches a 'SYN' prefix; its synonym display 'Zeta' is code-shaped-free so it only ever
+    // matches the display branch — never the code branch.
+    const synonymCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [{ code: 'SYN100', display: 'Alpha', designation: [{ value: 'Zeta' }] }],
+    };
+    const synonymValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: synonymCodeSystem.url }] },
+    };
+
+    beforeAll(async () => {
+      for (const resource of [
+        flatCodeSystem,
+        hierarchyCodeSystem,
+        synonymCodeSystem,
+        flatValueSet,
+        isaValueSet,
+        descendentValueSet,
+        synonymValueSet,
+      ]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+      }
+    });
+
+    test('Prefix match on code (>= 3 chars)', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HTX`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = flatCodeSystem.url;
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'HTX', display: 'Beta' },
+        { system, code: 'HTXY', display: 'Gamma' },
+      ]);
+    });
+
+    test('Prefix match on code is case-insensitive', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=htx`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = flatCodeSystem.url;
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'HTX', display: 'Beta' },
+        { system, code: 'HTXY', display: 'Gamma' },
+      ]);
+    });
+
+    test('Short filter (< 3 chars) falls back to exact code match', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HT`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = flatCodeSystem.url;
+      // Only the exact code 'HT' — the prefix siblings HTX/HTXY must NOT be returned below 3 chars
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'HT', display: 'Alpha' },
+      ]);
+    });
+
+    test('Escapes LIKE wildcards in code prefix filter', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=${encodeURIComponent('A_B')}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = flatCodeSystem.url;
+      // The underscore must be treated literally, so 'AXB' (which would match if '_' were a wildcard)
+      // is excluded.
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'A_B', display: 'Delta' },
+      ]);
+    });
+
+    test('Exact code match ranks ahead of longer prefix match', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HTX`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const contains = (res.body.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
+      const codes = contains.map((c) => c.code);
+      expect(codes.indexOf('HTX')).toBeGreaterThanOrEqual(0);
+      expect(codes.indexOf('HTX')).toBeLessThan(codes.indexOf('HTXY'));
+    });
+
+    test('Code prefix with is-a includes ancestor and matching descendants', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${isaValueSet.url}&filter=med`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = hierarchyCodeSystem.url;
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'MED', display: 'Alpha' },
+        { system, code: 'MED100', display: 'Beta' },
+        { system, code: 'MED200', display: 'Gamma' },
+      ]);
+    });
+
+    test('Code prefix narrows an is-a hierarchy expansion', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${isaValueSet.url}&filter=med2`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = hierarchyCodeSystem.url;
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'MED200', display: 'Gamma' },
+      ]);
+    });
+
+    test('Code prefix with descendent-of excludes the ancestor', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${descendentValueSet.url}&filter=med`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = hierarchyCodeSystem.url;
+      // 'MED' matches the prefix but must be excluded because descendent-of is strict
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'MED100', display: 'Beta' },
+        { system, code: 'MED200', display: 'Gamma' },
+      ]);
+    });
+
+    test('Code prefix branch matches canonical rows only, not synonyms', async () => {
+      // Filtering by the code prefix must surface the canonical row (code + primary display) but must
+      // NOT pull in synonym rows via the code branch — synonyms share the canonical code and are
+      // redundant there. Because the synonym display 'Zeta' does not match the code prefix, it is not
+      // attached as a designation.
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${synonymValueSet.url}&filter=SYN`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = synonymCodeSystem.url;
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'SYN100', display: 'Alpha' },
+      ]);
+    });
+
+    test('Display branch still matches synonym rows', async () => {
+      // The display branch is unchanged (non-partial index), so a filter matching only the synonym's
+      // display still finds the code.
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${synonymValueSet.url}&filter=zeta`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const system = synonymCodeSystem.url;
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'SYN100', display: 'Zeta' },
+      ]);
+    });
+  });
+
   test('Recursive subsumption', async () => {
     const res = await request(app)
       .get(

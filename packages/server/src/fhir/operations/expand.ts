@@ -432,10 +432,26 @@ function applyExpansionFilters(
   }
 
   if (params.filter) {
+    // Match the code by case-insensitive prefix for filters of at least 3 characters, backed by the
+    // (system, lower(code) text_pattern_ops) index. Shorter filters fall back to exact code equality
+    // to avoid an under-selective prefix scan (and to preserve the previous behavior).
+    const codeMatch =
+      params.filter.length >= 3
+        ? new Condition(new Column('Coding', 'code'), 'LOWER_LIKE', `${escapeLikeString(params.filter)}%`)
+        : new Condition(new Column('Coding', 'code'), '=', params.filter);
+    // Restrict the code branch to canonical rows: synonyms share their canonical row's code, so they
+    // are redundant here (the canonical row already surfaces the code). This scoping lets the planner
+    // use the partial (system, lower(code)) WHERE "synonymOf" IS NULL index, keeping the code branch
+    // index-driven and its candidate set small. The display branch intentionally still matches
+    // synonym rows, so alternate terms remain searchable.
+    const codeCondition = new Conjunction([
+      codeMatch,
+      new Condition(new Column('Coding', 'synonymOf'), '=', null),
+    ]);
     query
       .whereExpr(
         new Disjunction([
-          new Condition(new Column('Coding', 'code'), '=', params.filter),
+          codeCondition,
           new Conjunction(
             params.filter
               .split(/\s+/g)
@@ -443,6 +459,9 @@ function applyExpansionFilters(
           ),
         ])
       )
+      // Surface an exact code match ahead of longer prefix and code-only matches, which have display
+      // similarity 0 and would otherwise sort arbitrarily.
+      .orderByExpr(new Condition(new Column('Coding', 'code'), '=', params.filter), true)
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
         true
