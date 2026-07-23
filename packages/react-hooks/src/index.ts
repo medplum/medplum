@@ -20,4 +20,5 @@ export * from './useSearch/useSearch';
 export * from './useSubscription/useSubscription';
 export * from './useSyncOrderSet/useSyncOrderSet';
 export * from './useThreadInbox/useThreadInbox';
+export * from './useValueSetAvailability/useValueSetAvailability';
 export * from './useWhisper/useWhisper';

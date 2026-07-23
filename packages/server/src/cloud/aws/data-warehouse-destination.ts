@@ -42,6 +42,35 @@ export class S3TablesWarehouseDestination implements DataWarehouseDestination {
     });
   }
 
+  /*
+   * DuckDB session settings for managed Iceberg sync connections.
+   *
+   * These are connection-scoped (`SET` without `GLOBAL`) and must run on every
+   * DuckDB connection that reads or writes Iceberg / Postgres.
+   */
+  getConnectionSetupQueries(): string[] {
+    return [
+      /*
+       * the default is 524288, which can take a LOT of memory since we're copying
+       * JSON content data
+       */
+      'SET partitioned_write_flush_threshold = 10000;',
+      /*
+       * Misleading option.  This is to allow duckdb to insert into a "sorted table", which is really a hint anyway.
+       * https://github.com/duckdb/duckdb-iceberg/issues/851
+       * https://github.com/duckdb/duckdb-iceberg/pull/992
+       */
+      'SET unsafe_iceberg_ignore_sort_order=true',
+      /*
+       * See https://duckdb.org/docs/current/core_extensions/postgres/connection_pool
+       * the default connection pool settings are very aggressive; many connections, much parallelism
+       * That's not what we want for a sync process on a timer; we want to be gentle on our reader instances
+       */
+      'SET threads = 1',
+      'SET pg_use_ctid_scan = false',
+    ];
+  }
+
   getPostgresAttachQueries(connectionString: string): string[] {
     return [buildDuckdbPostgresAttachQuery(connectionString)];
   }
