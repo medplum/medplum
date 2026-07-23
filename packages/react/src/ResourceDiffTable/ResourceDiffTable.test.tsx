@@ -184,6 +184,9 @@ describe('ResourceDiffTable', () => {
 
     const operations = screen.getAllByText('Remove identifier[1]');
     expect(operations).toHaveLength(1);
+
+    // The removed value is shown in the "Before" column
+    expect(screen.getByText('http://example.com/bar: 456')).toBeInTheDocument();
   });
 
   test('Combine patch operations on array remove', async () => {
@@ -219,8 +222,9 @@ describe('ResourceDiffTable', () => {
     // Reordering array elements produces a JSON patch such as:
     //   [{ op: 'add', path: '/telecom/0' }, { op: 'remove', path: '/telecom/2' }]
     // JSON Patch paths are sequential, so "/telecom/2" only exists after the "add" is applied.
-    // Evaluating "telecom[2]" statically against the original resource resolves to nothing.
-    // This previously crashed with "Cannot read properties of undefined (reading 'type')".
+    // Evaluating "telecom[2]" statically against the original resource resolves to nothing,
+    // which previously crashed with "Cannot read properties of undefined (reading 'type')".
+    // Evaluating against sequentially patched states resolves both operations to real values.
     const original: Practitioner = {
       resourceType: 'Practitioner',
       id: '123',
@@ -244,8 +248,14 @@ describe('ResourceDiffTable', () => {
       setup({ original, revised });
     });
 
+    // The "add" row shows the inserted value, evaluated after the operation is applied
     expect(await screen.findByText('Add telecom[0]')).toBeInTheDocument();
+    expect(screen.getByText('alice@example.com [email]')).toBeInTheDocument();
+
+    // The "remove" row shows the removed value, evaluated against the intermediate state
+    // [email, phone, work-email] in which index 2 actually exists
     expect(screen.getByText('Remove telecom[2]')).toBeInTheDocument();
+    expect(screen.getByText('alice@example.com [work email]')).toBeInTheDocument();
   });
 
   test('Change attachment URL', async () => {
