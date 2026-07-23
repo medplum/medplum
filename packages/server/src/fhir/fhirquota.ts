@@ -26,12 +26,33 @@ export const FhirQuotaCost = {
   WRITE: 100,
 } as const;
 
+/**
+ * Resolves the effective per-user FHIR quota for a project membership.
+ * Precedence: UserConfiguration `fhirQuota` option, then project `userFhirQuota`, then server default.
+ */
+export function getUserFhirQuota(
+  project: AuthState['project'] | undefined,
+  userConfig?: Pick<AuthState['userConfig'], 'option'>
+): number {
+  const defaultUserLimit = project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = userConfig?.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  return userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
+}
+
+/**
+ * Resolves the project-wide FHIR quota.
+ * Uses `totalFhirQuota` when set; otherwise project default user quota × 10 (ignores per-user overrides).
+ */
+export function getProjectFhirQuota(project: AuthState['project'] | undefined): number {
+  const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  return perProjectLimit ?? getUserFhirQuota(project) * 10;
+}
+
 export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
   const { project, userConfig } = authState;
-  const defaultUserLimit = project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
-  const userSpecificLimit = userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
-  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
-
+  const userLimit = getUserFhirQuota(project, userConfig);
+  // Enforcement keeps the historical fallback: when totalFhirQuota is unset, projectLimit is userLimit × 10
+  // (including any UserConfiguration override on this request).
   const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
