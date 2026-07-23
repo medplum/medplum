@@ -247,6 +247,21 @@ WHERE (
 LIMIT 21;
 ```
 
+The `filter` parameter matches against both the `display` and the `code` of each concept. Display
+matching is a case-insensitive substring match, backed by the `(system, display gin_trgm_ops)`
+trigram index. Code matching is a **case-insensitive prefix** match (`LOWER(code) LIKE 'filter%'`)
+for filters of at least three characters, falling back to exact code equality for shorter filters;
+the prefix match is served as a bounded btree range scan by the `(system, lower(code)
+text_pattern_ops)` index. Restricting code matching to a prefix (rather than an unanchored substring)
+keeps the candidate set small and index-driven, which is what preserves `$expand` performance when a
+typeahead filter is combined with an `is-a`/`descendent-of` hierarchy over a large CodeSystem.
+
+The code branch matches **canonical rows only** (`synonymOf IS NULL`): synonym rows share their
+canonical row's `code`, so they are redundant for code matching. Accordingly the supporting index is
+**partial** (`WHERE "synonymOf" IS NULL`), mirroring the primary `(system, code)` index — this keeps
+it smaller and further trims the candidate set fed to the hierarchy walk. The display branch is
+deliberately not restricted this way, so alternate terms carried on synonym rows remain searchable.
+
 ### `CodeSystem/$import`
 
 Medplum supports a [non-standard Operation][import-operation] to load codes into the database for large code systems.

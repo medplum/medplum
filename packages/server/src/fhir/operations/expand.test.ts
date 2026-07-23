@@ -824,6 +824,269 @@ describe('Expand', () => {
     });
   });
 
+  describe('Code prefix filter', () => {
+    // Flat CodeSystem for prefix/exact/escaping tests. Displays are deliberately Greek letters so
+    // they never contain the code-shaped filter strings — this isolates the code-matching branch
+    // from the display ILIKE branch.
+    const flatCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'HT', display: 'Alpha' },
+        { code: 'HTX', display: 'Beta' },
+        { code: 'HTXY', display: 'Gamma' },
+        { code: 'A_B', display: 'Delta' },
+        { code: 'AXB', display: 'Epsilon' },
+      ],
+    };
+    const flatValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: flatCodeSystem.url }] },
+    };
+
+    // Hierarchical CodeSystem for prefix-with-hierarchy tests. Codes share the 'MED' prefix so a
+    // prefix filter is meaningful; displays again avoid the filter substrings.
+    const hierarchyCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'MED',
+          display: 'Alpha',
+          concept: [
+            { code: 'MED100', display: 'Beta' },
+            { code: 'MED200', display: 'Gamma' },
+          ],
+        },
+      ],
+    };
+    const isaValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [{ system: hierarchyCodeSystem.url, filter: [{ property: 'code', op: 'is-a', value: 'MED' }] }],
+      },
+    };
+    const descendentValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [
+          { system: hierarchyCodeSystem.url, filter: [{ property: 'code', op: 'descendent-of', value: 'MED' }] },
+        ],
+      },
+    };
+
+    // CodeSystem with a synonym (designation) to exercise the canonical-only code branch. The code
+    // 'SYN100' matches a 'SYN' prefix; its synonym display 'Zeta' is code-shaped-free so it only ever
+    // matches the display branch — never the code branch.
+    const synonymCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [{ code: 'SYN100', display: 'Alpha', designation: [{ value: 'Zeta' }] }],
+    };
+    const synonymValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: synonymCodeSystem.url }] },
+    };
+
+    // CodeSystem whose codes all share the 'ORD' prefix and whose displays are code-shaped-free, so a
+    // filter of 'ORD' matches every code by prefix while every row ties on display similarity (0) and
+    // none is an exact code match. With no discriminating sort key, the result order is arbitrary; this
+    // system exists to prove the deterministic code tiebreaker. Codes are inserted out of order so a
+    // pass-through of physical/insertion order would NOT be code-ascending.
+    const orderingCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'ORD30', display: 'Alpha' },
+        { code: 'ORD10', display: 'Beta' },
+        { code: 'ORD50', display: 'Gamma' },
+        { code: 'ORD20', display: 'Delta' },
+        { code: 'ORD40', display: 'Epsilon' },
+      ],
+    };
+    const orderingValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: orderingCodeSystem.url }] },
+    };
+
+    beforeAll(async () => {
+      for (const resource of [
+        flatCodeSystem,
+        hierarchyCodeSystem,
+        synonymCodeSystem,
+        orderingCodeSystem,
+        flatValueSet,
+        isaValueSet,
+        descendentValueSet,
+        synonymValueSet,
+        orderingValueSet,
+      ]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+      }
+    });
+
+    test.each([
+      {
+        name: 'Prefix match on code (>= 3 chars)',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'HTX',
+        expected: [
+          { code: 'HTX', display: 'Beta' },
+          { code: 'HTXY', display: 'Gamma' },
+        ],
+      },
+      {
+        name: 'Prefix match on code is case-insensitive',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'htx',
+        expected: [
+          { code: 'HTX', display: 'Beta' },
+          { code: 'HTXY', display: 'Gamma' },
+        ],
+      },
+      {
+        // Only the exact code 'HT' — the prefix siblings HTX/HTXY must NOT be returned below 3 chars.
+        name: 'Short filter (< 3 chars) falls back to exact code match',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'HT',
+        expected: [{ code: 'HT', display: 'Alpha' }],
+      },
+      {
+        // The underscore must be treated literally, so 'AXB' (which would match if '_' were a
+        // wildcard) is excluded.
+        name: 'Escapes LIKE wildcards in code prefix filter',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'A_B',
+        expected: [{ code: 'A_B', display: 'Delta' }],
+      },
+      {
+        name: 'Code prefix with is-a includes ancestor and matching descendants',
+        valueSet: isaValueSet.url,
+        system: hierarchyCodeSystem.url,
+        filter: 'med',
+        expected: [
+          { code: 'MED', display: 'Alpha' },
+          { code: 'MED100', display: 'Beta' },
+          { code: 'MED200', display: 'Gamma' },
+        ],
+      },
+      {
+        name: 'Code prefix narrows an is-a hierarchy expansion',
+        valueSet: isaValueSet.url,
+        system: hierarchyCodeSystem.url,
+        filter: 'med2',
+        expected: [{ code: 'MED200', display: 'Gamma' }],
+      },
+      {
+        // 'MED' matches the prefix but must be excluded because descendent-of is strict.
+        name: 'Code prefix with descendent-of excludes the ancestor',
+        valueSet: descendentValueSet.url,
+        system: hierarchyCodeSystem.url,
+        filter: 'med',
+        expected: [
+          { code: 'MED100', display: 'Beta' },
+          { code: 'MED200', display: 'Gamma' },
+        ],
+      },
+      {
+        // The code branch surfaces the canonical row only; synonyms share the canonical code and are
+        // redundant there, so the synonym display 'Zeta' is not attached as a designation.
+        name: 'Code prefix branch matches canonical rows only, not synonyms',
+        valueSet: synonymValueSet.url,
+        system: synonymCodeSystem.url,
+        filter: 'SYN',
+        expected: [{ code: 'SYN100', display: 'Alpha' }],
+      },
+      {
+        // The display branch is unchanged (non-partial index), so a filter matching only the
+        // synonym's display still finds the code.
+        name: 'Display branch still matches synonym rows',
+        valueSet: synonymValueSet.url,
+        system: synonymCodeSystem.url,
+        filter: 'zeta',
+        expected: [{ code: 'SYN100', display: 'Zeta' }],
+      },
+    ])('$name', async ({ valueSet, system, filter, expected }) => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${valueSet}&filter=${encodeURIComponent(filter)}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect(res.body.expansion).toMatchObject<Partial<ValueSetExpansion>>({
+        contains: expected.map((coding) => ({ system, ...coding })),
+      });
+    });
+
+    test('Exact code match ranks ahead of longer prefix match', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HTX`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const contains = (res.body.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
+      const codes = contains.map((c) => c.code);
+      expect(codes.indexOf('HTX')).toBeGreaterThanOrEqual(0);
+      expect(codes.indexOf('HTX')).toBeLessThan(codes.indexOf('HTXY'));
+    });
+
+    test('Sort order is deterministic when rows tie on relevance', async () => {
+      // Every 'ORD' code ties on the relevance keys (no exact match, display similarity 0), so only a
+      // stable tiebreaker can pin the order. Expect ascending code order, and identical order across
+      // repeated requests.
+      const expectedCodes = ['ORD10', 'ORD20', 'ORD30', 'ORD40', 'ORD50'];
+      const fetchCodes = async (): Promise<(string | undefined)[]> => {
+        const res = await request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${orderingValueSet.url}&filter=ORD`)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res).toHaveStatus(200);
+        return (res.body.expansion.contains as ValueSetExpansionContains[]).map((c) => c.code);
+      };
+      expect(await fetchCodes()).toStrictEqual(expectedCodes);
+      // Stable across repeated identical queries.
+      expect(await fetchCodes()).toStrictEqual(expectedCodes);
+    });
+
+    test('Pagination is stable across offset windows', async () => {
+      // A deterministic sort is what makes offset-based paging safe: consecutive windows must partition
+      // the full result with no skipped or duplicated codes.
+      const page = async (offset: number, count: number): Promise<(string | undefined)[]> => {
+        const res = await request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${orderingValueSet.url}&filter=ORD&offset=${offset}&count=${count}`)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res).toHaveStatus(200);
+        return (res.body.expansion.contains as ValueSetExpansionContains[]).map((c) => c.code);
+      };
+      const paged = [...(await page(0, 2)), ...(await page(2, 2)), ...(await page(4, 2))];
+      expect(paged).toStrictEqual(['ORD10', 'ORD20', 'ORD30', 'ORD40', 'ORD50']);
+    });
+  });
+
   test('Recursive subsumption', async () => {
     const res = await request(app)
       .get(
