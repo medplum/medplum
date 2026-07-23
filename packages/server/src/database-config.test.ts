@@ -132,6 +132,7 @@ describe('Database config', () => {
 
     const configCopy = deepClone(config);
     configCopy.databaseProxyEndpoint = 'test';
+    delete configCopy.database.ssl;
 
     const databaseConfig = configCopy.database;
 
@@ -145,6 +146,47 @@ describe('Database config', () => {
         database: databaseConfig.dbname,
         user: databaseConfig.username,
         ssl: { require: true },
+      })
+    );
+  });
+
+  test('RDS proxy preserves existing SSL config', async () => {
+    const config = await loadTestConfig();
+    config.databaseProxyEndpoint = 'test';
+    config.database.ssl = {
+      ca: '__THIS_SHOULD_BE_A_PEM_FILE__',
+      rejectUnauthorized: true,
+    };
+
+    await initDatabase(config);
+
+    expect(poolConfigs[0]).toEqual(
+      expect.objectContaining({
+        host: config.databaseProxyEndpoint,
+        ssl: {
+          ca: '__THIS_SHOULD_BE_A_PEM_FILE__',
+          rejectUnauthorized: true,
+          require: true,
+        },
+      })
+    );
+  });
+
+  test('Custom pool settings', async () => {
+    const config = await loadTestConfig();
+    config.database.maxConnections = 20;
+    config.database.minConnections = 5;
+    config.database.idleTimeoutMillis = 30_000;
+    config.database.connectionTimeoutMillis = 10_000;
+
+    await initDatabase(config);
+
+    expect(poolConfigs[0]).toEqual(
+      expect.objectContaining({
+        max: 20,
+        min: 5,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 10_000,
       })
     );
   });

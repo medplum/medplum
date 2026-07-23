@@ -100,6 +100,18 @@ describe('appendMedplumDatabaseSslSearchParams', () => {
     expect(params.get('sslmode')).toBe('require');
   });
 
+  test('sets sslmode=require when certificate verification is disabled', () => {
+    const params = new URLSearchParams();
+    appendMedplumDatabaseSslSearchParams(params, { rejectUnauthorized: false });
+    expect(params.get('sslmode')).toBe('require');
+  });
+
+  test('leaves the default sslmode when certificate verification has no CA', () => {
+    const params = new URLSearchParams();
+    appendMedplumDatabaseSslSearchParams(params, { rejectUnauthorized: true });
+    expect(params.has('sslmode')).toBe(false);
+  });
+
   test('sets verify-full with sslrootcert when rejectUnauthorized and ca are set', () => {
     const params = new URLSearchParams();
     appendMedplumDatabaseSslSearchParams(params, {

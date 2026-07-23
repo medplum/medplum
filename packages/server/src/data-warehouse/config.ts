@@ -108,18 +108,11 @@ export function getWarehouseSyncPostgresTableNames(
   includeResourceTypes?: string[],
   excludeResourceTypes?: string[]
 ): string[] {
-  const hasIncluded = !!includeResourceTypes?.length;
-  const hasExcluded = !!excludeResourceTypes?.length;
-
-  if (!hasIncluded && !hasExcluded) {
-    return getResourceTypes().map(toHistoryPostgresTableName);
-  }
-
   let types = getResourceTypes();
-  if (hasIncluded) {
+  if (includeResourceTypes?.length) {
     const includedSet = new Set(includeResourceTypes);
     types = types.filter((resourceType) => includedSet.has(resourceType));
-  } else if (hasExcluded) {
+  } else if (excludeResourceTypes?.length) {
     const excludedSet = new Set(excludeResourceTypes);
     types = types.filter((resourceType) => !excludedSet.has(resourceType));
   }
