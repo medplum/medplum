@@ -59,7 +59,9 @@ export function LabDetailPane(props: LabDetailPaneProps): JSX.Element {
           setOrder(result);
         }
       } catch (err) {
-        showErrorNotification(err);
+        if (subscribed) {
+          showErrorNotification(err);
+        }
       } finally {
         if (subscribed) {
           setLoading(false);
