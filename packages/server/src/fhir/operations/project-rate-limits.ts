@@ -3,12 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { allOk, arrayify, badRequest, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  OperationDefinitionParameter,
-  ProjectMembership,
-  Reference,
-  UserConfiguration,
-} from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import { getActiveRateLimitKey, getProjectFhirQuota, getUserFhirQuota } from '../fhirquota';
