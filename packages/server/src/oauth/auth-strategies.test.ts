@@ -43,17 +43,27 @@ vi.mock('jose', async (importOriginal) => {
   const original = await importOriginal<typeof Jose>();
   return {
     ...original,
-    // token.ts destructures `customFetch` from 'jose' unconditionally; the installed jose
-    // version here predates that export, so provide a stand-in symbol to satisfy the access —
-    // its actual behavior is irrelevant since remote-JWKS verification is stubbed out below.
+    // token.ts destructures `customFetch` from 'jose' unconditionally; some install
+    // environments resolve a jose version that predates that export, so provide a stand-in
+    // symbol to satisfy the access — its actual behavior is irrelevant since remote-JWKS
+    // verification is stubbed out below.
     customFetch: (original as { customFetch?: symbol }).customFetch ?? Symbol('customFetch'),
-    jwtVerify: vi.fn(async (jwt: string, keyOrKeySet: unknown, options?: Jose.JWTVerifyOptions) => {
-      const isRemoteJwks = typeof keyOrKeySet === 'function' && 'coolingDown' in keyOrKeySet;
-      if (!isRemoteJwks) {
-        return original.jwtVerify(jwt, keyOrKeySet as Jose.KeyLike, options);
+    // The key/options types are derived from `original.jwtVerify` itself, rather than named
+    // from 'jose' (e.g. `KeyLike`), because the exact type surface varies across the jose
+    // versions this monorepo's workspaces can resolve to.
+    jwtVerify: vi.fn(
+      async (
+        jwt: string,
+        keyOrKeySet: Parameters<typeof original.jwtVerify>[1],
+        options?: Parameters<typeof original.jwtVerify>[2]
+      ) => {
+        const isRemoteJwks = typeof keyOrKeySet === 'function' && 'coolingDown' in keyOrKeySet;
+        if (!isRemoteJwks) {
+          return original.jwtVerify(jwt, keyOrKeySet, options);
+        }
+        return { payload: core.parseJWTPayload(jwt) };
       }
-      return { payload: core.parseJWTPayload(jwt) };
-    }),
+    ),
   };
 });
 
