@@ -8,6 +8,8 @@ import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
 import {
   AckOutcome,
+  ArBehavior,
+  DEFAULT_AR_BEHAVIOR,
   GUARANTEED_TERMINAL_CODES,
   MessageState,
   PERMANENT_ERROR_CODES,
@@ -251,6 +253,13 @@ export interface ChannelQueueWorkerOptions {
   log: ILogger;
   /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, guaranteed delivery). */
   retryPolicy?: RetryPolicy;
+  /**
+   * What to do when a message lands terminally `rejected`; default
+   * {@link DEFAULT_AR_BEHAVIOR} (`pause`). `pause` stops the channel draining
+   * while a rejected row exists (enforced in the claim SQL); `continue` keeps
+   * draining past it. See {@link ArBehavior}.
+   */
+  arBehavior?: ArBehavior;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
   responseTimeoutMs?: number;
   /** Override for unit tests; default {@link DEFAULT_WORKER_IDLE_POLL_MS}. */
@@ -311,6 +320,7 @@ export class ChannelQueueWorker {
   private readonly idlePollMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
   private retryPolicy: RetryPolicy;
+  private arBehavior: ArBehavior;
 
   private running = false;
   private stopping = false;
@@ -329,6 +339,7 @@ export class ChannelQueueWorker {
     this.idlePollMs = options.idlePollMs ?? DEFAULT_WORKER_IDLE_POLL_MS;
     this.sendAck = options.sendAck;
     this.retryPolicy = options.retryPolicy ?? DEFAULT_RETRY_POLICY;
+    this.arBehavior = options.arBehavior ?? DEFAULT_AR_BEHAVIOR;
     this.wakeSignal = makeWakeSignal();
   }
 
@@ -340,6 +351,18 @@ export class ChannelQueueWorker {
    */
   setRetryPolicy(policy: RetryPolicy): void {
     this.retryPolicy = policy;
+  }
+
+  /**
+   * Replaces the AR (application-reject) behavior. Called on channel config
+   * reloads — the worker outlives `reloadConfig`, so the change is pushed rather
+   * than re-read. Takes effect on the next `claimNext`: switching to `continue`
+   * lets a channel that was paused on a reject resume draining; switching to
+   * `pause` stops it at the next reject (or immediately, if one already exists).
+   * @param behavior - The newly resolved behavior.
+   */
+  setArBehavior(behavior: ArBehavior): void {
+    this.arBehavior = behavior;
   }
 
   /** Starts the dispatch loop. No-op if already started. */
@@ -564,7 +587,11 @@ export class ChannelQueueWorker {
           await this.waitForWork();
           continue;
         }
-        const row = this.queue.claimNext(this.channelName);
+        // `arBehavior=pause` (the default) gates the claim in SQL: while the
+        // channel has a `rejected` row, claimNext returns null and the loop parks
+        // exactly as it does for an empty queue, resuming automatically once an
+        // operator clears the reject. `continue` never gates.
+        const row = this.queue.claimNext(this.channelName, undefined, this.arBehavior === ArBehavior.PAUSE);
         if (row) {
           await this.process(row);
         } else {
@@ -874,6 +901,16 @@ export class ChannelQueueWorker {
       const applied = this.queue.markRejected(row.id, row.attemptCount, message, code);
       if (applied) {
         this.log.error(`${rowDesc} rejected (${code}): ${message}`);
+        if (this.arBehavior === ArBehavior.PAUSE) {
+          // The pause itself is enforced by the SQL claim gate (the next
+          // claimNext returns null while this rejected row exists); this log is
+          // the operator's signal for why the channel stopped draining.
+          this.log.error(
+            `Channel '${this.channelName}' paused (arBehavior=pause): ${rowDesc} was rejected, so no further ` +
+              `messages will be processed until the rejected row is cleared (reclassify its state or delete it). ` +
+              `Set arBehavior=continue to keep draining past rejects instead.`
+          );
+        }
       } else {
         this.log.info(`${rowDesc} rejected-state write discarded: attempt ${row.attemptCount} was already superseded`);
       }

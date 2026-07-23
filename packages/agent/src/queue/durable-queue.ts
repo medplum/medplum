@@ -10,6 +10,7 @@ import {
   CHANNEL_DEPTH,
   CHECKPOINT_WAL,
   CLAIM_NEXT,
+  CLAIM_NEXT_PAUSE_ON_REJECT,
   COMMIT_SEQ_NO,
   COUNT_BY_STATE,
   DB_SIZE_BYTES,
@@ -184,6 +185,7 @@ export class DurableQueue {
   private readonly commitSeqNoStmt: StatementSync;
   private readonly findSeenByControlIdStmt: StatementSync;
   private readonly claimNextStmt: StatementSync;
+  private readonly claimNextPauseOnRejectStmt: StatementSync;
   private readonly markSentStmt: StatementSync;
   private readonly findByCallbackStmt: StatementSync;
   private readonly findByIdStmt: StatementSync;
@@ -255,6 +257,7 @@ export class DurableQueue {
     // node:sqlite is synchronous and the agent is single-process, so RETURNING is
     // enough — no advisory locking needed.
     this.claimNextStmt = this.db.prepare(CLAIM_NEXT);
+    this.claimNextPauseOnRejectStmt = this.db.prepare(CLAIM_NEXT_PAUSE_ON_REJECT);
 
     // Phase A → B: the App's send path calls this the moment the transmit request
     // is written to the socket, flipping `claimed` → `inflight` and stamping sent_at.
@@ -624,13 +627,23 @@ export class DurableQueue {
    * @param channelName - The channel to claim from.
    * @param now - Override the timestamp written to `processing_started_at` and
    *   compared against `next_attempt_at` (for tests).
-   * @returns The claimed row, or `null` if the channel queue is empty or its head is backing off.
+   * @param pauseOnReject - When true (a channel configured `arBehavior=pause`,
+   *   the default), refuse to claim while the channel has any `rejected` row —
+   *   see {@link CLAIM_NEXT_PAUSE_ON_REJECT}. When false (`arBehavior=continue`),
+   *   a rejected message never stalls the channel.
+   * @returns The claimed row, or `null` if the channel queue is empty, its head
+   *   is backing off, or (when `pauseOnReject`) the channel is paused on a reject.
    */
-  claimNext(channelName: string, now: number = Date.now()): ClaimedRow | null {
+  claimNext(channelName: string, now: number = Date.now(), pauseOnReject = false): ClaimedRow | null {
     this.assertNotDemoted();
     // Bind `now` twice: once for processing_started_at, once for the
-    // next_attempt_at backoff predicate on the outer update.
-    const raw = this.claimNextStmt.get(now, channelName, now) as Record<string, SQLInputValue> | undefined;
+    // next_attempt_at backoff predicate on the outer update. The pause-on-reject
+    // variant binds `channelName` a second time for the rejected-row gate.
+    const raw = (
+      pauseOnReject
+        ? this.claimNextPauseOnRejectStmt.get(now, channelName, now, channelName)
+        : this.claimNextStmt.get(now, channelName, now)
+    ) as Record<string, SQLInputValue> | undefined;
     if (raw) {
       this.walDirty = true;
     }
