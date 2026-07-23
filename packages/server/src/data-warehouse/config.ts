@@ -71,7 +71,13 @@ export function buildPgConnectionURI(db: MedplumDatabaseConfig): string {
   searchParams.set('application_name', DEFAULT_DW_DATABASE_APPLICATION_NAME);
   searchParams.set('options', '-c statement_timeout=' + String(timeout));
   if (db.connectionTimeoutMillis !== undefined) {
-    searchParams.set('connect_timeout', String(Math.floor(db.connectionTimeoutMillis / 1000)));
+    if (db.connectionTimeoutMillis < 0) {
+      throw new RangeError('connectionTimeoutMillis must be greater than or equal to 0');
+    }
+    // values less than 1,000ms are rounded up to 1 second
+    const connectTimeoutSeconds =
+      db.connectionTimeoutMillis > 0 ? Math.max(1, Math.floor(db.connectionTimeoutMillis / 1000)) : 0;
+    searchParams.set('connect_timeout', String(connectTimeoutSeconds));
   }
   appendMedplumDatabaseSslSearchParams(searchParams, db.ssl);
   // libpq / DuckDB postgres attach do not treat '+' as space in query values; use encodeURIComponent.
