@@ -15,7 +15,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
-import { addExpansionItems } from './expand';
+import { repoAccess } from '../repository/access-tracker';
+import type { PgQueryable } from '../sql';
+import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
 
 describe('Expand', () => {
   const app = express();
@@ -821,6 +823,69 @@ describe('Expand', () => {
 
       const system = codeSystem.url;
       expect(expansion.contains).toContainExactly([{ system, code: 'PET', display: 'pet' }]);
+    });
+  });
+
+  describe('Cost-based parent-filter strategy', () => {
+    const system = 'http://example.com/CodeSystem/' + randomUUID();
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'example',
+      url: system,
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'PAR',
+          display: 'parent alpha',
+          concept: [
+            { code: 'CHD', display: 'child alpha' },
+            { code: 'PET', display: 'pet beta' },
+          ],
+        },
+      ],
+    };
+    let stored: WithId<CodeSystem>;
+    let db: PgQueryable;
+
+    beforeAll(async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(codeSystem);
+      expect(res).toHaveStatus(201);
+      stored = res.body as WithId<CodeSystem>;
+
+      await withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+        db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'test' }));
+        await hydrateCodeSystemProperties(db, stored);
+      });
+    });
+
+    test('countCandidatesBounded returns min(actual, limit)', async () => {
+      // 'alpha' matches PAR + CHD (2). PET does not.
+      expect(await countCandidatesBounded(db, stored, 'alpha', 10)).toBe(2);
+      expect(await countCandidatesBounded(db, stored, 'alpha', 1)).toBe(1); // bounded
+      expect(await countCandidatesBounded(db, stored, 'zzz', 10)).toBe(0);
+    });
+
+    test('descendant and ancestor strategies return identical members', async () => {
+      const include = { system, filter: [{ property: 'concept', op: 'is-a' as const, value: 'PAR' }] };
+      const params = { filter: 'alpha' };
+
+      const ancestorQuery = expansionQuery(include, stored, params, 'ancestor');
+      const descendantQuery = expansionQuery(include, stored, params, 'descendant');
+      if (!ancestorQuery || !descendantQuery) {
+        throw new Error('expected both strategies to build a query');
+      }
+      const ancestorRows = await ancestorQuery.execute(db);
+      const descendantRows = await descendantQuery.execute(db);
+
+      const codes = (rows: { code: string }[]): string[] => rows.map((r) => r.code).sort();
+      expect(codes(ancestorRows)).toEqual(['CHD', 'PAR']);
+      expect(codes(descendantRows)).toEqual(codes(ancestorRows));
     });
   });
 
