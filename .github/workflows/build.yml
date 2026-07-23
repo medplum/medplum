@@ -151,6 +151,17 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Install decision guide build tools
+        # pandoc + LibreOffice render the Decision Guide .docx/.pdf downloads
+        # (packages/docs/scripts/build-decision-guides.mjs) at build time. Poppins
+        # must be installed as a system font too, or LibreOffice silently
+        # substitutes a fallback when rendering the PDF.
+        if: steps.changes.outputs.deploy_docs == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends pandoc libreoffice zip unzip
+          mkdir -p ~/.fonts
+          cp packages/docs/scripts/assets/fonts/*.ttf ~/.fonts/
+          fc-cache -f
       - name: Install
         if: steps.changes.outputs.deploy_any == 'true'
         run: npm ci
@@ -712,6 +723,16 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
           echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Install decision guide build tools
+        # pandoc + LibreOffice render the Decision Guide .docx/.pdf downloads
+        # (packages/docs/scripts/build-decision-guides.mjs) at build time. Poppins
+        # must be installed as a system font too, or LibreOffice silently
+        # substitutes a fallback when rendering the PDF.
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends pandoc libreoffice zip unzip
+          mkdir -p ~/.fonts
+          cp packages/docs/scripts/assets/fonts/*.ttf ~/.fonts/
+          fc-cache -f
       - name: Build Project
         run: ./scripts/build-docs.sh
         env:

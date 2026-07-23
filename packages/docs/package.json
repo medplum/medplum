@@ -20,6 +20,8 @@
     "copy-core-docs": "rm -rf docs/sdk && node markdown-to-mdx.mjs ../core/dist/docs docs/sdk",
     "deploy": "docusaurus deploy",
     "docusaurus": "docusaurus",
+    "prebuild": "node scripts/build-decision-guides.mjs",
+    "prestart": "node scripts/build-decision-guides.mjs",
     "serve": "docusaurus serve",
     "start": "docusaurus start",
     "swizzle": "docusaurus swizzle",
