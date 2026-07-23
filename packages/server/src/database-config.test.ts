@@ -185,8 +185,8 @@ describe('Database config', () => {
       expect.objectContaining({
         max: 20,
         min: 5,
-        idleTimeoutMs: 30_000,
-        connectionTimeoutMs: 10_000,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 10_000,
       })
     );
   });
