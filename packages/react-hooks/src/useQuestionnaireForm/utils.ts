@@ -62,6 +62,7 @@ export const QUESTIONNAIRE_CALCULATED_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/
 export const QUESTIONNAIRE_SIGNATURE_REQUIRED_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`;
 export const QUESTIONNAIRE_SIGNATURE_RESPONSE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`;
 export const QUESTIONNAIRE_HIDDEN_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-hidden`;
+export const QUESTIONNAIRE_OPTION_EXCLUSIVE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-optionExclusive`;
 
 /**
  * Returns true if the item is a choice question.

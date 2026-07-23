@@ -1666,6 +1666,186 @@ describe('QuestionnaireForm', () => {
     expect(response2.item[0].answer).toEqual(expect.arrayContaining([{}]));
   });
 
+  test('Checkbox optionExclusive', async () => {
+    const onSubmit = vi.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'checkbox-option-exclusive',
+        title: 'Checkbox optionExclusive',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Select Allergies',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              { valueString: 'Peanuts' },
+              { valueString: 'Shellfish' },
+              {
+                valueString: 'No known allergies',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-optionExclusive',
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+    const [peanuts, shellfish, noAllergies] = checkboxes as HTMLInputElement[];
+
+    // Select two non-exclusive options
+    await act(async () => {
+      fireEvent.click(peanuts);
+      fireEvent.click(shellfish);
+    });
+    expect(peanuts.checked).toBe(true);
+    expect(shellfish.checked).toBe(true);
+
+    // Selecting the exclusive option clears the others
+    await act(async () => {
+      fireEvent.click(noAllergies);
+    });
+    expect(noAllergies.checked).toBe(true);
+    expect(peanuts.checked).toBe(false);
+    expect(shellfish.checked).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(response1.item[0].answer).toEqual([{ valueString: 'No known allergies' }]);
+
+    // Selecting a non-exclusive option clears the exclusive option
+    await act(async () => {
+      fireEvent.click(peanuts);
+    });
+    expect(peanuts.checked).toBe(true);
+    expect(noAllergies.checked).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(response2.item[0].answer).toEqual([{ valueString: 'Peanuts' }]);
+  });
+
+  test('Multi-Select Dropdown optionExclusive', async () => {
+    const onSubmit = vi.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'dropdown-option-exclusive',
+        title: 'Multi-Select Dropdown optionExclusive',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Select Allergies',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              { valueString: 'Peanuts' },
+              { valueString: 'Shellfish' },
+              {
+                valueString: 'No known allergies',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-optionExclusive',
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const input = screen.getByPlaceholderText('Select items');
+
+    const selectOption = async (label: string): Promise<void> => {
+      await act(async () => {
+        fireEvent.click(input);
+      });
+      // Mantine renders the dropdown options once the search input receives input. The suite uses
+      // fake timers, so query synchronously rather than with an async findBy (which can't advance).
+      // The options live in a portal that the a11y tree treats as hidden, hence hidden: true.
+      await act(async () => {
+        fireEvent.change(input, { target: { value: label } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('option', { hidden: true, name: label }));
+      });
+    };
+
+    // Select two non-exclusive options
+    await selectOption('Peanuts');
+    await selectOption('Shellfish');
+
+    // Selecting the exclusive option clears the others
+    await selectOption('No known allergies');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(response1.item[0].answer).toEqual([{ valueString: 'No known allergies' }]);
+
+    // Selecting a non-exclusive option clears the exclusive option
+    await selectOption('Peanuts');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(response2.item[0].answer).toEqual([{ valueString: 'Peanuts' }]);
+  });
+
   test('Multi-Select Dropdown Value Set', async () => {
     const onSubmit = vi.fn();
 
