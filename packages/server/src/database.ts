@@ -4,7 +4,7 @@ import { sleep } from '@medplum/core';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
-import type { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
+import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig, MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -59,7 +59,7 @@ function initPoolConfig(
   proxyEndpoint: string | undefined,
   applicationName = 'medplum-server'
 ): PoolConfig {
-  const poolConfig = {
+  const poolConfig: PoolConfig = {
     host: config.host,
     port: config.port,
     database: config.dbname,
@@ -68,6 +68,9 @@ function initPoolConfig(
     application_name: applicationName,
     ssl: config.ssl,
     max: config.maxConnections ?? DEFAULT_MAX_CONNECTIONS,
+    min: config.minConnections,
+    idleTimeoutMillis: config.idleTimeoutMillis,
+    connectionTimeoutMillis: config.connectionTimeoutMillis,
     options: config.disableConnectionConfiguration
       ? undefined
       : `-c statement_timeout=${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT} -c default_transaction_isolation=${DEFAULT_TRANSACTION_ISOLATION} -c idle_in_transaction_session_timeout=${DEFAULT_IDLE_IN_TRANSACTION_SESSION_TIMEOUT}`,
@@ -75,8 +78,9 @@ function initPoolConfig(
 
   if (proxyEndpoint) {
     poolConfig.host = proxyEndpoint;
-    poolConfig.ssl = poolConfig.ssl ?? {};
-    poolConfig.ssl.require = true;
+    // require SSL when using a proxy endpoint
+    poolConfig.ssl = typeof poolConfig.ssl === 'object' ? poolConfig.ssl : {};
+    (poolConfig.ssl as MedplumDatabaseSslConfig).require = true;
   }
 
   return poolConfig;
