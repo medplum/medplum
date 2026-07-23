@@ -74,27 +74,27 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
     [0, '0'],
     [500, '1'],
     [10_999, '10'],
-  ])('converts connectionTimeoutMillis=%i to libpq connect_timeout=%s', (connectionTimeoutMillis, expected) => {
+  ])('converts connectionTimeoutMs=%i to libpq connect_timeout=%s', (connectionTimeoutMs, expected) => {
     const uri = buildPgConnectionURI({
       host: 'db.example.com',
       dbname: 'medplum',
       username: 'medplum',
       password: 'secret',
-      connectionTimeoutMillis,
+      connectionTimeoutMs,
     });
     expect(new URL(uri).searchParams.get('connect_timeout')).toBe(expected);
   });
 
-  test('rejects negative connectionTimeoutMillis', () => {
+  test('rejects negative connectionTimeoutMs', () => {
     expect(() =>
       buildPgConnectionURI({
         host: 'db.example.com',
         dbname: 'medplum',
         username: 'medplum',
         password: 'secret',
-        connectionTimeoutMillis: -1,
+        connectionTimeoutMs: -1,
       })
-    ).toThrowError(new RangeError('connectionTimeoutMillis must be greater than or equal to 0'));
+    ).toThrowError(new RangeError('connectionTimeoutMs must be greater than or equal to 0'));
   });
 
   test('percent-encodes special characters in password', () => {

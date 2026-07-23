@@ -41,7 +41,7 @@ export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ss
  * Builds a PostgreSQL URI for DuckDB `ATTACH (TYPE postgres)` from {@link MedplumDatabaseConfig},
  * including `application_name`, `connect_timeout`, `options=-c statement_timeout=...`, and TLS via `sslmode` /
  * cert paths from {@link MedplumDatabaseConfig.ssl}. Pool-only settings such as `minConnections`,
- * `maxConnections`, and `idleTimeoutMillis` do not apply to this standalone connection URI.
+ * `maxConnections`, and `idleTimeoutMs` do not apply to this standalone connection URI.
  *
  * @param db - Medplum database settings; host, dbname, username, and password must be set.
  * @returns A PostgreSQL connection URI (`postgresql://...`).
@@ -70,13 +70,13 @@ export function buildPgConnectionURI(db: MedplumDatabaseConfig): string {
   const searchParams = new URLSearchParams();
   searchParams.set('application_name', DEFAULT_DW_DATABASE_APPLICATION_NAME);
   searchParams.set('options', '-c statement_timeout=' + String(timeout));
-  if (db.connectionTimeoutMillis !== undefined) {
-    if (db.connectionTimeoutMillis < 0) {
-      throw new RangeError('connectionTimeoutMillis must be greater than or equal to 0');
+  if (db.connectionTimeoutMs !== undefined) {
+    if (db.connectionTimeoutMs < 0) {
+      throw new RangeError('connectionTimeoutMs must be greater than or equal to 0');
     }
     // values less than 1,000ms are rounded up to 1 second
     const connectTimeoutSeconds =
-      db.connectionTimeoutMillis > 0 ? Math.max(1, Math.floor(db.connectionTimeoutMillis / 1000)) : 0;
+      db.connectionTimeoutMs > 0 ? Math.max(1, Math.floor(db.connectionTimeoutMs / 1000)) : 0;
     searchParams.set('connect_timeout', String(connectTimeoutSeconds));
   }
   appendMedplumDatabaseSslSearchParams(searchParams, db.ssl);

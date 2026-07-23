@@ -69,8 +69,8 @@ function initPoolConfig(
     ssl: config.ssl,
     max: config.maxConnections ?? DEFAULT_MAX_CONNECTIONS,
     min: config.minConnections,
-    idleTimeoutMillis: config.idleTimeoutMillis,
-    connectionTimeoutMillis: config.connectionTimeoutMillis,
+    idleTimeoutMillis: config.idleTimeoutMs,
+    connectionTimeoutMillis: config.connectionTimeoutMs,
     options: config.disableConnectionConfiguration
       ? undefined
       : `-c statement_timeout=${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT} -c default_transaction_isolation=${DEFAULT_TRANSACTION_ISOLATION} -c idle_in_transaction_session_timeout=${DEFAULT_IDLE_IN_TRANSACTION_SESSION_TIMEOUT}`,
