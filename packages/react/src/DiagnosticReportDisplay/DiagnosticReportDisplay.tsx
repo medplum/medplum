@@ -1,14 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Group, List, Stack, Text, Title } from '@mantine/core';
-import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import {
+  formatAddress,
+  formatCodeableConcept,
+  formatDateTime,
+  formatHumanName,
+  formatObservationValue,
+  getDisplayString,
+  isReference,
+} from '@medplum/core';
 import type {
   Annotation,
+  CareTeam,
   DiagnosticReport,
   Observation,
   ObservationComponent,
   ObservationReferenceRange,
+  Organization,
+  OrganizationContact,
+  Patient,
+  Practitioner,
+  PractitionerRole,
   Reference,
+  RelatedPerson,
   Specimen,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
@@ -17,6 +33,7 @@ import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
@@ -86,6 +103,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
           <Text>{diagnosticReport.conclusion}</Text>
         </Stack>
       )}
+      <PerformingLabs value={diagnosticReport} />
     </Stack>
   );
 }
@@ -96,8 +114,10 @@ interface DiagnosticReportHeaderProps {
 }
 
 function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
+  const basedOn = useResource(value.basedOn?.[0]);
+  const requester = basedOn?.resourceType === 'ServiceRequest' ? basedOn.requester : undefined;
   const showSubject = Boolean(value.subject && !hideSubject);
-  const hasLeftColumn = showSubject || Boolean(value.resultsInterpreter?.length);
+  const hasLeftColumn = showSubject || Boolean(requester) || Boolean(value.resultsInterpreter?.length);
   const hasRightColumn = Boolean(value.performer?.length || value.issued || value.status);
   return (
     <Group mt="md" gap="xl" align="stretch" wrap="nowrap">
@@ -106,6 +126,11 @@ function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReport
           {showSubject && (
             <HeaderField label="Subject">
               <ResourceBadge value={value.subject} link={true} />
+            </HeaderField>
+          )}
+          {requester && (
+            <HeaderField label="Ordering">
+              <ResourceBadge value={requester} link={true} />
             </HeaderField>
           )}
           {value.resultsInterpreter?.map((interpreter) => (
@@ -300,7 +325,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         </td>
         <td>
           {observation.performer?.map((performer) => (
-            <ReferenceDisplay key={performer.reference} value={performer} />
+            <ObservationPerformerDisplay key={performer.reference} value={performer} />
           ))}
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
@@ -321,6 +346,18 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       )}
     </>
   );
+}
+
+interface ObservationPerformerDisplayProps {
+  readonly value: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson>;
+}
+
+function ObservationPerformerDisplay(props: ObservationPerformerDisplayProps): JSX.Element {
+  const performer = useResource(props.value);
+  if (!performer) {
+    return <ReferenceDisplay value={props.value} />;
+  }
+  return <MedplumLink to={props.value}>{getDisplayString(performer)}</MedplumLink>;
 }
 
 interface ObservationValueDisplayProps {
@@ -355,5 +392,141 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
  */
 function isCritical(observation: Observation): boolean {
   const code = observation.interpretation?.[0]?.coding?.[0]?.code;
-  return code === 'AA' || code === 'LL' || code === 'HH' || code === 'A';
+  if (code !== undefined) {
+    return code === 'AA' || code === 'LL' || code === 'HH' || code === 'A';
+  }
+  const interpretation = observation.interpretation?.[0].text;
+  return (
+    interpretation === 'Critical abnormal' ||
+    interpretation === 'Critical high' ||
+    interpretation === 'Critical low' ||
+    interpretation === 'Critical' ||
+    interpretation === 'Abnormal'
+  );
+}
+
+interface PerformingLabsProps {
+  readonly value: DiagnosticReport;
+}
+
+function PerformingLabs({ value }: PerformingLabsProps): JSX.Element | null {
+  const medplum = useMedplum();
+  const [labs, setLabs] = useState<Organization[]>();
+
+  useEffect(() => {
+    getPerformingLabs(medplum, value).then(setLabs).catch(console.error);
+  }, [medplum, value]);
+
+  if (!labs || labs.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack gap="xs" mt="md">
+      <Divider />
+      <Text fw={500} size="sm" c="dimmed">
+        Performing Labs
+      </Text>
+      {labs.map((lab) => (
+        <Group key={`lab-${lab.id}-${lab.name}`} justify="space-between" align="flex-start" wrap="nowrap">
+          <div>
+            <Text>{lab.name}</Text>
+            {lab.address?.[0] && (
+              <Text size="sm" c="dimmed">
+                <AddressDisplay value={lab.address[0]} />
+              </Text>
+            )}
+          </div>
+          <LabContactDisplay value={lab.contact?.[0]} />
+        </Group>
+      ))}
+    </Stack>
+  );
+}
+
+interface LabContactDisplayProps {
+  readonly value?: OrganizationContact;
+}
+
+function LabContactDisplay({ value }: LabContactDisplayProps): JSX.Element | null {
+  if (!value) {
+    return null;
+  }
+  return (
+    <div style={{ textAlign: 'right' }}>
+      {value.name && <Text>{value.name.text ?? formatHumanName(value.name)}</Text>}
+      {value.telecom?.[0] && (
+        <Text size="sm" c="dimmed">
+          <ContactPointDisplay value={value.telecom[0]} />
+        </Text>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Collects the unique performing lab organizations for a diagnostic report.
+ *
+ * Walks the report results (including nested observation groups) and resolves
+ * each observation performer that is an Organization. References of the form
+ * "#id" are resolved against the report's contained resources, which is how
+ * lab integrations such as Health Gorilla represent the performing labs.
+ * @param medplum - The Medplum client.
+ * @param report - The diagnostic report.
+ * @returns The unique performing lab organizations.
+ */
+async function getPerformingLabs(medplum: MedplumClient, report: DiagnosticReport): Promise<Organization[]> {
+  const observations: Observation[] = [];
+  const visited = new Set<string>();
+
+  async function resolveObservation(ref: Reference<Observation>): Promise<void> {
+    const refString = ref.reference;
+    if (!refString || visited.has(refString)) {
+      return;
+    }
+    visited.add(refString);
+    const observation = refString.startsWith('#')
+      ? findContained<Observation>(report, refString, 'Observation')
+      : await medplum.readReference(ref).catch(() => undefined);
+    if (!observation) {
+      return;
+    }
+    observations.push(observation);
+    for (const member of observation.hasMember ?? []) {
+      await resolveObservation(member as Reference<Observation>);
+    }
+  }
+
+  for (const result of report.result ?? []) {
+    await resolveObservation(result);
+  }
+
+  const labs = new Map<string, Organization>();
+  for (const performer of observations.flatMap((observation) => observation.performer ?? [])) {
+    const refString = performer.reference;
+    let organization: Organization | undefined;
+    if (refString?.startsWith('#')) {
+      organization = findContained<Organization>(report, refString, 'Organization');
+    } else if (refString?.startsWith('Organization/')) {
+      organization = await medplum.readReference(performer as Reference<Organization>).catch(() => undefined);
+    }
+    if (organization && (organization.address || organization.contact)) {
+      const key = `${organization.name}|${formatAddress(organization.address?.[0])}`;
+      if (!labs.has(key)) {
+        labs.set(key, organization);
+      }
+    }
+  }
+
+  return Array.from(labs.values());
+}
+
+function findContained<T extends Observation | Organization>(
+  report: DiagnosticReport,
+  refString: string,
+  resourceType: T['resourceType']
+): T | undefined {
+  const id = refString.slice(1);
+  return report.contained?.find((resource) => resource.resourceType === resourceType && resource.id === id) as
+    T | undefined;
 }
