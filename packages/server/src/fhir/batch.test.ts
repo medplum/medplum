@@ -71,7 +71,7 @@ describe('Batch and Transaction processing', () => {
     await initApp(app, config);
     accessToken = await initTestAuth({
       project: {
-        features: ['transaction-bundles'],
+        features: ['transaction-bundles', 'async-batch'],
         // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
         // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
         // flag the project defaults to the legacy single-shot path.
@@ -1659,6 +1659,7 @@ describe('Batch and Transaction processing', () => {
       withAccessToken: true,
       withClient: true,
       project: {
+        features: ['async-batch'],
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
