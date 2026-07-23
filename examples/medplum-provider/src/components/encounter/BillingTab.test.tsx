@@ -505,13 +505,8 @@ describe('BillingTab', () => {
     // Type in CPT code input
     await user.type(cptInput, '99214');
 
-    // Wait for valueSetExpand to be called
-    await waitFor(
-      () => {
-        expect(medplum.valueSetExpand).toHaveBeenCalled();
-      },
-      { timeout: 3000 }
-    );
+    // Wait for the search result to render before selecting
+    await screen.findByText('Office Visit Level 4', undefined, { timeout: 3000 });
 
     // Select the CPT code option
     await act(async () => {
