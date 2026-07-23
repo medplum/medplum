@@ -49,6 +49,8 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
   // Stable keys so the searches below only re-run when the set of predicates actually
   // changes, rather than on every render when the parent passes a new array instance.
   const scheduleRefsKey = scheduleRefs.join(',');
+  const rangeStart = range?.start?.toISOString();
+  const rangeEnd = range?.end?.toISOString();
 
   // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
   // slots created when booking a visit from the FindPane or soft-deleted when cancelling
@@ -83,22 +85,24 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
   });
 
   useEffect(() => {
-    if (!range) {
+    if (!rangeStart || !rangeEnd) {
       return () => {};
     }
     let active = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional loading flag
     setLoading(true);
 
+    const refs = scheduleRefsKey.split(',');
+
     // Emit one Slot search per schedule so MedplumClient can cache each schedule's
     // results independently.
     Promise.all(
-      scheduleRefs.map((scheduleRef) =>
+      refs.map((scheduleRef) =>
         medplum.searchResources('Slot', [
           ['_count', '1000'],
           ['schedule', scheduleRef],
-          ['start', `ge${range.start.toISOString()}`],
-          ['start', `le${range.end.toISOString()}`],
+          ['start', `ge${rangeStart}`],
+          ['start', `le${rangeEnd}`],
           ['status:not', 'entered-in-error'],
         ])
       )
@@ -115,8 +119,7 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
       active = false;
       setLoading(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- scheduleRefsKey captures scheduleRefs
-  }, [medplum, scheduleRefsKey, range]);
+  }, [medplum, scheduleRefsKey, rangeStart, rangeEnd]);
 
   return {
     slots,
@@ -151,6 +154,8 @@ export function useSchedulingAppointments(
   const actorRefs = [
     ...new Set(schedules.flatMap((schedule) => schedule.actor.map((ref) => getReferenceString(ref))).filter(isDefined)),
   ];
+  const rangeStart = range?.start?.toISOString();
+  const rangeEnd = range?.end?.toISOString();
 
   // Stable keys so the searches below only re-run when the set of predicates actually
   // changes, rather than on every render when the parent passes a new array instance.
@@ -188,22 +193,24 @@ export function useSchedulingAppointments(
 
   // Find appointments visible in the current range
   useEffect(() => {
-    if (actorRefs.length === 0 || !range) {
+    if (actorRefsKey.length === 0 || !rangeStart || !rangeEnd) {
       return () => {};
     }
     let active = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional loading flag
     setLoading(true);
 
+    const refs = actorRefsKey.split(',');
+
     // Emit one Appointment search per schedule actor, again so each schedule's results
     // can be cached independently.
     Promise.all(
-      actorRefs.map((actorRef) =>
+      refs.map((actorRef) =>
         medplum.searchResources('Appointment', [
           ['_count', '1000'],
           ['actor', actorRef],
-          ['date', `ge${range.start.toISOString()}`],
-          ['date', `le${range.end.toISOString()}`],
+          ['date', `ge${rangeStart}`],
+          ['date', `le${rangeEnd}`],
         ])
       )
     )
@@ -230,8 +237,7 @@ export function useSchedulingAppointments(
       active = false;
       setLoading(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- actorRefsKey captures actorRefs
-  }, [medplum, actorRefsKey, range]);
+  }, [medplum, actorRefsKey, rangeStart, rangeEnd]);
 
   return {
     appointments,

@@ -28,6 +28,11 @@ const SCHEDULE_B: WithId<Schedule> = {
   id: 'schedule-b',
   actor: [{ reference: 'Practitioner/pract-b' }],
 };
+const SCHEDULE_C: WithId<Schedule> = {
+  resourceType: 'Schedule',
+  id: 'schedule-c',
+  actor: [{ reference: 'Practitioner/pract-c' }],
+};
 const RANGE: Range = {
   start: new Date('2024-01-01T00:00:00.000Z'),
   end: new Date('2024-01-31T00:00:00.000Z'),
@@ -179,6 +184,50 @@ describe('useSchedulingSlots', () => {
 
       await waitFor(() => expect(vi.mocked(showErrorNotification)).toHaveBeenCalled());
       await waitFor(() => expect(result.current.loading).toBe(false));
+    });
+
+    test('searches are not triggered by unstable wrappers', async () => {
+      medplum.searchResources = vi.fn();
+      const { rerender } = await act(async () => setup(useSchedulingSlots, [SCHEDULE_A, SCHEDULE_B], { ...RANGE }));
+
+      // one search per schedule emitted
+      expect(medplum.searchResources).toHaveBeenCalledTimes(2);
+
+      // re-render with the same objects in new outer wrapping list/objects
+      await act(() => rerender({ schedules: [SCHEDULE_A, SCHEDULE_B], range: { ...RANGE } }));
+
+      // no new searches emitted
+      expect(medplum.searchResources).toHaveBeenCalledTimes(2);
+
+      // re-render with a new schedule added
+      await act(() => rerender({ schedules: [SCHEDULE_A, SCHEDULE_B, SCHEDULE_C], range: { ...RANGE } }));
+
+      // effect re-runs search for each schedule
+      expect(medplum.searchResources).toHaveBeenCalledTimes(5);
+
+      // re-render with a range change
+      const newRange = {
+        start: new Date('2024-01-07T00:00:00.000Z'),
+        end: new Date('2024-01-14T00:00:00.000Z'),
+      };
+      await act(() => rerender({ schedules: [SCHEDULE_A, SCHEDULE_B, SCHEDULE_C], range: { ...newRange } }));
+
+      // effect re-runs search for each schedule
+      expect(medplum.searchResources).toHaveBeenCalledTimes(8);
+
+      // re-render with same range but new `Date` instances
+      await act(() =>
+        rerender({
+          schedules: [SCHEDULE_A, SCHEDULE_B, SCHEDULE_C],
+          range: {
+            start: new Date('2024-01-07T00:00:00.000Z'),
+            end: new Date('2024-01-14T00:00:00.000Z'),
+          },
+        })
+      );
+
+      // no new searches run
+      expect(medplum.searchResources).toHaveBeenCalledTimes(8);
     });
   });
 
@@ -392,6 +441,52 @@ describe('useSchedulingAppointments', () => {
 
       await waitFor(() => expect(vi.mocked(showErrorNotification)).toHaveBeenCalled());
       await waitFor(() => expect(result.current.loading).toBe(false));
+    });
+
+    test('searches are not triggered by unstable wrappers', async () => {
+      medplum.searchResources = vi.fn();
+      const { rerender } = await act(async () =>
+        setup(useSchedulingAppointments, [SCHEDULE_A, SCHEDULE_B], { ...RANGE })
+      );
+
+      // one search per schedule.actor emitted
+      expect(medplum.searchResources).toHaveBeenCalledTimes(2);
+
+      // re-render with the same objects in new outer wrapping list/objects
+      await act(() => rerender({ schedules: [SCHEDULE_A, SCHEDULE_B], range: { ...RANGE } }));
+
+      // no new searches emitted
+      expect(medplum.searchResources).toHaveBeenCalledTimes(2);
+
+      // re-render with a new schedule added
+      await act(() => rerender({ schedules: [SCHEDULE_A, SCHEDULE_B, SCHEDULE_C], range: { ...RANGE } }));
+
+      // effect re-runs search for each schedule
+      expect(medplum.searchResources).toHaveBeenCalledTimes(5);
+
+      // re-render with a range change
+      const newRange = {
+        start: new Date('2024-01-07T00:00:00.000Z'),
+        end: new Date('2024-01-14T00:00:00.000Z'),
+      };
+      await act(() => rerender({ schedules: [SCHEDULE_A, SCHEDULE_B, SCHEDULE_C], range: { ...newRange } }));
+
+      // effect re-runs search for each schedule
+      expect(medplum.searchResources).toHaveBeenCalledTimes(8);
+
+      // re-render with same range but new `Date` instances
+      await act(() =>
+        rerender({
+          schedules: [SCHEDULE_A, SCHEDULE_B, SCHEDULE_C],
+          range: {
+            start: new Date('2024-01-07T00:00:00.000Z'),
+            end: new Date('2024-01-14T00:00:00.000Z'),
+          },
+        })
+      );
+
+      // no new searches run
+      expect(medplum.searchResources).toHaveBeenCalledTimes(8);
     });
   });
 
