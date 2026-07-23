@@ -22,12 +22,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  color: var(--ifm-color-emphasis-700);
+  color: var(--ifm-color-primary);
   font-weight: 600;
   text-decoration: none;
 }
 
 .downloadLink:hover {
-  color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary-dark);
   text-decoration: underline;
 }
