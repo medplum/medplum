@@ -15,7 +15,7 @@ import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
 import { initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
-import { applyGlobalConcurrency, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { applyGlobalConcurrency, getMedplumBullmqConfig, queueRegistry } from './utils';
 
 const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'dispatch', init: initDispatchWorker },
@@ -47,7 +47,7 @@ export async function initWorkers(config: MedplumServerConfig): Promise<void> {
       queueRegistry.add(queueName, queue, worker);
       // Fail startup if the global concurrency limit cannot be applied: it is unsafe to run the
       // workers without it configured correctly.
-      await applyGlobalConcurrency(queue, getWorkerBullmqConfig(config, name));
+      await applyGlobalConcurrency(queue, getMedplumBullmqConfig(config, name));
     }
   }
   globalLogger.debug('Workers initialized');
