@@ -6,6 +6,7 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import { SqlBuilder } from '../fhir/sql';
 import { buildPgConnectionURI } from './config';
 import type { DuckdbConnection } from './warehouse-sql';
@@ -27,6 +28,9 @@ const DEST_TABLE = 'wh_sql_int_dest';
 const PATIENT_ID = '6e586f88-710f-42b2-9cc2-285496264c99';
 const VERSION_ID = 'c227e03f-b6d5-44f7-b191-8571ed508d7e';
 const PROJECT_ID = '71b6dae7-1e96-47ed-babb-c1a0e58a885f';
+
+const LOGIN_ID = 'a1b2c3d4-e5f6-4789-a012-3456789abcde';
+const LOGIN_VERSION_ID = 'b2c3d4e5-f6a7-4890-b123-456789abcdef';
 
 describe('warehouse SQL (integration)', () => {
   let host: string;
@@ -57,7 +61,7 @@ describe('warehouse SQL (integration)', () => {
         );
       `);
       await client.query(
-        `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)`,
         [
           PATIENT_ID,
           VERSION_ID,
@@ -65,6 +69,15 @@ describe('warehouse SQL (integration)', () => {
             resourceType: 'Patient',
             id: PATIENT_ID,
             meta: { project: PROJECT_ID },
+          }),
+          '2024-06-01T12:00:00.000Z',
+          LOGIN_ID,
+          LOGIN_VERSION_ID,
+          JSON.stringify({
+            resourceType: 'Login',
+            id: LOGIN_ID,
+            authMethod: 'password',
+            // Intentionally no meta.project (protected resource)
           }),
           '2024-06-01T12:00:00.000Z',
         ]
@@ -107,14 +120,17 @@ describe('warehouse SQL (integration)', () => {
       `);
 
       const rowCount = await runParameterizedWarehouseSql(connection, insertQuery);
-      expect(rowCount).toBe(1);
+      expect(rowCount).toBe(2);
 
       const readSql = new SqlBuilder();
-      readSql.append(`SELECT id, project_id FROM "${DEST_TABLE}"`);
+      readSql.append(`SELECT id, project_id FROM "${DEST_TABLE}" ORDER BY id`);
       const readResult = await runParameterizedWarehouseSqlReadAll(connection, readSql);
-      const row = readResult.getRowObjectsJson()[0] as { id: string; project_id: string };
-      expect(row.id).toBe(PATIENT_ID);
-      expect(row.project_id).toBe(PROJECT_ID);
+      const rows = readResult.getRowObjectsJson() as { id: string; project_id: string }[];
+      expect(rows).toHaveLength(2);
+
+      const byId = Object.fromEntries(rows.map((row) => [row.id, row.project_id]));
+      expect(byId[PATIENT_ID]).toBe(PROJECT_ID);
+      expect(byId[LOGIN_ID]).toBe(systemResourceProjectId);
     } finally {
       connection.closeSync();
       instance.closeSync();
