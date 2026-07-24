@@ -41,7 +41,9 @@
 *,
 *::before,
 *::after {
-  font-feature-settings: 'ss02' on, 'ss04' on;
+  font-feature-settings:
+    'ss02' on,
+    'ss04' on;
 }
 
 [data-theme='dark'] {
@@ -417,4 +419,3 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   background-color: var(--oc-grape-9);
   border-color: var(--oc-grape-9);
 }
-
