@@ -14,11 +14,33 @@
   padding: var(--mantine-spacing-xs) 0;
 }
 
+/* Two levels of grid so the activatable region (.rowContent) can hold the three data columns
+   while the remove button stays a sibling rather than a descendant — see the ARIA note in
+   ElementBuilder. */
 .row {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(120px, 160px) minmax(200px, 1.4fr) 28px;
+  grid-template-columns: 1fr 28px;
   gap: var(--mantine-spacing-md);
   align-items: start;
+}
+
+.rowContent {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 160px) minmax(200px, 1.4fr);
+  gap: var(--mantine-spacing-md);
+  align-items: start;
+}
+
+/* The row itself carries the hover/selected styling, so the inner button must not add its own
+   focus box on click; keyboard focus still shows through :focus-visible. */
+.rowContent:focus {
+  outline: none;
+}
+
+.rowContent:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-5);
+  outline-offset: 2px;
+  border-radius: var(--mantine-radius-sm);
 }
 
 .columnHeader {
