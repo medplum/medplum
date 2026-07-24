@@ -29,6 +29,7 @@ const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const exactLocalBundleReference = new RegExp(`^${localBundleReference.source}$`, localBundleReference.flags);
 
 interface BundleEntryIdentity {
   placeholder: string;
@@ -403,6 +404,19 @@ export class BatchProcessor {
         );
         continue;
       }
+
+      // An invalid fullUrl is a structural error that makes the bundle's reference
+      // graph undefined — fail the entire bundle so we don't persist invalid pointers
+      const fullUrl = entry.fullUrl;
+      if (fullUrl?.startsWith('http')) {
+        // We don't validate "http" and "https" URLs, as we assume that they are not used as
+        // reference replacements inside the batch/transaction.
+      } else if (fullUrl && !exactLocalBundleReference.test(fullUrl)) {
+        throw new OperationOutcomeError(
+          badRequest('Invalid fullUrl: must be a valid UUID URN', `Bundle.entry[${i}].fullUrl`)
+        );
+      }
+
       const outcome = await this.preprocessEntry(entry, i, seenIdentities);
       if (outcome) {
         if (!this.isTransaction()) {
