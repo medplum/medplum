@@ -35,6 +35,7 @@ import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { smartHealthLinkRouter } from './fhir/operations/smarthealthlinks';
+import { closeAgentCallbackSubscriber } from './fhir/operations/utils/agentcallback';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
@@ -280,6 +281,7 @@ export async function shutdownApp(): Promise<void> {
 
   await closeWorkers();
   await closeDatabase();
+  closeAgentCallbackSubscriber();
   await closeRedis();
   closeRateLimiter();
 
