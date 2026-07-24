@@ -14,7 +14,7 @@ import classes from './AIRealTimeQuestionnaireForm.module.css';
 import type { QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireForm } from './QuestionnaireForm';
 
-const SILENCE_DEBOUNCE_MS = 3000;
+const DEFAULT_SILENCE_DEBOUNCE_MS = 500;
 const DEFAULT_IDLE_LABEL = 'Start Dictation to complete this form with your voice';
 const TRANSCRIPT_PLACEHOLDER = 'Start speaking to see your transcribed words...';
 const VOICE_TRANSCRIPT_EXTENSION_URL = 'https://medplum.com/ai-voice-transcript';
@@ -41,10 +41,11 @@ export interface AIRealTimeQuestionnaireFormProps extends QuestionnaireFormProps
   readonly aiModel?: string;
   readonly onTranscript?: (fullTranscript: string, chunk: string) => void;
   readonly voiceInstructions?: ReactNode;
+  readonly silenceDebounceMs?: number;
 }
 
 export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormProps): JSX.Element {
-  const { aiModel, onTranscript, voiceInstructions, ...questionnaireFormProps } = props;
+  const { aiModel, onTranscript, voiceInstructions, silenceDebounceMs, ...questionnaireFormProps } = props;
   const medplum = useMedplum();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(
     props.questionnaireResponse as QuestionnaireResponse | undefined
@@ -234,7 +235,7 @@ export function AIRealTimeQuestionnaireForm(props: AIRealTimeQuestionnaireFormPr
       .catch((err) =>
         showNotification({ color: 'red', message: `Error flushing transcript: ${normalizeErrorString(err)}` })
       );
-  }, SILENCE_DEBOUNCE_MS);
+  }, silenceDebounceMs ?? DEFAULT_SILENCE_DEBOUNCE_MS);
 
   useEffect(() => {
     if (status === 'speech_stopped') {
