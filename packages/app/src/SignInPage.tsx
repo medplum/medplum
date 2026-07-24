@@ -34,6 +34,7 @@ export function SignInPage(): JSX.Element {
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}
+      externalAuthDomain={searchParams.get('domain') || undefined}
     >
       <Logo size={32} />
       {searchParams.get('project') !== 'new' && (

@@ -122,4 +122,62 @@ describe('Method', () => {
       .send({ email: 'alice@' + randomUUID() + '.com' });
     expect(res2).toHaveStatus(200);
   });
+
+  test('Missing email and domain parameters', async () => {
+    const res = await request(app).post('/auth/method').type('json').send({});
+    expect(res.status).toBe(400);
+  });
+
+  test('Domain parameter', async () => {
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      systemRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    // Domain config found via domain parameter (no email required)
+    const res1 = await request(app).post('/auth/method').type('json').send({ domain });
+    expect(res1.status).toBe(200);
+    expect(res1.body.domain).toBe(domain);
+    expect(res1.body.authorizeUrl).toBeDefined();
+
+    // Domain config not found
+    const res2 = await request(app)
+      .post('/auth/method')
+      .type('json')
+      .send({ domain: randomUUID() + '.com' });
+    expect(res2.status).toBe(200);
+    expect(res2.body).toStrictEqual({});
+  });
+
+  test('Domain parameter case sensitivity', async () => {
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      systemRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    // Domain lookup is case-insensitive
+    const res = await request(app).post('/auth/method').type('json').send({ domain: domain.toUpperCase() });
+    expect(res.status).toBe(200);
+    expect(res.body.authorizeUrl).toBeDefined();
+  });
 });

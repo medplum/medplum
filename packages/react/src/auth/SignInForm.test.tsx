@@ -15,9 +15,9 @@ function mockFetch(url: string, options: any): Promise<any> {
   let result: any;
 
   if (options.method === 'POST' && url.endsWith('/auth/method')) {
-    const { email } = JSON.parse(options.body);
+    const { email, domain } = JSON.parse(options.body);
     status = 200;
-    if (email === 'alice@external.example.com') {
+    if (email === 'alice@external.example.com' || domain === 'external.example.com') {
       result = {
         authorizeUrl: 'https://external.example.com/authorize',
         domain: 'external.example.com',
@@ -786,6 +786,26 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(assignSpy).toHaveBeenCalled());
     expect(assignSpy).toHaveBeenCalled();
+  });
+
+  test('externalAuthDomain initiates external auth without typing an email', async () => {
+    const assignSpy = vi.spyOn(locationUtils, 'assign').mockImplementation(() => {});
+    assignSpy.mockClear();
+
+    await setup({ externalAuthDomain: 'external.example.com' });
+
+    await waitFor(() => expect(assignSpy).toHaveBeenCalled());
+    expect(assignSpy).toHaveBeenCalledWith(expect.stringContaining('https://external.example.com/authorize'));
+  });
+
+  test('externalAuthDomain without a configured provider shows an error', async () => {
+    const assignSpy = vi.spyOn(locationUtils, 'assign').mockImplementation(() => {});
+    assignSpy.mockClear();
+
+    await setup({ externalAuthDomain: 'no-config.example.com' });
+
+    await waitFor(() => expect(screen.getByText(/No identity provider configured/)).toBeInTheDocument());
+    expect(assignSpy).not.toHaveBeenCalled();
   });
 
   test('MFA -- Success', async () => {

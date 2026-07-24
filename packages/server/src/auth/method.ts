@@ -17,11 +17,17 @@ import { makeValidationMiddleware } from '../util/validator';
  */
 
 export const methodValidator = makeValidationMiddleware([
-  body('email').isEmail().withMessage('Valid email address is required'),
+  body('domain').optional().isString().withMessage('Domain must be a string'),
+  body('email')
+    .if((_value, { req }) => !req.body.domain)
+    .isEmail()
+    .withMessage('Valid email address is required'),
 ]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
-  const externalAuth = await isExternalAuth(req.body.email);
+  const externalAuth = req.body.domain
+    ? await getExternalAuthForDomain(req.body.domain)
+    : await isExternalAuth(req.body.email);
   if (externalAuth) {
     // Return the authorization URL
     // This indicates the client should redirect to the authorization URL
@@ -40,7 +46,15 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
  * @returns External auth url if available. Otherwise undefined.
  */
 export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
-  const domain = email.split('@')[1];
+  return getExternalAuthForDomain(email.split('@')[1]);
+}
+
+/**
+ * Checks if the given email domain is configured for external authentication.
+ * @param domain - The email domain, e.g. "example.com".
+ * @returns External auth url if available. Otherwise undefined.
+ */
+async function getExternalAuthForDomain(domain: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
   const domainConfig = await getDomainConfiguration(domain);
   if (!domainConfig) {
     return undefined;
