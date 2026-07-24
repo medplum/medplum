@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
-import type { MedicationOrderRequest, MedicationOrderResponse } from '@medplum/core';
+import { notifications, Notifications } from '@mantine/notifications';
+import type { MedicationOrderRequest, MedicationOrderResponse, WithId } from '@medplum/core';
 import {
   MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
   MEDICATION_REQUEST_STATUS_REASON_SYSTEM,
+  OperationOutcomeError,
 } from '@medplum/core';
 import type { Medication, MedicationRequest } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
@@ -38,6 +39,11 @@ describe('OrderMedicationPage', () => {
     vi.clearAllMocks();
     searchMedicationsMock.mockResolvedValue([]);
     orderMedicationMock.mockReset();
+    // Prevent notifications from leaking across test cases — @mantine/notifications
+    // keeps its store as a module-level singleton, so an error toast raised by one
+    // test (e.g. the bot-rejection test below) otherwise reappears in a later test's
+    // DOM the moment <Notifications /> is remounted.
+    notifications.clean();
   });
 
   test('shows single, compound, and order-set tabs', async () => {
@@ -145,6 +151,51 @@ describe('OrderMedicationPage', () => {
     // And the legacy hard-delete path must NOT fire — that would erase the orphan record
     // and remove the only handle vendor reconciliation has.
     expect(deleteSpy).not.toHaveBeenCalledWith('MedicationRequest', expect.any(String));
+  });
+
+  test('infers days supply from a hyphenated compound number in the sig', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+    searchMedicationsMock.mockResolvedValue([
+      {
+        resourceType: 'Medication',
+        id: 'med-aspirin-81',
+        code: { text: 'Aspirin 81 mg tablet' },
+      },
+    ]);
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i);
+    await user.type(searchInput, 'aspirin');
+    await user.click(await screen.findByText('Aspirin 81 mg tablet'));
+
+    const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
+    await user.clear(sigInput);
+    await user.type(sigInput, 'Take 1 tablet every twenty-four hours');
+    const quantityInput = screen.getByLabelText('Quantity to dispense');
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '48');
+
+    await waitFor(() => {
+      expect(screen.getAllByLabelText('Days supply')[0]).toHaveValue('48');
+    });
   });
 
   test('medication title combines the drug name with the selected formulation, not just the strength', async () => {
@@ -300,5 +351,142 @@ describe('OrderMedicationPage', () => {
 
     expect(await screen.findByRole('button', { name: /^Prescribe now$/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Add to cart$/ })).not.toBeInTheDocument();
+  });
+
+  test('re-prescription mode retries rejected and uncertain replacements without retaining a status reason', async () => {
+    const medplum = new MockClient();
+    medplum.setProfile(DrAliceSmith);
+    const readReference = vi.spyOn(medplum, 'readReference').mockResolvedValue(DrAliceSmith);
+    const replacement: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'replacement-rx',
+      status: 'draft',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      requester: { reference: `Practitioner/${DrAliceSmith.id}` },
+      priorPrescription: { reference: 'MedicationRequest/failed-rx' },
+      medicationCodeableConcept: {
+        text: 'Diovan 80 mg tablet',
+        coding: [{ system: 'http://hl7.org/fhir/sid/ndc', code: '00078035834' }],
+      },
+      dosageInstruction: [{ text: 'Take 1 tablet daily', patientInstruction: 'With water' }],
+      dispenseRequest: {
+        quantity: { value: 90, unit: 'C48542' },
+        numberOfRepeatsAllowed: 1,
+        expectedSupplyDuration: { value: 90, unit: 'days' },
+      },
+      note: [{ text: 'Route to the new pharmacy' }],
+      substitution: { allowedBoolean: false },
+      authoredOn: '2026-07-15',
+    };
+    orderMedicationMock
+      .mockRejectedValueOnce(
+        new OperationOutcomeError({
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'not-found',
+              details: { text: 'Payer Organization not found' },
+            },
+          ],
+        })
+      )
+      .mockRejectedValueOnce(ORDER_MEDICATION_REJECTION)
+      .mockResolvedValueOnce({
+        launchUrl: 'https://ssu.example/widget/replacement',
+        medicationRequestId: replacement.id,
+      });
+    const updateResource = vi.spyOn(medplum, 'updateResource');
+    const createResource = vi.spyOn(medplum, 'createResource');
+    const onOrderComplete = vi.fn();
+    const onAddedToCart = vi.fn();
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={
+                    <OrderMedicationPage
+                      patient={HomerSimpson}
+                      replacementMedicationRequest={replacement}
+                      onOrderComplete={onOrderComplete}
+                      onAddedToCart={onAddedToCart}
+                    />
+                  }
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    expect((await screen.findAllByText('Diovan 80 mg tablet')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Alice Smith/i)).length).toBeGreaterThan(0);
+    expect(readReference).not.toHaveBeenCalledWith(replacement.requester);
+    const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
+    expect(sigInput).toHaveValue('Take 1 tablet daily');
+    expect(screen.getByLabelText('Quantity to dispense')).toHaveValue('90');
+    expect(screen.getByLabelText('Notes to pharmacist')).toHaveValue('Route to the new pharmacy');
+    expect(screen.queryByRole('button', { name: 'Add to cart' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Compound' })).not.toBeInTheDocument();
+
+    await user.clear(sigInput);
+    await user.type(sigInput, 'Take 2 tablets daily');
+    const quantityInput = screen.getByLabelText('Quantity to dispense');
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '60');
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    expect((await screen.findAllByText('Payer Organization not found')).length).toBeGreaterThan(0);
+    expect(updateResource.mock.calls.some(([resource]) => (resource as MedicationRequest).status === 'unknown')).toBe(
+      false
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    expect((await screen.findAllByText('bot rejected')).length).toBeGreaterThan(0);
+    expect(updateResource.mock.calls.some(([resource]) => (resource as MedicationRequest).status === 'unknown')).toBe(
+      true
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Re-prescribe' }));
+
+    await waitFor(() => {
+      expect(orderMedicationMock).toHaveBeenCalledTimes(3);
+      expect(orderMedicationMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: HomerSimpson.id,
+          medicationRequestId: replacement.id,
+        })
+      );
+    });
+    const updatedReplacement = updateResource.mock.calls
+      .map(([resource]) => resource as MedicationRequest)
+      .filter((resource) => resource.id === replacement.id && resource.status === 'draft')
+      .at(-1);
+    expect(updatedReplacement).toMatchObject({
+      id: replacement.id,
+      priorPrescription: replacement.priorPrescription,
+      dosageInstruction: [{ text: 'Take 2 tablets daily', patientInstruction: 'With water' }],
+      dispenseRequest: expect.objectContaining({ quantity: { value: 60, unit: 'C48542' } }),
+    });
+    expect(updatedReplacement?.statusReason).toBeUndefined();
+    expect(
+      createResource.mock.calls.some(
+        ([resource]) => (resource as MedicationRequest).resourceType === 'MedicationRequest'
+      )
+    ).toBe(false);
+    expect(onOrderComplete).toHaveBeenCalledWith({
+      launchUrl: 'https://ssu.example/widget/replacement',
+      medicationRequestId: replacement.id,
+    });
   });
 });

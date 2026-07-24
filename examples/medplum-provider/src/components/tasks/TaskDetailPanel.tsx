@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
+import { Box, Flex, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import {
@@ -15,6 +15,8 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
+import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
+import { isScriptSureMessageTask } from './ScriptSureMessageTaskActions.utils';
 import classes from './TaskBoard.module.css';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
@@ -56,6 +58,11 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
     onTaskChange?.(updatedTask);
   };
 
+  const handleServerTaskChange = (updatedTask: Task): void => {
+    setTask(updatedTask);
+    onTaskChange?.(updatedTask);
+  };
+
   const handleDeleteTask = async (deletedTask: Task): Promise<void> => {
     try {
       await medplum.deleteResource('Task', deletedTask.id as string);
@@ -93,11 +100,24 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
         }}
         className={classes.borderRight}
       >
-        <TaskInputNote
-          task={task}
-          onTaskChange={handleTaskChange}
-          onDeleteTask={onDeleteTask ? handleDeleteTask : undefined}
-        />
+        {isScriptSureMessageTask(task) ? (
+          <Flex direction="column" h="100%">
+            <ScriptSureMessageTaskActions task={task} onTaskChange={handleServerTaskChange} />
+            <Box flex={1} mih={0}>
+              <TaskInputNote
+                task={task}
+                onTaskChange={handleTaskChange}
+                onDeleteTask={onDeleteTask ? handleDeleteTask : undefined}
+              />
+            </Box>
+          </Flex>
+        ) : (
+          <TaskInputNote
+            task={task}
+            onTaskChange={handleTaskChange}
+            onDeleteTask={onDeleteTask ? handleDeleteTask : undefined}
+          />
+        )}
       </Box>
 
       <Box h="100%" w="400px">
