@@ -30,6 +30,7 @@ import type {
   Binary,
   Bot,
   Device,
+  Project,
   Reference,
   Resource,
   SearchParameter,
@@ -103,6 +104,12 @@ export interface MockClientOptions extends Pick<
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
   /**
+   * Override the active project returned by `getProject()`. Defaults to `TestProject`,
+   * which has all features enabled. Specifying null results in `getProject()` returning
+   * undefined, as if there were no active project.
+   */
+  readonly project?: Project | null;
+  /**
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
@@ -120,6 +127,7 @@ export type MockFetchOverrideOptions = {
 interface MockClientTestMethods {
   withSeeding: <T>(fn: () => T | Promise<T>) => Promise<T>;
   setProfile: (profile: ProfileResource | undefined) => void;
+  setProject: (project: Project | undefined) => void;
   setAgentAvailable: (value: boolean) => void;
   setSubscriptionManager: (subManager: MockSubscriptionManager) => void;
 }
@@ -132,6 +140,7 @@ export class MockClient extends MedplumClient {
   activeLoginOverride?: LoginState;
   private agentAvailable = true;
   private profile: ReturnType<MedplumClient['getProfile']>;
+  private project: Project | undefined;
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
@@ -180,6 +189,8 @@ export class MockClient extends MedplumClient {
     this.client = client;
     // if null is specified, treat it as if no one is logged in
     this.profile = clientOptions?.profile === null ? undefined : (clientOptions?.profile ?? DrAliceSmith);
+    // if null is specified, treat it as if there is no active project
+    this.project = clientOptions?.project === null ? undefined : (clientOptions?.project ?? TestProject);
     this.debug = !!clientOptions?.debug;
   }
 
@@ -193,6 +204,10 @@ export class MockClient extends MedplumClient {
       },
       setProfile: (profile: ProfileResource | undefined): void => {
         this.profile = profile;
+        this.dispatchEvent({ type: 'change' });
+      },
+      setProject: (project: Project | undefined): void => {
+        this.project = project;
         this.dispatchEvent({ type: 'change' });
       },
       setAgentAvailable: (value: boolean): void => {
@@ -226,6 +241,10 @@ export class MockClient extends MedplumClient {
 
   getProfile(): ProfileResource | undefined {
     return this.profile;
+  }
+
+  getProject(): Project | undefined {
+    return this.project;
   }
 
   getUserConfiguration(): WithId<UserConfiguration> | undefined {

@@ -308,13 +308,18 @@ describe('SchedulePage', () => {
 
   describe('Settings gear icon', () => {
     test('when the scheduling feature is disabled the gear icon is hidden', async () => {
+      medplum.mock.setProject({
+        resourceType: 'Project',
+        id: 'project-123',
+        features: [],
+      });
       await act(async () => setup());
       await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
       expect(screen.queryByRole('button', { name: 'Schedule settings' })).not.toBeInTheDocument();
     });
 
     test('when the scheduling feature is enabled the gear icon is visible', async () => {
-      medplum.getProject = vi.fn().mockReturnValue({
+      medplum.mock.setProject({
         resourceType: 'Project',
         id: 'project-123',
         features: ['scheduling'],
