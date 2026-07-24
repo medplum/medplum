@@ -8,7 +8,7 @@ import { ListWithDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { NewTaskModal } from './NewTaskModal';
 import { TaskDetailPanel } from './TaskDetailPanel';
@@ -57,11 +57,20 @@ export function TaskBoard({
 }: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tasks, setTasks] = useState<WithId<Task>[]>([]);
   const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
   const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
+
+  // Open the New Task modal when navigated here with that intent (e.g. from the global search).
+  const newTaskSignal = (location.state as { newTask?: number } | null)?.newTask;
+  useEffect(() => {
+    if (newTaskSignal) {
+      setNewTaskModalOpened(true);
+    }
+  }, [newTaskSignal]);
   const [total, setTotal] = useState<number | undefined>(undefined);
   const requestIdRef = useRef(0);
   const fetchingRef = useRef(false);
