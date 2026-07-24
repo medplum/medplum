@@ -35,6 +35,7 @@ import {
   abstractProperty,
   addDescendants,
   addPropertyFilter,
+  buildFilterMembershipExpression,
   buildValueSetMembershipPredicate,
   findAncestor,
   findTerminologyResource,
@@ -328,13 +329,19 @@ function enterValueSetReference(
 }
 
 /**
- * Intersects multiple referenced ValueSets within a single pure-`valueSet` include. The first reference drives
- * the expansion (bounded by its own limit); each remaining reference then filters those candidates down to codes
- * that are also members, via a batched membership check keyed on `(system, code)`.
+ * Intersects multiple referenced ValueSets within a single pure-`valueSet` include. A code is in the result iff it
+ * is a member of *every* referenced ValueSet, so the intersection is pushed entirely into SQL: for each candidate
+ * system, a base query over that system ANDs one membership predicate per reference. This keeps the intersection
+ * order-independent and correctly bounded/pageable by `LIMIT`/`OFFSET`, rather than materializing one reference and
+ * filtering it (which truncated to `count` *before* intersecting, making the result order-dependent and unpageable).
+ *
+ * Candidate systems are bounded by the first reference: the intersection is a subset of every member set, so it can
+ * only contain systems that appear in reference[0]. Each system is then intersected independently and results are
+ * paged across systems.
  * @param repo - The repository.
- * @param urls - The referenced ValueSet URLs; the first is the driver.
+ * @param urls - The referenced ValueSet URLs (all are intersected symmetrically).
  * @param expansion - The expansion being accumulated.
- * @param params - The expand parameters (notably `count`, which bounds the driver).
+ * @param params - The expand parameters (notably `count`/`offset`).
  * @param terminologyResources - Resolution chain for cycle detection.
  */
 async function intersectReferencedValueSets(
@@ -344,98 +351,145 @@ async function intersectReferencedValueSets(
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>>
 ): Promise<void> {
-  const driver = await findTerminologyResource<ValueSet>(repo, 'ValueSet', urls[0]);
-  const marker = enterValueSetReference(terminologyResources, urls[0], driver);
-  let candidates: ValueSetExpansionContains[];
-  try {
-    candidates = await computeExpansion(repo, driver, params, terminologyResources);
-  } finally {
-    delete terminologyResources[marker];
+  const references: WithId<ValueSet>[] = [];
+  for (const url of urls) {
+    const ref = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
+    terminologyResources[ref.url as string] = ref;
+    references.push(ref);
   }
 
-  for (let i = 1; i < urls.length && candidates.length; i++) {
-    const referenced = await findTerminologyResource<ValueSet>(repo, 'ValueSet', urls[i]);
-    terminologyResources[referenced.url as string] = referenced;
-    candidates = await filterCandidatesByMembership(repo, candidates, referenced, terminologyResources);
+  const candidateSystems = await collectValueSetSystems(repo, references[0], new Set());
+  if (!candidateSystems) {
+    // Could not bound the intersection's systems (unresolvable nested reference). Fail safe: an empty result is
+    // preferable to scanning every code system, and matches the membership path's untranslatable behavior.
+    getLogger().warn('ValueSet $expand: could not determine systems for intersection; yielding empty', {
+      valueSet: references[0].url,
+    });
+    return;
   }
 
-  expansion.push(...candidates);
+  const db = getAuthenticatedContext().repo.getDatabaseClient(
+    repoAccess.sqlRead('CodeSystem', { source: 'expand.intersectReferencedValueSets' })
+  );
+  const maxCount = params.count ?? MAX_EXPANSION_SIZE;
+  let toSkip = params.offset ?? 0;
+
+  for (const systemUrl of candidateSystems) {
+    if (expansion.length >= maxCount) {
+      break;
+    }
+    const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', systemUrl).catch(() => undefined);
+    if (!codeSystem) {
+      continue; // Cannot resolve the system → cannot confirm membership → drop (fail safe)
+    }
+    terminologyResources[systemUrl] = codeSystem;
+    await hydrateCodeSystemProperties(db, codeSystem);
+
+    // A code in this system is in the intersection iff it is a member of every referenced ValueSet.
+    const query = new SelectQuery('Coding')
+      .column('id')
+      .column('code')
+      .column('display')
+      .column('synonymOf')
+      .column('language')
+      .where('system', '=', codeSystem.id);
+    let translatable = true;
+    for (const ref of references) {
+      const predicate = await buildValueSetMembershipPredicate(repo, codeSystem, 'Coding', ref, terminologyResources);
+      if (!predicate) {
+        translatable = false;
+        break;
+      }
+      query.whereExpr(predicate);
+    }
+    if (!translatable) {
+      getLogger().warn('ValueSet $expand: referenced ValueSet membership could not be translated; dropping system', {
+        system: systemUrl,
+      });
+      continue; // Fail safe: exclude this system rather than include over-broadly
+    }
+
+    // Apply shared expansion filters (text filter, language, excludeNotForUI) and page across systems in memory:
+    // fetch enough rows to satisfy any outstanding offset plus the remaining budget for this system.
+    applyExpansionFilters(query, codeSystem, { ...params, offset: 0, count: toSkip + (maxCount - expansion.length) });
+    const rows: ExpansionRow[] = await query.execute(db);
+    if (toSkip >= rows.length) {
+      toSkip -= rows.length;
+      continue;
+    }
+    // Collect synonyms/designations per system: `addExpansionItems` dedupes by code alone, so it must not see
+    // codes from other systems (the same code can legitimately exist in multiple systems).
+    const systemItems: ValueSetExpansionContains[] = [];
+    addExpansionItems(rows.slice(toSkip), systemItems, codeSystem);
+    expansion.push(...systemItems);
+    toSkip = 0;
+  }
 }
 
 /**
- * Filters a list of candidate codings down to those that are members of the referenced ValueSet. Candidates are
- * grouped by system, and for each system a single indexed query checks membership over just those codes.
+ * Collects the set of code system URLs that a ValueSet can contain, from its usable pre-expansion and/or its
+ * `compose.include` chain (recursing through nested `valueSet` references). Used to bound the candidate systems of
+ * an intersection.
  * @param repo - The repository.
- * @param candidates - The candidate codings to filter.
- * @param referenced - The ValueSet that survivors must be members of.
- * @param terminologyResources - Resolution chain for cycle detection.
- * @returns The candidates that are members of `referenced`, in their original order.
+ * @param valueSet - The ValueSet whose systems to collect.
+ * @param seen - URLs already visited on this path, to guard against reference cycles.
+ * @returns The set of system URLs, or `undefined` if a nested reference cannot be resolved (systems indeterminate).
  */
-async function filterCandidatesByMembership(
+async function collectValueSetSystems(
   repo: Repository,
-  candidates: ValueSetExpansionContains[],
-  referenced: WithId<ValueSet>,
-  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>>
-): Promise<ValueSetExpansionContains[]> {
-  const db = getAuthenticatedContext().repo.getDatabaseClient(
-    repoAccess.sqlRead('CodeSystem', { source: 'expand.filterCandidatesByMembership' })
-  );
+  valueSet: WithId<ValueSet>,
+  seen: Set<string>
+): Promise<Set<string> | undefined> {
+  const systems = new Set<string>();
 
-  const bySystem = new Map<string, ValueSetExpansionContains[]>();
-  for (const candidate of candidates) {
-    if (candidate.system && candidate.code) {
-      const group = bySystem.get(candidate.system);
-      if (group) {
-        group.push(candidate);
-      } else {
-        bySystem.set(candidate.system, [candidate]);
+  const preExpansion = valueSet.expansion;
+  if (
+    preExpansion?.contains?.length &&
+    (!preExpansion.total || preExpansion.total === preExpansion.contains.length)
+  ) {
+    collectContainsSystems(preExpansion.contains, systems);
+  }
+
+  for (const include of valueSet.compose?.include ?? EMPTY) {
+    if (include.system) {
+      systems.add(include.system);
+    }
+    for (const url of include.valueSet ?? EMPTY) {
+      if (seen.has(url)) {
+        continue; // Cycle on this path; reported during predicate translation, not here
+      }
+      seen.add(url);
+      const nested = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url).catch(() => undefined);
+      if (!nested) {
+        return undefined; // Unresolvable nested reference → cannot bound systems (fail safe)
+      }
+      const nestedSystems = await collectValueSetSystems(repo, nested, seen);
+      if (!nestedSystems) {
+        return undefined;
+      }
+      for (const s of nestedSystems) {
+        systems.add(s);
       }
     }
   }
 
-  const memberKeys = new Set<string>();
-  for (const [system, items] of bySystem) {
-    let codeSystem = terminologyResources[system] as WithId<CodeSystem> | undefined;
-    if (!codeSystem) {
-      codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', system).catch(() => undefined);
-      if (!codeSystem) {
-        continue; // Unable to resolve the system → drop these candidates (cannot confirm membership)
-      }
-      terminologyResources[system] = codeSystem;
-    }
-    await hydrateCodeSystemProperties(db, codeSystem);
+  return systems;
+}
 
-    const predicate = await buildValueSetMembershipPredicate(
-      repo,
-      codeSystem,
-      'Coding',
-      referenced,
-      terminologyResources
-    );
-    if (!predicate) {
-      getLogger().warn('ValueSet $expand: referenced ValueSet membership could not be translated; dropping codes', {
-        valueSet: referenced.id,
-        system,
-      });
-      continue; // Fail safe: cannot confirm membership, exclude rather than include over-broadly
+/**
+ * Adds the systems referenced by a (possibly nested) pre-computed expansion into the given set.
+ * @param contains - The `expansion.contains` entries to scan.
+ * @param systems - The set to add systems to.
+ */
+function collectContainsSystems(contains: ValueSetExpansionContains[], systems: Set<string>): void {
+  for (const c of contains) {
+    if (c.system) {
+      systems.add(c.system);
     }
-
-    const rows = await new SelectQuery('Coding')
-      .column('code')
-      .where('system', '=', codeSystem.id)
-      .where(
-        'code',
-        'IN',
-        items.map((i) => i.code)
-      )
-      .whereExpr(predicate)
-      .execute(db);
-    for (const row of rows) {
-      memberKeys.add(system + '|' + row.code);
+    if (c.contains?.length) {
+      collectContainsSystems(c.contains, systems);
     }
   }
-
-  return candidates.filter((c) => c.system && c.code && memberKeys.has(c.system + '|' + c.code));
 }
 
 async function includeInExpansion(
@@ -584,6 +638,21 @@ function applyValueSetFilters(
           return undefined;
         }
         query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
+        break;
+      }
+
+      case 'is-not-a':
+      case 'generalizes':
+      case 'not-in':
+      case 'regex': {
+        // `generalizes` translates to a bounded ancestor semi-join (undefined → skip include when the CodeSystem has
+        // no usable hierarchy). `is-not-a`/`not-in`/`regex` are unsupported and throw a loud error from
+        // buildFilterMembershipExpression rather than silently returning an empty result — see that function.
+        const expr = buildFilterMembershipExpression(codeSystem, query.effectiveTableName, condition);
+        if (!expr) {
+          return undefined;
+        }
+        query.whereExpr(expr);
         break;
       }
 

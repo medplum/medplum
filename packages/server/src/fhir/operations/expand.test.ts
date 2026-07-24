@@ -1730,10 +1730,11 @@ describe('Expand', () => {
 
     test('unsatisfiable membership fails safe to an empty include', async () => {
       // Both ways a referenced ValueSet's membership cannot be pushed into the base system's SQL should
-      // yield an empty include rather than an over-broad one that silently drops the intersection criterion
+      // yield an empty include rather than an over-broad one that silently drops the intersection criterion.
+      // (Note: this is distinct from the unsupported `regex`/`is-not-a`/`not-in` ops, which fail loudly instead.)
       const differentSystem = await postResource(valueSet({ system: otherSystem, concept: [{ code: 'CHD' }] }));
       const untranslatableFilter = await postResource(
-        valueSet({ system, filter: [{ property: 'display', op: 'regex', value: '.*' }] })
+        valueSet({ system, filter: [{ property: 'no-such-property', op: '=', value: 'x' }] })
       );
 
       for (const referenced of [differentSystem, untranslatableFilter]) {
@@ -1787,7 +1788,7 @@ describe('Expand', () => {
       ]);
     });
 
-    test('Intersection preserves expansion order across systems', async () => {
+    test('Intersection across systems returns every member, grouped by system', async () => {
       const driver = await postResource({
         resourceType: 'ValueSet',
         status: 'active',
@@ -1814,12 +1815,88 @@ describe('Expand', () => {
       const res = await expand(outer.url);
       expect(res).toHaveStatus(200);
       const expansion = res.body.expansion as ValueSetExpansion;
-      expect(expansion.contains?.map((c) => `${c.system}|${c.code}`)).toStrictEqual([
-        `${system}|PET`,
-        `${otherSystem}|CHD`,
-        `${system}|CHD`,
+      // The intersection is pushed into per-system SQL, so results are grouped by system (in the order the systems
+      // first appear in the driver) rather than preserving the driver's cross-system interleaving. Crucially, the
+      // same code in two different systems (`system|CHD` and `otherSystem|CHD`) must both survive — they are not
+      // collapsed. Within a system, ordering follows the underlying index scan.
+      expect(expansion.contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+        { system, code: 'PET', display: 'pet' },
+        { system: otherSystem, code: 'CHD', display: 'other child' },
+      ]);
+      // System grouping: both `system` entries precede the `otherSystem` entry.
+      const systemsInOrder = expansion.contains?.map((c) => c.system);
+      expect(systemsInOrder?.indexOf(otherSystem)).toBe(2);
+    });
+
+    test('Multiple ValueSet references intersect order-independently and are not truncated before intersecting', async () => {
+      // A ⊇ B: is-a PAR = {PAR, CHD, PET}; B = {CHD, PET}. The true intersection is {CHD, PET}. With count=1 the
+      // old driver-then-filter approach truncated the *driver* to 1 row before intersecting, so [A,B] and [B,A]
+      // returned different (and sometimes empty) results. The intersection must instead be order-independent and
+      // still reachable under a small count, with `total` signalling that more members exist.
+      const a = await postResource(valueSet({ system, filter: [{ property: 'concept', op: 'is-a', value: 'PAR' }] }));
+      const b = await postResource(valueSet({ system, concept: [{ code: 'CHD' }, { code: 'PET' }] }));
+
+      async function expandCount1(...urls: string[]): Promise<ValueSetExpansion> {
+        const outer = await postResource(valueSet({ valueSet: urls }));
+        const res = await request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(outer.url)}&count=1`)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res).toHaveStatus(200);
+        return res.body.expansion as ValueSetExpansion;
+      }
+
+      const forward = await expandCount1(a.url, b.url);
+      const reverse = await expandCount1(b.url, a.url);
+
+      // Both orderings agree, return exactly one code (the count), and report ≥2 total available.
+      expect(forward.contains).toHaveLength(1);
+      expect(reverse.contains).toStrictEqual(forward.contains);
+      expect(forward.total).toBeGreaterThanOrEqual(2);
+      // The single returned code is a genuine member of the intersection {CHD, PET}, never PAR (only in A).
+      expect(['CHD', 'PET']).toContain(forward.contains?.[0]?.code);
+    });
+
+    test('generalizes filter selects the code together with its ancestors', async () => {
+      // generalizes CHD selects CHD together with its ancestors → {CHD, PAR}. Supported because the ancestor set is
+      // bounded by hierarchy depth (a handful of rows), unlike the unsupported full-scan ops below.
+      const generalizes = await postResource(
+        valueSet({ system, filter: [{ property: 'concept', op: 'generalizes', value: 'CHD' }] })
+      );
+      const generalizesRes = await expand(generalizes.url);
+      expect(generalizesRes).toHaveStatus(200);
+      expect((generalizesRes.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+        { system, code: 'PAR', display: 'parent' },
       ]);
     });
+
+    // `regex`, `is-not-a`, and `not-in` require a non-sargable full scan of the CodeSystem and do not scale to large
+    // code systems (e.g. SNOMED/LOINC), so they are unsupported: expansion must fail loudly (HTTP 400) rather than
+    // silently return an empty result that would masquerade as "no matching codes" and reject valid codes.
+    test.each(['is-not-a', 'not-in', 'regex'] as const)(
+      'unsupported filter op "%s" fails loudly rather than returning an empty expansion',
+      async (op) => {
+        // (1) As a direct include filter
+        const direct = await postResource(valueSet({ system, filter: [{ property: 'concept', op, value: 'CHD' }] }));
+        const directRes = await expand(direct.url);
+        expect(directRes).toHaveStatus(400);
+        expect(directRes.body.issue?.[0]?.details?.text).toMatch(
+          new RegExp(`Unsupported ValueSet filter operation "${op}"`)
+        );
+
+        // (2) When reached transitively through a referenced ValueSet in an intersection, the failure must still
+        // surface (never degrade to a silently-empty intersection).
+        const referenced = await postResource(
+          valueSet({ system, filter: [{ property: 'concept', op, value: 'CHD' }] })
+        );
+        const outer = await postResource(
+          valueSet({ system, concept: [{ code: 'CHD' }], valueSet: [referenced.url] })
+        );
+        const outerRes = await expand(outer.url);
+        expect(outerRes).toHaveStatus(400);
+      }
+    );
 
     test('A → B → A cycle on valueSet include path returns an error', async () => {
       const urlA = 'http://example.com/ValueSet/mixed-cycleA-' + randomUUID();

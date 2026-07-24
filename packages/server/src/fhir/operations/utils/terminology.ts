@@ -509,41 +509,46 @@ async function buildIncludeMembershipTerm(
  * @param baseTableName - Table/alias of the base row.
  * @param filter - The filter to translate.
  * @returns The predicate, or `undefined` if the filter op or property cannot be translated (fail safe).
+ * @throws OperationOutcomeError for the unsupported `regex`/`is-not-a`/`not-in` operators, which cannot be expanded
+ *   efficiently against large code systems (fails loudly rather than returning a misleading empty result).
  */
-function buildFilterMembershipExpression(
+export function buildFilterMembershipExpression(
   baseCodeSystem: WithId<CodeSystem>,
   baseTableName: string,
   filter: ValueSetComposeIncludeFilter
 ): Expression | undefined {
   switch (filter.op) {
+    // `regex`, `is-not-a`, and `not-in` are intentionally unsupported. Each can only be evaluated by a non-sargable
+    // full scan of the CodeSystem — a property-partition regex scan for `regex`, or a whole-subtree/property
+    // materialization followed by a negation that cannot seed an index for `is-not-a`/`not-in` — which does not
+    // scale to large code systems (e.g. SNOMED/LOINC, ~1M codes). No base FHIR or US Core ValueSet relies on these
+    // ops against such systems. Rather than silently returning an empty result — which masquerades as "no matching
+    // codes" and can cause valid codes to be rejected — reject the expansion loudly so the misconfiguration is
+    // visible. See buildFilterMembershipExpression callers; both the direct and intersection paths propagate this.
+    case 'regex':
+    case 'is-not-a':
+    case 'not-in':
+      throw new OperationOutcomeError(
+        badRequest(
+          `Unsupported ValueSet filter operation "${filter.op}" (CodeSystem ${baseCodeSystem.url}): this operator cannot be expanded efficiently and is not supported`
+        )
+      );
     case 'is-a':
     case 'descendent-of': {
-      if (baseCodeSystem.hierarchyMeaning !== 'is-a') {
+      // Hierarchy semi-join: materialize the referenced subtree once (its own recursive CTE) and test membership by id.
+      const idSubquery = buildSubtreeIdSubquery(baseCodeSystem, filter.value, filter.op === 'descendent-of');
+      if (!idSubquery) {
         return undefined;
       }
-      const parentProperty = getParentProperty(baseCodeSystem);
-      if (!parentProperty.id) {
+      return new Condition(new Column(baseTableName, 'id'), 'IN_SUBQUERY', idSubquery);
+    }
+    case 'generalizes': {
+      // `generalizes` selects the provided code and all of its ancestors (concepts it has an is-a relationship to).
+      // The ancestor set is bounded by hierarchy depth (a handful of rows), so this scales safely.
+      const idSubquery = buildAncestorIdSubquery(baseCodeSystem, filter.value);
+      if (!idSubquery) {
         return undefined;
       }
-      // Materialize the referenced subtree once (its own recursive CTE) and semi-join by id
-      const memberQuery = new SelectQuery('Coding')
-        .column('id')
-        .column('code')
-        .column('display')
-        .column('synonymOf')
-        .column('language')
-        .where('system', '=', baseCodeSystem.id);
-      const subtree = addDescendants(
-        memberQuery,
-        baseCodeSystem,
-        parentProperty as WithId<CodeSystemProperty>,
-        filter.value,
-        'cte_member'
-      );
-      if (filter.op !== 'is-a') {
-        subtree.where(new Column(subtree.effectiveTableName, 'code'), '!=', filter.value);
-      }
-      const idSubquery = new SelectQuery('member_subtree', subtree).column('id');
       return new Condition(new Column(baseTableName, 'id'), 'IN_SUBQUERY', idSubquery);
     }
     case '=':
@@ -558,6 +563,93 @@ function buildFilterMembershipExpression(
     default:
       return undefined;
   }
+}
+
+/**
+ * Builds an `id`-selecting subquery for the descendant-or-self subtree rooted at `code` (an `is-a` set) within the
+ * given CodeSystem, wrapped so its recursive CTE is scoped and cannot collide with sibling subtrees in the same
+ * query. Returns `undefined` (fail-safe) when the CodeSystem has no usable `is-a` hierarchy.
+ * @param baseCodeSystem - The CodeSystem to enumerate within (hydrated).
+ * @param code - The root code whose descendants (and, unless `excludeSelf`, itself) are selected.
+ * @param excludeSelf - When true (a `descendent-of` filter), the root code itself is excluded.
+ * @returns The `id` subquery, or `undefined` if the hierarchy is unavailable.
+ */
+function buildSubtreeIdSubquery(
+  baseCodeSystem: WithId<CodeSystem>,
+  code: string,
+  excludeSelf: boolean
+): SelectQuery | undefined {
+  if (baseCodeSystem.hierarchyMeaning !== 'is-a') {
+    return undefined;
+  }
+  const parentProperty = getParentProperty(baseCodeSystem);
+  if (!parentProperty.id) {
+    return undefined;
+  }
+  const memberQuery = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .column('synonymOf')
+    .column('language')
+    .where('system', '=', baseCodeSystem.id);
+  const subtree = addDescendants(
+    memberQuery,
+    baseCodeSystem,
+    parentProperty as WithId<CodeSystemProperty>,
+    code,
+    'cte_member'
+  );
+  if (excludeSelf) {
+    subtree.where(new Column(subtree.effectiveTableName, 'code'), '!=', code);
+  }
+  return new SelectQuery('member_subtree', subtree).column('id');
+}
+
+/**
+ * Builds an `id`-selecting subquery for `code` together with all of its ancestors (the `generalizes` set) within
+ * the given CodeSystem, walking up the parent relationship. Wrapped so its recursive CTE is scoped. Returns
+ * `undefined` (fail-safe) when the CodeSystem has no usable `is-a` hierarchy.
+ * @param baseCodeSystem - The CodeSystem to enumerate within (hydrated).
+ * @param code - The code whose ancestors (and itself) are selected.
+ * @returns The `id` subquery, or `undefined` if the hierarchy is unavailable.
+ */
+function buildAncestorIdSubquery(baseCodeSystem: WithId<CodeSystem>, code: string): SelectQuery | undefined {
+  if (baseCodeSystem.hierarchyMeaning !== 'is-a') {
+    return undefined;
+  }
+  const parentProperty = getParentProperty(baseCodeSystem);
+  if (!parentProperty.id) {
+    return undefined;
+  }
+  const cteName = 'cte_ancestor';
+  const base = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('synonymOf')
+    .where('system', '=', baseCodeSystem.id)
+    .where('code', '=', code);
+
+  // Recursive step: for each node already collected, join up to its parent (Coding is the `target` of the
+  // parent-relationship row whose `coding` is the current node).
+  const step = new SelectQuery('Coding').column('id').column('code').column('synonymOf').where('system', '=', baseCodeSystem.id);
+  const propertyTable = step.getNextJoinAlias();
+  const propertyJoin = new Conjunction([
+    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target')),
+    new Condition(new Column(propertyTable, 'property'), '=', parentProperty.id),
+    new Constant(`"${propertyTable}"."target" > 0`),
+  ]);
+  step.join('INNER JOIN', 'Coding_Property', propertyTable, propertyJoin);
+  const recursiveTable = step.getNextJoinAlias();
+  step.join(
+    'INNER JOIN',
+    cteName,
+    recursiveTable,
+    new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
+  );
+
+  const cte = new SelectQuery(cteName).column('id').withRecursive(cteName, new Union(base, step));
+  return new SelectQuery('ancestor_set', cte).column('id');
 }
 
 /**
