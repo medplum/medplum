@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Text } from '@mantine/core';
-import type { Reference, Resource } from '@medplum/fhirtypes';
+import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import {
   createPharmaciesSection,
   getDefaultSections,
@@ -10,6 +10,7 @@ import {
   useResource,
 } from '@medplum/react';
 import type { JSX } from 'react';
+import { usePatientActionsMenu } from '../../pages/patient/usePatientActionsMenu';
 import { EncounterChart } from '../encounter/EncounterChart';
 import { LabOrderDetails } from '../labs/LabOrderDetails';
 import { LabResultDetails } from '../labs/LabResultDetails';
@@ -24,6 +25,8 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
   const { resource } = props;
   const displayResource = useResource(resource);
   const PharmacyDialogComponent = usePharmacyDialog();
+  const patientForActions = displayResource?.resourceType === 'Patient' ? (displayResource as Patient) : undefined;
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(patientForActions);
 
   const sections = getDefaultSections().map((s) =>
     s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
@@ -36,7 +39,17 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
     switch (displayResource.resourceType) {
       case 'Patient':
-        return <PatientSummary patient={displayResource} sections={sections} />;
+        return (
+          <>
+            <PatientSummary
+              patient={displayResource}
+              sections={sections}
+              headerMenuItems={headerMenuItems}
+              onEditPatient={openEditModal}
+            />
+            {actionsModals}
+          </>
+        );
       case 'Task':
         return <TaskDetailPanel task={displayResource} />;
       case 'DiagnosticReport':

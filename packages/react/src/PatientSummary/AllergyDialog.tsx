@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack, TextInput } from '@mantine/core';
+import { Stack, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import type { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -9,6 +9,8 @@ import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInp
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 
 export interface AllergyDialogProps {
   readonly patient: Patient;
@@ -49,34 +51,39 @@ export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
 
   return (
     <Form key={allergy?.id} onSubmit={handleSubmit}>
-      <Stack>
-        <CodeableConceptInput
-          name="allergy"
-          label="Code"
-          path="AllergyIntolerance.code"
-          data-autofocus={true}
-          binding={HTTP + 'cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1186.8'}
-          maxValues={1}
-          defaultValue={allergy?.code}
-          onChange={(code) => setCode(code)}
-          outcome={undefined}
-        />
-        <TextInput name="reaction" label="Reaction" defaultValue={allergy?.reaction?.[0]?.manifestation?.[0]?.text} />
-        <CodeableConceptInput
-          name="clinicalStatus"
-          label="Clinical Status"
-          path="AllergyIntolerance.clinicalStatus"
-          binding={HTTP_HL7_ORG + '/fhir/ValueSet/allergyintolerance-clinical'}
-          maxValues={1}
-          defaultValue={allergy?.clinicalStatus}
-          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
-          outcome={undefined}
-        />
-        <DateTimeInput name="onsetDateTime" label="Onset" defaultValue={allergy?.recordedDate} />
-        <Group justify="flex-end" gap={4} mt="md">
-          <SubmitButton>Save</SubmitButton>
-        </Group>
-      </Stack>
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <SubmitButton fullWidth>Save</SubmitButton>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <CodeableConceptInput
+            name="allergy"
+            label="Code"
+            path="AllergyIntolerance.code"
+            data-autofocus={true}
+            binding={HTTP + 'cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1186.8'}
+            maxValues={1}
+            defaultValue={allergy?.code}
+            onChange={(code) => setCode(code)}
+            outcome={undefined}
+          />
+          <TextInput name="reaction" label="Reaction" defaultValue={allergy?.reaction?.[0]?.manifestation?.[0]?.text} />
+          <CodeableConceptInput
+            name="clinicalStatus"
+            label="Clinical Status"
+            path="AllergyIntolerance.clinicalStatus"
+            binding={HTTP_HL7_ORG + '/fhir/ValueSet/allergyintolerance-clinical'}
+            maxValues={1}
+            defaultValue={allergy?.clinicalStatus}
+            onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
+            outcome={undefined}
+          />
+          <DateTimeInput name="onsetDateTime" label="Onset" defaultValue={allergy?.recordedDate} />
+        </Stack>
+      </ModalContentLayout>
     </Form>
   );
 }

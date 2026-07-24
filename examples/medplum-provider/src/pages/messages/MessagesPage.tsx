@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
-import type { Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { createPharmaciesSection, getDefaultSections, ThreadInbox } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
+import { usePatientActionsMenu } from '../patient/usePatientActionsMenu';
 import classes from './MessagesPage.module.css';
 /**
  * Fetches
@@ -21,6 +22,8 @@ export function MessagesPage(): JSX.Element {
   const location = useLocation();
   const medplum = useMedplum();
   const PharmacyDialogComponent = usePharmacyDialog();
+  const [threadPatient, setThreadPatient] = useState<Reference<Patient>>();
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(threadPatient);
 
   const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
@@ -84,11 +87,15 @@ export function MessagesPage(): JSX.Element {
 
   return (
     <div className={classes.container}>
+      {actionsModals}
       <ThreadInbox
         threadId={messageId}
         query={formatSearchQuery(parsedSearch).substring(1)}
         showPatientSummary={true}
         sections={sections}
+        patientHeaderMenuItems={headerMenuItems}
+        onEditPatient={openEditModal}
+        onPatientChange={setThreadPatient}
         allowPatientSelection={true}
         onNew={onNew}
         getThreadUri={getThreadUri}

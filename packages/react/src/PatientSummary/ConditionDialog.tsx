@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import type { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -10,6 +10,8 @@ import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 
 export interface ConditionDialogProps {
   readonly patient: Patient;
@@ -56,31 +58,36 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
 
   return (
     <Form key={condition?.id} onSubmit={handleSubmit}>
-      <Stack>
-        <CodeableConceptInput
-          name="code"
-          label="Problem"
-          path="Condition.code"
-          data-autofocus={true}
-          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
-          defaultValue={condition?.code}
-          onChange={(code) => setCode(code)}
-          outcome={undefined}
-        />
-        <CodeableConceptInput
-          name="clinicalStatus"
-          label="Status"
-          path="Condition.clinicalStatus"
-          binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
-          defaultValue={condition?.clinicalStatus}
-          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
-          outcome={undefined}
-        />
-        <DateTimeInput name="onsetDateTime" label="Dx Date" defaultValue={condition?.onsetDateTime} required />
-        <Group justify="flex-end" gap={4} mt="md">
-          <SubmitButton>Save</SubmitButton>
-        </Group>
-      </Stack>
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <SubmitButton fullWidth>Save</SubmitButton>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <CodeableConceptInput
+            name="code"
+            label="Problem"
+            path="Condition.code"
+            data-autofocus={true}
+            binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
+            defaultValue={condition?.code}
+            onChange={(code) => setCode(code)}
+            outcome={undefined}
+          />
+          <CodeableConceptInput
+            name="clinicalStatus"
+            label="Status"
+            path="Condition.clinicalStatus"
+            binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
+            defaultValue={condition?.clinicalStatus}
+            onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
+            outcome={undefined}
+          />
+          <DateTimeInput name="onsetDateTime" label="Dx Date" defaultValue={condition?.onsetDateTime} required />
+        </Stack>
+      </ModalContentLayout>
     </Form>
   );
 }

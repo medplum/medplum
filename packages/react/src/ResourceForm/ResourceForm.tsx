@@ -17,6 +17,8 @@ import type { FormEvent, JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { FormSection } from '../FormSection/FormSection';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 import classes from './ResourceForm.module.css';
 
 export interface ResourceFormProps {
@@ -27,6 +29,10 @@ export interface ResourceFormProps {
   readonly onDelete?: (resource: Resource) => void;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
   readonly profileUrl?: string;
+  /** When true, renders a divider and full-width submit button for modal footers. */
+  readonly stackedSubmit?: boolean;
+  /** When true with stackedSubmit, pins the footer to the modal bottom with a full-bleed divider. */
+  readonly stickyModalFooter?: boolean;
 }
 
 export function ResourceForm(props: ResourceFormProps): JSX.Element {
@@ -102,17 +108,9 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
     );
   }
 
-  return (
-    <form
-      noValidate
-      autoComplete="off"
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        if (props.onSubmit) {
-          props.onSubmit(value);
-        }
-      }}
-    >
+  // Shared between the plain and modal-footer layouts below.
+  const formBody = (
+    <>
       <Stack mb="xl">
         <FormSection title="Resource Type" htmlFor="resourceType" outcome={outcome}>
           <TextInput name="resourceType" defaultValue={value.resourceType} disabled={true} />
@@ -131,49 +129,86 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         profileUrl={props.profileUrl}
         accessPolicyResource={accessPolicyResource}
       />
-      <Group justify="flex-end" mt="xl" wrap="nowrap" gap={0}>
-        <Button type="submit" className={cx((props.onPatch || props.onDelete) && classes.splitButton)}>
-          {defaultValue?.id ? 'Update' : 'Create'}
-        </Button>
-        {(props.onPatch || props.onDelete) && (
-          <Menu transitionProps={{ transition: 'pop' }} position="bottom-end" withinPortal>
-            <Menu.Target>
-              <ActionIcon
-                variant="filled"
-                color={theme.primaryColor}
-                size={36}
-                className={classes.menuControl}
-                aria-label="More actions"
-              >
-                <IconChevronDown size={14} stroke={1.5} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {props.onPatch && (
-                <Menu.Item
-                  leftSection={<IconEdit size={14} stroke={1.5} />}
-                  onClick={() => {
-                    (props.onPatch as (resource: Resource) => void)(value);
-                  }}
-                >
-                  Patch
-                </Menu.Item>
-              )}
-              {props.onDelete && (
-                <Menu.Item
-                  color="red"
-                  leftSection={<IconTrash size={14} stroke={1.5} color="red" />}
-                  onClick={() => {
-                    (props.onDelete as (resource: Resource) => void)(value);
-                  }}
-                >
-                  Delete
-                </Menu.Item>
-              )}
-            </Menu.Dropdown>
-          </Menu>
-        )}
-      </Group>
+    </>
+  );
+
+  return (
+    <form
+      noValidate
+      autoComplete="off"
+      style={
+        props.stickyModalFooter && props.stackedSubmit
+          ? { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, width: '100%' }
+          : undefined
+      }
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault();
+        if (props.onSubmit) {
+          props.onSubmit(value);
+        }
+      }}
+    >
+      {props.stackedSubmit && !props.onPatch && !props.onDelete ? (
+        <ModalContentLayout
+          insetContent={props.stickyModalFooter}
+          footer={
+            <ModalActionsFooter sticky={props.stickyModalFooter}>
+              <Button type="submit" fullWidth>
+                {defaultValue?.id ? 'Update' : 'Create'}
+              </Button>
+            </ModalActionsFooter>
+          }
+        >
+          {formBody}
+        </ModalContentLayout>
+      ) : (
+        <>
+          {formBody}
+          <Group justify="flex-end" mt="xl" wrap="nowrap" gap={0}>
+            <Button type="submit" className={cx((props.onPatch || props.onDelete) && classes.splitButton)}>
+              {defaultValue?.id ? 'Update' : 'Create'}
+            </Button>
+            {(props.onPatch || props.onDelete) && (
+              <Menu transitionProps={{ transition: 'pop' }} position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <ActionIcon
+                    variant="filled"
+                    color={theme.primaryColor}
+                    size={36}
+                    className={classes.menuControl}
+                    aria-label="More actions"
+                  >
+                    <IconChevronDown size={14} stroke={1.5} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {props.onPatch && (
+                    <Menu.Item
+                      leftSection={<IconEdit size={14} stroke={1.5} />}
+                      onClick={() => {
+                        (props.onPatch as (resource: Resource) => void)(value);
+                      }}
+                    >
+                      Patch
+                    </Menu.Item>
+                  )}
+                  {props.onDelete && (
+                    <Menu.Item
+                      color="red"
+                      leftSection={<IconTrash size={14} stroke={1.5} color="red" />}
+                      onClick={() => {
+                        (props.onDelete as (resource: Resource) => void)(value);
+                      }}
+                    >
+                      Delete
+                    </Menu.Item>
+                  )}
+                </Menu.Dropdown>
+              </Menu>
+            )}
+          </Group>
+        </>
+      )}
     </form>
   );
 }

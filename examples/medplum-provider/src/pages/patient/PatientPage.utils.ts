@@ -64,7 +64,9 @@ export function getPatientPageTabs(
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
-  { id: 'edit', url: 'edit', label: 'Edit' },
+  // Note: patient profile editing moved to the "…" menu in the Patient Summary header
+  // (opens the /Patient/:id/edit-details modal). The full-page /Patient/:id/edit route
+  // still works by direct URL; it is intentionally unlinked from this tab bar.
   {
     id: 'encounter',
     url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,serviceType&_sort=-_lastUpdated&patient=%patient.id',

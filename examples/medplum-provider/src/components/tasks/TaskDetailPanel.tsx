@@ -13,6 +13,7 @@ import {
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { usePatientActionsMenu } from '../../pages/patient/usePatientActionsMenu';
 import { showErrorNotification } from '../../utils/notifications';
 import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
 import classes from './TaskBoard.module.css';
@@ -41,6 +42,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
 
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
+  const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(selectedPatient);
 
   if (!task) {
     return (
@@ -84,6 +86,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
 
   return (
     <>
+      {actionsModals}
       <Box
         h="100%"
         style={{
@@ -138,6 +141,8 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
                   sections={getDefaultSections().map((s) =>
                     s.key === 'pharmacies' ? createPharmaciesSection(PharmacyDialogComponent) : s
                   )}
+                  headerMenuItems={headerMenuItems}
+                  onEditPatient={openEditModal}
                 />
               </ScrollArea>
             )}

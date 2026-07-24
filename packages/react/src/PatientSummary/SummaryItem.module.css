@@ -12,7 +12,7 @@
 }
 
 [data-mantine-color-scheme='dark'] .gradient {
-  background: linear-gradient(to right, transparent, var(--mantine-color-dark-8));
+  background: linear-gradient(to right, transparent, var(--mantine-color-body));
 }
 
 [data-mantine-color-scheme='light'] .gradient {
@@ -35,7 +35,7 @@
 }
 
 [data-mantine-color-scheme='dark'] .container {
-  background: var(--mantine-color-dark-8);
+  background: var(--mantine-color-body);
 }
 
 [data-mantine-color-scheme='light'] .container {

@@ -8,6 +8,8 @@ import type {
   Condition,
   Coverage,
   DiagnosticReport,
+  Goal,
+  Immunization,
   MedicationRequest,
   MedicationStatement,
   Observation,
@@ -23,6 +25,8 @@ import {
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { Allergies } from './Allergies';
+import { Goals } from './Goals';
+import { Immunizations } from './Immunizations';
 import { Insurance } from './Insurance';
 import { Labs } from './Labs';
 import { Medications } from './Medications';
@@ -47,10 +51,10 @@ import { Vitals } from './Vitals';
 export const DemographicsSection: PatientSummarySectionConfig = {
   key: 'demographics',
   title: 'Demographics',
-  component: ({ patient, onClickResource }: SectionRenderContext) => {
+  component: ({ patient, onClickResource, onEditPatient }: SectionRenderContext) => {
     const languageDisplay = getPreferredLanguage(patient);
     return (
-      <Stack gap="xs" py={8}>
+      <Stack gap="xs" py="md">
         <PatientInfoItem
           patient={patient}
           value={patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined}
@@ -58,6 +62,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Birthdate"
           label="Birthdate & Age"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -66,6 +71,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Gender & Identity"
           label="Gender & Identity"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -74,6 +80,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Race & Ethnicity"
           label="Race & Ethnicity"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -82,6 +89,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Location"
           label="Location"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -90,6 +98,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add Language"
           label="Language"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
         <PatientInfoItem
           patient={patient}
@@ -98,6 +107,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           placeholder="Add General Practitioner"
           label="General Practitioner"
           onClickResource={onClickResource}
+          onClick={onEditPatient}
         />
       </Stack>
     );
@@ -157,6 +167,30 @@ export const MedicationsSection: PatientSummarySectionConfig = {
       medicationStatements={(results['medicationStatements'] as MedicationStatement[]) || []}
       onClickResource={onClickResource}
     />
+  ),
+};
+
+/** Immunizations section — searches for Immunization resources. */
+export const ImmunizationsSection: PatientSummarySectionConfig = {
+  key: 'immunizations',
+  title: 'Immunizations',
+  searches: [{ key: 'immunizations', resourceType: 'Immunization', patientParam: 'patient' }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
+    <Immunizations
+      patient={patient}
+      immunizations={(results['immunizations'] as Immunization[]) || []}
+      onClickResource={onClickResource}
+    />
+  ),
+};
+
+/** Goals section — searches for Goal resources. */
+export const GoalsSection: PatientSummarySectionConfig = {
+  key: 'goals',
+  title: 'Goals',
+  searches: [{ key: 'goals', resourceType: 'Goal', patientParam: 'patient' }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
+    <Goals patient={patient} goals={(results['goals'] as Goal[]) || []} onClickResource={onClickResource} />
   ),
 };
 
@@ -261,10 +295,12 @@ export const PharmaciesSection: PatientSummarySectionConfig = createPharmaciesSe
 export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySectionConfig[] {
   return [
     DemographicsSection,
+    GoalsSection,
     InsuranceSection,
     AllergiesSection,
     ProblemListSection,
     MedicationsSection,
+    ImmunizationsSection,
     createLabsSection(onRequestLabs),
     SexualOrientationSection,
     SmokingStatusSection,

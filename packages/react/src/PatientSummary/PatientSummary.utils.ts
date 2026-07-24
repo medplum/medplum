@@ -1,7 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { capitalize, getExtension, HTTP_HL7_ORG } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { CodeableConcept, Patient, Resource } from '@medplum/fhirtypes';
+
+/**
+ * Returns true when a resource has been marked `entered-in-error`. Such resources are hidden from
+ * list/summary views (they remain accessible by direct URL). The error state lives in different
+ * fields depending on resource type: `.status` (most), `.lifecycleStatus` (Goal), and
+ * `.verificationStatus` (AllergyIntolerance, Condition).
+ * @param resource - The resource to check.
+ * @returns True if the resource is entered-in-error.
+ */
+export function isEnteredInError(resource: Resource): boolean {
+  const candidate = resource as Resource & {
+    status?: string;
+    lifecycleStatus?: string;
+    verificationStatus?: CodeableConcept;
+  };
+  if (candidate.status === 'entered-in-error' || candidate.lifecycleStatus === 'entered-in-error') {
+    return true;
+  }
+  return !!candidate.verificationStatus?.coding?.some((coding) => coding.code === 'entered-in-error');
+}
 
 export function getGenderIdentity(patient: Patient): string | undefined {
   const genderIdentityExt = getExtension(
@@ -66,6 +86,19 @@ export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
   }
 
   return parts.join(' · ');
+}
+
+/**
+ * Formats a FHIR status/lifecycleStatus code for display: removes hyphens and capitalizes each word.
+ * e.g. 'on-hold' → 'On Hold', 'not-done' → 'Not Done', 'active' → 'Active'.
+ * @param status - The raw status code.
+ * @returns The human-friendly, capitalized, hyphen-free label.
+ */
+export function formatStatusLabel(status: string): string {
+  return status
+    .split('-')
+    .map((word) => capitalize(word))
+    .join(' ');
 }
 
 export const getPreferredLanguage = (patient: Patient): string | undefined => {

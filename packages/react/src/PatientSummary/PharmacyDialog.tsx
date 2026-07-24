@@ -7,6 +7,8 @@ import { formatAddress, normalizeErrorString } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 import styles from './PharmacyDialog.module.css';
 
 /**
@@ -81,25 +83,31 @@ function SearchForm({ onSearch, searching, renderBeforeSearchButton, placeholder
         onSearch(formData);
       }}
     >
-      <Stack gap="md">
-        <TextInput name="name" label="Pharmacy Name" placeholder={placeholders.name} />
-        <Group grow>
-          <TextInput name="city" label="City" placeholder={placeholders.city} />
-          <TextInput name="state" label="State" placeholder={placeholders.state} />
-        </Group>
-        <Group grow>
-          <TextInput name="zip" label="Zip Code" placeholder={placeholders.zip} />
-          <TextInput name="phoneOrFax" label="Phone or Fax" placeholder={placeholders.phoneOrFax} />
-        </Group>
-        <TextInput name="address" label="Address" placeholder={placeholders.address} />
-        <TextInput name="ncpdpID" label="NCPDP ID" placeholder={placeholders.ncpdpID} />
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <Button type="submit" fullWidth loading={searching}>
+              Search
+            </Button>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <TextInput name="name" label="Pharmacy Name" placeholder={placeholders.name} />
+          <Group grow>
+            <TextInput name="city" label="City" placeholder={placeholders.city} />
+            <TextInput name="state" label="State" placeholder={placeholders.state} />
+          </Group>
+          <Group grow>
+            <TextInput name="zip" label="Zip Code" placeholder={placeholders.zip} />
+            <TextInput name="phoneOrFax" label="Phone or Fax" placeholder={placeholders.phoneOrFax} />
+          </Group>
+          <TextInput name="address" label="Address" placeholder={placeholders.address} />
+          <TextInput name="ncpdpID" label="NCPDP ID" placeholder={placeholders.ncpdpID} />
 
-        {renderBeforeSearchButton}
-
-        <Button type="submit" loading={searching}>
-          Search
-        </Button>
-      </Stack>
+          {renderBeforeSearchButton}
+        </Stack>
+      </ModalContentLayout>
     </form>
   );
 }
@@ -177,53 +185,56 @@ function SearchResults({
 }: SearchResultsProps): JSX.Element {
   return (
     <Box mt="xl">
-      <Text fw={600} mb="md">
-        Search Results ({searchResults.length})
-      </Text>
-      <Radio.Group
-        value={selectedPharmacy ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) : ''}
-        onChange={(value) => {
-          const selected = searchResults.find((p, i) => getPharmacyKey(p, i) === value);
-          if (selected) {
-            onSelectPharmacy(selected);
-          }
-        }}
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <Button fullWidth onClick={onAddFavorite} disabled={!selectedPharmacy} loading={adding}>
+              Add to Favorites
+            </Button>
+            <Button fullWidth variant="subtle" onClick={onClose}>
+              Cancel
+            </Button>
+          </ModalActionsFooter>
+        }
       >
-        <Stack gap="sm">
-          {searchResults.map((pharmacy, index) => {
-            const pharmacyKey = getPharmacyKey(pharmacy, index);
-            const isSelected = selectedPharmacy
-              ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) === pharmacyKey
-              : false;
+        <Text fw={600} mb="md">
+          Search Results ({searchResults.length})
+        </Text>
+        <Radio.Group
+          value={selectedPharmacy ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) : ''}
+          onChange={(value) => {
+            const selected = searchResults.find((p, i) => getPharmacyKey(p, i) === value);
+            if (selected) {
+              onSelectPharmacy(selected);
+            }
+          }}
+        >
+          <Stack gap="md">
+            {searchResults.map((pharmacy, index) => {
+              const pharmacyKey = getPharmacyKey(pharmacy, index);
+              const isSelected = selectedPharmacy
+                ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) === pharmacyKey
+                : false;
 
-            return (
-              <PharmacyItem
-                key={pharmacyKey}
-                pharmacy={pharmacy}
-                pharmacyKey={pharmacyKey}
-                isSelected={isSelected}
-                onSelect={() => onSelectPharmacy(pharmacy)}
-              />
-            );
-          })}
-        </Stack>
-      </Radio.Group>
+              return (
+                <PharmacyItem
+                  key={pharmacyKey}
+                  pharmacy={pharmacy}
+                  pharmacyKey={pharmacyKey}
+                  isSelected={isSelected}
+                  onSelect={() => onSelectPharmacy(pharmacy)}
+                />
+              );
+            })}
+          </Stack>
+        </Radio.Group>
 
-      <Flex mt="lg" gap="md" align="center" justify="space-between">
         <Checkbox
           label="Set as primary pharmacy"
           checked={setAsPrimary}
           onChange={(e) => onSetAsPrimary(e.currentTarget.checked)}
         />
-        <Group>
-          <Button variant="subtle" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={onAddFavorite} disabled={!selectedPharmacy} loading={adding}>
-            Add to Favorites
-          </Button>
-        </Group>
-      </Flex>
+      </ModalContentLayout>
     </Box>
   );
 }
