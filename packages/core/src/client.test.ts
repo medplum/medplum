@@ -3119,6 +3119,63 @@ describe('Client', () => {
         })
       );
     });
+
+    test('Execute batch invalidates search cache only for mutations', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [{ response: { status: '201' } }, { response: { status: '200' } }],
+      });
+      const client = new MedplumClient({ fetch });
+      const invalidateSpy = vi.spyOn(client, 'invalidateSearches');
+      await client.executeBatch({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            resource: { resourceType: 'Patient', name: [{ family: 'Smith' }] },
+            request: { method: 'POST', url: 'Patient' },
+          },
+          {
+            request: { method: 'GET', url: 'Observation?patient=123' },
+          },
+        ],
+      });
+      // POST Patient invalidates; the GET read must not
+      expect(invalidateSpy).toHaveBeenCalledWith('Patient');
+      expect(invalidateSpy).not.toHaveBeenCalledWith('Observation');
+    });
+
+    test('Execute batch invalidates search cache for PUT/PATCH/DELETE mutations', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [{ response: { status: '200' } }, { response: { status: '200' } }, { response: { status: '200' } }],
+      });
+      const client = new MedplumClient({ fetch });
+      const invalidateSpy = vi.spyOn(client, 'invalidateSearches');
+      await client.executeBatch({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            resource: { resourceType: 'Patient', id: '123', name: [{ family: 'Smith' }] },
+            request: { method: 'PUT', url: 'Patient/123' },
+          },
+          {
+            resource: { resourceType: 'Observation', id: '456', status: 'final', code: { text: 'test' } },
+            request: { method: 'PATCH', url: 'Observation/456' },
+          },
+          {
+            // DELETE carries no resource body, so the type must come from the request URL
+            request: { method: 'DELETE', url: 'Encounter/789' },
+          },
+        ],
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith('Patient');
+      expect(invalidateSpy).toHaveBeenCalledWith('Observation');
+      expect(invalidateSpy).toHaveBeenCalledWith('Encounter');
+    });
   });
 
   test('Send email', async () => {
