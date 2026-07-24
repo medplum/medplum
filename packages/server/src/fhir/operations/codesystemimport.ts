@@ -5,7 +5,6 @@ import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperation
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getLogger } from '../../logger';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { Condition, InsertQuery, SelectQuery } from '../sql';
@@ -22,7 +21,7 @@ function makeCodeAttributeParameter(
     use: 'in',
     name: paramName,
     min: 0,
-    max: '*',
+    max: '1000',
     part: [
       { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
       { use: 'in', ...attributeParam },
@@ -38,7 +37,7 @@ const operation = makeOperationDefinition(
     code: 'import',
     parameter: [
       { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
-      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
+      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '1000' },
       makeCodeAttributeParameter('property', {
         name: 'property',
         type: 'code',
@@ -170,14 +169,6 @@ export async function importCodeSystem(
     }
     const query = new InsertQuery('Coding', synonyms).ignoreOnConflict();
     await query.execute(db);
-  }
-
-  if ((concepts?.length ?? 0) > 1000 || (properties?.length ?? 0) > 1000 || (designations?.length ?? 0) > 1000) {
-    getLogger().warn('Oversized CodeSystem import', {
-      concepts: concepts?.length ?? 0,
-      properties: properties?.length ?? 0,
-      designations: designations?.length ?? 0,
-    });
   }
 }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, EMPTY } from '@medplum/core';
-import type { CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import type { CodeSystem, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -30,6 +30,10 @@ export const snomedJSON: CodeSystem = {
       uri: 'http://hl7.org/fhir/concept-properties#parent',
       description: 'A SNOMED CT concept id that has the target of a direct is-a relationship from the concept',
       type: 'code',
+    },
+    {
+      code: 'active',
+      type: 'boolean',
     },
   ],
 };
@@ -412,6 +416,59 @@ describe('CodeSystem $import', () => {
     expect(resExpand).toHaveStatus(200);
     const expanded = resExpand.body as ValueSet;
     expect(expanded.expansion?.contains).toHaveLength(1);
+  });
+
+  test('Rejects excessively large batches', async () => {
+    const parameter: ParametersParameter[] = [{ name: 'system', valueUri: snomed.url }];
+    for (let i = 0; i < 1001; i++) {
+      parameter.push({ name: 'concept', valueCoding: { code: i.toString() } });
+    }
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter,
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue?.[0]).toStrictEqual({
+      code: 'invalid',
+      details: { text: 'Expected 0..1000 value(s) for input parameter concept, but 1001 provided' },
+      severity: 'error',
+    });
+  });
+
+  test('Accepts batch of max size', async () => {
+    const parameter: ParametersParameter[] = [{ name: 'system', valueUri: snomed.url }];
+    for (let i = 0; i < 1000; i++) {
+      parameter.push({ name: 'concept', valueCoding: { code: i.toString() } });
+      parameter.push({
+        name: 'property',
+        part: [
+          { name: 'code', valueCode: i.toString() },
+          { name: 'property', valueCode: 'active' },
+          { name: 'value', valueString: '1' },
+        ],
+      });
+      parameter.push({
+        name: 'designation',
+        part: [
+          { name: 'code', valueCode: i.toString() },
+          { name: 'language', valueCode: 'en-GB' },
+          { name: 'value', valueString: i.toLocaleString('en-GB') },
+        ],
+      });
+    }
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter,
+      });
+    expect(res.status).toBe(200);
   });
 });
 
