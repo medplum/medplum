@@ -7,7 +7,13 @@ import { mergeConfig } from 'vite';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
-  stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
+  stories: [
+    '../src/stories/Introduction.mdx',
+    '../src/**/*.mdx',
+    '../src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../../react/src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../../react-scheduling/src/**/*.stories.@(js|jsx|ts|tsx)',
+  ],
   addons: ['@storybook/addon-links', '@storybook/addon-docs', '@vueless/storybook-dark-mode'],
   staticDirs: ['../public'],
   framework: {

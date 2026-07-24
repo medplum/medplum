@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Document } from '@medplum/react';
 import type { Meta, StoryObj } from '@storybook/react';
 import type { JSX } from 'react';
-import { Document } from '../Document/Document';
 
 import { Box, Stack, useMantineTheme } from '@mantine/core';
 
