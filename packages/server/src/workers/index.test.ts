@@ -29,7 +29,7 @@ describe('Workers', () => {
     await initDatabase(config);
     await seedDatabase(config);
     initBinaryStorage('file:binary');
-    initWorkers(config);
+    await initWorkers(config);
     await closeWorkers();
     await closeDatabase();
     await closeRedis();
@@ -42,7 +42,7 @@ describe('Workers', () => {
     await initDatabase(config);
     await seedDatabase(config);
     initBinaryStorage('file:binary');
-    initWorkers(config);
+    await initWorkers(config);
 
     // Queues should still be available for enqueuing even with no workers enabled
     expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
@@ -61,7 +61,7 @@ describe('Workers', () => {
       await initDatabase(config);
       await seedDatabase(config);
       initBinaryStorage('file:binary');
-      initWorkers(config);
+      await initWorkers(config);
 
       // Queues should still be available regardless of which workers are enabled
       expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();

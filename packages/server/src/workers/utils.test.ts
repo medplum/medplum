@@ -9,7 +9,13 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { withTestContext } from '../test.setup';
-import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
+import {
+  addVerboseQueueLogging,
+  applyGlobalConcurrency,
+  DefaultQueueRegistry,
+  getWorkerBullmqConfig,
+  isJobSuccessful,
+} from './utils';
 
 describe('worker utils', () => {
   beforeAll(async () => {
@@ -339,6 +345,46 @@ describe('worker utils', () => {
 
       // Restore the spy
       loggerInfoSpy.mockRestore();
+    });
+  });
+
+  describe('applyGlobalConcurrency', () => {
+    test('sets global concurrency when configured', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, { globalConcurrency: 5 });
+      expect(setGlobalConcurrency).toHaveBeenCalledWith(5);
+      expect(removeGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('removes global concurrency when not configured', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, { concurrency: 10 });
+      expect(removeGlobalConcurrency).toHaveBeenCalledTimes(1);
+      expect(setGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('removes global concurrency when config is undefined', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, undefined);
+      expect(removeGlobalConcurrency).toHaveBeenCalledTimes(1);
+      expect(setGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('rejects when the underlying call fails', async () => {
+      const err = new Error('redis down');
+      const setGlobalConcurrency = vi.fn().mockRejectedValue(err);
+      const queue = { name: 'TestQueue', setGlobalConcurrency } as unknown as Queue;
+
+      await expect(applyGlobalConcurrency(queue, { globalConcurrency: 3 })).rejects.toThrow('redis down');
     });
   });
 
