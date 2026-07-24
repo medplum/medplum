@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { ContentType, encodeBase64, OAuthSigningAlgorithm } from '@medplum/core';
+import { ContentType, encodeBase64, isOk, normalizeErrorString, OAuthSigningAlgorithm } from '@medplum/core';
 import type { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { SignJWT } from 'jose';
@@ -85,6 +85,9 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
     filename: basename(codePath),
   });
   console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
+  if (!isOk(deployResult)) {
+    throw new Error(`Bot deploy failed: ${normalizeErrorString(deployResult)}`);
+  }
 }
 
 export async function createBot(
