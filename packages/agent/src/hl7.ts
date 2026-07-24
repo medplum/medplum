@@ -10,8 +10,15 @@ import type { App } from './app';
 import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { DurableQueue } from './queue/durable-queue';
-import type { EnqueueResult, InboundRow } from './queue/types';
-import { AckOutcome, DuplicateBehavior, QueueErrorCode, SETTLED_MESSAGE_STATES } from './queue/types';
+import type { ArBehavior, EnqueueResult, InboundRow } from './queue/types';
+import {
+  AckOutcome,
+  DEFAULT_AR_BEHAVIOR,
+  DuplicateBehavior,
+  isArBehavior,
+  QueueErrorCode,
+  SETTLED_MESSAGE_STATES,
+} from './queue/types';
 import type { AgentRetryDefaults, RetryMode, RetryPolicy } from './queue/worker';
 import {
   ChannelQueueWorker,
@@ -66,6 +73,7 @@ export class AgentHl7Channel extends BaseChannel {
   private lastSeqNo = -1;
   private duplicateBehavior: DuplicateBehavior = DuplicateBehavior.IDEMPOTENT;
   private retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY;
+  private arBehavior: ArBehavior = DEFAULT_AR_BEHAVIOR;
   // The channel's own copy of the enhanced mode, parsed from the endpoint URL.
   // In durable mode this is intentionally NOT pushed onto the Hl7Connection (so
   // the connection's synchronous auto-ACK stays off and the agent can defer the
@@ -155,6 +163,7 @@ export class AgentHl7Channel extends BaseChannel {
       queue,
       log: this.log,
       retryPolicy: this.retryPolicy,
+      arBehavior: this.arBehavior,
       sendAck: (response) => this.sendToRemote(response),
     });
     this.worker.start();
@@ -264,6 +273,7 @@ export class AgentHl7Channel extends BaseChannel {
       // unconditionally so that reaches the running worker instead of waiting
       // for an unrelated address change or a process restart.
       this.refreshRetryPolicy();
+      this.resolveAndApplyArBehavior();
     }
   }
 
@@ -315,6 +325,7 @@ export class AgentHl7Channel extends BaseChannel {
     const queueOn = this.app.getDurableQueue() !== undefined;
 
     this.refreshRetryPolicy();
+    this.resolveAndApplyArBehavior();
 
     const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
 
@@ -359,8 +370,40 @@ export class AgentHl7Channel extends BaseChannel {
     this.worker?.setRetryPolicy(this.retryPolicy);
   }
 
+  /**
+   * Resolves and pushes the channel's {@link ArBehavior}: the `arBehavior`
+   * endpoint URL param wins over the agent-wide `channelArBehavior` setting,
+   * which wins over {@link DEFAULT_AR_BEHAVIOR} (`continue`).
+   *
+   * Split out and called from both {@link configureHl7ServerAndConnections} and
+   * {@link reloadConfig}'s no-address-change branch for the same reason as
+   * {@link refreshRetryPolicy}: it reads an agent-wide setting that can change
+   * with no endpoint edit, so gating it behind an address change would strand a
+   * running channel on the old value.
+   */
+  private resolveAndApplyArBehavior(): void {
+    const address = new URL(this.getEndpoint().address);
+    const queueOn = this.app.getDurableQueue() !== undefined;
+    const urlParam = parseArBehavior(address.searchParams.get('arBehavior'), this.log);
+    const agentDefault = this.app.getChannelArBehaviorDefault();
+    this.arBehavior = urlParam ?? agentDefault ?? DEFAULT_AR_BEHAVIOR;
+    // Only warn when explicitly configured — arBehavior always resolves to a
+    // value (continue by default), so an unconditional warning would fire for
+    // every legacy channel with the queue off.
+    const explicitlyConfigured = address.searchParams.has('arBehavior') || agentDefault !== undefined;
+    if (!queueOn && explicitlyConfigured) {
+      this.log.warn('arBehavior is configured but the durable queue is off; it has no effect without it');
+    }
+    this.worker?.setArBehavior(this.arBehavior);
+  }
+
   getDuplicateBehavior(): DuplicateBehavior {
     return this.duplicateBehavior;
+  }
+
+  /** @returns The channel's resolved AR (application-reject) behavior. */
+  getArBehavior(): ArBehavior {
+    return this.arBehavior;
   }
 
   /** @returns The channel's resolved Path-2 auto-retry policy. */
@@ -987,6 +1030,29 @@ export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILo
   }
   logger.warn(`Invalid duplicateBehavior value '${rawValue}'; expected 'reject' or 'idempotent'. Using idempotent.`);
   return DuplicateBehavior.IDEMPOTENT;
+}
+
+/**
+ * Parses the `arBehavior` URL query param controlling what the durable-queue
+ * worker does after a message lands terminally `rejected` (see {@link ArBehavior}).
+ *
+ * Returns `undefined` when unset or invalid (warning on the latter) so the caller
+ * can fall through to the agent-wide `channelArBehavior` setting and ultimately
+ * {@link DEFAULT_AR_BEHAVIOR} — the same per-field layering `retryMode` uses.
+ * @param rawValue - Raw query-param value (typically from the endpoint URL).
+ * @param logger - Logger used to emit a warning on invalid values.
+ * @returns The resolved {@link ArBehavior}, or undefined to fall through.
+ */
+export function parseArBehavior(rawValue: string | null | undefined, logger: ILogger): ArBehavior | undefined {
+  if (rawValue === null || rawValue === undefined) {
+    return undefined;
+  }
+  const normalized = rawValue.toLowerCase();
+  if (isArBehavior(normalized)) {
+    return normalized;
+  }
+  logger.warn(`Invalid arBehavior value '${rawValue}'; expected 'pause' or 'continue'. Ignoring.`);
+  return undefined;
 }
 
 /**

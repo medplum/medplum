@@ -119,6 +119,43 @@ export const CLAIM_NEXT = `
 `;
 
 /**
+ * FIFO claim variant for channels configured `arBehavior=pause` (the default;
+ * see {@link ArBehavior}). Identical to {@link CLAIM_NEXT} but refuses to claim
+ * anything while the channel has a row in the terminal `rejected` state, so an
+ * application reject (AR/CR, or a permanent server 4xx) halts the channel until
+ * an operator clears the rejected row. Because the gate lives in the claim SQL —
+ * not in worker memory — the pause survives an agent restart.
+ *
+ * The `NOT EXISTS` subquery is a plain `(channel_name, state)` equality lookup
+ * served by `idx_inbound_channel_state_id` (the same index the inner select
+ * uses), so the pause check adds an index seek, never a scan. [index-guarded]
+ *
+ * Bind order: now (processing_started_at), channel (inner select), now
+ * (next_attempt_at backoff), channel (rejected-row gate).
+ */
+export const CLAIM_NEXT_PAUSE_ON_REJECT = `
+  UPDATE inbound_hl7_messages
+     SET state = 'claimed',
+         processing_started_at = ?,
+         attempt_count = attempt_count + 1,
+         next_attempt_at = NULL,
+         last_error = NULL,
+         error_code = NULL
+   WHERE id = (
+     SELECT id FROM inbound_hl7_messages
+      WHERE channel_name = ? AND state = 'queued'
+      ORDER BY id ASC
+      LIMIT 1
+   )
+   AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+   AND NOT EXISTS (
+     SELECT 1 FROM inbound_hl7_messages
+      WHERE channel_name = ? AND state = 'rejected'
+   )
+   RETURNING *
+`;
+
+/**
  * Phase A → B: the transmit request was written to the socket, so flip the
  * `claimed` row to `inflight` and stamp `sent_at`. Keyed by callback id (served
  * by `uq_inbound_callback`). The `state = 'claimed'` guard makes it a no-op for

@@ -36,6 +36,7 @@ import {
   APP_LEVEL_ACK_MODES,
   describeAckCode,
   parseAppLevelAckMode,
+  parseArBehavior,
   parseEnhancedMode,
   resolveRetryPolicy,
   shouldSendAppLevelAck,
@@ -2781,6 +2782,7 @@ describe('AgentHl7Channel application-level ACK gating', () => {
       getAgentConfig: vi.fn(),
       getDurableQueue: vi.fn().mockReturnValue(undefined),
       getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelArBehaviorDefault: vi.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -3097,6 +3099,7 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
       agentId: 'test-agent',
       getDurableQueue: vi.fn().mockReturnValue(undefined),
       getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelArBehaviorDefault: vi.fn().mockReturnValue(undefined),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -3183,6 +3186,29 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
 
     expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Commit ACK (CA) -- ID: not provided]'));
     await connection.close();
+  });
+});
+
+describe('parseArBehavior', () => {
+  test('parses pause and continue, case-insensitively', () => {
+    const logger = createMockLogger();
+    expect(parseArBehavior('pause', logger)).toBe('pause');
+    expect(parseArBehavior('continue', logger)).toBe('continue');
+    expect(parseArBehavior('CONTINUE', logger)).toBe('continue');
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('returns undefined for an unset value so the caller falls through to the agent default', () => {
+    const logger = createMockLogger();
+    expect(parseArBehavior(null, logger)).toBeUndefined();
+    expect(parseArBehavior(undefined, logger)).toBeUndefined();
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  test('warns and returns undefined for an invalid value', () => {
+    const logger = createMockLogger();
+    expect(parseArBehavior('halt', logger)).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid arBehavior'));
   });
 });
 

@@ -10,7 +10,7 @@ import type { App } from '../app';
 import { createMockLogger, waitFor } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
-import { AckOutcome, assertRowState, MessageState, QueueErrorCode } from './types';
+import { AckOutcome, ArBehavior, assertRowState, MessageState, QueueErrorCode } from './types';
 import type { RetryPolicy } from './worker';
 import { buildDispatchCallback, ChannelQueueWorker, computeRetryDelayMs, DEFAULT_RETRY_POLICY } from './worker';
 
@@ -274,6 +274,8 @@ describe('ChannelQueueWorker', () => {
       // Auto-retry off so the terminal classification is observed directly: a
       // transient 429 would otherwise be re-queued for retry, not left `failed`.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
+      // Default arBehavior is `continue`, so the channel drains past the rejected
+      // r1 to r2 — this test is about the terminal classification of both rows.
     });
     worker.start();
 
@@ -1204,6 +1206,114 @@ describe('ChannelQueueWorker', () => {
       await waitFor(() => worker.hasInFlight(), 2000);
       worker.onServerResponse(makeResponse(currentCallback(worker), 200));
       await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
+      await worker.stop();
+    });
+  });
+
+  describe('arBehavior', () => {
+    // An HL7 ACK body carrying the given MSA-1 code (guaranteed mode reads this,
+    // not the HTTP status). 'AR' is a definitive upstream reject → terminal `rejected`.
+    const ackBody = (code: string): string =>
+      `MSH|^~\\&|MEDPLUM|MEDPLUM|TEST|TEST|20240101000000||ACK|X1|P|2.5.1\rMSA|${code}|X1`;
+
+    test('pause: an upstream AR halts the channel until the rejected row is cleared', async () => {
+      const r1 = enqueueOne(queue, 'AR-PAUSE-1');
+      const r2 = enqueueOne(queue, 'AR-PAUSE-2');
+      const { app } = makeStubApp();
+      // Default retry policy is guaranteed, under which an upstream AR is the one
+      // terminal `rejected` outcome.
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+        arBehavior: ArBehavior.PAUSE,
+      });
+      worker.start();
+
+      await waitFor(() => pendingRowId(worker) === r1.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 400, ackBody('AR')));
+      await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED);
+      expect(queue.getById(r1.id)?.errorCode).toBe(QueueErrorCode.UpstreamRejected);
+
+      // The pipe is paused: r2 is never claimed while the reject stands, even
+      // after ample time for several idle-poll ticks.
+      await sleepMs(80);
+      expect(queue.getById(r2.id)?.state).toBe(MessageState.QUEUED);
+      expect(worker.hasInFlight()).toBe(false);
+
+      // Operator clears the reject (here: reclassify its state). The channel then
+      // resumes automatically on the next claim — no restart needed.
+      queue.getDb().prepare("UPDATE inbound_hl7_messages SET state = 'processed' WHERE id = ?").run(r1.id);
+      worker.notify();
+      await waitFor(() => pendingRowId(worker) === r2.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 200, ackBody('AA')));
+      await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
+
+      await worker.stop();
+    });
+
+    test('default (continue): a rejected message does not stall the channel', async () => {
+      const r1 = enqueueOne(queue, 'AR-CONT-1');
+      const r2 = enqueueOne(queue, 'AR-CONT-2');
+      const { app } = makeStubApp();
+      // No arBehavior option → defaults to `continue`.
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+      });
+      worker.start();
+
+      await waitFor(() => pendingRowId(worker) === r1.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 400, ackBody('AR')));
+      await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED);
+
+      // With continue, the worker drains straight past the rejected r1 to r2.
+      await waitFor(() => pendingRowId(worker) === r2.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 200, ackBody('AA')));
+      await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
+
+      await worker.stop();
+    });
+
+    test('setArBehavior(continue) resumes a channel paused on a reject', async () => {
+      const r1 = enqueueOne(queue, 'AR-SWITCH-1');
+      const r2 = enqueueOne(queue, 'AR-SWITCH-2');
+      const { app } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+        arBehavior: ArBehavior.PAUSE,
+      });
+      worker.start();
+
+      await waitFor(() => pendingRowId(worker) === r1.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 400, ackBody('AR')));
+      await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED);
+
+      await sleepMs(50);
+      expect(queue.getById(r2.id)?.state).toBe(MessageState.QUEUED);
+
+      // Flip the channel to continue (as a config reload would) — the pause lifts
+      // and draining resumes past the still-`rejected` r1.
+      worker.setArBehavior(ArBehavior.CONTINUE);
+      worker.notify();
+      await waitFor(() => pendingRowId(worker) === r2.id);
+      worker.onServerResponse(makeResponse(currentCallback(worker), 200, ackBody('AA')));
+      await waitFor(() => queue.getById(r2.id)?.state === MessageState.PROCESSED);
+      // r1 stays rejected — continue does not un-reject it, it just stops gating.
+      expect(queue.getById(r1.id)?.state).toBe(MessageState.REJECTED);
+
       await worker.stop();
     });
   });

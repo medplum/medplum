@@ -252,6 +252,45 @@ export const DuplicateBehavior = {
 } as const;
 export type DuplicateBehavior = (typeof DuplicateBehavior)[keyof typeof DuplicateBehavior];
 
+/**
+ * Per-channel policy for what the worker does after a message lands in the
+ * terminal `rejected` state — an application reject (MSA-1 of AR/CR from
+ * upstream, or a permanent server 4xx with no ACK). Only meaningful with the
+ * durable queue on; the legacy path has no worker to pause.
+ *
+ * - `continue` (**the default**): keep draining past the rejected message. The
+ *   default because it matches the pre-existing durable-queue behavior; use it
+ *   when the far side controls when it sends AR/CR and a single reject should
+ *   not stall the whole pipe — ordering across a rejected message is not relied
+ *   upon.
+ * - `pause`: stop draining the channel while any `rejected` row exists for it,
+ *   so no later message is processed past the rejected one. Preserves per-channel
+ *   ordering when a subsequent message may depend on the rejected one. Enforced
+ *   in the SQL claim (see `CLAIM_NEXT_PAUSE_ON_REJECT`), so it survives an agent
+ *   restart; the operator resumes by clearing the rejected row (reclassify its
+ *   `state` or delete it).
+ *
+ * Configured via the `arBehavior` endpoint URL param or the `channelArBehavior`
+ * agent setting; the URL param wins, then the setting, then {@link DEFAULT_AR_BEHAVIOR}.
+ */
+export const ArBehavior = {
+  PAUSE: 'pause',
+  CONTINUE: 'continue',
+} as const;
+export type ArBehavior = (typeof ArBehavior)[keyof typeof ArBehavior];
+
+/** The behavior a channel gets with no configuration: {@link ArBehavior.CONTINUE}. */
+export const DEFAULT_AR_BEHAVIOR: ArBehavior = ArBehavior.CONTINUE;
+
+/**
+ * Type guard for a valid {@link ArBehavior} string.
+ * @param value - The candidate behavior (already lower-cased, if applicable).
+ * @returns True if `value` is `pause` or `continue`.
+ */
+export function isArBehavior(value: string | undefined): value is ArBehavior {
+  return value === ArBehavior.PAUSE || value === ArBehavior.CONTINUE;
+}
+
 /** Wire format for the `enhanced_mode` column — mirrors `@medplum/hl7`'s EnhancedMode. */
 export type EnhancedModeColumn = 'standard' | 'aaMode' | null;
 

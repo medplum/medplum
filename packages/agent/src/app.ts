@@ -60,6 +60,8 @@ import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
+import type { ArBehavior } from './queue/types';
+import { isArBehavior } from './queue/types';
 import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
 import { isRetryMode, parseDispatchCallback } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
@@ -149,6 +151,9 @@ export class App {
   // Agent-wide channelRetryMode / channelAutoRetry* settings; fields left undefined
   // fall through to DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
   private channelRetrySettings: AgentRetryDefaults = {};
+  // Agent-wide channelArBehavior default; undefined when unset/invalid, so channels
+  // fall through to their arBehavior URL param and ultimately DEFAULT_AR_BEHAVIOR.
+  private channelArBehavior: ArBehavior | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
@@ -578,6 +583,10 @@ export class App {
         ?.valueDecimal,
     };
 
+    // Agent-wide default for the per-channel arBehavior; channels layer their
+    // endpoint URL `arBehavior` param over this when resolving their behavior.
+    this.channelArBehavior = this.parseChannelArBehaviorSetting(agent);
+
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
       const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
@@ -792,6 +801,34 @@ export class App {
   /** @returns The agent-wide channelRetryMode / channelAutoRetry* settings, used as per-channel policy defaults. */
   getChannelRetrySettings(): AgentRetryDefaults {
     return this.channelRetrySettings;
+  }
+
+  /**
+   * @returns The agent-wide `channelArBehavior` default, or undefined when unset
+   *   or invalid — channels then use their `arBehavior` URL param, falling back
+   *   to {@link DEFAULT_AR_BEHAVIOR}.
+   */
+  getChannelArBehaviorDefault(): ArBehavior | undefined {
+    return this.channelArBehavior;
+  }
+
+  /**
+   * Reads and validates the agent-wide `channelArBehavior` setting.
+   * @param agent - The agent config being applied.
+   * @returns The configured {@link ArBehavior}, or undefined when unset (falls
+   *   through to the endpoint param / built-in default) or invalid (warns).
+   */
+  private parseChannelArBehaviorSetting(agent: Agent | undefined): ArBehavior | undefined {
+    const raw = agent?.setting?.find((setting) => setting.name === 'channelArBehavior')?.valueString;
+    if (raw === undefined) {
+      return undefined;
+    }
+    const normalized = raw.toLowerCase();
+    if (isArBehavior(normalized)) {
+      return normalized;
+    }
+    this.log.warn(`Invalid channelArBehavior setting '${raw}'; expected 'pause' or 'continue'. Ignoring.`);
+    return undefined;
   }
 
   /**
