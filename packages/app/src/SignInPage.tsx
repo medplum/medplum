@@ -30,7 +30,11 @@ export function SignInPage(): JSX.Element {
     <SignInForm
       onSuccess={() => navigateToNext()}
       onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
-      onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      onRegister={
+        isRegisterEnabled() && !profile
+          ? () => navigate('/register')?.catch(console.error)
+          : undefined
+      }
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}
