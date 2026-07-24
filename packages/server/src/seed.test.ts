@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Project } from '@medplum/fhirtypes';
-import type { MockInstance } from 'vitest';
+import type { Mock } from 'vitest';
 import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
+import type { MedplumServerConfig } from './config/types';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { OutputAction } from './fhir/operations/db-configure-indexes';
 import { configureGinIndexes, vacuumTable } from './fhir/operations/db-configure-indexes';
@@ -19,8 +20,9 @@ import {
   preparePostDeployMigrationAsyncJob,
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
-import { seedDatabase } from './seed';
-import { withTestContext } from './test.setup';
+import { closeRedis, getCacheRedis, initRedis } from './redis';
+import * as seedModule from './seed';
+import { deleteRedisKeys, withTestContext } from './test.setup';
 
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
@@ -53,55 +55,62 @@ async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository,
 }
 
 describe('Seed', () => {
-  let loggerWriteSpy: MockInstance;
+  let config: MedplumServerConfig;
+  let loggerWriteSpy: Mock<typeof globalLogger.write>;
+  let seedDatabaseSpy: Mock<(typeof seedModule)['seedDatabase']>;
 
   beforeAll(async () => {
-    loggerWriteSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+    loggerWriteSpy = vi.spyOn(globalLogger, 'write').mockImplementation(() => undefined);
+    seedDatabaseSpy = vi.spyOn(seedModule, 'seedDatabase');
 
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     config.database.runMigrations = true;
     // Since BullMQ is not available in tests, disable automatically running post-deploy migrations
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
 
+    // Delete all cache Redis keys to ensure a clean slate since the cache may be out of
+    // sync with the database, e.g. if postgres/init_test.sql or something similar was run beforehand.
+    // On CI/CD this is effectively a noop since a fresh Redis server is used for each test run
+    await initRedis(config);
+    await deleteRedisKeys(getCacheRedis(), '');
+    await closeRedis();
+
     globalLogger.write(`${new Date().toISOString()} - Initializing app services`);
     await initAppServices(config);
-    await withTestContext(async () => {
-      const repo = getGlobalSystemRepo();
-      // Run post-deploy migrations synchronously
-      await synchronouslyRunAllPendingPostDeployMigrations(repo);
 
-      // Scheduling features use serializable transactions that touch these
-      // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
-      // to append to the same "pending list", which can cause transaction
-      // failures.
-      //
-      // Here we update the indexes on Appointment and Slot tables to disable `fastUpdate`,
-      // and then vacuum the tables to clear any existing pending list entries.
-      const actions: OutputAction[] = [];
-      const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
-      const client = repo.getDatabaseClient(
-        repoAccess.sqlWrite(['Appointment', 'Slot'], { source: 'seed.test.configureIndexes' })
-      );
-      await configureGinIndexes(client, actions, tables, { fastUpdate: false });
-      for (const table of tables) {
-        await vacuumTable(client, actions, table);
-      }
-    });
+    const repo = getGlobalSystemRepo();
+    // Run post-deploy migrations synchronously
+    await synchronouslyRunAllPendingPostDeployMigrations(repo);
+
+    // Scheduling features use serializable transactions that touch these
+    // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
+    // to append to the same "pending list", which can cause transaction
+    // failures.
+    //
+    // Here we update the indexes on Appointment and Slot tables to disable `fastUpdate`,
+    // and then vacuum the tables to clear any existing pending list entries.
+    const actions: OutputAction[] = [];
+    const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
+    const client = repo.getDatabaseClient(
+      repoAccess.sqlWrite(['Appointment', 'Slot'], { source: 'seed.test.configureIndexes' })
+    );
+    await configureGinIndexes(client, actions, tables, { fastUpdate: false });
+    for (const table of tables) {
+      await vacuumTable(client, actions, table);
+    }
   });
 
   afterAll(async () => {
     await shutdownApp();
     loggerWriteSpy.mockRestore();
+    seedDatabaseSpy.mockRestore();
   });
 
   test('Seeder completes successfully', () =>
     withTestContext(async () => {
-      const config = await loadTestConfig();
-
-      // Seeder was already run as part of `initAppServices`, but run it again
-      // incase it is ever removed from `initAppServices`
-      await seedDatabase(config);
+      // // seedDatabase executed in beforeAll via initAppServices
+      expect(seedDatabaseSpy).toHaveBeenCalledTimes(1);
 
       // Make sure all database migrations have run
       const pool = getDatabasePool(DatabaseMode.WRITER);
@@ -116,15 +125,15 @@ describe('Seed', () => {
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
-      // Make sure the first project is a super admin
+      // seedDatabase is idempotent
+      await seedDatabaseSpy(config);
+
+      // One super admin project exists
       const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
       expect(rows.length).toBe(1);
 
       const project = JSON.parse(rows[0].content) as Project;
       expect(project.superAdmin).toBe(true);
       expect(project.strictMode).toBe(true);
-
-      // Second time, seeder should silently ignore
-      await seedDatabase(config);
     }));
 });
