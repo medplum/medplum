@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import type { Mock } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const mockAnswers = {
@@ -113,13 +114,12 @@ describe('onboardPatient', () => {
     vi.clearAllMocks();
   });
 
-  test('creates patient and invokes onboarding helpers', async () => {
-    const validateSpy = vi.spyOn(medplum, 'validateResource').mockResolvedValue(allOk);
-    const createSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
-      if (resource.resourceType === 'Patient') {
-        return { ...resource, id: 'patient-1' };
-      }
-      return resource;
+  test('submits all onboarding resources as a single transaction', async () => {
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    const batchSpy = vi.spyOn(medplum, 'executeBatch').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'transaction-response',
+      entry: [{ resource: { resourceType: 'Patient', id: 'patient-1' } }],
     });
 
     const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
@@ -128,8 +128,12 @@ describe('onboardPatient', () => {
     const patient = await onboardPatient(medplum, questionnaire, response);
 
     expect(patient.id).toBe('patient-1');
-    expect(validateSpy).toHaveBeenCalledWith(response);
-    expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Patient' }));
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(batchSpy).toHaveBeenCalledTimes(1);
+    const bundle = batchSpy.mock.calls[0][0];
+    expect(bundle.type).toBe('transaction');
+    expect(bundle.entry?.some((e) => e.resource?.resourceType === 'Patient')).toBe(true);
+    expect(bundle.entry?.some((e) => e.resource?.resourceType === 'QuestionnaireResponse')).toBe(true);
     expect(mockIntakeUtils.addExtension).toHaveBeenCalledWith(
       expect.objectContaining({}),
       'race-url',
@@ -138,15 +142,15 @@ describe('onboardPatient', () => {
       'ombCategory'
     );
     expect(mockIntakeUtils.addLanguage).toHaveBeenCalledTimes(2);
-    expect(mockIntakeUtils.addCoverage).toHaveBeenCalledWith(medplum, patient, expect.any(Object));
+    expect(mockIntakeUtils.addCoverage).toHaveBeenCalledWith(expect.anything(), expect.any(Object), expect.any(Object));
     expect(mockIntakeUtils.addAllergy).toHaveBeenCalled();
     expect(mockIntakeUtils.addConsent).toHaveBeenCalled();
     expect(mockIntakeUtils.addPharmacy).toHaveBeenCalled();
   });
 
-  test('does not create any resources when the response is invalid', async () => {
-    vi.spyOn(medplum, 'validateResource').mockRejectedValue(new OperationOutcomeError(badRequest('Invalid response')));
+  test('does not create any resources when the transaction fails', async () => {
     const createSpy = vi.spyOn(medplum, 'createResource');
+    vi.spyOn(medplum, 'executeBatch').mockRejectedValue(new OperationOutcomeError(badRequest('Invalid response')));
 
     const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
     const response = buildResponseFromAnswers(mockAnswers);
@@ -154,13 +158,11 @@ describe('onboardPatient', () => {
     await expect(onboardPatient(medplum, questionnaire, response)).rejects.toThrow('Invalid response');
 
     expect(createSpy).not.toHaveBeenCalled();
-    expect(mockIntakeUtils.upsertObservation).not.toHaveBeenCalled();
   });
 
-  test('does not create any resources when a coverage group is missing required answers', async () => {
-    vi.spyOn(medplum, 'validateResource').mockResolvedValue(allOk);
-    const createSpy = vi.spyOn(medplum, 'createResource');
-    mockIntakeUtils.getGroupRepeatedAnswers.mockImplementation((_, __, groupId) =>
+  test('rejects before submitting when a coverage group is missing required answers', async () => {
+    const batchSpy = vi.spyOn(medplum, 'executeBatch');
+    (mockIntakeUtils.getGroupRepeatedAnswers as Mock).mockImplementation((_, __, groupId) =>
       groupId === 'coverage-information' ? [{ 'subscriber-id': { valueString: 'sub-1' } }] : []
     );
 
@@ -171,7 +173,7 @@ describe('onboardPatient', () => {
       'Coverage Information is missing required answers'
     );
 
-    expect(createSpy).not.toHaveBeenCalled();
+    expect(batchSpy).not.toHaveBeenCalled();
   });
 });
 

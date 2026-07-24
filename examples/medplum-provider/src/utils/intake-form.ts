@@ -5,12 +5,22 @@ import {
   addProfileToResource,
   append,
   badRequest,
+  convertToTransactionBundle,
   createReference,
   EMPTY,
+  generateId,
   getQuestionnaireAnswers,
+  isOk,
   OperationOutcomeError,
 } from '@medplum/core';
-import type { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import type {
+  Organization,
+  Patient,
+  Questionnaire,
+  QuestionnaireResponse,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
@@ -36,13 +46,23 @@ import {
   upsertObservation,
 } from './intake-utils';
 
+function createTransactionRecorder(): { recorder: MedplumClient; resources: Resource[] } {
+  const resources: Resource[] = [];
+  const record = async <T extends Resource>(resource: T): Promise<T> => {
+    const result = { ...resource, id: generateId() };
+    resources.push(result);
+    return result;
+  };
+  const recorder = { createResource: record, upsertResource: record } as unknown as MedplumClient;
+  return { recorder, resources };
+}
+
 export async function onboardPatient(
   medplum: MedplumClient,
   questionnaire: Questionnaire,
   response: QuestionnaireResponse
 ): Promise<Patient> {
-  // Reject invalid responses up front so a validation error cannot leave a partially created patient behind
-  await medplum.validateResource(response);
+  const { recorder, resources } = createTransactionRecorder();
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
@@ -132,17 +152,15 @@ export async function onboardPatient(
 
   // Create the patient resource
 
-  patient = await medplum.createResource(patient);
+  patient = await recorder.createResource(patient);
 
-  // NOTE: Updating the questionnaire response does not trigger a loop because the bot subscription
-  // is configured for "create"-only event.
   response.subject = createReference(patient);
-  await medplum.createResource(response);
+  await recorder.createResource(response);
 
   // Handle observations
 
   await upsertObservation(
-    medplum,
+    recorder,
     patient,
     observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
@@ -152,7 +170,7 @@ export async function onboardPatient(
   );
 
   await upsertObservation(
-    medplum,
+    recorder,
     patient,
     observationCodeMapping.housingStatus,
     observationCategoryMapping.sdoh,
@@ -161,7 +179,7 @@ export async function onboardPatient(
   );
 
   await upsertObservation(
-    medplum,
+    recorder,
     patient,
     observationCodeMapping.educationLevel,
     observationCategoryMapping.sdoh,
@@ -170,7 +188,7 @@ export async function onboardPatient(
   );
 
   await upsertObservation(
-    medplum,
+    recorder,
     patient,
     observationCodeMapping.smokingStatus,
     observationCategoryMapping.socialHistory,
@@ -180,7 +198,7 @@ export async function onboardPatient(
   );
 
   await upsertObservation(
-    medplum,
+    recorder,
     patient,
     observationCodeMapping.pregnancyStatus,
     observationCategoryMapping.socialHistory,
@@ -190,7 +208,7 @@ export async function onboardPatient(
 
   const estimatedDeliveryDate = convertDateToDateTime(answers['estimated-delivery-date']?.valueDate);
   await upsertObservation(
-    medplum,
+    recorder,
     patient,
     observationCodeMapping.estimatedDeliveryDate,
     observationCategoryMapping.socialHistory,
@@ -202,52 +220,52 @@ export async function onboardPatient(
 
   const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
   for (const allergy of allergies) {
-    await addAllergy(medplum, patient, allergy);
+    await addAllergy(recorder, patient, allergy);
   }
 
   // Handle medications
 
   const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
-    await addMedication(medplum, patient, medication);
+    await addMedication(recorder, patient, medication);
   }
 
   // Handle medical history
 
   const medicalHistory = getGroupRepeatedAnswers(questionnaire, response, 'medical-history');
   for (const history of medicalHistory) {
-    await addCondition(medplum, patient, history);
+    await addCondition(recorder, patient, history);
   }
 
   const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
   for (const history of familyMemberHistory) {
-    await addFamilyMemberHistory(medplum, patient, history);
+    await addFamilyMemberHistory(recorder, patient, history);
   }
 
   // Handle vaccination history (immunizations)
 
   const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
   for (const vaccine of vaccinationHistory) {
-    await addImmunization(medplum, patient, vaccine);
+    await addImmunization(recorder, patient, vaccine);
   }
 
   // Handle coverage
 
   for (const provider of insuranceProviders) {
-    await addCoverage(medplum, patient, provider);
+    await addCoverage(recorder, patient, provider);
   }
 
   // Handle preferred pharmacy
 
   const preferredPharmacyReference = answers['preferred-pharmacy-reference']?.valueReference;
   if (preferredPharmacyReference) {
-    await addPharmacy(medplum, patient, preferredPharmacyReference as Reference<Organization>);
+    await addPharmacy(recorder, patient, preferredPharmacyReference as Reference<Organization>);
   }
 
   // Handle consents
 
   await addConsent(
-    medplum,
+    recorder,
     patient,
     !!answers['consent-for-treatment-signature']?.valueBoolean,
     consentScopeMapping.treatment,
@@ -257,7 +275,7 @@ export async function onboardPatient(
   );
 
   await addConsent(
-    medplum,
+    recorder,
     patient,
     !!answers['agreement-to-pay-for-treatment-help']?.valueBoolean,
     consentScopeMapping.treatment,
@@ -267,7 +285,7 @@ export async function onboardPatient(
   );
 
   await addConsent(
-    medplum,
+    recorder,
     patient,
     !!answers['notice-of-privacy-practices-signature']?.valueBoolean,
     consentScopeMapping.patientPrivacy,
@@ -277,7 +295,7 @@ export async function onboardPatient(
   );
 
   await addConsent(
-    medplum,
+    recorder,
     patient,
     !!answers['acknowledgement-for-advance-directives-signature']?.valueBoolean,
     consentScopeMapping.adr,
@@ -286,5 +304,22 @@ export async function onboardPatient(
     convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
   );
 
-  return patient;
+  const bundle = convertToTransactionBundle({
+    resourceType: 'Bundle',
+    type: 'collection',
+    entry: resources.map((resource) => ({ resource })),
+  });
+  const result = await medplum.executeBatch(bundle);
+
+  for (const entry of result.entry ?? EMPTY) {
+    if (entry.response?.outcome && !isOk(entry.response.outcome)) {
+      throw new OperationOutcomeError(entry.response.outcome);
+    }
+  }
+
+  const createdPatient = result.entry?.find((entry) => entry.resource?.resourceType === 'Patient')?.resource;
+  if (!createdPatient) {
+    throw new OperationOutcomeError(badRequest('Patient was not created'));
+  }
+  return createdPatient as Patient;
 }
