@@ -1154,7 +1154,10 @@ describe('ChannelQueueWorker', () => {
         await worker.stop();
       });
 
-      test('worker stop schedules a retry instead of erroring the in-flight row', async () => {
+      test('default worker stop cancels the in-flight row (guaranteed mode reschedules it)', async () => {
+        // Immediate stop (channel/app shutdown) cancels the in-flight dispatch with
+        // an ambiguous `worker-stopped`; guaranteed mode reschedules it for retry
+        // rather than leaving it dangling `inflight`.
         const r = enqueueOne(queue, 'GD-STOP');
         const { app } = makeStubApp();
         const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
@@ -1165,6 +1168,28 @@ describe('ChannelQueueWorker', () => {
 
         expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
         expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.WorkerStopped);
+      });
+
+      test('worker stop with { drain: true } lets the in-flight row settle instead of cancelling it', async () => {
+        // A pool resize (shrinking maxWorkers) drains rather than cancels: the
+        // in-flight dispatch settles on its own. Here the response arrives during
+        // the drain, so the row lands `processed` — no duplicate re-dispatch, no
+        // spurious `worker-stopped`.
+        const r = enqueueOne(queue, 'GD-DRAIN');
+        const { app } = makeStubApp();
+        const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
+        worker.start();
+
+        await waitFor(() => worker.hasInFlight());
+        const cb = currentCallback(worker);
+        const stopped = worker.stop({ drain: true });
+        // Deliver the server response while stop() is still draining.
+        worker.onServerResponse(makeResponse(cb, 200, makeAckBody('AA')));
+        await stopped;
+
+        expect(queue.getById(r.id)?.state).toBe(MessageState.PROCESSED);
+        expect(queue.getById(r.id)?.errorCode).toBeNull();
+        expect(queue.getById(r.id)?.attemptCount).toBe(1);
       });
 
       test('explicit maxAttempts caps guaranteed-mode retries', async () => {
@@ -1205,6 +1230,108 @@ describe('ChannelQueueWorker', () => {
       worker.onServerResponse(makeResponse(currentCallback(worker), 200));
       await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
       await worker.stop();
+    });
+  });
+
+  describe('logical channels (worker partitioning)', () => {
+    // Normal-mode policy so a permanent 4xx lands terminally `rejected` (guaranteed
+    // mode would retry it), letting us exercise the failure→wake path.
+    const NORMAL_POLICY: RetryPolicy = {
+      enabled: true,
+      guaranteedDelivery: false,
+      baseDelayMs: 10,
+      maxDelayMs: 100,
+      maxAttempts: 5,
+      backoffMultiplier: 2,
+    };
+
+    // A pool worker that keys EVERY row into the same logical channel 'K', so a
+    // second worker must serialize behind the first. notifyPool wakes all siblings.
+    function makePoolWorker(app: App, pool: ChannelQueueWorker[]): ChannelQueueWorker {
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        responseTimeoutMs: 5000,
+        idlePollMs: 10,
+        retryPolicy: NORMAL_POLICY,
+        computeKey: () => 'K',
+        notifyPool: () => {
+          for (const w of pool) {
+            w.notify();
+          }
+        },
+      });
+      pool.push(worker);
+      return worker;
+    }
+
+    // Waits until exactly one of the two rows is held by a worker (`claimed` — the
+    // stub app never calls markSent, so an in-flight dispatch stays `claimed`) and
+    // the other is parked `delayed` behind it. Returns which is which.
+    async function untilOneClaimedOneDelayed(
+      r1: InboundRow,
+      r2: InboundRow
+    ): Promise<{ claimedId: number; delayedId: number }> {
+      await waitFor(
+        () => {
+          const states = [queue.getById(r1.id)?.state, queue.getById(r2.id)?.state];
+          return states.includes(MessageState.CLAIMED) && states.includes(MessageState.DELAYED);
+        },
+        3000,
+        'one claimed, one delayed'
+      );
+      const claimedId = queue.getById(r1.id)?.state === MessageState.CLAIMED ? r1.id : r2.id;
+      return { claimedId, delayedId: claimedId === r1.id ? r2.id : r1.id };
+    }
+
+    test('a second worker parks a same-partition row `delayed`; a terminal success wakes it', async () => {
+      const r1 = enqueueOne(queue, 'PP1');
+      const r2 = enqueueOne(queue, 'PP2');
+      const { app } = makeStubApp();
+      const pool: ChannelQueueWorker[] = [];
+      const wA = makePoolWorker(app, pool);
+      const wB = makePoolWorker(app, pool);
+      wA.start();
+      wB.start();
+
+      const { claimedId, delayedId } = await untilOneClaimedOneDelayed(r1, r2);
+      expect(queue.getById(delayedId)?.state).toBe(MessageState.DELAYED);
+
+      // Settle the held row; its terminal success releases the partition, so the
+      // parked sibling leaves `delayed` and gets picked up.
+      const holder = wA.hasInFlight() ? wA : wB;
+      holder.onServerResponse(makeResponse(currentCallback(holder), 200));
+      await waitFor(() => queue.getById(claimedId)?.state === MessageState.PROCESSED);
+      await waitFor(() => queue.getById(delayedId)?.state !== MessageState.DELAYED, 3000, 'sibling woken');
+
+      await wA.stop();
+      await wB.stop();
+    });
+
+    test('a terminal failure of the in-flight head also wakes its delayed sibling', async () => {
+      const r1 = enqueueOne(queue, 'PF1');
+      const r2 = enqueueOne(queue, 'PF2');
+      const { app } = makeStubApp();
+      const pool: ChannelQueueWorker[] = [];
+      const wA = makePoolWorker(app, pool);
+      const wB = makePoolWorker(app, pool);
+      wA.start();
+      wB.start();
+
+      const { claimedId, delayedId } = await untilOneClaimedOneDelayed(r1, r2);
+
+      // A permanent 4xx rejects the head; handleFailure's terminal branch still
+      // releases the partition, so the sibling is woken (no strand on failure).
+      const holder = wA.hasInFlight() ? wA : wB;
+      holder.onServerResponse(makeResponse(currentCallback(holder), 400, 'bad request'));
+      await waitFor(() => queue.getById(claimedId)?.state === MessageState.REJECTED);
+      await waitFor(() => queue.getById(delayedId)?.state !== MessageState.DELAYED, 3000, 'sibling woken');
+
+      await wA.stop();
+      await wB.stop();
     });
   });
 });

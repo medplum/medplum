@@ -13,6 +13,13 @@
  *
  * - `queued`     — inserted, awaiting worker dispatch; OR a retryable failure
  *                  was scheduled for auto-retry (`next_attempt_at` set, see §4.1).
+ * - `delayed`    — a worker claimed the row, computed its logical-channel key,
+ *                  and found an earlier not-yet-settled message in the same
+ *                  partition, so it parked the row instead of dispatching it. It
+ *                  carries no dispatch timestamps and re-enters `queued` when the
+ *                  blocking message settles (see the wake-on-settle path), on a
+ *                  `logicalChannelKey` spec change, or on startup recovery.
+ *                  Non-terminal; invisible to `CLAIM_NEXT`.
  * - `claimed`    — a worker has claimed the row off the queue, but the
  *                  `agent:transmit:request` has NOT yet been written to the
  *                  WebSocket (it's still buffered in the in-memory send queue).
@@ -36,6 +43,7 @@
  */
 export const MessageState = {
   QUEUED: 'queued',
+  DELAYED: 'delayed',
   CLAIMED: 'claimed',
   INFLIGHT: 'inflight',
   PROCESSED: 'processed',
@@ -49,9 +57,9 @@ export type MessageState = (typeof MessageState)[keyof typeof MessageState];
  * States whose Bot-leg outcome is final — no further attempt (retry or
  * otherwise) will ever change `last_error`/`error_code`/`server_response_body`
  * again. Used to gate replay of a stored server response (see `handleDuplicate`
- * in hl7.ts): a `queued`/`claimed`/`inflight` row's response fields can still be
- * superseded by a future attempt, so replaying them to a retransmitting source
- * would risk relaying a stale, no-longer-authoritative verdict.
+ * in hl7.ts): a `queued`/`delayed`/`claimed`/`inflight` row's response fields can
+ * still be superseded by a future attempt, so replaying them to a retransmitting
+ * source would risk relaying a stale, no-longer-authoritative verdict.
  */
 export const SETTLED_MESSAGE_STATES: ReadonlySet<MessageState> = new Set<MessageState>([
   MessageState.PROCESSED,
@@ -288,6 +296,20 @@ interface InboundRowBase {
   encoding: string | null;
   enhancedMode: EnhancedModeColumn;
   attemptCount: number;
+  /**
+   * The row's logical channel — the FIFO partition it is processed within.
+   * Written at CLAIM time (not intake) from the channel's *current*
+   * `logicalChannelKey` spec: a worker computes it right after claiming the row
+   * and stores it before dispatching (or when parking the row `delayed`). Empty
+   * (`''`, the default) until the row is first evaluated, and whenever the
+   * channel has no spec — meaning the channel is a single serialized queue. Rows
+   * sharing a key are serialized against each other; distinct keys can run on
+   * different pool workers at once. Computing it at claim time (rather than
+   * persisting an intake-time key) is what keeps the partition correct across
+   * retries, requeues, restarts, and spec changes. See logical-channel.ts and the
+   * worker's post-claim partition check.
+   */
+  logicalChannelKey: string;
   /** Snapshot of the channel's guaranteed-delivery setting at intake (drives crash recovery). */
   guaranteedDelivery: boolean;
   callbackId: string;
@@ -315,6 +337,17 @@ export interface QueuedRow extends InboundRowBase {
   state: typeof MessageState.QUEUED;
   /** Earliest time (ms) a retry-scheduled row may be re-claimed; null for a fresh enqueue. */
   nextAttemptAt: number | null;
+}
+
+/**
+ * `delayed` — parked behind an earlier not-yet-settled message in the same
+ * logical channel. A worker claimed it, computed its partition key, found the
+ * partition occupied, and set it aside (undoing the claim's attempt increment).
+ * It carries no dispatch timestamps and re-enters `queued` when the blocking
+ * message settles, on a spec change, or on startup recovery.
+ */
+export interface DelayedRow extends InboundRowBase {
+  state: typeof MessageState.DELAYED;
 }
 
 /**
@@ -392,7 +425,15 @@ export interface NackedRow extends InboundRowBase {
  * Columns that are `NULL` in SQL surface as `null` here (not `undefined`), so callers
  * can distinguish "not yet set" from "absent property."
  */
-export type InboundRow = QueuedRow | ClaimedRow | InflightRow | ProcessedRow | RejectedRow | FailedRow | NackedRow;
+export type InboundRow =
+  | QueuedRow
+  | DelayedRow
+  | ClaimedRow
+  | InflightRow
+  | ProcessedRow
+  | RejectedRow
+  | FailedRow
+  | NackedRow;
 
 /**
  * Narrows a (possibly null) {@link InboundRow} to the union member for `state`,
