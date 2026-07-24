@@ -45,9 +45,12 @@ export interface BundlePreprocessInfo {
 /**
  * The durable, JSON-serializable state produced by preprocessing a batch bundle. This is
  * everything required to (re)hydrate a {@link BatchProcessor} and resume processing after a
- * server restart or worker crash, EXCEPT the progress marker (the index into `bundleInfo.ordering`
- * of the next entry to process) and the per-entry results produced so far, both of which the
- * caller (e.g. the async batch worker) is responsible for persisting separately.
+ * server restart or worker crash, EXCEPT for three things the caller (e.g. the async batch
+ * worker) is responsible for persisting separately: the progress marker (the index into
+ * `bundleInfo.ordering` of the next entry to process), the per-entry results produced so far, and
+ * the resolved-identity map (the placeholder-URN to reference mapping, which is *seeded* during
+ * preprocessing — see {@link BatchProcessor.getResolvedIdentities} — but continues to evolve as
+ * entries execute, so it does not belong in this otherwise-immutable snapshot).
  *
  * @see BatchProcessor.preprocess
  * @see BatchProcessor.fromState
@@ -62,7 +65,6 @@ export interface BatchInitialState {
    */
   bundle: Bundle;
   bundleInfo: BundlePreprocessInfo;
-  resolvedIdentities: Record<string, string>;
   /**
    * Result entries produced during preprocessing itself (i.e. error responses for malformed
    * entries in a non-transaction bundle), keyed by their index in the original bundle. These
@@ -98,6 +100,13 @@ interface ProcessingState {
   resultEntries: (BundleEntry | OperationOutcome)[];
   /** Indices (into the original bundle) of results produced since the last {@link BatchProcessor.takePendingResults} call. */
   pendingIndices: number[];
+  /**
+   * Identity reconciliations (placeholder URN to new reference) produced since the last
+   * {@link BatchProcessor.takePendingIdentityUpdates} call. Populated by
+   * {@link BatchProcessor.reconcileResolvedIdentity} when a conditional entry resolves to a
+   * resource whose id differs from the one assigned during preprocessing.
+   */
+  pendingIdentityUpdates: Record<string, string>;
   /** Error messages accumulated across processed entries, for the post-batch telemetry event. */
   errors: string[];
 }
@@ -146,6 +155,7 @@ export class BatchProcessor {
       position: 0,
       resultEntries: new Array(bundle.entry?.length ?? 0),
       pendingIndices: [],
+      pendingIdentityUpdates: Object.create(null),
       errors: [],
     };
   }
@@ -156,10 +166,18 @@ export class BatchProcessor {
    * flow; the caller is responsible for loading the {@link BatchInitialState} and progress marker
    * from durable storage, and for assembling the final response bundle from the durably-persisted
    * result entries (this instance only tracks results produced in the current run).
+   *
+   * The resolved-identity map is passed in separately from `initialState` because it evolves as
+   * entries execute (see {@link BatchProcessor.takePendingIdentityUpdates}) and is checkpointed by
+   * the caller apart from the immutable initial-state snapshot. The caller must supply the *full*
+   * map — the preprocess-time seed ({@link BatchProcessor.getResolvedIdentities}) merged with any
+   * reconciliations checkpointed since — or a resumed processor would rewrite references using
+   * stale or missing identities.
    * @param router - The FHIR router.
    * @param repo - The FHIR repository.
    * @param req - The request for the batch.
    * @param initialState - The durable state produced by {@link BatchProcessor.preprocess}.
+   * @param resolvedIdentities - The full placeholder-URN to reference map (seed plus reconciliations).
    * @param position - The index into `bundleInfo.ordering` of the next entry to process.
    * @returns A batch processor positioned to resume at `position`.
    */
@@ -168,10 +186,13 @@ export class BatchProcessor {
     repo: FhirRepository,
     req: FhirRequest,
     initialState: BatchInitialState,
+    resolvedIdentities: Record<string, string>,
     position: number
   ): BatchProcessor {
     const processor = new BatchProcessor(router, repo, initialState.bundle, req);
-    processor.resolvedIdentities = initialState.resolvedIdentities;
+    // Copy into a fresh null-proto map so the processor never shares (and thus never mutates) the
+    // caller's object as reconciliations accumulate during the resumed run.
+    processor.resolvedIdentities = Object.assign(Object.create(null), resolvedIdentities);
     processor.bundleInfo = {
       ...initialState.bundleInfo,
     };
@@ -260,9 +281,19 @@ export class BatchProcessor {
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
       },
-      resolvedIdentities: this.resolvedIdentities,
       preprocessResults,
     };
+  }
+
+  /**
+   * Returns the resolved-identity map (placeholder URN to reference) as seeded by preprocessing.
+   * Unlike the rest of {@link BatchInitialState}, this map continues to evolve as entries execute,
+   * so it is exposed separately for the caller to persist and later restore via
+   * {@link BatchProcessor.fromState}. Must be called after {@link BatchProcessor.preprocess}.
+   * @returns The preprocess-time resolved-identity seed, keyed by placeholder URN.
+   */
+  getResolvedIdentities(): Record<string, string> {
+    return this.resolvedIdentities;
   }
 
   /**
@@ -299,6 +330,25 @@ export class BatchProcessor {
       out[index] = this.state.resultEntries[index];
     }
     this.state.pendingIndices = [];
+    return out;
+  }
+
+  /**
+   * Returns identity reconciliations (placeholder URN to new reference) produced since the last
+   * call, and clears the buffer. The caller persists these as a checkpoint before advancing the
+   * durable progress marker, appending to the identity stream whose seed is the preprocess-time map
+   * from {@link BatchProcessor.getResolvedIdentities}; a resumed processor restores the merged
+   * result via {@link BatchProcessor.fromState}. Returns `undefined` when none were produced,
+   * mirroring {@link BatchProcessor.takePendingResults}.
+   * @returns Newly-produced identity updates, keyed by placeholder URN, or `undefined` if none.
+   */
+  takePendingIdentityUpdates(): Record<string, string> | undefined {
+    if (Object.keys(this.state.pendingIdentityUpdates).length === 0) {
+      return undefined;
+    }
+
+    const out = this.state.pendingIdentityUpdates;
+    this.state.pendingIdentityUpdates = Object.create(null);
     return out;
   }
 
@@ -644,13 +694,14 @@ export class BatchProcessor {
       return;
     }
 
-    const n = this.state.position;
-    const entryIndex = bundleInfo.ordering[n];
+    const entryIndex = bundleInfo.ordering[this.state.position];
     const entry = entries[entryIndex];
     const rewritten = this.rewriteIdsInObject(entry);
     try {
-      this.setResult(entryIndex, await this.processBatchEntry(rewritten));
-      this.state.position = n + 1;
+      const result = await this.processBatchEntry(rewritten);
+      this.reconcileResolvedIdentity(entry, result);
+      this.setResult(entryIndex, result);
+      this.state.position++;
     } catch (err: any) {
       if (this.isTransaction()) {
         throw err;
@@ -659,7 +710,7 @@ export class BatchProcessor {
       this.state.errors.push(err.message);
       if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
         // Rate limit reached; terminate batch and finish to avoid further load on server
-        for (let i = n; i < bundleInfo.ordering.length; i++) {
+        for (let i = this.state.position; i < bundleInfo.ordering.length; i++) {
           this.setResult(bundleInfo.ordering[i], buildBundleResponse(err.outcome));
         }
         this.state.position = bundleInfo.ordering.length;
@@ -667,13 +718,41 @@ export class BatchProcessor {
       }
 
       this.setResult(entryIndex, buildBundleResponse(normalizeOperationOutcome(err)));
-      this.state.position = n + 1;
+      this.state.position++;
     }
   }
 
   private setResult(index: number, entry: BundleEntry): void {
     this.state.resultEntries[index] = entry;
     this.state.pendingIndices.push(index);
+  }
+
+  /**
+   * Reconciles the resolved-identity map with the resource actually persisted for an entry.
+   *
+   * Identities are resolved once during preprocessing and reused across transaction retries to
+   * maintain stable IDs (see {@link BatchProcessor.run}), but a conditional create or update
+   * transaction resolves against a search that is re-executed on every attempt.  If a matching
+   * resource appears between preprocessing (or a failed attempt) and the attempt that commits,
+   * the entry should resolve to that existing resource, not the one assigned during preprocessing.
+   * @param entry - The original Bundle entry that was processed.
+   * @param result - The response entry produced for it, carrying the persisted resource.
+   */
+  private reconcileResolvedIdentity(entry: BundleEntry, result: BundleEntry): void {
+    const placeholder = entry.fullUrl;
+    const resource = result.resource;
+    // Only update placeholders that were resolved during preprocessing
+    if (placeholder && this.resolvedIdentities[placeholder] && resource?.id) {
+      const newReference = getReferenceString(resource as WithId<Resource>);
+      // Record only genuine divergences (the common case — a normal create landing on its
+      // preprocessing-assigned id — is a no-op), so the checkpointed delta stays minimal. The
+      // recorded update lets the async batch worker persist the reconciliation and rehydrate it
+      // on resume (see takePendingIdentityUpdates).
+      if (newReference !== this.resolvedIdentities[placeholder]) {
+        this.resolvedIdentities[placeholder] = newReference;
+        this.state.pendingIdentityUpdates[placeholder] = newReference;
+      }
+    }
   }
 
   /**
@@ -897,6 +976,7 @@ function cloneState(state: ProcessingState): ProcessingState {
     position: state.position,
     resultEntries: state.resultEntries.slice(),
     pendingIndices: state.pendingIndices.slice(),
+    pendingIdentityUpdates: { ...state.pendingIdentityUpdates },
     errors: state.errors.slice(),
   };
 }
