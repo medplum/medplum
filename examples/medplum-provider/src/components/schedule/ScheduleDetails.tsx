@@ -140,6 +140,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
               appointments={appointments ?? []}
               onRangeChange={setRange}
               onDoubleClickAppointment={handleDoubleClickAppointment}
+              focus="Appointment"
             />
           </Box>
           <Text size="sm" color="dimmed" fs="italic">

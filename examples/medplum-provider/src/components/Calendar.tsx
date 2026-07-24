@@ -23,7 +23,7 @@ import classes from './Calendar.module.css';
 
 type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
 
-function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
+function appointmentsToEvents(appointments: Appointment[], options: { background: boolean }): EventInput[] {
   return appointments
     .filter((appointment) => appointment.status !== 'cancelled' && appointment.start && appointment.end)
     .map((appointment) => {
@@ -43,11 +43,12 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
         extendedProps: { type: 'appointment', appointment } satisfies ExtendedEvent,
         interactive: true,
         className: cx(classes.appointment, classes[appointment.status]),
+        display: options.background ? 'background' : 'auto',
       };
     });
 }
 
-function slotsToEvents(slots: Slot[]): EventInput[] {
+function slotsToEvents(slots: Slot[], options: { background: boolean }): EventInput[] {
   return slots.map((slot) => ({
     id: slot.id,
     start: slot.start,
@@ -56,7 +57,7 @@ function slotsToEvents(slots: Slot[]): EventInput[] {
     extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
     interactive: false,
     className: cx(classes.slot, classes[slot.status]),
-    display: 'background',
+    display: options.background ? 'background' : 'auto',
   }));
 }
 
@@ -69,6 +70,7 @@ export function Calendar(props: {
   onDoubleClickAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: Range) => void;
   className?: string;
+  focus: 'Appointment' | 'Slot';
 }): JSX.Element {
   const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
@@ -137,8 +139,11 @@ export function Calendar(props: {
       return true;
     });
 
-    return [...appointmentsToEvents(props.appointments), ...slotsToEvents(filteredSlots)];
-  }, [props.appointments, props.slots]);
+    return [
+      ...appointmentsToEvents(props.appointments, { background: props.focus !== 'Appointment' }),
+      ...slotsToEvents(filteredSlots, { background: props.focus !== 'Slot' }),
+    ];
+  }, [props.appointments, props.slots, props.focus]);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, props.className)}>
