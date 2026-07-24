@@ -80,14 +80,6 @@ export function ConceptMapBuilder(props: ConceptMapBuilderProps): JSX.Element | 
   const [value, setValue] = useState<ConceptMap>();
   const [error, setError] = useState<string>();
 
-  function handleDocumentMouseOver(): void {
-    setHoverKey(undefined);
-  }
-
-  function handleDocumentClick(): void {
-    setSelectedKey(undefined);
-  }
-
   useEffect(() => {
     medplum
       .requestSchema('ConceptMap')
@@ -95,14 +87,25 @@ export function ConceptMapBuilder(props: ConceptMapBuilderProps): JSX.Element | 
       .catch(console.log);
   }, [medplum]);
 
+  // Clear hover/selection when the pointer or a click lands outside a row. These listeners do not
+  // depend on the resource, so they are not re-bound every time it changes.
+  useEffect(() => {
+    function onDocumentMouseOver(): void {
+      setHoverKey(undefined);
+    }
+    function onDocumentClick(): void {
+      setSelectedKey(undefined);
+    }
+    document.addEventListener('mouseover', onDocumentMouseOver);
+    document.addEventListener('click', onDocumentClick);
+    return () => {
+      document.removeEventListener('mouseover', onDocumentMouseOver);
+      document.removeEventListener('click', onDocumentClick);
+    };
+  }, []);
+
   useEffect(() => {
     setValue(ensureConceptMapKeys(defaultValue ?? { resourceType: 'ConceptMap', status: 'draft' }));
-    document.addEventListener('mouseover', handleDocumentMouseOver);
-    document.addEventListener('click', handleDocumentClick);
-    return () => {
-      document.removeEventListener('mouseover', handleDocumentMouseOver);
-      document.removeEventListener('click', handleDocumentClick);
-    };
   }, [defaultValue]);
 
   if (!schemaLoaded || !value) {
@@ -136,6 +139,12 @@ export function ConceptMapBuilder(props: ConceptMapBuilderProps): JSX.Element | 
     if (missingComment) {
       setError('Narrower and inexact mappings require a comment explaining the difference.');
       setSelectedKey(missingComment);
+      return;
+    }
+    const codedUnmatched = findCodedUnmatched(value as ConceptMap);
+    if (codedUnmatched) {
+      setError('A target cannot be "unmatched" and have a code. Remove the code, or use the No equivalent checkbox.');
+      setSelectedKey(codedUnmatched);
       return;
     }
     setError(undefined);
@@ -668,12 +677,15 @@ function ElementBuilder(props: ElementBuilderProps): JSX.Element {
   });
 
   return (
-    <div className={className} data-testid={element.id} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
+    <div className={className} onMouseOver={onHover} onFocus={onHover}>
       {/* The activatable region deliberately excludes the remove button. `role="button"` has
           presentational children in ARIA, so a nested button is not exposed to screen readers at
-          all — keeping them siblings is what makes "Remove mapping" announceable. */}
+          all — keeping them siblings is what makes "Remove mapping" announceable. Click and keyboard
+          activation both live here so the two cannot drift apart. */}
       <div
         className={classes.rowContent}
+        data-testid={element.id}
+        onClick={onClick}
         onKeyDown={onKeyDown}
         role={collapsed ? 'button' : undefined}
         tabIndex={collapsed ? 0 : undefined}
@@ -843,6 +855,20 @@ function TargetBuilder(props: TargetBuilderProps): JSX.Element {
   const missingEquivalence = Boolean(target.code) && !target.equivalence;
   const commentRequired = COMMENT_REQUIRED.includes(target.equivalence);
   const missingComment = commentRequired && !target.comment;
+  // `unmatched` means "no equivalent exists", so pairing it with a target code is contradictory,
+  // and `isNoMap` does not recognise such a row. Reachable from both directions: pick unmatched
+  // then add a code, or add a code then pick unmatched.
+  const codedUnmatched = Boolean(target.code) && target.equivalence === 'unmatched';
+
+  function equivalenceError(): string | undefined {
+    if (missingEquivalence) {
+      return 'Required';
+    }
+    if (codedUnmatched) {
+      return 'Remove the code, or pick another relationship';
+    }
+    return undefined;
+  }
 
   return (
     <Box className={classes.target}>
@@ -866,7 +892,7 @@ function TargetBuilder(props: TargetBuilderProps): JSX.Element {
           required
           searchable
           allowDeselect={false}
-          error={missingEquivalence ? 'Required' : undefined}
+          error={equivalenceError()}
           value={target.equivalence ?? null}
           data={EQUIVALENCE_OPTIONS}
           onChange={(v) => changeProperty('equivalence', (v as Equivalence) ?? undefined)}
@@ -972,6 +998,21 @@ function findMissingComment(conceptMap: ConceptMap): string | undefined {
   return undefined;
 }
 
+// Returns the id of the first element owning a target that claims `unmatched` while carrying a
+// code. The two are contradictory, and such a row is not recognised as a no-map.
+function findCodedUnmatched(conceptMap: ConceptMap): string | undefined {
+  for (const group of conceptMap.group ?? []) {
+    for (const element of group.element ?? []) {
+      for (const target of element.target ?? []) {
+        if (target.code && target.equivalence === 'unmatched') {
+          return element.id;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 // Returns the id of the first element that owns a target with a code but no equivalence, or
 // undefined if every coded target has a relationship. Enforces "equivalence required, no default".
 function findMissingEquivalence(conceptMap: ConceptMap): string | undefined {
@@ -997,6 +1038,19 @@ function pruneEmptyGroups(conceptMap: ConceptMap): ConceptMap {
 // Injects synthetic `id` on every group, element, and target that lacks one. These are valid
 // FHIR `Element.id` values used only as stable React keys; they round-trip harmlessly.
 function ensureConceptMapKeys(conceptMap: ConceptMap): ConceptMap {
+  // Reserve every id already present before minting a new one. Assigning during a single pass lets
+  // a generated `id-N` collide with an existing `id-N` that appears later in the resource, which
+  // React reports as two children with the same key.
+  for (const g of conceptMap.group ?? []) {
+    reserveId(g.id);
+    for (const element of g.element ?? []) {
+      reserveId(element.id);
+      for (const target of element.target ?? []) {
+        reserveId(target.id);
+      }
+    }
+  }
+
   let group = conceptMap.group?.map((g) => ({
     ...g,
     id: generateId(g.id),
@@ -1028,13 +1082,21 @@ let nextId = 1;
  */
 function generateId(existing?: string): string {
   if (existing) {
-    if (existing.startsWith('id-')) {
-      const existingNum = Number.parseInt(existing.substring(3), 10);
-      if (!Number.isNaN(existingNum)) {
-        nextId = Math.max(nextId, existingNum + 1);
-      }
-    }
+    reserveId(existing);
     return existing;
   }
   return 'id-' + nextId++;
+}
+
+/**
+ * Advances the key counter past an id already in use so it is never minted again.
+ * @param existing - An existing id, if any.
+ */
+function reserveId(existing: string | undefined): void {
+  if (existing?.startsWith('id-')) {
+    const existingNum = Number.parseInt(existing.substring(3), 10);
+    if (!Number.isNaN(existingNum)) {
+      nextId = Math.max(nextId, existingNum + 1);
+    }
+  }
 }

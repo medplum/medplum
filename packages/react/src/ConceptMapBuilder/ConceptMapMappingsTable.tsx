@@ -105,7 +105,9 @@ function GroupTable(props: GroupTableProps): JSX.Element {
   const filtered = elements.filter((e) => matchesFilter(e, props.filter) && matchesSearch(e, props.search));
   const narrowed = props.filter !== 'all' || props.search.trim().length > 0;
   const capped = filtered.slice(0, TABLE_RENDER_CAP);
-  const rows = capped.flatMap(buildRows);
+  // Pass the callback explicitly: flatMap also supplies the source array, which buildRows must not
+  // receive.
+  const rows = capped.flatMap((element, index) => buildRows(element, index));
 
   const ordinal = `Group ${props.groupIndex + 1}`;
 

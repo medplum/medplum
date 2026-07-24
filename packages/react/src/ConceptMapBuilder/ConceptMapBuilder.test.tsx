@@ -602,6 +602,59 @@ describe('ConceptMapBuilder', () => {
     expect(screen.getByText(url)).toBeInTheDocument();
   });
 
+  test('A coded target cannot also be unmatched', async () => {
+    const onSubmit = vi.fn();
+    await setup({
+      value: {
+        resourceType: 'ConceptMap',
+        status: 'draft',
+        group: [
+          {
+            source: SNOMED,
+            target: ICD10,
+            // Contradictory: unmatched means "no equivalent exists", but a code is present.
+            element: [{ id: 'el', code: 'a', target: [{ id: 't', code: 'x', equivalence: 'unmatched' }] }],
+          },
+        ],
+      },
+      onSubmit,
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByTestId('conceptmap-error')).toHaveTextContent('cannot be "unmatched" and have a code');
+  });
+
+  test('Generated keys never collide with ids already in the resource', async () => {
+    // An existing `id-N` that appears after an element with no id used to be handed the same key,
+    // which React reports as two children with the same key.
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await setup({
+      value: {
+        resourceType: 'ConceptMap',
+        status: 'draft',
+        group: [
+          {
+            id: 'g',
+            source: SNOMED,
+            target: ICD10,
+            element: [{ code: 'first' }, { id: 'id-1', code: 'second' }, { code: 'third' }],
+          },
+        ],
+      },
+      onSubmit: vi.fn(),
+    });
+    const duplicateKeyWarning = warn.mock.calls.some((c) => String(c[0]).includes('same key'));
+    expect(duplicateKeyWarning).toBe(false);
+    warn.mockRestore();
+
+    // All three rows render, each with a distinct test id.
+    const ids = ['first', 'second', 'third'].map((code) => screen.getByText(code).closest('[data-testid]'));
+    const testIds = ids.map((el) => el?.getAttribute('data-testid'));
+    expect(new Set(testIds).size).toBe(3);
+  });
+
   test('Remove button is not nested inside the row button', async () => {
     await setup({
       value: {
