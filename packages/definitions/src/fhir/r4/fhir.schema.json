@@ -62902,6 +62902,28 @@
     "IdentityProvider": {
       "description": "External Identity Provider (IdP) configuration details.",
       "properties": {
+        "issuer": {
+          "description": "Issuer URL for the external Identity Provider.",
+          "$ref": "#/definitions/string"
+        },
+        "audience": {
+          "description": "Audience URL for the external Identity Provider.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "tokenVerificationMethod": {
+          "description": "Token verification method for the external Identity Provider.",
+          "enum": [
+            "userinfo",
+            "jwks"
+          ]
+        },
+        "jwksUrl": {
+          "description": "Remote URL for the external Identity Provider JWKS endpoint.",
+          "$ref": "#/definitions/string"
+        },
         "authorizeUrl": {
           "description": "Remote URL for the external Identity Provider authorize endpoint.",
           "$ref": "#/definitions/string"
@@ -62966,14 +62988,7 @@
           ]
         }
       },
-      "additionalProperties": false,
-      "required": [
-        "authorizeUrl",
-        "tokenUrl",
-        "userInfoUrl",
-        "clientId",
-        "clientSecret"
-      ]
+      "additionalProperties": false
     },
     "ProjectMembership_Access": {
       "description": "Extended access configuration using parameterized access policies.",

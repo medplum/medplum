@@ -5751,17 +5751,81 @@
             }
           },
           {
+            "id" : "IdentityProvider.issuer",
+            "path" : "IdentityProvider.issuer",
+            "definition" : "Issuer URL for the external Identity Provider.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.issuer",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.audience",
+            "path" : "IdentityProvider.audience",
+            "definition" : "Audience URL for the external Identity Provider.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.audience",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "IdentityProvider.tokenVerificationMethod",
+            "path" : "IdentityProvider.tokenVerificationMethod",
+            "definition" : "Token verification method for the external Identity Provider.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "IdentityProvider.tokenVerificationMethod",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/identity-provider-token-verification-method|4.0.1"
+            }
+          },
+          {
+            "id" : "IdentityProvider.jwksUrl",
+            "path" : "IdentityProvider.jwksUrl",
+            "definition" : "Remote URL for the external Identity Provider JWKS endpoint.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.jwksUrl",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "IdentityProvider.authorizeUrl",
             "path" : "IdentityProvider.authorizeUrl",
             "definition" : "Remote URL for the external Identity Provider authorize endpoint.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
               "path" : "IdentityProvider.authorizeUrl",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
@@ -5769,14 +5833,14 @@
             "id" : "IdentityProvider.tokenUrl",
             "path" : "IdentityProvider.tokenUrl",
             "definition" : "Remote URL for the external Identity Provider token endpoint.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
               "path" : "IdentityProvider.tokenUrl",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
@@ -5803,14 +5867,14 @@
             "id" : "IdentityProvider.userInfoUrl",
             "path" : "IdentityProvider.userInfoUrl",
             "definition" : "Remote URL for the external Identity Provider userinfo endpoint.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
               "path" : "IdentityProvider.userInfoUrl",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
@@ -5854,14 +5918,14 @@
             "id" : "IdentityProvider.clientId",
             "path" : "IdentityProvider.clientId",
             "definition" : "External Identity Provider client ID.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
               "path" : "IdentityProvider.clientId",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
@@ -5869,14 +5933,14 @@
             "id" : "IdentityProvider.clientSecret",
             "path" : "IdentityProvider.clientSecret",
             "definition" : "External Identity Provider client secret.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
             }],
             "base" : {
               "path" : "IdentityProvider.clientSecret",
-              "min" : 1,
+              "min" : 0,
               "max" : "1"
             }
           },
