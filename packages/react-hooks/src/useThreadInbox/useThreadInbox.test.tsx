@@ -261,6 +261,49 @@ describe('useThreadInbox', () => {
     });
   });
 
+  test('updates a thread parent in place, preserving its last message', async () => {
+    await medplum.createResource(mockCommunication1);
+    await medplum.createResource(mockCommunication2);
+
+    // Return comm-1 from search so it is present in the list (the edited thread is always
+    // one the user selected from the list).
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
+    });
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm1: [mockCommunication2],
+      },
+    } as any);
+
+    const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.selectedThread?.id).toBe('comm-1');
+    });
+
+    const updated: WithId<Communication> = {
+      ...(mockCommunication1 as WithId<Communication>),
+      topic: { text: 'Edited topic' },
+    };
+
+    await act(async () => result.current.updateThread(updated));
+
+    await waitFor(() => {
+      // Selected thread and the list entry's parent both reflect the edit...
+      expect(result.current.selectedThread?.topic?.text).toBe('Edited topic');
+      expect(result.current.threadMessages[0][0].topic?.text).toBe('Edited topic');
+      // ...while the last-message slot is preserved (a draft would keep its undefined slot).
+      expect(result.current.threadMessages[0][1]?.id).toBe('comm-2');
+    });
+  });
+
   test('does not update status when no thread is selected', async () => {
     const updateSpy = vi.spyOn(medplum, 'updateResource');
 

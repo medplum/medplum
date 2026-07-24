@@ -216,6 +216,39 @@ describe('ThreadInbox', () => {
     expect(vi.mocked(reactHooks.useSubscription)).toHaveBeenCalled();
   });
 
+  test('opens the Message Settings dialog from the thread header and saves', async () => {
+    const user = userEvent.setup();
+    // A Practitioner sender lets the dialog's fallback populate the practitioner field, so Save is enabled.
+    const thread: Communication = {
+      ...mockCommunication,
+      sender: { reference: 'Practitioner/123' },
+    };
+    await medplum.createResource(thread);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: thread }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({ data: { CommunicationList: [] } });
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+
+    await setup({ threadId: 'comm-123' });
+
+    await waitFor(() => expect(screen.getAllByText('Test Topic').length).toBeGreaterThan(0), { timeout: 3000 });
+
+    await user.click(screen.getByRole('button', { name: 'Message settings' }));
+    await waitFor(() => expect(screen.getByText('Message Settings')).toBeInTheDocument());
+
+    const saveButton = screen.getByRole('button', { name: 'Save' });
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    await user.click(saveButton);
+
+    // Saving calls onSaved -> updateThread and closes the dialog.
+    await waitFor(() => expect(updateSpy).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText('Message Settings')).not.toBeInTheDocument());
+  });
+
   test('shows patient summary when showPatientSummary is true and thread is selected', async () => {
     const medplumReact = await import('../../PatientSummary/PatientSummary');
     const patientSummarySpy = vi.spyOn(medplumReact, 'PatientSummary');

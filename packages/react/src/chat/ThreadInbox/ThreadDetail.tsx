@@ -1,9 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Flex, Menu, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Group,
+  Menu,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
-import { IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
@@ -21,6 +34,8 @@ export interface ThreadDetailProps {
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
   /** Fired when the user changes the thread status from the header menu. */
   readonly onStatusChange: (status: Communication['status']) => void;
+  /** When provided, shows a Message Settings button in the header that invokes this callback. */
+  readonly onOpenSettings?: () => void;
 }
 
 /**
@@ -30,7 +45,15 @@ export interface ThreadDetailProps {
  * @returns The ThreadDetail React node.
  */
 export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
-  const { thread, showPatientSummary = false, sections, uploadEnabled, onViewInDocuments, onStatusChange } = props;
+  const {
+    thread,
+    showPatientSummary = false,
+    sections,
+    uploadEnabled,
+    onViewInDocuments,
+    onStatusChange,
+    onOpenSettings,
+  } = props;
 
   return (
     <>
@@ -43,28 +66,45 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
                 {thread.topic?.text ?? 'Messages'}
               </Text>
 
-              <Menu position="bottom-end" shadow="md">
-                <Menu.Target>
-                  <Button
-                    variant="light"
-                    color={getStatusColor(thread.status)}
-                    rightSection={thread.status === 'completed' ? undefined : <IconChevronDown size={16} />}
-                    radius="xl"
-                    size="sm"
-                  >
-                    {thread.status
-                      .split('-')
-                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(' ')}
-                  </Button>
-                </Menu.Target>
-
-                {thread.status !== 'completed' && (
-                  <Menu.Dropdown>
-                    <Menu.Item onClick={() => onStatusChange('completed')}>Completed</Menu.Item>
-                  </Menu.Dropdown>
+              <Group gap="xs">
+                {onOpenSettings && (
+                  <Tooltip label="Message Settings" position="bottom" openDelay={500}>
+                    <ActionIcon
+                      aria-label="Message settings"
+                      variant="transparent"
+                      radius="xl"
+                      size={32}
+                      className="outline-icon-button"
+                      onClick={onOpenSettings}
+                    >
+                      <IconInfoCircle size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                 )}
-              </Menu>
+
+                <Menu position="bottom-end" shadow="md">
+                  <Menu.Target>
+                    <Button
+                      variant="light"
+                      color={getStatusColor(thread.status)}
+                      rightSection={thread.status === 'completed' ? undefined : <IconChevronDown size={16} />}
+                      radius="xl"
+                      size="sm"
+                    >
+                      {thread.status
+                        .split('-')
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ')}
+                    </Button>
+                  </Menu.Target>
+
+                  {thread.status !== 'completed' && (
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={() => onStatusChange('completed')}>Completed</Menu.Item>
+                    </Menu.Dropdown>
+                  )}
+                </Menu>
+              </Group>
             </Flex>
             <Divider />
             <Box flex={1} h="100%">

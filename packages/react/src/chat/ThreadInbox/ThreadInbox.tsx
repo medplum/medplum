@@ -3,9 +3,8 @@
 
 import { ActionIcon, Box, Center, Flex, Skeleton, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import { Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
@@ -14,7 +13,9 @@ import { useCallback, useEffect, useMemo } from 'react';
 import type { ListWithDetailPaneTab } from '../../ListWithDetailPane/ListWithDetailPane';
 import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
+import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
+import { showErrorNotification } from './notifications';
 import { ParticipantFilter } from './ParticipantFilter';
 import { ThreadDetail } from './ThreadDetail';
 import classes from './ThreadInbox.module.css';
@@ -69,6 +70,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const navigate = useMedplumNavigate();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
@@ -98,6 +100,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     total,
     handleThreadStatusChange,
     addThreadMessage,
+    updateThread,
     refreshThreadMessages,
   } = useThreadInbox({
     query,
@@ -127,11 +130,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
     }
   }, [error]);
 
@@ -140,11 +139,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     try {
       await refreshThreadMessages();
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showErrorNotification(error);
     }
   };
 
@@ -222,6 +217,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               uploadEnabled={uploadEnabled}
               onViewInDocuments={onViewInDocuments}
               onStatusChange={handleTopicStatusChangeWithErrorHandling}
+              onOpenSettings={openEditModal}
             />
           )}
         />
@@ -233,6 +229,18 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
         onSubmit={handleNewTopicCompletion}
         allowPatientSelection={allowPatientSelection}
       />
+      {/* Mount only while open so every open is a fresh instance — any edits dismissed
+          without saving are abandoned, with no leftover form state. */}
+      {selectedThread && editModalOpened && (
+        <EditThreadDialog
+          thread={selectedThread}
+          opened={editModalOpened}
+          onClose={closeEditModal}
+          // Update the thread in place rather than refetching, so a draft thread (no reply yet)
+          // stays in the list after editing its settings instead of being filtered out.
+          onSaved={(updated) => updateThread(updated)}
+        />
+      )}
     </>
   );
 }
