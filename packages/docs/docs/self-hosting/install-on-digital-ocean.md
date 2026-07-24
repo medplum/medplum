@@ -45,7 +45,7 @@ npx turbo run build --filter=@medplum/server
 Use this run command:
 
 ```bash
-node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env
+node --import ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env
 ```
 
 Set the App Platform HTTP port to the same value as `MEDPLUM_PORT`.
