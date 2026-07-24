@@ -88,7 +88,6 @@ describe('EventTarget', () => {
   });
 
   test('When an event listener throws an error', () => {
-    // The default error handler logs to console.error
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const error = new Error('Oh no');
     const listener1 = vi.fn().mockThrow(error);
@@ -103,59 +102,8 @@ describe('EventTarget', () => {
     expect(listener1).toHaveBeenCalled();
     expect(listener2).toHaveBeenCalled();
 
-    // Test the default error handler
     expect(consoleError).toHaveBeenCalledTimes(1);
     expect(consoleError).toHaveBeenCalledWith('Unhandled error in "test" event listener', error);
-  });
-
-  test('With an eventListenerErrorHandler', () => {
-    // The default error handler logs to console.error
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const error = new Error('Oh no');
-    const listener1 = vi.fn().mockThrow(error);
-    const listener2 = vi.fn();
-
-    const target = new EventTarget();
-    target.addEventListener('test', listener1);
-    target.addEventListener('test', listener2);
-
-    const eventListenerErrorHandler = vi.fn();
-    target.setEventListenerErrorHandler(eventListenerErrorHandler);
-
-    const event = { type: 'test', extraData: 123 };
-    expect(() => target.dispatchEvent(event)).not.toThrow();
-
-    expect(listener1).toHaveBeenCalled();
-    expect(listener2).toHaveBeenCalled();
-
-    expect(eventListenerErrorHandler).toHaveBeenCalledTimes(1);
-    expect(eventListenerErrorHandler).toHaveBeenCalledWith(error, event);
-
-    expect(consoleError).not.toHaveBeenCalled();
-  });
-
-  test('opting in to synchronous event listener errors', () => {
-    // This usage is *strongly discouraged*, but is provided as a backwards
-    // compatibility shim for any users who were relying on this style of
-    // exception bubbling.
-
-    const error = new Error('Oh no');
-    const myCallback1 = vi.fn().mockThrow(error);
-    const myCallback2 = vi.fn();
-    const target = new EventTarget();
-    target.setEventListenerErrorHandler((err) => {
-      throw err;
-    });
-    target.addEventListener('test', myCallback1);
-    target.addEventListener('test', myCallback2);
-
-    const event = { type: 'test' };
-
-    expect(() => {
-      target.dispatchEvent(event);
-    }).toThrow(error);
-    expect(myCallback1).toHaveBeenCalled();
-    expect(myCallback2).not.toHaveBeenCalled();
   });
 });
 
@@ -236,24 +184,5 @@ describe('TypedEventTarget', () => {
     target.removeAllListeners();
     expect(target.listenerCount('test1')).toStrictEqual(0);
     expect(target.listenerCount('test2')).toStrictEqual(0);
-  });
-
-  test('Setting an event listener error handler', () => {
-    const error = new Error('Oh no');
-    const myCallback1 = vi.fn().mockThrow(error);
-    const myCallback2 = vi.fn();
-    const eventListenerErrorHandler = vi.fn();
-    const target = new TypedEventTarget<{ test: { type: 'test' } }>();
-    target.setEventListenerErrorHandler(eventListenerErrorHandler);
-    target.addEventListener('test', myCallback1);
-    target.addEventListener('test', myCallback2);
-
-    const event = { type: 'test' } as const;
-    target.dispatchEvent(event);
-
-    expect(myCallback1).toHaveBeenCalled();
-    expect(myCallback2).toHaveBeenCalled();
-    expect(eventListenerErrorHandler).toHaveBeenCalledTimes(1);
-    expect(eventListenerErrorHandler).toHaveBeenCalledWith(error, event);
   });
 });

@@ -14,23 +14,11 @@ export interface Event {
 
 export type EventListener = (e: Event) => void;
 
-export type EventListenerErrorHandler = (error: unknown, event: Event) => void;
-
-export const defaultEventListenerErrorHandler: EventListenerErrorHandler = (error, event) => {
-  console.error(`Unhandled error in "${event.type}" event listener`, error);
-};
-
 export class EventTarget {
   private readonly listeners: Record<string, EventListener[]>;
-  private eventListenerErrorHandler: EventListenerErrorHandler;
 
   constructor() {
     this.listeners = {};
-    this.eventListenerErrorHandler = defaultEventListenerErrorHandler;
-  }
-
-  setEventListenerErrorHandler(callback: EventListenerErrorHandler): void {
-    this.eventListenerErrorHandler = callback;
   }
 
   addEventListener(type: string, callback: EventListener): void {
@@ -59,7 +47,7 @@ export class EventTarget {
       try {
         listener.call(this, event);
       } catch (err) {
-        this.eventListenerErrorHandler(err, event);
+        console.error(`Unhandled error in "${event.type}" event listener`, err);
       }
     }
     return !event.defaultPrevented;
@@ -85,10 +73,6 @@ export class TypedEventTarget<TEvents extends Record<string, Event>> {
 
   dispatchEvent<TEventType extends keyof TEvents>(event: TEvents[TEventType]): void {
     this.emitter.dispatchEvent(event);
-  }
-
-  setEventListenerErrorHandler(callback: (error: unknown, event: TEvents[keyof TEvents]) => void): void {
-    this.emitter.setEventListenerErrorHandler(callback as EventListenerErrorHandler);
   }
 
   addEventListener<TEventType extends keyof TEvents>(
