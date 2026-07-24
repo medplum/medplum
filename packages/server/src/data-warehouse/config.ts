@@ -39,8 +39,9 @@ export function appendMedplumDatabaseSslSearchParams(params: URLSearchParams, ss
 
 /**
  * Builds a PostgreSQL URI for DuckDB `ATTACH (TYPE postgres)` from {@link MedplumDatabaseConfig},
- * including `application_name`, `options=-c statement_timeout=...`, and TLS via `sslmode` / cert paths from
- * {@link MedplumDatabaseConfig.ssl}.
+ * including `application_name`, `connect_timeout`, `options=-c statement_timeout=...`, and TLS via `sslmode` /
+ * cert paths from {@link MedplumDatabaseConfig.ssl}. Pool-only settings such as `minConnections`,
+ * `maxConnections`, and `idleTimeoutMs` do not apply to this standalone connection URI.
  *
  * @param db - Medplum database settings; host, dbname, username, and password must be set.
  * @returns A PostgreSQL connection URI (`postgresql://...`).
@@ -69,6 +70,15 @@ export function buildPgConnectionURI(db: MedplumDatabaseConfig): string {
   const searchParams = new URLSearchParams();
   searchParams.set('application_name', DEFAULT_DW_DATABASE_APPLICATION_NAME);
   searchParams.set('options', '-c statement_timeout=' + String(timeout));
+  if (db.connectionTimeoutMs !== undefined) {
+    if (db.connectionTimeoutMs < 0) {
+      throw new RangeError('connectionTimeoutMs must be greater than or equal to 0');
+    }
+    // values less than 1,000ms are rounded up to 1 second
+    const connectTimeoutSeconds =
+      db.connectionTimeoutMs > 0 ? Math.max(1, Math.floor(db.connectionTimeoutMs / 1000)) : 0;
+    searchParams.set('connect_timeout', String(connectTimeoutSeconds));
+  }
   appendMedplumDatabaseSslSearchParams(searchParams, db.ssl);
   // libpq / DuckDB postgres attach do not treat '+' as space in query values; use encodeURIComponent.
   url.search = Array.from(searchParams.entries())
@@ -108,18 +118,11 @@ export function getWarehouseSyncPostgresTableNames(
   includeResourceTypes?: string[],
   excludeResourceTypes?: string[]
 ): string[] {
-  const hasIncluded = !!includeResourceTypes?.length;
-  const hasExcluded = !!excludeResourceTypes?.length;
-
-  if (!hasIncluded && !hasExcluded) {
-    return getResourceTypes().map(toHistoryPostgresTableName);
-  }
-
   let types = getResourceTypes();
-  if (hasIncluded) {
+  if (includeResourceTypes?.length) {
     const includedSet = new Set(includeResourceTypes);
     types = types.filter((resourceType) => includedSet.has(resourceType));
-  } else if (hasExcluded) {
+  } else if (excludeResourceTypes?.length) {
     const excludedSet = new Set(excludeResourceTypes);
     types = types.filter((resourceType) => !excludedSet.has(resourceType));
   }
