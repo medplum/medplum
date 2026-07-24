@@ -6,6 +6,7 @@ import type {
   CodeSystem,
   OperationOutcome,
   ValueSet,
+  ValueSetComposeInclude,
   ValueSetExpansion,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
@@ -448,13 +449,12 @@ describe('Expand', () => {
   });
 
   test('Returns error for recursive definition', async () => {
+    const url = 'https://example.com/fhir/ValueSet/recursive-' + randomUUID();
     const valueSet: ValueSet = {
       resourceType: 'ValueSet',
       status: 'active',
-      url: 'https://example.com/fhir/ValueSet/recursive' + randomUUID(),
-      compose: {
-        include: [{ valueSet: ['http://example.com/ValueSet/recursive'] }],
-      },
+      url,
+      compose: { include: [{ valueSet: [url] }] },
     };
     const res1 = await request(app)
       .post(`/fhir/R4/ValueSet`)
@@ -464,9 +464,10 @@ describe('Expand', () => {
     expect(res1).toHaveStatus(201);
 
     const res2 = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2).toHaveStatus(400);
+    expect(res2.body.issue?.[0]?.details?.text).toMatch(/recursive/i);
   });
 
   test('Subsumption', async () => {
@@ -1639,6 +1640,277 @@ describe('Expand', () => {
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'MSG_INVALID_ID', display: 'Identifiant invalide', system: codeSystem.url },
     ]);
+  });
+
+  describe('Mixed include with referenced ValueSet', () => {
+    const system = 'http://example.com/CodeSystem/mixed-' + randomUUID();
+    const otherSystem = 'http://example.com/CodeSystem/mixed-other-' + randomUUID();
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'example',
+      url: system,
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'PAR',
+          display: 'parent',
+          concept: [
+            { code: 'CHD', display: 'child' },
+            { code: 'PET', display: 'pet' },
+          ],
+        },
+        { code: 'OTHER', display: 'other' }, // A separate root, NOT under PAR
+      ],
+    };
+    const otherCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'example',
+      url: otherSystem,
+      concept: [{ code: 'CHD', display: 'other child' }],
+    };
+
+    async function postResource<T extends { resourceType: string }>(resource: T): Promise<T & { url: string }> {
+      const res = await request(app)
+        .post(`/fhir/R4/${resource.resourceType}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(resource);
+      expect(res).toHaveStatus(201);
+      return res.body;
+    }
+
+    function valueSet(...include: ValueSetComposeInclude[]): ValueSet {
+      return {
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/mixed-' + randomUUID(),
+        compose: { include },
+      };
+    }
+
+    async function expand(url: string, query = ''): Promise<request.Response> {
+      return request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&count=50${query}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+    }
+
+    beforeAll(async () => {
+      await postResource(codeSystem);
+      await postResource(otherCodeSystem);
+    });
+
+    test('is-a filter over referenced concept-list ValueSet returns only the intersection', async () => {
+      const referenced = await postResource(valueSet({ system, concept: [{ code: 'CHD' }, { code: 'OTHER' }] }));
+      const vs = await postResource(
+        valueSet({ system, filter: [{ property: 'concept', op: 'is-a', value: 'PAR' }], valueSet: [referenced.url] })
+      );
+
+      const res = await expand(vs.url);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+      ]);
+    });
+
+    test('multiple referenced ValueSets in one include are intersected', async () => {
+      const r1 = await postResource(valueSet({ system, concept: [{ code: 'CHD' }, { code: 'PET' }] }));
+      const r2 = await postResource(valueSet({ system, concept: [{ code: 'CHD' }] }));
+      const vs = await postResource(
+        valueSet({ system, filter: [{ property: 'concept', op: 'is-a', value: 'PAR' }], valueSet: [r1.url, r2.url] })
+      );
+
+      const res = await expand(vs.url);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+      ]);
+    });
+
+    test('unsatisfiable membership fails safe to an empty include', async () => {
+      // Both ways a referenced ValueSet's membership cannot be pushed into the base system's SQL should
+      // yield an empty include rather than an over-broad one that silently drops the intersection criterion
+      const differentSystem = await postResource(valueSet({ system: otherSystem, concept: [{ code: 'CHD' }] }));
+      const untranslatableFilter = await postResource(
+        valueSet({ system, filter: [{ property: 'display', op: 'regex', value: '.*' }] })
+      );
+
+      for (const referenced of [differentSystem, untranslatableFilter]) {
+        const vs = await postResource(
+          valueSet({ system, filter: [{ property: 'concept', op: 'is-a', value: 'PAR' }], valueSet: [referenced.url] })
+        );
+        const res = await expand(vs.url);
+        expect(res).toHaveStatus(200);
+        expect((res.body.expansion as ValueSetExpansion).contains ?? []).toHaveLength(0);
+      }
+    });
+
+    test('pre-expanded referenced ValueSet checks listed codes against filter', async () => {
+      const referenced = await postResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/mixed-preexpanded-' + randomUUID(),
+        expansion: {
+          timestamp: new Date().toISOString(),
+          total: 2,
+          contains: [
+            { system, code: 'CHD', display: 'child' },
+            { system, code: 'PAR', display: 'parent' },
+          ],
+        },
+      } satisfies ValueSet);
+      const vs = await postResource(
+        valueSet({
+          system,
+          filter: [{ property: 'concept', op: 'descendent-of', value: 'PAR' }],
+          valueSet: [referenced.url],
+        })
+      );
+
+      const res = await expand(vs.url);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+      ]);
+    });
+
+    test('pure multiple ValueSet references are intersected', async () => {
+      const a = await postResource(valueSet({ system, concept: [{ code: 'CHD' }, { code: 'PET' }] }));
+      const b = await postResource(valueSet({ system, concept: [{ code: 'CHD' }] }));
+      const vs = await postResource(valueSet({ valueSet: [a.url, b.url] }));
+
+      const res = await expand(vs.url);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
+        { system, code: 'CHD', display: 'child' },
+      ]);
+    });
+
+    test('Intersection preserves expansion order across systems', async () => {
+      const driver = await postResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/mixed-driver-' + randomUUID(),
+        expansion: {
+          timestamp: new Date().toISOString(),
+          total: 3,
+          // Interleaved ordering of different systems
+          contains: [
+            { system, code: 'PET', display: 'pet' },
+            { system: otherSystem, code: 'CHD', display: 'other child' },
+            { system, code: 'CHD', display: 'child' },
+          ],
+        },
+      } satisfies ValueSet);
+      const member = await postResource(
+        valueSet(
+          { system, concept: [{ code: 'CHD' }, { code: 'PET' }] },
+          { system: otherSystem, concept: [{ code: 'CHD' }] }
+        )
+      );
+      const outer = await postResource(valueSet({ valueSet: [driver.url, member.url] }));
+
+      const res = await expand(outer.url);
+      expect(res).toHaveStatus(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+      expect(expansion.contains?.map((c) => `${c.system}|${c.code}`)).toStrictEqual([
+        `${system}|PET`,
+        `${otherSystem}|CHD`,
+        `${system}|CHD`,
+      ]);
+    });
+
+    test('A → B → A cycle on valueSet include path returns an error', async () => {
+      const urlA = 'http://example.com/ValueSet/mixed-cycleA-' + randomUUID();
+      const urlB = 'http://example.com/ValueSet/mixed-cycleB-' + randomUUID();
+      await postResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: urlA,
+        compose: { include: [{ system, concept: [{ code: 'CHD' }], valueSet: [urlB] }] },
+      } satisfies ValueSet);
+      await postResource({
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: urlB,
+        compose: { include: [{ system, concept: [{ code: 'CHD' }], valueSet: [urlA] }] },
+      } satisfies ValueSet);
+
+      const res = await expand(urlA);
+      expect(res).toHaveStatus(400);
+    });
+
+    test('two includes each intersecting an orthogonal filter with a nested is-a ValueSet', async () => {
+      // Complex intersection and filtering case: an outer ValueSet whose two includes each add an
+      // orthogonal property filter (`defined = true`, independent of the hierarchy) on top of a
+      // different nested is-a ValueSet. The two is-a subtrees overlap, so the union across the two includes must dedupe
+      //   ENDO ─┬─ ENDO_DEF   (defined)      METAB ─┬─ METAB_DEF   (defined)
+      //         ├─ ENDO_PRIM  (primitive)           ├─ METAB_PRIM  (primitive)
+      //         └─ SHARED_DEF (defined) ────────────┘  (second parent → in both subtrees)
+      const hierarchy = 'http://example.com/CodeSystem/scale-' + randomUUID();
+      const defined = { code: 'defined', valueBoolean: true };
+      await postResource({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        content: 'example',
+        url: hierarchy,
+        hierarchyMeaning: 'is-a',
+        property: [{ code: 'defined', type: 'boolean' }],
+        concept: [
+          {
+            code: 'METAB',
+            display: 'metabolic disease',
+            concept: [
+              { code: 'METAB_DEF', display: 'fully-defined metabolic', property: [defined] },
+              { code: 'METAB_PRIM', display: 'primitive metabolic' },
+            ],
+          },
+          {
+            code: 'ENDO',
+            display: 'endocrine disorder',
+            concept: [
+              { code: 'ENDO_DEF', display: 'fully-defined endocrine', property: [defined] },
+              { code: 'ENDO_PRIM', display: 'primitive endocrine' },
+              {
+                code: 'SHARED_DEF',
+                display: 'fully-defined endocrine + metabolic',
+                // `defined` is orthogonal to the hierarchy; the `is-a` property adds METAB as a second parent.
+                property: [defined, { code: 'is-a', valueCode: 'METAB' }],
+              },
+            ],
+          },
+        ],
+      } satisfies CodeSystem);
+
+      const nestedEndo = await postResource(
+        valueSet({ system: hierarchy, filter: [{ property: 'concept', op: 'is-a', value: 'ENDO' }] })
+      );
+      const nestedMetab = await postResource(
+        valueSet({ system: hierarchy, filter: [{ property: 'concept', op: 'is-a', value: 'METAB' }] })
+      );
+
+      // Precondition: the poly-hierarchy makes SHARED_DEF a member of BOTH nested is-a sets, so the outer union
+      // genuinely has an overlap to dedup.
+      const metabExpansion = (await expand(nestedMetab.url)).body.expansion as ValueSetExpansion;
+      expect(metabExpansion.contains?.map((c) => c.code)).toContain('SHARED_DEF');
+
+      const outer = await postResource(
+        valueSet(
+          { system: hierarchy, filter: [{ property: 'defined', op: '=', value: 'true' }], valueSet: [nestedEndo.url] },
+          { system: hierarchy, filter: [{ property: 'defined', op: '=', value: 'true' }], valueSet: [nestedMetab.url] }
+        )
+      );
+
+      const res = await expand(outer.url);
+      expect(res).toHaveStatus(200);
+      const expanded = res.body as ValueSet;
+      expect(expanded.expansion?.contains?.map((c) => c.code)).toContainExactly([
+        'ENDO_DEF',
+        'METAB_DEF',
+        'SHARED_DEF',
+      ]);
+    });
   });
 
   test('Base resources are not shadowed for Super Admin', async () => {
