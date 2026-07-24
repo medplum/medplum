@@ -75,7 +75,7 @@
     "fast-glob": "3.3.3",
     "iconv-lite": "0.7.3",
     "semver": "7.8.5",
-    "tar": "7.5.20"
+    "tar": "7.5.21"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.1.27",
