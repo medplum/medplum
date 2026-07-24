@@ -8,9 +8,7 @@ import type {
   ConceptMap,
   Reference,
   ValueSet,
-  ValueSetComposeInclude,
   ValueSetComposeIncludeFilter,
-  ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../../../constants';
 import type { Repository } from '../../repo';
@@ -30,6 +28,14 @@ import {
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
 export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelectable';
+
+/**
+ * Strategy for evaluating an `is-a`/`descendent-of` hierarchy test.
+ * - `ancestor`: correlated `EXISTS(findAncestor …)` per candidate row — best for selective text filters, where the
+ *   candidate set is small and walking up the hierarchy is cheaper than materializing the whole subtree.
+ * - `descendant`: materialize the subtree once and test membership by id — best for broad/no filters.
+ */
+export type ParentFilterStrategy = 'ancestor' | 'descendant';
 
 export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
@@ -363,159 +369,21 @@ export function addDescendants(
 }
 
 /**
- * Builds a predicate that is TRUE for a base `Coding` row (from `baseCodeSystem`, i.e. system X) if and only if
- * that code is a member of the `referenced` ValueSet, restricted to system X.
- *
- * The base `$expand` query always roots at `FROM Coding WHERE system = X`, so every candidate row already has
- * system X. Membership therefore reduces to an index-driven predicate on that same `(system, code)` row:
- *   - `concept` lists become `code IN (…)`
- *   - `=`/`in`/`exists` filters become correlated `EXISTS(Coding_Property …)`
- *   - `is-a`/`descendent-of` filters become a semi-join against a materialized subtree (`id = ANY(subtree)`)
- *   - nested `valueSet` references recurse and AND their predicates in
- * ANDing the result into the base query keeps Postgres's indexes, ordering, and `LIMIT` on the true
- * intersection — no in-memory materialization, and no silent truncation.
- *
- * Fail-safe: if any criterion cannot be faithfully translated (unknown filter op, unresolved hierarchy property,
- * or a large/truncated pre-expansion), the whole predicate is `undefined`. Under-translating would silently drop
- * valid intersection members, so the caller must instead yield an empty result for the include. A `referenced`
- * set that genuinely has no system-X members yields a `FALSE` predicate (a correct empty result, not a failure).
- * @param repo - Repository used to resolve nested ValueSet references.
- * @param baseCodeSystem - The base CodeSystem X (already hydrated), whose rows the predicate is evaluated against.
- * @param baseTableName - Table/alias of the base row in the surrounding query (`Coding` or a descendant CTE).
- * @param referenced - The referenced ValueSet whose membership is being tested.
- * @param terminologyResources - Resolution chain, used for cycle detection across nested ValueSet references.
- * @returns The membership predicate, or `undefined` if it cannot be faithfully translated (fail-safe).
- */
-export async function buildValueSetMembershipPredicate(
-  repo: Repository,
-  baseCodeSystem: WithId<CodeSystem>,
-  baseTableName: string,
-  referenced: WithId<ValueSet>,
-  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>>
-): Promise<Expression | undefined> {
-  if (!referenced.compose?.include?.length) {
-    // No logical definition; fall back to a pre-computed expansion if one is fully materialized
-    const contains = referenced.expansion?.contains;
-    if (!contains?.length) {
-      return undefined; // Nothing usable to translate → fail safe
-    }
-    if (referenced.expansion?.total && referenced.expansion.total > contains.length) {
-      return undefined; // Truncated/partial pre-expansion → fail safe rather than under-count
-    }
-    const codes = collectSystemCodes(contains, baseCodeSystem.url as string);
-    return codes.length ? new Condition(new Column(baseTableName, 'code'), 'IN', codes) : FALSE_PREDICATE;
-  }
-
-  const includeTerms: Expression[] = [];
-  for (const include of referenced.compose.include) {
-    const term = await buildIncludeMembershipTerm(repo, baseCodeSystem, baseTableName, include, terminologyResources);
-    if (term === undefined) {
-      return undefined; // Untranslatable include → fail safe for the whole predicate
-    }
-    if (term !== null) {
-      includeTerms.push(term);
-    }
-  }
-
-  if (!includeTerms.length) {
-    return FALSE_PREDICATE; // No include contributes a system-X member → correct empty result
-  }
-  return includeTerms.length === 1 ? includeTerms[0] : new Disjunction(includeTerms);
-}
-
-/** A predicate that is never true, used when a referenced ValueSet has no members in the base system. */
-const FALSE_PREDICATE = new Constant('FALSE');
-
-/**
- * Translates a single `compose.include` of a referenced ValueSet into a membership term over base system X.
- * @param repo - Repository used to resolve nested ValueSet references.
- * @param baseCodeSystem - The base CodeSystem X.
- * @param baseTableName - Table/alias of the base row.
- * @param include - The referenced include to translate.
- * @param terminologyResources - Resolution chain for cycle detection.
- * @returns An expression term, `null` if the include cannot contain any system-X code (skip it), or `undefined`
- *   if it cannot be faithfully translated (fail safe).
- */
-async function buildIncludeMembershipTerm(
-  repo: Repository,
-  baseCodeSystem: WithId<CodeSystem>,
-  baseTableName: string,
-  include: ValueSetComposeInclude,
-  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>>
-): Promise<Expression | null | undefined> {
-  const conjuncts: Expression[] = [];
-
-  if (include.system) {
-    if (include.system !== baseCodeSystem.url) {
-      // A base row always has system X, so an include pinned to a different system can never match it
-      return null;
-    }
-    if (include.concept?.length) {
-      conjuncts.push(
-        new Condition(
-          new Column(baseTableName, 'code'),
-          'IN',
-          include.concept.map((c) => c.code)
-        )
-      );
-    }
-    for (const filter of include.filter ?? []) {
-      const expr = buildFilterMembershipExpression(baseCodeSystem, baseTableName, filter);
-      if (!expr) {
-        return undefined;
-      }
-      conjuncts.push(expr);
-    }
-  } else if (!include.valueSet?.length) {
-    return undefined; // Neither system nor valueSet → nothing to translate
-  }
-
-  for (const url of include.valueSet ?? []) {
-    if (terminologyResources[url]) {
-      throw new OperationOutcomeError(badRequest(`Recursive ValueSet reference: ${url}`));
-    }
-    const nested = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
-    const marker = (nested.url as string) ?? url;
-    if (terminologyResources[marker]) {
-      throw new OperationOutcomeError(badRequest(`Recursive ValueSet reference: ${marker}`));
-    }
-    terminologyResources[marker] = nested;
-    try {
-      const nestedPred = await buildValueSetMembershipPredicate(
-        repo,
-        baseCodeSystem,
-        baseTableName,
-        nested,
-        terminologyResources
-      );
-      if (!nestedPred) {
-        return undefined;
-      }
-      conjuncts.push(nestedPred);
-    } finally {
-      delete terminologyResources[marker];
-    }
-  }
-
-  if (!conjuncts.length) {
-    return null;
-  }
-  return conjuncts.length === 1 ? conjuncts[0] : new Conjunction(conjuncts);
-}
-
-/**
  * Translates a single referenced `include.filter` into a membership predicate over base system X.
  * @param baseCodeSystem - The base CodeSystem X (hydrated).
  * @param baseTableName - Table/alias of the base row.
  * @param filter - The filter to translate.
+ * @param strategy - For `is-a`/`descendent-of`, whether to test membership by a correlated ancestor walk
+ *   (`ancestor`, selective text filters) or a materialized subtree semi-join (`descendant`/undefined, the default).
  * @returns The predicate, or `undefined` if the filter op or property cannot be translated (fail safe).
- * @throws OperationOutcomeError for the unsupported `regex`/`is-not-a`/`not-in` operators, which cannot be expanded
- *   efficiently against large code systems (fails loudly rather than returning a misleading empty result).
+ * @throws On unsupported operators, which cannot be expanded efficiently against large code systems,
+ *   and for a hierarchy filter whose CodeSystem is not an is-a hierarchy
  */
 export function buildFilterMembershipExpression(
   baseCodeSystem: WithId<CodeSystem>,
   baseTableName: string,
-  filter: ValueSetComposeIncludeFilter
+  filter: ValueSetComposeIncludeFilter,
+  strategy?: ParentFilterStrategy
 ): Expression | undefined {
   switch (filter.op) {
     // `regex`, `is-not-a`, and `not-in` are intentionally unsupported. Each can only be evaluated by a non-sargable
@@ -535,6 +403,11 @@ export function buildFilterMembershipExpression(
       );
     case 'is-a':
     case 'descendent-of': {
+      if (strategy === 'ancestor') {
+        // Selective text filter: test ancestry per (already trigram-narrowed) candidate row, instead of
+        // materializing the whole subtree, so cost scales with the candidate count rather than the subtree size.
+        return buildAncestorMembershipExpression(baseCodeSystem, baseTableName, filter.value, filter.op === 'descendent-of');
+      }
       // Hierarchy semi-join: materialize the referenced subtree once (its own recursive CTE) and test membership by id.
       const idSubquery = buildSubtreeIdSubquery(baseCodeSystem, filter.value, filter.op === 'descendent-of');
       if (!idSubquery) {
@@ -567,21 +440,18 @@ export function buildFilterMembershipExpression(
 
 /**
  * Builds an `id`-selecting subquery for the descendant-or-self subtree rooted at `code` (an `is-a` set) within the
- * given CodeSystem, wrapped so its recursive CTE is scoped and cannot collide with sibling subtrees in the same
- * query. Returns `undefined` (fail-safe) when the CodeSystem has no usable `is-a` hierarchy.
+ * given CodeSystem, wrapped so its recursive CTE is scoped and cannot collide with sibling subtrees in the same query.
  * @param baseCodeSystem - The CodeSystem to enumerate within (hydrated).
  * @param code - The root code whose descendants (and, unless `excludeSelf`, itself) are selected.
  * @param excludeSelf - When true (a `descendent-of` filter), the root code itself is excluded.
- * @returns The `id` subquery, or `undefined` if the hierarchy is unavailable.
+ * @returns The `id` subquery, or `undefined` if the is-a hierarchy's parent property is unavailable.
+ * @throws When the CodeSystem is not an is-a hierarchy
  */
 function buildSubtreeIdSubquery(
   baseCodeSystem: WithId<CodeSystem>,
   code: string,
   excludeSelf: boolean
 ): SelectQuery | undefined {
-  if (baseCodeSystem.hierarchyMeaning !== 'is-a') {
-    return undefined;
-  }
   const parentProperty = getParentProperty(baseCodeSystem);
   if (!parentProperty.id) {
     return undefined;
@@ -607,17 +477,55 @@ function buildSubtreeIdSubquery(
 }
 
 /**
- * Builds an `id`-selecting subquery for `code` together with all of its ancestors (the `generalizes` set) within
- * the given CodeSystem, walking up the parent relationship. Wrapped so its recursive CTE is scoped. Returns
- * `undefined` (fail-safe) when the CodeSystem has no usable `is-a` hierarchy.
- * @param baseCodeSystem - The CodeSystem to enumerate within (hydrated).
- * @param code - The code whose ancestors (and itself) are selected.
- * @returns The `id` subquery, or `undefined` if the hierarchy is unavailable.
+ * Builds a correlated membership predicate that is TRUE for a base-system candidate row when `code` is one of its
+ * ancestors (an `is-a`/`descendent-of` set), by walking up the hierarchy from that candidate. Unlike
+ * {@link buildSubtreeIdSubquery}, its cost scales with the number of candidate rows rather than the subtree size, so
+ * it is preferred once a selective text filter has already narrowed the candidates. Mirrors the `ancestor` branch of
+ * `addParentFilter`. Each call scopes its own `cte_ancestors` recursive CTE inside the `EXISTS` subquery, so sibling
+ * predicates in the same query do not collide.
+ * @param baseCodeSystem - The base CodeSystem the candidate rows belong to (hydrated).
+ * @param baseTableName - Table/alias of the candidate row (`Coding` or a descendant CTE).
+ * @param code - The ancestor code whose descendants (and, unless `excludeSelf`, itself) are members.
+ * @param excludeSelf - When true (a `descendent-of` filter), the root code itself is excluded.
+ * @returns The membership predicate, or `undefined` if the is-a hierarchy's parent property is unavailable.
+ * @throws When the CodeSystem is not an is-a hierarchy
  */
-function buildAncestorIdSubquery(baseCodeSystem: WithId<CodeSystem>, code: string): SelectQuery | undefined {
-  if (baseCodeSystem.hierarchyMeaning !== 'is-a') {
+export function buildAncestorMembershipExpression(
+  baseCodeSystem: WithId<CodeSystem>,
+  baseTableName: string,
+  code: string,
+  excludeSelf: boolean
+): Expression | undefined {
+  const parentProperty = getParentProperty(baseCodeSystem);
+  if (!parentProperty.id) {
     return undefined;
   }
+  const base = new SelectQuery('Coding', undefined, 'origin')
+    .column('id')
+    .column('code')
+    .column('display')
+    .column('synonymOf')
+    .column('language')
+    .where(new Column('origin', 'system'), '=', baseCodeSystem.id)
+    .where(new Column('origin', 'code'), '=', new Column(baseTableName, 'code'));
+  const ancestorQuery = findAncestor(base, baseCodeSystem, parentProperty as WithId<CodeSystemProperty>, code);
+  const exists: Expression = new SqlFunction('EXISTS', [ancestorQuery]);
+  if (!excludeSelf) {
+    return exists;
+  }
+  // `descendent-of` excludes the root code itself, which the ancestor walk would otherwise match.
+  return new Conjunction([exists, new Condition(new Column(baseTableName, 'code'), '!=', code)]);
+}
+
+/**
+ * Builds an `id`-selecting subquery for `code` together with all of its ancestors (the `generalizes` set) within
+ * the given CodeSystem, walking up the parent relationship.
+ * @param baseCodeSystem - The CodeSystem to enumerate within (hydrated).
+ * @param code - The code whose ancestors (and itself) are selected.
+ * @returns The `id` subquery, or `undefined` if the is-a hierarchy's parent property is unavailable.
+ * @throws When the CodeSystem is not an is-a hierarchy
+ */
+function buildAncestorIdSubquery(baseCodeSystem: WithId<CodeSystem>, code: string): SelectQuery | undefined {
   const parentProperty = getParentProperty(baseCodeSystem);
   if (!parentProperty.id) {
     return undefined;
@@ -632,7 +540,11 @@ function buildAncestorIdSubquery(baseCodeSystem: WithId<CodeSystem>, code: strin
 
   // Recursive step: for each node already collected, join up to its parent (Coding is the `target` of the
   // parent-relationship row whose `coding` is the current node).
-  const step = new SelectQuery('Coding').column('id').column('code').column('synonymOf').where('system', '=', baseCodeSystem.id);
+  const step = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('synonymOf')
+    .where('system', '=', baseCodeSystem.id);
   const propertyTable = step.getNextJoinAlias();
   const propertyJoin = new Conjunction([
     new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target')),
@@ -650,25 +562,6 @@ function buildAncestorIdSubquery(baseCodeSystem: WithId<CodeSystem>, code: strin
 
   const cte = new SelectQuery(cteName).column('id').withRecursive(cteName, new Union(base, step));
   return new SelectQuery('ancestor_set', cte).column('id');
-}
-
-/**
- * Collects the codes belonging to a given system from a (possibly nested) pre-computed expansion.
- * @param contains - The `expansion.contains` entries to scan.
- * @param system - The system URL to collect codes for.
- * @returns The matching codes.
- */
-function collectSystemCodes(contains: ValueSetExpansionContains[], system: string): string[] {
-  const codes: string[] = [];
-  for (const c of contains) {
-    if (c.contains?.length) {
-      codes.push(...collectSystemCodes(c.contains, system));
-    }
-    if (c.system === system && c.code) {
-      codes.push(c.code);
-    }
-  }
-  return codes;
 }
 
 export function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
