@@ -190,6 +190,7 @@ const booleanKeys = new Set([
   'mcpEnabled',
   'registerEnabled',
   'serverScopedSubscriptionsEnabled',
+  'asyncBatchFairQueueEnabled',
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
