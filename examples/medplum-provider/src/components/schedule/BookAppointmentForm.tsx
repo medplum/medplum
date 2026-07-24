@@ -124,9 +124,6 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
             parameter: [{ name: 'appointment', resource: booking }],
           }
         );
-        medplum.invalidateSearches('Appointment');
-        medplum.invalidateSearches('Slot');
-
         const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
         const slots = resources.filter(
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Slot> => obj.resourceType === 'Slot'
@@ -135,18 +132,36 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
           (obj: WithId<Slot> | WithId<Appointment>): obj is WithId<Appointment> => obj.resourceType === 'Appointment'
         );
 
-        if (appointment) {
-          let encounter: WithId<Encounter> | undefined;
-          try {
-            encounter = await bookEncounter(appointment);
-          } catch (err) {
-            // If we couldn't load the plan definition or create the encounter for
-            // some reason, we log the error but ignore it. The viewer can decide how
-            // to proceed and manually create the encounter.
-            console.error(err);
-          }
-          await onSuccess?.({ appointment, slots, patient, encounter });
+        if (!appointment) {
+          // This should never happen; if `$book` succeeded it should always
+          // have returned an Appointment resource. Fail loudly if we didn't
+          // get one back.
+          throw new Error('$book succeeded without returning an Appointment');
         }
+
+        // $book is a custom operation, so the client cannot classify its modifications
+        // itself; announce them to invalidate caches and notify interested components
+        // (e.g. the schedule calendar).
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: appointment.id,
+          resource: appointment,
+        });
+        slots.forEach((slot) => {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+        });
+
+        let encounter: WithId<Encounter> | undefined;
+        try {
+          encounter = await bookEncounter(appointment);
+        } catch (err) {
+          // If we couldn't load the plan definition or create the encounter for
+          // some reason, we log the error but ignore it. The viewer can decide how
+          // to proceed and manually create the encounter.
+          console.error(err);
+        }
+        await onSuccess?.({ appointment, slots, patient, encounter });
       } finally {
         setLoading(false);
       }

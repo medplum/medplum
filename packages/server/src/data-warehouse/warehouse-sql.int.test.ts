@@ -24,6 +24,10 @@ const DELETED_ONLY_TABLE = 'iceberg_catalog.default.deleted_only';
 const HISTORY_TABLE = 'DwWarehouseSqlIntTest_history';
 const DEST_TABLE = 'wh_sql_int_dest';
 
+const PATIENT_ID = '6e586f88-710f-42b2-9cc2-285496264c99';
+const VERSION_ID = 'c227e03f-b6d5-44f7-b191-8571ed508d7e';
+const PROJECT_ID = '71b6dae7-1e96-47ed-babb-c1a0e58a885f';
+
 describe('warehouse SQL (integration)', () => {
   let host: string;
   let port: number;
@@ -46,8 +50,8 @@ describe('warehouse SQL (integration)', () => {
       await client.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
       await client.query(`
         CREATE TABLE "${HISTORY_TABLE}" (
-          id TEXT NOT NULL,
-          "versionId" TEXT NOT NULL,
+          id UUID NOT NULL,
+          "versionId" UUID NOT NULL,
           content TEXT NOT NULL,
           "lastUpdated" TIMESTAMPTZ NOT NULL
         );
@@ -55,12 +59,12 @@ describe('warehouse SQL (integration)', () => {
       await client.query(
         `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
         [
-          'patient-wh-sql-1',
-          '1',
+          PATIENT_ID,
+          VERSION_ID,
           JSON.stringify({
             resourceType: 'Patient',
-            id: 'patient-wh-sql-1',
-            meta: { project: 'project-from-json' },
+            id: PATIENT_ID,
+            meta: { project: PROJECT_ID },
           }),
           '2024-06-01T12:00:00.000Z',
         ]
@@ -94,11 +98,11 @@ describe('warehouse SQL (integration)', () => {
       await connection.run(buildDuckdbPostgresAttachQuery(connStr));
       await connection.run(`
         CREATE TABLE "${DEST_TABLE}" (
-          id VARCHAR,
-          version_id VARCHAR,
+          id UUID,
+          version_id UUID,
           content VARCHAR,
           last_updated TIMESTAMPTZ,
-          project_id VARCHAR
+          project_id UUID
         );
       `);
 
@@ -109,8 +113,8 @@ describe('warehouse SQL (integration)', () => {
       readSql.append(`SELECT id, project_id FROM "${DEST_TABLE}"`);
       const readResult = await runParameterizedWarehouseSqlReadAll(connection, readSql);
       const row = readResult.getRowObjectsJson()[0] as { id: string; project_id: string };
-      expect(row.id).toBe('patient-wh-sql-1');
-      expect(row.project_id).toBe('project-from-json');
+      expect(row.id).toBe(PATIENT_ID);
+      expect(row.project_id).toBe(PROJECT_ID);
     } finally {
       connection.closeSync();
       instance.closeSync();

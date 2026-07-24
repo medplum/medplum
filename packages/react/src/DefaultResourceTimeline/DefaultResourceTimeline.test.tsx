@@ -4,7 +4,6 @@ import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Patient } from '@medplum/fhirtypes';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen, waitFor } from '../test-utils/render';
 import type { DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 import { DefaultResourceTimeline } from './DefaultResourceTimeline';
@@ -15,11 +14,9 @@ describe('DefaultResourceTimeline', () => {
   async function setup(args: DefaultResourceTimelineProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <DefaultResourceTimeline {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <DefaultResourceTimeline {...args} />
+        </MedplumProvider>
       );
     });
   }
@@ -56,7 +53,7 @@ describe('DefaultResourceTimeline', () => {
     const p = await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
     // Use seeding mode so the mock client's DB accepts the `lastUpdated` timestamp
-    const dr1 = await medplum.withSeeding(() =>
+    const dr1 = await medplum.mock.withSeeding(() =>
       medplum.createResource<DiagnosticReport>({
         resourceType: 'DiagnosticReport',
         meta: {
@@ -70,7 +67,7 @@ describe('DefaultResourceTimeline', () => {
     );
 
     // Use seeding mode so the mock client's DB accepts the `lastUpdated` timestamp
-    const dr2 = await medplum.withSeeding(() =>
+    const dr2 = await medplum.mock.withSeeding(() =>
       medplum.updateResource<DiagnosticReport>({
         ...dr1,
         meta: {

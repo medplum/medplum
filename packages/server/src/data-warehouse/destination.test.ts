@@ -27,6 +27,7 @@ describe('data warehouse destinations', () => {
   test('local destination attaches postgres after setup', () => {
     const destination = new LocalParquetWarehouseDestination('/tmp/dw-local-destination');
     expect(destination.getSetupQueries()).toStrictEqual([]);
+    expect(destination.getConnectionSetupQueries()).toStrictEqual([]);
     expect(destination.getPostgresAttachQueries('postgresql://user:pass@localhost/db')).toStrictEqual([
       'INSTALL postgres',
       'LOAD postgres',

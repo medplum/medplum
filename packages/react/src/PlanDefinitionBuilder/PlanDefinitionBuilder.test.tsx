@@ -3,7 +3,6 @@
 import type { ActivityDefinition } from '@medplum/fhirtypes';
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, clickAutocompleteOption, fireEvent, render, screen, typeInAutocomplete } from '../test-utils/render';
 import type { PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 import { PlanDefinitionBuilder } from './PlanDefinitionBuilder';
@@ -13,11 +12,9 @@ const medplum = new MockClient();
 async function setup(args: PlanDefinitionBuilderProps): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <PlanDefinitionBuilder {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <PlanDefinitionBuilder {...args} />
+      </MedplumProvider>
     );
   });
 }

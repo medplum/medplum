@@ -13,7 +13,17 @@ import type {
 import { r4ProjectId } from '../../../constants';
 import type { Repository } from '../../repo';
 import type { PgQueryable } from '../../sql';
-import { Column, Condition, Conjunction, Disjunction, Negation, SelectQuery, SqlFunction, Union } from '../../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Constant,
+  Disjunction,
+  Negation,
+  SelectQuery,
+  SqlFunction,
+  Union,
+} from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -303,6 +313,11 @@ export function addDescendants(
     new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
   ]);
   propertyJoinCondition.where(new Column(propertyTable, 'property'), '=', property.id);
+  // Provably-true predicate: relationship-property rows always have a positive `target` coding id. Emitting it as a
+  // literal (not a bound parameter) lets the planner prove the partial `Coding_Property_reverse_rel_lookup_idx`
+  // predicate (`target > 0`) and drive the recursion via a parameterized nested-loop on that index, instead of
+  // hash-scanning every row of the parent property on each recursion level.
+  propertyJoinCondition.whereExpr(new Constant(`"${propertyTable}"."target" > 0`));
   query.join('INNER JOIN', 'Coding_Property', propertyTable, propertyJoinCondition);
 
   const recursiveCTE = 'cte_descendants';
