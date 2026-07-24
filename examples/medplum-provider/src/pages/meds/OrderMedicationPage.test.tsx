@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { notifications, Notifications } from '@mantine/notifications';
 import type { MedicationOrderRequest, MedicationOrderResponse, WithId } from '@medplum/core';
 import {
   MEDICATION_REQUEST_STATUS_REASON_RESPONSE_NOT_RECEIVED,
@@ -39,6 +39,11 @@ describe('OrderMedicationPage', () => {
     vi.clearAllMocks();
     searchMedicationsMock.mockResolvedValue([]);
     orderMedicationMock.mockReset();
+    // Prevent notifications from leaking across test cases — @mantine/notifications
+    // keeps its store as a module-level singleton, so an error toast raised by one
+    // test (e.g. the bot-rejection test below) otherwise reappears in a later test's
+    // DOM the moment <Notifications /> is remounted.
+    notifications.clean();
   });
 
   test('shows single, compound, and order-set tabs', async () => {
