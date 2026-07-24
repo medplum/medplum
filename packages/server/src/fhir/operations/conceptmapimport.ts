@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue, WithId } from '@medplum/core';
-import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, EMPTY, forbidden, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -10,7 +10,7 @@ import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery, Union } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
-import { findTerminologyResource, uniqueOn } from './utils/terminology';
+import { findTerminologyResource } from './utils/terminology';
 
 const operation = makeOperationDefinition(
   { scope: 'type-and-instance', resource: 'ConceptMap' },
@@ -280,11 +280,10 @@ async function prepareMappingRows(
   }
 
   const systems = new Set<string>();
-  const uniqueMappings = uniqueOn(rows, (r) => {
-    systems.add(r.sourceSystem as string);
-    systems.add(r.targetSystem as string);
-    return `${r.sourceSystem}|${r.sourceCode} : ${r.targetSystem}|${r.targetCode}`;
-  });
+  for (const row of rows) {
+    systems.add(row.sourceSystem as string);
+    systems.add(row.targetSystem as string);
+  }
 
   const systemStrings = Array.from(systems.values());
   const insertCTE = new InsertQuery(
@@ -309,14 +308,14 @@ async function prepareMappingRows(
   const systemIds: Record<string, number> = Object.create(null);
   for (let i = 0; i < systemStrings.length; i++) {
     const { id, system } = systemResults[i];
-    systemIds[system] = id;
+    systemIds[system] = Number.parseInt(id, 10);
   }
 
-  for (const mapping of uniqueMappings) {
+  for (const mapping of rows) {
     mapping.sourceSystem = systemIds[mapping.sourceSystem];
     mapping.targetSystem = systemIds[mapping.targetSystem];
   }
-  return uniqueMappings as (MappingRow & { sourceSystem: number; targetSystem: number })[];
+  return rows as (MappingRow & { sourceSystem: number; targetSystem: number })[];
 }
 
 async function writeMappingRows(
@@ -325,14 +324,18 @@ async function writeMappingRows(
   attributes: (Omit<AttributeRow, 'mapping'>[] | undefined)[]
 ): Promise<void> {
   if (mappings.length) {
-    const insertMappings = new InsertQuery('ConceptMapping', mappings)
-      .mergeOnConflict(['conceptMap', 'sourceSystem', 'sourceCode', 'targetSystem', 'targetCode'])
-      .returnColumn('id');
+    const insertMappings = new InsertQuery('ConceptMapping', mappings).returnColumn('id');
     const mappingIds = await insertMappings.execute(db);
 
-    const attributeRows = flatMapFilter(attributes, (attrs, i) =>
-      attrs?.map((a) => ({ ...a, mapping: mappingIds[i].id }))
-    );
+    const attributeRows: AttributeRow[] = [];
+    for (let i = 0; i < mappings.length; i++) {
+      const mappingId = mappingIds[i].id;
+      for (const attribute of attributes[i] ?? EMPTY) {
+        const row = attribute as AttributeRow;
+        row.mapping = mappingId;
+        attributeRows.push(row);
+      }
+    }
     if (attributeRows.length) {
       const insertAttributes = new InsertQuery('ConceptMapping_Attribute', attributeRows).ignoreOnConflict();
       await insertAttributes.execute(db);

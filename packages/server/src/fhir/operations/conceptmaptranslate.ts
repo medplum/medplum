@@ -2,22 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   ConceptMapTranslateMatch,
+  ConceptMapTranslateMatchProperty,
   ConceptMapTranslateOutput,
   ConceptMapTranslateParameters,
   WithId,
 } from '@medplum/core';
-import { allOk, badRequest, EMPTY, indexConceptMapCodings, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  allOk,
+  append,
+  badRequest,
+  EMPTY,
+  indexConceptMapCodings,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
+import { getDefinitionResource } from '@medplum/definitions';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ConceptMap, ConceptMapGroupUnmapped } from '@medplum/fhirtypes';
+import type { ConceptMap, ConceptMapGroupUnmapped, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition, SelectQuery } from '../sql';
-import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource } from './utils/terminology';
 
-// TODO: Define hybrid OperationDefinition combining R4+R5 semantics
-const operation = getOperationDefinition('ConceptMap', 'translate');
+const operation = getDefinitionResource<OperationDefinition>(
+  'fhir/r4/profiles-medplum.json',
+  'OperationDefinition',
+  'http://hl7.org/fhir/OperationDefinition/ConceptMap-translate'
+);
 
 /** Set of equivalence/relationship codes that indicate a negative match, taken from both R4 and R5 value sets. */
 const nonMatchingCodes = ['unmatched', 'disjoint', 'not-related-to'];
@@ -29,8 +41,8 @@ export async function conceptMapTranslateHandler(req: FhirRequest): Promise<Fhir
   const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
   const map = await lookupConceptMap(params, req.params.id);
 
-  const output = await translateConcept(map, params);
-  return [allOk, buildOutputParameters(operation, output)];
+  const translation = await translateConcept(map, params);
+  return [allOk, buildOutputParameters(operation, translation)];
 }
 
 async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: string): Promise<WithId<ConceptMap>> {
@@ -85,6 +97,7 @@ async function findConceptMappings(
 ): Promise<ConceptMapTranslateMatch[]> {
   const query = new SelectQuery('ConceptMapping')
     .column('conceptMap')
+    .column('id')
     .column(new Column('source', 'system', false, 'sourceSystem'))
     .column('sourceCode')
     .column('sourceDisplay')
@@ -117,7 +130,8 @@ async function findConceptMappings(
     )
     .where('conceptMap', '=', conceptMap.id)
     .where(new Column('source', 'system'), '=', system)
-    .where('sourceCode', 'IN', codes);
+    .where('sourceCode', 'IN', codes)
+    .orderBy('id');
 
   if (params.targetsystem) {
     query.where(new Column('target', 'system'), '=', params.targetsystem);
@@ -167,13 +181,69 @@ async function handleUnmappedCodes(
 
 function parseDatabaseRows(rows: any[]): ConceptMapTranslateMatch[] {
   const matches: ConceptMapTranslateMatch[] = [];
-  for (const { targetSystem, targetCode, targetDisplay, relationship } of rows) {
-    matches.push({
-      concept: { system: targetSystem, code: targetCode, display: targetDisplay ?? undefined },
-      equivalence: relationship ?? EQUIVALENT,
-      // TODO: Collect attributes (i.e. `property`, `dependsOn`, `product`)
-    });
+  let currentMappingId: string | undefined;
+  let match: ConceptMapTranslateMatch | undefined;
+
+  for (const { id, targetSystem, targetCode, targetDisplay, relationship, kind, uri, type, value, comment } of rows) {
+    if (id !== currentMappingId) {
+      if (match) {
+        matches.push(match);
+      }
+      match = {
+        equivalence: relationship ?? EQUIVALENT,
+        concept: { system: targetSystem, code: targetCode, display: targetDisplay ?? undefined },
+      };
+      if (comment) {
+        match.property = [
+          { uri: 'https://medplum.com/conceptmap-attribute/comment', value: { type: 'string', value: comment } },
+        ];
+      }
+      currentMappingId = id;
+    }
+
+    if (kind && match) {
+      const propertyName = kind as 'property' | 'dependsOn' | 'product';
+      if (propertyName === 'property') {
+        const property: ConceptMapTranslateMatchProperty = { uri, value: { type, value: JSON.parse(value) } };
+        match.property = append(match.property, property);
+      } else {
+        const attribute = { attribute: uri, value: { type, value: JSON.parse(value) } };
+        match[propertyName] = append(match[propertyName], attribute);
+      }
+    }
+  }
+  if (match) {
+    matches.push(match);
   }
 
+  matches.sort(sortMatches);
   return matches;
+}
+
+function sortMatches(a: ConceptMapTranslateMatch, b: ConceptMapTranslateMatch): number {
+  const aDeps =
+    a.dependsOn
+      ?.map((d) => `${d.attribute}|${JSON.stringify(d.value.value)}`)
+      .sort()
+      .join(',') ?? '';
+  const bDeps =
+    b.dependsOn
+      ?.map((d) => `${d.attribute}|${JSON.stringify(d.value.value)}`)
+      .sort()
+      .join(',') ?? '';
+  if (aDeps < bDeps) {
+    return -1;
+  } else if (aDeps > bDeps) {
+    return 1;
+  }
+
+  const aConcept = `${a.concept?.system ?? ''}|${a.concept?.code ?? ''}`;
+  const bConcept = `${b.concept?.system ?? ''}|${b.concept?.code ?? ''}`;
+  if (aConcept < bConcept) {
+    return -1;
+  } else if (aConcept > bConcept) {
+    return 1;
+  }
+
+  return 0;
 }
