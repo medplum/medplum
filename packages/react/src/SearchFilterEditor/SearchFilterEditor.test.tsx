@@ -237,7 +237,7 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    expect(screen.queryByDisplayValue('not-a-code')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('not-a-code')).toBeNull();
   });
 
   test('_lastUpdated filter', async () => {
@@ -263,10 +263,32 @@ describe('SearchFilterEditor', () => {
     );
 
     // Wait for the resource to load
-    await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
+    await waitFor(() => screen.queryAllByText('_lastUpdated').length > 0);
 
     const input = screen.getByTestId<HTMLInputElement>('filter-0-row-filter-value');
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+  });
+
+  test('Meta fields are disambiguated from same-named elements', async () => {
+    // ProjectMembership has both `project`/`profile` elements and `_project`/`_profile` meta fields.
+    const currSearch: SearchRequest = {
+      resourceType: 'ProjectMembership',
+      filters: [{ code: '', operator: Operator.EQUALS, value: '' }],
+    };
+
+    await setup(<SearchFilterEditor search={currSearch} visible={true} onOk={vi.fn()} onCancel={vi.fn()} />);
+
+    const fieldInput = screen.getByTestId<HTMLSelectElement>('filter-0-row-filter-field');
+    const optionLabels = Array.from(fieldInput.options).map((o) => o.textContent);
+
+    expect(optionLabels.filter((label) => label === 'Project')).toHaveLength(1);
+    expect(optionLabels.filter((label) => label === '_project')).toHaveLength(1);
+    expect(optionLabels.filter((label) => label === 'Profile')).toHaveLength(1);
+    expect(optionLabels.filter((label) => label === '_profile')).toHaveLength(1);
+
+    const groups = Array.from(fieldInput.querySelectorAll('optgroup')).map((g) => g.label);
+    expect(groups).toContain('Fields');
+    expect(groups).toContain('Metadata');
   });
 
   test('Quantity filter', async () => {

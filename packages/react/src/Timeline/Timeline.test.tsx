@@ -3,7 +3,6 @@
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import { Timeline, TimelineItem } from './Timeline';
 
@@ -16,13 +15,11 @@ describe('Timeline', () => {
     } as Communication;
 
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <Timeline>
-            <TimelineItem resource={resource}>test</TimelineItem>
-          </Timeline>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <Timeline>
+          <TimelineItem resource={resource}>test</TimelineItem>
+        </Timeline>
+      </MedplumProvider>
     );
 
     expect(screen.getByText('test')).toBeDefined();
@@ -41,13 +38,11 @@ describe('Timeline', () => {
 
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <Timeline>
-              <TimelineItem resource={resource}>test</TimelineItem>
-            </Timeline>
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Timeline>
+            <TimelineItem resource={resource}>test</TimelineItem>
+          </Timeline>
+        </MedplumProvider>
       );
     });
 
@@ -65,13 +60,11 @@ describe('Timeline', () => {
 
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <Timeline>
-              <TimelineItem resource={resource}>test</TimelineItem>
-            </Timeline>
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Timeline>
+            <TimelineItem resource={resource}>test</TimelineItem>
+          </Timeline>
+        </MedplumProvider>
       );
     });
 

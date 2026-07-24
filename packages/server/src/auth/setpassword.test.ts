@@ -20,7 +20,6 @@ import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -316,6 +315,19 @@ describe('Set Password', () => {
         password: '',
       });
     expect(res).toHaveStatus(400);
+  });
+
+  test('Password too long', async () => {
+    const res = await request(app)
+      .post('/auth/setpassword')
+      .type('json')
+      .send({
+        id: randomUUID(),
+        secret: generateSecret(16),
+        password: 'a'.repeat(73),
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be no more than 72 characters');
   });
 
   test('Not found', async () => {

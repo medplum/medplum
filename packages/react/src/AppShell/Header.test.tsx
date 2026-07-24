@@ -4,7 +4,6 @@ import { AppShell as MantineAppShell } from '@mantine/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
@@ -13,16 +12,14 @@ const medplum = new MockClient();
 const navigateMock = vi.fn();
 const closeMock = vi.fn();
 
-async function setup(initialUrl = '/'): Promise<void> {
+async function setup(): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
-        <MedplumProvider medplum={medplum} navigate={navigateMock}>
-          <MantineAppShell>
-            <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
-          </MantineAppShell>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum} navigate={navigateMock}>
+        <MantineAppShell>
+          <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
+        </MantineAppShell>
+      </MedplumProvider>
     );
   });
 }

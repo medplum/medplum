@@ -12,7 +12,6 @@ import { loadTestConfig } from '../config/loader';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 

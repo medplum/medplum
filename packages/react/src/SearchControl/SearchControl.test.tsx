@@ -5,7 +5,6 @@ import { Operator } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { SearchControlProps } from './SearchControl';
 import { SearchControl } from './SearchControl';
@@ -32,9 +31,7 @@ describe('SearchControl', () => {
     }
     const { rerender: _rerender } = await act(async () =>
       render(<SearchControl {...props} />, ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
       ))
     );
     return {
@@ -66,6 +63,28 @@ describe('SearchControl', () => {
 
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('Renders additional columns', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', 'name'],
+      },
+      additionalColumns: [
+        {
+          name: 'Custom Column',
+          renderCell: (resource) => <span>cell-{resource.id}</span>,
+        },
+      ],
+    };
+
+    await setup(props);
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    // The additional column header and a computed cell for the row are rendered.
+    expect(screen.getByText('Custom Column')).toBeInTheDocument();
+    expect(screen.getByText(`cell-${HomerSimpson.id}`)).toBeInTheDocument();
   });
 
   test('Rerender does not trigger `loadResult` when `search` deep equals `memoizedSearch`', async () => {

@@ -4,19 +4,16 @@ import { createReference, getReferenceString } from '@medplum/core';
 import type { ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
 import request from 'supertest';
-import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { addTestUser, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -46,8 +43,6 @@ describe('Project Admin routes', () => {
 
   beforeEach(() => {
     fetchMock.mockClear();
-    (pwnedPassword as unknown as Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     setupRecaptchaMock(true);
   });
 
@@ -662,7 +657,7 @@ describe('Project Admin routes', () => {
       });
 
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
+    expect(res.body.issue[0].details.text).toBe('Password must be at least 8 characters');
   });
 
   test('Set password user not found', async () => {

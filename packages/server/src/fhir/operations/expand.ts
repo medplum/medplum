@@ -17,7 +17,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
-import type { PgQueryable } from '../sql';
+import type { Expression, PgQueryable } from '../sql';
 import {
   Column,
   Condition,
@@ -248,7 +248,8 @@ async function includeInExpansion(
   );
   await hydrateCodeSystemProperties(db, codeSystem);
 
-  const query = expansionQuery(include, codeSystem, params);
+  const strategy = await chooseParentFilterStrategy(db, include, codeSystem, params);
+  const query = expansionQuery(include, codeSystem, params, strategy);
   if (!query) {
     return;
   }
@@ -323,7 +324,8 @@ export async function hydrateCodeSystemProperties(db: PgQueryable, codeSystem: W
 export function expansionQuery(
   include: ValueSetComposeInclude,
   codeSystem: WithId<CodeSystem>,
-  params?: ValueSetExpandParameters
+  params?: ValueSetExpandParameters,
+  strategy?: ParentFilterStrategy
 ): SelectQuery | undefined {
   let query: SelectQuery | undefined = new SelectQuery('Coding')
     .column('id')
@@ -334,7 +336,7 @@ export function expansionQuery(
     .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {
-    query = applyValueSetFilters(query, include.filter, codeSystem, params);
+    query = applyValueSetFilters(query, include.filter, codeSystem, params, strategy);
   }
   if (params) {
     query = applyExpansionFilters(query, codeSystem, params);
@@ -346,7 +348,8 @@ function applyValueSetFilters(
   query: SelectQuery,
   filters: ValueSetComposeIncludeFilter[],
   codeSystem: WithId<CodeSystem>,
-  params?: ValueSetExpandParameters
+  params?: ValueSetExpandParameters,
+  strategy?: ParentFilterStrategy
 ): SelectQuery | undefined {
   for (const condition of filters) {
     switch (condition.op) {
@@ -361,7 +364,8 @@ function applyValueSetFilters(
           codeSystem,
           condition,
           parentProperty as WithId<CodeSystemProperty>,
-          params
+          params,
+          strategy
         );
         if (!newQuery) {
           return undefined;
@@ -390,14 +394,108 @@ function applyValueSetFilters(
   return query;
 }
 
+/**
+ * Strategy for resolving an `is-a`/`descendent-of` include combined with a text filter.
+ * - `ancestor`: correlated `EXISTS(findAncestor …)` per trigram candidate — best for selective filters
+ * - `descendant`: materialize the subtree once via `addDescendants` and filter within it,
+ *   capping the worst-case cost at the subtree-materialize floor rather than scaling with candidates
+ */
+export type ParentFilterStrategy = 'ancestor' | 'descendant';
+
+/**
+ * Candidate-count crossover for choosing between the `ancestor` and `descendant` strategies. Tuned to the
+ * representative dataset: on a ~132k-node subtree the per-candidate ancestor walk costs ~60× a per-descendant
+ * enumeration step, so materializing the subtree wins once the filter matches more than ~2000 candidate codes.
+ */
+const CANDIDATE_THRESHOLD = 2000;
+
+/**
+ * Builds the text-filter predicate used by `$expand` filtering: an exact code match, plus (for filters of at
+ * least 3 characters) a per-word `display ILIKE` substring match. Below 3 characters the `display ILIKE
+ * '%filter%'` branch cannot use the trigram GIN index (a substring needs at least one full trigram), so only the
+ * exact code is matched.
+ * @param filterText - The `filter` parameter value.
+ * @param tableName - Table/alias that the `code` column belongs to (`Coding` or the descendant CTE).
+ * @returns The WHERE expression selecting rows that match the filter text.
+ */
+function buildTextFilterPredicate(filterText: string, tableName: string): Expression {
+  const codeCondition = new Condition(new Column(tableName, 'code'), '=', filterText);
+  if (filterText.length < 3) {
+    return codeCondition;
+  }
+  return new Disjunction([
+    codeCondition,
+    new Conjunction(
+      filterText.split(/\s+/g).map((word) => new Condition('display', 'ILIKE', `%${escapeLikeString(word)}%`))
+    ),
+  ]);
+}
+
+/**
+ * Counts, up to `limit`, the codes in a CodeSystem whose display/code matches the filter text.
+ * Used to choose the parent-filter strategy.
+ * @param db - Database client.
+ * @param codeSystem - The CodeSystem being expanded (with resolved id).
+ * @param filterText - The `filter` parameter value.
+ * @param limit - Upper bound on the count (candidates beyond this don't change the decision).
+ * @returns The number of matching candidate codes, capped at `limit`.
+ */
+export async function countCandidatesBounded(
+  db: PgQueryable,
+  codeSystem: WithId<CodeSystem>,
+  filterText: string,
+  limit: number
+): Promise<number> {
+  const inner = new SelectQuery('Coding')
+    .column('id')
+    .where('system', '=', codeSystem.id)
+    .where('synonymOf', '=', null)
+    .whereExpr(buildTextFilterPredicate(filterText, 'Coding'))
+    .limit(limit);
+  const countQuery = new SelectQuery('c', inner).raw('COUNT(*)::int AS "count"');
+  const rows = await countQuery.execute(db);
+  return rows[0]?.count ?? 0;
+}
+
+/**
+ * Chooses the parent-filter strategy for an include. Only applies to a single `is-a`/`descendent-of` filter
+ * combined with a text filter of at least 3 characters.
+ * A bounded candidate count decides between walking ancestors (selective filter) and materializing the subtree
+ * (broad filter), or undefined otherwise when the decision is not applicable.
+ * @param db - Database client.
+ * @param include - The ValueSet compose include being expanded.
+ * @param codeSystem - The CodeSystem being expanded (with resolved id).
+ * @param params - The expand parameters (notably `filter`).
+ * @returns The chosen strategy, or undefined when the cost-based choice does not apply.
+ */
+async function chooseParentFilterStrategy(
+  db: PgQueryable,
+  include: ValueSetComposeInclude,
+  codeSystem: WithId<CodeSystem>,
+  params: ValueSetExpandParameters
+): Promise<ParentFilterStrategy | undefined> {
+  const filterText = params.filter;
+  if (!filterText || filterText.length < 3 || include.filter?.length !== 1) {
+    return undefined;
+  }
+  const op = include.filter[0].op;
+  if (op !== 'is-a' && op !== 'descendent-of') {
+    return undefined;
+  }
+
+  const count = await countCandidatesBounded(db, codeSystem, filterText, CANDIDATE_THRESHOLD + 1);
+  return count > CANDIDATE_THRESHOLD ? 'descendant' : 'ancestor';
+}
+
 export function addParentFilter(
   query: SelectQuery,
   codeSystem: WithId<CodeSystem>,
   condition: ValueSetComposeIncludeFilter,
   parentProperty: WithId<CodeSystemProperty>,
-  params?: ValueSetExpandParameters
+  params?: ValueSetExpandParameters,
+  strategy: ParentFilterStrategy = 'ancestor'
 ): SelectQuery | undefined {
-  if (params?.filter) {
+  if (params?.filter && strategy === 'ancestor') {
     if (params.filter.length < 3) {
       return undefined; // Must specify minimum filter length to make this expensive query workable
     }
@@ -411,9 +509,13 @@ export function addParentFilter(
       .where(new Column('origin', 'system'), '=', codeSystem.id)
       .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
 
+    // For a selective text filter, test ancestry per candidate row: the trigram-matched set is small, so a
+    // correlated EXISTS(walk up to the ancestor) is cheaper than materializing the whole subtree.
     const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
     query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
   } else {
+    // No filter, or a broad text filter over a large subtree: materialize the descendant set once
+    // and let applyExpansionFilters filter within it, instead of walking ancestors for every candidate
     query = addDescendants(query, codeSystem, parentProperty, condition.value);
   }
   if (condition.op !== 'is-a') {
@@ -433,16 +535,7 @@ function applyExpansionFilters(
 
   if (params.filter) {
     query
-      .whereExpr(
-        new Disjunction([
-          new Condition(new Column('Coding', 'code'), '=', params.filter),
-          new Conjunction(
-            params.filter
-              .split(/\s+/g)
-              .map((filter) => new Condition('display', 'ILIKE', `%${escapeLikeString(filter)}%`))
-          ),
-        ])
-      )
+      .whereExpr(buildTextFilterPredicate(params.filter, query.effectiveTableName))
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
         true

@@ -2928,6 +2928,13 @@
             "code": "Reference"
           }
         ]
+      },
+      "deleted": {
+        "type": [
+          {
+            "code": "boolean"
+          }
+        ]
       }
     }
   },
