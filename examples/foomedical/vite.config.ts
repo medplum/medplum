@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react';
 import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vitest/config';
+import { globalSetupFiles } from '../../vitest.config';
+
+const coreSrc = path.resolve(__dirname, '../../packages/core/src');
 
 if (!existsSync(path.join(__dirname, '.env'))) {
   copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
@@ -16,9 +19,12 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  resolve: {
+    alias: existsSync(coreSrc) ? { '@medplum/core': coreSrc } : undefined,
+  },
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/test.setup.ts'],
+    setupFiles: [...globalSetupFiles, './src/test.setup.ts'],
     globals: true,
     testTimeout: 120000,
   },
