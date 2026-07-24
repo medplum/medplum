@@ -3708,11 +3708,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private dispatchResourceModified(payload: ResourceModifiedEvent): void {
     if (this.listenerCount('resourceModified') > 0) {
-      try {
-        this.dispatchEvent({ type: 'resourceModified', payload });
-      } catch (err) {
-        console.error("[MedplumClient] A 'resourceModified' event listener threw an error ", err);
-      }
+      this.dispatchEvent({ type: 'resourceModified', payload });
     }
   }
 

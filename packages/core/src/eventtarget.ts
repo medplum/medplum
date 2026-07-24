@@ -44,7 +44,11 @@ export class EventTarget {
   dispatchEvent(event: Event): boolean {
     const array = this.listeners[event.type];
     for (const listener of array ?? EMPTY) {
-      listener.call(this, event);
+      try {
+        listener.call(this, event);
+      } catch (err) {
+        console.error(`Unhandled error in "${event.type}" event listener`, err);
+      }
     }
     return !event.defaultPrevented;
   }

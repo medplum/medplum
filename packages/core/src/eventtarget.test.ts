@@ -3,6 +3,10 @@
 import { vi } from 'vitest';
 import { EventTarget, TypedEventTarget } from './eventtarget';
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('EventTarget', () => {
   test('No listeners', () => {
     const target = new EventTarget();
@@ -81,6 +85,25 @@ describe('EventTarget', () => {
     target.removeAllListeners();
     expect(target.listenerCount('test1')).toStrictEqual(0);
     expect(target.listenerCount('test2')).toStrictEqual(0);
+  });
+
+  test('When an event listener throws an error', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = new Error('Oh no');
+    const listener1 = vi.fn().mockThrow(error);
+    const listener2 = vi.fn();
+
+    const target = new EventTarget();
+    target.addEventListener('test', listener1);
+    target.addEventListener('test', listener2);
+
+    expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
+
+    expect(listener1).toHaveBeenCalled();
+    expect(listener2).toHaveBeenCalled();
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    expect(consoleError).toHaveBeenCalledWith('Unhandled error in "test" event listener', error);
   });
 });
 
