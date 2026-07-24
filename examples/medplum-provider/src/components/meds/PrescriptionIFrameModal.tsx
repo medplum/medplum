@@ -133,8 +133,8 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   const hasReadErrors = errors.size > 0;
 
   return (
-    <Modal opened={opened} onClose={onClose} size="xl" centered title={title} styles={{ body: { padding: 0 } }}>
-      <Box p="md" style={{ maxWidth: 'min(100%, 560px)', margin: '0 auto' }}>
+    <Modal opened={opened} onClose={onClose} size="xl" centered title={title}>
+      <Box style={{ maxWidth: 'min(100%, 560px)', margin: '0 auto' }}>
         {timedOut && (
           <Alert
             mb="sm"

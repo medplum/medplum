@@ -1,10 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type { Practitioner, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import {
+  CodeInput,
+  DateTimeInput,
+  Loading,
+  ModalActionsFooter,
+  ModalContentLayout,
+  ResourceInput,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -115,89 +124,88 @@ export const TaskDetailsModal = (): JSX.Element => {
       size="xl"
       styles={{
         body: {
-          padding: 0,
           height: '60vh',
         },
       }}
     >
-      <Stack h="100%" justify="space-between" gap={0}>
-        <Box flex={1} miw={0}>
-          <Grid p="md" h="100%">
-            <Grid.Col span={6} pr="lg">
-              <Stack gap="sm">
-                <Card p="md" radius="md" className={classes.taskDetails}>
-                  <Stack gap="sm">
-                    <Text fz="lg" fw={700}>
-                      {task?.code?.text}
-                    </Text>
-                    {task?.description && <Text>{task.description}</Text>}
-                    {patient?.name && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Text>View Patient</Text>
-                        <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
-                          {formatHumanName(patient.name?.[0])}
-                        </Button>
-                      </div>
-                    )}
-                  </Stack>
-                </Card>
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <Button variant="filled" w="100%" onClick={handleOnSubmit}>
+              Save Changes
+            </Button>
+          </ModalActionsFooter>
+        }
+      >
+        <Grid h="100%">
+          <Grid.Col span={6} pr="lg">
+            <Stack gap="md">
+              <Card p="md" radius="md" className={classes.taskDetails}>
+                <Stack gap="md">
+                  <Text fz="lg" fw={700}>
+                    {task?.code?.text}
+                  </Text>
+                  {task?.description && <Text>{task.description}</Text>}
+                  {patient?.name && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Text>View Patient</Text>
+                      <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
+                        {formatHumanName(patient.name?.[0])}
+                      </Button>
+                    </div>
+                  )}
+                </Stack>
+              </Card>
 
-                <ResourceInput<Practitioner>
-                  name="practitioner"
-                  resourceType="Practitioner"
-                  label="Assigned to"
-                  defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+              <ResourceInput<Practitioner>
+                name="practitioner"
+                resourceType="Practitioner"
+                label="Assigned to"
+                defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+                onChange={(value) => {
+                  setPractitioner(value);
+                }}
+              />
+
+              <DateTimeInput
+                name="Due Date"
+                placeholder="End"
+                label="Due Date"
+                defaultValue={dueDate}
+                onChange={setDueDate}
+              />
+
+              {task?.status && (
+                <CodeInput
+                  name="status"
+                  label="Status"
+                  binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
+                  maxValues={1}
+                  defaultValue={status}
                   onChange={(value) => {
-                    setPractitioner(value);
+                    if (value) {
+                      setStatus(value as typeof status);
+                    }
                   }}
                 />
+              )}
+            </Stack>
+          </Grid.Col>
 
-                <DateTimeInput
-                  name="Due Date"
-                  placeholder="End"
-                  label="Due Date"
-                  defaultValue={dueDate}
-                  onChange={setDueDate}
-                />
-
-                {task?.status && (
-                  <CodeInput
-                    name="status"
-                    label="Status"
-                    binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
-                    maxValues={1}
-                    defaultValue={status}
-                    onChange={(value) => {
-                      if (value) {
-                        setStatus(value as typeof status);
-                      }
-                    }}
-                  />
-                )}
-              </Stack>
-            </Grid.Col>
-
-            <Grid.Col span={6} pr="md">
-              <Stack gap="sm">
-                <Text>Note</Text>
-                <Text c="dimmed">Optional free form details about this task</Text>
-                <Textarea
-                  placeholder="Add note to this task"
-                  minRows={3}
-                  value={note}
-                  onChange={(event) => setNote(event.currentTarget.value)}
-                />
-              </Stack>
-            </Grid.Col>
-          </Grid>
-        </Box>
-
-        <Box className={classes.footer} h={70} p="md">
-          <Button variant="filled" onClick={handleOnSubmit}>
-            Save Changes
-          </Button>
-        </Box>
-      </Stack>
+          <Grid.Col span={6} pr="md">
+            <Stack gap="md">
+              <Text>Note</Text>
+              <Text c="dimmed">Optional free form details about this task</Text>
+              <Textarea
+                placeholder="Add note to this task"
+                minRows={3}
+                value={note}
+                onChange={(event) => setNote(event.currentTarget.value)}
+              />
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </ModalContentLayout>
     </Modal>
   );
 };

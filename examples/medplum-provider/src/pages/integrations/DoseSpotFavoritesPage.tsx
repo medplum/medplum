@@ -1,23 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Group,
-  Group as MantineGroup,
-  Modal,
-  Paper,
-  Stack,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { Box, Button, Container, Divider, Group, Modal, Paper, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatSearchQuery, generateId, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import type { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
-import { AsyncAutocomplete, useMedplum } from '@medplum/react';
+import { AsyncAutocomplete, ModalActionsFooter, ModalContentLayout, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -129,49 +117,53 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         size="lg"
         withCloseButton
       >
-        <Box>
-          <AsyncAutocomplete<CodeableConcept>
-            placeholder="Search medications..."
-            loadOptions={searchMedications}
-            toOption={toOption}
-            onChange={(medications) => {
-              if (medications.length > 0) {
-                setSelectedMedication(medications[0]);
-              } else {
-                setSelectedMedication(undefined);
-              }
-            }}
-            minInputLength={3} //DoseSpot requires at least 3 characters to search
-            clearable
-            maxValues={1} // Only allow single selection
-          />
+        <ModalContentLayout
+          footer={
+            <ModalActionsFooter>
+              <Button
+                w="100%"
+                onClick={() => handleAddFavoriteMedication()}
+                disabled={!state.directions || !state.selectedMedication || loading}
+                loading={loading}
+              >
+                Add Favorite
+              </Button>
+            </ModalActionsFooter>
+          }
+        >
+          <Box>
+            <AsyncAutocomplete<CodeableConcept>
+              placeholder="Search medications..."
+              loadOptions={searchMedications}
+              toOption={toOption}
+              onChange={(medications) => {
+                if (medications.length > 0) {
+                  setSelectedMedication(medications[0]);
+                } else {
+                  setSelectedMedication(undefined);
+                }
+              }}
+              minInputLength={3} //DoseSpot requires at least 3 characters to search
+              clearable
+              maxValues={1} // Only allow single selection
+            />
 
-          {/* After selecting a medication, show the medication info with followup input items */}
-          {state.selectedMedication && isCodeableConcept(state.selectedMedication) && (
-            <Stack gap="md" mt="lg">
-              <Divider />
-              {/* Prescription Form */}
-              <TextInput
-                label="Directions"
-                placeholder="e.g., Take 1 tablet by mouth daily"
-                value={state.directions}
-                onChange={(e) => setSelectedMedicationDirections(e.target.value)}
-                required
-              />
-            </Stack>
-          )}
-
-          {/* Action Buttons */}
-          <MantineGroup justify="flex-end" gap="md" mt="md">
-            <Button
-              onClick={() => handleAddFavoriteMedication()}
-              disabled={!state.directions || !state.selectedMedication || loading}
-              loading={loading}
-            >
-              Add Favorite
-            </Button>
-          </MantineGroup>
-        </Box>
+            {/* After selecting a medication, show the medication info with followup input items */}
+            {state.selectedMedication && isCodeableConcept(state.selectedMedication) && (
+              <Stack gap="md" mt="lg">
+                <Divider />
+                {/* Prescription Form */}
+                <TextInput
+                  label="Directions"
+                  placeholder="e.g., Take 1 tablet by mouth daily"
+                  value={state.directions}
+                  onChange={(e) => setSelectedMedicationDirections(e.target.value)}
+                  required
+                />
+              </Stack>
+            )}
+          </Box>
+        </ModalContentLayout>
       </Modal>
     </Container>
   );

@@ -17,7 +17,7 @@ import {
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Condition, Coverage, Organization, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
-import { ResourceInput, useMedplum } from '@medplum/react';
+import { ModalActionsFooter, ModalContentLayout, ResourceInput, useMedplum } from '@medplum/react';
 import { SCRIPTSURE_ORDERSET_ID_SYSTEM, useScriptSureOrderSet } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -231,109 +231,116 @@ export function OrderSetTabPanel(props: Readonly<OrderSetTabPanelProps>): JSX.El
   }, [submitDisabled, refresh, url, error, onOrderComplete]);
 
   return (
-    <Stack gap="md" data-testid="orderset-tab-panel">
-      <Input.Wrapper label="Patient" required>
-        <ResourceInput<Patient>
-          key={patient?.id ?? 'patient-orderset'}
-          resourceType="Patient"
-          name="patient-orderset"
-          defaultValue={patient}
-          onChange={onPatientChange}
-        />
-      </Input.Wrapper>
-
-      <Input.Wrapper label="Requester" required>
-        <ResourceInput<Practitioner>
-          key={requester?.id ?? 'requester-orderset'}
-          resourceType="Practitioner"
-          name="requester-orderset"
-          defaultValue={requester}
-          onChange={onRequesterChange}
-        />
-      </Input.Wrapper>
-
-      <Input.Wrapper
-        label="Order set"
-        description="Shared PlanDefinitions of type `order-set` (synced with ScriptSure)"
-        required
-      >
-        <ResourceInput<PlanDefinition>
-          key={planDefinition?.id ?? 'plan-definition-orderset'}
-          resourceType="PlanDefinition"
-          name="plan-definition-orderset"
-          defaultValue={planDefinition}
-          searchCriteria={{ type: 'order-set', status: 'active', context: 'shared' }}
-          itemComponent={renderPlanDefinitionOption}
-          onChange={(pd) => {
-            setPlanDefinition(pd);
-            // Picking a PD clears the manual escape hatch so the active
-            // selection always has exactly one source.
-            if (pd) {
-              setScriptSureIdEscape(undefined);
+    <ModalContentLayout
+      footer={
+        <ModalActionsFooter>
+          <Button
+            fullWidth
+            onClick={() => {
+              handleSubmit().catch(showErrorNotification);
+            }}
+            loading={loading || submitting}
+            disabled={submitDisabled}
+            title={
+              summaryWarnUnsynced
+                ? 'This order set hasn’t been synced to ScriptSure yet — pick a synced PlanDefinition or use the ScriptSure-id escape hatch.'
+                : undefined
             }
-          }}
-        />
-      </Input.Wrapper>
+          >
+            Open prescribing widget
+          </Button>
+        </ModalActionsFooter>
+      }
+    >
+      <Stack gap="md" data-testid="orderset-tab-panel">
+        <Input.Wrapper label="Patient" required>
+          <ResourceInput<Patient>
+            key={patient?.id ?? 'patient-orderset'}
+            resourceType="Patient"
+            name="patient-orderset"
+            defaultValue={patient}
+            onChange={onPatientChange}
+          />
+        </Input.Wrapper>
 
-      <Box>
-        <UnstyledButton onClick={() => setShowEscapeHatch((v) => !v)}>
-          <Text size="xs" c="dimmed">
-            {showEscapeHatch ? '▾' : '▸'} Use ScriptSure orderset id directly (escape hatch for un-synced sets)
-          </Text>
-        </UnstyledButton>
-        <Collapse in={showEscapeHatch} mt="xs">
-          <NumberInput
-            label="ScriptSure orderset id"
-            description="Use when the PlanDefinition picker can’t find your set. Disables PD selection while non-empty."
-            value={scriptSureIdEscape ?? ''}
-            onChange={(v) => {
-              const n = typeof v === 'number' ? v : Number.parseInt(String(v), 10);
-              const next = Number.isFinite(n) && n > 0 ? n : undefined;
-              setScriptSureIdEscape(next);
-              if (next !== undefined) {
-                setPlanDefinition(undefined);
+        <Input.Wrapper label="Requester" required>
+          <ResourceInput<Practitioner>
+            key={requester?.id ?? 'requester-orderset'}
+            resourceType="Practitioner"
+            name="requester-orderset"
+            defaultValue={requester}
+            onChange={onRequesterChange}
+          />
+        </Input.Wrapper>
+
+        <Input.Wrapper
+          label="Order set"
+          description="Shared PlanDefinitions of type `order-set` (synced with ScriptSure)"
+          required
+        >
+          <ResourceInput<PlanDefinition>
+            key={planDefinition?.id ?? 'plan-definition-orderset'}
+            resourceType="PlanDefinition"
+            name="plan-definition-orderset"
+            defaultValue={planDefinition}
+            searchCriteria={{ type: 'order-set', status: 'active', context: 'shared' }}
+            itemComponent={renderPlanDefinitionOption}
+            onChange={(pd) => {
+              setPlanDefinition(pd);
+              // Picking a PD clears the manual escape hatch so the active
+              // selection always has exactly one source.
+              if (pd) {
+                setScriptSureIdEscape(undefined);
               }
             }}
-            min={1}
-            allowNegative={false}
-            allowDecimal={false}
           />
-        </Collapse>
-      </Box>
+        </Input.Wrapper>
 
-      <OrderSetPreflightSummary pd={planDefinition} scriptSureIdEscape={scriptSureIdEscape} />
+        <Box>
+          <UnstyledButton onClick={() => setShowEscapeHatch((v) => !v)}>
+            <Text size="xs" c="dimmed">
+              {showEscapeHatch ? '▾' : '▸'} Use ScriptSure orderset id directly (escape hatch for un-synced sets)
+            </Text>
+          </UnstyledButton>
+          <Collapse in={showEscapeHatch} mt="xs">
+            <NumberInput
+              label="ScriptSure orderset id"
+              description="Use when the PlanDefinition picker can’t find your set. Disables PD selection while non-empty."
+              value={scriptSureIdEscape ?? ''}
+              onChange={(v) => {
+                const n = typeof v === 'number' ? v : Number.parseInt(String(v), 10);
+                const next = Number.isFinite(n) && n > 0 ? n : undefined;
+                setScriptSureIdEscape(next);
+                if (next !== undefined) {
+                  setPlanDefinition(undefined);
+                }
+              }}
+              min={1}
+              allowNegative={false}
+              allowDecimal={false}
+            />
+          </Collapse>
+        </Box>
 
-      <OptionalContextFields
-        medplum={medplum}
-        patient={patient}
-        primaryCondition={primaryCondition}
-        setPrimaryCondition={setPrimaryCondition}
-        coverage={coverage}
-        setCoverage={setCoverage}
-        pharmacyOrg={pharmacyOrg}
-        setPharmacyOrg={setPharmacyOrg}
-      />
+        <OrderSetPreflightSummary pd={planDefinition} scriptSureIdEscape={scriptSureIdEscape} />
 
-      {error ? (
-        <Alert color="red" variant="light" p="xs" radius="sm">
-          <Text size="xs">Failed to build widget URL — see browser console for details.</Text>
-        </Alert>
-      ) : null}
+        <OptionalContextFields
+          medplum={medplum}
+          patient={patient}
+          primaryCondition={primaryCondition}
+          setPrimaryCondition={setPrimaryCondition}
+          coverage={coverage}
+          setCoverage={setCoverage}
+          pharmacyOrg={pharmacyOrg}
+          setPharmacyOrg={setPharmacyOrg}
+        />
 
-      <Button
-        onClick={() => {
-          handleSubmit().catch(showErrorNotification);
-        }}
-        loading={loading || submitting}
-        disabled={submitDisabled}
-        title={
-          summaryWarnUnsynced
-            ? 'This order set hasn’t been synced to ScriptSure yet — pick a synced PlanDefinition or use the ScriptSure-id escape hatch.'
-            : undefined
-        }
-      >
-        Open prescribing widget
-      </Button>
-    </Stack>
+        {error ? (
+          <Alert color="red" variant="light" p="xs" radius="sm">
+            <Text size="xs">Failed to build widget URL — see browser console for details.</Text>
+          </Alert>
+        ) : null}
+      </Stack>
+    </ModalContentLayout>
   );
 }

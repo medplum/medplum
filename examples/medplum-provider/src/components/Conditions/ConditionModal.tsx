@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack } from '@mantine/core';
+import { Stack } from '@mantine/core';
 import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 import type { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
+import { CodeableConceptInput, Form, ModalActionsFooter, ModalContentLayout, SubmitButton } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -55,30 +55,35 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Stack>
-        <CodeableConceptInput
-          binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
-          label="ICD-10 Code"
-          name="diagnosis"
-          path="Condition.code"
-          required
-          maxValues={1}
-          onChange={(diagnosis) => setDiagnosis(diagnosis)}
-        />
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <SubmitButton fullWidth>Save</SubmitButton>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <CodeableConceptInput
+            binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
+            label="ICD-10 Code"
+            name="diagnosis"
+            path="Condition.code"
+            required
+            maxValues={1}
+            onChange={(diagnosis) => setDiagnosis(diagnosis)}
+          />
 
-        <CodeableConceptInput
-          name="clinicalStatus"
-          label="Status"
-          path="Condition.clinicalStatus"
-          maxValues={1}
-          binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
-          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
-          required
-        />
-        <Group justify="flex-end" gap={4} mt="md">
-          <SubmitButton>Save</SubmitButton>
-        </Group>
-      </Stack>
+          <CodeableConceptInput
+            name="clinicalStatus"
+            label="Status"
+            path="Condition.clinicalStatus"
+            maxValues={1}
+            binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
+            onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
+            required
+          />
+        </Stack>
+      </ModalContentLayout>
     </Form>
   );
 }

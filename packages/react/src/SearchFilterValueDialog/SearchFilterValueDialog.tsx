@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Grid, Modal } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
 import type { Filter } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Form } from '../Form/Form';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 
 export interface SearchFilterValueDialogProps {
@@ -33,22 +35,23 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
   return (
     <Modal title={props.title} size="xl" opened={props.visible} onClose={props.onCancel}>
       <Form onSubmit={onOk}>
-        <Grid>
-          <Grid.Col span={10}>
-            <SearchFilterValueInput
-              resourceType={props.resourceType}
-              searchParam={props.searchParam}
-              defaultValue={value}
-              autoFocus={true}
-              onChange={setValue}
-            />
-          </Grid.Col>
-          <Grid.Col span={2}>
-            <Button onClick={onOk} fullWidth>
-              OK
-            </Button>
-          </Grid.Col>
-        </Grid>
+        <ModalContentLayout
+          footer={
+            <ModalActionsFooter>
+              <Button type="submit" fullWidth>
+                OK
+              </Button>
+            </ModalActionsFooter>
+          }
+        >
+          <SearchFilterValueInput
+            resourceType={props.resourceType}
+            searchParam={props.searchParam}
+            defaultValue={value}
+            autoFocus={true}
+            onChange={setValue}
+          />
+        </ModalContentLayout>
       </Form>
     </Modal>
   );

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Paper, Stack, Text } from '@mantine/core';
+import { Button, Group, Paper, Text } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { Practitioner, Reference } from '@medplum/fhirtypes';
-import { ResourceAvatar, useMedplumProfile } from '@medplum/react';
+import { ModalActionsFooter, ModalContentLayout, ResourceAvatar, useMedplumProfile } from '@medplum/react';
 import { IconLock, IconSignature } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -27,7 +27,23 @@ export const SignLockDialog = (props: SignLockDialogProps): JSX.Element => {
   };
 
   return (
-    <Stack gap="md">
+    <ModalContentLayout
+      footer={
+        <ModalActionsFooter>
+          <Button fullWidth leftSection={<IconLock size={18} />} onClick={() => handleSign(true)}>
+            Sign & Lock Note
+          </Button>
+          <Button
+            variant="outline"
+            fullWidth
+            leftSection={<IconSignature size={18} />}
+            onClick={() => handleSign(false)}
+          >
+            Just Sign
+          </Button>
+        </ModalActionsFooter>
+      }
+    >
       <Paper p="sm" withBorder radius="md">
         <Group gap="sm">
           <ResourceAvatar value={authorReference} radius="xl" size={36} />
@@ -36,22 +52,6 @@ export const SignLockDialog = (props: SignLockDialogProps): JSX.Element => {
           </Text>
         </Group>
       </Paper>
-
-      <Stack gap={0}>
-        <Button fullWidth leftSection={<IconLock size={18} />} onClick={() => handleSign(true)} mt="md">
-          Sign & Lock Note
-        </Button>
-
-        <Button
-          variant="outline"
-          fullWidth
-          leftSection={<IconSignature size={18} />}
-          onClick={() => handleSign(false)}
-          mt="md"
-        >
-          Just Sign
-        </Button>
-      </Stack>
-    </Stack>
+    </ModalContentLayout>
   );
 };

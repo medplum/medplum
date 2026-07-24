@@ -10,7 +10,7 @@
 }
 
 .dropzone {
-  border: 2px dashed var(--mantine-color-gray-3);
+  border: 2px dashed var(--mantine-color-dark-4);
   border-radius: var(--mantine-radius-md);
   padding: var(--mantine-spacing-xl) var(--mantine-spacing-md);
   cursor: pointer;
