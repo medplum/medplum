@@ -5,6 +5,7 @@ import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
 import type { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -24,17 +25,23 @@ export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
+const shardPools = new Map<string, { writer: Pool; reader?: Pool }>();
 
-export function getDatabasePool(mode: DatabaseMode): Pool {
-  if (!pool) {
-    throw new Error('Database not setup');
+export function getDatabasePool(mode: DatabaseMode): Pool;
+export function getDatabasePool(shardId: string, mode: DatabaseMode): Pool;
+export function getDatabasePool(shardIdOrMode: string, optionalMode?: DatabaseMode): Pool {
+  const shardId = optionalMode === undefined ? GLOBAL_SHARD_ID : shardIdOrMode;
+  const mode = optionalMode ?? (shardIdOrMode as DatabaseMode);
+  const shardPool = shardPools.get(shardId);
+  if (shardPool) {
+    return mode === DatabaseMode.READER && shardPool.reader ? shardPool.reader : shardPool.writer;
   }
 
-  if (mode === DatabaseMode.READER && readonlyPool) {
-    return readonlyPool;
+  if (shardId !== GLOBAL_SHARD_ID || !pool) {
+    throw new Error(`Database shard not setup: ${shardId}`);
   }
 
-  return pool;
+  return mode === DatabaseMode.READER && readonlyPool ? readonlyPool : pool;
 }
 
 export const locks = {
@@ -52,6 +59,8 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
   if (serverConfig.readonlyDatabase) {
     readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
   }
+
+  shardPools.set(GLOBAL_SHARD_ID, { writer: pool, reader: readonlyPool });
 }
 
 function initPoolConfig(
@@ -121,15 +130,40 @@ export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): numbe
 }
 
 export async function closeDatabase(): Promise<void> {
+  const pools = new Set<Pool>();
+  for (const shardPool of shardPools.values()) {
+    pools.add(shardPool.writer);
+    if (shardPool.reader) {
+      pools.add(shardPool.reader);
+    }
+  }
   if (pool) {
-    await pool.end();
-    pool = undefined;
+    pools.add(pool);
+  }
+  if (readonlyPool) {
+    pools.add(readonlyPool);
   }
 
-  if (readonlyPool) {
-    await readonlyPool.end();
-    readonlyPool = undefined;
+  await Promise.all(Array.from(pools, (databasePool) => databasePool.end()));
+  pool = undefined;
+  readonlyPool = undefined;
+  shardPools.clear();
+}
+
+/**
+ * Registers an initialized database pool pair for a shard.
+ *
+ * The global shard is registered by {@link initDatabase}. Additional shard
+ * configuration and lifecycle management can register their pools here.
+ * @param shardId - The shard ID.
+ * @param writer - The shard's writer pool.
+ * @param reader - Optional read replica pool.
+ */
+export function registerDatabaseShard(shardId: string, writer: Pool, reader?: Pool): void {
+  if (shardPools.has(shardId)) {
+    throw new Error(`Database shard already setup: ${shardId}`);
   }
+  shardPools.set(shardId, { writer, reader });
 }
 
 async function runMigrations(pool: Pool): Promise<void> {

@@ -5,7 +5,8 @@ import { OperationOutcomeError, allOk, append, badRequest, notFound, serverError
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode, getDatabasePool } from '../../database';
+import type { Repository } from '../repo';
+import { repoAccess } from '../repository/access-tracker';
 import { Column, Condition } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -48,7 +49,7 @@ export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('No coding specified')];
   }
 
-  const output = await lookupCoding(codeSystem, coding);
+  const output = await lookupCoding(repo, codeSystem, coding);
   return [allOk, buildOutputParameters(operation, output)];
 }
 
@@ -60,6 +61,7 @@ export type CodeSystemLookupOutput = {
 };
 
 export async function lookupCoding(
+  repo: Repository,
   codeSystem: WithId<CodeSystem>,
   coding: Coding & { code: string }
 ): Promise<CodeSystemLookupOutput> {
@@ -96,15 +98,17 @@ export async function lookupCoding(
     .column(new Column(propertyTable, 'value'))
     .column(new Column(target, 'display', undefined, 'targetDisplay'));
 
-  const db = getDatabasePool(DatabaseMode.READER);
-  const result = await lookup.execute(db);
+  const result = await repo.executeSql(
+    lookup,
+    repoAccess.sqlRead('CodeSystem', { source: 'codesystemlookup.lookupCoding' })
+  );
   if (!result.length) {
     throw new OperationOutcomeError(notFound);
   }
 
   const output: CodeSystemLookupOutput = {
     name: codeSystem.title ?? codeSystem.name ?? (codeSystem.url as string),
-    display: result.find((r) => !r.synonymOf).display ?? '',
+    display: result.find((r) => !r.synonymOf)?.display ?? '',
   };
   for (const property of result) {
     if (property.synonymOf) {

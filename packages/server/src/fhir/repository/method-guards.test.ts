@@ -86,6 +86,8 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'isCacheOnly',
   'restoreReadonlyFields',
   'logEvent',
+  'getConnectionBindingForAccess',
+  'throwCrossShardAccess',
   'getCacheEntry',
   'getCacheEntries',
   'setCacheEntry',

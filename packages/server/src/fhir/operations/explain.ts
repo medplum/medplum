@@ -66,14 +66,17 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {
-    const result = await repo.executeSql<{ 'QUERY PLAN': string[] }>(
-      selectQuery,
-      repoAccess.sqlRead(getSearchResourceTypes(searchReq), { source: 'dbExplainHandler' })
-    );
-    const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
-    return { result, countResult };
-  });
+  const { result, countResult } = await repo.withStatementTimeout(
+    { timeoutMs: 0, resourceTypes: getSearchResourceTypes(searchReq) },
+    async () => {
+      const result = await repo.executeSql<{ 'QUERY PLAN': string[] }>(
+        selectQuery,
+        repoAccess.sqlRead(getSearchResourceTypes(searchReq), { source: 'dbExplainHandler' })
+      );
+      const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
+      return { result, countResult };
+    }
+  );
 
   let explain: string;
   if (params.format === 'json') {

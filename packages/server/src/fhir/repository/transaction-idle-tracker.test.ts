@@ -41,7 +41,7 @@ describe('TransactionIdleTracker', () => {
       } as unknown as PoolClient;
       const repo = getShardSystemRepo(
         'test-shard',
-        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: 'test-shard' })
       );
       const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
       const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -89,7 +89,7 @@ describe('TransactionIdleTracker', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: 'test-shard' })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -127,7 +127,7 @@ describe('TransactionIdleTracker', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: 'test-shard' })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -185,7 +185,7 @@ describe('TransactionIdleTracker', () => {
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
       'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: 'test-shard' })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);

@@ -1051,8 +1051,9 @@ describe('FHIR Repo Transactions', () => {
     assert(querySpy);
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
+    const connection = getRepositoryConnection(repo);
+    expect((connection as any).transactionDepth).toBe(0);
+    expect((connection as any).conn).toBeUndefined();
 
     // The rollback failure should be logged, not thrown
     expect(warnSpy).toHaveBeenCalledWith(
@@ -1095,10 +1096,11 @@ describe('FHIR Repo Transactions', () => {
     assert(querySpy);
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
+    const connection = getRepositoryConnection(repo);
+    expect((connection as any).transactionDepth).toBe(0);
+    expect((connection as any).conn).toBeUndefined();
     // The dead transaction's frame stack must be drained, not leaked
-    expect((repo as any).connection.accessTracker.transactionFrames).toHaveLength(0);
+    expect((repo as any).connections.accessTracker.transactionFrames).toHaveLength(0);
 
     // The mixed-access transaction is surfaced as rolled_back rather than silently dropped
     expect(infoSpy).toHaveBeenCalledWith(
@@ -1147,6 +1149,25 @@ describe('FHIR Repo Transactions', () => {
       },
       { resourceTypes: [], source: 'test.withStatementTimeout.rejectsBorrowed' }
     );
+  });
+
+  test('transaction rolls back when a later operation resolves to another shard', async () => {
+    const query = vi.fn(async (_sql: string) => ({ rows: [] }));
+    const client = { query, release: vi.fn() } as unknown as PoolClient;
+    const borrowedClientRepo = createBorrowedRepo(client);
+
+    await expect(
+      borrowedClientRepo.withTransaction(
+        async (txRepo) => {
+          txRepo.getDatabaseClient(repoAccess.sqlRead('Project', { source: 'test.crossShardTransaction' }));
+        },
+        { resourceTypes: ['Patient'], source: 'test.crossShardTransaction' }
+      )
+    ).rejects.toThrow('Repository access spans database shards (test-shard, global): Project');
+
+    expect(query).toHaveBeenCalledWith('BEGIN ISOLATION LEVEL REPEATABLE READ');
+    expect(query).toHaveBeenCalledWith('ROLLBACK');
+    expect(query).not.toHaveBeenCalledWith('COMMIT');
   });
 
   test('withStatementTimeout prevents writer operations on a pinned reader connection', async () => {
@@ -1253,11 +1274,10 @@ describe('FHIR Repo Transactions', () => {
 
       // BEGIN never succeeded, so the in-memory state must not claim an active
       // transaction or have published a transaction scope for one.
-      expect((borrowedClientRepo as any).connection.transactionDepth).toBe(0);
-      expect((borrowedClientRepo as any).connection.currentScope).toBe(
-        (borrowedClientRepo as any).connection.rootScope
-      );
-      expect((borrowedClientRepo as any).connection.hasConnection()).toBe(false);
+      const connection = getRepositoryConnection(borrowedClientRepo);
+      expect((connection as any).transactionDepth).toBe(0);
+      expect((connection as any).currentScope).toBe((connection as any).rootScope);
+      expect(connection.hasConnection()).toBe(false);
       expect(client.release).not.toHaveBeenCalled();
     } finally {
       errorSpy.mockRestore();
@@ -1648,5 +1668,12 @@ async function expectPatientSearchCount(repo: Repository, id: string | undefined
 }
 
 function createBorrowedRepo(client: PoolClient): Repository {
-  return getShardSystemRepo('test-shard', RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER }));
+  return getShardSystemRepo(
+    'test-shard',
+    RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: 'test-shard' })
+  );
+}
+
+function getRepositoryConnection(repo: Repository): RepositoryConnection {
+  return (repo as any).connections.getExisting(repo.shardId).connection as RepositoryConnection;
 }

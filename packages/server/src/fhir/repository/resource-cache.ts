@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import { stringify } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { getCacheRedis } from '../../redis';
+import { GLOBAL_SHARD_ID } from '../sharding';
 
 const RESOURCE_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
@@ -16,22 +17,31 @@ export interface CacheEntry<T extends Resource = Resource> {
  * Tries to read a cache entry from Redis by resource type and ID.
  * @param resourceType - The resource type.
  * @param id - The resource ID.
+ * @param shardId - The database shard containing the resource.
  * @returns The cache entry if found; otherwise, undefined.
  */
 export async function getResourceCacheEntry<T extends Resource>(
   resourceType: string,
-  id: string
+  id: string,
+  shardId: string = GLOBAL_SHARD_ID
 ): Promise<CacheEntry<WithId<T>> | undefined> {
-  const cachedValue = await getCacheRedis().get(getResourceCacheKey(resourceType, id));
+  const cachedValue = await getCacheRedis().get(getResourceCacheKey(resourceType, id, shardId));
   return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
 }
 
 /**
  * Performs a bulk read of cache entries from Redis.
  * @param references - Array of FHIR references.
+ * @param shardIds - Database shard for each reference.
  * @returns Array of cache entries or undefined.
  */
-export async function getResourceCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+export async function getResourceCacheEntries(
+  references: Reference[],
+  shardIds?: readonly string[]
+): Promise<(CacheEntry | undefined)[]> {
+  if (shardIds && shardIds.length !== references.length) {
+    throw new Error('Expected one shard ID per reference');
+  }
   const referenceKeys: string[] = [];
 
   // Build referenceKeys only for valid input references and track
@@ -41,7 +51,7 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
   for (let i = 0; i < references.length; i++) {
     const r = references[i];
     if (r.reference) {
-      referenceKeys.push(r.reference);
+      referenceKeys.push(`${shardIds?.[i] ?? GLOBAL_SHARD_ID}/${r.reference}`);
       referenceKeyIndices[i] = referenceKeys.length - 1;
     }
   }
@@ -69,11 +79,15 @@ export async function getResourceCacheEntries(references: Reference[]): Promise<
 /**
  * Writes a cache entry to Redis.
  * @param resource - The resource to cache.
+ * @param shardId - The database shard containing the resource.
  */
-export async function setResourceCacheEntry(resource: WithId<Resource>): Promise<void> {
+export async function setResourceCacheEntry(
+  resource: WithId<Resource>,
+  shardId: string = GLOBAL_SHARD_ID
+): Promise<void> {
   const projectId = resource.meta?.project;
   await getCacheRedis().set(
-    getResourceCacheKey(resource.resourceType, resource.id),
+    getResourceCacheKey(resource.resourceType, resource.id, shardId),
     stringify({ resource, projectId }),
     'EX',
     RESOURCE_CACHE_EX_SECONDS
@@ -84,19 +98,29 @@ export async function setResourceCacheEntry(resource: WithId<Resource>): Promise
  * Deletes a cache entry from Redis.
  * @param resourceType - The resource type.
  * @param id - The resource ID.
+ * @param shardId - The database shard containing the resource.
  */
-export async function deleteResourceCacheEntry(resourceType: string, id: string): Promise<void> {
-  await getCacheRedis().del(getResourceCacheKey(resourceType, id));
+export async function deleteResourceCacheEntry(
+  resourceType: string,
+  id: string,
+  shardId: string = GLOBAL_SHARD_ID
+): Promise<void> {
+  await getCacheRedis().del(getResourceCacheKey(resourceType, id, shardId));
 }
 
 /**
  * Deletes cache entries from Redis.
  * @param resourceType - The resource type.
  * @param ids - The resource IDs.
+ * @param shardId - The database shard containing the resources.
  */
-export async function deleteResourceCacheEntries(resourceType: string, ids: string[]): Promise<void> {
+export async function deleteResourceCacheEntries(
+  resourceType: string,
+  ids: string[],
+  shardId: string = GLOBAL_SHARD_ID
+): Promise<void> {
   const cacheKeys = ids.map((id) => {
-    return getResourceCacheKey(resourceType, id);
+    return getResourceCacheKey(resourceType, id, shardId);
   });
 
   await getCacheRedis().del(cacheKeys);
@@ -106,8 +130,9 @@ export async function deleteResourceCacheEntries(resourceType: string, ids: stri
  * Returns the redis cache key for the given resource type and resource ID.
  * @param resourceType - The resource type.
  * @param id - The resource ID.
+ * @param shardId - The database shard containing the resource.
  * @returns The Redis cache key.
  */
-export function getResourceCacheKey(resourceType: string, id: string): string {
-  return `${resourceType}/${id}`;
+export function getResourceCacheKey(resourceType: string, id: string, shardId: string = GLOBAL_SHARD_ID): string {
+  return `${shardId}/${resourceType}/${id}`;
 }

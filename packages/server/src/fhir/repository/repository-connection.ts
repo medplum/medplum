@@ -8,13 +8,12 @@ import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
+import { normalizeShardId } from '../sharding';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 import type {
   ExecuteSqlOptions,
   NormalizedResourceTypes,
-  RepositoryAccessLayer,
-  RepositoryAccessOperation,
   RepositoryAccessOptions,
   ResourceTypeInput,
   TransactionSqlOptions,
@@ -33,6 +32,7 @@ const transactionIsolationLevelPriority: Record<TransactionIsolationLevel, numbe
 export type StatementTimeoutOptions = {
   timeoutMs: number;
   mode?: DatabaseMode;
+  resourceTypes?: ResourceTypeInput;
 };
 
 /**
@@ -94,6 +94,7 @@ function validateScope(scope: unknown): Scope {
  * cannot diverge from the underlying Postgres transaction.
  */
 export class RepositoryConnection implements Disposable {
+  readonly shardId: string;
   private conn?: PoolClient;
   /** Physical mode of the currently held PoolClient, if one is pinned. */
   private connMode?: DatabaseMode;
@@ -109,12 +110,16 @@ export class RepositoryConnection implements Disposable {
   private readonly rootScope: RootScope;
   private currentScope: Scope;
 
-  private readonly accessTracker = new RepositoryAccessTracker();
+  private readonly accessTracker: RepositoryAccessTracker;
 
   /**
    * Creates a connection that owns any PoolClient it acquires.
+   * @param shardId - Database shard for this connection.
+   * @param accessTracker - Repository-owned access tracker shared by its connections.
    */
-  constructor() {
+  constructor(shardId?: string, accessTracker: RepositoryAccessTracker = new RepositoryAccessTracker()) {
+    this.shardId = normalizeShardId(shardId);
+    this.accessTracker = accessTracker;
     this._mode = RepositoryMode.WRITER;
     this.rootScope = {
       __brand: 'scope',
@@ -129,10 +134,16 @@ export class RepositoryConnection implements Disposable {
    * @param client - Caller-owned database client.
    * @param options - Borrowed client options.
    * @param options.mode - Database mode for the borrowed client.
+   * @param options.shardId - Database shard containing the borrowed client.
+   * @param accessTracker - Repository-owned access tracker to use.
    * @returns Repository connection wrapping the borrowed client.
    */
-  static borrowClient(client: PoolClient, options: { mode: DatabaseMode }): RepositoryConnection {
-    const connection = new RepositoryConnection();
+  static borrowClient(
+    client: PoolClient,
+    options: { mode: DatabaseMode; shardId?: string },
+    accessTracker?: RepositoryAccessTracker
+  ): RepositoryConnection {
+    const connection = new RepositoryConnection(options.shardId, accessTracker);
     connection.conn = client;
     connection.connMode = options.mode;
     connection.ownsClient = false;
@@ -151,6 +162,10 @@ export class RepositoryConnection implements Disposable {
 
   getCurrentScope(): ConnectionScope {
     return this.currentScope;
+  }
+
+  getAccessTracker(): RepositoryAccessTracker {
+    return this.accessTracker;
   }
 
   isInTransaction(): boolean {
@@ -238,16 +253,6 @@ export class RepositoryConnection implements Disposable {
     return false;
   }
 
-  recordResourceAccess(
-    layer: RepositoryAccessLayer,
-    operation: RepositoryAccessOperation,
-    resourceTypes: ResourceTypeInput,
-    source: string | undefined
-  ): void {
-    const normalizedResourceTypes = RepositoryAccessTracker.normalizeResourceTypes(resourceTypes);
-    this.accessTracker.recordResourceAccess(layer, operation, normalizedResourceTypes, source);
-  }
-
   /**
    * Returns a database client.
    * Use this method when you don't care if you're in a transaction or not.
@@ -260,7 +265,6 @@ export class RepositoryConnection implements Disposable {
    * @returns The database client.
    */
   getDatabaseClient(scope: ConnectionScope, options: ExecuteSqlOptions): PgQueryable {
-    this.recordResourceAccess('sql', options.operation, options.resourceTypes, options.source);
     this.assertNotClosed();
     this.assertScope(scope);
     if (this.conn) {
@@ -271,7 +275,7 @@ export class RepositoryConnection implements Disposable {
     }
     this.assertCanAcquireConnection();
     this.promoteRepositoryMode(options.mode);
-    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : options.mode);
+    return getDatabasePool(this.shardId, this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : options.mode);
   }
 
   /**
@@ -289,7 +293,7 @@ export class RepositoryConnection implements Disposable {
 
     this.assertCanAcquireConnection();
     this.promoteRepositoryMode(mode);
-    this.conn = await getDatabasePool(mode).connect();
+    this.conn = await getDatabasePool(this.shardId, mode).connect();
     this.connMode = mode;
     return this.conn;
   }
@@ -511,7 +515,6 @@ export class RepositoryConnection implements Disposable {
             serializable: options?.serializable ?? false,
           });
         }
-        this.recordResourceAccess('sql', 'transaction', options.resourceTypes, options.source);
         const result = await callback(txScope);
         await this.commitTransaction(txScope);
         if (attempt > 0) {

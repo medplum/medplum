@@ -5,6 +5,7 @@ import type { TransactionOptions } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
+import { isGlobalResourceType } from '../sharding';
 
 export type RepositoryAccessLayer = 'sql' | 'cache';
 export type RepositoryAccessOperation = 'read' | 'write' | 'transaction' | 'configuration';
@@ -37,8 +38,6 @@ type TransactionAccessFrame = {
   otherResourceTypes: Set<ResourceType>;
   sources: Set<string>;
 };
-
-const splitTrackedResourceTypes = new Set<ResourceType>(['Project', 'ProjectMembership', 'User']);
 
 export class RepositoryAccessTracker {
   readonly transactionFrames: TransactionAccessFrame[] = [];
@@ -207,7 +206,7 @@ function partitionResourceTypes(resourceTypes: ReadonlySet<ResourceType>): Resou
 
   for (const resourceType of resourceTypes) {
     all.add(resourceType);
-    if (splitTrackedResourceTypes.has(resourceType)) {
+    if (isGlobalResourceType(resourceType)) {
       special.add(resourceType);
     } else {
       other.add(resourceType);
@@ -285,14 +284,15 @@ export const repoAccess = {
    * Use when acquiring a READER client only to issue session/transaction configuration — e.g.
    * `SET statement_timeout = 2000` — rather than to read resource data. No resources should be read.
    * @param options - Optional overrides.
+   * @param options.resourceTypes - Resource types whose operation requires the configuration.
    * @param options.source - Short label identifying the call site.
    * @returns Options describing the reader configuration access.
    */
-  sqlReadConfig: (options?: { source?: string }): ExecuteSqlOptions => {
+  sqlReadConfig: (options?: { resourceTypes?: ResourceTypeInput; source?: string }): ExecuteSqlOptions => {
     return {
       mode: DatabaseMode.READER,
       operation: 'configuration',
-      resourceTypes: new Set(),
+      resourceTypes: options?.resourceTypes ?? new Set(),
       source: options?.source,
     };
   },
@@ -301,16 +301,17 @@ export const repoAccess = {
    * Use when acquiring the WRITER client only to issue configuration statements — e.g.
    * `set_config('statement_timeout', ..., true)` inside a transaction — rather than to read or
    * write resource data. Like {@link repoAccess.sqlReadConfig} but on the writer (the connection a
-   * transaction is pinned to). Carries no resource types, so nothing is recorded against tracking.
+   * transaction is pinned to).
    * @param options - Optional overrides.
+   * @param options.resourceTypes - Resource types whose operation requires the configuration.
    * @param options.source - Short label identifying the call site.
    * @returns Options describing the writer configuration access.
    */
-  sqlWriteConfig: (options?: { source?: string }): ExecuteSqlOptions => {
+  sqlWriteConfig: (options?: { resourceTypes?: ResourceTypeInput; source?: string }): ExecuteSqlOptions => {
     return {
       mode: DatabaseMode.WRITER,
       operation: 'configuration',
-      resourceTypes: new Set(),
+      resourceTypes: options?.resourceTypes ?? new Set(),
       source: options?.source,
     };
   },

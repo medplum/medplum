@@ -25,7 +25,8 @@ describe('Repository resource cache', () => {
   });
 
   test('Returns resource cache key', () => {
-    expect(getResourceCacheKey('Patient', '123')).toStrictEqual('Patient/123');
+    expect(getResourceCacheKey('Patient', '123')).toStrictEqual('global/Patient/123');
+    expect(getResourceCacheKey('Patient', '123', 'shard-1')).toStrictEqual('shard-1/Patient/123');
   });
 
   test('Sets, reads, and deletes resource cache entry', async () => {
@@ -85,6 +86,26 @@ describe('Repository resource cache', () => {
 
     await expect(getResourceCacheEntry<Patient>('Patient', patient1.id)).resolves.toBeUndefined();
     await expect(getResourceCacheEntry<Patient>('Patient', patient2.id)).resolves.toBeUndefined();
+  });
+
+  test('Separates entries with the same resource identity by shard', async () => {
+    const patient = buildPatient();
+    const otherPatient = { ...patient, active: true };
+
+    try {
+      await setResourceCacheEntry(patient, 'shard-1');
+      await setResourceCacheEntry(otherPatient, 'shard-2');
+
+      await expect(getResourceCacheEntry<Patient>('Patient', patient.id, 'shard-1')).resolves.toMatchObject({
+        resource: patient,
+      });
+      await expect(getResourceCacheEntry<Patient>('Patient', patient.id, 'shard-2')).resolves.toMatchObject({
+        resource: otherPatient,
+      });
+    } finally {
+      await deleteResourceCacheEntry('Patient', patient.id, 'shard-1');
+      await deleteResourceCacheEntry('Patient', patient.id, 'shard-2');
+    }
   });
 });
 

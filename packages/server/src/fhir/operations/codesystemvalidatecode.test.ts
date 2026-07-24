@@ -9,6 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import { getGlobalSystemRepo } from '../repo';
 import { validateCodings } from './codesystemvalidatecode';
 
 const app = express();
@@ -340,7 +341,7 @@ describe('CodeSystem validate-code', () => {
   });
 
   test('validateCodings', async () => {
-    const result = await validateCodings(codeSystem, [
+    const result = await validateCodings(getGlobalSystemRepo(), codeSystem, [
       { system: codeSystem.url, code: '1' }, // valid
       { system: codeSystem.url, code: '2' }, // valid
       { system: codeSystem.url, code: 'invalid-code' }, // invalid
