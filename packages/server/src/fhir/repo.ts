@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   Binary,
   Bundle,
   BundleEntry,
@@ -655,6 +656,9 @@ export class Repository extends FhirRepository implements Disposable {
     const cacheEntries = await this.getCacheEntries(references);
     const result: (WithId<T> | Error)[] = new Array(references.length);
 
+    // Collect the AuditEvents produced for each entry and persist them in a single batched write
+    // after the loop, rather than issuing one transaction per entry (see saveAuditEvents).
+    const auditEvents: AuditEvent[] = [];
     for (let i = 0; i < result.length; i++) {
       const startTime = Date.now();
       const reference = references[i];
@@ -662,18 +666,26 @@ export class Repository extends FhirRepository implements Disposable {
       let entryResult = await this.processReadReferenceEntry(reference, cacheEntry);
       const durationMs = Date.now() - startTime;
 
+      let auditEvent: AuditEvent | undefined;
       if (entryResult instanceof Error) {
         const reference = references[i];
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, {
+        auditEvent = this.buildAuditEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, {
           resource: reference,
           durationMs,
         });
       } else {
         entryResult = this.removeHiddenFields(entryResult);
-        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
+        auditEvent = this.buildAuditEvent(ReadInteraction, AuditEventOutcome.Success, undefined, {
+          resource: entryResult,
+          durationMs,
+        });
+      }
+      if (auditEvent) {
+        auditEvents.push(auditEvent);
       }
       result[i] = entryResult as WithId<T> | Error;
     }
+    this.saveAuditEvents(auditEvents);
 
     return result;
   }
@@ -949,25 +961,22 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   private async updateResourceImpl<T extends Resource>(
-    resource: T,
+    input: T,
     create: boolean,
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     // Promote before pre-commit validation and existing-resource reads.
     this.setMode(RepositoryMode.WRITER);
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
-    let validatedResource = this.checkResourcePermissions(resource, interaction);
-    this.validateBinarySecurityContext(validatedResource);
-    const { resourceType, id } = validatedResource;
+    let resource = this.checkResourcePermissions(input, interaction);
+    this.validateBinarySecurityContext(resource);
+    const { resourceType, id } = resource;
 
-    const preCommitResult = await preCommitValidation(this, validatedResource, 'update');
+    const preCommitResult = await preCommitValidation(this, resource, 'update');
 
-    if (
-      isResourceWithId(preCommitResult, validatedResource.resourceType) &&
-      preCommitResult.id === validatedResource.id
-    ) {
-      validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
-      this.validateBinarySecurityContext(validatedResource);
+    if (isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
+      resource = this.checkResourcePermissions(preCommitResult, interaction);
+      this.validateBinarySecurityContext(resource);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
@@ -983,31 +992,11 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
-      ...this.restoreReadonlyFields(validatedResource, existing),
+      ...this.restoreReadonlyFields(resource, existing),
     });
     updated = await replaceConditionalReferences(this, updated);
 
-    const resultMeta: Meta = {
-      ...updated.meta,
-      versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, validatedResource),
-      author: this.getAuthor(),
-      onBehalfOf: this.context.onBehalfOf,
-      deleted: undefined,
-    };
-
-    const result = { ...updated, meta: resultMeta };
-
-    const projectId = this.getProjectId(existing, updated);
-    if (projectId) {
-      resultMeta.project = projectId;
-    }
-    const accounts = await this.getAccounts(existing, updated);
-    if (accounts) {
-      resultMeta.account = accounts[0];
-      resultMeta.accounts = accounts;
-    }
-    resultMeta.compartment = this.getCompartments(result);
+    const result = await this.withUpdatedMeta(updated, existing);
 
     // Validate resource after all modifications and touchups above are done
     await validateRepositoryResource(this, result);
@@ -1048,7 +1037,7 @@ export class Repository extends FhirRepository implements Disposable {
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     if (!this.context.skipBackgroundJobs) {
       await this.postCommit(async () => {
-        const project = await this.getProjectById(projectId);
+        const project = await this.getProjectById(result.meta?.project);
         await addBackgroundJobs(result, existing, { project, interaction });
       });
     }
@@ -1841,6 +1830,36 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Writes versions of the given resources to the resource history table in a single INSERT.
+   * All resources must be of the same type.  This is the batch counterpart of {@link writeResourceVersion}.
+   * @param resources - The resources whose versions to write.
+   */
+  protected async batchWriteResourceVersions(resources: Resource[]): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
+    const resourceType = resources[0].resourceType;
+    await this.sqlWrite(
+      new InsertQuery(
+        resourceType + '_History',
+        resources.map((r) => {
+          const meta = r.meta as Meta;
+          return {
+            id: r.id,
+            versionId: meta.versionId,
+            lastUpdated: meta.lastUpdated,
+            content: stringify(r),
+          };
+        })
+      ),
+      resourceType,
+      {
+        source: 'repo.batchWriteResourceVersions',
+      }
+    );
+  }
+
+  /**
    * Builds a list of compartments for the resource for writing.
    * FHIR compartments are used for two purposes.
    * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
@@ -2065,6 +2084,50 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Populates the server-controlled metadata for a resource being written — versionId, lastUpdated,
+   * author, onBehalfOf, project, accounts, and compartments — and returns a copy of the resource with
+   * that metadata applied.
+   *
+   * This is the single source of truth for write metadata, shared by {@link updateResourceImpl} and
+   * the batched AuditEvent save path (see {@link saveAuditEvents}), so the two stay in sync.  The
+   * assignment order matters: accounts must be resolved before compartments, since compartments are
+   * derived in part from the resolved accounts.
+   *
+   * @param resource - The resource to write, after any attachment/reference rewrites.  Must already
+   * have an `id`.
+   * @param existing - The previous version of the resource, if this is an update; `undefined` on create.
+   * @returns A copy of `resource` with server-controlled `meta` populated.
+   */
+  private async withUpdatedMeta<T extends Resource>(
+    resource: WithId<T>,
+    existing: WithId<T> | undefined
+  ): Promise<WithId<T>> {
+    const resultMeta: Meta = {
+      ...resource.meta,
+      versionId: this.generateId(),
+      lastUpdated: this.getLastUpdated(existing, resource),
+      author: this.getAuthor(),
+      onBehalfOf: this.context.onBehalfOf,
+      deleted: undefined,
+    };
+
+    const result = { ...resource, meta: resultMeta };
+
+    const projectId = this.getProjectId(existing, resource);
+    if (projectId) {
+      resultMeta.project = projectId;
+    }
+    const accounts = await this.getAccounts(existing, resource);
+    if (accounts) {
+      resultMeta.account = accounts[0];
+      resultMeta.accounts = accounts;
+    }
+    resultMeta.compartment = this.getCompartments(result);
+
+    return result;
+  }
+
+  /**
    * Determines if the current user can manually set the ID field.
    * This is very powerful, and reserved for the system account.
    * @returns True if the current user can manually set the ID field.
@@ -2273,6 +2336,40 @@ export class Repository extends FhirRepository implements Disposable {
       durationMs?: number;
     }
   ): void {
+    const auditEvent = this.buildAuditEvent(subtype, outcome, description, options);
+    if (auditEvent) {
+      this.saveAuditEvents([auditEvent]);
+    }
+  }
+
+  /**
+   * Records metrics and logs the AuditEvent for an interaction, and returns the AuditEvent to be
+   * persisted to the database, or `undefined` if it should not be persisted.
+   *
+   * This is the non-persistence half of {@link logEvent}: the metrics and stdout log side effects
+   * always happen per-interaction, but the (comparatively expensive) database write is deferred to
+   * {@link saveAuditEvents} so that callers producing many events at once (e.g. {@link readReferences})
+   * can batch the writes into a single transaction.
+   *
+   * @param subtype - The AuditEvent subtype.
+   * @param outcome - The outcome of the interaction.
+   * @param description - The description.  Can be a string, object, or Error.  Will be normalized to a string.
+   * @param options -
+   * @param options.resource - Optional resource to associate with the AuditEvent.
+   * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
+   * @param options.durationMs - Duration of the operation, used for generating metrics.
+   * @returns The AuditEvent to persist, or `undefined` when it should not be saved.
+   */
+  private buildAuditEvent(
+    subtype: AuditEventSubtype,
+    outcome: AuditEventOutcome,
+    description?: unknown,
+    options?: {
+      resource?: Resource | Reference;
+      searchRequest?: SearchRequest;
+      durationMs?: number;
+    }
+  ): AuditEvent | undefined {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
 
@@ -2295,7 +2392,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (isSystem) {
       // Don't log system events.
-      return;
+      return undefined;
     }
     let outcomeDesc: string | undefined = undefined;
     if (description) {
@@ -2324,20 +2421,65 @@ export class Repository extends FhirRepository implements Disposable {
     logAuditEvent(auditEvent);
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
-      auditEvent.id = this.generateId();
-      // Clone the repository to obtain a separate RepositoryConnection for two reasons:
-      // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
-      // and closed/unusable as soon as post-commit callbacks returns (before the un-awaited save completes).
-      // 2. the un-awaited save begins a transaction (in handleStorage) which would clash with any subsequent
-      // mainline transactions started on the current Repository and cause one of them to fail.
-      // To reduce AuditEvent overhead, we could consider further decoupling AuditEvent saves from request processing
-      // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
-      const saveRepo = this.clone({ skipBackgroundJobs: true });
-      saveRepo
-        .updateResourceImpl(auditEvent, true)
-        .catch((err) => getLogger().error('Failed to save AuditEvent', err))
-        .finally(() => saveRepo[Symbol.dispose]());
+      return auditEvent;
     }
+    return undefined;
+  }
+
+  /**
+   * Persists the given AuditEvents to the database in a single batched transaction.
+   *
+   * The write is fire-and-forget on a cloned repository for two reasons:
+   * 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
+   * and closed/unusable as soon as post-commit callbacks return (before the un-awaited save completes).
+   * 2. the un-awaited save begins a transaction which would clash with any subsequent mainline
+   * transactions started on the current Repository and cause one of them to fail.
+   *
+   * Batching all events from a single interaction into one transaction (one multi-row INSERT into the
+   * AuditEvent table, one into AuditEvent_History, and one batched lookup-table write) avoids the
+   * per-event transaction + round-trip overhead that would otherwise scale linearly with the number
+   * of events — see {@link readReferences}.
+   *
+   * AuditEvents are trusted, internally-generated resources, so this deliberately skips the heavy
+   * permission/validation path of `updateResourceImpl`, but reuses {@link assignWriteMeta} to apply
+   * the same server-controlled metadata so the persisted AuditEvents are scoped and searchable
+   * identically to the previous per-event save path.
+   *
+   * @param auditEvents - The AuditEvents to persist.
+   */
+  private saveAuditEvents(auditEvents: AuditEvent[]): void {
+    if (!auditEvents.length) {
+      return;
+    }
+
+    const saveRepo = this.clone({ skipBackgroundJobs: true });
+    saveRepo
+      .batchWriteAuditEvents(auditEvents)
+      .catch((err) => getLogger().error('Failed to save AuditEvents', err))
+      .finally(() => saveRepo[Symbol.dispose]());
+  }
+
+  /**
+   * Assigns server-controlled metadata to each AuditEvent via {@link assignWriteMeta} (the same
+   * helper used by the create path in {@link updateResourceImpl}) and writes them all in a single
+   * transaction.  Runs on a cloned repository via {@link saveAuditEvents}.
+   * @param auditEvents - The AuditEvents to persist.
+   */
+  private async batchWriteAuditEvents(auditEvents: AuditEvent[]): Promise<void> {
+    const resources: WithId<AuditEvent>[] = [];
+    for (const auditEvent of auditEvents) {
+      auditEvent.id = this.generateId();
+      resources.push(await this.withUpdatedMeta(auditEvent as WithId<AuditEvent>, undefined));
+    }
+
+    await this.ensureInTransaction(
+      async (txRepo) => {
+        await txRepo.batchWriteResources(resources);
+        await txRepo.batchWriteResourceVersions(resources);
+        await txRepo.batchWriteLookupTables(resources, true);
+      },
+      { resourceTypes: 'AuditEvent', source: 'repo.saveAuditEvents' }
+    );
   }
 
   /**
