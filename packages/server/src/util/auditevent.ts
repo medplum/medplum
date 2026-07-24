@@ -353,23 +353,18 @@ export async function createBotAuditEvent(
   };
 
   const config = getConfig();
-  for (const destination of bot.auditEventDestination ?? ['resource']) {
-    switch (destination) {
-      case 'resource': {
-        const systemRepo = await getProjectSystemRepo(runAs.project);
-        await systemRepo.createResource<AuditEvent>({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
-        });
-        break;
-      }
-      case 'log':
-        logAuditEvent({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultBotOutputLength),
-        });
-        break;
-    }
+  // Always emit to logs
+  logAuditEvent({
+    ...auditEvent,
+    outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultBotOutputLength),
+  });
+  // Optionally write to the database (default if auditEventDestination is unset)
+  if (!bot.auditEventDestination || bot.auditEventDestination.includes('resource')) {
+    const systemRepo = await getProjectSystemRepo(runAs.project);
+    await systemRepo.createResource<AuditEvent>({
+      ...auditEvent,
+      outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
+    });
   }
 }
 
@@ -434,7 +429,6 @@ export async function createSubscriptionAuditEvent(
     extension,
   };
 
-  // Read destination extensions from subscription
   const destinations: string[] = [];
   if (subscription?.extension) {
     for (const ext of subscription.extension) {
@@ -443,11 +437,8 @@ export async function createSubscriptionAuditEvent(
       }
     }
   }
-
-  // Default to 'resource' if no extensions found
   const finalDestinations = destinations.length > 0 ? destinations : ['resource'];
 
-  // Process each destination
   for (const destination of finalDestinations) {
     switch (destination) {
       case 'resource':
