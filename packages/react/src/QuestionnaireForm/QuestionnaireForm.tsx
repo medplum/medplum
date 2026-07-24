@@ -28,6 +28,8 @@ export interface QuestionnaireFormProps {
   readonly submitButtonText?: string;
   /** Optional content rendered immediately below the header row, before the form items. */
   readonly afterHeader?: ReactNode;
+  /** Optional content rendered on the right side of the title row (e.g. action buttons). */
+  readonly titleActions?: ReactNode;
   readonly onChange?: (response: QuestionnaireResponse) => void;
   readonly onSubmit?: (response: QuestionnaireResponse) => void;
 }
@@ -144,11 +146,19 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   return (
     <Form testid="questionnaire-form" onSubmit={handleSubmit}>
-      {formState.questionnaire.title && (
-        <Title order={1} fz="1.625rem" fw={700} lh={1.3} mb="xl">
-          {formState.questionnaire.title}
-        </Title>
-      )}
+      {formState.questionnaire.title &&
+        (props.titleActions ? (
+          <Group justify="space-between" align="center" wrap="nowrap" mb="xl">
+            <Title order={1} fz="1.625rem" fw={700} lh={1.3}>
+              {formState.questionnaire.title}
+            </Title>
+            {props.titleActions}
+          </Group>
+        ) : (
+          <Title order={1} fz="1.625rem" fw={700} lh={1.3} mb="xl">
+            {formState.questionnaire.title}
+          </Title>
+        ))}
       {props.afterHeader && (
         <Stack gap="xl" mb="xl">
           {props.afterHeader}

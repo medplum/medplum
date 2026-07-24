@@ -341,7 +341,7 @@ async function resolveExternalSmartHealthLink(
 
   const warnings: string[] = [];
   if (payload.exp !== undefined && payload.exp <= Math.floor(Date.now() / 1000)) {
-    warnings.push('SMART Health Link is expired. Content was still available and decrypted.');
+    throw new Error('SMART Health Link has expired');
   }
 
   const url = new URL(payload.url);

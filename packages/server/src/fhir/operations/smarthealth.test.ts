@@ -446,14 +446,8 @@ describe('SMART Health operations', () => {
     fetchSpy.mockRestore();
   });
 
-  test('Returns warnings for expired external SMART Health Link payloads', async () => {
-    const key = base64url.encode(Buffer.alloc(32, 2));
-    const encrypted = await encryptSmartHealthLinkTestFile({ resourceType: 'Bundle', type: 'collection' }, key);
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => encrypted,
-    } as Response);
+  test('Rejects expired external direct SMART Health Link payloads', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     const resolveResponse = await request(app)
       .post('/fhir/R4/$resolve-smart-health-link')
@@ -462,7 +456,7 @@ describe('SMART Health operations', () => {
       .send({
         shlink: encodeShlinkPayload({
           url: 'https://issuer.example.com/smart-link/payload',
-          key,
+          key: base64url.encode(Buffer.alloc(32, 2)),
           flag: 'U',
           exp: Math.floor(Date.now() / 1000) - 60,
           v: 1,
@@ -470,8 +464,9 @@ describe('SMART Health operations', () => {
         recipient: 'Test Recipient',
       });
     expect(resolveResponse).toHaveStatus(200);
-    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
-    expect(getStringParameter(resolveResponse.body, 'warning')).toContain('expired');
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(resolveResponse.body, 'error')).toContain('expired');
+    expect(fetchSpy).not.toHaveBeenCalled();
 
     fetchSpy.mockRestore();
   });

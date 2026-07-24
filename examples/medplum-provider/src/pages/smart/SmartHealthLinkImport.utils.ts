@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { convertToTransactionBundle, getReferenceString, isResource } from '@medplum/core';
 import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
 
@@ -73,6 +73,119 @@ export function getMatchGrade(entry: BundleEntry<WithId<Patient>>): string | und
   return entry.search?.extension?.find((ext) => ext.url.endsWith('/match-grade'))?.valueCode;
 }
 
+/**
+ * Human-friendly labels for the resource types that appear in shared health-summary bundles.
+ * Types not listed here fall back to a spaced-out version of the raw type (see {@link getResourceTypeLabel}).
+ */
+const RESOURCE_TYPE_LABELS: Record<string, string> = {
+  AllergyIntolerance: 'Allergy',
+  Condition: 'Condition',
+  MedicationRequest: 'Medication (prescribed)',
+  MedicationStatement: 'Medication (reported)',
+  MedicationDispense: 'Medication (dispensed)',
+  Medication: 'Medication',
+  Immunization: 'Immunization',
+  Observation: 'Observation',
+  DiagnosticReport: 'Report',
+  DocumentReference: 'Document',
+  Procedure: 'Procedure',
+  Encounter: 'Visit',
+  ServiceRequest: 'Order',
+  CarePlan: 'Care Plan',
+  CareTeam: 'Care Team',
+  Goal: 'Goal',
+  FamilyMemberHistory: 'Family History',
+  Device: 'Device',
+  Coverage: 'Insurance',
+  Specimen: 'Specimen',
+  Practitioner: 'Provider',
+  Organization: 'Organization',
+};
+
+/**
+ * Returns a patient-friendly label for a FHIR resource type (e.g. `AllergyIntolerance` → "Allergy").
+ * Unmapped types are humanized by inserting spaces at camelCase boundaries (`NutritionOrder` → "Nutrition Order").
+ * @param resourceType - The raw FHIR resource type.
+ * @returns The simplified display label.
+ */
+export function getResourceTypeLabel(resourceType: string): string {
+  return RESOURCE_TYPE_LABELS[resourceType] ?? resourceType.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+}
+
+/**
+ * Uploads any inline attachment data found in the bundle's resources as `Binary` resources,
+ * replacing the inline base64 `data` with the resulting `Binary` URL.
+ *
+ * SMART Health Link bundles embed documents inline as base64 `Attachment.data`. Browsers refuse to
+ * render a `data:` URL PDF inside an iframe (and a download link needs a real URL), so imported
+ * attachments don't display until they're stored the way Medplum normally stores them: as `Binary`
+ * resources referenced by `Attachment.url`.
+ * @param medplum - The Medplum client used to create the `Binary` resources.
+ * @param bundle - The bundle whose resources' inline attachments should be externalized (mutated in place).
+ */
+export async function uploadInlineAttachments(medplum: MedplumClient, bundle: Bundle): Promise<void> {
+  for (const entry of bundle.entry ?? []) {
+    if (entry.resource) {
+      await externalizeInlineAttachments(medplum, entry.resource);
+    }
+  }
+}
+
+async function externalizeInlineAttachments(medplum: MedplumClient, value: unknown): Promise<void> {
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      await externalizeInlineAttachments(medplum, item);
+    }
+    return;
+  }
+  const record = value as Record<string, unknown>;
+  if (isInlineAttachment(record)) {
+    const contentType = record.contentType as string;
+    const uploaded = await medplum.createAttachment({
+      data: base64ToBytes(record.data as string),
+      contentType,
+      filename: typeof record.title === 'string' ? record.title : undefined,
+    });
+    delete record.data;
+    record.url = uploaded.url;
+    return;
+  }
+  for (const key of Object.keys(record)) {
+    await externalizeInlineAttachments(medplum, record[key]);
+  }
+}
+
+/**
+ * Detects a FHIR `Attachment` carrying inline base64 data that hasn't been externalized.
+ * Requires both `contentType` and `data` strings and no existing `url`, and rejects the two
+ * look-alikes that share those field names: `Signature` (has `who`/`when`) and `SampledData`
+ * (no `contentType`).
+ * @param record - The object to inspect.
+ * @returns True when the object is an inline attachment that should be uploaded.
+ */
+function isInlineAttachment(record: Record<string, unknown>): boolean {
+  return (
+    typeof record.data === 'string' &&
+    record.data.length > 0 &&
+    typeof record.contentType === 'string' &&
+    typeof record.url !== 'string' &&
+    !('who' in record) &&
+    !('when' in record)
+  );
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 function rewritePatientReference<T extends Resource>(
   resource: T,
   sharedPatientRefs: Set<string>,
@@ -125,13 +238,14 @@ function getIdentifierSearch(resource: Resource): string | undefined {
 
 function getPatientSearchParam(resourceType: string): string | undefined {
   switch (resourceType) {
-    case 'AllergyIntolerance':
     case 'Condition':
     case 'DiagnosticReport':
     case 'DocumentReference':
     case 'Observation':
     case 'Procedure':
       return 'subject';
+    // AllergyIntolerance and Immunization use `patient` (they have no `subject` search parameter).
+    case 'AllergyIntolerance':
     case 'Immunization':
     case 'MedicationRequest':
       return 'patient';

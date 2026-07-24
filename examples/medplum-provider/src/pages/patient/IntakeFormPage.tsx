@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert } from '@mantine/core';
+import { ActionIcon, Alert, Tooltip } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Questionnaire, QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
@@ -16,6 +17,8 @@ import type { JSX } from 'react';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { onboardPatient } from '../../utils/intake-form';
+import { SmartHealthLinkImportModal } from '../smart/SmartHealthLinkImportModal';
+import { SmartLogo } from '../smart/SmartLogo';
 
 const voiceInstructions = (
   <ul>
@@ -46,6 +49,7 @@ export function IntakeFormPage({
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const [shlOpened, shlHandlers] = useDisclosure(false);
   const questionnaire = propQuestionnaire ?? defaultQuestionnaire;
 
   // Every value set referenced by the questionnaire, deduplicated by URL (keeping the first
@@ -85,8 +89,24 @@ export function IntakeFormPage({
     [medplum, navigate, profile, questionnaire]
   );
 
+  const titleActions = (
+    <Tooltip label="Import from SMART Health Card or Link" position="bottom" openDelay={500}>
+      <ActionIcon
+        variant="transparent"
+        aria-label="Import from SMART Health Card or Link"
+        radius="xl"
+        size={32}
+        className="outline-icon-button"
+        onClick={shlHandlers.open}
+      >
+        <SmartLogo size={16} />
+      </ActionIcon>
+    </Tooltip>
+  );
+
   return (
     <Document width={800}>
+      <SmartHealthLinkImportModal opened={shlOpened} onClose={shlHandlers.close} />
       {checkingValueSets && <Loading />}
       {!checkingValueSets && unavailableValueSets.length > 0 && (
         <Alert color="red" title="Some valuesets are unavailable" mb="md">
@@ -105,6 +125,7 @@ export function IntakeFormPage({
         questionnaire={questionnaire}
         onSubmit={handleOnSubmit}
         voiceInstructions={voiceInstructions}
+        titleActions={titleActions}
       />
     </Document>
   );
@@ -146,7 +167,7 @@ function extractValueSets(items: QuestionnaireItem[] | undefined, result: ValueS
 const defaultQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
-  title: 'Patient Intake Questionnaire',
+  title: 'New Patient Intake',
   url: 'https://medplum.com/Questionnaire/patient-intake-questionnaire-example',
   name: 'patient-intake',
   item: [
