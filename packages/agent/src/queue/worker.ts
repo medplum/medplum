@@ -255,7 +255,7 @@ export interface ChannelQueueWorkerOptions {
   retryPolicy?: RetryPolicy;
   /**
    * What to do when a message lands terminally `rejected`; default
-   * {@link DEFAULT_AR_BEHAVIOR} (`pause`). `pause` stops the channel draining
+   * {@link DEFAULT_AR_BEHAVIOR} (`continue`). `pause` stops the channel draining
    * while a rejected row exists (enforced in the claim SQL); `continue` keeps
    * draining past it. See {@link ArBehavior}.
    */

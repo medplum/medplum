@@ -274,10 +274,8 @@ describe('ChannelQueueWorker', () => {
       // Auto-retry off so the terminal classification is observed directly: a
       // transient 429 would otherwise be re-queued for retry, not left `failed`.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
-      // arBehavior=continue so the channel drains past the rejected r1 — the
-      // default (pause) would halt the channel on r1's reject, and this test is
-      // about the terminal classification of BOTH rows, not the pause gate.
-      arBehavior: ArBehavior.CONTINUE,
+      // Default arBehavior is `continue`, so the channel drains past the rejected
+      // r1 to r2 — this test is about the terminal classification of both rows.
     });
     worker.start();
 
@@ -1218,12 +1216,12 @@ describe('ChannelQueueWorker', () => {
     const ackBody = (code: string): string =>
       `MSH|^~\\&|MEDPLUM|MEDPLUM|TEST|TEST|20240101000000||ACK|X1|P|2.5.1\rMSA|${code}|X1`;
 
-    test('default (pause): an upstream AR halts the channel until the rejected row is cleared', async () => {
+    test('pause: an upstream AR halts the channel until the rejected row is cleared', async () => {
       const r1 = enqueueOne(queue, 'AR-PAUSE-1');
       const r2 = enqueueOne(queue, 'AR-PAUSE-2');
       const { app } = makeStubApp();
-      // No arBehavior option → defaults to pause. Default retry policy is guaranteed,
-      // under which an upstream AR is the one terminal `rejected` outcome.
+      // Default retry policy is guaranteed, under which an upstream AR is the one
+      // terminal `rejected` outcome.
       const worker = new ChannelQueueWorker({
         channelName: 'ch1',
         app,
@@ -1231,6 +1229,7 @@ describe('ChannelQueueWorker', () => {
         log: createMockLogger(),
         sendAck: () => true,
         idlePollMs: 10,
+        arBehavior: ArBehavior.PAUSE,
       });
       worker.start();
 
@@ -1256,10 +1255,11 @@ describe('ChannelQueueWorker', () => {
       await worker.stop();
     });
 
-    test('continue: a rejected message does not stall the channel', async () => {
+    test('default (continue): a rejected message does not stall the channel', async () => {
       const r1 = enqueueOne(queue, 'AR-CONT-1');
       const r2 = enqueueOne(queue, 'AR-CONT-2');
       const { app } = makeStubApp();
+      // No arBehavior option → defaults to `continue`.
       const worker = new ChannelQueueWorker({
         channelName: 'ch1',
         app,
@@ -1267,7 +1267,6 @@ describe('ChannelQueueWorker', () => {
         log: createMockLogger(),
         sendAck: () => true,
         idlePollMs: 10,
-        arBehavior: ArBehavior.CONTINUE,
       });
       worker.start();
 

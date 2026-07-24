@@ -373,7 +373,7 @@ export class AgentHl7Channel extends BaseChannel {
   /**
    * Resolves and pushes the channel's {@link ArBehavior}: the `arBehavior`
    * endpoint URL param wins over the agent-wide `channelArBehavior` setting,
-   * which wins over {@link DEFAULT_AR_BEHAVIOR} (`pause`).
+   * which wins over {@link DEFAULT_AR_BEHAVIOR} (`continue`).
    *
    * Split out and called from both {@link configureHl7ServerAndConnections} and
    * {@link reloadConfig}'s no-address-change branch for the same reason as
@@ -388,8 +388,8 @@ export class AgentHl7Channel extends BaseChannel {
     const agentDefault = this.app.getChannelArBehaviorDefault();
     this.arBehavior = urlParam ?? agentDefault ?? DEFAULT_AR_BEHAVIOR;
     // Only warn when explicitly configured — arBehavior always resolves to a
-    // value (pause by default), so an unconditional warning would fire for every
-    // legacy channel with the queue off.
+    // value (continue by default), so an unconditional warning would fire for
+    // every legacy channel with the queue off.
     const explicitlyConfigured = address.searchParams.has('arBehavior') || agentDefault !== undefined;
     if (!queueOn && explicitlyConfigured) {
       this.log.warn('arBehavior is configured but the durable queue is off; it has no effect without it');
