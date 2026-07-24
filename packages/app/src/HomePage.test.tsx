@@ -45,6 +45,12 @@ describe('HomePage', () => {
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
+  test('Renders resource type header', async () => {
+    await setup('/Bot');
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Bot' })).toBeInTheDocument();
+  });
+
   test('Next page button', async () => {
     await setup();
     expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
