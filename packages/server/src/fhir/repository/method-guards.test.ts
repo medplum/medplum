@@ -94,6 +94,10 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'createTransactionScopedRepo',
   'assertUsable',
   'authorizeBinarySecurityContext',
+  'getShardConnection',
+  'resolveShard',
+  'isInTransaction',
+  'shareConnections',
 ]);
 
 interface MethodInvocation {

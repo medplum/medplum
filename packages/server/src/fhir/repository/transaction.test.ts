@@ -1051,8 +1051,9 @@ describe('FHIR Repo Transactions', () => {
     assert(querySpy);
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
+    const connection = getSoleConnection(repo);
+    expect(connection.transactionDepth).toBe(0);
+    expect(connection.conn).toBeUndefined();
 
     // The rollback failure should be logged, not thrown
     expect(warnSpy).toHaveBeenCalledWith(
@@ -1063,56 +1064,6 @@ describe('FHIR Repo Transactions', () => {
     );
 
     querySpy.mockRestore();
-    warnSpy.mockRestore();
-    errorSpy.mockRestore();
-  });
-
-  test('withTransaction logs mixed access as rolled_back when rollback fails on a dead backend', async () => {
-    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
-    const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => undefined);
-    const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
-    let querySpy: MockInstance | undefined;
-
-    await expect(
-      repo.withTransaction(
-        async (txRepo) => {
-          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
-          querySpy = spyOnQuery(client).mockImplementation(() => {
-            const terminationErr = Object.assign(
-              new Error('terminating connection due to idle-in-transaction timeout'),
-              { code: '57P01' }
-            );
-            throw terminationErr;
-          });
-          await client.query('SELECT 1');
-        },
-        // Declaring a special (Project) + other (Patient) type seeds the frame as mixed, so the
-        // teardown must still emit the transaction-level log even though ROLLBACK itself fails.
-        { resourceTypes: ['Patient', 'Project'], source: 'test.withTransaction.deadBackendMixed' }
-      )
-    ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
-
-    assert(querySpy);
-
-    // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
-    // The dead transaction's frame stack must be drained, not leaked
-    expect((repo as any).connection.accessTracker.transactionFrames).toHaveLength(0);
-
-    // The mixed-access transaction is surfaced as rolled_back rather than silently dropped
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[RepoSplit] Mixed transaction access',
-      expect.objectContaining({
-        scope: 'transaction',
-        status: 'rolled_back',
-        specialResourceTypes: ['Project'],
-        otherResourceTypes: ['Patient'],
-      })
-    );
-
-    querySpy.mockRestore();
-    infoSpy.mockRestore();
     warnSpy.mockRestore();
     errorSpy.mockRestore();
   });
@@ -1253,11 +1204,10 @@ describe('FHIR Repo Transactions', () => {
 
       // BEGIN never succeeded, so the in-memory state must not claim an active
       // transaction or have published a transaction scope for one.
-      expect((borrowedClientRepo as any).connection.transactionDepth).toBe(0);
-      expect((borrowedClientRepo as any).connection.currentScope).toBe(
-        (borrowedClientRepo as any).connection.rootScope
-      );
-      expect((borrowedClientRepo as any).connection.hasConnection()).toBe(false);
+      const connection = getSoleConnection(borrowedClientRepo);
+      expect(connection.transactionDepth).toBe(0);
+      expect(connection.currentScope).toBe(connection.rootScope);
+      expect(connection.hasConnection()).toBe(false);
       expect(client.release).not.toHaveBeenCalled();
     } finally {
       errorSpy.mockRestore();
@@ -1649,4 +1599,15 @@ async function expectPatientSearchCount(repo: Repository, id: string | undefined
 
 function createBorrowedRepo(client: PoolClient): Repository {
   return getShardSystemRepo('test-shard', RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER }));
+}
+
+/**
+ * Reaches into a Repository holding exactly one connection and returns it for state assertions.
+ * @param repo - The repository to inspect.
+ * @returns The repository's sole RepositoryConnection.
+ */
+function getSoleConnection(repo: Repository): any {
+  const connections: Map<string, { connection: RepositoryConnection }> = (repo as any).connections;
+  assert(connections.size === 1);
+  return [...connections.values()][0].connection;
 }

@@ -50,6 +50,7 @@ import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { ShardRoutingError } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -376,80 +377,66 @@ describe('FHIR Repo', () => {
     expect((results[5] as OperationOutcomeError).outcome.id).toBe('not-found');
   });
 
-  test('Logs mixed cache access for readReferences across split resource types', async () => {
-    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
-    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Cache Project' });
-    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-
-    await systemRepo.readReferences([{ reference: `Project/${project.id}` }, { reference: `Patient/${patient.id}` }]);
-
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[RepoSplit] Mixed resource access',
-      expect.objectContaining({
-        scope: 'statement',
-        layer: 'cache',
-        operation: 'read',
-        source: 'repo.getCacheEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+  test('Multi-type search mixing global and project-scoped resource types throws on a project shard', async () => {
+    const shardRepo = getShardSystemRepo('test-shard-a');
+    await expect(
+      shardRepo.search({
+        resourceType: 'Patient',
+        types: ['Project', 'Patient'],
+        count: 10,
+        offset: 0,
       })
-    );
+    ).rejects.toThrow(ShardRoutingError);
   });
 
-  test('Logs mixed SQL access for multi-type search across split resource types', async () => {
-    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
-    await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Search Project' });
-    await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-
-    await systemRepo.search({
-      resourceType: 'Patient',
-      types: ['Project', 'Patient'],
-      count: 10,
-      offset: 0,
-    });
-
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[RepoSplit] Mixed resource access',
-      expect.objectContaining({
-        scope: 'statement',
-        layer: 'sql',
-        operation: 'read',
-        source: 'search.getSearchEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+  test('Multi-type search mixing global and project-scoped resource types resolves to global on the global shard', async () => {
+    // On the global shard, both partitions resolve to the same physical database, so this is legal.
+    await expect(
+      systemRepo.search({
+        resourceType: 'Patient',
+        types: ['Project', 'Patient'],
+        count: 10,
+        offset: 0,
       })
-    );
+    ).resolves.toBeDefined();
   });
 
-  test('Logs mixed transaction access across repo and system repo', async () => {
-    const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
+  test('Statement targeting the global shard throws inside a transaction bound to a project shard', async () => {
+    const shardRepo = getShardSystemRepo('test-shard-a');
+    const patient = await shardRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    await expect(
+      shardRepo.withTransaction(
+        async (txRepo) => {
+          // The transaction is bound to test-shard-a via its Patient annotation; reading a Project
+          // resolves to the global shard, which the binding rejects.
+          await txRepo.readResource('Patient', patient.id);
+          await txRepo.getSystemRepo().readResource('Project', patient.id);
+        },
+        {
+          resourceTypes: ['Patient'],
+          source: 'repo.test.crossShardTransaction',
+        }
+      )
+    ).rejects.toThrow(ShardRoutingError);
+  });
+
+  test('Transaction spanning global and project-scoped resource types commits on the global shard', async () => {
     const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Tx Project' });
     const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
 
-    await systemRepo.withTransaction(
-      async (txRepo) => {
-        await txRepo.readResource('Patient', patient.id);
-        await txRepo.getSystemRepo().readResource('Project', project.id);
-      },
-      {
-        resourceTypes: ['Patient', 'Project'],
-        source: 'repo.test.mixedTransactionAccess',
-      }
-    );
-
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[RepoSplit] Mixed transaction access',
-      expect.objectContaining({
-        scope: 'transaction',
-        status: 'committed',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        readResourceTypes: expect.toContainExactly(['Patient', 'Project']),
-        writeResourceTypes: expect.toContainExactly([]),
-      })
-    );
+    await expect(
+      systemRepo.withTransaction(
+        async (txRepo) => {
+          await txRepo.readResource('Patient', patient.id);
+          await txRepo.getSystemRepo().readResource('Project', project.id);
+        },
+        {
+          resourceTypes: ['Patient', 'Project'],
+          source: 'repo.test.mixedTransactionAccess',
+        }
+      )
+    ).resolves.toBeUndefined();
   });
 
   describe('Read history', () => {

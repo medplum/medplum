@@ -2,24 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcomeError } from '@medplum/core';
 import { normalizeErrorString, sleep } from '@medplum/core';
+import type { TransactionOptions } from '@medplum/fhir-router';
 import { RepositoryMode } from '@medplum/fhir-router';
 import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
-import type {
-  ExecuteSqlOptions,
-  NormalizedResourceTypes,
-  RepositoryAccessLayer,
-  RepositoryAccessOperation,
-  RepositoryAccessOptions,
-  ResourceTypeInput,
-  TransactionSqlOptions,
-} from './access-tracker';
-import { RepositoryAccessTracker } from './access-tracker';
+import type { ExecuteSqlOptions, ResourceTypeInput } from './access-tracker';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -33,6 +26,10 @@ const transactionIsolationLevelPriority: Record<TransactionIsolationLevel, numbe
 export type StatementTimeoutOptions = {
   timeoutMs: number;
   mode?: DatabaseMode;
+  /** Resource type(s) used only to route the timeout-scoped work to the correct shard. */
+  resourceTypes?: ResourceTypeInput;
+  /** Short label identifying the call site (e.g. `repo.searchWithTimeout`) */
+  source?: string;
 };
 
 /**
@@ -109,12 +106,15 @@ export class RepositoryConnection implements Disposable {
   private readonly rootScope: RootScope;
   private currentScope: Scope;
 
-  private readonly accessTracker = new RepositoryAccessTracker();
+  /** The database shard this connection is associated with. Not yet used for pool selection. */
+  readonly shardId: string;
 
   /**
    * Creates a connection that owns any PoolClient it acquires.
+   * @param shardId - The database shard this connection is associated with.
    */
-  constructor() {
+  constructor(shardId: string = GLOBAL_SHARD_ID) {
+    this.shardId = shardId;
     this._mode = RepositoryMode.WRITER;
     this.rootScope = {
       __brand: 'scope',
@@ -129,10 +129,11 @@ export class RepositoryConnection implements Disposable {
    * @param client - Caller-owned database client.
    * @param options - Borrowed client options.
    * @param options.mode - Database mode for the borrowed client.
+   * @param options.shardId - The database shard the borrowed client is connected to.
    * @returns Repository connection wrapping the borrowed client.
    */
-  static borrowClient(client: PoolClient, options: { mode: DatabaseMode }): RepositoryConnection {
-    const connection = new RepositoryConnection();
+  static borrowClient(client: PoolClient, options: { mode: DatabaseMode; shardId?: string }): RepositoryConnection {
+    const connection = new RepositoryConnection(options.shardId);
     connection.conn = client;
     connection.connMode = options.mode;
     connection.ownsClient = false;
@@ -238,16 +239,6 @@ export class RepositoryConnection implements Disposable {
     return false;
   }
 
-  recordResourceAccess(
-    layer: RepositoryAccessLayer,
-    operation: RepositoryAccessOperation,
-    resourceTypes: ResourceTypeInput,
-    source: string | undefined
-  ): void {
-    const normalizedResourceTypes = RepositoryAccessTracker.normalizeResourceTypes(resourceTypes);
-    this.accessTracker.recordResourceAccess(layer, operation, normalizedResourceTypes, source);
-  }
-
   /**
    * Returns a database client.
    * Use this method when you don't care if you're in a transaction or not.
@@ -260,7 +251,6 @@ export class RepositoryConnection implements Disposable {
    * @returns The database client.
    */
   getDatabaseClient(scope: ConnectionScope, options: ExecuteSqlOptions): PgQueryable {
-    this.recordResourceAccess('sql', options.operation, options.resourceTypes, options.source);
     this.assertNotClosed();
     this.assertScope(scope);
     if (this.conn) {
@@ -489,7 +479,7 @@ export class RepositoryConnection implements Disposable {
   async withTransaction<TResult>(
     scope: ConnectionScope,
     callback: (txScope: ConnectionScope) => Promise<TResult>,
-    options: TransactionSqlOptions
+    options?: TransactionOptions
   ): Promise<TResult> {
     this.assertNotClosed();
     const isolationLevel = options?.serializable ? 'SERIALIZABLE' : 'REPEATABLE READ';
@@ -511,7 +501,6 @@ export class RepositoryConnection implements Disposable {
             serializable: options?.serializable ?? false,
           });
         }
-        this.recordResourceAccess('sql', 'transaction', options.resourceTypes, options.source);
         const result = await callback(txScope);
         await this.commitTransaction(txScope);
         if (attempt > 0) {
@@ -644,7 +633,6 @@ export class RepositoryConnection implements Disposable {
       }
       const txScope = createScope(nextDepth === 1 ? 'transaction' : 'savepoint', this.currentScope);
       this.currentScope = txScope;
-      this.accessTracker.pushTransactionFrame();
       return { client, scope: txScope };
     });
   }
@@ -677,8 +665,6 @@ export class RepositoryConnection implements Disposable {
 
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
-        const frame = this.accessTracker.popTransactionFrame();
-        this.accessTracker.logTransactionAccess(frame, 'committed');
       } else {
         assert(this.currentScope.kind === 'savepoint');
         assert(this.currentScope.parent.kind !== 'root');
@@ -691,7 +677,6 @@ export class RepositoryConnection implements Disposable {
         this.currentScope.parent.preCommitCallbacks.push(...this.currentScope.preCommitCallbacks);
         this.currentScope.parent.postCommitCallbacks.push(...this.currentScope.postCommitCallbacks);
         this.currentScope = this.currentScope.parent;
-        this.accessTracker.mergeLastTransactionFrame();
       }
     });
 
@@ -739,13 +724,6 @@ export class RepositoryConnection implements Disposable {
           this.currentScope = this.currentScope.parent;
         }
         this.transactionIsolationLevel = undefined;
-        // The transaction died as a whole, so the per-level commit/rollback logging never runs.
-        // Collapse whatever frames are still live into one and emit the rolled_back transaction
-        // record here so a mixed-access transaction is still surfaced on the dead-connection path.
-        const frame = this.accessTracker.collapseTransactionFrames();
-        if (frame) {
-          this.accessTracker.logTransactionAccess(frame, 'rolled_back');
-        }
         // Pass the original triggering error so the client is released with the right root cause.
         this.releaseConnection(error);
         return;
@@ -762,10 +740,6 @@ export class RepositoryConnection implements Disposable {
       if (isOuter) {
         this.transactionIsolationLevel = undefined;
         this.releaseConnection(error);
-        const frame = this.accessTracker.popTransactionFrame();
-        this.accessTracker.logTransactionAccess(frame, 'rolled_back');
-      } else {
-        this.accessTracker.mergeLastTransactionFrame();
       }
     });
   }
@@ -926,16 +900,5 @@ export class RepositoryConnection implements Disposable {
     if (this.closed) {
       throw new Error('Already closed');
     }
-  }
-
-  static noramlizeResourceTypes(input: ResourceTypeInput): NormalizedResourceTypes {
-    return RepositoryAccessTracker.normalizeResourceTypes(input);
-  }
-
-  static normalizeOptions<T extends RepositoryAccessOptions>(opts: T): T & { resourceTypes: NormalizedResourceTypes } {
-    return {
-      ...opts,
-      resourceTypes: RepositoryAccessTracker.normalizeResourceTypes(opts.resourceTypes),
-    };
   }
 }

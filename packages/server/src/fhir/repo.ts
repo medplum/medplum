@@ -101,9 +101,9 @@ import { FhirQuotaCost } from './fhirquota';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
-import { getResourceTypesFromReferences, replaceConditionalReferences, validateResourceReferences } from './references';
+import { replaceConditionalReferences, validateResourceReferences } from './references';
 import type { ExecuteSqlOptions, ResourceTypeInput, TransactionSqlOptions } from './repository/access-tracker';
-import { repoAccess } from './repository/access-tracker';
+import { normalizeResourceTypes, repoAccess } from './repository/access-tracker';
 import { removeField } from './repository/field-utils';
 import { removeCachedProfile } from './repository/profile-cache';
 import type { ConnectionScope, StatementTimeoutOptions } from './repository/repository-connection';
@@ -129,7 +129,7 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
-import { GLOBAL_SHARD_ID } from './sharding';
+import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, ShardRoutingError } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
 
@@ -257,6 +257,27 @@ export interface ProcessAllResourcesOptions {
 
 export type { ExecuteSqlOptions, TransactionSqlOptions } from './repository/access-tracker';
 
+interface ShardConnectionEntry {
+  readonly connection: RepositoryConnection;
+  readonly scope: ConnectionScope;
+  /** Whether this Repository created the connection and is responsible for disposing it. */
+  readonly owned: boolean;
+}
+
+/**
+ * The database connections a Repository routes operations across, keyed by normalized shard ID.
+ * See {@link RepositoryConnection.withTransaction} for details on connection sharing and scopes.
+ */
+export interface RepositoryConnections {
+  readonly entries: ReadonlyMap<string, { connection: RepositoryConnection; scope: ConnectionScope }>;
+  /**
+   * When set, every database operation must resolve to this shard; anything else throws
+   * {@link ShardRoutingError}. Set on transaction-scoped repositories (a transaction is pinned to
+   * one shard's connection) and on repositories wrapping a borrowed client (one physical session).
+   */
+  readonly boundShardId?: string;
+}
+
 function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
   if (context.projects && !context.projects.some((project) => project.id === syntheticR4Project.id)) {
     // Repositories with a project scope can also see the synthetic R4 project,
@@ -272,9 +293,12 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
  */
 export class Repository extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
-  private readonly connection: RepositoryConnection;
-  private readonly connectionScope: ConnectionScope;
-  private readonly ownsConnection: boolean;
+  /** Connections this Repository routes operations across, keyed by normalized shard ID. Populated lazily. */
+  private readonly connections = new Map<string, ShardConnectionEntry>();
+  /** See {@link RepositoryConnections.boundShardId}. Normalized. */
+  private readonly boundShardId?: string;
+  /** Preferred mode for connections created by this Repository. See {@link mode}. */
+  private repositoryMode: RepositoryMode = RepositoryMode.WRITER;
   private closed = false;
 
   /**
@@ -310,24 +334,101 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Constructs a new Repository instance.
    * @param context - The context of the repository.
-   * @param connection - (optional) The connection to use for the repository. See
-   * {@link RepositoryConnection.withTransaction} for more details.
-   * @param scope - (optional) The repository connection scope to use for the repository.
+   * @param connections - (optional) Connections to share with the repository, e.g. to stay within
+   * an active transaction. Connections for other shards are created lazily as needed.
    */
-  constructor(context: RepositoryContext, connection?: RepositoryConnection, scope?: ConnectionScope) {
+  constructor(context: RepositoryContext, connections?: RepositoryConnections) {
     super();
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
-    this.ownsConnection = connection === undefined;
-    this.connection = connection ?? new RepositoryConnection();
-    this.connectionScope = scope ?? this.connection.getCurrentScope();
+    if (connections) {
+      for (const [shardId, entry] of connections.entries) {
+        this.connections.set(normalizeShardId(shardId), { ...entry, owned: false });
+      }
+      this.boundShardId = connections.boundShardId ? normalizeShardId(connections.boundShardId) : undefined;
+    }
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
   }
 
   get mode(): RepositoryMode {
-    return this.connection.mode;
+    for (const entry of this.connections.values()) {
+      if (entry.connection.mode === RepositoryMode.WRITER) {
+        return RepositoryMode.WRITER;
+      }
+    }
+    return this.repositoryMode;
+  }
+
+  /**
+   * Returns the connection for the given shard, creating one if this Repository doesn't have one
+   * yet, and enforcing the bound shard, if any.
+   * @param rawShardId - The shard to connect to; normalized internally.
+   * @param source - Short label identifying the call site, for error messages.
+   * @returns The connection entry for the shard.
+   */
+  private getShardConnection(rawShardId: string, source?: string): ShardConnectionEntry {
+    const shardId = normalizeShardId(rawShardId);
+    if (this.boundShardId && shardId !== this.boundShardId) {
+      throw new ShardRoutingError(
+        `Cross-shard access: operation targets shard "${shardId}" but repository is bound to shard "${this.boundShardId}"${source ? ` (source=${source})` : ''}`
+      );
+    }
+    let entry = this.connections.get(shardId);
+    if (!entry) {
+      const connection = new RepositoryConnection(shardId);
+      if (this.mode === RepositoryMode.READER) {
+        connection.setMode(RepositoryMode.READER);
+      }
+      entry = { connection, scope: connection.getCurrentScope(), owned: true };
+      this.connections.set(shardId, entry);
+    }
+    return entry;
+  }
+
+  /**
+   * Resolves the shard an operation must be routed to based on the resource types involved.
+   * @param resourceTypes - The resource types involved in the operation.
+   * @param source - Short label identifying the call site, for logs and error messages.
+   * @returns The shard ID the operation must be routed to.
+   */
+  private resolveShard(resourceTypes: ResourceTypeInput, source?: string): string {
+    const normalized = normalizeResourceTypes(resourceTypes);
+    if (normalized.size === 0) {
+      // e.g. configuration statements: route to the transaction's shard when bound, else the context shard
+      return this.boundShardId ?? normalizeShardId(this.shardId);
+    }
+    return resolveShardId(this.shardId, normalized, source);
+  }
+
+  private isInTransaction(): boolean {
+    for (const entry of this.connections.values()) {
+      if (entry.connection.isInTransaction()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns this Repository's connections in the shape needed to share them with a derived
+   * repository, or undefined if there is no live database client and the derived repository
+   * should get its own connections.
+   * @returns The connections to share, or undefined.
+   */
+  private shareConnections(): RepositoryConnections | undefined {
+    let hasConnection = false;
+    for (const entry of this.connections.values()) {
+      if (entry.connection.hasConnection()) {
+        hasConnection = true;
+        break;
+      }
+    }
+    if (!hasConnection) {
+      return undefined;
+    }
+    return { entries: new Map(this.connections), boundShardId: this.boundShardId };
   }
 
   /**
@@ -342,23 +443,27 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Creates a repository with the same RepositoryContext and RepositoryConnection as the current repository for
-   * provided transaction scope. The current repository's connection must already be in a transaction.
+   * Creates a repository with the same RepositoryContext as the current repository, bound to the
+   * shard whose connection is in a transaction, for the provided transaction scope.
+   * @param shardId - The (normalized) shard the transaction is running on.
    * @param scope - The scope of the repository.
    * @returns A repository with the same context as the current repository, but valid for the duration of the current transaction as well
    * as post-commit callbacks.
    */
-  private createTransactionScopedRepo(scope: ConnectionScope): this {
-    if (!this.connection.isInTransaction()) {
+  private createTransactionScopedRepo(shardId: string, scope: ConnectionScope): this {
+    const entry = this.connections.get(shardId);
+    if (!entry?.connection.isInTransaction()) {
       throw new Error('Not in transaction');
     }
     // use this.constructor to create the same concrete class, e.g. SystemRepository vs Repository, as this instance.
     const RepositoryConstructor = this.constructor as new (
       context: RepositoryContext,
-      connection?: RepositoryConnection,
-      scope?: ConnectionScope
+      connections?: RepositoryConnections
     ) => this;
-    return new RepositoryConstructor(this.context, this.connection, scope);
+    return new RepositoryConstructor(this.context, {
+      entries: new Map([[shardId, { connection: entry.connection, scope }]]),
+      boundShardId: shardId,
+    });
   }
 
   get shardId(): string {
@@ -376,29 +481,20 @@ export class Repository extends FhirRepository implements Disposable {
       skipBackgroundJobs: this.context.skipBackgroundJobs,
     };
 
-    let systemRepo: SystemRepository;
-    if (this.connection.hasConnection()) {
-      systemRepo = createSystemRepository(this.shardId, this.connection, this.connectionScope, contextDefaults);
-    } else {
-      systemRepo = createSystemRepository(this.shardId, undefined, undefined, contextDefaults);
-    }
-    return systemRepo;
+    return createSystemRepository(this.shardId, this.shareConnections(), contextDefaults);
   }
 
   withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
     this.assertUsable();
-    let repo: Repository;
-    if (this.connection.hasConnection()) {
-      repo = new Repository({ ...this.context, ...config }, this.connection, this.connectionScope);
-    } else {
-      repo = new Repository({ ...this.context, ...config });
-    }
-    return repo;
+    return new Repository({ ...this.context, ...config }, this.shareConnections());
   }
 
   setMode(mode: RepositoryMode): void {
     this.assertUsable();
-    this.connection.setMode(mode);
+    this.repositoryMode = mode;
+    for (const entry of this.connections.values()) {
+      entry.connection.setMode(mode);
+    }
   }
 
   async recordFhirQuota(points: number): Promise<void> {
@@ -409,7 +505,7 @@ export class Repository extends FhirRepository implements Disposable {
       // Do not enforce rate limits in async context; instead, slow down the consumer
       // in proportion to the weight of the operation being performed
       const delay = points * getConfig().asyncDelayScaling;
-      if (this.connection.isInTransaction()) {
+      if (this.isInTransaction()) {
         // Don't hold the transaction open, but shift the delay to after the transaction commits
         await this.postCommit(() => sleep(delay));
       } else {
@@ -632,7 +728,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
 
-    if (!this.connection.isInTransaction()) {
+    if (!this.isInTransaction()) {
       // Only set cache entry if not in a transaction
       await this.setCacheEntry(resource);
     }
@@ -2354,7 +2450,8 @@ export class Repository extends FhirRepository implements Disposable {
    */
   getDatabaseClient(options: ExecuteSqlOptions): PgQueryable {
     this.assertUsable();
-    return this.connection.getDatabaseClient(this.connectionScope, options);
+    const entry = this.getShardConnection(this.resolveShard(options.resourceTypes, options.source), options.source);
+    return entry.connection.getDatabaseClient(entry.scope, options);
   }
 
   async withTransaction<TResult>(
@@ -2362,13 +2459,18 @@ export class Repository extends FhirRepository implements Disposable {
     options: TransactionSqlOptions
   ): Promise<TResult> {
     this.assertUsable();
-    return this.connection.withTransaction(
-      this.connectionScope,
+    // A transaction is pinned to a single shard's connection, resolved up front from the
+    // transaction's resourceTypes annotation. Statements within the transaction that resolve to a
+    // different shard throw ShardRoutingError.
+    const shardId = this.resolveShard(options.resourceTypes, options.source);
+    const entry = this.getShardConnection(shardId, options.source);
+    return entry.connection.withTransaction(
+      entry.scope,
       async (txScope) => {
         // create transaction-scoped repository within RepositoryConnection.withTransaction callback
         // since the callback is only invoked after a sticky PoolClient is established to begin the
         // transaction.
-        const txnScopedRepo = this.createTransactionScopedRepo(txScope);
+        const txnScopedRepo = this.createTransactionScopedRepo(shardId, txScope);
         return callback(txnScopedRepo);
       },
       options
@@ -2380,17 +2482,20 @@ export class Repository extends FhirRepository implements Disposable {
     callback: () => Promise<TResult>
   ): Promise<TResult> {
     this.assertUsable();
-    return this.connection.withStatementTimeout(options, callback);
+    const entry = this.getShardConnection(this.resolveShard(options.resourceTypes ?? [], options.source));
+    return entry.connection.withStatementTimeout(options, callback);
   }
 
   async preCommit(fn: () => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.preCommit(this.connectionScope, async () => fn());
+    const entry = this.getShardConnection(this.boundShardId ?? this.shardId);
+    return entry.connection.preCommit(entry.scope, async () => fn());
   }
 
   async postCommit(fn: () => void | Promise<void>): Promise<void> {
     this.assertUsable();
-    return this.connection.postCommit(this.connectionScope, async () => fn());
+    const entry = this.getShardConnection(this.boundShardId ?? this.shardId);
+    return entry.connection.postCommit(entry.scope, async () => fn());
   }
 
   /**
@@ -2404,10 +2509,9 @@ export class Repository extends FhirRepository implements Disposable {
     id: string
   ): Promise<CacheEntry<WithId<T>> | undefined> {
     // No cache access allowed mid-transaction
-    if (this.connection.isInTransaction()) {
+    if (this.isInTransaction()) {
       return undefined;
     }
-    this.connection.recordResourceAccess('cache', 'read', resourceType, 'repo.getCacheEntry');
     return getResourceCacheEntry<T>(resourceType, id);
   }
 
@@ -2418,16 +2522,10 @@ export class Repository extends FhirRepository implements Disposable {
    */
   private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
     // No cache access allowed mid-transaction
-    if (this.connection.isInTransaction()) {
+    if (this.isInTransaction()) {
       return new Array(references.length);
     }
 
-    this.connection.recordResourceAccess(
-      'cache',
-      'read',
-      getResourceTypesFromReferences(references),
-      'repo.getCacheEntries'
-    );
     return getResourceCacheEntries(references);
   }
 
@@ -2437,7 +2535,7 @@ export class Repository extends FhirRepository implements Disposable {
    */
   private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
     // No cache access allowed mid-transaction
-    if (this.connection.isInTransaction()) {
+    if (this.isInTransaction()) {
       const cachedResource = deepClone(resource);
       await this.postCommit(() => {
         return this.setCacheEntry(cachedResource);
@@ -2445,7 +2543,6 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
-    this.connection.recordResourceAccess('cache', 'write', resource.resourceType, 'repo.setCacheEntry');
     await setResourceCacheEntry(resource);
   }
 
@@ -2456,12 +2553,11 @@ export class Repository extends FhirRepository implements Disposable {
    */
   private async deleteCacheEntry(resourceType: ResourceType, id: string): Promise<void> {
     // No cache access allowed mid-transaction
-    if (this.connection.isInTransaction()) {
+    if (this.isInTransaction()) {
       await this.postCommit(() => this.deleteCacheEntry(resourceType, id));
       return;
     }
 
-    this.connection.recordResourceAccess('cache', 'write', resourceType, 'repo.deleteCacheEntry');
     await deleteResourceCacheEntry(resourceType, id);
   }
 
@@ -2472,12 +2568,11 @@ export class Repository extends FhirRepository implements Disposable {
    */
   private async deleteCacheEntries(resourceType: ResourceType, ids: string[]): Promise<void> {
     // No cache access allowed mid-transaction
-    if (this.connection.isInTransaction()) {
+    if (this.isInTransaction()) {
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
       return;
     }
 
-    this.connection.recordResourceAccess('cache', 'write', resourceType, 'repo.deleteCacheEntries');
     await deleteResourceCacheEntries(resourceType, ids);
   }
 
@@ -2486,8 +2581,9 @@ export class Repository extends FhirRepository implements Disposable {
     options: TransactionSqlOptions
   ): Promise<TResult> {
     this.assertUsable();
-    if (this.connection.isInTransaction()) {
-      this.connection.recordResourceAccess('sql', 'transaction', options.resourceTypes, options.source);
+    if (this.isInTransaction()) {
+      // Enforce that the requested resource types route to the shard the transaction is bound to
+      this.getShardConnection(this.resolveShard(options.resourceTypes, options.source), options.source);
       return callback(this);
     }
 
@@ -2504,20 +2600,32 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
     this.closed = true;
-    if (this.ownsConnection) {
-      this.connection[Symbol.dispose](removeConnection);
+    for (const entry of this.connections.values()) {
+      if (entry.owned) {
+        entry.connection[Symbol.dispose](removeConnection);
+      }
     }
   }
 
   isClosed(): boolean {
-    return this.closed || this.connection.isScopeEnded(this.connectionScope);
+    if (this.closed) {
+      return true;
+    }
+    for (const entry of this.connections.values()) {
+      if (entry.connection.isScopeEnded(entry.scope)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private assertUsable(): void {
     if (this.isClosed()) {
       throw new Error('Already closed');
     }
-    this.connection.assertScope(this.connectionScope);
+    for (const entry of this.connections.values()) {
+      entry.connection.assertScope(entry.scope);
+    }
   }
 }
 
@@ -2528,15 +2636,13 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
 /**
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
- * @param connection - Optional repository connection for transaction support.
- * @param connectionScope - Optional scope for the connection.
+ * @param connections - Optional repository connections for transaction support.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
 function createSystemRepository(
   shardId: string,
-  connection?: RepositoryConnection,
-  connectionScope?: ConnectionScope,
+  connections?: RepositoryConnections,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
   return new SystemRepository(
@@ -2551,9 +2657,23 @@ function createSystemRepository(
       },
       // System repo does not have an associated Project; it can write to any
     },
-    connection,
-    connectionScope
+    connections
   );
+}
+
+/**
+ * Wraps a single caller-supplied connection in the {@link RepositoryConnections} shape,
+ * bound to its shard: the connection is one physical database session, so operations that
+ * resolve to any other shard must throw rather than silently escape it.
+ * @param shardId - The shard the connection is associated with.
+ * @param connection - The connection to wrap.
+ * @returns Connections for a new Repository.
+ */
+function bindSingleConnection(shardId: string, connection: RepositoryConnection): RepositoryConnections {
+  return {
+    entries: new Map([[normalizeShardId(shardId), { connection, scope: connection.getCurrentScope() }]]),
+    boundShardId: shardId,
+  };
 }
 
 /*
@@ -2586,15 +2706,20 @@ export function getGlobalSystemRepo(
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return createSystemRepository(GLOBAL_SHARD_ID, connection, undefined, contextDefaults);
+  return createSystemRepository(
+    GLOBAL_SHARD_ID,
+    connection && bindSingleConnection(GLOBAL_SHARD_ID, connection),
+    contextDefaults
+  );
 }
 
 /**
  * This is a sharding future-proofing function that returns a SystemRepository for the specified shard.
  * Prefer using `Repository.getSystemRepo` or `getProjectSystemRepo` if working in the context of a project
  * or `getGlobalSystemRepo` if intentionally working in the global shard.
- * @param shardId - The shard ID. Currently ignored.
- * @param connection - Optional repository connection to use in new Repository.
+ * @param shardId - The shard ID.
+ * @param connection - Optional repository connection to use in new Repository. The repository is
+ * bound to the given shard when provided.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the specified shard.
  */
@@ -2603,7 +2728,7 @@ export function getShardSystemRepo(
   connection?: RepositoryConnection,
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
-  return createSystemRepository(shardId, connection, undefined, contextDefaults);
+  return createSystemRepository(shardId, connection && bindSingleConnection(shardId, connection), contextDefaults);
 }
 
 /**
