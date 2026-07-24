@@ -1139,4 +1139,153 @@ describe('Search matching', () => {
     };
     expect(matchesSearchRequest(resource, search1)).toBe(false);
   });
+
+  describe('_project', () => {
+    test('Filter by _project matches correct project', () => {
+      const resource1: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        meta: { project: 'project-1' },
+      };
+
+      const resource2: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-2',
+        meta: { project: 'project-2' },
+      };
+
+      const resource3: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-3',
+        // no project
+      };
+
+      const search: SearchRequest = {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-1' }],
+      };
+
+      expect(matchesSearchRequest(resource1, search)).toBe(true);
+      expect(matchesSearchRequest(resource2, search)).toBe(false);
+      expect(matchesSearchRequest(resource3, search)).toBe(false);
+    });
+
+    test('_project with NOT_EQUALS operator', () => {
+      const resource1: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        meta: { project: 'project-1' },
+      };
+
+      const resource2: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-2',
+        meta: { project: 'project-2' },
+      };
+
+      const search: SearchRequest = {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.NOT_EQUALS, value: 'project-1' }],
+      };
+
+      expect(matchesSearchRequest(resource1, search)).toBe(false);
+      expect(matchesSearchRequest(resource2, search)).toBe(true);
+    });
+
+    test('_project with MISSING true', () => {
+      const resourceWithProject: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        meta: { project: 'project-1' },
+      };
+
+      const resourceWithoutProject: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-2',
+        meta: {},
+      };
+
+      const search: SearchRequest = {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.MISSING, value: 'true' }],
+      };
+
+      expect(matchesSearchRequest(resourceWithProject, search)).toBe(false);
+      expect(matchesSearchRequest(resourceWithoutProject, search)).toBe(true);
+    });
+
+    test('_project with PRESENT true', () => {
+      const resourceWithProject: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        meta: { project: 'project-1' },
+      };
+
+      const resourceWithoutProject: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-2',
+        meta: {},
+      };
+
+      const search: SearchRequest = {
+        resourceType: 'Patient',
+        filters: [{ code: '_project', operator: Operator.PRESENT, value: 'true' }],
+      };
+
+      expect(matchesSearchRequest(resourceWithProject, search)).toBe(true);
+      expect(matchesSearchRequest(resourceWithoutProject, search)).toBe(false);
+    });
+
+    test('_project combined with other filters', () => {
+      const resource: Patient = {
+        resourceType: 'Patient',
+        id: 'patient-1',
+        meta: { project: 'project-1', tag: [{ code: 'VIP' }] },
+      };
+
+      // Both filters must match
+      const bothMatch: SearchRequest = {
+        resourceType: 'Patient',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: 'project-1' },
+          { code: '_tag', operator: Operator.EQUALS, value: 'VIP' },
+        ],
+      };
+      expect(matchesSearchRequest(resource, bothMatch)).toBe(true);
+
+      // One filter fails
+      const oneFails: SearchRequest = {
+        resourceType: 'Patient',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: 'wrong-project' },
+          { code: '_tag', operator: Operator.EQUALS, value: 'VIP' },
+        ],
+      };
+      expect(matchesSearchRequest(resource, oneFails)).toBe(false);
+    });
+
+    test('_project works on non-Patient resource types', () => {
+      const resource: Observation = {
+        resourceType: 'Observation',
+        id: 'obs-1',
+        meta: { project: 'project-1' },
+        status: 'final',
+        code: { coding: [{ code: 'test' }] },
+      };
+
+      const search: SearchRequest = {
+        resourceType: 'Observation',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-1' }],
+      };
+
+      expect(matchesSearchRequest(resource, search)).toBe(true);
+
+      const search2: SearchRequest = {
+        resourceType: 'Observation',
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: 'project-2' }],
+      };
+
+      expect(matchesSearchRequest(resource, search2)).toBe(false);
+    });
+  });
 });
