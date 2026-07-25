@@ -1049,10 +1049,7 @@ export async function getLoginForAccessToken(
  * @param token - The basic auth token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForBasicAuth(
-  req: IncomingMessage,
-  token: string
-): Promise<AuthenticationResult | undefined> {
+export async function getLoginForBasicAuth(req: Request, token: string): Promise<AuthenticationResult | undefined> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
@@ -1071,6 +1068,10 @@ export async function getLoginForBasicAuth(
     return undefined;
   }
 
+  if (client.status && client.status !== 'active') {
+    return undefined;
+  }
+
   const membership = await getClientApplicationMembership(systemRepo, client);
   if (!membership || membership.active === false) {
     return undefined;
@@ -1082,7 +1083,18 @@ export async function getLoginForBasicAuth(
     user: createReference(client),
     authMethod: 'client',
     authTime: new Date().toISOString(),
+    remoteAddress: req.ip,
   };
+
+  // Basic auth has no login step, so the checks that the token endpoint performs once
+  // when issuing a token must be performed here on every request instead.
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const accessPolicy = await getAccessPolicyForLogin({ login, project, membership, userConfig });
+  try {
+    await checkIpAccessRules(login, accessPolicy);
+  } catch {
+    return undefined;
+  }
 
   return makeAuthResult(systemRepo, req, login, project, membership, { profile: client });
 }
