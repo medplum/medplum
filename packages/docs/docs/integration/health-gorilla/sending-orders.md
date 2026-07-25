@@ -6,6 +6,8 @@ sidebar_position: 1
 
 :::info[Prerequisites]
 For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data model, see [Labs & Imaging](/docs/labs-imaging) and [Order Labs and Imaging](/docs/labs-imaging/ordering-labs-imaging).
+
+For the AccessPolicy rules a non-admin practitioner needs to send orders end-to-end (Bot read, Binary write, Organization scoping, terminology lookups, etc.), see [Access Policy for Practitioners](./access-policy).
 :::
 
 This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
