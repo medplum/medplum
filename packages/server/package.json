@@ -54,7 +54,6 @@
     "@medplum/core": "5.1.27",
     "@medplum/definitions": "5.1.27",
     "@medplum/fhir-router": "5.1.27",
-    "@modelcontextprotocol/sdk": "1.29.0",
     "@opentelemetry/core": "2.9.0",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.220.0",
     "@opentelemetry/exporter-trace-otlp-proto": "0.220.0",
@@ -102,8 +101,7 @@
     "undici": "7.28.0",
     "uuid": "14.0.1",
     "validator": "13.15.35",
-    "ws": "8.21.1",
-    "zod": "3.25.76"
+    "ws": "8.21.1"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.1.27",

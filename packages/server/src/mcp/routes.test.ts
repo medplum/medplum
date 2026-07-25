@@ -9,12 +9,8 @@ vi.mock('node-fetch', async () => {
   return { default: actual.default };
 });
 
-import { normalizeOperationOutcome } from '@medplum/core';
+import { ContentType, normalizeOperationOutcome } from '@medplum/core';
 import type { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'supertest';
@@ -60,65 +56,55 @@ describe('MCP Routes', () => {
     expect(res).toHaveStatus(401);
   });
 
-  test('Unauthenticated SSE', async () => {
-    const res = await request(app).get('/mcp/sse');
-    expect(res).toHaveStatus(401);
+  test.each(['get', 'post'] as const)('SSE transport removed (%s)', async (method) => {
+    const agent = request(app);
+    const res = await agent[method]('/mcp/sse').set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(410);
+    expect(res.body.message).toContain('/mcp/stream');
   });
 
-  test('SSE missing sessionId query param', async () => {
-    const res = await request(app)
-      .post('/mcp/sse')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({ jsonrpc: '2.0', method: 'notifications/initialized' });
-    expect(res).toHaveStatus(400);
-  });
+  describe('MCP with streamable HTTP transport', () => {
+    // Sends one JSON-RPC request to /mcp/stream and returns its `result`.
+    async function rpc(method: string, params?: Record<string, unknown>): Promise<any> {
+      const res = await request(app)
+        .post('/mcp/stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .set('Accept', `${ContentType.JSON}, ${ContentType.EVENT_STREAM}`)
+        .send({ jsonrpc: '2.0', id: 1, method, params });
+      expect(res).toHaveStatus(200);
+      expect(res.body.error).toBeUndefined();
+      return res.body.result;
+    }
 
-  test('SSE missing JSON-RPC body', async () => {
-    const res = await request(app)
-      .post(`/mcp/sse?sessionId=${randomUUID()}`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({ foo: 'bar' });
-    expect(res).toHaveStatus(400);
-  });
-
-  test.each<string>(['stream', 'sse'])('MCP with %s transport', async (transportType: string) => {
-    const TransportClass = transportType === 'stream' ? StreamableHTTPClientTransport : SSEClientTransport;
-
-    const baseUrl = `http://localhost:${port}/mcp/${transportType}`;
-
-    const transport = new TransportClass(new URL(baseUrl), {
-      requestInit: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
+    test('Initialize handshake', async () => {
+      const result = await rpc('initialize', {
+        protocolVersion: '2025-11-25',
+        capabilities: {},
+        clientInfo: { name: 'example-client', version: '1.0.0' },
+      });
+      expect(result).toMatchObject({
+        protocolVersion: '2025-11-25',
+        capabilities: { tools: {} },
+        serverInfo: { name: 'medplum' },
+      });
     });
 
-    const client = new Client({
-      name: 'example-client',
-      version: '1.0.0',
-    });
-
-    await client.connect(transport);
-
-    try {
-      const tools = await client.listTools();
+    test('Tool discovery and invocation', async () => {
+      const tools = await rpc('tools/list');
       expect(tools).toMatchObject({
         tools: [{ name: 'search' }, { name: 'fetch' }, { name: 'fhir-request' }],
       });
 
-      const searchToolResult = await client.callTool({ name: 'search', arguments: { query: 'example' } });
+      const searchToolResult = await rpc('tools/call', { name: 'search', arguments: { query: 'example' } });
       expect(searchToolResult).toBeDefined();
 
-      const fetchToolResult = await client.callTool({ name: 'fetch', arguments: { id: 'example-id' } });
+      const fetchToolResult = await rpc('tools/call', { name: 'fetch', arguments: { id: 'example-id' } });
       expect(fetchToolResult).toBeDefined();
 
       // Convenience method to make FHIR requests
       async function fhirRequest<T>(method: string, path: string, body?: any): Promise<T> {
-        const mcpResult = (await client.callTool({
-          name: 'fhir-request',
-          arguments: { method, path, body },
-        })) as any;
+        const mcpResult = await rpc('tools/call', { name: 'fhir-request', arguments: { method, path, body } });
         const json = mcpResult.content?.[0]?.text;
         try {
           return JSON.parse(json);
@@ -183,8 +169,6 @@ describe('MCP Routes', () => {
       // reach an external host; it is handled as an ordinary same-origin FHIR request.
       const protoRel = await fhirRequest<OperationOutcome>('GET', '//169.254.169.254/latest/meta-data/');
       expect(protoRel.resourceType).toBe('OperationOutcome');
-    } finally {
-      await client.close();
-    }
+    });
   });
 });

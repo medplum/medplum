@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls, isString, MEDPLUM_VERSION, MedplumClient } from '@medplum/core';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
+import { McpServer } from './protocol';
 
 export function getMcpServer(): McpServer {
   const server = new McpServer({
@@ -27,15 +26,25 @@ export function getMcpServer(): McpServer {
     uri: 'https://example.com/dummy-doc',
   } as const;
 
-  server.registerTool('search', { inputSchema: { query: z.string() } }, async ({ query }) => {
-    getLogger().debug(`Performing search for: "${query}"`);
-    return { content: [dummyDocument] };
-  });
+  server.registerTool(
+    'search',
+    { inputSchema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
+    async ({ query }) => {
+      getLogger().debug(`Performing search for: "${query}"`);
+      return { content: [dummyDocument] };
+    }
+  );
 
   server.registerTool(
     'fetch',
     {
-      inputSchema: { id: z.string().describe('The ID of the resource to fetch, obtained from a search result.') },
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'The ID of the resource to fetch, obtained from a search result.' },
+        },
+        required: ['id'],
+      },
     },
     async ({ id }) => {
       getLogger().debug(`Performing fetch for ID: "${id}"`);
@@ -51,9 +60,14 @@ export function getMcpServer(): McpServer {
     'fhir-request',
     {
       inputSchema: {
-        method: z.string(),
-        path: z.string(),
-        body: z.any(),
+        type: 'object',
+        properties: {
+          method: { type: 'string' },
+          path: { type: 'string' },
+          // Untyped: a FHIR resource, a JSON Patch array, or a JSON string from clients that stringify.
+          body: {},
+        },
+        required: ['method', 'path'],
       },
     },
     async ({ method, path, body }) => {
