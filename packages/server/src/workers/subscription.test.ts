@@ -1154,12 +1154,19 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(2);
 
-      const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.outcomeDesc).toStrictEqual('Bots not enabled');
-      expect(auditEvent.period).toBeDefined();
-      expect(auditEvent.entity).toHaveLength(3);
+      const botEvent = bundle.entry?.map((e) => e.resource as AuditEvent).find((ae) => ae.type?.code === 'execute');
+      expect(botEvent).toBeDefined();
+      expect(botEvent?.outcomeDesc).toStrictEqual('Bots not enabled');
+      expect(botEvent?.period).toBeDefined();
+      expect(botEvent?.entity).toHaveLength(3);
+
+      const subscriptionEvent = bundle.entry
+        ?.map((e) => e.resource as AuditEvent)
+        .find((ae) => ae.type?.code === 'transmit');
+      expect(subscriptionEvent).toBeDefined();
+      expect(subscriptionEvent?.outcome).toStrictEqual(AuditEventOutcome.MinorFailure);
     }));
 
   test('Execute bot subscriptions', () =>
@@ -1215,8 +1222,15 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toStrictEqual(1);
-      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+      expect(bundle.entry?.length).toStrictEqual(2);
+
+      const botEvent = bundle.entry?.map((e) => e.resource as AuditEvent).find((ae) => ae.type?.code === 'execute');
+      expect(botEvent?.outcome).toStrictEqual(AuditEventOutcome.Success);
+
+      const subscriptionEvent = bundle.entry
+        ?.map((e) => e.resource as AuditEvent)
+        .find((ae) => ae.type?.code === 'transmit');
+      expect(subscriptionEvent?.outcome).toStrictEqual(AuditEventOutcome.Success);
     }));
 
   test('Execute bot subscriptions run as user', () =>
@@ -1273,8 +1287,15 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toStrictEqual(1);
-      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+      expect(bundle.entry?.length).toStrictEqual(2);
+
+      const botEvent = bundle.entry?.map((e) => e.resource as AuditEvent).find((ae) => ae.type?.code === 'execute');
+      expect(botEvent?.outcome).toStrictEqual(AuditEventOutcome.Success);
+
+      const subscriptionEvent = bundle.entry
+        ?.map((e) => e.resource as AuditEvent)
+        .find((ae) => ae.type?.code === 'transmit');
+      expect(subscriptionEvent?.outcome).toStrictEqual(AuditEventOutcome.Success);
     }));
 
   test('Execute Bot from linked Project', () =>
@@ -1343,12 +1364,15 @@ describe('Subscription Worker', () => {
       expect(fetch).not.toHaveBeenCalled();
 
       // The Subscription should have been triggered
+      // Both the bot execution AuditEvent and the subscription delivery AuditEvent should exist
       const events = await repo.search(subscriptionEvents);
-      expect(events.entry).toHaveLength(1);
-      expect(events.entry?.[0].resource).toMatchObject<Partial<AuditEvent>>({
-        resourceType: 'AuditEvent',
-        outcome: '0',
-      });
+      expect(events.entry).toHaveLength(2);
+      for (const entry of events.entry ?? []) {
+        expect(entry.resource).toMatchObject<Partial<AuditEvent>>({
+          resourceType: 'AuditEvent',
+          outcome: '0',
+        });
+      }
     }));
 
   test('Stop retries if Subscription status not active', () =>
@@ -1776,6 +1800,83 @@ describe('Subscription Worker', () => {
         expect(bundle.entry?.length).toStrictEqual(1);
 
         // Should also log AuditEvent via globalLogger
+        expect(writeSpy).toHaveBeenCalled();
+        const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
+          try {
+            const parsed = JSON.parse(call[0] as string);
+            return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
+          } catch {
+            return false;
+          }
+        });
+        expect(loggedCall).toBeDefined();
+      }));
+
+    test('bot subscription log only', () =>
+      withTestContext(async () => {
+        const bot = await botRepo.createResource<Bot>({
+          resourceType: 'Bot',
+          name: 'Test Bot',
+          description: 'Test Bot',
+          runtimeVersion: 'awslambda',
+          code: `
+        export async function handler(medplum, event) {
+          return event.input;
+        }
+      `,
+        });
+
+        await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: { reference: 'Project/' + bot.meta?.project },
+          user: createReference(bot),
+          profile: createReference(bot),
+        });
+
+        const subscription = await botRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: getReferenceString(bot),
+          },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
+              valueCode: 'log',
+            },
+          ],
+        });
+
+        const patient = await botRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+        await findAndExecSubscriptionJob(patient, 'create');
+        expect(fetch).not.toHaveBeenCalled();
+
+        const bundle = await botRepo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(subscription),
+            },
+          ],
+        });
+
+        // Should NOT create the subscription delivery AuditEvent resource in DB
+        // Only the bot execution AuditEvent should exist
+        expect(bundle.entry?.length).toStrictEqual(1);
+        expect(bundle.entry?.[0]?.resource?.type?.code).toStrictEqual('execute');
+
+        // Should log the subscription delivery AuditEvent via globalLogger
         expect(writeSpy).toHaveBeenCalled();
         const loggedCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
