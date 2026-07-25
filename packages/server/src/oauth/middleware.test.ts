@@ -249,6 +249,48 @@ describe('Auth middleware', () => {
     expect(res).toHaveStatus(401);
   });
 
+  test('Basic auth with inactive client status', async () => {
+    for (const status of ['off', 'error'] as const) {
+      const client = await createTestClient();
+      const authHeader = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+      // Control: the client works before it is disabled
+      const res1 = await request(app).get('/fhir/R4/Patient').set('Authorization', authHeader);
+      expect(res1).toHaveStatus(200);
+
+      await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status }));
+
+      const res2 = await request(app).get('/fhir/R4/Patient').set('Authorization', authHeader);
+      expect(res2).toHaveStatus(401);
+    }
+  });
+
+  test('Basic auth with IP access rules', async () => {
+    const client = await createTestClient({
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: '*' }],
+        ipAccessRule: [
+          { name: 'Block test', value: '6.6.6.6', action: 'block' },
+          { name: 'Allow by default', value: '*', action: 'allow' },
+        ],
+      },
+    });
+    const authHeader = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+    const res1 = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('X-Forwarded-For', '6.6.6.6')
+      .set('Authorization', authHeader);
+    expect(res1).toHaveStatus(401);
+
+    const res2 = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('X-Forwarded-For', '5.5.5.5')
+      .set('Authorization', authHeader);
+    expect(res2).toHaveStatus(200);
+  });
+
   test('Basic auth with super admin client', async () => {
     const { client, project } = await createTestProject({ superAdmin: true, withClient: true });
     const { project: otherProject } = await createTestProject({ withClient: false });
