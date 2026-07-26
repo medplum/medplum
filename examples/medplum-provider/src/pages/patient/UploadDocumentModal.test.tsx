@@ -42,7 +42,7 @@ describe('UploadDocumentModal', () => {
 
   test('renders the form when opened', () => {
     setup();
-    expect(screen.getByText('Upload document')).toBeInTheDocument();
+    expect(screen.getByText('Upload Document')).toBeInTheDocument();
     expect(screen.getByText('Drag a file here or click to browse')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter a description (optional)')).toBeInTheDocument();
     expect(screen.getByText('Type')).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('UploadDocumentModal', () => {
 
   test('renders nothing when closed', () => {
     setup({ opened: false });
-    expect(screen.queryByText('Upload document')).not.toBeInTheDocument();
+    expect(screen.queryByText('Upload Document')).not.toBeInTheDocument();
   });
 
   test('disables the Upload button until a file is selected', () => {

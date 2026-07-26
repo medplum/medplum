@@ -94,7 +94,7 @@ describe('EncounterModal', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('New encounter')).toBeInTheDocument();
+      expect(screen.getByText('New Visit')).toBeInTheDocument();
     });
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe('EncounterModal', () => {
 
     // The modal is open and can be closed via keyboard escape
     // This verifies the modal rendering behavior
-    expect(screen.getByText('New encounter')).toBeInTheDocument();
+    expect(screen.getByText('New Visit')).toBeInTheDocument();
   });
 
   test('Sets start date when DateTimeInput changes', async () => {
