@@ -29,6 +29,23 @@ describe('_filter Parameter parser', () => {
       "_has:Observation:patient:_id ne ''",
       { path: '_has:Observation:patient:_id', operator: Operator.NOT_EQUALS, value: '' },
     ],
+    [
+      // A UUID whose first group is all digits looks like the start of a date literal.
+      // It must be kept whole rather than truncated at the first letter.
+      'UUID with all digits before the first hyphen',
+      '_id eq 12345678-1234-4123-8123-123456789abc',
+      { path: '_id', operator: Operator.EXACT, value: '12345678-1234-4123-8123-123456789abc' },
+    ],
+    [
+      'Date literal',
+      'birthdate ge 2014-10-10',
+      { path: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: '2014-10-10' },
+    ],
+    [
+      'DateTime literal',
+      '_lastUpdated gt 2014-10-10T12:30:45.123Z',
+      { path: '_lastUpdated', operator: Operator.GREATER_THAN, value: '2014-10-10T12:30:45.123Z' },
+    ],
   ])('%s', (_, filter, expected) => {
     const result = parseFilterParameter(filter);
     assert(result instanceof FhirFilterComparison);
@@ -86,6 +103,22 @@ describe('_filter Parameter parser', () => {
     expect(right.path).toBe('birthdate');
     expect(right.operator).toBe(Operator.GREATER_THAN_OR_EQUALS);
     expect(right.value).toBe('2014-10-10');
+  });
+
+  test('Or connective with UUID value', () => {
+    // Regression: the UUID was tokenized as a date literal and truncated, which dropped the "or"
+    // and everything after it, leaving a comparison against a value that matched nothing.
+    const result = parseFilterParameter('_project eq 12345678-1234-4123-8123-123456789abc or _project pr false');
+    expect(result).toBeInstanceOf(FhirFilterConnective);
+
+    const connective = result as FhirFilterConnective;
+    expect(connective.keyword).toBe('or');
+    expect(connective.left).toMatchObject({
+      path: '_project',
+      operator: Operator.EXACT,
+      value: '12345678-1234-4123-8123-123456789abc',
+    });
+    expect(connective.right).toMatchObject({ path: '_project', operator: Operator.PRESENT, value: 'false' });
   });
 
   test('Top level parentheses', () => {

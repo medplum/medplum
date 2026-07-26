@@ -30,6 +30,15 @@ const STANDARD_UNITS = [
   'milliseconds',
 ];
 
+/**
+ * Matches an unquoted date or dateTime literal: a 4 digit year, a 2 digit month, and then only
+ * characters that can appear in a day or time part, up to the end of the token.
+ *
+ * Used to tell a date literal apart from other values that also start with digits followed by "-",
+ * such as a UUID: "2014-10-10" is a date, "12345678-1234-4123-8123-123456789abc" is not.
+ */
+const DATE_TIME_LITERAL_REGEX = /^\d{4}-\d{2}[\dT:.+\-Z]*(?=[\s)\]]|$)/;
+
 const ESCAPE_MAP: Record<string, string> = {
   "'": "'",
   '"': '"',
@@ -270,9 +279,17 @@ export class Tokenizer {
 
     const terminal = this.curr();
     if (terminal === '-' && this.dateTimeLiterals) {
-      // Rewind to one character before the start, and then treat as dateTime literal.
+      // Rewind to one character before the start; both branches below skip that character.
       this.pos.index = start - 1;
-      return this.consumeDateTime();
+      if (DATE_TIME_LITERAL_REGEX.test(this.str.substring(start))) {
+        return this.consumeDateTime();
+      }
+      // Digits followed by "-" that are not a date, such as the UUID
+      // "12345678-1234-4123-8123-123456789abc". Consuming those as a dateTime literal would end the
+      // token at the first letter ("12345678-1234-4"), silently changing the value and leaving the
+      // remainder to be parsed as separate tokens. Fall back to parsing as a string, same as the
+      // alphabetic terminal below.
+      return this.consumeString(' ');
     } else if (terminal === ' ') {
       if (isUnitToken(this.peekToken())) {
         id = 'Quantity';

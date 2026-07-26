@@ -3729,6 +3729,31 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(result2.entry).toHaveLength(1);
     }));
 
+  test('_filter with UUID value', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+      });
+
+      // The first UUID has all digits before its first hyphen, which used to be tokenized as a date
+      // literal and truncated. That silently dropped the rest of the expression -- including the
+      // "or" branch that matches the real resource.
+      const result = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_filter',
+            operator: Operator.EQUALS,
+            value: `_id eq 12345678-1234-4123-8123-123456789abc or _id eq ${patient.id}`,
+          },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+    }));
+
   test('_filter birthdate eq', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
