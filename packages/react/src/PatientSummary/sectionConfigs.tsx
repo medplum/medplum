@@ -175,12 +175,8 @@ export const ImmunizationsSection: PatientSummarySectionConfig = {
   key: 'immunizations',
   title: 'Immunizations',
   searches: [{ key: 'immunizations', resourceType: 'Immunization', patientParam: 'patient' }],
-  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
-    <Immunizations
-      patient={patient}
-      immunizations={(results['immunizations'] as Immunization[]) || []}
-      onClickResource={onClickResource}
-    />
+  component: ({ results, patient }: SectionRenderContext) => (
+    <Immunizations patient={patient} immunizations={(results['immunizations'] as Immunization[]) || []} />
   ),
 };
 
@@ -189,8 +185,8 @@ export const GoalsSection: PatientSummarySectionConfig = {
   key: 'goals',
   title: 'Goals',
   searches: [{ key: 'goals', resourceType: 'Goal', patientParam: 'patient' }],
-  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
-    <Goals patient={patient} goals={(results['goals'] as Goal[]) || []} onClickResource={onClickResource} />
+  component: ({ results, patient }: SectionRenderContext) => (
+    <Goals patient={patient} goals={(results['goals'] as Goal[]) || []} />
   ),
 };
 

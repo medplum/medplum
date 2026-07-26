@@ -17,7 +17,6 @@ import styles from './SummaryItem.module.css';
 export interface GoalsProps {
   readonly patient: Patient;
   readonly goals: Goal[];
-  readonly onClickResource?: (resource: Goal) => void;
 }
 
 export function Goals(props: GoalsProps): JSX.Element {

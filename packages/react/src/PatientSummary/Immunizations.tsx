@@ -18,7 +18,6 @@ export interface ImmunizationsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly immunizations: Immunization[];
-  readonly onClickResource?: (resource: Immunization) => void;
 }
 
 export function Immunizations(props: ImmunizationsProps): JSX.Element {
