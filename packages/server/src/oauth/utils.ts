@@ -1019,7 +1019,12 @@ export async function getLoginForAccessToken(
   // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
   // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
   if (claims.aud !== getConfig().issuer || claims.refresh_secret !== undefined) {
-    return undefined;
+    getLogger().warn('Access token verification failed', {
+      login_id: claims.login_id,
+      aud: claims.aud,
+      issuer: getConfig().issuer,
+      refresh_secret: !!claims.refresh_secret,
+    });
   }
 
   let login = undefined;

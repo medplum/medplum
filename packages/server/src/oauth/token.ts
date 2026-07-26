@@ -351,7 +351,6 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
       sendTokenError(res, 'invalid_grant', 'Incorrect client secret');
       return;
     }
-    // The presented secret must match, and not merely be present
     if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
       return;
     }
