@@ -323,6 +323,17 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  let client: ClientApplication | undefined;
+  if (login.client) {
+    const clientId = resolveId(login.client) ?? '';
+    try {
+      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    } catch {
+      sendTokenError(res, 'invalid_request', 'Invalid client');
+      return;
+    }
+  }
+
   const authHeader = req.headers.authorization;
   if (authHeader) {
     if (!authHeader.startsWith('Basic ')) {
@@ -340,15 +351,8 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
       sendTokenError(res, 'invalid_grant', 'Incorrect client secret');
       return;
     }
-  }
-
-  let client: ClientApplication | undefined;
-  if (login.client) {
-    const clientId = resolveId(login.client) ?? '';
-    try {
-      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-    } catch {
-      sendTokenError(res, 'invalid_request', 'Invalid client');
+    // The presented secret must match, and not merely be present
+    if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
       return;
     }
   }

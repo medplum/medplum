@@ -1348,6 +1348,38 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Incorrect client secret');
   });
 
+  test('Refresh token Basic auth failure incorrect secret', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline_access',
+    });
+    expect(res).toHaveStatus(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.refresh_token).toBeDefined();
+
+    const res3 = await request(app)
+      .post('/oauth2/token')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + randomUUID()).toString('base64'))
+      .type('form')
+      .send({
+        grant_type: 'refresh_token',
+        refresh_token: res2.body.refresh_token,
+      });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.error).toBe('invalid_request');
+    expect(res3.body.error_description).toBe('Invalid secret');
+  });
+
   test('Refresh token rotation', async () => {
     // 1) Authorize
     // 2) Get tokens with grant_type=authorization_code
