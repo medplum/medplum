@@ -1015,13 +1015,6 @@ export async function getLoginForAccessToken(
 
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
 
-  // A valid signature only proves that this server minted the token, not that it minted an access token.
-  // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
-  // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
-  if (claims.aud !== getConfig().issuer || claims.refresh_secret !== undefined) {
-    return undefined;
-  }
-
   let login = undefined;
   try {
     login = await globalSystemRepo.readResource<Login>('Login', claims.login_id);
