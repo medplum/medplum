@@ -131,7 +131,14 @@ import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './sear
 import { lookupTables } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, PgQueryable } from './sql';
-import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
+import { Column, Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
+
+/**
+ * Maximum nesting depth for security filters. Depth only grows when an access policy
+ * criteria contains a chained search, whose target then has its own security filters
+ * applied. Legitimate policies nest at most one or two levels deep.
+ */
+const MAX_SECURITY_FILTER_DEPTH = 8;
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -276,6 +283,7 @@ export class Repository extends FhirRepository implements Disposable {
   private readonly connectionScope: ConnectionScope;
   private readonly ownsConnection: boolean;
   private closed = false;
+  private securityFilterDepth = 0;
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -1660,13 +1668,32 @@ export class Repository extends FhirRepository implements Disposable {
    * @param builder - The select query builder.
    * @param resourceType - The resource type for compartments.
    * @param interaction - The FHIR interaction being performed.
+   * @param table - Optional table name or alias holding `resourceType` rows. Defaults to
+   *   `resourceType`, which is correct when the resource table is the query's FROM table.
+   *   Chained search subqueries must pass the join alias of the chain link target instead.
    */
-  addSecurityFilters(builder: SelectQuery, resourceType: string, interaction: AccessPolicyInteraction): void {
-    // No compartment restrictions for admins.
-    if (!this.isSuperAdmin()) {
-      this.addProjectFilters(builder, resourceType);
+  addSecurityFilters(
+    builder: SelectQuery,
+    resourceType: string,
+    interaction: AccessPolicyInteraction,
+    table: string = resourceType
+  ): void {
+    // Access policy criteria may themselves contain chained searches, and each chain link
+    // recurses back into this method for its target type. A policy whose criteria chain
+    // between resource types in a cycle would otherwise recurse until the stack overflows.
+    if (this.securityFilterDepth >= MAX_SECURITY_FILTER_DEPTH) {
+      throw new OperationOutcomeError(badRequest('Access policy criteria are nested too deeply'));
     }
-    this.addAccessPolicyFilters(builder, resourceType, interaction);
+    this.securityFilterDepth++;
+    try {
+      // No compartment restrictions for admins.
+      if (!this.isSuperAdmin()) {
+        this.addProjectFilters(builder, resourceType, table);
+      }
+      this.addAccessPolicyFilters(builder, resourceType, interaction, table);
+    } finally {
+      this.securityFilterDepth--;
+    }
   }
 
   /**
@@ -1705,11 +1732,12 @@ export class Repository extends FhirRepository implements Disposable {
    * Adds the "project" filter to the select query.
    * @param builder - The select query builder.
    * @param resourceType - The resource type being searched.
+   * @param table - The table name or alias holding `resourceType` rows.
    */
-  private addProjectFilters(builder: SelectQuery, resourceType: string): void {
+  private addProjectFilters(builder: SelectQuery, resourceType: string, table: string): void {
     const projectIds = this.getPermittedProjectIds(resourceType);
     if (projectIds) {
-      builder.where('projectId', 'IN', projectIds);
+      builder.where(new Column(table, 'projectId'), 'IN', projectIds);
     }
   }
 
@@ -1718,11 +1746,13 @@ export class Repository extends FhirRepository implements Disposable {
    * @param builder - The select query builder.
    * @param resourceType - The resource type being read or searched.
    * @param interaction - The FHIR interaction being performed.
+   * @param table - The table name or alias holding `resourceType` rows.
    */
   private addAccessPolicyFilters(
     builder: SelectQuery,
     resourceType: string,
-    interaction: AccessPolicyInteraction
+    interaction: AccessPolicyInteraction,
+    table: string
   ): void {
     const accessPolicy = this.context.accessPolicy;
     if (!accessPolicy?.resource) {
@@ -1748,7 +1778,12 @@ export class Repository extends FhirRepository implements Disposable {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(
-            new Condition('compartments', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+            new Condition(
+              new Column(table, 'compartments'),
+              'ARRAY_OVERLAPS_AND_IS_NOT_NULL',
+              policyCompartmentId,
+              'UUID[]'
+            )
           );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
@@ -1771,7 +1806,9 @@ export class Repository extends FhirRepository implements Disposable {
             this,
             builder,
             searchRequest.resourceType,
-            searchRequest
+            searchRequest,
+            undefined,
+            table
           );
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
