@@ -121,13 +121,13 @@ function replaceGrid(tblXml, widths) {
     out = out.replace(/(<\/w:tblPr>)/, `<w:tblLayout w:type="fixed"/>$1`);
   }
 
-  // Also stamp explicit per-cell widths (<w:tcW>) so cells match the grid even
-  // if a viewer ignores <w:tblGrid>. Walking every <w:tcW> in document order and
-  // cycling through `widths` assumes each row has exactly one cell per column,
-  // with one <w:tcW> each and no merged/<w:gridSpan> cells — true of pandoc's
-  // markdown-table output, which is the only thing that feeds this. A guide that
-  // somehow gained a spanning cell would shift every later cell's width by one
-  // column, so revisit this if the source ever stops being plain pipe tables.
+  // Also stamp explicit per-cell widths (<w:tcW>) to match the grid. pandoc
+  // currently emits none at all, so this is normally a no-op — kept because
+  // <w:tcW> takes precedence over <w:tblGrid> under a fixed layout, so a pandoc
+  // version that started emitting even-width cells would silently undo
+  // everything above. Cycling `widths` in document order assumes one cell per
+  // column per row and no merged/<w:gridSpan> cells (true of pipe tables); a
+  // spanning cell would shift every later cell by one column.
   let col = 0;
   out = out.replace(/<w:tcW\b[^/]*\/>/g, () => {
     const w = widths[col % widths.length];
