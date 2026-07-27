@@ -15,7 +15,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
-import { addExpansionItems } from './expand';
+import { repoAccess } from '../repository/access-tracker';
+import type { PgQueryable } from '../sql';
+import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
 
 describe('Expand', () => {
   const app = express();
@@ -824,6 +826,69 @@ describe('Expand', () => {
     });
   });
 
+  describe('Cost-based parent-filter strategy', () => {
+    const system = 'http://example.com/CodeSystem/' + randomUUID();
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'example',
+      url: system,
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'PAR',
+          display: 'parent alpha',
+          concept: [
+            { code: 'CHD', display: 'child alpha' },
+            { code: 'PET', display: 'pet beta' },
+          ],
+        },
+      ],
+    };
+    let stored: WithId<CodeSystem>;
+    let db: PgQueryable;
+
+    beforeAll(async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(codeSystem);
+      expect(res).toHaveStatus(201);
+      stored = res.body as WithId<CodeSystem>;
+
+      await withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+        db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'test' }));
+        await hydrateCodeSystemProperties(db, stored);
+      });
+    });
+
+    test('countCandidatesBounded returns min(actual, limit)', async () => {
+      // 'alpha' matches PAR + CHD (2). PET does not.
+      expect(await countCandidatesBounded(db, stored, 'alpha', 10)).toBe(2);
+      expect(await countCandidatesBounded(db, stored, 'alpha', 1)).toBe(1); // bounded
+      expect(await countCandidatesBounded(db, stored, 'zzz', 10)).toBe(0);
+    });
+
+    test('descendant and ancestor strategies return identical members', async () => {
+      const include = { system, filter: [{ property: 'concept', op: 'is-a' as const, value: 'PAR' }] };
+      const params = { filter: 'alpha' };
+
+      const ancestorQuery = expansionQuery(include, stored, params, 'ancestor');
+      const descendantQuery = expansionQuery(include, stored, params, 'descendant');
+      if (!ancestorQuery || !descendantQuery) {
+        throw new Error('expected both strategies to build a query');
+      }
+      const ancestorRows = await ancestorQuery.execute(db);
+      const descendantRows = await descendantQuery.execute(db);
+
+      const codes = (rows: { code: string }[]): string[] => rows.map((r) => r.code).sort();
+      expect(codes(ancestorRows)).toEqual(['CHD', 'PAR']);
+      expect(codes(descendantRows)).toEqual(codes(ancestorRows));
+    });
+  });
+
   test('Recursive subsumption', async () => {
     const res = await request(app)
       .get(
@@ -1456,13 +1521,62 @@ describe('Expand', () => {
     expect(vsRes).toHaveStatus(201);
 
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=ID`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=accepted`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'MSG_INVALID_ID', display: 'ID not accepted', system: codeSystem.url },
+    ]);
+  });
+
+  test('Short filter (< 3 chars) does not match display substrings', async () => {
+    // Below 3 characters the display-substring branch is dropped (the trigram index can't serve a sub-trigram
+    // substring), so a 2-char filter matches only exact codes, never display substrings.
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'complete',
+      status: 'active',
+      concept: [
+        { code: 'HT', display: 'Alpha' },
+        { code: 'HTX', display: 'Beta' }, // display contains 'et' but code does not
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    expect(
+      await request(app)
+        .post('/fhir/R4/CodeSystem')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(codeSystem)
+    ).toHaveStatus(201);
+    expect(
+      await request(app)
+        .post('/fhir/R4/ValueSet')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(valueSet)
+    ).toHaveStatus(201);
+
+    // 'et' is a substring of display 'Beta' (code HTX) but of no code → no matches.
+    const displayOnly = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=et`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(displayOnly).toHaveStatus(200);
+    expect((displayOnly.body.expansion as ValueSetExpansion).contains ?? []).toHaveLength(0);
+
+    // The exact 2-char code 'HT' still matches.
+    const codeMatch = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=HT`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(codeMatch).toHaveStatus(200);
+    expect((codeMatch.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'HT', display: 'Alpha', system: codeSystem.url },
     ]);
   });
 

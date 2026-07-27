@@ -4,9 +4,6 @@ sidebar_position: 6
 
 # Drug Interaction Check
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 **Bot:** `scriptsure-drug-interaction-bot`
 

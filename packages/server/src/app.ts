@@ -253,7 +253,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 }
 
 export async function initAppServices(config: MedplumServerConfig): Promise<void> {
-  loadStructureDefinitions();
+  loadStructureDefinitions(config);
   initRedis(config);
   await initDatabase(config);
   initWorkers(config);

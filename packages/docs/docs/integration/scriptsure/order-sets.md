@@ -4,9 +4,6 @@ sidebar_position: 8
 
 # Order Sets
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 Order sets allow you to embed a pre-configured prescribing widget for a group of medications defined in a ScriptSure orderset. The orderset can be mapped to a Medplum `PlanDefinition` resource or referenced directly by its ScriptSure ID.
 

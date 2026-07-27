@@ -4,9 +4,6 @@ sidebar_position: 1
 
 # Account Setup
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 This guide walks through completing your ScriptSure account setup after Medplum has provisioned your organization.
 

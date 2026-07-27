@@ -7,7 +7,7 @@ download_slug: intake
 
 # Intake & Registration Decision Guide
 
-_Companion to the [Intake & Registration](https://www.medplum.com/docs/intake) docs._
+_Companion to the [Intake & Registration](/docs/intake) docs._
 
 ## Section 1: Use Case & Participants
 
@@ -90,7 +90,7 @@ Section 3 is grouped into three lanes:
 
 #### 3.1 Patient Identity at Intake
 
-Decide whether intake creates a new patient record, updates an existing one, or runs unlinked until a human confirms a match – and how the intake response gets tied to the right patient. For matching rules, master records, and merge mechanics, defer to [Patient Deduplication Architectures](https://www.medplum.com/docs/fhir-datastore/patient-deduplication) and \[Patient `$match](https://www.medplum.com/docs/api/fhir/operations/patient-match)`.
+Decide whether intake creates a new patient record, updates an existing one, or runs unlinked until a human confirms a match – and how the intake response gets tied to the right patient. For matching rules, master records, and merge mechanics, defer to [Patient Deduplication Architectures](/docs/fhir-datastore/patient-deduplication) and \[Patient `$match](/docs/api/fhir/operations/patient-match)`.
 
 **Questions:**
 
@@ -167,7 +167,7 @@ Decide where extraction logic lives: on the form itself (declarative SDC rules) 
 | Simple field-to-resource mapping, no conditionals, no external calls | SDC `$extract` with template resources in `Questionnaire.contained`; rules ship with the form. |
 | Conditional resource creation, external API calls, custom validation | Bot triggered by Subscription on `QuestionnaireResponse`; use `getQuestionnaireAnswers` and `getGroupRepeatedAnswers` from `@medplum/core`. |
 | Mixed | SDC for the deterministic mapping, Bot for the conditional / external pieces. |
-| Resubmission without duplicates | Upsert clinical history by stable natural keys: `patient` \+ `code` for AllergyIntolerance; `subject` \+ `code` for MedicationRequest / Condition; `beneficiary` \+ `payor` for Coverage. See [Intake Data Model → Resource Role Reference](https://www.medplum.com/docs/intake/intake-data-model). |
+| Resubmission without duplicates | Upsert clinical history by stable natural keys: `patient` \+ `code` for AllergyIntolerance; `subject` \+ `code` for MedicationRequest / Condition; `beneficiary` \+ `payor` for Coverage. See [Intake Data Model → Resource Role Reference](/docs/intake/intake-data-model). |
 
 ---
 
@@ -189,9 +189,9 @@ Decide how insurance is modeled, especially when the subscriber is not the patie
 | Situation | Approach |
 | :---- | :---- |
 | Subscriber is the patient | Single `Coverage` with `subscriber` \= `Patient`; `relationship` \= `self`. |
-| Subscriber is not the patient | `Coverage` \+ `RelatedPerson`; remember the **inversion**: if `Coverage.relationship` is `child`, `RelatedPerson.relationship` is parent. See [Intake Data Model → RelatedPerson and Insurance Coverage](https://www.medplum.com/docs/intake/intake-data-model). |
+| Subscriber is not the patient | `Coverage` \+ `RelatedPerson`; remember the **inversion**: if `Coverage.relationship` is `child`, `RelatedPerson.relationship` is parent. See [Intake Data Model → RelatedPerson and Insurance Coverage](/docs/intake/intake-data-model). |
 | Multiple coverages | One `Coverage` per plan; use `order` to indicate primary vs secondary. |
-| Card image capture | Store the image as a `DocumentReference` and link it to the Coverage via `DocumentReference.context.related`; for full modeling see [Patient Insurance](https://www.medplum.com/docs/billing/patient-insurance). |
+| Card image capture | Store the image as a `DocumentReference` and link it to the Coverage via `DocumentReference.context.related`; for full modeling see [Patient Insurance](/docs/billing/patient-insurance). |
 | Payer directory | Curated `Organization` resources searched by the form; fall back to "create if missing" only when scope is too broad to curate. |
 
 ---
@@ -222,7 +222,7 @@ Decide which consent types are captured, how they're modeled, and what triggers 
 
 Decide what happens after intake is submitted: which automations fire, when eligibility runs, and which downstream actions are part of intake vs separate workflows.
 
-*Note: This section is decision-focused. For the full pattern catalog, see [Post Intake Automation](https://www.medplum.com/docs/intake/post-intake-automation).*
+*Note: This section is decision-focused. For the full pattern catalog, see [Post Intake Automation](/docs/intake/post-intake-automation).*
 
 **Questions:**
 
@@ -236,7 +236,7 @@ Decide what happens after intake is submitted: which automations fire, when elig
 | :---- | :---- |
 | Monolithic intake Bot | One Bot on `QuestionnaireResponse` create handles extraction and all downstream actions. Simplest to operate; trade-off is larger blast radius on failure. |
 | Split by concern | Separate Subscriptions: one on `QuestionnaireResponse` for extraction, one on `Coverage` for eligibility, one on `Patient` for welcome notifications. Each Bot has a single responsibility and audit trail. |
-| Prevent re-run on updates | Use the create-only Subscription extension so Bot updates to the QuestionnaireResponse (e.g. setting `subject`) don't re-trigger extraction. See [Avoid Infinite Loops](https://www.medplum.com/docs/intake/post-intake-automation#triggering-intake-processing). |
+| Prevent re-run on updates | Use the create-only Subscription extension so Bot updates to the QuestionnaireResponse (e.g. setting `subject`) don't re-trigger extraction. See [Avoid Infinite Loops](/docs/intake/post-intake-automation#triggering-intake-processing). |
 | Exception handling | When required data is missing or an external call fails, create a `Task` for staff (`status: requested`, `owner` \= registration pool); do not silently drop the response. |
 | Eligibility — sync gate (during form or on submit) | `CoverageEligibilityRequest` results gate "intake complete" (3.9). Highest UX cost, lowest downstream rework. Use when day-one billing readiness matters. |
 | Eligibility — async post-intake | Same Subscription pattern, but failures surface as exception Tasks rather than blocking intake. Use when intake throughput trumps day-one billing readiness. |
@@ -248,7 +248,7 @@ Decide what happens after intake is submitted: which automations fire, when elig
 
 Decide whether intake is a single form or a multi-step workflow with several tasks owned by different roles – and whether those tasks must show up in the provider's visit chart.
 
-*Note: The template-driven orchestration pattern is documented in detail under [Post Intake Automation → PlanDefinition Orchestration](https://www.medplum.com/docs/intake/post-intake-automation). This section stays at the level needed to decide whether to adopt that pattern.*
+*Note: The template-driven orchestration pattern is documented in detail under [Post Intake Automation → PlanDefinition Orchestration](/docs/intake/post-intake-automation). This section stays at the level needed to decide whether to adopt that pattern.*
 
 **Questions:**
 

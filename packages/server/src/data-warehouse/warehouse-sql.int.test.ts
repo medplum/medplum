@@ -6,6 +6,7 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import pg from 'pg';
 import { loadTestConfig } from '../config/loader';
+import { systemResourceProjectId } from '../constants';
 import { SqlBuilder } from '../fhir/sql';
 import { buildPgConnectionURI } from './config';
 import type { DuckdbConnection } from './warehouse-sql';
@@ -23,6 +24,13 @@ const DELETED_ONLY_TABLE = 'iceberg_catalog.default.deleted_only';
 
 const HISTORY_TABLE = 'DwWarehouseSqlIntTest_history';
 const DEST_TABLE = 'wh_sql_int_dest';
+
+const PATIENT_ID = '6e586f88-710f-42b2-9cc2-285496264c99';
+const VERSION_ID = 'c227e03f-b6d5-44f7-b191-8571ed508d7e';
+const PROJECT_ID = '71b6dae7-1e96-47ed-babb-c1a0e58a885f';
+
+const LOGIN_ID = 'a1b2c3d4-e5f6-4789-a012-3456789abcde';
+const LOGIN_VERSION_ID = 'b2c3d4e5-f6a7-4890-b123-456789abcdef';
 
 describe('warehouse SQL (integration)', () => {
   let host: string;
@@ -46,21 +54,30 @@ describe('warehouse SQL (integration)', () => {
       await client.query(`DROP TABLE IF EXISTS "${HISTORY_TABLE}"`);
       await client.query(`
         CREATE TABLE "${HISTORY_TABLE}" (
-          id TEXT NOT NULL,
-          "versionId" TEXT NOT NULL,
+          id UUID NOT NULL,
+          "versionId" UUID NOT NULL,
           content TEXT NOT NULL,
           "lastUpdated" TIMESTAMPTZ NOT NULL
         );
       `);
       await client.query(
-        `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO "${HISTORY_TABLE}" (id, "versionId", content, "lastUpdated") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)`,
         [
-          'patient-wh-sql-1',
-          '1',
+          PATIENT_ID,
+          VERSION_ID,
           JSON.stringify({
             resourceType: 'Patient',
-            id: 'patient-wh-sql-1',
-            meta: { project: 'project-from-json' },
+            id: PATIENT_ID,
+            meta: { project: PROJECT_ID },
+          }),
+          '2024-06-01T12:00:00.000Z',
+          LOGIN_ID,
+          LOGIN_VERSION_ID,
+          JSON.stringify({
+            resourceType: 'Login',
+            id: LOGIN_ID,
+            authMethod: 'password',
+            // Intentionally no meta.project (protected resource)
           }),
           '2024-06-01T12:00:00.000Z',
         ]
@@ -94,23 +111,26 @@ describe('warehouse SQL (integration)', () => {
       await connection.run(buildDuckdbPostgresAttachQuery(connStr));
       await connection.run(`
         CREATE TABLE "${DEST_TABLE}" (
-          id VARCHAR,
-          version_id VARCHAR,
+          id UUID,
+          version_id UUID,
           content VARCHAR,
           last_updated TIMESTAMPTZ,
-          project_id VARCHAR
+          project_id UUID
         );
       `);
 
       const rowCount = await runParameterizedWarehouseSql(connection, insertQuery);
-      expect(rowCount).toBe(1);
+      expect(rowCount).toBe(2);
 
       const readSql = new SqlBuilder();
-      readSql.append(`SELECT id, project_id FROM "${DEST_TABLE}"`);
+      readSql.append(`SELECT id, project_id FROM "${DEST_TABLE}" ORDER BY id`);
       const readResult = await runParameterizedWarehouseSqlReadAll(connection, readSql);
-      const row = readResult.getRowObjectsJson()[0] as { id: string; project_id: string };
-      expect(row.id).toBe('patient-wh-sql-1');
-      expect(row.project_id).toBe('project-from-json');
+      const rows = readResult.getRowObjectsJson() as { id: string; project_id: string }[];
+      expect(rows).toHaveLength(2);
+
+      const byId = Object.fromEntries(rows.map((row) => [row.id, row.project_id]));
+      expect(byId[PATIENT_ID]).toBe(PROJECT_ID);
+      expect(byId[LOGIN_ID]).toBe(systemResourceProjectId);
     } finally {
       connection.closeSync();
       instance.closeSync();

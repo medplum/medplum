@@ -4,7 +4,7 @@ import { Anchor, Button, Table, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { ProfileResource } from '@medplum/core';
 import { formatDateTime, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { UserConfiguration } from '@medplum/fhirtypes';
+import type { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -17,6 +17,7 @@ interface UserSession {
   readonly remoteAddress: string;
   readonly browser?: string;
   readonly os?: string;
+  readonly project?: Reference;
 }
 
 interface SecurityDetails {
@@ -70,6 +71,7 @@ export function SecurityPage(): JSX.Element | null {
         <Table>
           <thead>
             <tr>
+              <th>Project</th>
               <th>OS</th>
               <th>Browser</th>
               <th>IP Address</th>
@@ -81,6 +83,7 @@ export function SecurityPage(): JSX.Element | null {
           <tbody>
             {details.security.sessions.map((session) => (
               <tr key={session.id}>
+                <td>{session.project?.display ?? 'Unknown'}</td>
                 <td>{session.os}</td>
                 <td>{session.browser}</td>
                 <td>{session.remoteAddress}</td>

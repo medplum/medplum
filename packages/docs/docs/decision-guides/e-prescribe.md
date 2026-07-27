@@ -7,7 +7,7 @@ download_slug: e-prescribe
 
 # E-Prescribe Decision Guide
 
-_Companion to the [E-Prescribe (eRx)](https://www.medplum.com/docs/medications/e-prescibe) docs._
+_Companion to the [E-Prescribe (eRx)](/docs/medications/e-prescibe) docs._
 
 E-prescribing in Medplum runs through an integration with an e-prescribing vendor connected to the SureScripts network. This space is less about the FHIR data model than a sequence of **integration and enrollment decisions**: how much prescribing UI you build, whether you send controlled substances, and how prescribers get enrolled and verified. This guide moves from those high-level decisions down to feature detail.
 
@@ -46,7 +46,7 @@ E-prescribing in Medplum runs through an integration with an e-prescribing vendo
 - Administrators (enroll prescribers, manage practices, configure favorites)
 - Any offshore or non-US staff using the prescribing UI?
 
-*Why: prescriber vs. agent vs. admin map to distinct enrollment roles (3.3), and only fully-enrolled prescribers can transmit. Non-prescribing roles don't need an NPI.*
+*Why: prescriber vs. agent vs. admin map to distinct enrollment roles (3.3), and only fully-enrolled prescribers can transmit. Non-prescribing roles don't need an NPI. Offshore and non-US staff matter here because e-prescribing is only available to professionals **authorized to prescribe in the United States** — a SureScripts-network constraint, not a Medplum one — so non-US staff can only hold non-prescribing roles, and even those must be enrolled with the vendor to call pharmacy or medication-history operations (3.3). Confirm your vendor's policy on non-US users before designing an offshore-staffing model around the prescribing UI.*
 
 ---
 
@@ -134,6 +134,7 @@ Accurate provider identity data prevents the most common enrollment failures.
 - Do controlled-substance prescribers have a valid DEA number with issuing state?
 - Which roles do users need — prescriber, agent/proxy, admin?
 - Do non-prescriber staff (front desk, MAs) need to perform prescribing-adjacent tasks — searching pharmacies, setting a preferred pharmacy, viewing history — without an NPI?
+- Are any of those staff offshore or otherwise outside the US?
 
 | Situation | Approach |
 | :---- | :---- |
@@ -142,6 +143,7 @@ Accurate provider identity data prevents the most common enrollment failures.
 | Staff who stage but don't send | Enroll as a **prescribing agent** or **proxy** role — no NPI required; cannot finalize or transmit. |
 | Users who enroll others | Enroll with an **admin/clinician-admin** role to invite and manage other prescribers and configure favorites (3.7). |
 | Non-prescriber staff running pharmacy/history ops | Even without prescribing rights, staff must be **enrolled with a vendor identifier** to call pharmacy-directory or medication-history operations — an un-enrolled user is rejected. Confirm which staff need these ops and provision a non-prescribing role for them. |
+| Offshore / non-US staff | Prescribing itself is limited to professionals **authorized to prescribe in the United States**, so non-US users can only take non-prescribing roles (agent/proxy, admin) — and still need vendor enrollment for pharmacy and history operations. Vendor policy on non-US users varies; validate it with your vendor before designing an offshore-staffing model, not after. |
 
 ---
 
@@ -185,8 +187,8 @@ Whether prescribers see coverage and cost at the point of prescribing, and how p
 | :---- | :---- |
 | Show coverage & cost | The vendor pulls active benefit info from pharmacy-benefit data via patient demographics and surfaces formulary status, cost, and alternatives. Coverage comes from the benefit network, **not** insurance data stored only in Medplum, and prescription cost is **not** retrievable via the Medplum API — keep demographics accurate so the match succeeds. |
 | ePA via the eRx vendor | The e-prescribing vendor can initiate ePA from the medication when formulary data flags it's required. This may require **separate enablement** with the vendor rather than being part of the base integration — confirm it's in scope. |
-| Standards-based ePA (payer path) | The emerging FHIR path for payer-connected prior auth — CDS Hooks with CRD / DTR / PAS (ONC criteria (g)(31)–(g)(33)). Currently [alpha](https://www.medplum.com/docs/integration/electronic-prior-auth). |
-| Compliance-driven timeline | HTI-4 (effective Oct 1, 2025) mandates **NCPDP SCRIPT v2023011** with ePA in the prescribing workflow and **RTPB v13** for real-time cost display. Payer ePA APIs are due **Jan 1, 2027**; eRx modules must be certified to SCRIPT v2023011 by **Jan 1, 2028**. Factor these into the 3.1 decision. See [HTI-4 & CMS-0057-F](https://www.medplum.com/docs/compliance/hti-4). |
+| Standards-based ePA (payer path) | The emerging FHIR path for payer-connected prior auth — CDS Hooks with CRD / DTR / PAS (ONC criteria (g)(31)–(g)(33)). Currently [alpha](/docs/integration/electronic-prior-auth). |
+| Compliance-driven timeline | HTI-4 (effective Oct 1, 2025) mandates **NCPDP SCRIPT v2023011** with ePA in the prescribing workflow and **RTPB v13** for real-time cost display. Payer ePA APIs are due **Jan 1, 2027**; eRx modules must be certified to SCRIPT v2023011 by **Jan 1, 2028**. Factor these into the 3.1 decision. See [HTI-4 & CMS-0057-F](/docs/compliance/hti-4). |
 
 #### 3.6 Refills, Reorders & Discontinuation
 
@@ -292,3 +294,12 @@ Read only when replacing an existing EHR or e-Rx vendor (1.3).
 | Already on SureScripts | Coordinate a **Change of Vendor** so the new system is recognized; without it, new prescriptions may work while refills and edits fail. |
 | Preserving pending refills | The approach depends on whether pending refills must be preserved vs. whether the old system must keep operating during cutover — these pull opposite ways. Scope with the vendor before scheduling. |
 | Phased rollout | Migration can generally be coordinated per prescriber, enabling a phased cutover. |
+
+---
+
+## Related Integrations
+
+The e-prescribing vendors Medplum integrates with first-party:
+
+- **[ScriptSure](/docs/integration/scriptsure)** — full API surface with custom FHIR operations and bots, plus an authenticated iframe. The option behind the **integrated (API-driven)** model in 3.1.
+- **[DoseSpot](/docs/integration/dosespot)** — embedded iFrame prescribing, including [clinic favorites](/docs/integration/dosespot/clinic-favorite-medications) (3.7) and [prescriber enrollment](/docs/integration/dosespot/enroll-user) (3.2).

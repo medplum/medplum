@@ -7,7 +7,7 @@ download_slug: rcm-billing
 
 # RCM & Billing Decision Guide
 
-_Companion to the [Billing](https://www.medplum.com/docs/billing) docs._
+_Companion to the [Billing](/docs/billing) docs._
 
 ## Section 1: Use Case & Participants
 
@@ -120,7 +120,7 @@ Section 3 is grouped into four lanes:
 
 #### 3.1 Coverage & Insurance Model
 
-How you represent a patient's insurance (the coverage stack, the subscriber, payers, cost-sharing) is the foundation every claim and eligibility check builds on. See [Representing Patient Insurance Coverage](https://www.medplum.com/docs/billing/patient-insurance); coverage capture at intake is in the Intake guide (3.5).
+How you represent a patient's insurance (the coverage stack, the subscriber, payers, cost-sharing) is the foundation every claim and eligibility check builds on. See [Representing Patient Insurance Coverage](/docs/billing/patient-insurance); coverage capture at intake is in the Intake guide (3.5).
 
 **Questions:**
 
@@ -165,7 +165,7 @@ Decide whether you track a patient financial account that rolls charges, claims,
 
 #### 3.3 Eligibility & Benefits
 
-Decide whether you verify coverage before service, what you ask the payer, and when the check runs. See [Insurance Eligibility Checks](https://www.medplum.com/docs/billing/insurance-eligibility-checks).
+Decide whether you verify coverage before service, what you ask the payer, and when the check runs. See [Insurance Eligibility Checks](/docs/billing/insurance-eligibility-checks).
 
 *Note: Eligibility is provided by the clearinghouse integration. An RCM partner may offer its own eligibility on its platform, outside that integration.*
 
@@ -189,7 +189,7 @@ Decide whether you verify coverage before service, what you ask the payer, and w
 
 Decide whether services need payer authorization before they happen, how you track that to a decision, and whether you produce patient cost estimates up front.
 
-*Note: the eligibility- and Claim-based rows below are one FHIR approach to prior auth; validate against your payer requirements. The standards-based CMS-0057-F path (CDS Hooks / CRD) is in [alpha](https://www.medplum.com/docs/integration/electronic-prior-auth). Prior auth in a referral context is in the Referrals guide (3.7).*
+*Note: the eligibility- and Claim-based rows below are one FHIR approach to prior auth; validate against your payer requirements. The standards-based CMS-0057-F path (CDS Hooks / CRD) is in [alpha](/docs/integration/electronic-prior-auth). Prior auth in a referral context is in the Referrals guide (3.7).*
 
 **Questions:**
 
@@ -202,7 +202,7 @@ Decide whether services need payer authorization before they happen, how you tra
 | :---- | :---- |
 | Is auth required? | `CoverageEligibilityRequest` with `purpose: auth-requirements`; the response indicates whether authorization is required. |
 | Submit a prior auth | `Claim` with `use: preauthorization` (distinct from a claim for completed services); `ClaimResponse` carries the decision. A `Bot` converts FHIR ↔ X12 for transmission. |
-| Standards-based (CMS-0057-F) | Electronic prior auth via CDS Hooks / Coverage Requirements Discovery (CRD); [alpha](https://www.medplum.com/docs/integration/electronic-prior-auth). The emerging payer-interop path as the rule phases in. |
+| Standards-based (CMS-0057-F) | Electronic prior auth via CDS Hooks / Coverage Requirements Discovery (CRD); [alpha](/docs/integration/electronic-prior-auth). The emerging payer-interop path as the rule phases in. |
 | Gate scheduling | Hold in an auth-pending `Task.businessStatus` until the `ClaimResponse` approves, then release. |
 
 **Good-Faith Estimates (No Surprises Act).** One FHIR approach: build the estimate from pricing rules (`ChargeItemDefinition`/`$apply`, 3.5) and the patient's cost-sharing (`Coverage.costToBeneficiary`, 3.1), delivered as a `DocumentReference`; validate against your compliance requirements. Mainly for self-pay and out-of-network patients.
@@ -227,7 +227,7 @@ Decide what gets billed, where the codes come from, and how each line is priced.
 | Situation | Approach |
 | :---- | :---- |
 | What gets billed | One `ChargeItem` per billable line; `ChargeItem.code` carries CPT/HCPCS. Link `context` → `Encounter` and reference the `Account` (3.2) at creation, or reconciling into claims and AR later gets painful. |
-| Pricing | `ChargeItemDefinition` holds the rules; [`$apply`](https://www.medplum.com/docs/api/fhir/operations/chargeitemdefinition-apply) calculates the price. |
+| Pricing | `ChargeItemDefinition` holds the rules; [`$apply`](/docs/api/fhir/operations/chargeitemdefinition-apply) calculates the price. |
 | Payer-specific rates | Multiple `ChargeItemDefinition`s keyed to payer/contract; apply the one matching the coverage. |
 | Coding source | Auto-derive via a `Bot`, or set by a coder; route low-confidence items to a review `Task`. |
 | Diagnoses | Capture ICD-10 diagnoses to attach to the claim (`Claim.diagnosis`, with item-level pointers) in 3.6. |
@@ -251,8 +251,8 @@ Decide how you build a valid claim from charges and coverage, and how it leaves 
 | Billing provider | Set on `Claim.provider`, but backends read it differently (billing provider vs. rendering provider with the billing `Organization` via `PractitionerRole`); confirm per integration. |
 | Electronic (you own the cycle) | The clearinghouse submit operation sends an 837P and writes a correlation id back to the `Claim`. |
 | RCM partner | The partner's submit operation returns a `ClaimResponse`; the partner owns scrubbing, denials, resubmission, and remittance on its platform, and billing tasks sync back into Medplum as `Task`s (3.8). |
-| Manual / paper / portal | [`Claim/$export`](https://www.medplum.com/docs/api/fhir/operations/claim-export) generates a [CMS-1500 PDF](https://www.medplum.com/docs/billing/creating-cms1500) (`Binary`; experimental); log the outbound document. |
-| Patient-submitted (out-of-network) | Generate a [superbill](https://www.medplum.com/docs/billing/creating-superbills) for the patient to file. |
+| Manual / paper / portal | [`Claim/$export`](/docs/api/fhir/operations/claim-export) generates a [CMS-1500 PDF](/docs/billing/creating-cms1500) (`Binary`; experimental); log the outbound document. |
+| Patient-submitted (out-of-network) | Generate a [superbill](/docs/billing/creating-superbills) for the patient to file. |
 | Validation | Validate before submit; surface a `Task` and don't transmit invalid claims. (In the current integration, a submission failure marks the `Claim` `status = error`.) |
 | Multiple channels | One `Claim` is the source of truth; run separate send paths per payer without diverging content. |
 
@@ -317,7 +317,7 @@ Decide how you bill patients for their share (copays, coinsurance, deductibles, 
 | Situation | Approach |
 | :---- | :---- |
 | Patient balance | `Invoice` for patient-owed amounts rolling to the `Account` (3.2); responsibility from remittance (3.7) or self-pay pricing (3.5). |
-| Online payment | Integrate a payment processor; a [sample integration](https://www.medplum.com/docs/billing#sample-integrations) shows keeping invoices and payments in sync. |
+| Online payment | Integrate a payment processor; a [sample integration](/docs/billing#sample-integrations) shows keeping invoices and payments in sync. |
 | Self-pay / cash | Price via `ChargeItemDefinition`/`$apply` (3.5); invoice the patient directly, no payer claim. |
 | Out-of-network | Provide a superbill (3.6) for the patient to submit for reimbursement. |
 
@@ -349,7 +349,7 @@ Decide how you track where every claim and balance sits, and how staff find work
 
 Value-based care isn't a claims pipeline; it splits into measurement (quality, gaps in care) and money (capitation, risk, settlement). Read only for capitated or risk-based contracts.
 
-*Note: Quality measurement uses documented operations; the financial rows are one FHIR approach to validate against your contracts. Quality/HEDIS reporting overlaps clinical analytics; see [Analytics](https://www.medplum.com/docs/analytics).*
+*Note: Quality measurement uses documented operations; the financial rows are one FHIR approach to validate against your contracts. Quality/HEDIS reporting overlaps clinical analytics; see [Analytics](/docs/analytics).*
 
 **Questions:**
 
@@ -361,8 +361,17 @@ Value-based care isn't a claims pipeline; it splits into measurement (quality, g
 | Situation | Approach |
 | :---- | :---- |
 | Attribution / panel | `Group` as the member roster; ingest the payer roster via a `Bot`; `CareTeam` for accountable teams. |
-| Quality measurement & gaps in care | `Measure` \+ `MeasureReport` via [`Measure/$evaluate-measure`](https://www.medplum.com/docs/api/fhir/operations/evaluate-measure); eCQM and HEDIS via [Analytics](https://www.medplum.com/docs/analytics). |
+| Quality measurement & gaps in care | `Measure` \+ `MeasureReport` via [`Measure/$evaluate-measure`](/docs/api/fhir/operations/evaluate-measure); eCQM and HEDIS via [Analytics](/docs/analytics). |
 | Risk adjustment (HCC / RAF) | Capture `Condition` coding from encounters and submit as encounter data; ties to coding (3.5). |
 | Encounter data | Even when capitated, reuse claim assembly (3.6) to send 837/encounter data for measurement and risk. |
 | Payments (PMPM, settlement) | Model received capitation and shared-savings settlement as `PaymentReconciliation` against the `Account` (3.2). |
 
+
+---
+
+## Related Integrations
+
+The billing and revenue-cycle partners Medplum integrates with first-party:
+
+- **[Stedi](/docs/integration/stedi)** — X12 [eligibility checks](/docs/integration/stedi/insurance-eligibility/eligibility-checks) (270/271) and [professional claim submission](/docs/integration/stedi/claim-submission/professional-claims) (837P) with [claim responses](/docs/integration/stedi/claim-submission/claim-responses).
+- **[Candid Health](/docs/integration/candid)** — revenue cycle automation and professional claim submission from FHIR `Claim` resources.

@@ -7,7 +7,7 @@ download_slug: charting
 
 # Charting Decision Guide
 
-_Companion to the [Charting](https://www.medplum.com/docs/charting) docs (SOAP notes, diagnoses, vitals, allergies), plus [Provider Visits](https://www.medplum.com/docs/provider/visits), [Structured Data Capture](https://www.medplum.com/docs/questionnaires/structured-data-capture), [`PlanDefinition $apply`](https://www.medplum.com/docs/api/fhir/operations/plandefinition-apply), and [`QuestionnaireResponse $extract`](https://www.medplum.com/docs/api/fhir/operations/extract)._
+_Companion to the [Charting](/docs/charting) docs (SOAP notes, diagnoses, vitals, allergies), plus [Provider Visits](/docs/provider/visits), [Structured Data Capture](/docs/questionnaires/parsing-questionnaire-responses), [`PlanDefinition $apply`](/docs/api/fhir/operations/plandefinition-apply), and [`QuestionnaireResponse $extract`](/docs/api/fhir/operations/extract)._
 
 ---
 
@@ -79,7 +79,7 @@ If visit types share most of their structure: factor common pieces into shared Q
 
 ### 2.2 How structured should the chart be?
 
-**Medplum Recommendation:** Structured wherever possible. Medplum's documented [SOAP note approach](https://www.medplum.com/docs/charting/soap-notes) maps each section to discrete resources — Observations for findings, ClinicalImpression for assessment, ServiceRequest / MedicationRequest / CarePlan for the plan. Reserve free-text (`ClinicalImpression.note`) for the assessment (A) component of SOAP.
+**Medplum Recommendation:** Structured wherever possible. Medplum's documented [SOAP note approach](/docs/charting/visit-templates) maps each section to discrete resources — Observations for findings, ClinicalImpression for assessment, ServiceRequest / MedicationRequest / CarePlan for the plan. Reserve free-text (`ClinicalImpression.note`) for the assessment (A) component of SOAP.
 
 **⚠ Recommended pattern.** Surface a patient sidebar (problem list, allergies, active medications) alongside the active note, with inline edit.
 
