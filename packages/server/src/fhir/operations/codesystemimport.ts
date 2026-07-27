@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  OperationOutcomeError,
+  allOk,
+  badRequest,
+  forbidden,
+  normalizeOperationOutcome,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -96,6 +103,9 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+    if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, codeSystem)) {
+      return [forbidden];
+    }
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, {
       ownProjectOnly: !isSuperAdmin,
