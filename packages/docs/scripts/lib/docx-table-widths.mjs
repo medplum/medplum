@@ -13,12 +13,15 @@ const CELL_PADDING_TWIPS = 320; // ~2 x default cell margin, plus a little slack
 const MIN_COL_TWIPS = 450; // absolute floor, only hit for single-glyph columns (#, checkmarks)
 const MAX_COL_TWIPS = 5760; // 4", so one column can't swallow the whole table
 
+// Resolved in a single pass, not one .replace() per entity: unescaping &amp;
+// separately would turn the '&' it produces into the head of a new entity for
+// the later passes to unescape a second time (&amp;lt; -> &lt; -> '<').
+const XML_ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" };
+
 function stripTags(xml) {
   return xml
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/&(?:amp|lt|gt|quot|apos);/g, (entity) => XML_ENTITIES[entity])
     .replace(/\s+/g, ' ')
     .trim();
 }
