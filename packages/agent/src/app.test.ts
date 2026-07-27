@@ -657,7 +657,7 @@ describe('App', () => {
     });
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
-    await expect(app.start()).rejects.toThrow(new Error("Invalid empty endpoint address for channel 'test'"));
+    await expect(app.start()).rejects.toThrow(/Invalid empty endpoint address for channel 'test'/);
 
     await app.stop();
     await new Promise<void>((resolve) => {
@@ -665,10 +665,10 @@ describe('App', () => {
     });
   });
 
+  // An unsupported scheme used to be swallowed while creating the channel: the agent started
+  // normally, logged the problem, and ran without that channel. It is now a validation error
+  // that rejects the whole config, so a channel can never silently go missing.
   test('Unknown endpoint protocol', async () => {
-    const originalConsoleLog = console.log;
-    console.log = vi.fn();
-
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });
@@ -714,14 +714,12 @@ describe('App', () => {
     });
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
-    await app.start();
+    await expect(app.start()).rejects.toThrow(/Unsupported endpoint type: foo:/);
+
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
     });
-
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unsupported endpoint type: foo:'));
-    console.log = originalConsoleLog;
   });
 
   // The durable-queue wiring in app.ts (reconcileDurableQueue → open/close the DB,
@@ -3996,6 +3994,12 @@ describe('App', () => {
       // Now let the agent win the PID and become primary. Wait until the PID is actually acquired
       // (which sets isPrimary) before sending again, since dropped requests are not queued/replayed.
       allowPrimary = true;
+      // Clear first, so we wait for a call made *after* flipping the flag. A retry loop left over
+      // from an earlier test can tick against the bare module mock in the window before this
+      // test's implementation is installed, recording a 'return' that has nothing to do with us --
+      // and this loop would then exit immediately, sending the transmit while we are still not
+      // primary and dropping it for good.
+      createPidFileSpy.mockClear();
       let shouldThrow = false;
       let timeout = setTimeout(() => {
         shouldThrow = true;

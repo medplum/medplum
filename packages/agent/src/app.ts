@@ -42,8 +42,12 @@ import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
 import { AgentByteStreamChannel } from './bytestream';
-import type { Channel } from './channel';
+import type { Channel, ChannelConstructor, ChannelValidationContext } from './channel';
 import { ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import type { AppliedConfigSnapshot } from './config-snapshot';
+import { APPLIED_CONFIG_FILENAME, readSnapshot, writeSnapshotAtomic } from './config-snapshot';
+import type { ConfigPlan, DesiredChannel } from './config-validation';
+import { configIssuesToError, parseAgentSettings, probePorts, validateChannelStructure } from './config-validation';
 import {
   DEFAULT_MAX_CLIENTS_PER_REMOTE,
   DEFAULT_PING_TIMEOUT,
@@ -61,7 +65,7 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
 import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
-import { isRetryMode, parseDispatchCallback } from './queue/worker';
+import { parseDispatchCallback } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -150,6 +154,11 @@ export class App {
   // fall through to DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
   private channelRetrySettings: AgentRetryDefaults = {};
   private retentionSweeper: RetentionSweeper | undefined;
+  // The last config that applied end to end. Held in memory as the rollback target (it carries
+  // resolved endpoints, so rolling back never needs the server -- which may be what broke) and
+  // mirrored to disk so a later boot can fall back to it. See {@link App.rollbackToLastGood}.
+  private lastGoodPlan: ConfigPlan | undefined;
+  private rollbackInProgress = false;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
   // the PID before start()). An upgrading agent stays non-primary until it wins the PID from the
@@ -181,7 +190,7 @@ export class App {
     // below (which signals the installer to stop the old agent). If we awaited the binds here, we
     // would deadlock: waiting for ports the old agent won't free until we delete the manifest,
     // which we can't reach until the binds complete.
-    const { listenersStarted } = await this.beginReloadConfig();
+    const { listenersStarted } = await this.beginReloadConfigWithFallback();
 
     // Delete the upgrade manifest (if present) now that the listeners are attempting to bind.
     // Removing it is the signal the installer waits on before stopping the previous agent, which
@@ -552,34 +561,245 @@ export class App {
    */
   private async beginReloadConfig(): Promise<{ listenersStarted: Promise<void> }> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
-    const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
-    const maxClientsPerRemote = agent?.setting?.find((setting) => setting.name === 'maxClientsPerRemote')?.valueInteger;
-    const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
-    const durableQueueOn = agent?.setting?.find((setting) => setting.name === 'durableQueue')?.valueBoolean ?? false;
-    const queueDbPath = agent?.setting?.find((setting) => setting.name === 'queueDbPath')?.valueString;
-    const queueRetentionDays = agent?.setting?.find((setting) => setting.name === 'queueRetentionDays')?.valueInteger;
-    const queueRetentionMaxMb = agent?.setting?.find((setting) => setting.name === 'queueRetentionMaxMb')?.valueInteger;
-    const queueErroredRetentionDays = agent?.setting?.find(
-      (setting) => setting.name === 'queueErroredRetentionDays'
-    )?.valueInteger;
-    const queueSweepIntervalSecs = agent?.setting?.find(
-      (setting) => setting.name === 'queueSweepIntervalSecs'
-    )?.valueInteger;
+    const plan = await this.planConfig(agent);
+    await this.probePlannedPorts(plan);
+    return this.applyConfig(plan, { persist: true });
+  }
+
+  /**
+   * Loads the config the same way {@link App.beginReloadConfig} does, but falls back to the
+   * last config this agent successfully applied if the server can't give us a usable one.
+   *
+   * Used only at startup. A boot is the one moment where refusing to run is the worst
+   * available option: the alternative to a stale config is no channels at all, so an agent
+   * that can't reach the server -- or whose server-side config has been edited into something
+   * invalid -- keeps serving the config it was already known to be running.
+   *
+   * A *live* reload deliberately does not do this. There, failing loudly and rolling back is
+   * right; silently reverting to a disk snapshot would hide the operator's mistake.
+   *
+   * @returns An object whose `listenersStarted` promise resolves once all channel listeners have bound.
+   */
+  private async beginReloadConfigWithFallback(): Promise<{ listenersStarted: Promise<void> }> {
+    try {
+      return await this.beginReloadConfig();
+    } catch (err) {
+      const snapshot = readSnapshot(this.appliedConfigPath(), this.agentId, this.log);
+      if (!snapshot) {
+        this.log.error(
+          `Unable to load the agent config from the server, and no previously applied config is available: ${normalizeErrorString(err)}`
+        );
+        throw err;
+      }
+      this.log.error(
+        `Unable to load the agent config from the server: ${normalizeErrorString(err)}. ` +
+          `Falling back to the config applied at ${snapshot.appliedAt} by agent version ${snapshot.agentVersion}. ` +
+          `Channel config may be stale -- fix the server-side config and run $reload-config.`
+      );
+      // The ports are ours to take at boot, but the outgoing agent may still hold them mid-upgrade,
+      // so probing here would fail a fallback that is about to succeed. Skip straight to applying.
+      return this.applyConfig(this.planFromSnapshot(snapshot), { persist: false });
+    }
+  }
+
+  /**
+   * Reads the agent's endpoints and validates the whole config, without touching a thing.
+   *
+   * Every problem across every channel and every agent-wide setting is collected and reported
+   * together, so one round trip tells the operator everything that is wrong. If anything is
+   * wrong this throws, and because no state has been mutated yet, the agent simply carries on
+   * running the config it already had -- that is what makes a config change atomic.
+   *
+   * @param agent - The agent config to validate.
+   * @returns The validated plan.
+   */
+  private async planConfig(agent: Agent): Promise<ConfigPlan> {
+    let channels = agent.channel ?? [];
+    if (agent.status === 'off') {
+      channels = [];
+      this.log.warn(
+        "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
+      );
+    }
+
+    const results = await Promise.allSettled(
+      channels.map(async (definition) => this.medplum.readReference(definition.endpoint, { cache: 'no-cache' }))
+    );
+    const endpoints = results.map((result) => (result.status === 'fulfilled' ? result.value : undefined));
+
+    return this.buildPlan(agent, channels, endpoints);
+  }
+
+  /**
+   * Rebuilds a plan from a previously applied config snapshot, mirroring {@link App.planConfig}
+   * but reading the endpoints off the snapshot instead of the server.
+   * @param snapshot - The last-good config snapshot.
+   * @returns The validated plan.
+   */
+  private planFromSnapshot(snapshot: AppliedConfigSnapshot): ConfigPlan {
+    const channels = snapshot.agent.status === 'off' ? [] : (snapshot.agent.channel ?? []);
+    return this.buildPlan(snapshot.agent, channels, snapshot.endpoints);
+  }
+
+  /**
+   * Validates a config and turns it into a {@link ConfigPlan}, or throws with every problem it found.
+   *
+   * Reads the live channel map (to know each channel's current type) but never mutates it.
+   *
+   * @param agent - The agent config being validated.
+   * @param channels - The channel definitions to bring up, already filtered for agent status.
+   * @param endpoints - The resolved endpoints, positionally matching `channels`.
+   * @returns The validated plan.
+   */
+  private buildPlan(agent: Agent, channels: AgentChannel[], endpoints: (Endpoint | undefined)[]): ConfigPlan {
+    const { settings, issues } = parseAgentSettings(agent);
+    const { valid, issues: structuralIssues } = validateChannelStructure(channels, endpoints);
+    issues.push(...structuralIssues);
+
+    const context: ChannelValidationContext = {
+      retryDefaults: settings.channelRetrySettings,
+      durableQueueOn: settings.durableQueueOn,
+    };
+
+    const desired: DesiredChannel[] = [];
+    for (const candidate of valid) {
+      issues.push(
+        ...App.channelClassFor(candidate.type).validateConfig(candidate.definition, candidate.endpoint, context)
+      );
+      // A channel whose endpoint is off is validated but not run -- it is stopped like a
+      // channel that was removed from the config, and comes back when the endpoint does.
+      if (candidate.endpoint.status === 'off') {
+        this.log.warn(
+          `[${getChannelTypeShortName(candidate.endpoint)}:${candidate.definition.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
+        );
+        continue;
+      }
+      desired.push(candidate);
+    }
+
+    // Malformed channel params have always warned and fallen back to a default, so promoting
+    // them to hard failures by default would break configs that have been running for years
+    // with a typo in them. strictConfigValidation is the opt-in for operators who would rather
+    // a typo be refused than silently ignored.
+    const finalIssues = settings.strictConfigValidation
+      ? issues.map((issue) => (issue.severity === 'warning' ? { ...issue, severity: 'error' as const } : issue))
+      : issues;
+
+    const errorCount = finalIssues.filter((issue) => issue.severity === 'error').length;
+    if (errorCount) {
+      throw configIssuesToError(finalIssues, `${errorCount} problem(s) found in agent config; no changes applied`);
+    }
+
+    return {
+      agent,
+      settings,
+      desired,
+      warnings: finalIssues,
+      endpoints: valid.map((candidate) => candidate.endpoint),
+    };
+  }
+
+  /**
+   * Verifies that every port the plan needs, and that we do not already hold, can actually be
+   * bound -- while the current config is still running and fully revertible.
+   *
+   * Ports we already hold are excluded: probing one would fail against our own listener. That
+   * also covers the common case of a channel being renamed onto the same endpoint, where the
+   * outgoing channel holds the port until the moment the incoming one takes it.
+   *
+   * @param plan - The plan whose ports to check.
+   */
+  private async probePlannedPorts(plan: ConfigPlan): Promise<void> {
+    // Mid-upgrade the outgoing agent legitimately still holds every port -- it only releases
+    // them once we delete the upgrade manifest, which happens after this. Probing here would
+    // fail every zero-downtime upgrade. See {@link App.start}.
+    if (existsSync(UPGRADE_MANIFEST_PATH)) {
+      return;
+    }
+
+    const heldPorts = new Set<number>();
+    for (const channel of this.channels.values()) {
+      heldPorts.add(Number.parseInt(new URL(channel.getEndpoint().address).port, 10));
+    }
+
+    const targets = plan.desired
+      .filter((candidate) => !heldPorts.has(candidate.port))
+      .map((candidate) => ({ port: candidate.port, channel: candidate.definition.name }));
+    if (!targets.length) {
+      return;
+    }
+
+    const issues = await probePorts(targets);
+    if (issues.length) {
+      throw configIssuesToError(issues, `${issues.length} port(s) unavailable; no changes applied`);
+    }
+  }
+
+  /**
+   * Applies a validated plan: agent-wide settings first, then the channel set.
+   *
+   * Everything here is past the point of no return for validation -- what can still fail is
+   * the world (a port taken between the probe and the bind, a listener that won't close). Those
+   * failures roll the agent back to the last config that was known to work, and are reported
+   * either way.
+   *
+   * @param plan - The validated plan to apply.
+   * @param opts - Apply options.
+   * @param opts.persist - Whether to record this config as the new last-good one on disk.
+   * @returns An object whose `listenersStarted` promise resolves once all channel listeners have bound.
+   */
+  private async applyConfig(
+    plan: ConfigPlan,
+    opts: { persist: boolean }
+  ): Promise<{ listenersStarted: Promise<void> }> {
+    for (const warning of plan.warnings) {
+      this.log.warn(warning.channel ? `[${warning.channel}] ${warning.message}` : warning.message);
+    }
+
+    await this.applyAgentSettings(plan);
+
+    let startPromises: Promise<void>[];
+    try {
+      startPromises = await this.hydrateListeners(plan);
+    } catch (err) {
+      await this.rollbackToLastGood(err as Error);
+      throw err;
+    }
+
+    const listenersStarted = this.waitForChannelsToStart(startPromises).then(
+      () => {
+        this.lastGoodPlan = plan;
+        if (opts.persist) {
+          this.persistAppliedConfig(plan);
+        }
+      },
+      async (err: Error) => {
+        await this.rollbackToLastGood(err);
+        throw err;
+      }
+    );
+    return { listenersStarted };
+  }
+
+  /**
+   * Commits the agent-wide settings from a validated plan.
+   *
+   * This is the first mutation of a config change and the only place `this.config` is
+   * assigned. It runs after validation for exactly that reason: a config that was never
+   * applied must never be what the agent reports it is running.
+   *
+   * @param plan - The validated plan being applied.
+   */
+  private async applyAgentSettings(plan: ConfigPlan): Promise<void> {
+    const { agent, settings } = plan;
 
     // Agent-wide auto-retry defaults. Channels layer their endpoint URL params
     // (retryMode, autoRetryBaseDelayMs, ...) over these when resolving their
     // RetryPolicy in configureHl7ServerAndConnections.
-    this.channelRetrySettings = {
-      mode: this.parseChannelRetryModeSetting(agent),
-      baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
-      maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
-      maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
-      backoffMultiplier: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBackoffMultiplier')
-        ?.valueDecimal,
-    };
+    this.channelRetrySettings = settings.channelRetrySettings;
 
     // If the keepAlive setting changed, we need to reset the pools we have
-    if (this.keepAlive !== keepAlive) {
+    if (this.keepAlive !== settings.keepAlive) {
       const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
       for (const result of results) {
         if (result.status === 'rejected') {
@@ -589,18 +809,18 @@ export class App {
       this.hl7Clients.clear();
     }
 
-    if (this.logStatsFreqSecs !== logStatsFreqSecs && this.logStatsTimer) {
+    if (this.logStatsFreqSecs !== settings.logStatsFreqSecs && this.logStatsTimer) {
       // Clear the interval for log stats if logStatsFreqSecs is not the same in the new config
       clearInterval(this.logStatsTimer);
       this.logStatsTimer = undefined;
     }
 
     this.config = agent;
-    this.keepAlive = keepAlive ?? false;
+    this.keepAlive = settings.keepAlive;
 
     // Determine maxClientsPerRemote: default is 10, but becomes 1 when keepAlive is true (unless explicitly set)
-    if (maxClientsPerRemote !== undefined) {
-      this.maxClientsPerRemote = maxClientsPerRemote;
+    if (settings.maxClientsPerRemote !== undefined) {
+      this.maxClientsPerRemote = settings.maxClientsPerRemote;
     } else if (this.keepAlive) {
       this.maxClientsPerRemote = 1;
     } else {
@@ -612,24 +832,85 @@ export class App {
       pool.setMaxClients(this.maxClientsPerRemote);
     }
 
-    this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
+    this.logStatsFreqSecs = settings.logStatsFreqSecs ?? -1;
 
     if (this.logStatsFreqSecs > 0) {
       this.log.info(`Stats logging enabled. Logging stats every ${this.logStatsFreqSecs} seconds...`);
       this.logStatsTimer ??= setInterval(() => this.logStats(), this.logStatsFreqSecs * 1000);
     }
 
+    // Last, because a channel reads the queue handle as it starts.
     this.reconcileDurableQueue({
-      durableQueueOn,
-      queueDbPath,
-      queueRetentionDays,
-      queueRetentionMaxMb,
-      queueErroredRetentionDays,
-      queueSweepIntervalSecs,
+      durableQueueOn: settings.durableQueueOn,
+      queueDbPath: settings.queueDbPath,
+      queueRetentionDays: settings.queueRetentionDays,
+      queueRetentionMaxMb: settings.queueRetentionMaxMb,
+      queueErroredRetentionDays: settings.queueErroredRetentionDays,
+      queueSweepIntervalSecs: settings.queueSweepIntervalSecs,
     });
+  }
 
-    const startPromises = await this.hydrateListeners();
-    return { listenersStarted: this.waitForChannelsToStart(startPromises) };
+  /**
+   * Returns the agent to the last config it applied end to end, after an apply-phase failure.
+   *
+   * Never throws -- the caller reports the *original* error, which is the one the operator
+   * needs to see. A rollback that itself fails is logged loudly and leaves the last-good plan
+   * untouched, so the next attempt is still measured against a config known to have worked.
+   *
+   * There is no recursion risk: this calls the apply steps directly and never
+   * {@link App.applyConfig}, which is the only place a rollback is triggered from. The
+   * `rollbackInProgress` guard backstops that for any future refactor that reintroduces a cycle.
+   *
+   * @param cause - The failure that prompted the rollback.
+   */
+  private async rollbackToLastGood(cause: Error): Promise<void> {
+    if (this.rollbackInProgress) {
+      this.log.error('Rollback already in progress; not re-entering.');
+      return;
+    }
+
+    const lastGood = this.lastGoodPlan;
+    if (!lastGood) {
+      this.log.error(
+        `Failed to apply the agent config and there is no previously applied config to roll back to: ${normalizeErrorString(cause)}. Some channels may be down.`
+      );
+      return;
+    }
+
+    this.rollbackInProgress = true;
+    try {
+      this.log.warn(
+        `Failed to apply the agent config (${normalizeErrorString(cause)}); rolling back to the last config that applied successfully...`
+      );
+      await this.applyAgentSettings(lastGood);
+      await this.waitForChannelsToStart(await this.hydrateListeners(lastGood));
+      this.log.warn('Rolled back to last-good config successfully.');
+    } catch (rollbackErr) {
+      this.log.error(
+        `CRITICAL: rollback to the last-good config ALSO failed: ${normalizeErrorString(rollbackErr)}. ` +
+          `The agent is in a degraded state and some channels may be down. ` +
+          `Original failure: ${normalizeErrorString(cause)}`
+      );
+    } finally {
+      this.rollbackInProgress = false;
+    }
+  }
+
+  /**
+   * Records the config that was just applied, so a later boot can fall back to it.
+   * @param plan - The plan that applied successfully.
+   */
+  private persistAppliedConfig(plan: ConfigPlan): void {
+    writeSnapshotAtomic(
+      this.appliedConfigPath(),
+      {
+        appliedAt: new Date().toISOString(),
+        agentVersion: MEDPLUM_VERSION,
+        agent: plan.agent,
+        endpoints: plan.endpoints,
+      },
+      this.log
+    );
   }
 
   /**
@@ -761,20 +1042,36 @@ export class App {
   }
 
   /**
-   * Default location for the queue DB file when no override is provided.
+   * Resolves a path for a file the agent owns on disk.
    *
    * Co-locating with the main logger's log directory keeps everything an
    * operator needs to mount a persistent volume in one place. The fallback is
    * the current working directory — same default an unconfigured agent uses.
-   * @returns Absolute path to the default queue DB file.
+   * @param filename - The file name to resolve.
+   * @returns Absolute path to the file.
    */
-  private defaultQueueDbPath(): string {
-    const baseDir =
-      (isWinstonWrapperLogger(this.log) && (this.log as unknown as { logDir?: string }).logDir) || process.cwd();
+  private logFilePath(filename: string): string {
+    const baseDir = (isWinstonWrapperLogger(this.log) && this.log.getLogDir()) || process.cwd();
     // Manual join to avoid pulling in node:path solely for this — the agent
     // doesn't need to support exotic path normalizations here.
     const sep = baseDir.endsWith('/') || baseDir.endsWith('\\') ? '' : '/';
-    return `${baseDir}${sep}medplum-agent-queue.sqlite`;
+    return `${baseDir}${sep}${filename}`;
+  }
+
+  /**
+   * Default location for the queue DB file when no override is provided.
+   * @returns Absolute path to the default queue DB file.
+   */
+  private defaultQueueDbPath(): string {
+    return this.logFilePath('medplum-agent-queue.sqlite');
+  }
+
+  /**
+   * Location of the last-good config snapshot.
+   * @returns Absolute path to the applied-config file.
+   */
+  private appliedConfigPath(): string {
+    return this.logFilePath(APPLIED_CONFIG_FILENAME);
   }
 
   /**
@@ -792,27 +1089,6 @@ export class App {
   /** @returns The agent-wide channelRetryMode / channelAutoRetry* settings, used as per-channel policy defaults. */
   getChannelRetrySettings(): AgentRetryDefaults {
     return this.channelRetrySettings;
-  }
-
-  /**
-   * Reads and validates the agent-wide `channelRetryMode` setting.
-   * @param agent - The agent config being applied.
-   * @returns The configured {@link RetryMode}, or undefined when unset (falls
-   *   through to the endpoint param / built-in default) or invalid (warns).
-   */
-  private parseChannelRetryModeSetting(agent: Agent | undefined): AgentRetryDefaults['mode'] {
-    const rawMode = agent?.setting?.find((setting) => setting.name === 'channelRetryMode')?.valueString;
-    if (rawMode === undefined) {
-      return undefined;
-    }
-    const normalized = rawMode.toLowerCase();
-    if (isRetryMode(normalized)) {
-      return normalized;
-    }
-    this.log.warn(
-      `Invalid channelRetryMode setting '${rawMode}'; expected 'none', 'normal', or 'guaranteed'. Ignoring.`
-    );
-    return undefined;
   }
 
   getStats(): AgentStats {
@@ -904,87 +1180,73 @@ export class App {
    * the upgrade manifest before waiting for the listeners to bind. See {@link App.start} for the
    * zero-downtime upgrade rationale.
    *
+   * @param plan - The validated plan describing the channel set that should be running.
    * @returns The channel listener start promises for the caller to await.
    */
-  private async hydrateListeners(): Promise<Promise<void>[]> {
-    const config = this.config as Agent;
-
-    const pendingRemoval = new Set(this.channels.keys());
-    let channels = config.channel ?? [];
-
-    if (config.status === 'off') {
-      channels = [];
-      this.log.warn(
-        "Agent status is currently 'off'. All channels are disconnected until status is set back to 'active'"
-      );
-    }
-
-    const endpointPromises = [] as Promise<Endpoint>[];
-    for (const definition of channels) {
-      endpointPromises.push(this.medplum.readReference(definition.endpoint, { cache: 'no-cache' }));
-    }
-
-    const endpoints = await Promise.all(endpointPromises);
-    this.validateAgentEndpoints(channels, endpoints);
-
-    const filteredChannels = [] as AgentChannel[];
-    const filteredEndpoints = [] as Endpoint[];
-
-    for (let i = 0; i < channels.length; i++) {
-      const definition = channels[i];
-      const endpoint = endpoints[i];
-
-      // If the endpoint for this channel is turned off, we're going to skip over this channel
-      // Which means it will be marked for removal in this step
-      if (endpoint.status === 'off') {
-        this.log.warn(
-          `[${getChannelTypeShortName(endpoint)}:${definition.name}] Channel currently has status of 'off'. Channel will not reconnect until status is set to 'active'`
-        );
-      } else {
-        // Push the definition and endpoint into our filtered arrays
-        filteredChannels.push(definition);
-        filteredEndpoints.push(endpoint);
-        // Remove all channels from pendingRemoval list that are present in the new definition (unless the endpoint is 'off')
-        // We will remove the channels that are left over -- channels that are not part of the new config
-        pendingRemoval.delete(definition.name);
-      }
-    }
-
-    // Now iterate leftover channels and stop any that were not present in config when reloaded
-    for (const leftover of pendingRemoval.keys()) {
-      const channel = this.channels.get(leftover) as Channel;
-      await channel.stop();
-
-      pendingRemoval.delete(leftover);
-      this.channels.delete(leftover);
-    }
-
-    // Iterate the channels specified in the config
-    // Either start them or reload their config if already present
+  private async hydrateListeners(plan: ConfigPlan): Promise<Promise<void>[]> {
     const errors = [] as Error[];
     const startPromises: Promise<void>[] = [];
 
-    for (let i = 0; i < filteredChannels.length; i++) {
-      const definition = filteredChannels[i];
-      const endpoint = filteredEndpoints[i];
+    // The diff is derived here rather than carried on the plan, so a plan stays applicable to
+    // whatever channel map it meets -- which is what lets a rollback replay the last-good plan
+    // against a map that a failed apply has already changed.
+    const desiredByName = new Map(plan.desired.map((candidate) => [candidate.definition.name, candidate]));
+    const toReload: DesiredChannel[] = [];
+    const toCreate: DesiredChannel[] = [];
+    const toRemove: string[] = [];
 
-      if (!endpoint.address) {
-        this.log.warn(`Ignoring empty endpoint address: ${definition.name}`);
+    for (const [name, channel] of this.channels) {
+      const candidate = desiredByName.get(name);
+      // Not in the new config, or the protocol changed and the instance can't be reused.
+      if (getChannelType(channel.getEndpoint()) !== candidate?.type) {
+        toRemove.push(name);
       }
+    }
+    const removing = new Set(toRemove);
+    for (const candidate of plan.desired) {
+      const existing = this.channels.get(candidate.definition.name);
+      if (existing && !removing.has(candidate.definition.name)) {
+        toReload.push(candidate);
+      } else {
+        toCreate.push(candidate);
+      }
+    }
 
+    // Stop everything that's going away first, so a channel being replaced releases its port
+    // before its replacement tries to bind it.
+    for (const name of toRemove) {
+      const channel = this.channels.get(name) as Channel;
       try {
-        const newChannel = await this.reloadOrCreateChannel(definition, endpoint);
-        if (newChannel) {
-          // Kick off listener binding but defer awaiting it -- the caller deletes the upgrade manifest
-          // before awaiting the start promises so the previous agent can release the ports. See {@link App.start}.
-          // Only register the channel once it has successfully bound, so a failed start doesn't leave a
-          // half-initialized channel in the map (which `stop()` would then choke on).
-          startPromises.push(
-            newChannel.start().then(() => {
-              this.channels.set(definition.name, newChannel);
-            })
-          );
-        }
+        await channel.stop();
+      } catch (err) {
+        errors.push(err as Error);
+        this.log.error(normalizeErrorString(err));
+      }
+      // Drop it either way: a channel we failed to stop is not one we can keep using.
+      this.channels.delete(name);
+    }
+
+    for (const { definition, endpoint } of toReload) {
+      try {
+        await (this.channels.get(definition.name) as Channel).reloadConfig(definition, endpoint);
+      } catch (err) {
+        errors.push(err as Error);
+        this.log.error(normalizeErrorString(err));
+      }
+    }
+
+    for (const { definition, endpoint, type } of toCreate) {
+      try {
+        const newChannel = new (App.channelClassFor(type))(this, definition, endpoint);
+        // Kick off listener binding but defer awaiting it -- the caller deletes the upgrade manifest
+        // before awaiting the start promises so the previous agent can release the ports. See {@link App.start}.
+        // Only register the channel once it has successfully bound, so a failed start doesn't leave a
+        // half-initialized channel in the map (which `stop()` would then choke on).
+        startPromises.push(
+          newChannel.start().then(() => {
+            this.channels.set(definition.name, newChannel);
+          })
+        );
       } catch (err) {
         errors.push(err as Error);
         this.log.error(normalizeErrorString(err));
@@ -1063,90 +1325,26 @@ export class App {
   }
 
   /**
-   * Validates whether all endpoints are valid. Also ensures that there are no conflicting ports between any endpoints in the group.
+   * Resolves a channel type to the class that implements it.
    *
-   * Will throw if not valid.
+   * The `ChannelConstructor` return type is what enforces the channel contract: a channel
+   * class that doesn't implement `static validateConfig` fails to compile here, and the
+   * exhaustive switch means a new {@link ChannelType} can't be added without being wired up.
    *
-   * @param channels - All the channels defined for the agent.
-   * @param endpoints - All the endpoints corresponding to the agent channels that should be validated.
+   * @param channelType - The channel type to resolve.
+   * @returns The channel class for that type.
    */
-  private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
-    const seenPorts = new Set<string>();
-    const portToChannelMap = new Map<string, [string, string]>();
-    for (let i = 0; i < channels.length; i++) {
-      const channel = channels[i];
-      const endpoint = endpoints[i];
-
-      if (!endpoint.address) {
-        throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
-      }
-
-      let parsedEndpoint: URL;
-      try {
-        parsedEndpoint = new URL(endpoint.address);
-      } catch (err: unknown) {
-        throw new Error(
-          `Error while validating endpoint address for channel '${channel.name}': ${normalizeErrorString(err)}`
-        );
-      }
-      if (seenPorts.has(parsedEndpoint.port)) {
-        const [conflictingChannel, conflictingAddress] = portToChannelMap.get(parsedEndpoint.port) as [string, string];
-        throw new Error(
-          `Invalid agent config. Both '${conflictingChannel}' (${conflictingAddress}) and '${channel.name}' (${endpoint.address}) declare use of port ${parsedEndpoint.port}`
-        );
-      }
-      seenPorts.add(parsedEndpoint.port);
-      portToChannelMap.set(parsedEndpoint.port, [channel.name, endpoint.address]);
-    }
-  }
-
-  /**
-   * Reloads the config of an existing channel, or creates a new (unstarted) one.
-   *
-   * Starting the new channel is intentionally left to the caller ({@link App.hydrateListeners}),
-   * which collects the unawaited `start()` promises so binding can be deferred past upgrade
-   * manifest deletion. See {@link App.start} for the zero-downtime upgrade rationale.
-   *
-   * @param definition - The channel definition from the agent config.
-   * @param endpoint - The endpoint for the channel.
-   * @returns The newly created channel for the caller to start, or `undefined` if no new channel
-   * was needed (config reload) or creating it failed.
-   */
-  private async reloadOrCreateChannel(definition: AgentChannel, endpoint: Endpoint): Promise<Channel | undefined> {
-    const existingChannel = this.channels.get(definition.name);
-
-    if (existingChannel) {
-      const previousType = getChannelType(existingChannel.getEndpoint());
-      const nextType = getChannelType(endpoint);
-
-      if (previousType === nextType) {
-        await existingChannel.reloadConfig(definition, endpoint);
-        return undefined;
-      }
-
-      await existingChannel.stop();
-      this.channels.delete(definition.name);
-    }
-
-    try {
-      const channelType = getChannelType(endpoint);
-      return this.createChannel(channelType, definition, endpoint);
-    } catch (err) {
-      this.log.error(normalizeErrorString(err));
-      return undefined;
-    }
-  }
-
-  private createChannel(channelType: ChannelType, definition: AgentChannel, endpoint: Endpoint): Channel {
+  private static channelClassFor(channelType: ChannelType): ChannelConstructor {
     switch (channelType) {
       case ChannelType.DICOM:
-        return new AgentDicomChannel(this, definition, endpoint);
+        return AgentDicomChannel;
       case ChannelType.HL7_V2:
-        return new AgentHl7Channel(this, definition, endpoint);
+        return AgentHl7Channel;
       case ChannelType.BYTE_STREAM:
-        return new AgentByteStreamChannel(this, definition, endpoint);
+        return AgentByteStreamChannel;
       default:
-        throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
+        channelType satisfies never;
+        throw new Error(`Unsupported channel type: ${channelType}`);
     }
   }
 

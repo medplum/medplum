@@ -3324,3 +3324,77 @@ describe('resolveRetryPolicy', () => {
     expect(logger.warn).not.toHaveBeenCalled();
   });
 });
+
+describe('AgentHl7Channel.validateConfig', () => {
+  const definition = { name: 'hl7', endpoint: { reference: 'Endpoint/hl7' } };
+  const context = { retryDefaults: {}, durableQueueOn: true };
+
+  function endpointWithAddress(address: string): Endpoint {
+    return {
+      resourceType: 'Endpoint',
+      status: 'active',
+      address,
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    };
+  }
+
+  test('Accepts a plain address', () => {
+    expect(
+      AgentHl7Channel.validateConfig(definition, endpointWithAddress('mllp://0.0.0.0:9001'), context)
+    ).toStrictEqual([]);
+  });
+
+  test('Accepts every valid param', () => {
+    expect(
+      AgentHl7Channel.validateConfig(
+        definition,
+        endpointWithAddress(
+          'mllp://0.0.0.0:9001?enhanced=aa&appLevelAck=ER&duplicateBehavior=reject&messagesPerMin=60&retryMode=normal&assignSeqNo=true'
+        ),
+        context
+      )
+    ).toStrictEqual([]);
+  });
+
+  // Every one of these has always warned and fallen back at runtime; validation reports the
+  // same thing rather than inventing a second, possibly divergent, set of rules.
+  test.each([
+    ['enhanced', 'enhanced=bogus', "Invalid enhanced value 'bogus'"],
+    ['appLevelAck', 'appLevelAck=XX', "Invalid appLevelAck value 'XX'"],
+    ['duplicateBehavior', 'duplicateBehavior=maybe', "Invalid duplicateBehavior value 'maybe'"],
+    ['messagesPerMin', 'messagesPerMin=lots', "Invalid messagesPerMin: 'lots'"],
+    ['retryMode', 'retryMode=sometimes', "Invalid retryMode value 'sometimes'"],
+  ])('Warns on an invalid %s', (_label, query, expectedMessage) => {
+    const issues = AgentHl7Channel.validateConfig(
+      definition,
+      endpointWithAddress(`mllp://0.0.0.0:9001?${query}`),
+      context
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({ severity: 'warning', channel: 'hl7' });
+    expect(issues[0].message).toContain(expectedMessage);
+  });
+
+  test('Reports every bad param at once', () => {
+    const issues = AgentHl7Channel.validateConfig(
+      definition,
+      endpointWithAddress('mllp://0.0.0.0:9001?enhanced=bogus&appLevelAck=XX&messagesPerMin=lots'),
+      context
+    );
+    expect(issues).toHaveLength(3);
+  });
+
+  test('Warns when a retry mode is configured but the durable queue is off', () => {
+    const issues = AgentHl7Channel.validateConfig(
+      definition,
+      endpointWithAddress('mllp://0.0.0.0:9001?retryMode=normal'),
+      {
+        retryDefaults: {},
+        durableQueueOn: false,
+      }
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toContain('auto-retry has no effect without it');
+  });
+});

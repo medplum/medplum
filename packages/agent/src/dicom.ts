@@ -11,6 +11,7 @@ import type net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { App } from './app';
+import type { ChannelConfigIssue } from './channel';
 import { BaseChannel } from './channel';
 
 export class AgentDicomChannel extends BaseChannel {
@@ -153,6 +154,18 @@ export class AgentDicomChannel extends BaseChannel {
     this.prefix = `[DICOM:${definition.name}] `;
     this.log = app.log.clone({ options: { prefix: this.prefix } });
     this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
+  }
+
+  /**
+   * DICOM channels take no endpoint query params -- the address is only ever read for its
+   * port, and the shared structural rules already guarantee that parses and is in range. The
+   * hook is still implemented (rather than omitted) so the contract holds for every channel
+   * type and DICOM picks up per-type rules for free if it ever grows params.
+   *
+   * @returns An empty list; there is nothing DICOM-specific left to check.
+   */
+  static validateConfig(): ChannelConfigIssue[] {
+    return [];
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {

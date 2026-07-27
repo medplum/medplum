@@ -7,8 +7,10 @@ import type { EnhancedMode, Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from
 import { Hl7EnhancedAckSentEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
+import type { ChannelConfigIssue, ChannelValidationContext } from './channel';
 import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
+import { createIssueCollector } from './config-validation';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
 import { AckOutcome, DuplicateBehavior, QueueErrorCode, SETTLED_MESSAGE_STATES } from './queue/types';
@@ -85,6 +87,48 @@ export class AgentHl7Channel extends BaseChannel {
     this.log = app.log.clone({ options: { prefix: this.prefix } });
     this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
     this.stats = new ChannelStatsTracker({ heartbeatEmitter: app.heartbeatEmitter, log: this.log });
+  }
+
+  /**
+   * Validates an HL7 channel's endpoint params without touching any live state.
+   *
+   * Runs every param through the same parsers `configureHl7ServerAndConnections` and
+   * `refreshRetryPolicy` use at runtime -- with a collecting logger in place of the channel's
+   * -- so a param is judged by exactly one implementation and validation can never disagree
+   * with what the channel would actually do. All of those parsers warn and fall back rather
+   * than fail, which is the historical behavior; `strictConfigValidation` is what turns their
+   * warnings into a rejected config.
+   *
+   * @param definition - The channel definition from the agent config.
+   * @param endpoint - The resolved endpoint; its address is guaranteed parseable.
+   * @param ctx - Agent-wide settings the channel layers its endpoint params over.
+   * @returns Every issue found; empty when the config is valid.
+   */
+  static validateConfig(
+    definition: AgentChannel,
+    endpoint: Endpoint,
+    ctx: ChannelValidationContext
+  ): ChannelConfigIssue[] {
+    const { log, issues } = createIssueCollector(definition.name);
+    const params = new URL(endpoint.address).searchParams;
+
+    parseEnhancedMode(params.get('enhanced'), log);
+    parseAppLevelAckMode(params.get('appLevelAck') ?? undefined, log);
+    parseDuplicateBehavior(params.get('duplicateBehavior') ?? undefined, log);
+
+    const messagesPerMinRaw = params.get('messagesPerMin');
+    if (messagesPerMinRaw !== null && !Number.isInteger(Number.parseInt(messagesPerMinRaw, 10))) {
+      log.warn(
+        `Invalid messagesPerMin: '${messagesPerMinRaw}'; must be a valid integer. Creating channel without a set messagesPerMin...`
+      );
+    }
+
+    const retryPolicy = resolveRetryPolicy(ctx.retryDefaults, params, log);
+    if (retryPolicy.enabled && !ctx.durableQueueOn && (params.has('retryMode') || ctx.retryDefaults.mode)) {
+      log.warn('retryMode is configured but the durable queue is off; auto-retry has no effect without it');
+    }
+
+    return issues;
   }
 
   async start(): Promise<void> {

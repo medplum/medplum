@@ -298,6 +298,19 @@ export class WinstonWrapperLogger implements ILogger {
     this.prefix = options?.prefix;
   }
 
+  /**
+   * The directory this logger writes its files to.
+   *
+   * Exposed because it is also where the agent keeps the rest of its on-disk state (the queue
+   * DB, the last-good config snapshot) -- co-locating them means an operator has one directory
+   * to mount and one directory to look in.
+   *
+   * @returns The configured log directory, or undefined if none was configured.
+   */
+  getLogDir(): string | undefined {
+    return this.config.logDir;
+  }
+
   debug(msg: string, data?: Record<string, any> | Error): void {
     this.log(LogLevel.DEBUG, msg, data);
   }

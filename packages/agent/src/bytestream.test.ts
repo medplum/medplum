@@ -8,6 +8,7 @@ import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';
 import { App } from './app';
+import { AgentByteStreamChannel } from './bytestream';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -466,5 +467,40 @@ describe('Byte Stream', () => {
     mockServer.stop();
     await app.stop();
     console.log = originalConsoleLog;
+  });
+});
+
+describe('AgentByteStreamChannel.validateConfig', () => {
+  function endpointWithAddress(address: string): Endpoint {
+    return {
+      resourceType: 'Endpoint',
+      status: 'active',
+      address,
+      connectionType: { code: ContentType.OCTET_STREAM },
+      payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+    };
+  }
+
+  const definition = { name: 'bytes', endpoint: { reference: 'Endpoint/bytes' } };
+
+  test('Accepts an address with both framing characters', () => {
+    expect(
+      AgentByteStreamChannel.validateConfig(
+        definition,
+        endpointWithAddress('tcp://0.0.0.0:9005?startChar=%02&endChar=%03')
+      )
+    ).toStrictEqual([]);
+  });
+
+  test.each([
+    ['startChar missing', 'tcp://0.0.0.0:9005?endChar=%03'],
+    ['endChar missing', 'tcp://0.0.0.0:9005?startChar=%02'],
+    ['both missing', 'tcp://0.0.0.0:9005'],
+    ['startChar empty', 'tcp://0.0.0.0:9005?startChar=&endChar=%03'],
+  ])('Rejects an address with %s', (_label, address) => {
+    const issues = AgentByteStreamChannel.validateConfig(definition, endpointWithAddress(address));
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({ severity: 'error', code: 'invalid-frame-chars', channel: 'bytes' });
+    expect(issues[0].message).toContain('Failed to parse startChar and/or endChar query param(s) from');
   });
 });

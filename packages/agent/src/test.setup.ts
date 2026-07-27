@@ -6,6 +6,10 @@ import type * as NodeFs from 'node:fs';
 import type * as NodeOs from 'node:os';
 import type * as NodeProcess from 'node:process';
 import type * as WsModule from 'ws';
+import { APPLIED_CONFIG_FILENAME } from './config-snapshot';
+
+/** Where an App with no configured log directory writes its last-good config snapshot. */
+const APPLIED_CONFIG_PATH = `${process.cwd()}/${APPLIED_CONFIG_FILENAME}`;
 
 const mockSocketServers: { stop: (cb?: () => void) => void }[] = [];
 let mockSocketServersAtTestStart = 0;
@@ -207,6 +211,16 @@ async function resetNodeModuleMocks(): Promise<void> {
 afterEach(async () => {
   vi.clearAllMocks();
   await resetNodeModuleMocks();
+
+  // An App with no winston logger resolves its on-disk files against cwd, so a started App
+  // leaves its applied-config snapshot in the package directory. Clear it between tests: it
+  // isn't ours to leave behind, and a leftover one is state the next test didn't ask for.
+  const { existsSync, rmSync } = await vi.importActual<typeof NodeFs>('node:fs');
+  for (const path of [APPLIED_CONFIG_PATH, `${APPLIED_CONFIG_PATH}.tmp`]) {
+    if (existsSync(path)) {
+      rmSync(path);
+    }
+  }
   const serversToStop = mockSocketServers.splice(mockSocketServersAtTestStart);
   await Promise.all(
     serversToStop.map(

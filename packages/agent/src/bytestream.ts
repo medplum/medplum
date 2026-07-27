@@ -7,7 +7,34 @@ import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import net from 'node:net';
 import type { App } from './app';
+import type { ChannelConfigIssue } from './channel';
 import { BaseChannel } from './channel';
+
+/**
+ * Reads the `startChar` / `endChar` framing characters a byte-stream channel needs to
+ * delimit messages on the wire.
+ *
+ * Shared by {@link AgentByteStreamChannel.validateConfig} and the runtime configure path so
+ * validation cannot disagree with what the channel actually accepts.
+ *
+ * @param address - The parsed endpoint address.
+ * @returns The framing characters, as code points.
+ */
+function parseFrameChars(address: URL): { startChar: number; endChar: number } {
+  const startCharStr = address.searchParams.get('startChar');
+  const endCharStr = address.searchParams.get('endChar');
+  if (!(startCharStr && endCharStr)) {
+    throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
+  }
+
+  const startChar = startCharStr.codePointAt(0) ?? -1;
+  const endChar = endCharStr.codePointAt(0) ?? -1;
+
+  // These should never eval to -1, but just in case we assert
+  assert(startChar !== -1 && endChar !== -1);
+
+  return { startChar, endChar };
+}
 
 export class AgentByteStreamChannel extends BaseChannel {
   readonly app: App;
@@ -101,20 +128,40 @@ export class AgentByteStreamChannel extends BaseChannel {
     return true;
   }
 
-  private configureTcpServerAndConnections(): void {
-    const address = new URL(this.getEndpoint().address);
-
-    const startCharStr = address.searchParams.get('startChar');
-    const endCharStr = address.searchParams.get('endChar');
-    if (!(startCharStr && endCharStr)) {
-      throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
+  /**
+   * Validates that the endpoint carries the framing characters this channel cannot run without.
+   *
+   * These used to be checked at `start()` / `reloadConfig()` time, which meant a config missing
+   * them was already half-applied by the time it failed. Checking here, against the same parser
+   * the runtime path uses, means that config is rejected before anything is touched.
+   *
+   * @param definition - The channel definition from the agent config.
+   * @param endpoint - The resolved endpoint; its address is guaranteed parseable.
+   * @returns Every issue found; empty when the config is valid.
+   */
+  static validateConfig(definition: AgentChannel, endpoint: Endpoint): ChannelConfigIssue[] {
+    try {
+      parseFrameChars(new URL(endpoint.address));
+    } catch (err) {
+      return [
+        {
+          severity: 'error',
+          code: 'invalid-frame-chars',
+          channel: definition.name,
+          field: 'endpoint.address',
+          message: normalizeErrorString(err),
+        },
+      ];
     }
+    return [];
+  }
 
-    this.startChar = startCharStr.codePointAt(0) ?? -1;
-    this.endChar = endCharStr.codePointAt(0) ?? -1;
-
-    // These should never eval to -1, but just in case we assert
-    assert(this.startChar !== -1 && this.endChar !== -1);
+  private configureTcpServerAndConnections(): void {
+    // Unreachable with an invalid address: AgentByteStreamChannel.validateConfig rejects the
+    // config before it reaches a live channel. Kept as a guard for direct construction.
+    const { startChar, endChar } = parseFrameChars(new URL(this.getEndpoint().address));
+    this.startChar = startChar;
+    this.endChar = endChar;
   }
 
   sendToRemote(msg: AgentTransmitResponse): boolean {
