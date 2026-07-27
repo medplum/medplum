@@ -3738,20 +3738,20 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 
       // The first UUID has all digits before its first hyphen, which used to be tokenized as a date
       // literal and truncated. That silently dropped the rest of the expression -- including the
-      // "or" branch that matches the real resource.
-      const result = await repo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: '_filter',
-            operator: Operator.EQUALS,
-            value: `_id eq 12345678-1234-4123-8123-123456789abc or _id eq ${patient.id}`,
-          },
-        ],
-      });
+      // "or" branch that matches the real resource. In the parenthesized form, the UUID also used to
+      // swallow the closing parenthesis.
+      for (const value of [
+        `_id eq 12345678-1234-4123-8123-123456789abc or _id eq ${patient.id}`,
+        `(_id eq 12345678-1234-4123-8123-123456789abc or _id eq ${patient.id})`,
+      ]) {
+        const result = await repo.search({
+          resourceType: 'Patient',
+          filters: [{ code: '_filter', operator: Operator.EQUALS, value }],
+        });
 
-      expect(result.entry).toHaveLength(1);
-      expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+      }
     }));
 
   test('_filter birthdate eq', () =>

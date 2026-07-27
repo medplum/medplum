@@ -279,17 +279,16 @@ export class Tokenizer {
 
     const terminal = this.curr();
     if (terminal === '-' && this.dateTimeLiterals) {
-      // Rewind to one character before the start; both branches below skip that character.
-      this.pos.index = start - 1;
       if (DATE_TIME_LITERAL_REGEX.test(this.str.substring(start))) {
+        // Rewind to one character before the start, and then treat as dateTime literal.
+        this.pos.index = start - 1;
         return this.consumeDateTime();
       }
       // Digits followed by "-" that are not a date, such as the UUID
       // "12345678-1234-4123-8123-123456789abc". Consuming those as a dateTime literal would end the
       // token at the first letter ("12345678-1234-4"), silently changing the value and leaving the
-      // remainder to be parsed as separate tokens. Fall back to parsing as a string, same as the
-      // alphabetic terminal below.
-      return this.consumeString(' ');
+      // remainder to be parsed as separate tokens.
+      return this.consumeUnquotedString(start);
     } else if (terminal === ' ') {
       if (isUnitToken(this.peekToken())) {
         id = 'Quantity';
@@ -297,11 +296,30 @@ export class Tokenizer {
       }
     } else if (terminal && /[a-zA-Z_$]/.exec(terminal)) {
       // This cannot be a number, fall back to parsing as string
-      this.pos.index = start - 1;
-      return this.consumeString(' ');
+      return this.consumeUnquotedString(start);
     }
 
     return this.buildToken(id, this.str.substring(start, this.pos.index));
+  }
+
+  /**
+   * Consumes an unquoted string value that begins with digits, such as a UUID in a `_filter`
+   * expression, starting over from the beginning of the value.
+   *
+   * The value ends at the first character that cannot be part of a token, per `symbolRegex`. For the
+   * `_filter` tokenizer that is whitespace, ")", and "]", so a value at the end of a nested
+   * expression such as "(_id eq 12345678-1234-4123-8123-123456789abc)" does not swallow the closing
+   * parenthesis.
+   *
+   * @param start - The index of the first character of the value.
+   * @returns The string token.
+   */
+  private consumeUnquotedString(start: number): Token {
+    this.pos.index = start;
+    return this.buildToken(
+      'String',
+      this.consumeWhile(() => this.symbolRegex.exec(this.curr()))
+    );
   }
 
   private consumeSymbol(): Token {
