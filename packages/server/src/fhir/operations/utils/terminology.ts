@@ -37,6 +37,13 @@ export const abstractProperty = 'http://hl7.org/fhir/concept-properties#notSelec
  */
 export type ParentFilterStrategy = 'ancestor' | 'descendant';
 
+/**
+ * Candidate-count crossover for choosing between the `ancestor` and `descendant` strategies, tuned to the
+ * UMLS dataset: on a ~100k+ subtree the per-candidate ancestor walk costs ~60x the per-descendant enumeration,
+ * so materializing the subtree is more performant once the filter matches >3000 candidate codes.
+ */
+export const PARENT_FILTER_THRESHOLD = 3000;
+
 export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 
 export async function findTerminologyResource<T extends TerminologyResource>(

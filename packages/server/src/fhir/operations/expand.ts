@@ -41,6 +41,7 @@ import {
   findAncestor,
   findTerminologyResource,
   getParentProperty,
+  PARENT_FILTER_THRESHOLD,
 } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
@@ -152,8 +153,9 @@ export async function expandValueSet(
 
   const contains = expandedSet.slice(offset, offset + count);
   await expander.hydrateDesignations(contains);
+  const truncated = expandedSet.length > budget || expander.isTruncated();
   valueSet.expansion = {
-    total: expandedSet.length >= MAX_EXPANSION_SIZE ? MAX_EXPANSION_SIZE + 1 : expandedSet.length,
+    total: truncated ? budget + 1 : expandedSet.length,
     timestamp: new Date().toISOString(),
     contains,
   };
@@ -169,10 +171,16 @@ class ValueSetExpander {
   private readonly stack = new Set<string>();
   /** Lazily-acquired database client, populated and returned by `this.database()` */
   private db?: PgQueryable;
+  /** Set when expansion stopped before consulting every include / candidate system. */
+  private truncated = false;
 
   constructor(repo: Repository, rootParams: ValueSetExpandParameters) {
     this.repo = repo;
     this.rootParams = rootParams;
+  }
+
+  isTruncated(): boolean {
+    return this.truncated;
   }
 
   private database(): PgQueryable {
@@ -264,9 +272,13 @@ class ValueSetExpander {
     }
 
     const expansion: ValueSetExpansionContains[] = [];
-    for (const include of valueSet.compose.include) {
-      await this.expandInclude(include, expansion, count);
+    const includes = valueSet.compose.include;
+    for (let i = 0; i < includes.length; i++) {
+      await this.expandInclude(includes[i], expansion, count);
       if (expansion.length >= count) {
+        // Budget exhausted. Any include we never consulted may hold more members, so the
+        // expansion must be reported as truncated even if nothing was over-fetched.
+        this.truncated ||= i < includes.length - 1;
         break; // Expansion limit exhausted; stop expanding further includes
       }
     }
@@ -456,10 +468,14 @@ class ValueSetExpander {
 
     const db = this.database();
 
+    let visited = 0;
     for (const systemUrl of candidateSystems) {
       if (expansion.length >= count) {
+        // Budget exhausted with candidate systems still unvisited; report the expansion as truncated.
+        this.truncated ||= visited < candidateSystems.size;
         break;
       }
+      visited++;
       const codeSystem = await this.optionalCodeSystem(systemUrl);
       if (!isResource(codeSystem, 'CodeSystem')) {
         continue;
@@ -783,9 +799,9 @@ export function addExpansionItems(
   expansion: ValueSetExpansionContains[],
   codeSystem: WithId<CodeSystem>
 ): void {
-  const system = codeSystem.url;
+  const system = codeSystem.url as string;
   for (const { code, display, synonymOf, language } of rows) {
-    const ex = expansion.find((o) => o.code === code);
+    const ex = expansion.find((o) => o.code === code && o.system === system);
     if (ex) {
       if (isEmpty(synonymOf)) {
         // Incoming display string is the primary, replacing the one currently in the expansion
@@ -916,13 +932,6 @@ function applyValueSetFilters(
 }
 
 /**
- * Candidate-count crossover for choosing between the `ancestor` and `descendant` strategies. Tuned to the
- * representative dataset: on a ~132k-node subtree the per-candidate ancestor walk costs ~60× a per-descendant
- * enumeration step, so materializing the subtree wins once the filter matches more than ~2000 candidate codes.
- */
-const CANDIDATE_THRESHOLD = 2000;
-
-/**
  * Builds the text-filter predicate used by `$expand` filtering: an exact code match, plus (for filters of at
  * least 3 characters) a per-word `display ILIKE` substring match. Below 3 characters the `display ILIKE
  * '%filter%'` branch cannot use the trigram GIN index (a substring needs at least one full trigram), so only the
@@ -1015,8 +1024,8 @@ async function chooseStrategyByCandidates(
   if (!filterText || filterText.length < 3) {
     return undefined;
   }
-  const count = await countCandidatesBounded(db, codeSystem, filterText, CANDIDATE_THRESHOLD + 1);
-  return count > CANDIDATE_THRESHOLD ? 'descendant' : 'ancestor';
+  const count = await countCandidatesBounded(db, codeSystem, filterText, PARENT_FILTER_THRESHOLD + 1);
+  return count > PARENT_FILTER_THRESHOLD ? 'descendant' : 'ancestor';
 }
 
 export function addParentFilter(

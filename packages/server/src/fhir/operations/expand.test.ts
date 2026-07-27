@@ -1816,6 +1816,98 @@ describe('Expand', () => {
       expect(tail.contains).toHaveLength(1);
       expect(tail.total).toBe(5);
     });
+
+    test('include that exactly exhausts the budget maintains pagination to next include', async () => {
+      const vs = await postResource(valueSet({ system: sysX }, { system: sysY }));
+
+      const res = await expandUrl(vs.url, 'count=2');
+      expect(res).toHaveStatus(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+      expect(expansion.contains?.map((c) => c.code)).toContainExactly(['x1', 'x2']);
+      expect(expansion.total).toBe(3); // count+1 signals more members despite no over-fetch
+
+      // Paging past the first include actually reaches the second include's members
+      const page2 = await expandUrl(vs.url, 'count=2&offset=2');
+      expect(page2).toHaveStatus(200);
+      expect((page2.body.expansion as ValueSetExpansion).contains?.map((c) => c.code)).toContainExactly(['y1', 'y2']);
+    });
+
+    test('intersection that exhausts the budget mid-system-loop maintains pagination', async () => {
+      const ref1 = await postResource(valueSet({ system: sysX }, { system: sysY }));
+      const ref2 = await postResource(valueSet({ system: sysX }, { system: sysY }));
+      const outer = await postResource(valueSet({ valueSet: [ref1.url, ref2.url] }));
+
+      const res = await expandUrl(outer.url, 'count=2');
+      expect(res).toHaveStatus(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+      expect(expansion.contains).toHaveLength(2);
+      expect(expansion.total).toBe(3);
+    });
+
+    test('expansion of exactly the maximum size does not paginate', async () => {
+      const concept = Array.from({ length: 1000 }, (_, i) => ({ code: `max${i}`, display: `code number ${i}` }));
+      const cs = await postResource({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        content: 'example',
+        url: 'http://example.com/CodeSystem/budget-max-' + randomUUID(),
+        concept,
+      } satisfies CodeSystem);
+
+      const res = await expandInline(valueSet({ system: cs.url }), 'count=1000');
+      expect(res).toHaveStatus(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+      expect(expansion.contains).toHaveLength(1000);
+      expect(expansion.total).toBe(1000);
+    });
+  });
+
+  describe('cross-system code collisions', () => {
+    const csA = 'http://example.com/CodeSystem/collide-a-' + randomUUID();
+    const csB = 'http://example.com/CodeSystem/collide-b-' + randomUUID();
+
+    beforeAll(async () => {
+      // Two systems that deliberately share the code string `dup` with distinct displays
+      await postResource({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        content: 'example',
+        url: csA,
+        concept: [{ code: 'dup', display: 'shared alpha thing' }],
+      } satisfies CodeSystem);
+      await postResource({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        content: 'example',
+        url: csB,
+        concept: [{ code: 'dup', display: 'shared beta thing' }],
+      } satisfies CodeSystem);
+    });
+
+    test('expansion can contain same code in two different code systems', async () => {
+      const res = await expandInline(valueSet({ system: csA }, { system: csB }), 'count=10');
+      expect(res).toHaveStatus(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+      // Both concepts are returned; neither display is demoted to a designation on the other's entry
+      expect(expansion.contains).toContainExactly([
+        { system: csA, code: 'dup', display: 'shared alpha thing' },
+        { system: csB, code: 'dup', display: 'shared beta thing' },
+      ]);
+      expect(expansion.contains?.every((c) => c.designation === undefined)).toBe(true);
+      expect(expansion.total).toBe(2);
+    });
+
+    test('colliding codes both present in expansion when text filter matches both displays', async () => {
+      const vs = valueSet({ system: csA }, { system: csB });
+      const res = await expandInline(vs, 'filter=shared&count=10');
+      expect(res).toHaveStatus(200);
+      const expansion = res.body.expansion as ValueSetExpansion;
+      expect(expansion.contains).toContainExactly([
+        { system: csA, code: 'dup', display: 'shared alpha thing' },
+        { system: csB, code: 'dup', display: 'shared beta thing' },
+      ]);
+      expect(expansion.total).toBe(2);
+    });
   });
 
   test('Intersection membership strategy', async () => {
