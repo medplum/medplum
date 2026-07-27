@@ -56,10 +56,8 @@ export function getProjectFhirQuota(project: AuthState['project'] | undefined): 
 export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
   const { project, userConfig } = authState;
   const userLimit = getUserFhirQuota(project, userConfig);
-  // Enforcement keeps the historical fallback: when totalFhirQuota is unset, projectLimit is userLimit × 10
-  // (including any UserConfiguration override on this request).
-  const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
-  const projectLimit = perProjectLimit ?? userLimit * 10;
+  // Project fallback uses the project per-user default × 10, not this user's UserConfiguration override.
+  const projectLimit = getProjectFhirQuota(project);
 
   return { userLimit, projectLimit };
 }
