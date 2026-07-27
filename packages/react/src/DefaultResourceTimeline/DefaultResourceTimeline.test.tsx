@@ -53,7 +53,7 @@ describe('DefaultResourceTimeline', () => {
     const p = await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
     // Use seeding mode so the mock client's DB accepts the `lastUpdated` timestamp
-    const dr1 = await medplum.withSeeding(() =>
+    const dr1 = await medplum.mock.withSeeding(() =>
       medplum.createResource<DiagnosticReport>({
         resourceType: 'DiagnosticReport',
         meta: {
@@ -67,7 +67,7 @@ describe('DefaultResourceTimeline', () => {
     );
 
     // Use seeding mode so the mock client's DB accepts the `lastUpdated` timestamp
-    const dr2 = await medplum.withSeeding(() =>
+    const dr2 = await medplum.mock.withSeeding(() =>
       medplum.updateResource<DiagnosticReport>({
         ...dr1,
         meta: {

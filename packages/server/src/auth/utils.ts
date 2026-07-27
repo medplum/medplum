@@ -24,7 +24,7 @@ import { randomInt } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
-import { EMAIL_MFA_CODE_EXPIRATION_MS } from '../constants';
+import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
@@ -377,10 +377,18 @@ export function getProjectByRecaptchaSiteKey(
 
 /**
  * Returns the bcrypt hash of the password.
+ *
+ * Rejects passwords longer than {@link MAX_PASSWORD_LENGTH} bytes as a
+ * defense-in-depth backstop. Route validators are the front line, but enforcing
+ * the cap at the single hashing chokepoint means any current or future caller is
+ * protected regardless of the route it came through.
  * @param password - The input password.
  * @returns The bcrypt hash of the password.
  */
 export function bcryptHashPassword(password: string): Promise<string> {
+  if (Buffer.byteLength(password, 'utf8') > MAX_PASSWORD_LENGTH) {
+    throw new OperationOutcomeError(badRequest(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`));
+  }
   return bcrypt.hash(password, getConfig().bcryptHashSalt);
 }
 

@@ -329,6 +329,10 @@ export async function addSubscriptionJobs(
   context: BackgroundJobContext,
   options?: ResendSubscriptionsOptions
 ): Promise<void> {
+  if (!getConfig().subscriptionsEnabled) {
+    return;
+  }
+
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;

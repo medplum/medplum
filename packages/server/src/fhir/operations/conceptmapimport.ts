@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue, WithId } from '@medplum/core';
-import { allOk, append, badRequest, EMPTY, flatMapFilter, forbidden, OperationOutcomeError } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  allOk,
+  append,
+  badRequest,
+  EMPTY,
+  flatMapFilter,
+  forbidden,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -113,6 +122,9 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('Parameter `url` not permitted for instance operation', 'Parameters.parameter')];
   } else if (req.params.id) {
     conceptMap = await repo.readResource('ConceptMap', req.params.id);
+    if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, conceptMap)) {
+      return [forbidden];
+    }
   } else if (params.url) {
     conceptMap = await findTerminologyResource(repo, 'ConceptMap', params.url, { ownProjectOnly: !isSuperAdmin });
   } else {
