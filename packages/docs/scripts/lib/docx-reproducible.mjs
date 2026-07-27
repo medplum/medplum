@@ -11,7 +11,7 @@
 //   2. zip records each file's mtime in the archive
 //   3. pandoc copies the wordmark's absolute source path into the picture's
 //      descr attribute — machine-specific, and not something to publish
-//   4. LibreOffice stamps the PDF with the wall-clock second it converted
+//   4. LibreOffice stamps the PDF with a wall-clock date and a per-run /ID
 //
 // All four are pinned to SOURCE_DATE_EPOCH, per the reproducible-builds
 // convention. Note this guarantees byte-identical output for a given toolchain,
@@ -20,6 +20,7 @@
 // regeneration may not match CI's. CI is the authority — it regenerates on every
 // PR that touches a guide, and its commit is what ships.
 
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -71,23 +72,73 @@ export function setFixedMtimes(dir) {
 }
 
 // LibreOffice is documented to honor SOURCE_DATE_EPOCH, but the version on the
-// CI runner does not — each converted PDF came out stamped with the wall-clock
-// second it was produced, which would re-commit ~1.5MB of identical-looking PDFs
-// on every regeneration. /CreationDate is the only field that varies (there's no
-// /ID trailer and no XMP metadata to worry about), so rewrite it in place.
+// CI runner does not. Two fields in its output vary per run, and both would
+// re-commit ~1.5MB of visually identical PDFs on every regeneration:
 //
-// The replacement is deliberately the same byte length as what it replaces:
-// a PDF's cross-reference table stores absolute file offsets, so changing the
-// length here would corrupt the document. Anything unexpected is left alone.
-export function normalizePdfDates(buffer) {
-  const fixed = `D:${new Date(SOURCE_DATE_EPOCH * 1000).toISOString().replace(/[-:T]/g, '').slice(0, 14)}`;
-  return Buffer.from(
-    buffer.toString('latin1').replace(/\/(CreationDate|ModDate)\s*\(([^)]*)\)/g, (match, key, value) => {
-      const replacement = value.startsWith('D:') ? fixed + value.slice(16) : value;
+//   /CreationDate  the wall-clock second the conversion ran
+//   /ID            a per-run document identifier in the trailer
+//
+// Every replacement is deliberately the same byte length as what it replaces:
+// a PDF's cross-reference table stores absolute file offsets, so changing any
+// length here would corrupt the document. Anything not matching the expected
+// shape is left alone rather than risking that.
+//
+// /ID is meant to identify a document, so rather than hardcoding one value for
+// all seven guides it's derived from the PDF's own bytes (with the ID field
+// itself blanked first, so the hash can't depend on what it's replacing). Same
+// content always yields the same ID; different guides still differ.
+export function normalizePdfMetadata(buffer) {
+  const fixedDate = `D:${new Date(SOURCE_DATE_EPOCH * 1000).toISOString().replace(/[-:T]/g, '').slice(0, 14)}`;
+
+  const withFixedDates = buffer
+    .toString('latin1')
+    .replace(/\/(CreationDate|ModDate)\s*\(([^)]*)\)/g, (match, key, value) => {
+      const replacement = value.startsWith('D:') ? fixedDate + value.slice(16) : value;
       return replacement.length === value.length ? `/${key}(${replacement})` : match;
-    }),
-    'latin1'
+    });
+
+  // Note the [\s\S] in the ID separator: LibreOffice puts a newline between the
+  // two hex strings, which is why a same-line-only pattern missed the field on
+  // the first attempt at this.
+  const varyingFields = [
+    { pattern: /(\/ID\s*\[\s*<)([0-9A-Fa-f]+)(>[\s\S]*?<)([0-9A-Fa-f]+)(>\s*\])/, digestOffset: 0 },
+    { pattern: /(\/DocChecksum\s*\/)([0-9A-Fa-f]+)()()()/, digestOffset: 32 },
+  ];
+
+  // Blank every varying field before hashing, so the digest depends only on the
+  // parts of the document that are actually stable.
+  const blank = (text, fill) =>
+    varyingFields.reduce(
+      (acc, { pattern }) =>
+        acc.replace(pattern, (_m, open, first, mid = '', second = '', close = '') =>
+          [open, fill(first), mid, fill(second), close].join('')
+        ),
+      text
+    );
+
+  const digest = createHash('sha256')
+    .update(
+      blank(withFixedDates, (hex) => '0'.repeat(hex.length)),
+      'latin1'
+    )
+    .digest('hex')
+    .toUpperCase();
+
+  const filled = varyingFields.reduce(
+    (acc, { pattern, digestOffset }) =>
+      acc.replace(pattern, (_m, open, first, mid = '', second = '', close = '') =>
+        [
+          open,
+          digest.slice(digestOffset, digestOffset + first.length),
+          mid,
+          second && digest.slice(digestOffset, digestOffset + second.length),
+          close,
+        ].join('')
+      ),
+    withFixedDates
   );
+
+  return Buffer.from(filled, 'latin1');
 }
 
 // Archive member order is part of the bytes, so it can't be left to directory

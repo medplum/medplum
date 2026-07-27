@@ -25,7 +25,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   normalizeCoreProps,
-  normalizePdfDates,
+  normalizePdfMetadata,
   setFixedMtimes,
   sortedArchiveEntries,
   SOURCE_DATE_EPOCH,
@@ -112,7 +112,7 @@ function buildPdf(docxPath, slug) {
 
     // ...and normalize the timestamp afterwards, because it doesn't honor it.
     const pdfPath = path.join(OUT_DIR, `${slug}.pdf`);
-    fs.writeFileSync(pdfPath, normalizePdfDates(fs.readFileSync(pdfPath)));
+    fs.writeFileSync(pdfPath, normalizePdfMetadata(fs.readFileSync(pdfPath)));
   } catch (err) {
     if (!isMissingToolError(err)) throw err;
     console.warn(
