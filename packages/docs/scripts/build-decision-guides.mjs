@@ -25,6 +25,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   normalizeCoreProps,
+  normalizePdfDates,
   setFixedMtimes,
   sortedArchiveEntries,
   SOURCE_DATE_EPOCH,
@@ -103,13 +104,15 @@ function postProcessDocx(docxPath) {
 
 function buildPdf(docxPath, slug) {
   try {
-    // SOURCE_DATE_EPOCH makes LibreOffice emit a fixed PDF creation date and
-    // document ID instead of wall-clock ones, so the committed PDF is stable
-    // across regenerations the same way the .docx is.
+    // Pass SOURCE_DATE_EPOCH, which LibreOffice is documented to honor...
     execFileSync('soffice', ['--headless', '--convert-to', 'pdf', '--outdir', OUT_DIR, docxPath], {
       stdio: 'inherit',
       env: { ...process.env, SOURCE_DATE_EPOCH: String(SOURCE_DATE_EPOCH) },
     });
+
+    // ...and normalize the timestamp afterwards, because it doesn't honor it.
+    const pdfPath = path.join(OUT_DIR, `${slug}.pdf`);
+    fs.writeFileSync(pdfPath, normalizePdfDates(fs.readFileSync(pdfPath)));
   } catch (err) {
     if (!isMissingToolError(err)) throw err;
     console.warn(

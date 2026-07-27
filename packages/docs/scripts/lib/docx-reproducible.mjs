@@ -6,14 +6,19 @@
 // only works if identical markdown yields identical bytes — otherwise every
 // regeneration run commits a fresh, meaningless binary blob.
 //
-// Three things made the output non-reproducible, all handled here:
+// Four things made the output non-reproducible, all handled here:
 //   1. pandoc stamps wall-clock dcterms:created/modified into docProps/core.xml
 //   2. zip records each file's mtime in the archive
 //   3. pandoc copies the wordmark's absolute source path into the picture's
 //      descr attribute — machine-specific, and not something to publish
+//   4. LibreOffice stamps the PDF with the wall-clock second it converted
 //
-// Follows the reproducible-builds SOURCE_DATE_EPOCH convention, so the same
-// value also feeds LibreOffice's PDF metadata.
+// All four are pinned to SOURCE_DATE_EPOCH, per the reproducible-builds
+// convention. Note this guarantees byte-identical output for a given toolchain,
+// not across toolchains: a different pandoc version numbers relationship IDs
+// differently and emits slightly different styles, so a contributor's local
+// regeneration may not match CI's. CI is the authority — it regenerates on every
+// PR that touches a guide, and its commit is what ships.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,6 +68,26 @@ export function setFixedMtimes(dir) {
     fs.utimesSync(full, when, when);
   }
   fs.utimesSync(dir, when, when);
+}
+
+// LibreOffice is documented to honor SOURCE_DATE_EPOCH, but the version on the
+// CI runner does not — each converted PDF came out stamped with the wall-clock
+// second it was produced, which would re-commit ~1.5MB of identical-looking PDFs
+// on every regeneration. /CreationDate is the only field that varies (there's no
+// /ID trailer and no XMP metadata to worry about), so rewrite it in place.
+//
+// The replacement is deliberately the same byte length as what it replaces:
+// a PDF's cross-reference table stores absolute file offsets, so changing the
+// length here would corrupt the document. Anything unexpected is left alone.
+export function normalizePdfDates(buffer) {
+  const fixed = `D:${new Date(SOURCE_DATE_EPOCH * 1000).toISOString().replace(/[-:T]/g, '').slice(0, 14)}`;
+  return Buffer.from(
+    buffer.toString('latin1').replace(/\/(CreationDate|ModDate)\s*\(([^)]*)\)/g, (match, key, value) => {
+      const replacement = value.startsWith('D:') ? fixed + value.slice(16) : value;
+      return replacement.length === value.length ? `/${key}(${replacement})` : match;
+    }),
+    'latin1'
+  );
 }
 
 // Archive member order is part of the bytes, so it can't be left to directory
