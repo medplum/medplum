@@ -25,7 +25,8 @@ export async function findAndExecDispatchJob(resource: Resource, interaction: Ba
     (jobData) =>
       jobData.interaction === interaction &&
       jobData.resourceType === resource.resourceType &&
-      jobData.id === resource.id
+      jobData.id === resource.id,
+    `dispatch job for ${resource.resourceType}/${resource.id} ${interaction}`
   );
 }
 
@@ -52,7 +53,9 @@ export async function findAndExecSubscriptionJob(
       jobData.interaction === interaction &&
       jobData.resourceType === resource.resourceType &&
       jobData.id === resource.id &&
-      (!subscription || jobData.subscriptionId === subscription.id)
+      (!subscription || jobData.subscriptionId === subscription.id),
+    `subscription job for ${resource.resourceType}/${resource.id} ${interaction}` +
+      (subscription ? ` matching Subscription/${subscription.id}` : '')
   );
 }
 
@@ -74,7 +77,8 @@ export async function findAndExecDownloadJob(
     getDownloadQueue,
     execDownloadJob,
     (jobData) =>
-      jobData.resourceType === resource.resourceType && jobData.id === resource.id && (!url || jobData.url === url)
+      jobData.resourceType === resource.resourceType && jobData.id === resource.id && (!url || jobData.url === url),
+    `download job for ${resource.resourceType}/${resource.id} ${interaction}` + (url ? ` matching ${url}` : '')
   );
 }
 
@@ -84,21 +88,36 @@ export async function findAndExecDownloadJob(
  * @param getQueue - A function that returns the queue to search for the job. This is necessary because the queue may not be initialized at the time this function is called.
  * @param execJob - A function that executes the job. This is necessary because the job processing logic is defined in the worker, and we want to reuse that logic in our tests.
  * @param matchJob - A function that matches the job data to find the correct job to execute. This is necessary because there may be multiple jobs in the queue, and we want to find the one that matches our criteria.
+ * @param description - Human-readable description of what was being looked for, used in the "Job not found" error.
  * @returns The list of jobs that were executed (there may be more than one if the job was retried).
  */
 async function findAndExecJob(
   getQueue: () => Queue | undefined,
   execJob: (job: Job) => Promise<void>,
-  matchJob: (jobData: any) => boolean
+  matchJob: (jobData: any) => boolean,
+  description: string
 ): Promise<Job[]> {
   const queue = getQueue();
   if (!queue) {
     throw new Error('Queue not initialized');
   }
 
-  const jobData = (queue.add as Mock).mock.calls.find(([_jobName, data]) => matchJob(data))?.[1];
+  const enqueued = (queue.add as Mock).mock.calls.map(([_jobName, data]) => data);
+  const jobData = enqueued.find((data) => matchJob(data));
   if (!jobData) {
-    throw new Error('Job not found');
+    // Say what was being looked for and what was enqueued instead. A bare "Job not found" cannot
+    // distinguish "the subscription was never matched" from "the dispatch job swallowed an error and
+    // enqueued nothing at all", which is the difference between a real bug and a flake.
+    //
+    // Note that `execDispatchJob` catches and only logs errors from `addSubscriptionJobs` /
+    // `addDownloadJobs` / `addCronJobs`, so when nothing was enqueued at all, check the logs for
+    // "Error adding <x> jobs" -- the real cause is there, not here.
+    //
+    // The mock accumulates for the lifetime of the queue, so only the most recent jobs are relevant.
+    throw new Error(
+      `Job not found: no ${description}. ` +
+        `${enqueued.length} job(s) enqueued on this queue, most recent last: ${JSON.stringify(enqueued.slice(-10))}`
+    );
   }
 
   const result: Job[] = [];
