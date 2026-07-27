@@ -835,21 +835,21 @@ function ImportDestinationSummary(props: ImportDestinationSummaryProps): JSX.Ele
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="center" wrap="nowrap" gap="md">
+      <div>
         <Text fz="md" fw={800}>
           Select Records to Import to {createNewPatient ? 'New' : 'Existing'} Profile
         </Text>
-        <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
-          {selectedCount} of {importableCount} selected
-        </Text>
-      </Group>
+        {!createNewPatient && (
+          <Text size="sm" c="dimmed">
+            Existing records will automatically be excluded from the import.
+          </Text>
+        )}
+      </div>
       <PatientDestinationCard patient={destinationPatient} selected showNewPatientBadge={createNewPatient} />
       {children}
-      {!createNewPatient && (
-        <Text size="sm" c="dimmed">
-          Existing records will automatically be excluded from the import.
-        </Text>
-      )}
+      <Text size="sm" c="dimmed">
+        {selectedCount} of {importableCount} selected
+      </Text>
     </Stack>
   );
 }
