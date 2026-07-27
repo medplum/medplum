@@ -2,11 +2,7 @@
 sidebar_position: 0
 ---
 
-# ScriptSure (Beta)
-
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
+# ScriptSure
 
 :::tip[Planning this integration?]
 The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks through the integration and enrollment decisions behind an e-prescribing build — iframe vs. integrated UI, controlled substances, and prescriber enrollment — use it alongside these docs.

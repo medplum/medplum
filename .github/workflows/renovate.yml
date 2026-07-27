@@ -20,10 +20,9 @@ on:
           - error
           - fatal
 
+# Renovate authenticates with MEDPLUM_BOT_GITHUB_ACCESS_TOKEN, not GITHUB_TOKEN
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 jobs:
   renovate:

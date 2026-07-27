@@ -122,7 +122,7 @@ describe('New user', () => {
 
     const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+    expect(res.body.issue[0].details.text).toBe('Password must be at least 8 characters');
   });
 
   test('Password too long', async () => {
@@ -136,7 +136,7 @@ describe('New user', () => {
 
     const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+    expect(res.body.issue[0].details.text).toBe('Password must be no more than 72 characters');
   });
 
   test('Multibyte password too long', async () => {
@@ -153,7 +153,24 @@ describe('New user', () => {
 
     const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+    expect(res.body.issue[0].details.text).toBe('Password must be no more than 72 characters');
+  });
+
+  test('Multibyte password too short', async () => {
+    // Two emoji: 2 characters but 8 bytes. The minimum is measured in
+    // characters, so this is rejected as too short even though it clears the
+    // byte-length check.
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: '🔑🔓',
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be at least 8 characters');
   });
 
   test('Breached password', async () => {

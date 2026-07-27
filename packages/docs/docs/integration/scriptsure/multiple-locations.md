@@ -4,9 +4,6 @@ sidebar_position: 10
 
 # Multiple Practice Locations
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 A single Medplum Project can serve many ScriptSure practice locations. This guide describes the data model and how prescribing resolves the correct practice per request.
 
