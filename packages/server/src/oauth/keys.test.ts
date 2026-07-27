@@ -84,7 +84,7 @@ describe('Keys', () => {
 
     // Construct a broken JWT with empty "kid"
     const accessToken = await new SignJWT({})
-      .setProtectedHeader({ alg: 'ES256', kid: '', typ: 'JWT' })
+      .setProtectedHeader({ alg: 'ES384', kid: '', typ: 'JWT' })
       .setIssuedAt()
       .setIssuer(config.issuer)
       .setAudience('my-audience')
@@ -223,7 +223,7 @@ describe('Keys', () => {
     await initKeys(config);
 
     expect(getSigningKey()).toBeDefined();
-    expect(getSigningKey('ES256')).toBeDefined();
+    expect(getSigningKey('ES384')).toBeDefined();
     expect(() => getSigningKey('none')).toThrow('Signing key not found for alg: none');
   });
 
