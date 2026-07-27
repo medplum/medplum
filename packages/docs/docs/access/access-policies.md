@@ -550,107 +550,7 @@ Patient Access is disabled by default. See our article on [enabling open patient
 
 :::
 
-:::danger[Binary Access]
-
-Binary resources cannot use compartment-based access controls. They require explicit `securityContext` declaration. See the [Binary Security Context](/docs/access/binary-security-context) documentation for more information.
-
-:::
-
-```json
-{
-  "resourceType": "AccessPolicy",
-  "name": "Patient Access Policy Template",
-  "id": "patient-access-policy-template",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%patient"
-    },
-    {
-      "resourceType": "Observation",
-      "criteria": "Observation?_compartment=%patient"
-    },
-    {
-      "resourceType": "DiagnosticReport",
-      "criteria": "DiagnosticReport?_compartment=%patient"
-    },
-    {
-      "resourceType": "MedicationRequest",
-      "criteria": "MedicationRequest?_compartment=%patient"
-    },
-    {
-      "resourceType": "Coverage",
-      "criteria": "Coverage?_compartment=%patient"
-    },
-    {
-      "resourceType": "PaymentNotice",
-      "criteria": "PaymentNotice?_compartment=%patient"
-    },
-    {
-      "resourceType": "CarePlan",
-      "criteria": "CarePlan?_compartment=%patient"
-    },
-    {
-      "resourceType": "Immunization",
-      "criteria": "Immunization?_compartment=%patient"
-    },
-    {
-      "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%patient",
-      "interaction": ["create", "read", "search"]
-    },
-    {
-      "resourceType": "RequestGroup",
-      "criteria": "RequestGroup?_compartment=%patient"
-    },
-    {
-      "resourceType": "Task",
-      "criteria": "Task?focus=%patient"
-    },
-    {
-      "resourceType": "QuestionnaireResponse",
-      "criteria": "QuestionnaireResponse?_compartment=%patient"
-    },
-    {
-      "resourceType": "Subscription",
-      "criteria": "Subscription?type=websocket&author=%profile"
-    },
-    {
-      "resourceType": "HealthcareService",
-      "readonly": true
-    },
-    {
-      "resourceType": "Organization",
-      "readonly": true
-    },
-    {
-      "resourceType": "Practitioner",
-      "readonly": true
-    },
-    {
-      "resourceType": "Schedule",
-      "readonly": true
-    },
-    {
-      "resourceType": "DocumentReference",
-      "criteria": "DocumentReference?_compartment=%patient"
-    },
-    {
-      "resourceType": "Subscription",
-      "criteria": "Subscription?type=websocket&author=%patient"
-    },
-    {
-      "resourceType": "Appointment",
-      "interaction": ["create", "read", "search"],
-      "criteria": "Appointment?_compartment=%patient"
-    },
-    {
-      "resourceType": "Slot",
-      "interaction": ["create", "read", "search"]
-    }
-  ]
-}
-```
+For an example Patient Access Policy template, see [your project's Default Access Policy](#default-access-policies).
 
 :::caution[Binary Security Context]
 
@@ -752,6 +652,36 @@ This update allows for more granular control and visibility in RBAC implementati
 - **Client-Side**
   - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.
   - This is especially useful for Role-Based Access Control (RBAC) implementations where different users may have varying access levels.
+
+## Default Access Policies
+
+New projects are created with a set of **default access policies**, one per profile type. These are stored on the [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project) element, which maps a `profileType` to the `AccessPolicy` applied when a user of that type is invited without an explicit policy:
+
+| Profile type    | Default policy grants                                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Practitioner`  | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types. |
+| `Admin`         | Full read/write access to all resource types (equivalent to having no access policy).                                                            |
+| `Patient`       | Access scoped to the patient's own compartment.                                                                                                  |
+| `RelatedPerson` | Access scoped to the associated patient's compartment, parameterized by `patient`.                                                               |
+
+When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default.
+
+### Switching a user to (or from) admin
+
+The `admin` flag does **not** bypass a user's access policy — it only grants access to project administration resource types (such as [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) and [`User`](/docs/api/fhir/medplum/user)) on top of the existing policy. This means that promoting a Practitioner to admin without also changing their policy would leave them "half-upgraded": still restricted by the read-only rules of the `Practitioner` default.
+
+To avoid this, Medplum automatically **reconciles the default access policy when the admin flag is toggled**:
+
+- Promoting a user to admin: if their current policy is exactly the project's `Practitioner` default, it is swapped to the `Admin` default.
+- Demoting an admin: if their current policy is exactly the project's `Admin` default, it is swapped back to the `Practitioner` default.
+
+This reconciliation only applies when the user is currently on a recognized role default. **Custom (non-default) access policies are never modified** — if you have assigned a user a bespoke policy, toggling the admin flag leaves that policy untouched.
+
+:::tip[Custom access policy combinations]
+
+If a user needs a more specific combination of access than the role defaults provide, we recommend **overriding the default by supplying an explicit access policy when you invite (or edit) the user**. Assigning a custom policy both gives the user exactly the access they need and opts them out of the automatic admin/practitioner reconciliation described above, so their policy will not be swapped when the admin flag changes.
+
+:::
 
 ## Related Resources
 
