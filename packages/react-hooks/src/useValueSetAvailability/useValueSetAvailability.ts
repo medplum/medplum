@@ -69,6 +69,9 @@ export function useValueSetAvailabilities(urls: readonly (string | undefined)[])
     }
 
     let cancelled = false;
+    // The abort is load-bearing beyond cancelling the request: `MedplumClient` caches rejections
+    // and only evicts an entry when its request is aborted, so aborting on unmount is what lets a
+    // later mount re-probe a value set that has since been imported.
     const controller = new AbortController();
 
     for (const url of uniqueUrls) {
