@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import type { CodeChallengeMethod } from '@medplum/core';
 import { locationUtils, normalizeErrorString } from '@medplum/core';
 import type { ClientApplicationSignInForm } from '@medplum/fhirtypes';
-import { Logo, SignInForm, useMedplum } from '@medplum/react';
+import { Loading, Logo, SignInForm, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
@@ -16,13 +16,14 @@ export function OAuthPage(): JSX.Element | null {
   const [params] = useSearchParams();
   const medplum = useMedplum();
   const scope = params.get('scope') || 'openid';
-  const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
-  const [loading, setLoading] = useState(true);
   const clientId = params.get('client_id');
   const login = params.get('login');
+  const hasClientInfo = !!clientId && clientId !== 'medplum-cli';
+  const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
+  const [loading, setLoading] = useState(hasClientInfo);
 
   useEffect(() => {
-    if (!clientId || clientId === 'medplum-cli') {
+    if (!hasClientInfo) {
       return;
     }
     async function fetchProjectInfo(): Promise<void> {
@@ -43,10 +44,14 @@ export function OAuthPage(): JSX.Element | null {
     }
 
     fetchProjectInfo().catch(console.error);
-  }, [medplum, clientId]);
+  }, [medplum, clientId, hasClientInfo]);
 
   if (!clientId) {
     return null;
+  }
+
+  if (loading) {
+    return <Loading />;
   }
 
   function onCode(code: string): void {
@@ -73,19 +78,15 @@ export function OAuthPage(): JSX.Element | null {
       launch={params.get('launch') || undefined}
       codeChallenge={params.get('code_challenge') || undefined}
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
-      chooseScopes={scope !== 'openid'}
+      chooseScopes={clientInfo?.showScopeSelection ?? scope !== 'openid'}
       login={login || undefined}
     >
-      {!loading && (
-        <>
-          {clientInfo?.logo?.url ? (
-            <img src={clientInfo?.logo?.url} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} />
-          ) : (
-            <Logo size={32} />
-          )}
-          <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
-        </>
+      {clientInfo?.logo?.url ? (
+        <img src={clientInfo?.logo?.url} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} />
+      ) : (
+        <Logo size={32} />
       )}
+      <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
     </SignInForm>
   );
 }
