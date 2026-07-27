@@ -445,6 +445,17 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
                       setShlink(event.currentTarget.value);
                       setError(undefined);
                     }}
+                    onKeyDown={(event) => {
+                      // A link is a single token, so Enter opens it rather than adding a newline.
+                      // Shift+Enter still inserts one, and we ignore Enter mid-IME-composition.
+                      if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) {
+                        return;
+                      }
+                      event.preventDefault();
+                      if (loading !== 'resolve' && loading !== 'match') {
+                        resolveLink(shlink).catch(console.error);
+                      }
+                    }}
                     minRows={4}
                     autosize
                     aria-label="SMART Health Link"
