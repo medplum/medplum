@@ -122,15 +122,18 @@ function replaceGrid(tblXml, widths) {
   }
 
   // Also stamp explicit per-cell widths (<w:tcW>) so cells match the grid even
-  // if a viewer ignores <w:tblGrid>.
+  // if a viewer ignores <w:tblGrid>. Walking every <w:tcW> in document order and
+  // cycling through `widths` assumes each row has exactly one cell per column,
+  // with one <w:tcW> each and no merged/<w:gridSpan> cells — true of pandoc's
+  // markdown-table output, which is the only thing that feeds this. A guide that
+  // somehow gained a spanning cell would shift every later cell's width by one
+  // column, so revisit this if the source ever stops being plain pipe tables.
   let col = 0;
-  const cellCountInFirstRow = (out.match(/<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/)?.[0].match(/<w:tc\b/g) ?? []).length;
   out = out.replace(/<w:tcW\b[^/]*\/>/g, () => {
     const w = widths[col % widths.length];
     col += 1;
     return `<w:tcW w:w="${w}" w:type="dxa"/>`;
   });
-  void cellCountInFirstRow;
 
   return out;
 }

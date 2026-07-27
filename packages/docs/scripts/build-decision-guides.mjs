@@ -43,14 +43,17 @@ function isMissingToolError(err) {
   return err.code === 'ENOENT';
 }
 
+// Builds into tmpDir rather than OUT_DIR: a docx is only worth publishing once
+// post-processing has run, so an interrupted build (e.g. zip/unzip missing after
+// pandoc succeeded) can't leave a raw even-columns docx sitting in static/.
 function buildDocx(slug, markdownBody, tmpDir) {
   const tmpMd = path.join(tmpDir, `${slug}.md`);
   const content = `![Medplum](${WORDMARK_PNG})\n\n${markdownBody}`;
   fs.writeFileSync(tmpMd, content);
 
-  const outDocx = path.join(OUT_DIR, `${slug}.docx`);
-  sh('pandoc', [tmpMd, '--from=markdown-implicit_figures', `--reference-doc=${REFERENCE_DOCX}`, '-o', outDocx]);
-  return outDocx;
+  const tmpDocx = path.join(tmpDir, `${slug}.docx`);
+  sh('pandoc', [tmpMd, '--from=markdown-implicit_figures', `--reference-doc=${REFERENCE_DOCX}`, '-o', tmpDocx]);
+  return tmpDocx;
 }
 
 function postProcessDocx(docxPath) {
@@ -83,6 +86,11 @@ function buildPdf(docxPath, slug) {
 }
 
 function main() {
+  // Wipe rather than merge: OUT_DIR is pure build output, so a guide that was
+  // renamed or deleted shouldn't leave an orphaned download behind that the
+  // site no longer links to. (CI is a fresh checkout; this keeps local and
+  // incremental builds honest too.)
+  fs.rmSync(OUT_DIR, { recursive: true, force: true });
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const slugs = fs
@@ -96,13 +104,16 @@ function main() {
     const raw = fs.readFileSync(path.join(DOCS_DIR, `${slug}.md`), 'utf8');
     const body = stripFrontMatter(raw);
 
-    let docxPath;
+    const outDocx = path.join(OUT_DIR, `${slug}.docx`);
     try {
       console.log(`[build-decision-guides] ${slug}: markdown -> docx`);
-      docxPath = buildDocx(slug, body, tmpDir);
+      const tmpDocx = buildDocx(slug, body, tmpDir);
 
       console.log(`[build-decision-guides] ${slug}: applying table widths + layout fixes`);
-      postProcessDocx(docxPath);
+      postProcessDocx(tmpDocx);
+
+      // Only now is it a finished download — publish it.
+      fs.renameSync(tmpDocx, outDocx);
     } catch (err) {
       if (!isMissingToolError(err)) throw err;
       console.warn(
@@ -114,7 +125,7 @@ function main() {
     }
 
     console.log(`[build-decision-guides] ${slug}: docx -> pdf`);
-    buildPdf(docxPath, slug);
+    buildPdf(outDocx, slug);
     built += 1;
   }
   fs.rmSync(tmpDir, { recursive: true, force: true });
