@@ -9,11 +9,11 @@ send many requests in quick succession may receive HTTP error responses with sta
 
 ## Total Requests Rate Limit
 
-| Category                                                              | Free tier                        | Paid tier                         |
-| --------------------------------------------------------------------- | -------------------------------- | --------------------------------- |
-| Login (`/auth/login`, `/auth/newuser`, `/auth/newproject`)            | 5 requests per IP per minute     | 5 requests per IP per minute      |
-| Auth (other `/auth/*` and `/oauth2/*` endpoints)                      | 160 requests per IP per minute   | 160 requests per IP per minute    |
-| Default (all other endpoints, including `/auth/me`)                   | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
+| Category                                                   | Free tier                        | Paid tier                         |
+| ---------------------------------------------------------- | -------------------------------- | --------------------------------- |
+| Login (`/auth/login`, `/auth/newuser`, `/auth/newproject`) | 5 requests per IP per minute     | 5 requests per IP per minute      |
+| Auth (other `/auth/*` and `/oauth2/*` endpoints)           | 160 requests per IP per minute   | 160 requests per IP per minute    |
+| Default (all other endpoints, including `/auth/me`)        | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
 
 All rate limits are calculated per IP address over a one minute window.
 
@@ -53,6 +53,10 @@ You can configure rate limits at the **Server**, **Project**, and **User** level
 - **Project Level Overrides**: Configured in the `Project.systemSettings` (see below).
 - **User Level Overrides**: Configured in `UserConfiguration` resources (see [User Configuration](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits)).
 
+:::info[Hosted Medplum]
+On the hosted Medplum service, **Server-level** and **Project-level** rate limits cannot be set by project administrators. If you would like to discuss or adjust your project's rate limits, please reach out to [support@medplum.com](mailto:support@medplum.com). Project admins can still configure **User-level** overrides via `UserConfiguration` (see [below](#setting-a-user-specific-quota-via-projectmembership)).
+:::
+
 To view or update the Project-level limits:
 
 1.  Navigate to the **Project Admin** page in the Medplum App.
@@ -71,6 +75,46 @@ There are some scenarios where you may want to **set a custom quota for a User, 
 
 **Important:** The `totalFhirQuota` will still be enforced, but `userFhirQuota` will be overridden for the User, Bot, or ClientApplication.
 :::
+
+#### Setting a User-specific quota via ProjectMembership
+
+To apply a custom quota to a specific User, Bot, or ClientApplication, you create a `UserConfiguration` resource with the desired quota and reference it from that member's `ProjectMembership` resource. Project administrators can do this on both hosted and self-hosted Medplum.
+
+1.  **Create a `UserConfiguration` resource** with the desired FHIR quota. Set the `fhirQuota` option to the per-minute point limit for this member:
+
+    ```ts
+    {
+      "resourceType": "UserConfiguration",
+      "name": "High-Traffic Bot Configuration",
+      "option": [
+        {
+          "id": "fhirQuota",
+          "valueInteger": 60000
+        }
+      ]
+    }
+    ```
+
+    Note the `id` of the created resource — you'll reference it in the next step.
+
+2.  **Find the `ProjectMembership`** for the User, Bot, or ClientApplication you want to update. In the Medplum App, go to the **Project Admin** page and select the member, or search for the `ProjectMembership` resource directly.
+
+3.  **Set the `userConfiguration` field** on the `ProjectMembership` to reference the `UserConfiguration` created in step 1:
+
+    ```ts
+    {
+      "resourceType": "ProjectMembership",
+      "userConfiguration": {
+        "reference": "UserConfiguration/<your-user-configuration-id>",
+        "display": "High-Traffic Bot Configuration"
+      },
+      //...
+    }
+    ```
+
+4.  **Save the `ProjectMembership`.** The custom quota takes effect immediately on subsequent requests made by that member.
+
+See [User Configuration](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits) for more details on the `UserConfiguration` resource.
 
 ### Avoiding quota with async batch requests
 
