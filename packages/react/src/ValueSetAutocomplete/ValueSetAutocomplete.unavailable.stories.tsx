@@ -4,7 +4,7 @@ import { Stack, Text } from '@mantine/core';
 import { badRequest, OperationOutcomeError } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ValueSetAutocomplete } from './ValueSetAutocomplete';

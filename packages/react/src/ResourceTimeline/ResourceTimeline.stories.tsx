@@ -4,7 +4,7 @@ import type { MedplumClient, ProfileResource } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Attachment, Bundle, Encounter, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ResourceTimeline } from './ResourceTimeline';

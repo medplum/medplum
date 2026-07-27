@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { PropertyType } from '@medplum/core';
 import { HomerServiceRequest, HomerSimpson } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { FhirPathDisplay } from './FhirPathDisplay';
 

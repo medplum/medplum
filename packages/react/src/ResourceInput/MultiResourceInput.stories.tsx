@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import { BartSimpson, HomerSimpson, LisaSimpson, MargeSimpson } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { MultiResourceInput } from './MultiResourceInput';

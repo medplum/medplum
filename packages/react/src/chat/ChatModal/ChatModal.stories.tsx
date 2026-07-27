@@ -3,7 +3,7 @@
 import { Text } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import type { JSX } from 'react';
 import { Document } from '../../Document/Document';
 import { withMockedDate } from '../../stories/decorators';

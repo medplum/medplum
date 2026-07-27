@@ -3,7 +3,7 @@
 import { ActionIcon, Box, Paper, Text, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
-import type { Meta } from '@storybook/react';
+import type { Meta } from '@storybook/react-vite';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
