@@ -1,4 +1,4 @@
-import { MantineProvider, createTheme, useMantineColorScheme } from '@mantine/core';
+import { MantineProvider, useMantineColorScheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MockClient } from '@medplum/mock';
@@ -8,6 +8,7 @@ import { FC, useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { addons } from 'storybook/preview-api';
 import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
+import { themePresetMap, themePresets } from './themes';
 
 export const parameters = {
   layout: 'fullscreen',
@@ -24,24 +25,18 @@ export const parameters = {
   },
 };
 
-const medplumDefaultTheme = createTheme({
-  headings: {
-    sizes: {
-      h1: {
-        fontSize: '1.125rem',
-        fontWeight: '500',
-        lineHeight: '2.0',
-      },
+export const globalTypes = {
+  theme: {
+    name: 'Theme',
+    description: 'Mantine theme preset',
+    defaultValue: 'medplumDefault',
+    toolbar: {
+      icon: 'paintbrush',
+      items: themePresets.map((preset) => ({ value: preset.id, title: preset.name })),
+      dynamicTitle: true,
     },
   },
-  fontSizes: {
-    xs: '0.6875rem',
-    sm: '0.875rem',
-    md: '0.875rem',
-    lg: '1.0rem',
-    xl: '1.125rem',
-  },
-});
+};
 
 // wrap initialization of MockClient and initial page navigation
 // so that resources created in MockFetchClient#initMockRepo have
@@ -76,9 +71,12 @@ export const decorators = [
       <Story />
     </ColorSchemeWrapper>
   ),
-  (Story: FC) => (
-    <MantineProvider theme={medplumDefaultTheme}>
-      <Story />
-    </MantineProvider>
-  ),
+  (Story: FC, context: { globals: { theme?: string } }) => {
+    const selectedTheme = themePresetMap[context.globals.theme ?? 'medplumDefault'] ?? themePresetMap.medplumDefault;
+    return (
+      <MantineProvider theme={selectedTheme}>
+        <Story />
+      </MantineProvider>
+    );
+  },
 ];
