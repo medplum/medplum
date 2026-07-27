@@ -675,7 +675,7 @@ To avoid this, Medplum automatically **reconciles the default access policy when
 - Promoting a user to admin: if their current policy is exactly the project's `Practitioner` default, it is swapped to the `Admin` default.
 - Demoting an admin: if their current policy is exactly the project's `Admin` default, it is swapped back to the `Practitioner` default.
 
-This reconciliation only applies when the user is currently on a recognized role default. **Custom (non-default) access policies are never modified** — if you have assigned a user a bespoke policy, toggling the admin flag leaves that policy untouched.
+This reconciliation only happens when the user's current policy is exactly the **opposite role's recognized default** — the `Practitioner` default when promoting, or the `Admin` default when demoting. Any other policy is left as-is. In particular, **custom (non-default) access policies are never modified**: if you have assigned a user a bespoke policy, toggling the admin flag leaves that policy untouched.
 
 :::tip[Custom access policy combinations]
 
