@@ -59,9 +59,8 @@ On the hosted Medplum service, **Server-level** and **Project-level** rate limit
 
 To view or update the Project-level limits:
 
-1.  Navigate to the **Project Admin** page in the Medplum App.
-2.  Edit the `Project` resource.
-3.  Update the `systemSettings` field:
+1.  Navigate to your list of [Projects](https://app.medplum.com/Project), and find the project.
+2.  View (or edit, if self-hosting) the `systemSettings` field on the Project resource:
 
 - `userFhirQuota`: Overrides the per-user FHIR interaction limit.
 - `totalFhirQuota`: Sets a limit for the _sum_ of all users in the project.
