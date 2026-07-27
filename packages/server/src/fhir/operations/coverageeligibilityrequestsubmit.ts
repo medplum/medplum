@@ -34,8 +34,8 @@ async function handleCoverageEligibilitySubmit(
   if (isResource<CoverageEligibilityRequest>(resource, 'CoverageEligibilityRequest')) {
     eligibilityRequest = resource;
   } else if (isResource<Bundle>(resource, 'Bundle')) {
-    eligibilityRequest = resource.entry?.find((e) => isResource(e.resource, 'CoverageEligibilityRequest'))
-      ?.resource as CoverageEligibilityRequest | undefined;
+    eligibilityRequest = resource.entry?.find((e) => isResource(e.resource, 'CoverageEligibilityRequest'))?.resource as
+      CoverageEligibilityRequest | undefined;
   }
 
   if (!eligibilityRequest) {
