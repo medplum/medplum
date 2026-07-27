@@ -480,11 +480,13 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
+  readonly extensions: { outcome: OperationOutcome };
 
   constructor(outcome: OperationOutcome, options?: ErrorOptions) {
     super(operationOutcomeToString(outcome), options);
     this.name = 'OperationOutcomeError';
     this.outcome = outcome;
+    this.extensions = { outcome };
   }
 }
 

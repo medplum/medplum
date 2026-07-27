@@ -1457,4 +1457,48 @@ describe('GraphQL', () => {
       /Expected value of type "PatchOperationInput" to be an object, found: "not-an-array"/
     );
   });
+  test('Mutation error preserves OperationOutcome in extensions', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        ConditionCreate(
+          res: {
+            resourceType: "Condition"
+            subject: { reference: "Patient/${patient.id}" }
+            clinicalStatus: {
+              coding: [
+                {
+                  system: "http://terminology.hl7.org/CodeSystem/condition-clinical"
+                  code: "active"
+                  display: "Wrong Display Text"
+                }
+              ]
+            }
+          }
+        ) {
+          id
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+
+    const errors = (res[1] as any).errors;
+    expect(errors).toBeDefined();
+    expect(errors.length).toBeGreaterThan(0);
+
+    const error = errors[0];
+
+    // Backward-compatible: message string still there
+    expect(error.message).toContain('clinicalStatus');
+
+    // New: structured outcome preserved via extensions
+    expect(error.extensions).toBeDefined();
+    expect(error.extensions.outcome).toBeDefined();
+    expect(error.extensions.outcome.resourceType).toBe('OperationOutcome');
+
+    const issue = error.extensions.outcome.issue[0];
+    expect(issue.severity).toBe('error');
+    expect(issue.expression).toContain('Condition.clinicalStatus');
+  });
 });
