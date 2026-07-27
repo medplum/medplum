@@ -35,6 +35,7 @@ describe('WorkflowGate', () => {
 
   test('renders children when the dependency is present', async () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(HG_BOT);
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
     renderGate();
     expect(await screen.findByText('Lab ordering form')).toBeInTheDocument();
   });
@@ -49,14 +50,15 @@ describe('WorkflowGate', () => {
     expect(screen.queryByText('Lab ordering form')).not.toBeInTheDocument();
   });
 
-  test('shows contact-administrator guidance for non-admins', async () => {
-    vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
+  test('never blocks non-admins, whose empty Bot search may just be an AccessPolicy', async () => {
+    // A non-admin under an AccessPolicy that hides Bot sees exactly what a missing integration
+    // looks like, so blocking would lock a clinician out of a working workflow.
+    const searchOne = vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
     vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
     renderGate();
-    expect(await screen.findByText('Order Labs is unavailable')).toBeInTheDocument();
-    expect(screen.getByText(/contact your administrator/i)).toBeInTheDocument();
-    // Non-admins are not shown the internal integration name
-    expect(screen.queryByText('Health Gorilla lab ordering')).not.toBeInTheDocument();
-    expect(screen.queryByText('Lab ordering form')).not.toBeInTheDocument();
+    expect(await screen.findByText('Lab ordering form')).toBeInTheDocument();
+    expect(screen.queryByText('Order Labs is unavailable')).not.toBeInTheDocument();
+    // ...and they never pay for the probe
+    expect(searchOne).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, List, Text } from '@mantine/core';
-import { Loading, useMedplum } from '@medplum/react';
+import { Loading } from '@medplum/react';
 import { IconPlugConnectedX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { UnavailableNotice } from '../components/UnavailableNotice';
@@ -16,9 +16,10 @@ export interface WorkflowGateProps {
   readonly loadingFallback?: ReactNode;
 }
 
-// Blocks entry to a workflow whose hard dependencies are missing, showing role-aware guidance
-// instead of the workflow UI. Admins see what to link and where; other users are directed to
-// contact an administrator. Renders its children unchanged once all dependencies are present.
+// Blocks entry to a workflow whose hard dependencies are missing, showing an admin what to link
+// and where instead of the workflow UI. Only project admins are gated: for anyone else the
+// dependency probe cannot tell a missing integration from an AccessPolicy that hides `Bot`, so
+// they are let through. Renders its children unchanged once all dependencies are present.
 // See issue #9824.
 export function WorkflowGate(props: WorkflowGateProps): JSX.Element {
   const { workflow, children, loadingFallback } = props;
@@ -38,12 +39,10 @@ export interface MissingDependenciesNoticeProps {
   readonly missing: readonly WorkflowDependency[];
 }
 
-// Role-aware guidance shown in place of a blocked workflow. Admins see which integrations to link
-// (with docs links); other users are told to contact their administrator.
+// Guidance shown in place of a blocked workflow, listing which integrations to link (with docs
+// links). Only ever shown to project admins — see WorkflowGate above.
 export function MissingDependenciesNotice(props: MissingDependenciesNoticeProps): JSX.Element {
   const { workflowLabel, missing } = props;
-  const medplum = useMedplum();
-  const isAdmin = medplum.isProjectAdmin();
   const plural = missing.length !== 1;
 
   const dependencyList = (
@@ -62,8 +61,11 @@ export function MissingDependenciesNotice(props: MissingDependenciesNoticeProps)
     </List>
   );
 
-  const adminBody = (
-    <>
+  return (
+    <UnavailableNotice
+      icon={<IconPlugConnectedX size={48} color="var(--mantine-color-gray-5)" aria-hidden />}
+      title={`${workflowLabel} is unavailable`}
+    >
       <Text size="sm" c="dimmed">
         This workflow depends on the following {plural ? 'integrations that are' : 'integration that is'} not linked to
         your project:
@@ -72,21 +74,6 @@ export function MissingDependenciesNotice(props: MissingDependenciesNoticeProps)
       <Text size="sm" c="dimmed">
         Link the required project{plural ? 's' : ''} to enable this workflow.
       </Text>
-    </>
-  );
-
-  const userBody = (
-    <Text size="sm" c="dimmed">
-      This workflow is not set up yet. Contact your administrator to enable it.
-    </Text>
-  );
-
-  return (
-    <UnavailableNotice
-      icon={<IconPlugConnectedX size={48} color="var(--mantine-color-gray-5)" aria-hidden />}
-      title={`${workflowLabel} is unavailable`}
-    >
-      {isAdmin ? adminBody : userBody}
     </UnavailableNotice>
   );
 }

@@ -13,12 +13,10 @@ import { WORKFLOWS } from './dependencies';
  * by the {@link MedplumClient} request cache for the session, and never executes the bot. A
  * transient failure is treated as "present" so a network blip never blocks a workflow.
  *
- * Limitation: an empty search result is treated as "missing". If the current user's `AccessPolicy`
- * hides `Bot` resources, the search returns empty (not an error) even when the bot is linked,
- * producing a false "unavailable" — `searchOne` can't distinguish "no bot" from "no read access".
- * The admin-only Get Started summary avoids this (admins can read bots); it only affects the
- * per-user {@link WorkflowGate}. Erring toward blocking is intentional here: a user who can't see
- * the bot most likely can't complete the workflow either.
+ * Limitation: an empty search result is indistinguishable from "no read access". If the current
+ * user's `AccessPolicy` hides `Bot` resources, the search returns empty (not an error) even when
+ * the bot is linked. Callers therefore only probe for project admins, who can always read bots —
+ * see {@link useWorkflowAvailability}.
  * @param medplum - The Medplum client used to look up bots by identifier.
  * @param dependencies - The dependencies to probe.
  * @returns The subset of `dependencies` confirmed missing.
@@ -50,6 +48,11 @@ export interface WorkflowAvailability {
 /**
  * Probes whether every hard dependency of `workflowId` is present in the current project.
  *
+ * Only project admins are probed. For anyone else an empty `Bot` search is ambiguous — an
+ * `AccessPolicy` that hides `Bot` looks exactly like an unlinked integration — and wrongly blocking
+ * a clinician out of a core workflow is worse than letting them reach the underlying error. So
+ * non-admins are always reported as available, and the workflow behaves as it did before gating.
+ *
  * Recovery after an admin links a missing project happens on the next mount / page refresh; there
  * is no live subscription. See issue #9824.
  * @param workflowId - The workflow whose dependencies to probe.
@@ -57,34 +60,40 @@ export interface WorkflowAvailability {
  */
 export function useWorkflowAvailability(workflowId: WorkflowId): WorkflowAvailability {
   const medplum = useMedplum();
-  const [state, setState] = useState<{ workflowId: WorkflowId; loading: boolean; missing: WorkflowDependency[] }>(
-    () => ({ workflowId, loading: true, missing: [] })
-  );
+  const enabled = medplum.isProjectAdmin();
+  const [state, setState] = useState<{
+    workflowId: WorkflowId;
+    enabled: boolean;
+    loading: boolean;
+    missing: WorkflowDependency[];
+  }>(() => ({ workflowId, enabled, loading: enabled, missing: [] }));
 
-  // When the workflow changes, reset to "probing" during render so a stale verdict is never shown.
-  // This is React's recommended alternative to resetting state with a synchronous setState in an effect.
-  if (state.workflowId !== workflowId) {
-    setState({ workflowId, loading: true, missing: [] });
+  // When the workflow (or the user's admin status) changes, reset to "probing" during render so a
+  // stale verdict is never shown. This is React's recommended alternative to resetting state with a
+  // synchronous setState in an effect.
+  if (state.workflowId !== workflowId || state.enabled !== enabled) {
+    setState({ workflowId, enabled, loading: enabled, missing: [] });
   }
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     let cancelled = false;
+    // `findMissingDependencies` settles every probe itself and never rejects.
     findMissingDependencies(medplum, WORKFLOWS[workflowId].dependencies)
       .then((missing) => {
         if (!cancelled) {
-          setState({ workflowId, loading: false, missing });
+          setState({ workflowId, enabled, loading: false, missing });
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setState({ workflowId, loading: false, missing: [] });
-        }
-      });
+      .catch(console.error);
 
     return () => {
       cancelled = true;
     };
-  }, [medplum, workflowId]);
+  }, [medplum, workflowId, enabled]);
 
   return {
     loading: state.loading,
@@ -132,6 +141,7 @@ export function useMissingWorkflowDependencies(options?: { enabled?: boolean }):
     }
 
     let cancelled = false;
+    // `findMissingDependencies` settles every probe itself and never rejects.
     Promise.all(
       Object.values(WORKFLOWS).map(async (workflow) => ({
         workflow,
@@ -147,11 +157,7 @@ export function useMissingWorkflowDependencies(options?: { enabled?: boolean }):
           });
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setState({ enabled, loading: false, blockedWorkflows: [] });
-        }
-      });
+      .catch(console.error);
 
     return () => {
       cancelled = true;
