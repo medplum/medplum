@@ -143,15 +143,14 @@ export async function expandValueSet(
   valueSet: ValueSet,
   params: ValueSetExpandParameters
 ): Promise<ValueSet> {
-  // Page after includes have been deduplicated, so `offset`/`count` operate on distinct concepts. Each include's
-  // query pages over distinct codes (one row per code, see `finalizePaging`). Designations/synonyms for the
-  // returned page are hydrated afterward.
   const offset = Math.max(0, params.offset ?? 0);
-  const requestedCount = params.count ?? MAX_EXPANSION_SIZE;
-  const budget = Math.min(offset + requestedCount, MAX_EXPANSION_SIZE);
+  const count = params.count ?? MAX_EXPANSION_SIZE;
+  const budget = Math.min(offset + count, MAX_EXPANSION_SIZE);
+
   const expander = new ValueSetExpander(repo, params);
   const expandedSet = await expander.expand(valueSet, budget);
-  const contains = expandedSet.slice(offset, offset + requestedCount);
+
+  const contains = expandedSet.slice(offset, offset + count);
   await expander.hydrateDesignations(contains);
   valueSet.expansion = {
     total: expandedSet.length >= MAX_EXPANSION_SIZE ? MAX_EXPANSION_SIZE + 1 : expandedSet.length,
@@ -275,8 +274,7 @@ class ValueSetExpander {
   }
 
   /**
-   * Expands a single `compose.include`, dispatching on the kind of include: pure ValueSet reference, mixed
-   * (system + references), explicit concept list, or plain filtered selection.
+   * Expands a single `compose.include`, dispatching on the kind of include: explicit concept list, or filtered selection.
    * @param include - The compose include to expand.
    * @param expansion - The expansion being accumulated.
    * @param count - The maximum number of codes to produce at this level.
@@ -286,8 +284,7 @@ class ValueSetExpander {
     expansion: ValueSetExpansionContains[],
     count: number
   ): Promise<void> {
-    // Every include is bounded by the budget left after earlier includes, so the requested count is honored
-    // across the whole ValueSet rather than fetched for each include
+    // Every include is bounded by the budget remaining after earlier includes, so the total count applies across the whole expansion
     const remaining = count - expansion.length;
     if (include.valueSet?.length && !include.system && !include.concept?.length && !include.filter?.length) {
       // Pure ValueSet reference(s), no other selection criteria
@@ -505,7 +502,7 @@ class ValueSetExpander {
 
   /**
    * Collects the set of code system URLs a ValueSet can contain, from its pre-expansion (if any) and/or its
-   * `compose.include` chain (recursing through nested `valueSet` references). Used to bound an intersection's
+   * `compose.include` chain (recursing through nested `valueSet` references) to bound an intersection's
    * candidate systems.
    * @param valueSet - The ValueSet whose systems to collect.
    * @param seen - URLs already visited on this path, to guard against reference cycles.
@@ -1092,14 +1089,14 @@ function applyExpansionFilters(
 }
 
 /**
- * Applies ranking + `count`/`offset` paging to a fully-filtered expansion query, so that the page bounds count
+ * Applies ranking and pagination to a fully-filtered expansion query, so that the page bounds count
  * distinct codes rather than raw Coding rows. Must be called after all WHERE criteria (text filter, concept list,
  * membership predicates) have been added.
  *
- * A text-filtered query may match a code on either its primary display or a synonym, so its rows are not one-per-code.
+ * A text-filtered query may match a code on either primary display or synonym, so its rows are not unique.
  * Such queries keep the best-ranked row per code via `DISTINCT ON (code)` and then rank those distinct codes by
  * similarity in an outer query, so `LIMIT`/`OFFSET` operate on codes. Un-filtered and `displayLanguage` queries
- * already yield one row per code, so they page directly.
+ * already yield one row per code and are paged directly.
  * @param query - The filtered expansion query.
  * @param params - The expand parameters (notably `filter`, `count`, `offset`, `displayLanguage`).
  * @returns The paged query to execute.
@@ -1117,8 +1114,6 @@ function finalizePaging(query: SelectQuery, params: ValueSetExpandParameters): S
     return query.limit(limit).offset(offset);
   }
 
-  // Collapse primary + synonym rows to one row per code (best similarity wins the display), then rank the distinct
-  // codes and page. The inner ORDER BY leads with `code` (required by DISTINCT ON) via the distinctOn column.
   query.distinctOn(new Column(query.effectiveTableName, 'code')).orderByExpr(similarity(undefined), true);
   return new SelectQuery('distinct_codes', query)
     .column('code')
