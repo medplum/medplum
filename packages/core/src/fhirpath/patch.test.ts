@@ -346,7 +346,7 @@ describe('FHIRPath Patch', () => {
       });
 
       expect(ops).toStrictEqual([
-        { type: 'add', path: 'Patient', name: 'birthDate', value: { type: 'Date', value: '1990-05-15' } },
+        { type: 'add', path: 'Patient', name: 'birthDate', value: { type: 'date', value: '1990-05-15' } },
         { type: 'move', path: 'Patient.name[0].given', source: 0, destination: 1 },
       ]);
     });

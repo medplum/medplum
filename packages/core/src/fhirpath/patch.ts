@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import type { Parameters } from '@medplum/fhirtypes';
 import { Pointer } from '../patch';
 import type { PatchOptions } from '../patch/patch';
 import { add, move, remove, replace } from '../patch/patch';
@@ -10,6 +10,7 @@ import type { TypedValueWithPath } from '../typeschema/crawler';
 import { pathToJSONPointer } from '../typeschema/crawler';
 import { isObject } from '../utils';
 import { evalFhirPathTyped } from './parse';
+import { getTypedPropertyValue } from './utils';
 
 export type FhirPathPatch =
   | { type: 'add'; path: string; name: string; value: TypedValue }
@@ -34,7 +35,7 @@ export function parseFhirPathPatchParameters(parameters: Parameters): FhirPathPa
     if (param.name !== 'operation') {
       continue;
     }
-    const op: Record<string, unknown> = {};
+    const op = {} as any;
     for (const part of param.part ?? []) {
       switch (part.name) {
         case 'type':
@@ -56,22 +57,13 @@ export function parseFhirPathPatchParameters(parameters: Parameters): FhirPathPa
           op.destination = part.valueInteger;
           break;
         case 'value':
-          op.value = getTypedValueFromPart(part);
+          op.value = getTypedPropertyValue({ type: 'ParametersParameter', value: part }, 'value');
           break;
       }
     }
     operations.push(op as FhirPathPatch);
   }
   return operations;
-}
-
-function getTypedValueFromPart(part: ParametersParameter): TypedValue | undefined {
-  for (const key of Object.keys(part)) {
-    if (key.startsWith('value')) {
-      return { type: key.substring(5), value: part[key as keyof ParametersParameter] };
-    }
-  }
-  return undefined;
 }
 
 export function fhirpathPatchTypedValue(original: TypedValue, patch: FhirPathPatch[]): void {
