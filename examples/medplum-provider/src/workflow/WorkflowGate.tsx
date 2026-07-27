@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Center, List, Paper, Stack, Text, Title } from '@mantine/core';
+import { Anchor, List, Text } from '@mantine/core';
 import { Loading, useMedplum } from '@medplum/react';
 import { IconPlugConnectedX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
+import { UnavailableNotice } from '../components/UnavailableNotice';
 import type { WorkflowDependency, WorkflowId } from './dependencies';
 import { WORKFLOWS } from './dependencies';
 import { useWorkflowAvailability } from './useWorkflowAvailability';
@@ -29,11 +30,7 @@ export function WorkflowGate(props: WorkflowGateProps): JSX.Element {
   if (available) {
     return <>{children}</>;
   }
-  return (
-    <Center p="xl">
-      <MissingDependenciesNotice workflowLabel={WORKFLOWS[workflow].label} missing={missing} />
-    </Center>
-  );
+  return <MissingDependenciesNotice workflowLabel={WORKFLOWS[workflow].label} missing={missing} />;
 }
 
 export interface MissingDependenciesNoticeProps {
@@ -85,12 +82,11 @@ export function MissingDependenciesNotice(props: MissingDependenciesNoticeProps)
   );
 
   return (
-    <Paper shadow="md" p="xl" radius="md" withBorder maw={480}>
-      <Stack align="center" gap="sm" ta="center">
-        <IconPlugConnectedX size={48} color="var(--mantine-color-gray-5)" />
-        <Title order={3}>{workflowLabel} is unavailable</Title>
-        {isAdmin ? adminBody : userBody}
-      </Stack>
-    </Paper>
+    <UnavailableNotice
+      icon={<IconPlugConnectedX size={48} color="var(--mantine-color-gray-5)" aria-hidden />}
+      title={`${workflowLabel} is unavailable`}
+    >
+      {isAdmin ? adminBody : userBody}
+    </UnavailableNotice>
   );
 }

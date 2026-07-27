@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { notFound } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -147,12 +148,8 @@ describe('ResourceCreatePage', () => {
 
   test('Shows friendly admin guidance when a required profile is missing', async () => {
     vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
-    // The US Core Patient profile is not installed, so the schema request rejects.
-    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(
-      new Error(
-        'StructureDefinition profile with URL http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient not found'
-      )
-    );
+    // The US Core Patient profile is not installed, so the schema request rejects as "not found".
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(notFound);
 
     await setup('/Patient/new');
 
@@ -169,7 +166,7 @@ describe('ResourceCreatePage', () => {
 
   test('Directs non-admins to an administrator when a required profile is missing', async () => {
     vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
-    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(new Error('us-core-patient not found'));
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(notFound);
 
     await setup('/Patient/new');
 
@@ -182,6 +179,22 @@ describe('ResourceCreatePage', () => {
       screen.queryByText('http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient')
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Server error:/i)).not.toBeInTheDocument();
+  });
+
+  test('Surfaces the real error on a transient profile-load failure instead of missing-profile guidance', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    // A transient failure (e.g. a 500 or network blip) is NOT a missing profile.
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(new Error('Internal server error'));
+
+    await setup('/Patient/new');
+
+    // The real error is surfaced...
+    await waitFor(() => {
+      expect(screen.getByText(/Server error: Internal server error/i)).toBeInTheDocument();
+    });
+
+    // ...and the admin is not misdirected to install a profile that may already be present.
+    expect(screen.queryByText(/Creating a Patient requires/i)).not.toBeInTheDocument();
   });
 
   test('Handles form submission error', async () => {

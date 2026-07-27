@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Text } from '@mantine/core';
-import type { InternalTypeSchema } from '@medplum/core';
-import { addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
+import {
+  addProfileToResource,
+  isNotFound,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  tryGetProfile,
+} from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import type { ResourceFormProps } from '@medplum/react';
 import { Loading, ResourceForm, useMedplum } from '@medplum/react';
@@ -23,8 +28,8 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
 
   const medplum = useMedplum();
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [profileError, setProfileError] = useState<any>();
-  const [profile, setProfile] = useState<InternalTypeSchema>();
+  const [profileError, setProfileError] = useState<unknown>();
+  const [profileMissing, setProfileMissing] = useState(false);
 
   useEffect(() => {
     if (!profileUrl) {
@@ -35,14 +40,21 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
       .requestProfileSchema(profileUrl, { expandProfile: true })
       .finally(() => setLoadingProfile(false))
       .then(() => {
-        const resourceProfile = tryGetProfile(profileUrl);
-        if (resourceProfile) {
-          setProfile(resourceProfile);
+        // The request succeeded but no such profile is installed in this project.
+        if (!tryGetProfile(profileUrl)) {
+          setProfileMissing(true);
         }
       })
       .catch((reason) => {
-        console.error(reason);
-        setProfileError(reason);
+        // Only a genuine "not found" means the profile is absent. Any other failure (500,
+        // timeout, network blip) is likely transient, so surface the real error instead of
+        // steering an admin toward installing a profile that may already be present.
+        if (isNotFound(normalizeOperationOutcome(reason))) {
+          setProfileMissing(true);
+        } else {
+          console.error(reason);
+          setProfileError(reason);
+        }
       });
   }, [medplum, profileUrl]);
 
@@ -63,16 +75,25 @@ export function ResourceFormWithRequiredProfile(props: ResourceFormWithRequiredP
     return <Loading />;
   }
 
-  if (profileUrl && !profile) {
+  // A failed profile request is surfaced as-is (it may be transient) rather than being mistaken
+  // for a missing profile. The technical error is also logged above for engineers.
+  if (profileUrl && profileError) {
+    return (
+      <Alert icon={<IconAlertCircle size={16} />} title="Error loading profile" color="red">
+        <Text>Server error: {normalizeErrorString(profileError)}</Text>
+      </Alert>
+    );
+  }
+
+  if (profileUrl && profileMissing) {
     // A caller-supplied message controls its own presentation and is rendered as-is. Callers that
-    // pass no message fall back to the raw server error in an alert (unchanged behavior for the edit
-    // pages). The technical error is also logged above for engineers.
+    // pass no message fall back to a generic notice (unchanged behavior for the edit pages).
     if (missingProfileMessage) {
       return <>{missingProfileMessage}</>;
     }
     return (
       <Alert icon={<IconAlertCircle size={16} />} title="Not found" color="red">
-        {profileError && <Text>Server error: {normalizeErrorString(profileError)}</Text>}
+        <Text>The required profile is not installed: {profileUrl}</Text>
       </Alert>
     );
   }
