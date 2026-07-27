@@ -361,7 +361,7 @@ const sidebars: SidebarsConfig = {
       label: 'Medplum Integrations',
       id: 'integration/index',
     },
-    { type: 'html', value: '<strong class="menu__link">ePrescribe</strong>' },
+    { type: 'html', value: '<strong class="menu__link">E-Prescribe</strong>' },
     {
       type: 'category',
       label: 'ScriptSure (Beta)',

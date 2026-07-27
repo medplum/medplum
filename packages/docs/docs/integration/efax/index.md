@@ -11,6 +11,10 @@ Medplum provides a first-party integration with eFax Corporate to send and recei
 This integration requires setup by the Medplum team. [Contact us](mailto:info+efax@medplum.com?subject=eFax%20Integration%20for%20Medplum) to enable eFax for your project.
 :::
 
+:::tip[Planning this integration?]
+The [Messaging & Communications Decision Guide](/docs/decision-guides/messaging) walks through requirements questions and FHIR modeling decisions for messaging — thread structure, routing, and external channels — use it alongside these docs.
+:::
+
 ## Overview
 
 The eFax integration allows you to:

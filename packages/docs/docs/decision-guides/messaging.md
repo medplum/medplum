@@ -7,7 +7,7 @@ download_slug: messaging
 
 # Messaging & Communications Decision Guide
 
-_Companion to the [Messaging & Communications](https://www.medplum.com/docs/communications) docs._
+_Companion to the [Messaging & Communications](/docs/communications) docs._
 
 ## Section 1: Use Case & Participants
 
@@ -242,3 +242,12 @@ These questions establish the "who and why" before scoping any features. The ans
 | Multiple patients can be in one session | Create a parent session Encounter \+ one child Encounter per patient via `Encounter.partOf`; clinical details live on child Encounters |
 | Clinical documentation needed for billing | Populate `Encounter.participant`, `Encounter.reasonCode`, and `Encounter.serviceType` per patient Encounter |
 
+
+---
+
+## Related Integrations
+
+The external messaging channels Medplum integrates with first-party — both deliver through FHIR `Communication` resources, so they slot into the thread model above:
+
+- **[Twilio SMS](/docs/integration/twilio-sms)** — send and receive SMS via the `$send-sms-twilio` operation.
+- **[eFax](/docs/integration/efax)** — send and receive faxes via the `$send-efax` and `$receive-efax` operations.

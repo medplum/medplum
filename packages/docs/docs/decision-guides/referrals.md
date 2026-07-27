@@ -7,7 +7,7 @@ download_slug: referrals
 
 # Referrals Decision Guide
 
-_Companion to the [Referral Management](https://www.medplum.com/docs/careplans/referrals) docs._
+_Companion to the [Referral Management](/docs/careplans/referrals) docs._
 
 ## Section 1: Use Case & Participants
 

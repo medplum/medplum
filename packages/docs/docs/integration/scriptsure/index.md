@@ -8,6 +8,10 @@ sidebar_position: 0
 The ScriptSure integration is in beta. Features and APIs may change.
 :::
 
+:::tip[Planning this integration?]
+The [E-Prescribe Decision Guide](/docs/decision-guides/e-prescribe) walks through the integration and enrollment decisions behind an e-prescribing build — iframe vs. integrated UI, controlled substances, and prescriber enrollment — use it alongside these docs.
+:::
+
 Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e-prescribing via ScriptSure. The integration exposes a full API surface, including custom FHIR operations and Medplum bots. This allows users to build custom UI on top of the platform, though ScriptSure also offers an authenticated iframe. Providers can have access to features such as:
 
 - Drug search with real-time DDI/allergy checks

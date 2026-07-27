@@ -7,7 +7,7 @@ download_slug: access-control
 
 # Access Control Decision Guide
 
-_Companion to the [Authorization and Access Control](https://www.medplum.com/docs/access) docs._
+_Companion to the [Authorization and Access Control](/docs/access) docs._
 
 ## Section 1: Use Case & Participants
 
@@ -35,7 +35,7 @@ _Companion to the [Authorization and Access Control](https://www.medplum.com/doc
 
 Isolation uses **compartments** (`meta.compartment`) matched by parameterized access policies.
 
-**Design principle (from [Medplum docs](https://www.medplum.com/docs/access/multi-tenant-access-policy)):** Push complexity into enrollment Bots, not policies. Each patient is tagged with their tenant(s); each practitioner's `ProjectMembership.access` lists every tenant they work in. See the [MSO demo `enrollment.ts`](https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts) for reference.
+**Design principle (from [Medplum docs](/docs/access/multi-tenant-access-policy)):** Push complexity into enrollment Bots, not policies. Each patient is tagged with their tenant(s); each practitioner's `ProjectMembership.access` lists every tenant they work in. See the [MSO demo `enrollment.ts`](https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts) for reference.
 
 ---
 
@@ -260,7 +260,7 @@ Keep FHIRPath simple; complex logic belongs in a Bot.
 
 | Situation | Approach |
 | :---- | :---- |
-| Patient enrollment | Bot calls [`$set-accounts`](https://www.medplum.com/docs/api/fhir/operations/set-accounts) on the triggering event; use `propagate: true` to tag related resources |
+| Patient enrollment | Bot calls [`$set-accounts`](/docs/api/fhir/operations/set-accounts) on the triggering event; use `propagate: true` to tag related resources |
 | Transfer, records follow | Update compartment with `propagate: true`; old tenant loses access |
 | Transfer, records stay / shared | Add new compartment (don't replace); both tenants retain access |
 
