@@ -1035,18 +1035,12 @@ export function buildSearchExpression(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
-  trackedResourceTypes?: TrackedResourceTypes
+  trackedResourceTypes?: TrackedResourceTypes,
+  table: string = resourceType
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    const expr = buildSearchFilterExpression(
-      repo,
-      selectQuery,
-      resourceType,
-      resourceType,
-      filter,
-      trackedResourceTypes
-    );
+    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, table, filter, trackedResourceTypes);
     expressions.push(expr);
   }
   if (expressions.length === 0) {
@@ -1086,7 +1080,7 @@ function buildSearchFilterExpression(
 
   if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
-    return buildChainedSearch(repo, selectQuery, resourceType, chain, trackedResourceTypes);
+    return buildChainedSearch(repo, selectQuery, resourceType, table, chain, trackedResourceTypes);
   }
 
   const specialParamExpression = trySpecialSearchParameter(
@@ -1788,6 +1782,7 @@ function buildChainedSearch(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
+  table: string,
   param: ChainedSearchParameter,
   trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
@@ -1810,13 +1805,13 @@ function buildChainedSearch(
       repo,
       selectQuery,
       resourceType as ResourceType,
-      resourceType,
+      table,
       { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
       trackedResourceTypes
     );
   }
 
-  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);
+  return buildChainedSearchUsingReferenceTable(repo, table, param, trackedResourceTypes);
 }
 
 /**
@@ -1825,14 +1820,14 @@ function buildChainedSearch(
  * However, reference tables were only populated after Medplum version 2.2.0.
  * Self-hosted servers need to run a full re-index before this technique can be used.
  * @param repo - The repository.
- * @param selectQuery - The select query builder.
+ * @param table - The table name or alias holding the rows the chain starts from.
  * @param param - The chained search parameter.
  * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
-  selectQuery: SelectQuery,
+  table: string,
   param: ChainedSearchParameter,
   trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
@@ -1843,15 +1838,15 @@ function buildChainedSearchUsingReferenceTable(
   // Set up subquery for EXISTS(), starting on the first link of the chain
   let innerQuery: SelectQuery;
   if (link.implementation.type === SearchParameterType.CANONICAL) {
-    innerQuery = new SelectQuery(currentTable).whereExpr(
-      getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
-    );
+    innerQuery = new SelectQuery(currentTable).whereExpr(getCanonicalJoinCondition(table, link, currentTable));
   } else {
-    innerQuery = new SelectQuery(currentTable).whereExpr(
-      lookupTableJoinCondition(selectQuery.effectiveTableName, link, currentTable)
-    );
+    innerQuery = new SelectQuery(currentTable).whereExpr(lookupTableJoinCondition(table, link, currentTable));
     currentTable = linkLiteralReference(innerQuery, currentTable, link);
   }
+  // Filter each link target exactly as the outer query filters its own resource type, so the
+  // chain only traverses resources the caller can read. Without this the subquery can match
+  // rows from other projects, or rows excluded by the caller's access policy.
+  repo.addSecurityFilters(innerQuery, link.targetType, AccessPolicyInteraction.SEARCH, currentTable);
 
   // Add joins to inner query for all subsequent chain links
   for (let i = 1; i < param.chain.length; i++) {
@@ -1863,6 +1858,8 @@ function buildChainedSearchUsingReferenceTable(
       const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
       currentTable = linkLiteralReference(innerQuery, lookupTable, link);
     }
+    // Every hop is traversed, so every hop is filtered, not just the terminal one.
+    repo.addSecurityFilters(innerQuery, link.targetType, AccessPolicyInteraction.SEARCH, currentTable);
   }
 
   // Add terminal conditions on final target table, and return EXISTS() over subquery
