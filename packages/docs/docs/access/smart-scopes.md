@@ -51,3 +51,34 @@ Scopes grant read, write, search and update access to specific resources, here a
 During authorization, the user has an option to select/deselect scopes and will see a scope selection page like the below.
 
 ![Smart scopes example](/img/auth/smart-scopes.png)
+
+By default, this page is shown whenever the authorization request asks for any scope other than `openid`.
+
+You can override that per client application with `ClientApplication.signInForm.showScopeSelection`:
+
+| Value   | Behavior                                                                                        |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| `true`  | Always show the scope selection page.                                                           |
+| `false` | Never show it. The client is granted the full scope that it requested.                          |
+| _unset_ | Show it if the authorization request asks for any scope other than `openid` (default behavior). |
+
+For example, to suppress the page for a provider-facing app whose users sign in many times a day:
+
+```json
+{
+  "resourceType": "ClientApplication",
+  "name": "Example EHR App",
+  "signInForm": {
+    "showScopeSelection": false
+  }
+}
+```
+
+:::warning
+
+Setting `showScopeSelection` to `false` removes the user's ability to grant the client less access
+than it requested. Granular scope selection is required for patient-facing apps under
+[ONC 170.315(g)(10)](https://www.healthit.gov/test-method/standardized-api-patient-and-population-services),
+so only disable it for provider-facing or trusted first-party clients.
+
+:::
