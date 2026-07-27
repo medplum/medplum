@@ -5,6 +5,10 @@ tags: [integration]
 
 # Stedi Integration
 
+:::tip[Planning this integration?]
+The [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing) walks through requirements questions and FHIR modeling decisions for billing — charge capture, eligibility, claims, and remittance — use it alongside these docs.
+:::
+
 Medplum integrates with [Stedi](https://www.stedi.com/) for billing and revenue cycle workflows.
 
 ## Insurance eligibility

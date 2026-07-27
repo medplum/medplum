@@ -4,9 +4,6 @@ sidebar_position: 7
 
 # Pharmacy Search
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 ## React hook: `useScriptSurePharmacySearch`
 

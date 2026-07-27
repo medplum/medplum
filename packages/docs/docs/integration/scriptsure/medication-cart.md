@@ -4,9 +4,6 @@ sidebar_position: 9
 
 # Medication Cart
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 The MedCart flow lets a clinician stage several prescriptions during one encounter and approve them all in a single signing session—instead of opening a separate widget per drug. The flow is:
 

@@ -4,9 +4,6 @@ sidebar_position: 5
 
 # Order Medication
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 ## React hook: `useScriptSureOrderMedication`
 
