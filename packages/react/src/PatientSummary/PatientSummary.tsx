@@ -101,7 +101,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   }
 
   const headerContent = (
-    <Group align="center" gap="sm" py="md" pl="sm" pr="xl">
+    <Group align="center" gap="sm" wrap="nowrap" className={styles.headerContent}>
       <ResourceAvatar value={patient} size={48} radius={48} className={styles.avatar} />
       <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
         <Tooltip
@@ -133,7 +133,11 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   return (
     <Flex direction="column" gap={0} w="100%" h="100%" className={styles.panel}>
       <Box>
-        <Box className={styles.headerRow}>
+        {/* The actions menu is a real flex sibling of the name rather than an overlay, so the
+            row's `gap` reserves the space itself: the name truncates that far short of the
+            icon at any panel width, and the icon stays pinned to the same right inset as the
+            sections' "+" buttons. Without the menu, keep the old right padding. */}
+        <Group align="center" gap="sm" wrap="nowrap" py="md" pl="sm" pr={headerMenuItems ? 'xs' : 'xl'}>
           {linkToPatient ? (
             <MedplumLink to={patient} className={styles.headerLink} underline="never">
               {headerContent}
@@ -142,21 +146,22 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             headerContent
           )}
           {headerMenuItems && (
-            <>
-              <div className={styles.gradient} aria-hidden="true" />
-              <div className={styles.headerMenu}>
-                <Menu shadow="md" radius="md" width={240} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon variant="subtle" size="md" radius="xl" aria-label="Patient actions">
-                      <IconDots size={18} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>{headerMenuItems}</Menu.Dropdown>
-                </Menu>
-              </div>
-            </>
+            <Menu shadow="md" radius="md" width={240} position="bottom-end">
+              <Menu.Target>
+                <ActionIcon
+                  variant="subtle"
+                  size="md"
+                  radius="xl"
+                  aria-label="Patient actions"
+                  className={styles.actionsButton}
+                >
+                  <IconDots size={18} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>{headerMenuItems}</Menu.Dropdown>
+            </Menu>
           )}
-        </Box>
+        </Group>
         <Divider />
       </Box>
 

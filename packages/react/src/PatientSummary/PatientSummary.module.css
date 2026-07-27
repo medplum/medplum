@@ -11,16 +11,20 @@
   background-color: var(--mantine-color-white);
 }
 
-.headerRow {
-  position: relative;
-}
-
 .avatar {
   border: 1px solid var(--mantine-color-gray-3);
 }
 
 [data-mantine-color-scheme='dark'] .avatar {
   border-color: var(--mantine-color-dark-4);
+}
+
+/* Both the link wrapper and the content it wraps take the row's free space and allow
+   shrinking, so the name truncates instead of pushing the actions menu around. */
+.headerLink,
+.headerContent {
+  flex: 1;
+  min-width: 0;
 }
 
 .headerLink {
@@ -33,65 +37,13 @@
   text-decoration: none;
 }
 
-/* Same hover treatment as SummaryItem: opaque solid behind the icon, with a white fade
-   to its left so truncated name text never shows through. Confined to the content row
-   (Divider is a sibling) and inset from the right to avoid the panel scrollbar. */
-.gradient {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: calc(var(--mantine-spacing-xs) + 28px);
-  width: 48px;
-  z-index: 1;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
+.actionsButton {
+  flex-shrink: 0;
 }
 
-[data-mantine-color-scheme='light'] .gradient {
-  background: linear-gradient(to right, transparent, var(--mantine-color-white));
-}
-
-[data-mantine-color-scheme='dark'] .gradient {
-  background: linear-gradient(to right, transparent, var(--mantine-color-body));
-}
-
-.headerMenu {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: var(--mantine-spacing-xs);
-  width: 28px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-}
-
-[data-mantine-color-scheme='light'] .headerMenu {
-  background: var(--mantine-color-white);
-}
-
-[data-mantine-color-scheme='dark'] .headerMenu {
-  background: var(--mantine-color-body);
-}
-
-.headerRow:hover .gradient,
-.headerRow:hover .headerMenu,
-.headerRow:focus-within .gradient,
-.headerRow:focus-within .headerMenu,
-/* Keep the overlay + trigger visible while the menu is open (dropdown is portaled). */
-.headerRow:has(:global([data-expanded])) .gradient,
-.headerRow:has(:global([data-expanded])) .headerMenu {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Match ActionIcon subtle hover while the menu stays open. */
-.headerMenu :global(.mantine-ActionIcon-root[data-expanded]) {
+/* Match ActionIcon subtle hover while the menu stays open (the dropdown is portaled,
+   so the trigger loses :hover as soon as the pointer moves into it). */
+.actionsButton[data-expanded] {
   background-color: var(--mantine-primary-color-light);
   color: var(--mantine-primary-color-light-color);
 }
