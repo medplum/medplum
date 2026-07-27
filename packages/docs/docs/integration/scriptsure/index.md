@@ -2,11 +2,7 @@
 sidebar_position: 0
 ---
 
-# ScriptSure (Beta)
-
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
+# ScriptSure
 
 Medplum has partnered with [DAW Systems](https://www.dawsystems.com/) to offer e-prescribing via ScriptSure. The integration exposes a full API surface, including custom FHIR operations and Medplum bots. This allows users to build custom UI on top of the platform, though ScriptSure also offers an authenticated iframe. Providers can have access to features such as:
 
