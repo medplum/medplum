@@ -45,7 +45,7 @@ export function HomePage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="md" className={classes.paper}>
-      <Title order={2} mb="sm">
+      <Title order={4} mb="md">
         {search.resourceType}
       </Title>
       <Divider mb="md" />
