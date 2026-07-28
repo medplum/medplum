@@ -32,6 +32,9 @@ interface FilterState {
  * @property getTaskUri - The function to call to get the URI of a task.
  * @property myTasksUri - The URI for the my tasks search request.
  * @property allTasksUri - The URI for the all tasks search request.
+ * @property newTaskOpened - Controlled open state for the new task modal. When provided, use `onNewTaskOpen` and `onNewTaskClose` to update it.
+ * @property onNewTaskOpen - Called when the user clicks the new task button. Required when `newTaskOpened` is provided.
+ * @property onNewTaskClose - Called when the new task modal is closed. Required when `newTaskOpened` is provided.
  * @returns The TaskBoard component.
  */
 interface TaskBoardProps {
@@ -43,6 +46,9 @@ interface TaskBoardProps {
   getTaskUri: (task: Task) => string;
   myTasksUri: string;
   allTasksUri: string;
+  newTaskOpened?: boolean;
+  onNewTaskOpen?: () => void;
+  onNewTaskClose?: () => void;
 }
 
 export function TaskBoard({
@@ -54,6 +60,9 @@ export function TaskBoard({
   getTaskUri,
   myTasksUri,
   allTasksUri,
+  newTaskOpened,
+  onNewTaskOpen,
+  onNewTaskClose,
 }: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
@@ -61,7 +70,10 @@ export function TaskBoard({
   const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
+  const [internalNewTaskOpened, setInternalNewTaskOpened] = useState(false);
+  const newTaskModalOpened = newTaskOpened ?? internalNewTaskOpened;
+  const openNewTaskModal = onNewTaskOpen ?? ((): void => setInternalNewTaskOpened(true));
+  const closeNewTaskModal = onNewTaskClose ?? ((): void => setInternalNewTaskOpened(false));
   const [total, setTotal] = useState<number | undefined>(undefined);
   const requestIdRef = useRef(0);
   const fetchingRef = useRef(false);
@@ -230,7 +242,7 @@ export function TaskBoard({
         onClearAllFilters={handleClearAllFilters}
       />
       <Tooltip label="New Task" position="bottom" openDelay={500}>
-        <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={() => setNewTaskModalOpened(true)}>
+        <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openNewTaskModal}>
           <IconPlus size={16} />
         </ActionIcon>
       </Tooltip>
@@ -269,11 +281,7 @@ export function TaskBoard({
         }}
       />
 
-      <NewTaskModal
-        opened={newTaskModalOpened}
-        onClose={() => setNewTaskModalOpened(false)}
-        onTaskCreated={handleNewTaskCreated}
-      />
+      <NewTaskModal opened={newTaskModalOpened} onClose={closeNewTaskModal} onTaskCreated={handleNewTaskCreated} />
     </>
   );
 }

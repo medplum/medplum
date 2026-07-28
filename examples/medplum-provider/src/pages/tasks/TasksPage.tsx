@@ -18,25 +18,39 @@ export function TasksPage(): JSX.Element {
   const profile = useMedplumProfile();
   const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
 
+  const isNewTask = location.pathname.endsWith('/new');
+  const basePath = taskId ? `/Task/${taskId}` : '/Task';
+
   useEffect(() => {
     const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search);
     if (needsNavigation) {
-      navigate(`/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
+      navigate(`${isNewTask ? `${basePath}/new` : basePath}${formatSearchQuery(normalizedSearch)}`)?.catch(
+        console.error
+      );
     } else {
       setParsedSearch(normalizedSearch);
     }
-  }, [location, navigate]);
+  }, [location, navigate, isNewTask, basePath]);
 
   if (!parsedSearch) {
     return <Loading />;
   }
 
   const onNew = (task: Task): void => {
-    navigate(getTaskUri(task))?.catch(console.error);
+    navigate(`/Task/${task.id}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
+  // Preserve the /new suffix so auto-selecting a task keeps the new task modal open.
   const getTaskUri = (task: Task): string => {
-    return `/Task/${task.id}${formatSearchQuery(parsedSearch)}`;
+    return `/Task/${task.id}${isNewTask ? '/new' : ''}${formatSearchQuery(parsedSearch)}`;
+  };
+
+  const onNewTaskOpen = (): void => {
+    navigate(`${basePath}/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+  };
+
+  const onNewTaskClose = (): void => {
+    navigate(`${basePath}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
   const onDelete = (_: Task): void => {
@@ -83,6 +97,9 @@ export function TasksPage(): JSX.Element {
         onNew={onNew}
         onChange={onChange}
         getTaskUri={getTaskUri}
+        newTaskOpened={isNewTask}
+        onNewTaskOpen={onNewTaskOpen}
+        onNewTaskClose={onNewTaskClose}
         myTasksUri={myTasksQuery ? `/Task?${myTasksQuery.substring(1)}` : '/Task'}
         allTasksUri={allTasksQuery ? `/Task?${allTasksQuery.substring(1)}` : '/Task'}
       />

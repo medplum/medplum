@@ -25,6 +25,9 @@ interface FaxBoardProps {
   getFaxUri: (fax: Communication) => string;
   onNew: (fax: Communication) => void;
   onChange: (search: SearchRequest) => void;
+  sendFaxOpened?: boolean;
+  onSendFaxOpen?: () => void;
+  onSendFaxClose?: () => void;
 }
 
 export function FaxBoard({
@@ -36,11 +39,17 @@ export function FaxBoard({
   getFaxUri,
   onNew,
   onChange,
+  sendFaxOpened,
+  onSendFaxOpen,
+  onSendFaxClose,
 }: FaxBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
 
-  const [sendModalOpened, setSendModalOpened] = useState(false);
+  const [internalSendModalOpened, setInternalSendModalOpened] = useState(false);
+  const sendModalOpened = sendFaxOpened ?? internalSendModalOpened;
+  const openSendModal = onSendFaxOpen ?? ((): void => setInternalSendModalOpened(true));
+  const closeSendModal = onSendFaxClose ?? ((): void => setInternalSendModalOpened(false));
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
 
@@ -104,7 +113,7 @@ export function FaxBoard({
 
   const headerActions = (
     <Tooltip label="Send Fax" position="bottom" openDelay={500}>
-      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={() => setSendModalOpened(true)}>
+      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openSendModal}>
         <IconSend size={16} />
       </ActionIcon>
     </Tooltip>
@@ -133,7 +142,7 @@ export function FaxBoard({
         onError={showErrorNotification}
       />
 
-      <SendFaxModal opened={sendModalOpened} onClose={() => setSendModalOpened(false)} onFaxSent={handleFaxSent} />
+      <SendFaxModal opened={sendModalOpened} onClose={closeSendModal} onFaxSent={handleFaxSent} />
     </>
   );
 }
