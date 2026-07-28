@@ -1,20 +1,55 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
+import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions, UpDownCounter } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
+import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
-import { getBatchQueue } from '../workers/batch';
+import { getBatchQueue, getBatchThroughputTotals } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';
 import { getSetAccountsQueue } from '../workers/set-accounts';
 import { getSubscriptionQueue } from '../workers/subscription';
 
-let queueEntries: [string, Queue][] | undefined;
-function getQueueEntries(): [string, Queue][] {
+/**
+ * Metrics recorded once per queue.
+ *
+ * `waitingCount`, `delayedCount` and `activeCount` are gauges the heartbeat reads straight out of
+ * Redis, so they report the state of the data structures backing that BullMQ queue (its streams) as
+ * seen by the whole cluster, regardless of which instance took the reading. They answer "how much
+ * work is sitting in this queue right now", which makes them the metrics for backlog and saturation.
+ *
+ * `inFlightJobs` never consults Redis. It is an UpDownCounter each worker maintains for its own
+ * process, incremented as a job starts and decremented as it settles, and so answers a different
+ * question: "how busy is THIS host". Because its deltas are timestamped as they happen and carry a
+ * `hostname` attribute, the observability backend can derive per-host job processing rates from it --
+ * something a cluster-wide gauge sampled once per heartbeat cannot support.
+ *
+ * The two are not expected to agree. `activeCount` counts everything Redis considers active across
+ * every instance, including jobs leased by a host that has since died and whose lock has not yet
+ * expired; `inFlightJobs` counts only what this process currently has on the stack.
+ */
+export type QueueMetric = 'waitingCount' | 'delayedCount' | 'activeCount' | 'inFlightJobs';
+
+/**
+ * Builds the name of a per-queue metric.
+ *
+ * The queue is part of the metric name rather than an attribute, which is how these metrics have
+ * always been reported. Prefer this over interpolating a name by hand so every per-queue metric
+ * stays consistent and greppable.
+ * @param queueName - The queue being measured.
+ * @param metric - The quantity being measured.
+ * @returns The metric name, e.g. `medplum.batch.activeCount`.
+ */
+export function getQueueMetricName(queueName: WorkerName, metric: QueueMetric): string {
+  return `medplum.${queueName}.${metric}`;
+}
+
+let queueEntries: [WorkerName, Queue][] | undefined;
+function getQueueEntries(): [WorkerName, Queue][] {
   if (!queueEntries) {
     if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue() && getSetAccountsQueue())) {
       throw new Error('Queues not initialized');
@@ -36,13 +71,14 @@ function getQueueEntries(): [string, Queue][] {
 // This file is used to record metrics.
 
 const hostname = os.hostname();
-const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
+export const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
 let otelHeartbeatListener: (() => Promise<void>) | undefined;
 
 let meter: Meter | undefined = undefined;
 const counters = new Map<string, Counter>();
 const histograms = new Map<string, Histogram>();
 const gauges = new Map<string, Gauge>();
+const upDownCounters = new Map<string, UpDownCounter>();
 
 export type RecordMetricOptions = {
   attributes?: Attributes;
@@ -105,6 +141,61 @@ export function setGauge(name: string, value: number, options?: RecordMetricOpti
   return true;
 }
 
+export function getUpDownCounter(name: string, options?: MetricOptions): UpDownCounter {
+  let result = upDownCounters.get(name);
+  if (!result) {
+    result = getMeter().createUpDownCounter(name, options);
+    upDownCounters.set(name, result);
+  }
+  return result;
+}
+
+/**
+ * Adds a signed delta to an UpDownCounter.
+ *
+ * Unlike a gauge, which reports an absolute reading, the collector sums the reported deltas. That
+ * makes this the right instrument for a quantity that rises and falls and is only observable at the
+ * moments it changes -- e.g. work in flight, incremented as it starts and decremented as it settles.
+ * @param name - The metric name.
+ * @param n - The delta to add. Negative values decrement.
+ * @param options - Optional metric attributes and options.
+ * @returns True if the delta was recorded, false if metrics are disabled.
+ */
+export function addToUpDownCounter(name: string, n: number, options?: RecordMetricOptions): boolean {
+  if (!isOtelMetricsEnabled()) {
+    return false;
+  }
+  getUpDownCounter(name, options?.options).add(n, options?.attributes);
+  return true;
+}
+
+/** The previous sample of each rate metric, used to turn running totals into per-second rates. */
+const rateSamples = new Map<string, { total: number; timestamp: number }>();
+
+/**
+ * Records the per-second rate of a running total as a gauge.
+ *
+ * The caller supplies the monotonically increasing total; the delta since the previous sample is
+ * divided by the wall-clock time between the two samples. The first sample of a given metric only
+ * establishes a baseline and records nothing, since there is no interval to divide by yet. A total
+ * that moved backwards (e.g. the source counter was reset) is treated as no progress rather than a
+ * negative rate.
+ * @param name - The metric name.
+ * @param total - The running total. Expected to be monotonically increasing.
+ * @param options - Optional metric attributes and options.
+ * @returns True if a rate was recorded, false if metrics are disabled or no interval is available.
+ */
+export function setRateGauge(name: string, total: number, options?: RecordMetricOptions): boolean {
+  const timestamp = Date.now();
+  const previous = rateSamples.get(name);
+  rateSamples.set(name, { total, timestamp });
+  if (!previous || timestamp <= previous.timestamp) {
+    return false;
+  }
+  const elapsedSeconds = (timestamp - previous.timestamp) / 1000;
+  return setGauge(name, Math.max(0, total - previous.total) / elapsedSeconds, options);
+}
+
 function isOtelMetricsEnabled(): boolean {
   return !!process.env.OTLP_METRICS_ENDPOINT;
 }
@@ -162,10 +253,23 @@ export function initOtelHeartbeat(): void {
 
     for (const [queueName, queue] of getQueueEntries()) {
       if (queue) {
-        setGauge(`medplum.${queueName}.waitingCount`, await queue.getWaitingCount());
-        setGauge(`medplum.${queueName}.delayedCount`, await queue.getDelayedCount());
+        setGauge(getQueueMetricName(queueName, 'waitingCount'), await queue.getWaitingCount());
+        setGauge(getQueueMetricName(queueName, 'delayedCount'), await queue.getDelayedCount());
+        setGauge(getQueueMetricName(queueName, 'activeCount'), await queue.getActiveCount());
       }
     }
+
+    // Async batch throughput. The worker maintains running totals; the rate is the delta between
+    // consecutive heartbeats, so these are per-process rates for whatever batches this instance ran.
+    const batchTotals = getBatchThroughputTotals();
+    setRateGauge('medplum.batch.completedPerSecond', batchTotals.completedJobs, {
+      ...BASE_METRIC_OPTIONS,
+      options: { unit: '{job}/s' },
+    });
+    setRateGauge('medplum.batch.entriesPerSecond', batchTotals.processedEntries, {
+      ...BASE_METRIC_OPTIONS,
+      options: { unit: '{entry}/s' },
+    });
   };
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
 }
@@ -178,4 +282,6 @@ export function cleanupOtelHeartbeat(): void {
   if (queueEntries) {
     queueEntries = undefined;
   }
+  // Drop rate baselines so a restarted heartbeat does not divide a fresh delta by a stale interval.
+  rateSamples.clear();
 }

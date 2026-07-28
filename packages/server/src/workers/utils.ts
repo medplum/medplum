@@ -3,13 +3,14 @@
 import type { WithId } from '@medplum/core';
 import { getExtension, Operator } from '@medplum/core';
 import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
+import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
@@ -257,6 +258,41 @@ export function addVerboseQueueLogging<TDataType>(
   worker.on('stalled', (jobId, prev) => {
     globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
   });
+}
+
+/**
+ * Wraps a worker's job processor so the number of jobs it is currently executing is reported as an
+ * UpDownCounter.
+ *
+ * This wraps the processor rather than listening for the worker's `active`/`completed`/`failed`
+ * events because those events do not pair up: BullMQ suppresses `failed` when a job is moved to
+ * delayed (see {@link moveToDelayedAndThrow}) and suppresses both terminal events once the
+ * connection is closing, either of which would leave the counter permanently incremented. The
+ * `finally` block below runs on every exit path, so the increment and decrement always pair.
+ *
+ * Note this counts jobs on THIS host, not queue-wide, and is deliberately not a substitute for the
+ * `activeCount` gauge; see the `QueueMetric` type in `otel/otel.ts` for why the two differ and what
+ * each is good for.
+ * @param workerName - The worker whose jobs are tracked.
+ * @param processor - The worker's job processor.
+ * @returns The processor, wrapped to maintain the in-flight metric.
+ */
+export function trackInFlightJobs<TData, TResult, TName extends string>(
+  workerName: WorkerName,
+  processor: Processor<TData, TResult, TName>
+): Processor<TData, TResult, TName> {
+  const metricName = getQueueMetricName(workerName, 'inFlightJobs');
+  // All three parameters are declared and forwarded so the wrapper's arity matches what BullMQ
+  // introspects (`processor.length >= 3`) to decide whether to supply an abort signal. Dropping the
+  // third parameter here would silently disable cancellation for a processor that accepts one.
+  return async (job, token, signal) => {
+    addToUpDownCounter(metricName, 1, BASE_METRIC_OPTIONS);
+    try {
+      return await processor(job, token, signal);
+    } finally {
+      addToUpDownCounter(metricName, -1, BASE_METRIC_OPTIONS);
+    }
+  };
 }
 
 /**

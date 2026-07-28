@@ -4,10 +4,12 @@ import type { Subscription } from '@medplum/fhirtypes';
 import type { Job, QueueOptions, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { globalLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { withTestContext } from '../test.setup';
 import {
   addVerboseQueueLogging,
@@ -15,6 +17,7 @@ import {
   DefaultQueueRegistry,
   getWorkerBullmqConfig,
   isJobSuccessful,
+  trackInFlightJobs,
 } from './utils';
 
 describe('worker utils', () => {
@@ -345,6 +348,68 @@ describe('worker utils', () => {
 
       // Restore the spy
       loggerInfoSpy.mockRestore();
+    });
+  });
+
+  describe('trackInFlightJobs', () => {
+    const job = { id: 'job-1' } as Job;
+    let counterSpy: MockInstance<typeof otelModule.addToUpDownCounter>;
+
+    beforeEach(() => {
+      counterSpy = vi.spyOn(otelModule, 'addToUpDownCounter');
+    });
+
+    afterEach(() => {
+      counterSpy.mockRestore();
+    });
+
+    /**
+     * Collects the signed deltas reported to a worker's in-flight metric.
+     * @param workerName - The worker whose metric to read.
+     * @returns The deltas, in the order they were reported.
+     */
+    function reportedDeltas(workerName: WorkerName): number[] {
+      const metricName = otelModule.getQueueMetricName(workerName, 'inFlightJobs');
+      return counterSpy.mock.calls.filter((call) => call[0] === metricName).map((call) => call[1]);
+    }
+
+    test('increments while the job runs and decrements once it resolves', async () => {
+      const processor = vi.fn(async () => {
+        // Mid-flight: the increment has landed and the decrement has not.
+        expect(reportedDeltas('batch')).toStrictEqual([1]);
+        return 'result';
+      });
+
+      await expect(trackInFlightJobs('batch', processor)(job)).resolves.toBe('result');
+      expect(reportedDeltas('batch')).toStrictEqual([1, -1]);
+    });
+
+    test('decrements and rethrows when the job fails', async () => {
+      const processor = vi.fn().mockRejectedValue(new Error('job blew up'));
+
+      await expect(trackInFlightJobs('reindex', processor)(job)).rejects.toThrow('job blew up');
+      expect(reportedDeltas('reindex')).toStrictEqual([1, -1]);
+    });
+
+    test('names the metric after the worker, matching the other per-queue metrics', async () => {
+      await trackInFlightJobs('subscription', async () => undefined)(job);
+
+      expect(counterSpy).toHaveBeenCalledWith('medplum.subscription.inFlightJobs', 1, {
+        attributes: otelModule.BASE_METRIC_OPTIONS.attributes,
+      });
+    });
+
+    test('forwards all processor arguments and preserves arity', async () => {
+      const processor = vi.fn().mockResolvedValue(undefined);
+      const wrapped = trackInFlightJobs('download', processor);
+      const signal = new AbortController().signal;
+
+      // BullMQ reads `processor.length >= 3` to decide whether to supply an abort signal, so the
+      // wrapper must keep all three parameters.
+      expect(wrapped.length).toBe(3);
+
+      await wrapped(job, 'token-1', signal);
+      expect(processor).toHaveBeenCalledWith(job, 'token-1', signal);
     });
   });
 

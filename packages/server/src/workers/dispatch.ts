@@ -16,7 +16,7 @@ import { addCronJobs } from './cron';
 import { addDownloadJobs } from './download';
 import { addSubscriptionJobs } from './subscription';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackInFlightJobs } from './utils';
 
 /*
  * The dispatch worker dispatches resource changes to other async jobs.
@@ -48,7 +48,9 @@ export const initDispatchWorker: WorkerInitializer = (config, options?: WorkerIn
   if (options?.workerEnabled !== false) {
     worker = new Worker<DispatchJobData>(
       queueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDispatchJob(job)),
+      trackInFlightJobs('dispatch', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDispatchJob(job))
+      ),
       getWorkerBullmqConfig(config, 'dispatch', queueOptions)
     );
   }

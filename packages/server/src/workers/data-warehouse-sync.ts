@@ -20,7 +20,13 @@ import {
 } from '../database';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  defaultQueueOptions,
+  getWorkerBullmqConfig,
+  queueRegistry,
+  trackInFlightJobs,
+} from './utils';
 
 export interface DataWarehouseSyncJobData {
   trigger: 'scheduler';
@@ -81,7 +87,7 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
 
   const worker = new Worker<DataWarehouseSyncJobData>(
     DataWarehouseSyncQueueName,
-    async (job) => processDataWarehouseSyncJob(config, job),
+    trackInFlightJobs('data-warehouse-sync', async (job) => processDataWarehouseSyncJob(config, job)),
     getWorkerBullmqConfig(config, 'data-warehouse-sync', queueOptions, {
       lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
       concurrency: 1, // Data warehouse sync is intentionally serialized.

@@ -71,6 +71,7 @@ import {
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
+  trackInFlightJobs,
 } from './utils';
 
 /**
@@ -163,12 +164,13 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
   if (options?.workerEnabled !== false) {
     worker = new Worker<SubscriptionJobData>(
       queueName,
-      (job) =>
+      trackInFlightJobs('subscription', (job) =>
         job.data.authState
           ? runInAuthenticatedContext(job.data.authState, job.data.requestId, job.data.traceId, undefined, () =>
               execSubscriptionJob(job)
             )
-          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+      ),
       {
         ...getWorkerBullmqConfig(config, 'subscription', defaultOptions),
         settings: {

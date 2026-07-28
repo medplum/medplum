@@ -11,7 +11,13 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, findProjectMembership, getWorkerBullmqConfig, queueRegistry } from './utils';
+import {
+  defaultQueueOptions,
+  findProjectMembership,
+  getWorkerBullmqConfig,
+  queueRegistry,
+  trackInFlightJobs,
+} from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -35,7 +41,11 @@ export const initCronWorker: WorkerInitializer = (config, options?: WorkerInitia
 
   let worker: Worker<CronJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    worker = new Worker<CronJobData>(queueName, execBot, getWorkerBullmqConfig(config, 'cron', queueOptions));
+    worker = new Worker<CronJobData>(
+      queueName,
+      trackInFlightJobs('cron', execBot),
+      getWorkerBullmqConfig(config, 'cron', queueOptions)
+    );
     worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
     worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
   }

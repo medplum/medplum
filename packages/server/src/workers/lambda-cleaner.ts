@@ -19,7 +19,13 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  defaultQueueOptions,
+  getWorkerBullmqConfig,
+  queueRegistry,
+  trackInFlightJobs,
+} from './utils';
 
 export interface LambdaCleanerOptions {
   readonly nameRegex: string;
@@ -59,7 +65,9 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
   if (options?.workerEnabled !== false) {
     worker = new Worker<LambdaCleanerJobData>(
       LambdaCleanerQueueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job)),
+      trackInFlightJobs('lambda-cleaner', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job))
+      ),
       getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })
     );
     addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({

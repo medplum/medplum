@@ -13,7 +13,13 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  defaultQueueOptions,
+  getWorkerBullmqConfig,
+  queueRegistry,
+  trackInFlightJobs,
+} from './utils';
 
 /*
  * The set-accounts worker asynchronously updates all account references
@@ -41,10 +47,10 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
   if (options?.workerEnabled !== false) {
     worker = new Worker<SetAccountsJobData>(
       queueName,
-      (job) => {
+      trackInFlightJobs('set-accounts', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
-      },
+      }),
       getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
     addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => ({

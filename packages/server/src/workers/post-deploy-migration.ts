@@ -41,6 +41,7 @@ import {
   isJobCompatible,
   moveToDelayedAndThrow,
   queueRegistry,
+  trackInFlightJobs,
 } from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
@@ -66,7 +67,9 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config, options
   if (options?.workerEnabled !== false) {
     worker = new Worker<PostDeployJobData>(
       PostDeployMigrationQueueName,
-      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+      trackInFlightJobs('post-deploy-migration', async (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job))
+      ),
       getWorkerBullmqConfig(config, 'post-deploy-migration', queueOptions, { concurrency: 1 })
     );
     addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);

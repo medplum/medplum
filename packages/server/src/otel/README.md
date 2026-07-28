@@ -13,7 +13,7 @@ flowchart LR
     C -->|Aggregated data| O[Observability]
 ```
 
-OpenTelemetry supports publishing three primary types of metrics:
+OpenTelemetry supports publishing four primary types of metrics:
 
 - **Counter**: Incrementing count, useful for recording when an event occurs; can be post-processed to give rates etc.
   - e.g. Bot executions, created resources
@@ -21,6 +21,14 @@ OpenTelemetry supports publishing three primary types of metrics:
   - e.g. request latency (in seconds), uploaded resource size (in bytes)
 - **Gauge**: A value that has meaning at the time it's measured, not associated with an event
   - e.g. CPU usage (in percent), heap size (in bytes)
+- **UpDownCounter**: Like a Counter, but the reported deltas may be negative, so the summed total rises and falls.
+  Use this instead of a Gauge for a quantity that is only observable at the moments it changes, rather than readable
+  on demand.
+  - e.g. jobs currently in flight, incremented as each starts and decremented as it settles
+
+> **NOTE**: Prefer a Counter over deriving a rate in the server: the observability backend can compute rates from a
+> monotonic total, and it does so without being tied to this process's lifetime. Compute a rate here only when the
+> underlying total is not itself exported as a metric.
 
 [otel]: https://opentelemetry.io/docs/what-is-opentelemetry/
 

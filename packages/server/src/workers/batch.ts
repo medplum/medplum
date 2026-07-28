@@ -34,6 +34,7 @@ import {
   isJobActive,
   moveToDelayedAndThrow,
   queueRegistry,
+  trackInFlightJobs,
   updateAsyncJobOutput,
 } from './utils';
 
@@ -104,6 +105,26 @@ const jobName = 'BatchJobData';
 const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
+// Running totals of async batch work finished by this process, sampled by the OpenTelemetry
+// heartbeat to derive per-second throughput rates (see `setRateGauge`). Kept as plain counters
+// rather than otel instruments because a rate needs to read the total back, which the otel API
+// does not allow. They only ever increase, and reset when the process restarts.
+let completedJobsTotal = 0;
+let processedEntriesTotal = 0;
+
+/**
+ * Returns the running totals of async batch work finished since this process started.
+ *
+ * `completedJobs` counts batch jobs that ran to completion, so a job that is checkpointed and
+ * re-queued across a deploy counts once, when it finally finishes. `processedEntries` counts
+ * individual bundle entries processed by the re-entrant path; the deprecated legacy path hands the
+ * whole bundle to the router at once and so contributes nothing to it.
+ * @returns The completed job and processed entry totals.
+ */
+export function getBatchThroughputTotals(): { completedJobs: number; processedEntries: number } {
+  return { completedJobs: completedJobsTotal, processedEntries: processedEntriesTotal };
+}
+
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<BatchJobData>(queueName, {
@@ -118,7 +139,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
   if (options?.workerEnabled !== false) {
     worker = new Worker<BatchJobData>(
       queueName,
-      (job) => {
+      trackInFlightJobs('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           if ('asyncJob' in job.data) {
@@ -129,7 +150,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
             throw new TypeError('Unrecognized BatchJobData', { cause: job.data });
           }
         });
-      },
+      }),
       getWorkerBullmqConfig(config, 'batch', queueOptions, { concurrency: 15 })
     );
 
@@ -342,6 +363,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
       await processor.processNextEntry();
       sinceCheckpoint++;
+      processedEntriesTotal++;
 
       if (sinceCheckpoint >= checkpointEntries || Date.now() - lastCheckpointTime >= checkpointIntervalMs) {
         await checkpoint();
@@ -381,6 +403,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       resourceType: 'Parameters',
       parameter: [{ name: 'results', valueReference: createReference(binary) }],
     });
+    completedJobsTotal++;
     await store.cleanup(chunkSeq);
   } catch (err) {
     // DelayedError means the job was intentionally re-queued; propagate for BullMQ to handle
@@ -566,6 +589,7 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
         resourceType: 'Parameters',
         parameter: [{ name: 'results', valueReference: createReference(binary) }],
       });
+      completedJobsTotal++;
     } else {
       logger.warn('Async batch request failed', { outcome });
       await exec.failJob(new OperationOutcomeError(outcome));
