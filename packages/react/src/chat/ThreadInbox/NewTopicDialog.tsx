@@ -92,8 +92,10 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
 
     try {
       const createdCommunication = await medplum.createResource(communication);
-      onSubmit?.(createdCommunication);
+      // Close before onSubmit so that a URL-driven onClose (e.g. navigating away from
+      // a /new route) does not override navigation performed by the onSubmit handler.
       onClose();
+      onSubmit?.(createdCommunication);
     } catch (error) {
       showNotification({
         title: 'Error',
