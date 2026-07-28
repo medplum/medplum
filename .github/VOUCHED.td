@@ -2,7 +2,7 @@
 # "Vouch" GitHub Actions workflows (.github/workflows/vouch-*.yml) to decide
 # who can open issues/PRs without extra scrutiny.
 #
-# - Vouched users' PRs are never required to link to an "accepting-prs"
+# - Vouched users' PRs are never required to link to a correctly
 #   labeled issue; everyone else's are (see vouch-check-pr.yml).
 # - Denounced users have their issues and PRs closed automatically,
 #   regardless of anything else (see vouch-check-issue.yml / vouch-check-pr.yml).

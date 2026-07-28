@@ -2,7 +2,7 @@ Hi @{author}, thanks for the PR!
 
 Contributors who aren't yet vouched for need their PR linked to an issue labeled `{label}`, showing we've explicitly invited a community PR for that work (link it with "Fixes #..."/"Closes #..." in the description, or via the Development panel).
 
-This PR isn't linked to a qualifying issue, so it's being closed automatically. If there's already an issue for this work, ask a maintainer to add the `{label}` label to it, then link this PR to it and reopen. If there isn't one yet, open an issue describing the change -- a maintainer can add the `{label}` label if it's something we're open to a community PR for.
+This PR isn't linked to a qualifying issue, so it's being closed automatically. If there's already an issue for this work, comment there with your proposed approach. If there isn't one yet, open one describing the change. Either way, a maintainer will add the `{label}` label once there's enough discussion for us to be confident you have the context needed to land it -- at that point, link this PR to the issue and reopen it.
 
 You can browse [open issues labeled `{label}`](https://github.com/{repo}/issues?q=is%3Aissue+is%3Aopen+label%3A{label}) for existing work you could pick up instead.
 
