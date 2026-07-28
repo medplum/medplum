@@ -199,8 +199,7 @@ describe('OrderMedicationPage', () => {
       },
       { timeout: 10000 }
     );
-  }, // This test drives a lot of real keystrokes (userEvent.type) through Mantine's
-  // Autocomplete + several async effects; the default 5000ms budget is too tight
+  }, // Autocomplete + several async effects; the default 5000ms budget is too tight // This test drives a lot of real keystrokes (userEvent.type) through Mantine's
   // on loaded/shared CI runners even though it's comfortably fast locally.
   20000);
 
@@ -275,8 +274,7 @@ describe('OrderMedicationPage', () => {
       },
       { timeout: 10000 }
     );
-  }, // See the timeout note on the previous test — this one also drives a search
-  // debounce + a routedMedId formulation lookup, both prone to CI slowness.
+  }, // debounce + a routedMedId formulation lookup, both prone to CI slowness. // See the timeout note on the previous test — this one also drives a search
   20000);
 
   test('Add to cart creates the draft MedicationRequest without calling $order-medication or opening a widget', async () => {
