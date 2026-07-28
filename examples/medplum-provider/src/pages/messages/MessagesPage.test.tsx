@@ -27,8 +27,7 @@ describe('MessagesPage', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (messageId?: string): void => {
-    const path = messageId ? `/Communication/${messageId}` : '/Communication';
+  const setup = (path = '/Communication'): void => {
     render(
       <MemoryRouter initialEntries={[path]}>
         <MedplumProvider medplum={medplum}>
@@ -84,7 +83,7 @@ describe('MessagesPage', () => {
 
     vi.spyOn(medplum, 'readResource').mockResolvedValue(mockCommunication as WithId<Communication>);
 
-    setup('comm-123');
+    setup('/Communication/comm-123');
 
     await waitFor(
       () => {
@@ -99,5 +98,27 @@ describe('MessagesPage', () => {
       },
       { timeout: 3000 }
     );
+  });
+
+  test('opens new message dialog when URL is /Communication/new', async () => {
+    setup('/Communication/new');
+
+    await waitFor(() => {
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('New Message')).toBeInTheDocument();
+    });
+  });
+
+  test('does not open new message dialog on the list view', async () => {
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('New Message')).not.toBeInTheDocument();
   });
 });

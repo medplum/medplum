@@ -50,6 +50,9 @@ describe('ThreadInbox', () => {
     threadId?: string;
     showPatientSummary?: boolean;
     subject?: typeof HomerSimpson;
+    newTopicOpened?: boolean;
+    onNewTopicOpen?: () => void;
+    onNewTopicClose?: () => void;
   }): Promise<void> => {
     await act(async () => {
       render(
@@ -65,6 +68,9 @@ describe('ThreadInbox', () => {
             onChange={mockOnChange}
             inProgressUri="/Communication?status=in-progress"
             completedUri="/Communication?status=completed"
+            newTopicOpened={props?.newTopicOpened}
+            onNewTopicOpen={props?.onNewTopicOpen}
+            onNewTopicClose={props?.onNewTopicClose}
           />
         </>,
         ({ children }) => (
@@ -295,6 +301,39 @@ describe('ThreadInbox', () => {
     await waitFor(() => {
       expect(screen.queryByText('New Message')).not.toBeInTheDocument();
     });
+  });
+
+  test('shows new topic dialog when newTopicOpened is true', async () => {
+    await setup({ newTopicOpened: true, onNewTopicOpen: vi.fn(), onNewTopicClose: vi.fn() });
+
+    expect(screen.getByText('New Message')).toBeInTheDocument();
+  });
+
+  test('calls onNewTopicOpen instead of opening dialog when controlled', async () => {
+    const user = userEvent.setup();
+    const onNewTopicOpen = vi.fn();
+    await setup({ newTopicOpened: false, onNewTopicOpen, onNewTopicClose: vi.fn() });
+
+    const iconButtons = screen.getAllByRole('button', { name: '' });
+    const plusButton = iconButtons[iconButtons.length - 1];
+    await user.click(plusButton);
+
+    expect(onNewTopicOpen).toHaveBeenCalled();
+    expect(screen.queryByText('New Message')).not.toBeInTheDocument();
+  });
+
+  test('calls onNewTopicClose when controlled dialog is closed', async () => {
+    const user = userEvent.setup();
+    const onNewTopicClose = vi.fn();
+    await setup({ newTopicOpened: true, onNewTopicOpen: vi.fn(), onNewTopicClose });
+
+    expect(screen.getByText('New Message')).toBeInTheDocument();
+
+    const closeButton = document.querySelector('.mantine-Modal-close');
+    expect(closeButton).not.toBeNull();
+    await user.click(closeButton as Element);
+
+    expect(onNewTopicClose).toHaveBeenCalled();
   });
 
   test('displays "Messages" in header when thread has no topic', async () => {
