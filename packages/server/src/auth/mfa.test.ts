@@ -1597,7 +1597,7 @@ describe('MFA', () => {
     expect(res.body).toMatchObject(badRequest('Already enrolled'));
   });
 
-  test('login-enroll requires a secret for TOTP enrollment', async () => {
+  test('login-enroll generates a secret for a user who does not have one', async () => {
     const email = `login-enroll${randomUUID()}@example.com`;
     const password = 'password!@#';
 
@@ -1611,11 +1611,51 @@ describe('MFA', () => {
       })
     );
 
-    // Require MFA but clear the secret so TOTP enrollment cannot proceed
+    // Require MFA for a user who has no secret. Only users invited with
+    // `mfaRequired` get one up front, so enrollment must generate it.
     await setMfaRequired(user, { clearSecret: true });
 
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
+
+    // The offered QR code must carry a real secret, not an empty one
+    const secret = new URL(loginRes.body.enrollUri).searchParams.get('secret') as string;
+    expect(secret).toMatch(/^[A-Z2-7]+$/);
+
+    // ...and the user can enroll with a code derived from it
+    const res = await request(app)
+      .post('/auth/mfa/login-enroll')
+      .type('json')
+      .send({ login: loginRes.body.login, token: authenticator.generate(secret) });
+    expect(res).toHaveStatus(200);
+    expect(res.body.code).toBeDefined();
+
+    const updated = await getGlobalSystemRepo().readResource<User>('User', user.id);
+    expect(updated.mfaEnrolled).toBe(true);
+    expect(updated.mfaMethod).toEqual(['totp']);
+  });
+
+  test('login-enroll rejects TOTP enrollment if the secret is removed mid-flow', async () => {
+    const email = `login-enroll${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    const { user } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Login',
+        lastName: 'SecretRemoved',
+        projectName: `Login Secret Removed Project ${randomUUID()}`,
+        email,
+        password,
+      })
+    );
+
+    await setMfaRequired(user);
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(loginRes.body.mfaEnrollRequired).toBe(true);
+
+    // Clear the secret after the QR code was issued but before it is used
+    await setMfaRequired(user, { clearSecret: true });
 
     const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: loginRes.body.login });
     expect(res).toHaveStatus(400);
