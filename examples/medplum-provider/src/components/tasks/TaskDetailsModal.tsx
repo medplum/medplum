@@ -122,6 +122,7 @@ export const TaskDetailsModal = (): JSX.Element => {
         setIsOpened(false);
       }}
       size="xl"
+      title="Edit Task"
       styles={{
         body: {
           height: '60vh',
