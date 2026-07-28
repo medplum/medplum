@@ -24,12 +24,20 @@ jobs:
       # merely-unvouched (never vouched, never denounced) author comes back
       # as "allowed", and gets a second, narrower check below rather than
       # being closed outright.
+      #
+      # Defaults to dry-run (safe) until the VOUCH_DRY_RUN repo variable
+      # (Settings -> Secrets and variables -> Actions -> Variables) is
+      # explicitly set to "false" -- flip it there, no workflow edit needed,
+      # once you're ready to actually close PRs for real. The `status`
+      # output (and so the rest of this workflow's branching) is computed
+      # the same either way.
       - uses: mitchellh/vouch/action/check-pr@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
         id: vouch
         with:
           pr-number: ${{ github.event.pull_request.number }}
           require-vouch: false
           auto-close: true
+          dry-run: ${{ vars.VOUCH_DRY_RUN || 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -77,16 +85,25 @@ jobs:
         with:
           sparse-checkout: .github/pr-unvouched-message
 
+      # Not part of the vouch action, so it doesn't get dry-run for free --
+      # gated on the same VOUCH_DRY_RUN repo variable by hand, also
+      # defaulting to dry-run (safe) until explicitly set to "false".
       - name: Close PR (unvouched, no linked issue with the community-PR label)
         if: steps.vouch.outputs.status == 'allowed' && steps.label-check.outputs.has-label == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
         run: |
           MESSAGE=$(cat .github/pr-unvouched-message)
           MESSAGE="${MESSAGE//\{author\}/$PR_AUTHOR}"
           MESSAGE="${MESSAGE//\{label\}/$COMMUNITY_PR_LABEL}"
           MESSAGE="${MESSAGE//\{repo\}/${{ github.repository }}}"
 
-          gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body "$MESSAGE"
-          gh pr close "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "(dry-run) Would post comment and close PR. Comment body:"
+            echo "$MESSAGE"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" --body "$MESSAGE"
+            gh pr close "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
+          fi

@@ -20,12 +20,19 @@ jobs:
       # etc.), so this always needs to resolve team membership via the org
       # Teams API. The default GITHUB_TOKEN can't do that -- "members" isn't
       # a grantable GITHUB_TOKEN permission scope at all, regardless of the
-      # `permissions:` block -- so this needs a PAT from a dedicated
-      # bot/service account instead: repo (or fine-grained: this repo's
-      # Contents + Pull requests, read/write) plus org Members: read-only.
+      # `permissions:` block -- so this uses a dedicated GitHub App
+      # (VOUCH_APP_ID / VOUCH_APP_PRIVATE_KEY) installed on this repo with
+      # org Members: read-only plus repo Contents + Pull requests: read/write,
+      # rather than a PAT tied to a human or bot user account.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.VOUCH_APP_ID }}
+          private-key: ${{ secrets.VOUCH_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ secrets.VOUCH_SYNC_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: mitchellh/vouch/action/sync-codeowners@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
         with:
@@ -33,7 +40,7 @@ jobs:
           pull-request: "true"
           merge-immediately: "true"
         env:
-          GITHUB_TOKEN: ${{ secrets.VOUCH_SYNC_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
       # Informational only: surfaces recent merged-PR authors who aren't
       # vouched (via CODEOWNERS/team membership or otherwise), as candidates
