@@ -122,7 +122,7 @@ export function Labs(props: LabsProps): JSX.Element {
           {filteredServiceRequests.length === 0 && filteredDiagnosticReports.length === 0 && <Text>(none)</Text>}
         </Flex>
       </CollapsibleSection>
-      <Modal opened={reportDialogOpened} onClose={closeReportDialog} size="80%">
+      <Modal opened={reportDialogOpened} onClose={closeReportDialog} size="80%" title="Lab Results">
         {selectedReport && <DiagnosticReportDisplay value={selectedReport} hideSubject={true} />}
       </Modal>
     </>

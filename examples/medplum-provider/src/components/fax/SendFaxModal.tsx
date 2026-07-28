@@ -292,7 +292,11 @@ export function SendFaxModal({
                     }
                   }}
                   style={{
-                    border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-dark-4)'}`,
+                    border: `2px dashed ${
+                      isDragging
+                        ? 'var(--mantine-color-blue-5)'
+                        : 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))'
+                    }`,
                     borderRadius: 'var(--mantine-radius-md)',
                     padding: 'var(--mantine-spacing-xl) var(--mantine-spacing-md)',
                     cursor: 'pointer',
