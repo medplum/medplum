@@ -453,7 +453,7 @@ describe('$find/$book component integration tests', () => {
             end: slotEnd,
             slot: [{ reference: 'Slot/slot-123' }, { reference: 'Slot/slot-124' }],
             participant: [
-              { actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' },
+              { actor: createReference(DrAliceSmith), status: 'tentative' },
               { actor: createReference(HomerSimpson), status: 'accepted' },
             ],
           },
@@ -466,7 +466,7 @@ describe('$find/$book component integration tests', () => {
             status: 'busy',
             start: slotStart,
             end: slotEnd,
-            schedule: { reference: 'Schedule/schedule-1' },
+            schedule: createReference(DrAliceSmithSchedule),
           },
         },
         {
@@ -477,12 +477,21 @@ describe('$find/$book component integration tests', () => {
             status: 'busy-unavailable',
             start: slotEnd,
             end: bufferEnd,
-            schedule: { reference: 'Schedule/schedule-1' },
+            schedule: createReference(DrAliceSmithSchedule),
           },
         },
       ],
     };
-    medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
+    medplum.post = vi.fn().mockImplementation(async () => {
+      // Persist the booked resources like the real $book operation would, so that the
+      // calendar refresh triggered by the booking announcement can find them.
+      for (const entry of mockBookResponse.entry ?? []) {
+        if (entry.resource) {
+          await medplum.repo.createResource(entry.resource);
+        }
+      }
+      return mockBookResponse;
+    });
 
     await act(async () => {
       setup('/Calendar/Schedule/alice-smith-schedule');
@@ -507,12 +516,12 @@ describe('$find/$book component integration tests', () => {
     // Submit the form
     await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
 
-    // Appointment should be in the big calendar
+    // Appointment should be in the big calendar once the calendar refreshes
     const calendar = screen.getByTestId('calendar');
-    expect(getByText(calendar, 'Homer Simpson')).toBeInTheDocument();
+    await waitFor(() => expect(getByText(calendar, 'Homer Simpson')).toBeInTheDocument());
 
     // Buffer-after unavailable slot should be in the big calendar
-    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Blocked')).toBeInTheDocument());
   });
 });
 
@@ -530,7 +539,7 @@ describe('Cancel Visit integration', () => {
     });
   });
 
-  const setup = (initialPath = '/Calendar/Schedule/alice-smith-schedule'): ReturnType<typeof render> => {
+  const setup = (initialPath = `/Calendar/Schedule/${DrAliceSmithSchedule.id}`): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
@@ -554,13 +563,17 @@ describe('Cancel Visit integration', () => {
       status: 'booked',
       start: '2024-01-16T10:00:00Z',
       end: '2024-01-16T10:30:00Z',
-      participant: [{ actor: { reference: 'Patient/patient-1', display: 'Jane Doe' }, status: 'accepted' }],
+      participant: [
+        { actor: createReference(DrAliceSmith), status: 'accepted' },
+        { actor: { reference: 'Patient/patient-1', display: 'Jane Doe' }, status: 'accepted' },
+      ],
     } satisfies Appointment;
     const cancelledAppointment = { ...bookedAppointment, status: 'cancelled' } satisfies Appointment;
 
+    let appointmentSearchResults: Appointment[] = [bookedAppointment];
     medplum.searchResources = vi.fn().mockImplementation((resourceType: string) => {
       if (resourceType === 'Appointment') {
-        return Promise.resolve([bookedAppointment]);
+        return Promise.resolve(appointmentSearchResults);
       }
       return Promise.resolve([]);
     });
@@ -572,7 +585,12 @@ describe('Cancel Visit integration', () => {
       return Promise.resolve(undefined); // no Encounter
     });
 
-    const postMock = vi.fn().mockResolvedValue(cancelledAppointment);
+    const postMock = vi.fn().mockImplementation(async () => {
+      // After $cancel, searches report the appointment as cancelled, so the calendar
+      // refresh triggered by the cancellation announcement no longer displays it.
+      appointmentSearchResults = [cancelledAppointment];
+      return cancelledAppointment;
+    });
     medplum.post = postMock;
 
     const user = userEvent.setup();

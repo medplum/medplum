@@ -204,7 +204,6 @@ async function handler(params: {
           end,
           schedule: createReference(schedule),
           status: 'busy',
-          serviceType,
         },
       ];
 
@@ -215,7 +214,6 @@ async function handler(params: {
           end: start,
           schedule: createReference(schedule),
           status: 'busy-unavailable',
-          serviceType,
           comment: 'buffer before appointment',
         });
       }
@@ -227,7 +225,6 @@ async function handler(params: {
           end: addMinutes(interval.end, parameters.get('bufferAfter')).toISOString(),
           schedule: createReference(schedule),
           status: 'busy-unavailable',
-          serviceType,
           comment: 'buffer after appointment',
         });
       }

@@ -853,7 +853,7 @@ describe('Super Admin routes', () => {
       });
 
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
+    expect(res.body.issue[0].details.text).toBe('Password must be at least 8 characters');
   });
 
   test('Set password user not found', async () => {

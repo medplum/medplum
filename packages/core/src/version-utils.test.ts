@@ -7,6 +7,8 @@ import {
   assertReleaseManifest,
   checkIfValidMedplumVersion,
   clearReleaseCache,
+  compareVersions,
+  fetchAllVersionStrings,
   fetchLatestVersionString,
   fetchVersionManifest,
   isValidMedplumSemver,
@@ -120,6 +122,88 @@ describe('checkIfValidMedplumVersion', () => {
       })
     );
     await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
+    fetchSpy.mockRestore();
+  });
+});
+
+test('compareVersions', () => {
+  expect(compareVersions('1.2.3', '1.2.3')).toStrictEqual(0);
+  expect(compareVersions('1.2.4', '1.2.3')).toBeGreaterThan(0);
+  expect(compareVersions('1.2.3', '1.2.4')).toBeLessThan(0);
+  expect(compareVersions('1.3.0', '1.2.9')).toBeGreaterThan(0);
+  expect(compareVersions('2.0.0', '1.9.9')).toBeGreaterThan(0);
+  expect(compareVersions('1.2.3-1a2b3c4', '1.2.3')).toStrictEqual(0);
+  expect(compareVersions('1.2.10', '1.2.9')).toBeGreaterThan(0);
+});
+
+describe('fetchAllVersionStrings', () => {
+  beforeEach(() => {
+    clearReleaseCache();
+  });
+
+  test('Returns versions sorted newest to oldest', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      vi.fn(async () => {
+        return Promise.resolve({
+          status: 200,
+          json: async () => ({
+            versions: [
+              { tag_name: 'v3.1.0', version: '3.1.0', published_at: '2024-01-01T00:00:00.000Z' },
+              { tag_name: 'v3.2.14', version: '3.2.14', published_at: '2024-03-01T00:00:00.000Z' },
+              { tag_name: 'v3.2.5', version: '3.2.5', published_at: '2024-02-01T00:00:00.000Z' },
+            ],
+          }),
+        });
+      }) as unknown as typeof globalThis.fetch
+    );
+    await expect(fetchAllVersionStrings('test')).resolves.toStrictEqual(['3.2.14', '3.2.5', '3.1.0']);
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/all.json`));
+    fetchSpy.mockRestore();
+  });
+
+  test('Filters out invalid version strings', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      vi.fn(async () => {
+        return Promise.resolve({
+          status: 200,
+          json: async () => ({
+            versions: [
+              { tag_name: 'v3.1.0', version: '3.1.0', published_at: '2024-01-01T00:00:00.000Z' },
+              { tag_name: 'canary', version: 'canary', published_at: '2024-02-01T00:00:00.000Z' },
+            ],
+          }),
+        });
+      }) as unknown as typeof globalThis.fetch
+    );
+    await expect(fetchAllVersionStrings('test')).resolves.toStrictEqual(['3.1.0']);
+    fetchSpy.mockRestore();
+  });
+
+  test('Fetch fails with non-200 status', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      vi.fn(async () => {
+        return Promise.resolve({
+          status: 500,
+          json: async () => ({ message: 'Internal Server Error' }),
+        });
+      }) as unknown as typeof globalThis.fetch
+    );
+    await expect(fetchAllVersionStrings('test')).rejects.toThrow(
+      'Received status code 500 while fetching all release versions'
+    );
+    await expect(fetchAllVersionStrings('test')).rejects.toMatchObject({
+      cause: expect.objectContaining({ message: 'Internal Server Error' }),
+    });
+    fetchSpy.mockRestore();
+  });
+
+  test('Fetch throws -- Network error', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      vi.fn(async () => {
+        return Promise.reject(new Error('Network request failed'));
+      })
+    );
+    await expect(fetchAllVersionStrings('test')).rejects.toThrow('Network request failed');
     fetchSpy.mockRestore();
   });
 });
@@ -240,8 +324,11 @@ describe('fetchVersionManifest', () => {
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow(
-      "Received status code 404 while fetching manifest for version '3.1.6'. Message: Not Found"
+      "Received status code 404 while fetching manifest for version '3.1.6'"
     );
+    await expect(fetchVersionManifest('test', '3.1.6')).rejects.toMatchObject({
+      cause: expect.objectContaining({ message: 'Not Found' }),
+    });
     fetchSpy.mockRestore();
   });
 });

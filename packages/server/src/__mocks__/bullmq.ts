@@ -16,6 +16,8 @@ export class Queue {
   close = vi.fn().mockResolvedValue(undefined) as Mock;
   getWaitingCount = vi.fn().mockResolvedValue(0) as Mock;
   getDelayedCount = vi.fn().mockResolvedValue(0) as Mock;
+  setGlobalConcurrency = vi.fn().mockResolvedValue(0) as Mock;
+  removeGlobalConcurrency = vi.fn().mockResolvedValue(0) as Mock;
 }
 export const Worker = vi.fn().mockImplementation(function Worker() {
   return {

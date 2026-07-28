@@ -4,7 +4,6 @@ import type { Bundle, Communication, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { ResourceBoardProps } from './ResourceBoard';
 import { ResourceBoard } from './ResourceBoard';
@@ -56,11 +55,9 @@ describe('ResourceBoard', () => {
           {...props}
         />,
         ({ children }) => (
-          <MemoryRouter>
-            <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-              {children}
-            </MedplumProvider>
-          </MemoryRouter>
+          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+            {children}
+          </MedplumProvider>
         )
       );
       await Promise.resolve();
@@ -292,11 +289,9 @@ describe('ResourceBoard', () => {
       renderDetail: () => <div />,
     };
     const { rerender } = render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-          <ResourceBoard {...props} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+        <ResourceBoard {...props} />
+      </MedplumProvider>
     );
     await waitFor(() => expect(screen.getByTestId('item-a')).toBeInTheDocument());
     expect(medplum.search).toHaveBeenCalledTimes(1);
@@ -304,11 +299,9 @@ describe('ResourceBoard', () => {
     // Same value, new identity: no refetch
     await act(async () => {
       rerender(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-            <ResourceBoard {...props} search={{ resourceType: 'Communication' }} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+          <ResourceBoard {...props} search={{ resourceType: 'Communication' }} />
+        </MedplumProvider>
       );
     });
     expect(medplum.search).toHaveBeenCalledTimes(1);
@@ -316,11 +309,9 @@ describe('ResourceBoard', () => {
     // Different value: refetch
     await act(async () => {
       rerender(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-            <ResourceBoard {...props} search={{ resourceType: 'Communication', offset: 20 }} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+          <ResourceBoard {...props} search={{ resourceType: 'Communication', offset: 20 }} />
+        </MedplumProvider>
       );
     });
     await waitFor(() => expect(medplum.search).toHaveBeenCalledTimes(2));

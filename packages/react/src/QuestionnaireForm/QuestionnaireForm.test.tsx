@@ -5,7 +5,6 @@ import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/f
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
-import { MemoryRouter } from 'react-router';
 import {
   act,
   clickAutocompleteOption,
@@ -37,11 +36,9 @@ const pageExtension: Extension[] = [
 async function setup(args: QuestionnaireFormProps): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <QuestionnaireForm {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <QuestionnaireForm {...args} />
+      </MedplumProvider>
     );
   });
 }

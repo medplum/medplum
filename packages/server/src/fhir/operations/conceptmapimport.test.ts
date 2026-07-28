@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, SNOMED } from '@medplum/core';
+import { ContentType, createReference, SNOMED } from '@medplum/core';
 import type { ConceptMap, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -214,6 +214,7 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -289,6 +290,7 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -304,6 +306,48 @@ describe('ConceptMap/$import', () => {
         ],
       } satisfies Parameters);
     expect(res).toHaveStatus(403);
+  });
+
+  test('Prevents writes by Project admin to linked Project ConceptMap', async () => {
+    // ConceptMaps in linked Projects are readable, but their mappings are shared server-wide;
+    // importing into one by ID must not bypass the `ownProjectOnly` check.
+    const { project: linkedProject, repo: linkedRepo } = await createTestProject({
+      withRepo: true,
+      project: { exportedResourceType: ['ConceptMap'] },
+    });
+    const conceptMap = await linkedRepo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      name: 'Linked Project ConceptMap',
+    });
+
+    const { accessToken: linkedAccessToken } = await createTestProject({
+      withAccessToken: true,
+      membership: { admin: true },
+      project: { link: [{ project: createReference(linkedProject) }] },
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('X-Medplum', 'extended')
+      .set('Authorization', 'Bearer ' + linkedAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: SNOMED, code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(403);
+
+    const results = await getMappingRows(getDatabasePool(DatabaseMode.READER), conceptMap);
+    expect(results).toHaveLength(0);
   });
 
   test('Allows selecting ConceptMap by URL', async () => {
@@ -366,6 +410,7 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
@@ -399,6 +444,7 @@ describe('ConceptMap/$import', () => {
 
     const res = await request(app)
       .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({

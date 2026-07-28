@@ -511,6 +511,27 @@ export function buildFieldNameString(key: string): string {
 }
 
 /**
+ * Returns true if the given search parameter code refers to a resource metadata field.
+ * @param code - The search parameter code.
+ * @returns True if the code is a meta search parameter.
+ */
+export function isMetaSearchParam(code: string): boolean {
+  return code.startsWith('_');
+}
+
+/**
+ * Returns a display label for a search parameter code.
+ *
+ * Meta fields keep their underscore-prefixed code so they don't collide with same-named
+ * elements (e.g. `ProjectMembership.project` vs `_project`).
+ * @param code - The search parameter code.
+ * @returns The display label for the search parameter.
+ */
+export function buildSearchParamFieldLabel(code: string): string {
+  return isMetaSearchParam(code) ? code : buildFieldNameString(code);
+}
+
+/**
  * Returns a fragment to be displayed in the search table for the value.
  * @param resource - The parent resource.
  * @param field - The search code or FHIRPath expression.

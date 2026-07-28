@@ -4,7 +4,6 @@ import { createReference } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { ThreadListItem } from './ThreadListItem';
 
@@ -43,11 +42,7 @@ describe('ThreadListItem', () => {
   const setup = (topic: Communication, lastCommunication: Communication | undefined): void => {
     render(
       <ThreadListItem topic={topic} lastCommunication={lastCommunication} getThreadUri={mockGetThreadUri} />,
-      ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      )
+      ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
     );
   };
 

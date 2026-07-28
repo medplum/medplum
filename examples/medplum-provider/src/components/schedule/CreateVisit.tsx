@@ -55,7 +55,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   }, [appointmentSlot]);
 
   async function handleSubmit(): Promise<void> {
-    if (!patient || !planDefinitionData || !encounterClass || !start || !end) {
+    if (!patient || !encounterClass || !start || !end) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
@@ -148,7 +148,6 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
             onChange={(value) => {
               setPlanDefinitionData(value as PlanDefinition);
             }}
-            required={true}
           />
         </Stack>
 

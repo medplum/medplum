@@ -633,7 +633,7 @@
   color: var(--landing-color-muted);
 }
 
-/* ---- Medplum Bridge: raw HL7v2 behind a connection diagram -------------
+/* ---- Medplum Agent: raw HL7v2 behind a connection diagram -------------
    Segment ids (MSH/PID/…) are highlighted in the dark code panel. */
 .bridgeFloat {
   z-index: 2;

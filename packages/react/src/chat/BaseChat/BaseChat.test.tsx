@@ -9,7 +9,6 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
 import type { BaseChatProps } from './BaseChat';
 import { BaseChat } from './BaseChat';
@@ -83,7 +82,7 @@ describe('BaseChat', () => {
       getWebSocketUrl(defaultMedplum.getBaseUrl(), '/ws/subscriptions-r4'),
       { mockReconnectingWebSocket: true }
     );
-    defaultMedplum.setSubscriptionManager(defaultSubManager);
+    defaultMedplum.mock.setSubscriptionManager(defaultSubManager);
   });
 
   function TestComponent(props: TestComponentProps): JSX.Element | null {
@@ -97,10 +96,10 @@ describe('BaseChat', () => {
   ): Promise<{ rerender: (props: TestComponentProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<TestComponent {...props} />, ({ children }) => (
-        <MemoryRouter>
+        <MedplumProvider medplum={medplum ?? defaultMedplum}>
           <Notifications />
-          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+          {children}
+        </MedplumProvider>
       ))
     );
     return {
@@ -133,7 +132,7 @@ describe('BaseChat', () => {
 
   test('Loads initial messages and can receive new ones', async () => {
     const medplum = new MockClient({ profile: HomerSimpson });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
     await Promise.all([
       createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
       createCommunication(medplum),
@@ -313,7 +312,7 @@ describe('BaseChat', () => {
     expect(screen.getByText('Hello again!')).toBeInTheDocument();
 
     await act(async () => {
-      medplum.setProfile(BartSimpson);
+      medplum.mock.setProfile(BartSimpson);
       await rerender(baseProps);
     });
 
@@ -343,7 +342,7 @@ describe('BaseChat', () => {
 
   test('Notifies user when disconnected and reconnected, refetches message after reconnect', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await Promise.all([
       createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
@@ -407,7 +406,7 @@ describe('BaseChat', () => {
 
   test('Displays an error notification when a subscription error occurs', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const baseProps = {
       title: 'Test Chat',
@@ -444,7 +443,7 @@ describe('BaseChat', () => {
 
   test('Calls onError cb when `onError` is specified', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const baseProps = {
       title: 'Test Chat',
@@ -482,7 +481,7 @@ describe('BaseChat', () => {
 
   test('Day sections are displayed when messages span multiple days', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const today = new Date();
     const yesterday = new Date(today);
@@ -547,7 +546,7 @@ describe('BaseChat', () => {
 
   test('Day sections are not duplicated for messages on the same day', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const today = new Date();
     const todayMorning = new Date(today);
@@ -594,7 +593,7 @@ describe('BaseChat', () => {
 
   test('Scrolls to bottom when new messages arrive', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const mockScrollTo = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
@@ -662,7 +661,7 @@ describe('BaseChat', () => {
 
   test('BaseChat returns null when profile is null', async () => {
     const medplum = new MockClient({ profile: null });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await setup(
       {
@@ -699,7 +698,7 @@ describe('BaseChat', () => {
 
   test('Messages with contentAttachment show filename and icon', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await createCommunication(medplum, {
       sender: homerReference,
@@ -723,7 +722,7 @@ describe('BaseChat', () => {
 
   test('Messages with contentReference show document title', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const docRef = await medplum.createResource<DocumentReference>({
       resourceType: 'DocumentReference',
@@ -748,7 +747,7 @@ describe('BaseChat', () => {
 
   test('3-dots menu appears for messages with attachment', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await createCommunication(medplum, {
       sender: homerReference,
@@ -779,7 +778,7 @@ describe('BaseChat', () => {
   test('onViewInDocuments called when View in Documents clicked', async () => {
     const onViewInDocuments = vi.fn();
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     const docRef = await medplum.createResource<DocumentReference>({
       resourceType: 'DocumentReference',
@@ -810,7 +809,7 @@ describe('BaseChat', () => {
   test('Download opens new tab with safe https URL', async () => {
     const mockOpen = vi.spyOn(window, 'open').mockReturnValue(null);
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await createCommunication(medplum, {
       sender: homerReference,
@@ -833,7 +832,7 @@ describe('BaseChat', () => {
   test('Download blocked for non-http URLs', async () => {
     const mockOpen = vi.spyOn(window, 'open').mockReturnValue(null);
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await createCommunication(medplum, {
       sender: homerReference,
@@ -855,7 +854,7 @@ describe('BaseChat', () => {
 
   test('BaseChat handles multiple communications with undefined sent date via subscription', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
-    medplum.setSubscriptionManager(defaultSubManager);
+    medplum.mock.setSubscriptionManager(defaultSubManager);
 
     await createCommunication(medplum, {
       sender: drAliceReference,
