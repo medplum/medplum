@@ -6,8 +6,8 @@ on:
     tags:
       - 'v*'
 
+# Every job below declares its own permissions, which replace (not merge with) these
 permissions:
-  id-token: write # Required for OIDC
   contents: read
 
 jobs:
@@ -22,8 +22,7 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     permissions:
-      actions: read
-      contents: write
+      contents: write # Required to upload release assets
       id-token: write
       pull-requests: write
     steps:
@@ -161,8 +160,7 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     permissions:
-      actions: read
-      contents: write
+      contents: write # Required to upload release assets
       id-token: write # Required for OIDC authentication with Azure Trusted Signing
     steps:
       - name: Checkout repository
@@ -380,8 +378,7 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     permissions:
-      actions: read
-      contents: write
+      contents: write # Required to upload release assets
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -473,8 +470,7 @@ jobs:
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     permissions:
-      actions: read
-      contents: write
+      contents: write # Required to upload release assets
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

@@ -7,6 +7,7 @@ import {
   ClientStorage,
   ContentType,
   getReferenceString,
+  getWebSocketUrl,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MemoryStorage,
@@ -50,6 +51,16 @@ describe('MockClient', () => {
     Object.defineProperty(global, 'crypto', {
       value: webcrypto,
     });
+  });
+
+  afterEach(() => {
+    // MockClient defaults to the shared jsdom `globalThis.localStorage`, so an
+    // `activeLogin` persisted by a login-flow test (e.g. `processCode`) bleeds
+    // into later tests. A subsequent `new MockClient()` would then resume that
+    // login and fire a background `auth/me` request, emitting stray debug logs
+    // after the test has finished. Clearing storage between tests isolates them.
+    localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   test('Simple route', async () => {
@@ -286,12 +297,10 @@ describe('MockClient', () => {
   });
 
   test('Debug mode', async () => {
-    const originalConsoleLog = console.log;
-    console.log = vi.fn();
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const client = new MockClient({ debug: true });
     await client.get('not-found');
-    expect(console.log).toHaveBeenCalled();
-    console.log = originalConsoleLog;
+    expect(consoleLog).toHaveBeenCalled();
   });
 
   test('mockFetchOverride -- Missing one of router, repo, or client throws', () => {
@@ -433,11 +442,11 @@ describe('MockClient', () => {
     const result = await client.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result).toBeDefined();
 
-    console.log = vi.fn();
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const client2 = new MockClient({ debug: true });
     const result2 = await client2.createPdf({ docDefinition: { content: ['Hello World'] } });
     expect(result2).toBeDefined();
-    expect(console.log).toHaveBeenCalled();
+    expect(consoleLog).toHaveBeenCalled();
   });
 
   test('Read resource', async () => {
@@ -804,7 +813,6 @@ describe('MockClient', () => {
     });
 
     const membership = await medplum.get('admin/projects/123/members/456');
-    console.log(membership);
     expect(membership).toMatchObject<ProjectMembership>({
       resourceType: 'ProjectMembership',
       id: '456',
@@ -858,12 +866,12 @@ describe('MockClient', () => {
     expect(homer.name[0].family).toStrictEqual('Simpson');
   });
 
-  test('setProfile()', async () => {
+  test('.mock.setProfile()', async () => {
     const medplum = new MockClient({ profile: null });
     expect(medplum.getProfile()).toBeUndefined();
     const callback = vi.fn();
     medplum.addEventListener('change', callback);
-    medplum.setProfile(DrAliceSmith);
+    medplum.mock.setProfile(DrAliceSmith);
     expect(medplum.getProfile()).toStrictEqual(DrAliceSmith);
     expect(callback).toHaveBeenCalledTimes(1);
   });
@@ -900,11 +908,11 @@ describe('MockClient', () => {
     const medplum = new MockClient();
     const agent = await medplum.createResource<Agent>({ resourceType: 'Agent', status: 'active', name: 'Agente' });
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
-    medplum.setAgentAvailable(false);
+    medplum.mock.setAgentAvailable(false);
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).rejects.toThrow(
       OperationOutcomeError
     );
-    medplum.setAgentAvailable(true);
+    medplum.mock.setAgentAvailable(true);
     await expect(medplum.pushToAgent(agent, '8.8.8.8', 'PING', ContentType.PING, true)).resolves.toBeDefined();
   });
 
@@ -946,6 +954,76 @@ describe('MockClient', () => {
     });
     expect(attachment).toBeDefined();
     expect(attachment.url).toBeDefined();
+  });
+
+  test('mock.withSeeding()', async () => {
+    const medplum = new MockClient();
+    const lastUpdated = '2020-01-01T14:00:00Z';
+    const result = await medplum.mock.withSeeding(() =>
+      medplum.createResource({
+        resourceType: 'Patient',
+        meta: { lastUpdated },
+      })
+    );
+    expect(result.meta).toHaveProperty('lastUpdated', lastUpdated);
+  });
+
+  test('mock.setSubscriptionManager()', async () => {
+    const medplum = new MockClient();
+    const manager = new MockSubscriptionManager(medplum, getWebSocketUrl(medplum.getBaseUrl(), '/ws/subscriptions-r4'));
+    medplum.mock.setSubscriptionManager(manager);
+    expect(medplum.getSubscriptionManager()).toBe(manager);
+  });
+
+  test('mock.setProfile()', () => {
+    const medplum = new MockClient();
+    const profile = { resourceType: 'Practitioner' } as const;
+    medplum.mock.setProfile(profile);
+    expect(medplum.getProfile()).toBe(profile);
+  });
+
+  test('mock.setAgentAvailable()', () => {
+    const medplum = new MockClient();
+    expect(() => medplum.mock.setAgentAvailable(true)).not.toThrow();
+    expect(() => medplum.mock.setAgentAvailable(false)).not.toThrow();
+  });
+
+  // To be removed in Medlpum v6; https://github.com/medplum/medplum/issues/9945
+  describe('deprecated methods', () => {
+    test('withSeeding()', async () => {
+      const medplum = new MockClient();
+      const lastUpdated = '2020-01-01T14:00:00Z';
+      const result = await medplum.withSeeding(() =>
+        medplum.createResource({
+          resourceType: 'Patient',
+          meta: { lastUpdated },
+        })
+      );
+      expect(result.meta).toHaveProperty('lastUpdated', lastUpdated);
+    });
+
+    test('setSubscriptionManager()', () => {
+      const medplum = new MockClient();
+      const manager = new MockSubscriptionManager(
+        medplum,
+        getWebSocketUrl(medplum.getBaseUrl(), '/ws/subscriptions-r4')
+      );
+      medplum.setSubscriptionManager(manager);
+      expect(medplum.getSubscriptionManager()).toBe(manager);
+    });
+
+    test('setProfile()', () => {
+      const medplum = new MockClient();
+      const profile = { resourceType: 'Practitioner' } as const;
+      medplum.setProfile(profile);
+      expect(medplum.getProfile()).toBe(profile);
+    });
+
+    test('setAgentAvailable()', () => {
+      const medplum = new MockClient();
+      expect(() => medplum.setAgentAvailable(true)).not.toThrow();
+      expect(() => medplum.setAgentAvailable(false)).not.toThrow();
+    });
   });
 });
 

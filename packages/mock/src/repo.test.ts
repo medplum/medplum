@@ -52,7 +52,7 @@ describe('Mock Repo', () => {
     const client = new MockClient();
     const id = randomUUID();
     const versionId = randomUUID();
-    const result = await client.withSeeding(() =>
+    const result = await client.mock.withSeeding(() =>
       client.createResource({
         resourceType: 'Patient',
         id,
