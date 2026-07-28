@@ -65,6 +65,13 @@ If you find a bug on Medplum and open a GitHub Pull Request that fixes it, we'll
 Before starting implementation of a new feature, open an issue first to discuss your plans and to ensure it fits into
 our roadmap and plans for the app.
 
+If you're not yet an established contributor, your pull request needs to be linked to an issue labeled `accepting-prs`
+(for example with a "Fixes #123" or "Closes #123" reference, or via the GitHub "Development" panel) -- this shows
+we've explicitly invited a community PR for that work. A maintainer can add this label to an existing issue, including
+one you just opened, on request. Pull requests that aren't linked to a qualifying issue are closed automatically;
+just reopen it once it's linked, or open the issue first if one doesn't exist yet. Medplum team members and
+established community contributors aren't subject to this requirement.
+
 **Ready to get started writing code?** First things first, you need to [clone the Medplum repository](./contributing/local-dev-setup).
 
 :::note[Legal Note]

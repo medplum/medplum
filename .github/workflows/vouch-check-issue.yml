@@ -1,0 +1,26 @@
+on:
+  issues:
+    types: [opened, reopened]
+
+name: "Vouch - Check Issue"
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      # require-vouch is false: only explicitly denounced (blocked) users get
+      # closed here. Everyone else may file issues freely, per medplum's
+      # public contributing docs (medplum.com/docs/contributing). Note the
+      # action uses a fixed message for denounced users regardless of any
+      # template-file, so there's no template to configure here.
+      - uses: mitchellh/vouch/action/check-issue@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          require-vouch: false
+          auto-close: true
+          auto-lock: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
