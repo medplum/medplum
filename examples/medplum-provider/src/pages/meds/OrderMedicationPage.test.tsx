@@ -199,8 +199,7 @@ describe('OrderMedicationPage', () => {
       },
       { timeout: 10000 }
     );
-  }, // Autocomplete + several async effects; the default 5000ms budget is too tight // This test drives a lot of real keystrokes (userEvent.type) through Mantine's
-  // on loaded/shared CI runners even though it's comfortably fast locally.
+  }, // on loaded/shared CI runners even though it's comfortably fast locally. // Autocomplete + several async effects; the default 5000ms budget is too tight // This test drives a lot of real keystrokes (userEvent.type) through Mantine's
   20000);
 
   test('medication title combines the drug name with the selected formulation, not just the strength', async () => {
@@ -274,8 +273,7 @@ describe('OrderMedicationPage', () => {
       },
       { timeout: 10000 }
     );
-  }, // debounce + a routedMedId formulation lookup, both prone to CI slowness. // See the timeout note on the previous test — this one also drives a search
-  20000);
+  }, 20000); // debounce + a routedMedId formulation lookup, both prone to CI slowness. // See the timeout note on the previous test — this one also drives a search
 
   test('Add to cart creates the draft MedicationRequest without calling $order-medication or opening a widget', async () => {
     const medplum = new MockClient();
