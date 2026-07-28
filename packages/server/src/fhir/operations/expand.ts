@@ -419,10 +419,24 @@ const CANDIDATE_THRESHOLD = 2000;
  * @returns The WHERE expression selecting rows that match the filter text.
  */
 function buildTextFilterPredicate(filterText: string, tableName: string): Expression {
-  const codeCondition = new Condition(new Column(tableName, 'code'), '=', filterText);
+  // Match the code by case-insensitive prefix for filters of at least 3 characters, backed by the
+  // database index. Shorter filters fall back to exact code equality to avoid an under-selective prefix scan
+  const codeMatch =
+    filterText.length >= 3
+      ? new Condition(new Column(tableName, 'code'), 'LOWER_LIKE', `${escapeLikeString(filterText)}%`)
+      : new Condition(new Column(tableName, 'code'), '=', filterText);
+
+  // Restrict the `code` branch to canonical rows: synonyms for the same code are redundant. This scoping lets the planner
+  // use the partial `(system, lower(code)) WHERE "synonymOf" IS NULL` index, keeping the `code` branch of the query plan
+  // well-indexed. The `display` branch intentionally still matches synonym rows, so alternate terms remain searchable.
+  const codeCondition = new Conjunction([codeMatch, new Condition(new Column(tableName, 'synonymOf'), '=', null)]);
+
+  // Below 3 characters the display-substring branch cannot use the trigram GIN index
+  // (a substring needs at least one full trigram), so match the exact code only.
   if (filterText.length < 3) {
     return codeCondition;
   }
+
   return new Disjunction([
     codeCondition,
     new Conjunction(
@@ -534,12 +548,18 @@ function applyExpansionFilters(
   }
 
   if (params.filter) {
+    const filterText = params.filter;
+    const tableAlias = query.effectiveTableName;
     query
-      .whereExpr(buildTextFilterPredicate(params.filter, query.effectiveTableName))
+      .whereExpr(buildTextFilterPredicate(filterText, tableAlias))
+      // Surface exact code match ahead of longer prefix and code-only matches, which would otherwise sort arbitrarily
+      .orderByExpr(new Condition(new Column(tableAlias, 'code'), '=', filterText), true)
       .orderByExpr(
-        new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
+        new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(filterText)]),
         true
-      );
+      )
+      // Final tiebreaker so the overall order is deterministic
+      .orderBy(new Column(tableAlias, 'code'));
   }
 
   if (params.displayLanguage) {
