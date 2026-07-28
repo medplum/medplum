@@ -1,13 +1,51 @@
 .panel {
+  min-height: 100%;
   height: 100%;
 }
 
 [data-mantine-color-scheme='dark'] .panel {
-  background-color: var(--mantine-color-dark-8);
+  background-color: var(--mantine-color-body);
 }
 
 [data-mantine-color-scheme='light'] .panel {
   background-color: var(--mantine-color-white);
+}
+
+.avatar {
+  border: 1px solid var(--mantine-color-gray-3);
+}
+
+[data-mantine-color-scheme='dark'] .avatar {
+  border-color: var(--mantine-color-dark-4);
+}
+
+/* Both the link wrapper and the content it wraps take the row's free space and allow
+   shrinking, so the name truncates instead of pushing the actions menu around. */
+.headerLink,
+.headerContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.headerLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.headerLink:hover {
+  text-decoration: none;
+}
+
+.actionsButton {
+  flex-shrink: 0;
+}
+
+/* Match ActionIcon subtle hover while the menu stays open (the dropdown is portaled,
+   so the trigger loses :hover as soon as the pointer moves into it). */
+.actionsButton[data-expanded] {
+  background-color: var(--mantine-primary-color-light);
+  color: var(--mantine-primary-color-light-color);
 }
 
 .patientSummaryBadge {

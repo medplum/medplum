@@ -68,19 +68,28 @@ describe('PatientPage', () => {
     });
 
     // Check for some key tabs
-    expect(screen.getByText('Edit')).toBeInTheDocument();
     expect(screen.getByText('Visits')).toBeInTheDocument();
     expect(screen.getByText('Tasks')).toBeInTheDocument();
     expect(screen.getByText('Meds')).toBeInTheDocument();
   });
 
-  test('sets initial tab from URL path', async () => {
-    setup(`/Patient/${HomerSimpson.id}/edit`);
+  test('does not render an Edit tab (profile editing moved to the summary header menu)', async () => {
+    setup(`/Patient/${HomerSimpson.id}`);
 
     await waitFor(() => {
-      const editTab = screen.getByText('Edit');
-      expect(editTab).toBeInTheDocument();
-      expect(editTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByText('Timeline')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+  });
+
+  test('sets initial tab from URL path', async () => {
+    setup(`/Patient/${HomerSimpson.id}/DocumentReference`);
+
+    await waitFor(() => {
+      const documentsTab = screen.getByText('Documents');
+      expect(documentsTab).toBeInTheDocument();
+      expect(documentsTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
     });
   });
 
@@ -92,13 +101,12 @@ describe('PatientPage', () => {
       expect(screen.getByText('Timeline')).toBeInTheDocument();
     });
 
-    const editTab = screen.getByText('Edit');
-    await user.click(editTab);
+    await user.click(screen.getByText('Documents'));
 
     await waitFor(() => {
-      const editTab = screen.getByText('Edit');
-      expect(editTab).toBeInTheDocument();
-      expect(editTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
+      const documentsTab = screen.getByText('Documents');
+      expect(documentsTab).toBeInTheDocument();
+      expect(documentsTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
     });
   });
 
@@ -150,13 +158,13 @@ describe('PatientPage', () => {
     });
   });
 
-  test('highlights the Edit tab in a case-insensitive way even when /EDIT is used', async () => {
-    setup(`/Patient/${HomerSimpson.id}/EDIT`);
+  test('highlights the matching tab in a case-insensitive way even when the path case differs', async () => {
+    setup(`/Patient/${HomerSimpson.id}/DOCUMENTREFERENCE`);
 
     await waitFor(() => {
-      const editTab = screen.getByText('Edit');
-      expect(editTab).toBeInTheDocument();
-      expect(editTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
+      const documentsTab = screen.getByText('Documents');
+      expect(documentsTab).toBeInTheDocument();
+      expect(documentsTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');
     });
   });
 });

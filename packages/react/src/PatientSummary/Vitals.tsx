@@ -9,6 +9,8 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 import { CollapsibleSection } from './CollapsibleSection';
 import {
   createCompoundObservation,
@@ -184,22 +186,29 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
       <Modal opened={opened} onClose={close} title="Add Vitals">
         <Form onSubmit={handleSubmit}>
-          <SimpleGrid cols={2}>
-            {LOINC_CODES.map((meta, index) => (
-              <TextInput
-                key={meta.name}
-                name={meta.name}
-                label={meta.short}
-                description={`${meta.title} (${meta.unit})`}
-                data-autofocus={index === 0}
-                autoFocus={index === 0}
-              />
-            ))}
-          </SimpleGrid>
-          <Textarea name="notes" label="Notes" />
-          <Group justify="flex-end" gap={4} mt="md">
-            <SubmitButton>Save</SubmitButton>
-          </Group>
+          <ModalContentLayout
+            footer={
+              <ModalActionsFooter>
+                <SubmitButton fullWidth>Save</SubmitButton>
+              </ModalActionsFooter>
+            }
+          >
+            <Stack gap="md">
+              <SimpleGrid cols={2}>
+                {LOINC_CODES.map((meta, index) => (
+                  <TextInput
+                    key={meta.name}
+                    name={meta.name}
+                    label={meta.short}
+                    description={`${meta.title} (${meta.unit})`}
+                    data-autofocus={index === 0}
+                    autoFocus={index === 0}
+                  />
+                ))}
+              </SimpleGrid>
+              <Textarea name="notes" label="Notes" />
+            </Stack>
+          </ModalContentLayout>
         </Form>
       </Modal>
     </>

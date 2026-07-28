@@ -10,10 +10,12 @@
   flex: 1;
   width: 350px;
   height: 100%;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
 }
 
 .scrollArea {
   height: 100%;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
 }
 
 .content {

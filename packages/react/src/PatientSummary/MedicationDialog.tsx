@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Group, Radio, Stack } from '@mantine/core';
+import { Alert, Radio, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import type { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
@@ -9,6 +9,8 @@ import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 
 export interface MedicationDialogProps {
   readonly patient: Patient;
@@ -66,26 +68,31 @@ export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <Stack>
-        <CodeableConceptInput
-          name="request"
-          path="MedicationRequest.medication[x]"
-          data-autofocus={true}
-          binding={HTTP + 'cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.4'}
-          maxValues={1}
-          defaultValue={medication?.medicationCodeableConcept}
-          onChange={(request) => setCode(request)}
-          outcome={undefined}
-        />
-        <Radio.Group name="status" label="Request Status" required defaultValue={medication?.status}>
-          {statusValues.map((sv) => (
-            <Radio key={sv} value={sv} label={sv} my="xs" required />
-          ))}
-        </Radio.Group>
-        <Group justify="flex-end" gap={4}>
-          <SubmitButton>Save</SubmitButton>
-        </Group>
-      </Stack>
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <SubmitButton fullWidth>Save</SubmitButton>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <CodeableConceptInput
+            name="request"
+            path="MedicationRequest.medication[x]"
+            data-autofocus={true}
+            binding={HTTP + 'cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.4'}
+            maxValues={1}
+            defaultValue={medication?.medicationCodeableConcept}
+            onChange={(request) => setCode(request)}
+            outcome={undefined}
+          />
+          <Radio.Group name="status" label="Request Status" required defaultValue={medication?.status}>
+            {statusValues.map((sv) => (
+              <Radio key={sv} value={sv} label={sv} my="xs" required />
+            ))}
+          </Radio.Group>
+        </Stack>
+      </ModalContentLayout>
     </Form>
   );
 }

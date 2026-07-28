@@ -12,6 +12,8 @@ import {
   createLabsSection,
   DemographicsSection,
   getDefaultSections,
+  GoalsSection,
+  ImmunizationsSection,
   InsuranceSection,
   LabsSection,
   MedicationsSection,
@@ -228,6 +230,37 @@ describe('PatientSummary', () => {
     expect(screen.getByText('Active Only')).toBeInTheDocument();
   });
 
+  test('Hides entered-in-error resources from all sections', async () => {
+    const patientRef = createReference(HomerSimpson);
+    await medplum.createResource({
+      resourceType: 'Condition',
+      subject: patientRef,
+      code: { text: 'Visible Condition' },
+      verificationStatus: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'confirmed' }],
+      },
+    });
+    await medplum.createResource({
+      resourceType: 'Condition',
+      subject: patientRef,
+      code: { text: 'Errored Condition' },
+      verificationStatus: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'entered-in-error' }],
+      },
+    });
+
+    const section = summaryResourceListSection({
+      key: 'ver-status-conditions',
+      title: 'Conditions',
+      search: { resourceType: 'Condition', patientParam: 'subject' },
+    });
+
+    await setup({ patient: HomerSimpson, sections: [section] });
+
+    expect(screen.getByText('Visible Condition')).toBeInTheDocument();
+    expect(screen.queryByText('Errored Condition')).not.toBeInTheDocument();
+  });
+
   test('Renders summaryResourceListSection with getDisplayString, getStatus, and getSecondaryText', async () => {
     const patientRef = createReference(HomerSimpson);
     await medplum.createResource({
@@ -312,13 +345,15 @@ describe('PatientSummary', () => {
 
   test('getDefaultSections returns all built-in sections', () => {
     const sections = getDefaultSections();
-    expect(sections).toHaveLength(10);
+    expect(sections).toHaveLength(12);
     expect(sections.map((s) => s.key)).toEqual([
       'demographics',
+      'goals',
       'insurance',
       'allergies',
       'problemList',
       'medications',
+      'immunizations',
       'labs',
       'sexualOrientation',
       'smokingStatus',
@@ -501,6 +536,52 @@ describe('PatientSummary', () => {
 
     expect(VitalsSection.key).toBe('vitals');
     expect(VitalsSection.searches?.[0].query).toEqual({ category: 'vital-signs' });
+
+    expect(ImmunizationsSection.key).toBe('immunizations');
+    expect(ImmunizationsSection.title).toBe('Immunizations');
+    expect(ImmunizationsSection.searches?.[0].resourceType).toBe('Immunization');
+    expect(ImmunizationsSection.searches?.[0].patientParam).toBe('patient');
+
+    expect(GoalsSection.key).toBe('goals');
+    expect(GoalsSection.title).toBe('Goals');
+    expect(GoalsSection.searches?.[0].resourceType).toBe('Goal');
+    expect(GoalsSection.searches?.[0].patientParam).toBe('patient');
+  });
+
+  test('Renders Immunizations section with vaccine, status, and date', async () => {
+    const patientRef = createReference(HomerSimpson);
+    await medplum.createResource({
+      resourceType: 'Immunization',
+      status: 'completed',
+      patient: patientRef,
+      vaccineCode: { text: 'Influenza vaccine' },
+      occurrenceDateTime: '2026-01-15T00:00:00Z',
+    });
+
+    await setup({ patient: HomerSimpson, sections: [ImmunizationsSection] });
+
+    expect(screen.getByText('Immunizations')).toBeInTheDocument();
+    expect(screen.getByText('Influenza vaccine')).toBeInTheDocument();
+    expect(screen.getByText('completed')).toBeInTheDocument();
+    expect(screen.getByText(/Given/)).toBeInTheDocument();
+  });
+
+  test('Renders Goals section with description, lifecycle status, and target date', async () => {
+    const patientRef = createReference(HomerSimpson);
+    await medplum.createResource({
+      resourceType: 'Goal',
+      lifecycleStatus: 'active',
+      description: { text: 'Lower blood pressure' },
+      subject: patientRef,
+      target: [{ dueDate: '2026-12-31' }],
+    });
+
+    await setup({ patient: HomerSimpson, sections: [GoalsSection] });
+
+    expect(screen.getByText('Goals')).toBeInTheDocument();
+    expect(screen.getByText('Lower blood pressure')).toBeInTheDocument();
+    expect(screen.getByText('active')).toBeInTheDocument();
+    expect(screen.getByText(/Target/)).toBeInTheDocument();
   });
 
   test('Renders with empty sections array', async () => {

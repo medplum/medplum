@@ -10,6 +10,8 @@ export type { FhirSearchDescriptor, SectionResults };
 export interface SectionRenderContext {
   readonly patient: Patient;
   readonly onClickResource?: (resource: Resource) => void;
+  /** When provided, the Demographics rows open this (the patient edit modal) instead of navigating. */
+  readonly onEditPatient?: () => void;
   /** Named results for each search in the section's `searches` array, keyed by `FhirSearchDescriptor.key`. */
   readonly results: SectionResults;
 }

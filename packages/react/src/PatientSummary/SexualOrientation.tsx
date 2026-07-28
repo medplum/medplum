@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Flex, Group, Modal, Radio, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Box, Flex, Modal, Radio, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
@@ -9,6 +9,8 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 import { killEvent } from '../utils/dom';
 import { CollapsibleSection } from './CollapsibleSection';
 
@@ -137,16 +139,19 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
       </CollapsibleSection>
       <Modal opened={opened} onClose={close} title="Set Sexual Orientation">
         <Form onSubmit={handleSubmit}>
-          <Stack>
+          <ModalContentLayout
+            footer={
+              <ModalActionsFooter>
+                <SubmitButton fullWidth>Save</SubmitButton>
+              </ModalActionsFooter>
+            }
+          >
             <Radio.Group name="sexualOrientation" label="Sexual Orientation" required>
               {Object.entries(CodesToText).map(([code, text]) => (
                 <Radio key={code} value={code} label={text} my="xs" />
               ))}
             </Radio.Group>
-            <Group justify="flex-end" gap={4} mt="md">
-              <SubmitButton>Save</SubmitButton>
-            </Group>
-          </Stack>
+          </ModalContentLayout>
         </Form>
       </Modal>
     </>

@@ -4,7 +4,7 @@ import { Box, Button, Divider, Flex, Menu, Paper, ScrollArea, Stack, Text } from
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
@@ -17,6 +17,10 @@ export interface ThreadDetailProps {
   readonly showPatientSummary?: boolean;
   /** Optional sections configuration for the patient summary. */
   readonly sections?: PatientSummarySectionConfig[];
+  /** `<Menu.Item>` nodes for the patient summary header's "…" actions menu. */
+  readonly patientHeaderMenuItems?: ReactNode;
+  /** When provided, Demographics rows open this (the patient edit modal) instead of navigating. */
+  readonly onEditPatient?: () => void;
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
   /** Fired when the user changes the thread status from the header menu. */
@@ -30,7 +34,16 @@ export interface ThreadDetailProps {
  * @returns The ThreadDetail React node.
  */
 export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
-  const { thread, showPatientSummary = false, sections, uploadEnabled, onViewInDocuments, onStatusChange } = props;
+  const {
+    thread,
+    showPatientSummary = false,
+    sections,
+    patientHeaderMenuItems,
+    onEditPatient,
+    uploadEnabled,
+    onViewInDocuments,
+    onStatusChange,
+  } = props;
 
   return (
     <>
@@ -85,7 +98,13 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
       {thread.subject && showPatientSummary && (
         <Box w={300} h="100%">
           <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-            <PatientSummary key={thread.id} patient={thread.subject as Reference<Patient>} sections={sections} />
+            <PatientSummary
+              key={thread.id}
+              patient={thread.subject as Reference<Patient>}
+              sections={sections}
+              headerMenuItems={patientHeaderMenuItems}
+              onEditPatient={onEditPatient}
+            />
           </ScrollArea>
         </Box>
       )}

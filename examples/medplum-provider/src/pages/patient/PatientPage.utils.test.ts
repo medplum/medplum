@@ -124,10 +124,10 @@ describe('PatientPage.utils', () => {
       expect(timelineTab.url).toBe('');
       expect(timelineTab.label).toBe('Timeline');
 
-      const editTab = getPatientPageTabOrThrow('edit');
-      expect(editTab.id).toBe('edit');
-      expect(editTab.url).toBe('edit');
-      expect(editTab.label).toBe('Edit');
+      const documentsTab = getPatientPageTabOrThrow('documentreference');
+      expect(documentsTab.id).toBe('documentreference');
+      expect(documentsTab.url).toBe('DocumentReference');
+      expect(documentsTab.label).toBe('Documents');
 
       const medsTab = getPatientPageTabOrThrow('meds');
       expect(medsTab.id).toBe('meds');
@@ -146,7 +146,6 @@ describe('PatientPage.utils', () => {
     test('finds all defined tabs', () => {
       const tabIds = [
         'timeline',
-        'edit',
         'encounter',
         'tasks',
         'meds',
@@ -177,7 +176,6 @@ describe('PatientPage.utils', () => {
     test('contains expected tabs', () => {
       const tabIds = PatientPageTabs.map((tab) => tab.id);
       expect(tabIds).toContain('timeline');
-      expect(tabIds).toContain('edit');
       expect(tabIds).toContain('encounter');
       expect(tabIds).toContain('tasks');
       expect(tabIds).toContain('meds');
