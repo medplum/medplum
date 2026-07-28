@@ -17,7 +17,14 @@ import {
 import { useDebouncedCallback } from '@mantine/hooks';
 import { createReference, formatDate, getDisplayString } from '@medplum/core';
 import type { Annotation, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { Loading, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import {
+  Loading,
+  ModalActionsFooter,
+  ModalContentLayout,
+  useMedplum,
+  useMedplumProfile,
+  useResource,
+} from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -231,20 +238,25 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
           size="md"
           centered
         >
-          <Stack gap="md">
-            <Text>Are you sure you want to delete this task? This action cannot be undone.</Text>
-            <Text fw={500} c="dimmed">
-              Task: {getDisplayString(task)}
-            </Text>
-            <Flex justify="flex-end" gap="sm">
-              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
-                Cancel
-              </Button>
-              <Button color="red" onClick={confirmDeleteTask}>
-                Delete
-              </Button>
-            </Flex>
-          </Stack>
+          <ModalContentLayout
+            footer={
+              <ModalActionsFooter>
+                <Button color="red" w="100%" onClick={confirmDeleteTask}>
+                  Delete
+                </Button>
+                <Button variant="outline" w="100%" onClick={() => setShowDeleteModal(false)}>
+                  Cancel
+                </Button>
+              </ModalActionsFooter>
+            }
+          >
+            <Stack gap="md">
+              <Text>Are you sure you want to delete this task? This action cannot be undone.</Text>
+              <Text fw={500} c="dimmed">
+                Task: {getDisplayString(task)}
+              </Text>
+            </Stack>
+          </ModalContentLayout>
         </Modal>
       </Paper>
     </Flex>

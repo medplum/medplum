@@ -5,7 +5,13 @@ import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
-import { AsyncAutocomplete, CodeableConceptInput, useMedplum } from '@medplum/react';
+import {
+  AsyncAutocomplete,
+  CodeableConceptInput,
+  ModalActionsFooter,
+  ModalContentLayout,
+  useMedplum,
+} from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -194,49 +200,53 @@ function AddChargeItemModal({ opened, onClose, onSubmit }: AddChargeItemModalPro
 
   return (
     <Modal opened={opened} onClose={handleClose} title="Add Charge Item" size="md">
-      <Stack gap="md">
-        <CodeableConceptInput
-          binding="http://www.ama-assn.org/go/cpt/vs"
-          label="CPT Code"
-          name="cptCode"
-          path="ChargeItem.code"
-          placeholder="Search for CPT code..."
-          required
-          onChange={setCptCode}
-        />
-
-        <Box>
-          <Text size="sm" fw={500} mb={5}>
-            Charge Item Definition{' '}
-            <Text span c="red">
-              *
-            </Text>
-          </Text>
-          <AsyncAutocomplete
-            placeholder="Search for charge item definition..."
-            onChange={handleSelectChargeItemDefinition}
-            toOption={(item: unknown) => {
-              const resource = item as ChargeItemDefinition;
-              return {
-                value: resource.id || '',
-                label: resource.title || resource.id || 'Untitled',
-                resource: resource,
-              };
-            }}
-            maxValues={1}
-            loadOptions={loadChargeItemDefinitions}
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <Button variant="filled" w="100%" onClick={handleSubmit} disabled={!cptCode || !chargeItemDefinition}>
+              Add Charge Item
+            </Button>
+            <Button variant="subtle" w="100%" onClick={handleClose}>
+              Cancel
+            </Button>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <CodeableConceptInput
+            binding="http://www.ama-assn.org/go/cpt/vs"
+            label="CPT Code"
+            name="cptCode"
+            path="ChargeItem.code"
+            placeholder="Search for CPT code..."
+            required
+            onChange={setCptCode}
           />
-        </Box>
 
-        <Flex justify="flex-end" gap="sm" mt="md">
-          <Button variant="subtle" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!cptCode || !chargeItemDefinition}>
-            Add Charge Item
-          </Button>
-        </Flex>
-      </Stack>
+          <Box>
+            <Text size="sm" fw={500} mb={5}>
+              Charge Item Definition{' '}
+              <Text span c="red">
+                *
+              </Text>
+            </Text>
+            <AsyncAutocomplete
+              placeholder="Search for charge item definition..."
+              onChange={handleSelectChargeItemDefinition}
+              toOption={(item: unknown) => {
+                const resource = item as ChargeItemDefinition;
+                return {
+                  value: resource.id || '',
+                  label: resource.title || resource.id || 'Untitled',
+                  resource: resource,
+                };
+              }}
+              maxValues={1}
+              loadOptions={loadChargeItemDefinitions}
+            />
+          </Box>
+        </Stack>
+      </ModalContentLayout>
     </Modal>
   );
 }

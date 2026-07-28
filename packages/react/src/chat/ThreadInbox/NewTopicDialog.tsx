@@ -14,6 +14,8 @@ import type {
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
+import { ModalActionsFooter } from '../../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../../ModalContentLayout/ModalContentLayout';
 import { QuestionnaireForm } from '../../QuestionnaireForm/QuestionnaireForm';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
 
@@ -105,50 +107,58 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
 
   return (
     <Modal opened={opened} onClose={onClose} title="New Message" size="md">
-      <Stack gap="xl">
-        <Stack gap={0}>
-          <Text fw={500}>Patient</Text>
-          {allowPatientSelection && <Text c="dimmed">Select a patient</Text>}
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <Button fullWidth onClick={handleSubmit}>
+              Next
+            </Button>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <Stack gap={0}>
+            <Text fw={500}>Patient</Text>
+            {allowPatientSelection && <Text c="dimmed">Select a patient</Text>}
 
-          <ResourceInput
-            resourceType="Patient"
-            name="patient"
-            required={true}
-            defaultValue={patient}
-            disabled={!allowPatientSelection && !!patient}
-            onChange={(value) => {
-              setPatient(value ? createReference(value) : undefined);
-            }}
-          />
+            <ResourceInput
+              resourceType="Patient"
+              name="patient"
+              required={true}
+              defaultValue={patient}
+              disabled={!allowPatientSelection && !!patient}
+              onChange={(value) => {
+                setPatient(value ? createReference(value) : undefined);
+              }}
+            />
+          </Stack>
+
+          <Stack gap={0}>
+            <Text fw={500}>Practitioner (optional)</Text>
+            <Text c="dimmed">Select one or more practitioners</Text>
+
+            <QuestionnaireForm
+              questionnaire={questionnaire}
+              questionnaireResponse={initialResponse}
+              excludeButtons={true}
+              onChange={(value: QuestionnaireResponse) => {
+                const references =
+                  value.item?.[0].answer
+                    ?.map((item) => item.valueReference)
+                    .filter((ref): ref is Reference<Practitioner> => ref !== undefined) ?? [];
+                setPractitioners(references);
+              }}
+            />
+          </Stack>
+
+          <Stack gap={0}>
+            <Text fw={500}>Topic (optional)</Text>
+            <Text c="dimmed">Enter a topic for the message</Text>
+
+            <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
+          </Stack>
         </Stack>
-
-        <Stack gap={0}>
-          <Text fw={500}>Practitioner (optional)</Text>
-          <Text c="dimmed">Select one or more practitioners</Text>
-
-          <QuestionnaireForm
-            questionnaire={questionnaire}
-            questionnaireResponse={initialResponse}
-            excludeButtons={true}
-            onChange={(value: QuestionnaireResponse) => {
-              const references =
-                value.item?.[0].answer
-                  ?.map((item) => item.valueReference)
-                  .filter((ref): ref is Reference<Practitioner> => ref !== undefined) ?? [];
-              setPractitioners(references);
-            }}
-          />
-        </Stack>
-
-        <Stack gap={0}>
-          <Text fw={500}>Topic (optional)</Text>
-          <Text c="dimmed">Enter a topic for the message</Text>
-
-          <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
-        </Stack>
-
-        <Button onClick={handleSubmit}>Next</Button>
-      </Stack>
+      </ModalContentLayout>
     </Modal>
   );
 };

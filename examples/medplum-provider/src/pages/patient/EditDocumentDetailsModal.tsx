@@ -1,9 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { Box, Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { CodeableConcept, DocumentReference, Reference } from '@medplum/fhirtypes';
-import { CodeableConceptInput, ReferenceInput, useMedplum } from '@medplum/react';
+import {
+  CodeableConceptInput,
+  ModalActionsFooter,
+  ModalContentLayout,
+  ReferenceInput,
+  useMedplum,
+} from '@medplum/react';
+import { IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
@@ -110,76 +117,84 @@ export function EditDocumentDetailsModal({
         <>
           {/* Edit form: kept mounted (only hidden) during delete confirmation so edits persist. */}
           <Box display={confirmingDelete ? 'none' : undefined}>
-            <Stack gap="md">
-              <Divider />
-
-              <TextInput
-                label="Description"
-                value={description}
-                onChange={(event) => setDescription(event.currentTarget.value)}
-              />
-
-              <CodeableConceptInput
-                name="type"
-                label="Type"
-                path={`${sourcePath}.type`}
-                binding="http://hl7.org/fhir/ValueSet/c80-doc-typecodes"
-                maxValues={1}
-                defaultValue={type}
-                onChange={(value) => setType(value)}
-              />
-
-              <CodeableConceptInput
-                name="category"
-                label="Category"
-                path={`${sourcePath}.category`}
-                binding="http://hl7.org/fhir/ValueSet/document-classcodes"
-                maxValues={1}
-                defaultValue={category}
-                onChange={(value) => setCategory(value)}
-              />
-
-              <Box>
-                <Text size="sm" fw={500} mb={4}>
-                  Author
-                </Text>
-                <ReferenceInput
-                  name="author"
-                  targetTypes={AUTHOR_TARGET_TYPES}
-                  defaultValue={authorRef}
-                  onChange={(value) => setAuthorRef(value)}
+            <ModalContentLayout
+              footer={
+                <ModalActionsFooter>
+                  <Button variant="filled" w="100%" onClick={() => handleSave().catch(console.error)} loading={saving}>
+                    Save Changes
+                  </Button>
+                  <Button
+                    variant="light"
+                    color="red"
+                    w="100%"
+                    leftSection={<IconTrash size={16} />}
+                    onClick={() => setConfirmingDelete(true)}
+                    disabled={saving}
+                  >
+                    Delete Document
+                  </Button>
+                </ModalActionsFooter>
+              }
+            >
+              <Stack gap="md">
+                <TextInput
+                  label="Description"
+                  value={description}
+                  onChange={(event) => setDescription(event.currentTarget.value)}
                 />
-              </Box>
 
-              <Divider />
+                <CodeableConceptInput
+                  name="type"
+                  label="Type"
+                  path={`${sourcePath}.type`}
+                  binding="http://hl7.org/fhir/ValueSet/c80-doc-typecodes"
+                  maxValues={1}
+                  defaultValue={type}
+                  onChange={(value) => setType(value)}
+                />
 
-              <Button variant="filled" w="100%" onClick={() => handleSave().catch(console.error)} loading={saving}>
-                Save Changes
-              </Button>
-              <Button
-                variant="outline"
-                color="red"
-                w="100%"
-                onClick={() => setConfirmingDelete(true)}
-                disabled={saving}
-              >
-                Delete Document
-              </Button>
-            </Stack>
+                <CodeableConceptInput
+                  name="category"
+                  label="Category"
+                  path={`${sourcePath}.category`}
+                  binding="http://hl7.org/fhir/ValueSet/document-classcodes"
+                  maxValues={1}
+                  defaultValue={category}
+                  onChange={(value) => setCategory(value)}
+                />
+
+                <Box>
+                  <Text size="sm" fw={500} mb={4}>
+                    Author
+                  </Text>
+                  <ReferenceInput
+                    name="author"
+                    targetTypes={AUTHOR_TARGET_TYPES}
+                    defaultValue={authorRef}
+                    onChange={(value) => setAuthorRef(value)}
+                  />
+                </Box>
+              </Stack>
+            </ModalContentLayout>
           </Box>
 
           {confirmingDelete && (
-            <Stack gap="md">
-              <Text>Are you sure you want to delete this document? This action cannot be undone.</Text>
-              <Group justify="flex-end" gap="sm">
-                <Button variant="outline" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
-                  Cancel
-                </Button>
-                <Button color="red" onClick={() => handleDelete().catch(console.error)} loading={deleting}>
-                  Delete
-                </Button>
-              </Group>
-            </Stack>
+            <ModalContentLayout
+              footer={
+                <ModalActionsFooter>
+                  <Button color="red" w="100%" onClick={() => handleDelete().catch(console.error)} loading={deleting}>
+                    Delete
+                  </Button>
+                  <Button variant="outline" w="100%" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+                    Cancel
+                  </Button>
+                </ModalActionsFooter>
+              }
+            >
+              <Stack gap="md">
+                <Text>Are you sure you want to delete this document? This action cannot be undone.</Text>
+              </Stack>
+            </ModalContentLayout>
           )}
         </>
       )}

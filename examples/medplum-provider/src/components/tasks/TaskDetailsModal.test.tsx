@@ -66,6 +66,15 @@ describe('TaskDetailsModal', () => {
     });
   });
 
+  test('renders the modal header title', async () => {
+    await medplum.createResource(mockTask);
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit Task')).toBeInTheDocument();
+    });
+  });
+
   test('displays patient information', async () => {
     await medplum.createResource(mockTask);
     await medplum.createResource(mockPatient);

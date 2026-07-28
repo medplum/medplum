@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { Box, Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { CodeableConcept, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
-import { CodeableConceptInput, useMedplum, useResource } from '@medplum/react';
+import { CodeableConceptInput, ModalActionsFooter, ModalContentLayout, useMedplum, useResource } from '@medplum/react';
 import { IconUpload } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -76,67 +76,71 @@ export function UploadDocumentModal({ opened, onClose, patient, onCreated }: Upl
   };
 
   return (
-    <Modal opened={opened} onClose={handleClose} title="Upload document" centered size="lg">
-      <Stack gap="md">
-        <Stack gap={4}>
-          <Text size="sm" fw={500}>
-            File <span className={classes.required}>*</span>
-          </Text>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className={classes.hiddenInput}
+    <Modal opened={opened} onClose={handleClose} title="Upload Document" centered size="lg">
+      <ModalContentLayout
+        footer={
+          <ModalActionsFooter>
+            <Button variant="filled" w="100%" onClick={handleUpload} loading={isSubmitting} disabled={!file}>
+              Upload
+            </Button>
+          </ModalActionsFooter>
+        }
+      >
+        <Stack gap="md">
+          <Stack gap={4}>
+            <Text size="sm" fw={500}>
+              File <span className={classes.required}>*</span>
+            </Text>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className={classes.hiddenInput}
+            />
+            <Box
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const dropped = e.dataTransfer.files?.[0];
+                if (dropped) {
+                  setFile(dropped);
+                }
+              }}
+              className={cx(classes.dropzone, isDragging && classes.dropzoneDragging)}
+            >
+              <Stack align="center" gap={4}>
+                <IconUpload size={24} color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'} />
+                <Text size="sm" c={file ? undefined : 'dimmed'}>
+                  {file ? file.name : 'Drag a file here or click to browse'}
+                </Text>
+              </Stack>
+            </Box>
+          </Stack>
+
+          <TextInput
+            label="Description"
+            placeholder="Enter a description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.currentTarget.value)}
           />
-          <Box
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              const dropped = e.dataTransfer.files?.[0];
-              if (dropped) {
-                setFile(dropped);
-              }
-            }}
-            className={cx(classes.dropzone, isDragging && classes.dropzoneDragging)}
-          >
-            <Stack align="center" gap={4}>
-              <IconUpload size={24} color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'} />
-              <Text size="sm" c={file ? undefined : 'dimmed'}>
-                {file ? file.name : 'Drag a file here or click to browse'}
-              </Text>
-            </Stack>
-          </Box>
+
+          <CodeableConceptInput
+            name="type"
+            path="DocumentReference.type"
+            label="Type"
+            placeholder="Select a document type (optional)"
+            binding="http://hl7.org/fhir/ValueSet/c80-doc-typecodes"
+            maxValues={1}
+            onChange={setType}
+          />
         </Stack>
-
-        <TextInput
-          label="Description"
-          placeholder="Enter a description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.currentTarget.value)}
-        />
-
-        <CodeableConceptInput
-          name="type"
-          path="DocumentReference.type"
-          label="Type"
-          placeholder="Select a document type (optional)"
-          binding="http://hl7.org/fhir/ValueSet/c80-doc-typecodes"
-          maxValues={1}
-          onChange={setType}
-        />
-
-        <Divider />
-
-        <Button variant="filled" onClick={handleUpload} loading={isSubmitting} disabled={!file}>
-          Upload
-        </Button>
-      </Stack>
+      </ModalContentLayout>
     </Modal>
   );
 }

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
+import { Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { deepClone, normalizeErrorString } from '@medplum/core';
@@ -9,6 +9,8 @@ import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { ModalActionsFooter } from '../ModalActionsFooter/ModalActionsFooter';
+import { ModalContentLayout } from '../ModalContentLayout/ModalContentLayout';
 
 interface BookmarkDialogProps {
   readonly pathname: string;
@@ -50,20 +52,25 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
       onClose={props.onCancel}
     >
       <Form onSubmit={submitHandler}>
-        <Stack>
-          <SelectMenu config={config}></SelectMenu>
-          <TextInput
-            label="Bookmark Name"
-            type="text"
-            name="bookmarkname"
-            placeholder="Bookmark Name"
-            defaultValue={props.pathname.split('/')[1] || ''}
-            withAsterisk
-          />
-          <Group justify="flex-end">
-            <SubmitButton mt="sm">OK</SubmitButton>
-          </Group>
-        </Stack>
+        <ModalContentLayout
+          footer={
+            <ModalActionsFooter>
+              <SubmitButton fullWidth>OK</SubmitButton>
+            </ModalActionsFooter>
+          }
+        >
+          <Stack gap="md">
+            <SelectMenu config={config}></SelectMenu>
+            <TextInput
+              label="Bookmark Name"
+              type="text"
+              name="bookmarkname"
+              placeholder="Bookmark Name"
+              defaultValue={props.pathname.split('/')[1] || ''}
+              withAsterisk
+            />
+          </Stack>
+        </ModalContentLayout>
       </Form>
     </Modal>
   );

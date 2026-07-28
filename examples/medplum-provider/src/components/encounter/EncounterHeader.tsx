@@ -4,6 +4,7 @@ import { ActionIcon, Box, Button, Flex, Group, Menu, Modal, Paper, SegmentedCont
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { ModalActionsFooter, ModalContentLayout } from '@medplum/react';
 import { IconChevronDown, IconLock, IconLockOpen, IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -210,20 +211,27 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       </Paper>
 
       <Modal opened={confirmOpened} onClose={closeConfirm}>
-        <Text size="lg" fw={500}>
-          Are you sure you want to cancel this encounter?
-        </Text>
-        <Text size="sm" c="dimmed" mt="xs">
-          This action cannot be undone.
-        </Text>
-        <Group justify="flex-end" mt="xl" gap="xs">
-          <Button onClick={closeConfirm} color="red" variant="outline">
-            No, keep it
-          </Button>
-          <Button onClick={confirmStatusChange} color="red">
-            Yes, cancel it
-          </Button>
-        </Group>
+        <ModalContentLayout
+          footer={
+            <ModalActionsFooter>
+              <Button onClick={confirmStatusChange} color="red" w="100%">
+                Yes, cancel it
+              </Button>
+              <Button onClick={closeConfirm} color="red" variant="outline" w="100%">
+                No, keep it
+              </Button>
+            </ModalActionsFooter>
+          }
+        >
+          <Stack gap="md">
+            <Text size="lg" fw={500}>
+              Are you sure you want to cancel this encounter?
+            </Text>
+            <Text size="sm" c="dimmed">
+              This action cannot be undone.
+            </Text>
+          </Stack>
+        </ModalContentLayout>
       </Modal>
 
       <Modal opened={signOpened} onClose={closeSign} title="Signing As">

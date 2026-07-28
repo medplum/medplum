@@ -4,6 +4,7 @@ import { Box, Button, Card, Checkbox, Divider, Grid, Group, Modal, Stack, Text }
 import type { WithId } from '@medplum/core';
 import { createReference, formatHumanName } from '@medplum/core';
 import type { Condition, Coverage, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { ModalActionsFooter, ModalContentLayout } from '@medplum/react';
 import { IconArrowUpRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -172,105 +173,111 @@ const ClaimReviewPanel = (props: ClaimReviewPanelProps): JSX.Element => {
   const canSubmit = billingType === 'self-pay' || selectedIds.size > 0;
 
   return (
-    <Stack gap="xl">
-      <Text size="sm" c="dimmed">
-        {patientName}
-      </Text>
-      <Box>
-        <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={8}>
-          Billing Type
-        </Text>
-        <Button.Group style={{ width: '100%' }}>
+    <ModalContentLayout
+      footer={
+        <ModalActionsFooter>
+          {onSubmitToStedi && (
+            <Button
+              size="md"
+              variant="outline"
+              rightSection={<IconArrowUpRight size={16} />}
+              disabled={!canSubmit}
+              w="100%"
+              onClick={() => handleSubmit(onSubmitToStedi)}
+            >
+              Submit to Stedi
+            </Button>
+          )}
           <Button
             size="md"
-            variant={billingType === 'insurance' ? 'filled' : 'default'}
-            onClick={() => setBillingType('insurance')}
-            style={{ flex: 1 }}
-            disabled={insuranceCoverages.length === 0}
-          >
-            Insurance pay
-          </Button>
-          <Button
-            size="md"
-            variant={billingType === 'self-pay' ? 'filled' : 'default'}
-            onClick={() => setBillingType('self-pay')}
-            style={{ flex: 1 }}
-          >
-            Self-pay
-          </Button>
-        </Button.Group>
-      </Box>
-
-      {billingType === 'insurance' && insuranceCoverages.length > 0 && (
-        <Box>
-          <Group justify="space-between" mb={8}>
-            <Text size="xs" tt="uppercase" fw={600} c="dimmed">
-              Coverage on file
-            </Text>
-            {insuranceCoverages.length > 1 && (
-              <Button variant="subtle" size="xs" onClick={toggleCoverageAll}>
-                {selectedIds.size === insuranceCoverages.length ? 'Deselect all' : 'Select all'}
-              </Button>
-            )}
-          </Group>
-          <Box style={{ maxHeight: 320, overflowY: 'auto' }}>
-            <Stack gap="sm" pr={6}>
-              {insuranceCoverages.map((coverage) => (
-                <CoverageCard
-                  key={coverage.id}
-                  coverage={coverage}
-                  selected={selectedIds.has(coverage.id)}
-                  onToggle={() => toggleCoverage(coverage.id)}
-                />
-              ))}
-            </Stack>
-          </Box>
-        </Box>
-      )}
-
-      <Divider />
-
-      <Grid gutter="lg">
-        <Grid.Col span={6}>
-          <Text size="xs" c="dimmed" mb={4}>
-            Diagnosis
-          </Text>
-          <Text size="sm" fw={600}>
-            {diagnosisText}
-          </Text>
-        </Grid.Col>
-        <Grid.Col span={6}>
-          <Text size="xs" c="dimmed" mb={4}>
-            Practitioner
-          </Text>
-          <Text size="sm" fw={600}>
-            {practitionerName}
-          </Text>
-        </Grid.Col>
-      </Grid>
-
-      <Group justify="flex-end">
-        {onSubmitToStedi && (
-          <Button
-            size="md"
-            variant="outline"
             rightSection={<IconArrowUpRight size={16} />}
             disabled={!canSubmit}
-            onClick={() => handleSubmit(onSubmitToStedi)}
+            w="100%"
+            onClick={() => handleSubmit(onSubmitClaim)}
           >
-            Submit to Stedi
+            Submit to Candid
           </Button>
+        </ModalActionsFooter>
+      }
+    >
+      <Stack gap="md">
+        <Text size="sm" c="dimmed">
+          {patientName}
+        </Text>
+        <Box>
+          <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={8}>
+            Billing Type
+          </Text>
+          <Button.Group style={{ width: '100%' }}>
+            <Button
+              size="md"
+              variant={billingType === 'insurance' ? 'filled' : 'default'}
+              onClick={() => setBillingType('insurance')}
+              style={{ flex: 1 }}
+              disabled={insuranceCoverages.length === 0}
+            >
+              Insurance pay
+            </Button>
+            <Button
+              size="md"
+              variant={billingType === 'self-pay' ? 'filled' : 'default'}
+              onClick={() => setBillingType('self-pay')}
+              style={{ flex: 1 }}
+            >
+              Self-pay
+            </Button>
+          </Button.Group>
+        </Box>
+
+        {billingType === 'insurance' && insuranceCoverages.length > 0 && (
+          <Box>
+            <Group justify="space-between" mb={8}>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Coverage on file
+              </Text>
+              {insuranceCoverages.length > 1 && (
+                <Button variant="subtle" size="xs" onClick={toggleCoverageAll}>
+                  {selectedIds.size === insuranceCoverages.length ? 'Deselect all' : 'Select all'}
+                </Button>
+              )}
+            </Group>
+            <Box style={{ maxHeight: 320, overflowY: 'auto' }}>
+              <Stack gap="md" pr={6}>
+                {insuranceCoverages.map((coverage) => (
+                  <CoverageCard
+                    key={coverage.id}
+                    coverage={coverage}
+                    selected={selectedIds.has(coverage.id)}
+                    onToggle={() => toggleCoverage(coverage.id)}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          </Box>
         )}
-        <Button
-          size="md"
-          rightSection={<IconArrowUpRight size={16} />}
-          disabled={!canSubmit}
-          onClick={() => handleSubmit(onSubmitClaim)}
-        >
-          Submit to Candid
-        </Button>
-      </Group>
-    </Stack>
+
+        <Divider />
+
+        <Grid gutter="lg">
+          <Grid.Col span={6}>
+            <Text size="xs" c="dimmed" mb={4}>
+              Diagnosis
+            </Text>
+            <Text size="sm" fw={600}>
+              {diagnosisText}
+            </Text>
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <Text size="xs" c="dimmed" mb={4}>
+              Practitioner
+            </Text>
+            <Text size="sm" fw={600}>
+              {practitionerName}
+            </Text>
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    </ModalContentLayout>
   );
 };
 
@@ -308,7 +315,7 @@ export const SubmitClaimModal = (props: SubmitClaimModalProps): JSX.Element => {
     !selectedIsSelfPay && insuranceCoverages.length > 0 ? 'insurance' : 'self-pay';
 
   return (
-    <Modal opened={opened} onClose={onClose} centered size="lg" padding="xl" title="Review before submitting claim">
+    <Modal opened={opened} onClose={onClose} centered size="lg" title="Review before submitting claim">
       {opened && (
         <ClaimReviewPanel
           patient={patient}
