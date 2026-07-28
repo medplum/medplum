@@ -327,11 +327,15 @@ describe('MemoryRepository', () => {
         active: true,
       };
 
-      const c1 = await repo.conditionalUpdate(patient, parseSearchRequest('Patient?_id=update-test'), { assignedId: true });
+      const c1 = await repo.conditionalUpdate(patient, parseSearchRequest('Patient?_id=update-test'), {
+        assignedId: true,
+      });
       expect(c1.outcome.id).toBe('created');
 
       patient.active = false;
-      const u1 = await repo.conditionalUpdate(patient, parseSearchRequest('Patient?_id=update-test'), { assignedId: true });
+      const u1 = await repo.conditionalUpdate(patient, parseSearchRequest('Patient?_id=update-test'), {
+        assignedId: true,
+      });
       expect(u1.outcome.id).toBe('ok');
       expect(u1.resource.active).toBe(false);
     });
