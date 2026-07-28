@@ -13,7 +13,6 @@ import {
   buildWelcomeEmail,
   sendWelcomeEmail,
   welcomeEmailHtml,
-  welcomeEmailMarkdown,
   welcomeEmailText,
 } from './welcomeemail';
 
@@ -55,30 +54,27 @@ describe('Welcome email', () => {
     sendEmailMock.mockResolvedValue(undefined);
   });
 
-  describe('welcomeEmailMarkdown', () => {
-    test('Includes project name and dynamic links', () => {
-      const body = welcomeEmailMarkdown(CTX);
-      expect(body).toContain('Hi Alexander');
-      expect(body).toContain('Hamilton Project');
-      expect(body).toContain('https://app.example.com/signin');
-      expect(body).toContain('https://app.example.com/admin/users');
-      expect(body).toContain('support@example.com');
+  describe('welcomeEmailText', () => {
+    test('Includes greeting, project name, and dynamic links', () => {
+      const text = welcomeEmailText(CTX);
+      expect(text).toContain('Hi Alexander');
+      expect(text).toContain('Your new project Hamilton Project is ready to go.');
+      expect(text).toContain('https://app.example.com/signin');
+      expect(text).toContain('https://app.example.com/admin/users');
+      expect(text).toContain('support@example.com');
+    });
+
+    test('Contains no markup or bold markers', () => {
+      const text = welcomeEmailText(CTX);
+      expect(text).not.toContain('**');
+      expect(text).not.toContain('<');
     });
 
     test('Omits first name when not provided', () => {
-      const body = welcomeEmailMarkdown({ ...CTX, firstName: undefined });
+      const text = welcomeEmailText({ ...CTX, firstName: undefined });
       // Clean greeting with no dangling name or stray whitespace.
-      expect(body).not.toContain('undefined');
-      expect(body.startsWith('Hi,\n')).toBe(true);
-    });
-  });
-
-  describe('welcomeEmailText', () => {
-    test('Strips bold markers and contains no markup', () => {
-      const text = welcomeEmailText(CTX);
-      expect(text).not.toContain('**');
-      expect(text).toContain('Your new project Hamilton Project is ready to go.');
-      expect(text).not.toContain('<');
+      expect(text).not.toContain('undefined');
+      expect(text.startsWith('Hi,\n')).toBe(true);
     });
   });
 
