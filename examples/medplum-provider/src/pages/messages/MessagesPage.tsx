@@ -32,16 +32,16 @@ export function MessagesPage(): JSX.Element {
     [currentSearch]
   );
 
-  const isNewMessage = location.pathname === '/Communication/new';
+  const isNewMessage = location.pathname.endsWith('/new');
+  const basePath = messageId ? `/Communication/${messageId}` : '/Communication';
 
   useEffect(() => {
     const isDetailView = Boolean(messageId);
     if (!isDetailView && normalizedSearch !== currentSearch) {
       const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
-      const basePath = isNewMessage ? '/Communication/new' : '/Communication';
-      navigate(`${basePath}${prefix}`, { replace: true })?.catch(console.error);
+      navigate(`${isNewMessage ? `${basePath}/new` : basePath}${prefix}`, { replace: true })?.catch(console.error);
     }
-  }, [currentSearch, navigate, normalizedSearch, messageId, isNewMessage]);
+  }, [currentSearch, navigate, normalizedSearch, messageId, isNewMessage, basePath]);
 
   const onChange = (search: SearchRequest): void => {
     navigate(`/Communication${formatSearchQuery(search)}`)?.catch(console.error);
@@ -75,11 +75,11 @@ export function MessagesPage(): JSX.Element {
   };
 
   const onNewTopicOpen = (): void => {
-    navigate(`/Communication/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+    navigate(`${basePath}/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
   const onNewTopicClose = (): void => {
-    navigate(`/Communication${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+    navigate(`${basePath}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
   const onViewInDocuments = (reference: Reference<DocumentReference>): void => {

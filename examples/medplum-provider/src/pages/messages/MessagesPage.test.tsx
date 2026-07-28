@@ -7,7 +7,7 @@ import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MessagesPage } from './MessagesPage';
 
@@ -33,7 +33,14 @@ describe('MessagesPage', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <MessagesPage />
+            <Routes>
+              <Route path="/Communication" element={<MessagesPage />}>
+                <Route index element={<MessagesPage />} />
+                <Route path="new" element={<MessagesPage />} />
+                <Route path=":messageId" element={<MessagesPage />} />
+                <Route path=":messageId/new" element={<MessagesPage />} />
+              </Route>
+            </Routes>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -92,9 +99,10 @@ describe('MessagesPage', () => {
       { timeout: 3000 }
     );
 
+    // The topic appears in both the thread list and the detail pane header
     await waitFor(
       () => {
-        expect(screen.getByText('Test Topic')).toBeInTheDocument();
+        expect(screen.getAllByText('Test Topic').length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
@@ -106,6 +114,44 @@ describe('MessagesPage', () => {
     await waitFor(() => {
       expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
+
+    await waitFor(() => {
+      expect(screen.getByText('New Message')).toBeInTheDocument();
+    });
+  });
+
+  test('opens new message dialog over a thread when URL is /Communication/:messageId/new', async () => {
+    const mockCommunication: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-123',
+      status: 'in-progress',
+      topic: { text: 'Test Topic' },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+    };
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockCommunication as WithId<Communication> }],
+    });
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm123: [],
+      },
+    } as any);
+
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockCommunication as WithId<Communication>);
+
+    setup('/Communication/comm-123/new');
+
+    await waitFor(
+      () => {
+        expect(screen.getAllByText('Test Topic').length).toBeGreaterThan(0);
+      },
+      { timeout: 3000 }
+    );
 
     await waitFor(() => {
       expect(screen.getByText('New Message')).toBeInTheDocument();
