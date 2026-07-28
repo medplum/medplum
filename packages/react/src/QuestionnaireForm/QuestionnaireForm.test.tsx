@@ -1714,7 +1714,7 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const checkboxes = screen.getAllByRole('checkbox');
+    const checkboxes = screen.getAllByRole<HTMLInputElement>('checkbox');
     expect(checkboxes.length).toBe(3);
     const [peanuts, shellfish, noAllergies] = checkboxes;
 
