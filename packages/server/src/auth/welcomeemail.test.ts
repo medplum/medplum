@@ -8,13 +8,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import {
-  WELCOME_EMAIL_SUBJECT,
-  buildWelcomeEmail,
-  sendWelcomeEmail,
-  welcomeEmailHtml,
-  welcomeEmailText,
-} from './welcomeemail';
+import { WELCOME_EMAIL_SUBJECT, buildWelcomeEmail, sendWelcomeEmail, welcomeEmailText } from './welcomeemail';
 
 vi.mock('../email/email');
 
@@ -78,44 +72,14 @@ describe('Welcome email', () => {
     });
   });
 
-  describe('welcomeEmailHtml', () => {
-    test('Renders bold project name and nested lists', () => {
-      const html = welcomeEmailHtml(CTX);
-      expect(html).toContain('<strong>Hamilton Project</strong>');
-      // A nested list produces two <ul> elements (outer + nested).
-      expect((html.match(/<ul[\s>]/g) ?? []).length).toBe(2);
-      expect(html).not.toContain('**');
-    });
-
-    test('Uses toned-down, left-aligned styling', () => {
-      const html = welcomeEmailHtml(CTX);
-      // No centered column.
-      expect(html).not.toContain('margin: 0 auto');
-      // Tightened list indentation rather than the deep browser default.
-      expect(html).toContain('padding-left: 20px');
-    });
-
-    test('Auto-links URLs', () => {
-      const html = welcomeEmailHtml(CTX);
-      expect(html).toContain('href="https://app.example.com/signin"');
-      expect(html).toContain('href="https://discord.gg/medplum"');
-    });
-
-    test('Escapes HTML in free-form values to prevent injection', () => {
-      const html = welcomeEmailHtml({ ...CTX, projectName: '<script>alert(1)</script>' });
-      expect(html).not.toContain('<script>');
-      expect(html).toContain('&lt;script&gt;');
-    });
-  });
-
   describe('buildWelcomeEmail', () => {
-    test('Sets recipient, subject, and both text and html parts', () => {
+    test('Sets recipient, subject, and a plain-text body only (no html)', () => {
       const options = buildWelcomeEmail('alex@example.com', CTX);
       expect(options.to).toBe('alex@example.com');
       expect(options.subject).toBe(WELCOME_EMAIL_SUBJECT);
       expect(options.text).toContain('Hamilton Project');
-      expect(options.text).not.toContain('**');
-      expect(options.html).toContain('<strong>Hamilton Project</strong>');
+      // Plain text only — no HTML part, keeping the message lightweight.
+      expect(options.html).toBeUndefined();
       // from is resolved by sendEmail from server settings, not set here.
       expect(options.from).toBeUndefined();
     });
