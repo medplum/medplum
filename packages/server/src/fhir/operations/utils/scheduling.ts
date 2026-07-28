@@ -319,7 +319,7 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
  * @param params.availability - Ranges of available time
  * @param params.slots - Slot resources to consider
  * @param params.range - Interval of time to restrict availability to
- * @param params.serviceType - Service type to check for "free" slots
+ * @param params.serviceType - Service type used to filter service-scoped Slots; Slots without a serviceType apply to all services
  * @returns Updated availability information
  */
 export function applyExistingSlots(params: {
@@ -339,6 +339,7 @@ export function applyExistingSlots(params: {
       .filter(
         (slot) => slot.status === 'busy' || slot.status === 'busy-unavailable' || slot.status === 'busy-tentative'
       )
+      .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY))
       .map((slot) => ({ start: new Date(slot.start), end: new Date(slot.end) }))
   );
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
