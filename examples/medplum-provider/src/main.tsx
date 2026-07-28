@@ -1,15 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider, Modal, createTheme } from '@mantine/core';
+import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider, medplumModalTheme } from '@medplum/react';
 import '@medplum/react-scheduling/styles.css';
 import '@medplum/react/styles.css';
-import { IconX } from '@tabler/icons-react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
@@ -40,42 +39,7 @@ const theme = createTheme({
     xl: '1.125rem',
   },
   components: {
-    Modal: Modal.extend({
-      defaultProps: {
-        padding: 'lg',
-        radius: 'md',
-        closeButtonProps: { icon: <IconX size={18} /> },
-      },
-      styles: {
-        content: {
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        },
-        header: {
-          minHeight: 0,
-          padding:
-            'var(--mantine-spacing-sm) var(--mantine-spacing-sm) var(--mantine-spacing-sm) var(--mantine-spacing-lg)',
-          borderBottom: '1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4))',
-          flexShrink: 0,
-          position: 'static',
-        },
-        close: {
-          width: '1.75rem',
-          height: '1.75rem',
-          borderRadius: '999px',
-        },
-        title: {
-          fontWeight: 800,
-        },
-        body: {
-          paddingTop: 'var(--mantine-spacing-lg)',
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-        },
-      },
-    }),
+    Modal: medplumModalTheme,
   },
 });
 
