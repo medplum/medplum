@@ -153,139 +153,131 @@ describe('OrderMedicationPage', () => {
     expect(deleteSpy).not.toHaveBeenCalledWith('MedicationRequest', expect.any(String));
   });
 
-  test(
-    'infers days supply from a hyphenated compound number in the sig',
-    async () => {
-      const medplum = new MockClient();
-      medplum.mock.setProfile(DrAliceSmith);
-      searchMedicationsMock.mockResolvedValue([
-        {
-          resourceType: 'Medication',
-          id: 'med-aspirin-81',
-          code: { text: 'Aspirin 81 mg tablet' },
-        },
-      ]);
-      const user = userEvent.setup();
-
-      await act(async () => {
-        render(
-          <MantineProvider>
-            <MedplumProvider medplum={medplum}>
-              <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
-                <Routes>
-                  <Route
-                    path="/Patient/:patientId/MedicationRequest"
-                    element={<OrderMedicationPage patient={HomerSimpson} />}
-                  />
-                </Routes>
-              </MemoryRouter>
-            </MedplumProvider>
-          </MantineProvider>
-        );
-      });
-
-      const searchInput = await screen.findByLabelText(/Search medication/i, {}, { timeout: 10000 });
-      await user.type(searchInput, 'aspirin');
-      await user.click(await screen.findByText('Aspirin 81 mg tablet', {}, { timeout: 10000 }));
-
-      const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
-      await user.clear(sigInput);
-      await user.type(sigInput, 'Take 1 tablet every twenty-four hours');
-      const quantityInput = screen.getByLabelText('Quantity to dispense');
-      await user.clear(quantityInput);
-      await user.type(quantityInput, '48');
-
-      await waitFor(
-        () => {
-          expect(screen.getAllByLabelText('Days supply')[0]).toHaveValue('48');
-        },
-        { timeout: 10000 }
-      );
-    },
-    // This test drives a lot of real keystrokes (userEvent.type) through Mantine's
-    // Autocomplete + several async effects; the default 5000ms budget is too tight
-    // on loaded/shared CI runners even though it's comfortably fast locally.
-    20000
-  );
-
-  test(
-    'medication title combines the drug name with the selected formulation, not just the strength',
-    async () => {
-      const medplum = new MockClient();
-      medplum.mock.setProfile(DrAliceSmith);
-
-      // Drug-name search row: carries the product name + a routed-med-id so the
-      // page expands to formulations (the path that previously dropped the name).
-      const drugHit: Medication = {
+  test('infers days supply from a hyphenated compound number in the sig', async () => {
+    const medplum = new MockClient();
+    medplum.mock.setProfile(DrAliceSmith);
+    searchMedicationsMock.mockResolvedValue([
+      {
         resourceType: 'Medication',
-        id: 'med-jentadueto',
-        code: { text: 'Jentadueto' },
-        identifier: [{ system: 'https://scriptsure.com/routed-med-id', value: '163396' }],
-      };
-      // Formulation row from the routedMedId lookup: only a strength/format string.
-      const formatHit: Medication = {
-        resourceType: 'Medication',
-        id: 'med-jentadueto-format',
-        code: {
-          text: '12.5 mg-500 mg tablet',
-          coding: [
-            { system: 'http://hl7.org/fhir/sid/ndc', code: '64764033560', display: '12.5 mg-500 mg tablet' },
-            { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '1368398', display: 'SBD' },
-          ],
-        },
-      };
-      searchMedicationsMock.mockImplementation(async (input: { term?: string; routedMedId?: number }) => {
-        return input?.routedMedId ? [formatHit] : [drugHit];
-      });
-      orderMedicationMock.mockResolvedValue({ launchUrl: 'https://ssu.example/widget', medicationRequestId: 'mr-1' });
+        id: 'med-aspirin-81',
+        code: { text: 'Aspirin 81 mg tablet' },
+      },
+    ]);
+    const user = userEvent.setup();
 
-      const createSpy = vi.spyOn(medplum, 'createResource');
-      const user = userEvent.setup();
-
-      await act(async () => {
-        render(
-          <MantineProvider>
-            <Notifications />
-            <MedplumProvider medplum={medplum}>
-              <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
-                <Routes>
-                  <Route
-                    path="/Patient/:patientId/MedicationRequest"
-                    element={<OrderMedicationPage patient={HomerSimpson} />}
-                  />
-                </Routes>
-              </MemoryRouter>
-            </MedplumProvider>
-          </MantineProvider>
-        );
-      });
-
-      const searchInput = await screen.findByLabelText(/Search medication/i, {}, { timeout: 10000 });
-      await user.type(searchInput, 'jentadueto');
-      await user.click(await screen.findByText('Jentadueto', {}, { timeout: 10000 }));
-
-      // Wait for the routedMedId formulation lookup to resolve and render.
-      await screen.findByText(/Formulation & directions/i, {}, { timeout: 10000 });
-
-      await user.click(await screen.findByRole('button', { name: /^Prescribe now$/ }, { timeout: 10000 }));
-
-      await waitFor(
-        () => {
-          const mrCall = createSpy.mock.calls.find(
-            (c) => (c[0] as { resourceType?: string })?.resourceType === 'MedicationRequest'
-          );
-          expect(mrCall).toBeDefined();
-          expect((mrCall?.[0] as MedicationRequest).medicationCodeableConcept?.text).toBe(
-            'Jentadueto 12.5 mg-500 mg tablet'
-          );
-        },
-        { timeout: 10000 }
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
       );
-    },
-    // See the timeout note on the previous test — this one also drives a search
-    // debounce + a routedMedId formulation lookup, both prone to CI slowness.
-    20000
-  );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i, {}, { timeout: 10000 });
+    await user.type(searchInput, 'aspirin');
+    await user.click(await screen.findByText('Aspirin 81 mg tablet', {}, { timeout: 10000 }));
+
+    const sigInput = screen.getByLabelText(/Sig \(directions\)/i);
+    await user.clear(sigInput);
+    await user.type(sigInput, 'Take 1 tablet every twenty-four hours');
+    const quantityInput = screen.getByLabelText('Quantity to dispense');
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '48');
+
+    await waitFor(
+      () => {
+        expect(screen.getAllByLabelText('Days supply')[0]).toHaveValue('48');
+      },
+      { timeout: 10000 }
+    );
+  }, // This test drives a lot of real keystrokes (userEvent.type) through Mantine's
+  // Autocomplete + several async effects; the default 5000ms budget is too tight
+  // on loaded/shared CI runners even though it's comfortably fast locally.
+  20000);
+
+  test('medication title combines the drug name with the selected formulation, not just the strength', async () => {
+    const medplum = new MockClient();
+    medplum.mock.setProfile(DrAliceSmith);
+
+    // Drug-name search row: carries the product name + a routed-med-id so the
+    // page expands to formulations (the path that previously dropped the name).
+    const drugHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-jentadueto',
+      code: { text: 'Jentadueto' },
+      identifier: [{ system: 'https://scriptsure.com/routed-med-id', value: '163396' }],
+    };
+    // Formulation row from the routedMedId lookup: only a strength/format string.
+    const formatHit: Medication = {
+      resourceType: 'Medication',
+      id: 'med-jentadueto-format',
+      code: {
+        text: '12.5 mg-500 mg tablet',
+        coding: [
+          { system: 'http://hl7.org/fhir/sid/ndc', code: '64764033560', display: '12.5 mg-500 mg tablet' },
+          { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '1368398', display: 'SBD' },
+        ],
+      },
+    };
+    searchMedicationsMock.mockImplementation(async (input: { term?: string; routedMedId?: number }) => {
+      return input?.routedMedId ? [formatHit] : [drugHit];
+    });
+    orderMedicationMock.mockResolvedValue({ launchUrl: 'https://ssu.example/widget', medicationRequestId: 'mr-1' });
+
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={medplum}>
+            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/MedicationRequest"
+                  element={<OrderMedicationPage patient={HomerSimpson} />}
+                />
+              </Routes>
+            </MemoryRouter>
+          </MedplumProvider>
+        </MantineProvider>
+      );
+    });
+
+    const searchInput = await screen.findByLabelText(/Search medication/i, {}, { timeout: 10000 });
+    await user.type(searchInput, 'jentadueto');
+    await user.click(await screen.findByText('Jentadueto', {}, { timeout: 10000 }));
+
+    // Wait for the routedMedId formulation lookup to resolve and render.
+    await screen.findByText(/Formulation & directions/i, {}, { timeout: 10000 });
+
+    await user.click(await screen.findByRole('button', { name: /^Prescribe now$/ }, { timeout: 10000 }));
+
+    await waitFor(
+      () => {
+        const mrCall = createSpy.mock.calls.find(
+          (c) => (c[0] as { resourceType?: string })?.resourceType === 'MedicationRequest'
+        );
+        expect(mrCall).toBeDefined();
+        expect((mrCall?.[0] as MedicationRequest).medicationCodeableConcept?.text).toBe(
+          'Jentadueto 12.5 mg-500 mg tablet'
+        );
+      },
+      { timeout: 10000 }
+    );
+  }, // See the timeout note on the previous test — this one also drives a search
+  // debounce + a routedMedId formulation lookup, both prone to CI slowness.
+  20000);
 
   test('Add to cart creates the draft MedicationRequest without calling $order-medication or opening a widget', async () => {
     const medplum = new MockClient();
