@@ -140,7 +140,7 @@ export interface Project {
    */
   features?: ('ai' | 'ai-realtime' | 'aws-comprehend' | 'aws-textract' | 'bots' | 'cron' | 'email' |
       'google-auth-required' | 'graphql-introspection' | 'scheduling' | 'websocket-subscriptions' | 'transaction-bundles' |
-      'validate-terminology' | 'range-search' | 'log-streaming')[];
+      'validate-terminology' | 'range-search' | 'log-streaming' | 'async-batch')[];
 
   /**
    * @deprecated Use defaultAccessPolicies instead. The default access
