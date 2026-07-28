@@ -22,6 +22,10 @@ export function asyncBatchHandler(
       return;
     }
 
+    if (!project.features?.includes('async-batch')) {
+      throw new OperationOutcomeError(badRequest('Async Batch feature not available'));
+    }
+
     await runMiddleware(req, res, json({ type: JSON_TYPE, limit: config.maxBatchSize }));
     if (req.body.resourceType !== 'Bundle') {
       throw new OperationOutcomeError(badRequest('Expected request body to be a Bundle'));

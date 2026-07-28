@@ -203,6 +203,11 @@
             "code": "log-streaming",
             "display": "Log Streaming",
             "definition": "Real-time streaming of log data for monitoring and analysis"
+          },
+          {
+            "code": "async-batch",
+            "display": "Async Batch",
+            "definition": "Asynchronous processing of FHIR Batch requests for bulk data import"
           }
         ]
       }
