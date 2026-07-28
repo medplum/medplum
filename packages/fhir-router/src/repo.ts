@@ -24,7 +24,16 @@ import {
   stringify,
   toTypedValue,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  BundleEntry,
+  OperationOutcome,
+  Parameters,
+  Reference,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
+import { getExtraEntries } from './search-include';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -595,7 +604,15 @@ export class MemoryRepository extends FhirRepository {
   async readReferences<T extends Resource>(
     references: readonly Reference<T>[]
   ): Promise<(T | OperationOutcomeError)[]> {
-    return Promise.all(references.map((r) => this.readReference<T>(r)));
+    // Unresolvable references are returned as errors rather than rejecting the whole batch,
+    // matching the `(T | Error)[]` contract on FhirRepository.
+    return Promise.all(
+      references.map(async (r) =>
+        this.readReference<T>(r).catch((err) =>
+          err instanceof OperationOutcomeError ? err : new OperationOutcomeError(normalizeOperationOutcome(err))
+        )
+      )
+    );
   }
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
@@ -631,7 +648,10 @@ export class MemoryRepository extends FhirRepository {
         result.push(resource);
       }
     }
-    let entry = result.map((resource) => ({ resource: deepClone(resource) }));
+    let entry = result.map((resource): BundleEntry<WithId<T>> => ({
+      search: { mode: 'match' },
+      resource: deepClone(resource),
+    }));
     for (const sortRule of searchRequest.sortRules ?? EMPTY) {
       entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));
     }
@@ -650,7 +670,15 @@ export class MemoryRepository extends FhirRepository {
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
-    return this.searchSync(searchRequest);
+    const bundle = this.searchSync(searchRequest);
+    if ((searchRequest.include || searchRequest.revInclude) && bundle.entry?.length) {
+      // `total` intentionally continues to reflect only the matched resources.
+      const entries = bundle.entry as BundleEntry[];
+      const resources = entries.map((e) => e.resource as WithId<T>);
+      await getExtraEntries(this, searchRequest, resources, entries);
+      bundle.entry = entries as BundleEntry<WithId<T>>[];
+    }
+    return bundle;
   }
 
   async conditionalCreate<T extends Resource>(
