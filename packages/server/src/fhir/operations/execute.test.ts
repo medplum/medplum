@@ -197,7 +197,7 @@ describe('Execute', () => {
           ...(streaming && { streamingEnabled: true }),
         });
 
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       const bot = res1.body as WithId<Bot>;
 
       const res2 = await request(app)
@@ -208,7 +208,7 @@ describe('Execute', () => {
           code: cjsCode,
         });
 
-      expect(res2.status).toBe(200);
+      expect(res2).toHaveStatus(200);
 
       return bot;
     }
@@ -228,7 +228,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.TEXT)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send('input');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
   });
@@ -242,7 +242,7 @@ describe('Execute', () => {
         name: [{ given: ['John'], family: ['Doe'] }],
         identifier: [],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.body.identifier).toStrictEqual([]);
   });
@@ -255,7 +255,7 @@ describe('Execute', () => {
         name: [{ given: ['John'], family: ['Doe'] }],
         identifier: [],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.body.identifier).toStrictEqual([]);
   });
@@ -266,7 +266,7 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send(JSON.parse(JSON.stringify(input)));
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.body).toStrictEqual({ type: 'not-a-resource', result: [] });
   });
@@ -284,7 +284,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.HL7_V2)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send(text);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
     expect(writeFileSpy).toHaveBeenCalledTimes(1);
 
@@ -310,7 +310,7 @@ describe('Execute', () => {
         name: 'Test Bot',
         code: '',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Execute the bot
@@ -319,7 +319,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
   });
 
   test('Unsupported runtime version', async () => {
@@ -332,7 +332,7 @@ describe('Execute', () => {
         name: 'Test Bot',
         runtimeVersion: 'unsupported',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Step 2: Publish the bot
@@ -348,7 +348,7 @@ describe('Execute', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Step 3: Execute the bot
     const res3 = await request(app)
@@ -356,7 +356,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
   });
 
   test('Bots not enabled', async () => {
@@ -380,7 +380,7 @@ describe('Execute', () => {
         name: 'Alice personal bot',
         description: 'Alice bot description',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
     expect(res2.body.sourceCode).toBeDefined();
@@ -392,7 +392,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
   });
 
@@ -408,7 +408,7 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
         runAsUser: true,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Try to execute before deploying
@@ -418,7 +418,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0].details.text).toStrictEqual('No executable code');
 
     // Update the bot with an invalid code URL
@@ -433,7 +433,7 @@ describe('Execute', () => {
           url: 'https://example.com/invalid.js',
         },
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Try to execute with invalid code URL
     // This should fail
@@ -442,7 +442,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
     expect(res4.body.issue[0].details.text).toStrictEqual('Executable code is not a Binary');
 
     // Deploy the bot
@@ -462,7 +462,7 @@ describe('Execute', () => {
           };
       `,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Execute the bot success
     const res6 = await request(app)
@@ -471,7 +471,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .set('Cookie', '__medplum-test-cookie=123')
       .send({});
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body).toMatchObject({
       patient: 'Patient/123',
       bot: 'Bot/' + bot.id,
@@ -490,7 +490,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res7.status).toBe(400);
+    expect(res7).toHaveStatus(400);
     expect(res7.body.issue[0].details.text).toStrictEqual('VM Context bots not enabled on this server');
 
     getConfig().vmContextBotsEnabled = true;
@@ -507,7 +507,7 @@ describe('Execute', () => {
         name: 'Test Bot',
         runtimeVersion: 'vmcontext',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Deploy the bot
@@ -522,7 +522,7 @@ describe('Execute', () => {
           };
       `,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Execute the bot success
     const res6 = await request(app)
@@ -530,7 +530,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body).toStrictEqual(42);
   });
 
@@ -541,7 +541,7 @@ describe('Execute', () => {
         .post(`/fhir/R4/Bot/${urlEnding}`)
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('');
-      expect(res.status).toBe(404);
+      expect(res).toHaveStatus(404);
       expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
       expect(res.body).toMatchObject(notFound);
     }
@@ -552,7 +552,7 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/$execute`)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send('');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     expect(res.body).toMatchObject(badRequest('Must specify bot ID or identifier.'));
   });
@@ -561,7 +561,7 @@ describe('Execute', () => {
     const res = await request(app)
       .get(`/fhir/R4/Bot/${bots.binaryBot.id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken1);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('Hello, world!');
   });
@@ -584,7 +584,7 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
         runAsUser: true,
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Deploy the bot
@@ -601,7 +601,7 @@ describe('Execute', () => {
           };
       `,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Execute the bot as self
     const res6 = await request(app)
@@ -609,7 +609,7 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     const selfToken = parseJWTPayload(res6.body.token);
     expect(selfToken.profile).toMatch(/^ClientApplication\//);
 
@@ -620,7 +620,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
       .send({});
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
     const membershipToken = parseJWTPayload(res7.body.token);
     expect(membershipToken.profile).toEqual(getReferenceString(profile));
 
@@ -631,7 +631,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
       .send({});
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
     const profileToken = parseJWTPayload(res8.body.token);
     expect(profileToken.profile).toEqual(getReferenceString(profile));
   });
@@ -647,7 +647,7 @@ describe('Execute', () => {
         name: 'Test Bot',
         runtimeVersion: 'vmcontext',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     const bot = res1.body as Bot;
 
     // Deploy the bot
@@ -662,7 +662,7 @@ describe('Execute', () => {
           };
       `,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     const traceId = randomUUID();
 
@@ -717,7 +717,7 @@ describe('Execute', () => {
         const res1 = await request(app)
           .get(`/fhir/R4/Project/${project2.id}`)
           .set('Authorization', 'Bearer ' + accessToken2);
-        expect(res1.status).toBe(200);
+        expect(res1).toHaveStatus(200);
         expect(res1.body.resourceType).toBe('Project');
         expect(res1.body.id).toBe(project2.id);
 
@@ -725,7 +725,7 @@ describe('Execute', () => {
         const res2 = await request(app)
           .get(`/fhir/R4/Project/${project1.id}`)
           .set('Authorization', 'Bearer ' + accessToken2);
-        expect(res2.status).toBe(200);
+        expect(res2).toHaveStatus(200);
         expect(res2.body.resourceType).toBe('Project');
         expect(res2.body.id).toBe(project1.id);
 
@@ -733,7 +733,7 @@ describe('Execute', () => {
         const res3 = await request(app)
           .get(`/fhir/R4/Bot/${bot.id}`)
           .set('Authorization', 'Bearer ' + accessToken2);
-        expect(res3.status).toBe(200);
+        expect(res3).toHaveStatus(200);
         expect(res3.body.resourceType).toBe('Bot');
         expect(res3.body.id).toBe(bot.id);
       }
@@ -795,7 +795,7 @@ describe('Execute', () => {
         .set('Content-Type', ContentType.TEXT)
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
       expect(res.text).toStrictEqual('input');
 
@@ -834,7 +834,7 @@ describe('Execute', () => {
         .set('Content-Type', ContentType.TEXT)
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
       expect(res.text).toStrictEqual('input');
 
@@ -856,7 +856,7 @@ describe('Execute', () => {
         .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send('input');
-      expect(res.status).toBe(202);
+      expect(res).toHaveStatus(202);
 
       const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
@@ -882,7 +882,7 @@ describe('Execute', () => {
         .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send({ hello: 'medplum' });
-      expect(res.status).toBe(202);
+      expect(res).toHaveStatus(202);
 
       const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
@@ -908,7 +908,7 @@ describe('Execute', () => {
         .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send('input: true');
-      expect(res.status).toBe(202);
+      expect(res).toHaveStatus(202);
 
       const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
@@ -934,7 +934,7 @@ describe('Execute', () => {
         .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send('input');
-      expect(res.status).toBe(202);
+      expect(res).toHaveStatus(202);
 
       const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
@@ -962,7 +962,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
@@ -978,7 +978,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send({ message: 'hello' });
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
@@ -996,7 +996,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('input');
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });
   });

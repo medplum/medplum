@@ -64,7 +64,7 @@ describe('ConceptMap $translate', () => {
           },
         ],
       });
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     conceptMap = res.body as ConceptMap;
   });
 
@@ -91,7 +91,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: params,
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const output = (res.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -146,7 +146,7 @@ describe('ConceptMap $translate', () => {
           { name: 'coding', valueCoding: { system, code } },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const output = (res.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -195,7 +195,7 @@ describe('ConceptMap $translate', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const output = (res.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -215,7 +215,7 @@ describe('ConceptMap $translate', () => {
           { name: 'coding', valueCoding: { system, code } },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const output = (res.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -271,7 +271,7 @@ describe('ConceptMap $translate', () => {
           { name: 'coding', valueCoding: { system, code } },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const output = (res.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -305,7 +305,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code: 'BAD' } }],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const output = (res.body as Parameters).parameter;
     expect(output).toHaveLength(1);
@@ -324,7 +324,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code } }],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
@@ -345,7 +345,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: 'BAD' }],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
@@ -366,7 +366,7 @@ describe('ConceptMap $translate', () => {
           { name: 'code', valueCode: 'BAD' },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -388,7 +388,7 @@ describe('ConceptMap $translate', () => {
       .send({
         resourceType: 'Parameters',
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
@@ -408,7 +408,7 @@ describe('ConceptMap $translate', () => {
           { name: 'coding', valueCoding: { system, code } },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
@@ -463,7 +463,7 @@ describe('ConceptMap $translate', () => {
           },
         ],
       });
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     conceptMap = res.body as ConceptMap;
 
     const res2 = await request(app)
@@ -474,7 +474,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code } }],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const output = (res2.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -521,7 +521,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'codeableConcept', valueCodeableConcept: { text: 'Nebulous concept' } }],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
@@ -562,7 +562,7 @@ describe('ConceptMap $translate', () => {
           },
         ],
       });
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     conceptMap = res.body as ConceptMap;
 
     const res2 = await request(app)
@@ -573,7 +573,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'codeableConcept', valueCodeableConcept: { coding: [{ code }] } }],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const output = (res2.body as Parameters).parameter;
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
@@ -610,7 +610,7 @@ describe('ConceptMap $translate', () => {
         sourceCanonical: 'http://example.com/labs',
         targetCanonical: 'http://example.com/loinc',
       });
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     conceptMap = res.body as ConceptMap;
 
     const res2 = await request(app)
@@ -621,7 +621,7 @@ describe('ConceptMap $translate', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code } }],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueBoolean: false }],

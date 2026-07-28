@@ -57,7 +57,7 @@ describe('Deploy', () => {
         name: botProps?.name ?? 'Test Bot',
         runtimeVersion: botProps?.runtimeVersion ?? 'awslambda',
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     const bot = res.body as Bot;
 
     // If additional properties are needed (e.g. timeout, code), update the bot
@@ -68,7 +68,7 @@ describe('Deploy', () => {
         .set('Content-Type', ContentType.FHIR_JSON)
         .set('Authorization', 'Bearer ' + accessToken)
         .send({ ...bot, ...extraProps });
-      expect(updateRes.status).toBe(200);
+      expect(updateRes).toHaveStatus(200);
       return updateRes.body as Bot;
     }
 
@@ -188,7 +188,7 @@ describe('Deploy', () => {
         }
         `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
@@ -227,7 +227,7 @@ describe('Deploy', () => {
         `,
         filename: 'updated.js',
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
@@ -263,7 +263,7 @@ describe('Deploy', () => {
       }
       `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
@@ -320,7 +320,7 @@ describe('Deploy', () => {
       `,
         filename: 'updated.js',
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(1);
     expect(mockLambdaClient.commandCalls(ListLayerVersionsCommand)).toHaveLength(1);
@@ -346,7 +346,7 @@ describe('Deploy', () => {
       }
       `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject(allOk);
 
     expect(mockLambdaClient.commandCalls(GetFunctionCommand)).toHaveLength(2);
@@ -364,7 +364,7 @@ describe('Deploy', () => {
         ...bot,
         timeout: 15,
       });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Step 4: Deploy bot again
     const res4 = await request(app)
@@ -379,7 +379,7 @@ describe('Deploy', () => {
       }
       `,
       });
-    // expect(res4.status).toBe(200);
+    // expect(res4).toHaveStatus(200);
     expect(res4.body).toMatchObject(allOk);
 
     // Make sure that timeout was updated
@@ -419,7 +419,7 @@ describe('Deploy', () => {
       .send({
         ...bot,
       });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Step 6: Deploy bot for final time
     const res6 = await request(app)
@@ -434,7 +434,7 @@ describe('Deploy', () => {
       }
       `,
       });
-    expect(res6.status).toBe(200);
+    expect(res6).toHaveStatus(200);
     expect(res6.body).toMatchObject(allOk);
 
     // Make sure that timeout was updated again
@@ -459,13 +459,13 @@ describe('Deploy', () => {
       }
       `,
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject(allOk);
 
     const res3 = await request(app)
       .get(`/fhir/R4/Bot/${bot.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body).toMatchObject({
       resourceType: 'Bot',
       name: 'Test Bot',
@@ -496,7 +496,7 @@ describe('Deploy', () => {
         }
         `,
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Bot timeout exceeds allowed maximum of 900 seconds'));
   });
 
@@ -511,7 +511,7 @@ describe('Deploy', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     mockLambdaClient.resetHistory();
 
@@ -532,7 +532,7 @@ describe('Deploy', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Cleanup runs async after the response, so poll until all expected deletes have occurred.
     // Versions 5 and 4 should be kept; 3, 2, 1 deleted.
@@ -559,7 +559,7 @@ describe('Deploy', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     mockLambdaClient.resetHistory();
 
@@ -576,7 +576,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
     // Deploy should still succeed even though cleanup deletion failed.
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     await waitFor(async () => {
       expect(mockLambdaClient.commandCalls(DeleteFunctionCommand)).toHaveLength(1);
     });
@@ -592,7 +592,7 @@ describe('Deploy', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     mockLambdaClient.resetHistory();
 
@@ -609,7 +609,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: `export async function handler() { return null; }` });
     // Deploy should still succeed even though the async cleanup throws.
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     await waitFor(async () => {
       expect(errorSpy).toHaveBeenCalledWith(
@@ -640,7 +640,7 @@ describe('Deploy', () => {
         }
         `,
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Too many requests'));
   });
 });

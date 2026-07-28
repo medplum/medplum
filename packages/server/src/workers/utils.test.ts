@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Subscription } from '@medplum/fhirtypes';
-import type { Job, Worker } from 'bullmq';
+import type { Job, QueueOptions, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
 import { vi } from 'vitest';
@@ -9,7 +9,13 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { withTestContext } from '../test.setup';
-import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
+import {
+  addVerboseQueueLogging,
+  applyGlobalConcurrency,
+  DefaultQueueRegistry,
+  getWorkerBullmqConfig,
+  isJobSuccessful,
+} from './utils';
 
 describe('worker utils', () => {
   beforeAll(async () => {
@@ -342,24 +348,66 @@ describe('worker utils', () => {
     });
   });
 
+  describe('applyGlobalConcurrency', () => {
+    test('sets global concurrency when configured', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, { globalConcurrency: 5 });
+      expect(setGlobalConcurrency).toHaveBeenCalledWith(5);
+      expect(removeGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('removes global concurrency when not configured', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, { concurrency: 10 });
+      expect(removeGlobalConcurrency).toHaveBeenCalledTimes(1);
+      expect(setGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('removes global concurrency when config is undefined', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, undefined);
+      expect(removeGlobalConcurrency).toHaveBeenCalledTimes(1);
+      expect(setGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('rejects when the underlying call fails', async () => {
+      const err = new Error('redis down');
+      const setGlobalConcurrency = vi.fn().mockRejectedValue(err);
+      const queue = { name: 'TestQueue', setGlobalConcurrency } as unknown as Queue;
+
+      await expect(applyGlobalConcurrency(queue, { globalConcurrency: 3 })).rejects.toThrow('redis down');
+    });
+  });
+
   describe('getWorkerBullmqConfig', () => {
-    test('returns global bullmq config when no per-worker overrides', () => {
+    const defaultOptions: QueueOptions = { connection: { host: 'test-redis' } };
+
+    test('returns default options plus global bullmq config when no per-worker overrides', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'subscription');
-      expect(result).toStrictEqual(config.bullmq);
+      const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
     });
 
-    test('returns global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
+    test('returns default options plus global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
       const config = {
         bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
         workers: { enabled: ['subscription'] },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'subscription');
-      expect(result).toStrictEqual(config.bullmq);
+      const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
     });
 
     test('merges per-worker bullmq overrides on top of global config', () => {
@@ -372,9 +420,43 @@ describe('worker utils', () => {
         },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'subscription');
+      const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
       expect(result).toStrictEqual({
+        ...defaultOptions,
         concurrency: 50,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
+    test('worker defaults supersede global bullmq config', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'batch', defaultOptions, { concurrency: 1 });
+      expect(result).toStrictEqual({
+        ...defaultOptions,
+        concurrency: 1,
+        removeOnComplete: { count: 1 },
+        removeOnFail: { count: 1 },
+      });
+    });
+
+    test('per-worker overrides supersede worker defaults', () => {
+      const config = {
+        bullmq: { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 } },
+        workers: {
+          bullmq: {
+            batch: { concurrency: 5 },
+          },
+        },
+      } as MedplumServerConfig;
+
+      const result = getWorkerBullmqConfig(config, 'batch', defaultOptions, { concurrency: 1 });
+      expect(result).toStrictEqual({
+        ...defaultOptions,
+        concurrency: 5,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
       });
@@ -390,8 +472,8 @@ describe('worker utils', () => {
         },
       } as MedplumServerConfig;
 
-      const result = getWorkerBullmqConfig(config, 'download');
-      expect(result).toStrictEqual(config.bullmq);
+      const result = getWorkerBullmqConfig(config, 'download', defaultOptions);
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
     });
   });
 });

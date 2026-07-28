@@ -5,6 +5,10 @@ tags: [integration]
 
 # Candid Health Integration
 
+:::tip[Planning this integration?]
+The [RCM & Billing Decision Guide](/docs/decision-guides/rcm-billing) walks through requirements questions and FHIR modeling decisions for billing — charge capture, eligibility, claims, and remittance — use it alongside these docs.
+:::
+
 [Candid Health](https://www.joincandidhealth.com/) is a revenue cycle automation provider. This integration enables professional medical claim submission directly from FHIR resources.
 
 ## [Claim Submission](/docs/integration/candid/claim-submission)

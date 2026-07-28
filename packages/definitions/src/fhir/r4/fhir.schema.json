@@ -199,7 +199,8 @@
       "PackageRelease": "#/definitions/PackageRelease",
       "PackageInstallation": "#/definitions/PackageInstallation",
       "SmartHealthLink": "#/definitions/SmartHealthLink",
-      "SmartHealthLinkFile": "#/definitions/SmartHealthLinkFile"
+      "SmartHealthLinkFile": "#/definitions/SmartHealthLinkFile",
+      "ProjectDefaultAccessPolicies": "#/definitions/ProjectDefaultAccessPolicies"
     }
   },
   "oneOf": [
@@ -787,6 +788,9 @@
     },
     {
       "$ref": "#/definitions/LoginEmailMfa"
+    },
+    {
+      "$ref": "#/definitions/ProjectDefaultAccessPolicies"
     }
   ],
   "definitions": {
@@ -1376,6 +1380,9 @@
         },
         {
           "$ref": "#/definitions/LoginEmailMfa"
+        },
+        {
+          "$ref": "#/definitions/ProjectDefaultAccessPolicies"
         }
       ]
     },
@@ -61446,7 +61453,7 @@
           "type": "array"
         },
         "defaultPatientAccessPolicy": {
-          "description": "The default access policy for patients using open registration.",
+          "description": "@deprecated Use defaultAccessPolicies instead. The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
         },
         "setting": {
@@ -61495,6 +61502,13 @@
           "description": "Default profiles to apply to resources in this project that do not individually specify profiles",
           "items": {
             "$ref": "#/definitions/ProjectDefaultProfile"
+          },
+          "type": "array"
+        },
+        "defaultAccessPolicies": {
+          "description": "Default access policies to apply to project members by role when no explicit policy is provided.",
+          "items": {
+            "$ref": "#/definitions/ProjectDefaultAccessPolicies"
           },
           "type": "array"
         },
@@ -62434,8 +62448,7 @@
       "additionalProperties": false,
       "required": [
         "resourceType",
-        "alg",
-        "kty"
+        "alg"
       ]
     },
     "Bot": {
@@ -64803,6 +64816,10 @@
         "logo": {
           "description": "Logo for the Log In Form.",
           "$ref": "#/definitions/Attachment"
+        },
+        "showScopeSelection": {
+          "description": "Whether the Log In Form prompts the user to select OAuth and SMART scopes. When set, this value is authoritative. When unset, the scope selection screen is shown if the authorization request asks for any scope other than \"openid\". Setting this to false suppresses the prompt and grants the client the full scope that it requested. Note that granular scope selection is required for patient-facing apps under ONC 170.315(g)(10), so this should only be disabled for provider-facing or trusted first-party clients.",
+          "$ref": "#/definitions/boolean"
         }
       },
       "additionalProperties": false
@@ -65259,6 +65276,29 @@
       "required": [
         "contentType",
         "attachment"
+      ]
+    },
+    "ProjectDefaultAccessPolicies": {
+      "description": "Default access policies to apply to project members by role when no explicit policy is provided.",
+      "properties": {
+        "profileType": {
+          "description": "The member role this policy applies to.",
+          "enum": [
+            "Patient",
+            "Practitioner",
+            "RelatedPerson",
+            "Admin"
+          ]
+        },
+        "accessPolicy": {
+          "description": "The access policy to apply to members of this role.",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "profileType",
+        "accessPolicy"
       ]
     }
   }

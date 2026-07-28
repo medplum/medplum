@@ -34,24 +34,18 @@ const queueName = 'SetAccountsQueue';
 const jobName = 'SetAccountsJobData';
 
 export const initSetAccountsWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
-  const queue = new Queue<SetAccountsJobData>(queueName, {
-    ...defaultOptions,
-  });
+  const queueOptions = defaultQueueOptions(config);
+  const queue = new Queue<SetAccountsJobData>(queueName, queueOptions);
 
   let worker: Worker<SetAccountsJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'set-accounts');
     worker = new Worker<SetAccountsJobData>(
       queueName,
       (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
       },
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-      }
+      getWorkerBullmqConfig(config, 'set-accounts', queueOptions)
     );
     addVerboseQueueLogging<SetAccountsJobData>(queue, worker, (job) => ({
       asyncJob: 'AsyncJob/' + job.data.asyncJob.id,

@@ -41,7 +41,7 @@ describe('Bot admin', () => {
         name: 'Alice personal bot',
         description: 'Alice bot description',
       });
-    expect(res2.status).toBe(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
     expect(res2.body.code).toBeUndefined();
@@ -51,7 +51,7 @@ describe('Bot admin', () => {
     const res3 = await request(app)
       .get('/fhir/R4/Bot/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.resourceType).toBe('Bot');
     expect(res3.body.id).toBe(res2.body.id);
 
@@ -61,6 +61,6 @@ describe('Bot admin', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({ foo: 'bar' });
-    expect(res4.status).toBe(400);
+    expect(res4).toHaveStatus(400);
   });
 });

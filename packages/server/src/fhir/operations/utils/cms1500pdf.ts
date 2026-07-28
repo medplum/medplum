@@ -8,7 +8,7 @@ import {
   getDisplayString,
   HTTP_HL7_ORG,
 } from '@medplum/core';
-import type { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import type { Address, Claim, ClaimItem, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
 import { imageData } from './cms1500.png';
@@ -94,7 +94,8 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     )?.valueQuantity
   );
 
-  const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
+  // Box 25 is the BILLING PROVIDER's federal tax ID (NUCC 1500 Instruction Manual), not the payer's.
+  const taxIdentifier = provider.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
 
   const docDefinition: TDocumentDefinitions = {
     defaultStyle: {
@@ -244,7 +245,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
           createDate(item?.servicedDate, 21, y),
 
           // 24B. Place of service
-          createText(item?.locationAddress?.state, 149, y),
+          createText(getPlaceOfService(item), 149, y),
 
           // 24C. EMG
           createCheckmark(item.category?.coding?.[0].code === 'EMG', 172, y),
@@ -327,6 +328,23 @@ function createDate(date: string | undefined, x: number, y: number): (Content | 
     createText(date?.substring(8, 10), x + 21, y),
     createText(date?.substring(0, 4), x + 42, y),
   ];
+}
+
+const CMS_PLACE_OF_SERVICE_SYSTEM = 'https://www.cms.gov/Medicare/Coding/place-of-service-codes';
+
+/**
+ * Returns the CMS-1500 Box 24B place-of-service CODE for a claim line.
+ *
+ * Box 24B must hold a two-digit code from the CMS Place of Service code set, so only a
+ * `locationCodeableConcept` coding from that system is used. Codings from other systems and the
+ * legacy `locationAddress.state` read are deliberately NOT used as fallbacks: neither can produce
+ * a valid place-of-service code, and a blank box is better than an unfilable value.
+ *
+ * @param item - The claim line item.
+ * @returns The two-digit place-of-service code, or undefined.
+ */
+export function getPlaceOfService(item: ClaimItem): string | undefined {
+  return item.locationCodeableConcept?.coding?.find((c) => c.system === CMS_PLACE_OF_SERVICE_SYSTEM)?.code;
 }
 
 /**

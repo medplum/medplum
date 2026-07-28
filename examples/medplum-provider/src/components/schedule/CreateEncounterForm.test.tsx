@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { notifications, Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { isReference } from '@medplum/core';
 import type { Appointment, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -47,65 +48,134 @@ describe('CreateEncounterForm', () => {
     notifications.clean();
   });
 
-  type SetupOptions = {
-    patientRef: Reference<Patient>;
-    practitionerRef: Reference<Practitioner> | undefined;
-  };
-
-  const setup = (options: SetupOptions): ReturnType<typeof render> => {
-    return render(
-      <CreateEncounterForm
-        appointment={appointment}
-        patientRef={options.patientRef}
-        practitionerRef={options.practitionerRef}
-      />,
-      {
-        wrapper: ({ children }) => (
-          <MemoryRouter>
-            <MedplumProvider medplum={medplum}>
-              <MantineProvider>
-                <Notifications />
-                {children}
-              </MantineProvider>
-            </MedplumProvider>
-          </MemoryRouter>
-        ),
-      }
-    );
+  const setup = (appointment: WithId<Appointment>): ReturnType<typeof render> => {
+    return render(<CreateEncounterForm appointment={appointment} />, {
+      wrapper: ({ children }) => (
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              {children}
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      ),
+    });
   };
 
   test('renders form with required fields', async () => {
-    setup({ patientRef, practitionerRef });
+    setup(appointment);
 
     expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
     expect(screen.getByLabelText(/Encounter Class/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  test('Apply button is disabled when class and care template are not selected', async () => {
-    setup({ patientRef, practitionerRef });
+  test('Continue button is disabled when class is not selected', async () => {
+    setup(appointment);
 
-    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   });
 
-  test('shows warning when practitioner is not set', async () => {
-    setup({ patientRef, practitionerRef: undefined });
+  test('Continue button is enabled once class is selected without a care template', async () => {
+    const user = userEvent.setup();
+    setup(appointment);
 
-    const form = screen.getByText('Set Up Encounter').closest('form');
-    expect(form).toBeTruthy();
-    await act(async () => {
-      fireEvent.submit(form as HTMLFormElement);
+    const classInput = screen.getByLabelText(/Encounter Class/i);
+    await user.type(classInput, 'Test');
+    await waitFor(() => {
+      expect(screen.getByText('Test Display')).toBeInTheDocument();
     });
+    await user.click(screen.getByText('Test Display'));
 
     await waitFor(() => {
-      expect(screen.getByText('Appointment has no Practitioner participant')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
     });
-    expect(createEncounter).not.toHaveBeenCalled();
   });
 
-  test('shows warning when required fields are not filled', async () => {
-    setup({ patientRef, practitionerRef });
+  test('calls createEncounter without a care template selected', async () => {
+    const user = userEvent.setup();
+    vi.mocked(createEncounter).mockResolvedValue({
+      resourceType: 'Encounter',
+      id: 'enc-1',
+      status: 'planned',
+      class: {},
+    });
+
+    setup(appointment);
+
+    const classInput = screen.getByLabelText(/Encounter Class/i);
+    await user.type(classInput, 'Test');
+    await waitFor(() => {
+      expect(screen.getByText('Test Display')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Test Display'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
+    });
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(createEncounter).toHaveBeenCalledWith(
+        medplum,
+        expect.anything(),
+        patientRef,
+        undefined,
+        appointment,
+        practitionerRef
+      );
+    });
+  });
+
+  test('shows alert when no practitioner is in appointment.participants', async () => {
+    const practitionerless = {
+      ...appointment,
+      participant: appointment.participant.filter((p) => !isReference(p.actor, 'Practitioner')),
+    };
+    setup(practitionerless);
+
+    expect(screen.getByText('No Practitioner to create Encounter.')).toBeInTheDocument();
+    expect(screen.queryByText('Set Up Encounter')).not.toBeInTheDocument();
+  });
+
+  test('shows alert when multiple practitioners are in appointment.participants', async () => {
+    const practitionerful = {
+      ...appointment,
+      participant: [
+        ...appointment.participant,
+        {
+          actor: { reference: 'Practitioner/practitioner-2' },
+          status: 'accepted',
+        },
+      ],
+    } satisfies Appointment;
+    setup(practitionerful);
+
+    expect(screen.getByText('Too many Practitioners to create Encounter.')).toBeInTheDocument();
+    expect(screen.queryByText('Set Up Encounter')).not.toBeInTheDocument();
+  });
+
+  test('shows alert when multiple patients are in appointment.participants', async () => {
+    const patientful = {
+      ...appointment,
+      participant: [
+        ...appointment.participant,
+        {
+          actor: { reference: 'Patient/patient-2' },
+          status: 'accepted',
+        },
+      ],
+    } satisfies Appointment;
+    setup(patientful);
+
+    expect(screen.getByText('Too many Patients to create Encounter.')).toBeInTheDocument();
+    expect(screen.queryByText('Set Up Encounter')).not.toBeInTheDocument();
+  });
+
+  test('when required fields are not filled', async () => {
+    setup(appointment);
 
     const form = screen.getByText('Set Up Encounter').closest('form');
     expect(form).toBeTruthy();
@@ -113,20 +183,12 @@ describe('CreateEncounterForm', () => {
       fireEvent.submit(form as HTMLFormElement);
     });
 
+    // it shows a warning
     await waitFor(() => {
       expect(screen.getByText('Please fill out required fields.')).toBeInTheDocument();
     });
-  });
 
-  test('does not call createEncounter when required fields are not filled', async () => {
-    setup({ patientRef, practitionerRef });
-
-    const form = screen.getByText('Set Up Encounter').closest('form');
-    expect(form).toBeTruthy();
-    await act(async () => {
-      fireEvent.submit(form as HTMLFormElement);
-    });
-
+    // it did not invoke `createEncounter`
     expect(createEncounter).not.toHaveBeenCalled();
   });
 
@@ -143,7 +205,7 @@ describe('CreateEncounterForm', () => {
     const encounterError = new Error('Failed to create encounter');
     vi.mocked(createEncounter).mockRejectedValue(encounterError);
 
-    setup({ patientRef, practitionerRef });
+    setup(appointment);
 
     // Fill in Encounter Class — MockClient's ValueSet expansion returns 'Test Display'
     const classInput = screen.getByLabelText(/Encounter Class/i);
@@ -162,9 +224,9 @@ describe('CreateEncounterForm', () => {
     await user.click(screen.getByText('Test Plan'));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
     });
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
       expect(showErrorNotification).toHaveBeenCalledWith(encounterError);

@@ -321,7 +321,7 @@ describe('Agent WebSockets', () => {
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
               'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           });
-        expect(res.status).toBe(200);
+        expect(res).toHaveStatus(200);
         expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
         expect(res.body).toMatchObject(allOk);
       })
@@ -359,7 +359,7 @@ describe('Agent WebSockets', () => {
               'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
               'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           });
-        expect(res.status).toBe(400);
+        expect(res).toHaveStatus(400);
         expect(res.body.issue[0].details.text).toBe('Timeout');
       })
       .close()
@@ -415,7 +415,7 @@ describe('Agent WebSockets', () => {
       .exec((ws) => ws.send(pushResponse))
       .exec(async () => {
         const res = await pushRequest;
-        expect(res.status).toBe(200);
+        expect(res).toHaveStatus(200);
         expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
         expect(res.text).toMatch(/MSH.*ACK.*\r/);
       })
@@ -592,7 +592,7 @@ describe('Agent WebSockets', () => {
       .exec((ws) => ws.send(pushResponse))
       .exec(async () => {
         const res = await pushRequest;
-        expect(res.status).toBe(200);
+        expect(res).toHaveStatus(200);
         expect(res.headers['content-type']).toBe('x-application/ping; charset=utf-8');
       })
       .close()

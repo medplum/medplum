@@ -5,7 +5,6 @@ import type { GoogleCredentialResponse } from '@medplum/core';
 import { allOk, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID, webcrypto } from 'crypto';
-import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { RegisterFormProps } from './RegisterForm';
@@ -126,13 +125,11 @@ async function setup(props: RegisterFormProps): Promise<void> {
 
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <RegisterForm {...props}>
-            <Title>My Register Form</Title>
-          </RegisterForm>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <RegisterForm {...props}>
+          <Title>My Register Form</Title>
+        </RegisterForm>
+      </MedplumProvider>
     );
   });
 }

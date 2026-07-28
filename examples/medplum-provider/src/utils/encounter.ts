@@ -75,7 +75,7 @@ export async function createEncounter(
   medplum: MedplumClient,
   classification: Coding,
   patient: Patient | Reference<Patient>,
-  planDefinition: PlanDefinition,
+  planDefinition: PlanDefinition | undefined,
   appointment: Appointment,
   practitioner: Practitioner | Reference<Practitioner>
 ): Promise<WithId<Encounter>> {
@@ -104,16 +104,19 @@ export async function createEncounter(
 
   await medplum.createResource(clinicalImpressionData);
 
-  await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
-    resourceType: 'Parameters',
-    parameter: [
-      { name: 'subject', valueString: getReferenceString(patient) },
-      { name: 'encounter', valueString: getReferenceString(encounter) },
-      { name: 'practitioner', valueString: getReferenceString(practitioner) },
-    ],
-  });
+  if (planDefinition) {
+    await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'subject', valueString: getReferenceString(patient) },
+        { name: 'encounter', valueString: getReferenceString(encounter) },
+        { name: 'practitioner', valueString: getReferenceString(practitioner) },
+      ],
+    });
 
-  await createChargeItemFromPlanDefinition(medplum, encounter, patientRef, planDefinition);
+    await createChargeItemFromPlanDefinition(medplum, encounter, patientRef, planDefinition);
+  }
+
   await handleChargeItemsFromTasks(medplum, encounter, patientRef);
 
   return encounter;

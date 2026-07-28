@@ -4,9 +4,8 @@ import { createReference } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
-import { ChatListItem } from './ChatListItem';
+import { ThreadListItem } from './ThreadListItem';
 
 const mockTopic: Communication = {
   resourceType: 'Communication',
@@ -32,7 +31,7 @@ const mockLastCommunication: Communication = {
 
 const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
 
-describe('ChatListItem', () => {
+describe('ThreadListItem', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
@@ -40,31 +39,22 @@ describe('ChatListItem', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (topic: Communication, lastCommunication: Communication | undefined, isSelected: boolean): void => {
+  const setup = (topic: Communication, lastCommunication: Communication | undefined): void => {
     render(
-      <ChatListItem
-        topic={topic}
-        lastCommunication={lastCommunication}
-        isSelected={isSelected}
-        getThreadUri={mockGetThreadUri}
-      />,
-      ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      )
+      <ThreadListItem topic={topic} lastCommunication={lastCommunication} getThreadUri={mockGetThreadUri} />,
+      ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
     );
   };
 
   test('renders topic with patient name', async () => {
-    setup(mockTopic, mockLastCommunication, false);
+    setup(mockTopic, mockLastCommunication);
     await waitFor(() => {
       expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     });
   });
 
   test('renders topic text when available', async () => {
-    setup(mockTopic, mockLastCommunication, false);
+    setup(mockTopic, mockLastCommunication);
     await waitFor(() => {
       expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
@@ -72,7 +62,7 @@ describe('ChatListItem', () => {
 
   test('renders last message when topic text is not available', async () => {
     const topicWithoutText: Communication = { ...mockTopic, topic: undefined };
-    setup(topicWithoutText, mockLastCommunication, false);
+    setup(topicWithoutText, mockLastCommunication);
     await waitFor(() => {
       expect(screen.getByText(/Dr. Smith/)).toBeInTheDocument();
     });
@@ -86,7 +76,7 @@ describe('ChatListItem', () => {
       ...mockLastCommunication,
       payload: [{ contentString: longMessage }],
     };
-    setup(topicWithoutText, lastCommunicationWithLongMessage, false);
+    setup(topicWithoutText, lastCommunicationWithLongMessage);
     await waitFor(() => {
       const truncated = `Dr. Smith: ${longMessage.slice(0, 100)}...`;
       expect(screen.getByText(truncated)).toBeInTheDocument();
@@ -94,30 +84,22 @@ describe('ChatListItem', () => {
   });
 
   test('shows topic text when available, even without last communication', async () => {
-    setup(mockTopic, undefined, false);
+    setup(mockTopic, undefined);
     await waitFor(() => {
       expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
   });
 
   test('displays formatted date when last communication exists', async () => {
-    setup(mockTopic, mockLastCommunication, false);
+    setup(mockTopic, mockLastCommunication);
     await waitFor(() => {
       const dateElement = screen.getByText(/2024/);
       expect(dateElement).toBeInTheDocument();
     });
   });
 
-  test('applies selected class when isSelected is true', async () => {
-    setup(mockTopic, mockLastCommunication, true);
-    await waitFor(() => {
-      const link = screen.getByRole('link');
-      expect(link).toHaveAttribute('href', '/Message/topic-123');
-    });
-  });
-
   test('generates correct link from getThreadUri', async () => {
-    setup(mockTopic, mockLastCommunication, false);
+    setup(mockTopic, mockLastCommunication);
     await waitFor(() => {
       const link = screen.getByRole('link');
       expect(link).toHaveAttribute('href', '/Message/topic-123');
@@ -126,7 +108,7 @@ describe('ChatListItem', () => {
 
   test('handles message without sender display', async () => {
     const commWithoutSender: Communication = { ...mockLastCommunication, sender: undefined };
-    setup(mockTopic, commWithoutSender, false);
+    setup(mockTopic, commWithoutSender);
     await waitFor(() => {
       expect(screen.getByText(/Test Topic/)).toBeInTheDocument();
     });
@@ -137,7 +119,7 @@ describe('ChatListItem', () => {
       ...mockLastCommunication,
       payload: [{ contentString: 'Short message' }],
     };
-    setup(mockTopic, shortMessage, false);
+    setup(mockTopic, shortMessage);
     await waitFor(() => {
       expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });

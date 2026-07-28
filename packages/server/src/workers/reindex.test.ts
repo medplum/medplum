@@ -789,13 +789,10 @@ describe('Reindex Worker', () => {
         new SelectQuery('Patient').column('id').column('__version').where('id', 'IN', id);
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, outdatedPatient.id]);
       const beforeResults = await getVersionQuery([outdatedPatient.id, currentPatient.id]).execute(client);
-      expect(beforeResults).toHaveLength(2);
-      expect(beforeResults).toEqual(
-        expect.arrayContaining([
-          { id: outdatedPatient.id, __version: OLDER_VERSION },
-          { id: currentPatient.id, __version: Repository.VERSION },
-        ])
-      );
+      expect(beforeResults).toContainExactly([
+        { id: outdatedPatient.id, __version: OLDER_VERSION },
+        { id: currentPatient.id, __version: Repository.VERSION },
+      ]);
 
       const jobData = prepareReindexJobData(['Patient'], asyncJob.id, {
         searchFilter: parseSearchRequest(`Patient?identifier=${idSystem}|${mrn}`),
@@ -805,13 +802,10 @@ describe('Reindex Worker', () => {
       await new ReindexJob(systemRepo).execute(undefined, jobData);
 
       const afterResults = await getVersionQuery([outdatedPatient.id, currentPatient.id]).execute(client);
-      expect(afterResults).toHaveLength(2);
-      expect(afterResults).toEqual(
-        expect.arrayContaining([
-          { id: outdatedPatient.id, __version: CURRENT_VERSION },
-          { id: currentPatient.id, __version: CURRENT_VERSION },
-        ])
-      );
+      expect(afterResults).toContainExactly([
+        { id: outdatedPatient.id, __version: CURRENT_VERSION },
+        { id: currentPatient.id, __version: CURRENT_VERSION },
+      ]);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');

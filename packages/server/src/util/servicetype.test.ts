@@ -109,9 +109,7 @@ describe('extractReferencesFromCodeableReferenceLike', () => {
       ...toCodeableReferenceLike(service2),
     ];
     const refs = extractReferencesFromCodeableReferenceLike(concepts);
-    expect(refs).toHaveLength(2);
-    expect(refs.map((r) => r.reference)).toContain('HealthcareService/svc-1');
-    expect(refs.map((r) => r.reference)).toContain('HealthcareService/svc-2');
+    expect(refs.map((r) => r.reference)).toContainExactly(['HealthcareService/svc-1', 'HealthcareService/svc-2']);
   });
 
   test('returns one reference per type entry when a service has multiple type entries', () => {

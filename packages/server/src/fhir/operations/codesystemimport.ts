@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  OperationOutcomeError,
+  allOk,
+  badRequest,
+  forbidden,
+  normalizeOperationOutcome,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, CodeSystemProperty, Coding, OperationDefinitionParameter } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -21,7 +28,7 @@ function makeCodeAttributeParameter(
     use: 'in',
     name: paramName,
     min: 0,
-    max: '*',
+    max: '1000',
     part: [
       { use: 'in', name: 'code', type: 'code', min: 1, max: '1' },
       { use: 'in', ...attributeParam },
@@ -37,7 +44,7 @@ const operation = makeOperationDefinition(
     code: 'import',
     parameter: [
       { use: 'in', name: 'system', type: 'uri', min: 0, max: '1' },
-      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '*' },
+      { use: 'in', name: 'concept', type: 'Coding', min: 0, max: '1000' },
       makeCodeAttributeParameter('property', {
         name: 'property',
         type: 'code',
@@ -95,6 +102,9 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+    if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, codeSystem)) {
+      return [forbidden];
+    }
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, {
       ownProjectOnly: !isSuperAdmin,

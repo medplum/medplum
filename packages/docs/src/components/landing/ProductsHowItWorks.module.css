@@ -1,0 +1,122 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  scroll-margin-top: 80px;
+  padding: var(--landing-section-padding-y) 0 0;
+}
+
+/* The diagram is a fixed-width figure (~1000px). Rather than force the whole page to scroll
+   sideways on narrow viewports, it scrolls within its own box. overscroll-behavior keeps the
+   swipe from chaining out to the page. */
+.diagramScroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* Below the max content width the container has no auto side margins, so we can break the
+   figure out to the viewport edges (negative margin = the container's own padding) and let it
+   scroll edge-to-edge — no page-coloured strips at the sides. Gradient overlays on the wrap
+   sit behind the scroll layer (z-index: 1) so the scrollbar stays fully visible in front. */
+@media (max-width: 80rem) {
+  .diagramScrollWrap {
+    --diagram-bleed: var(--layout-padding);
+    position: relative;
+    margin-inline: calc(-1 * var(--diagram-bleed));
+  }
+
+  .diagramScrollWrap::before,
+  .diagramScrollWrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: var(--diagram-bleed);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .diagramScrollWrap::before {
+    left: 0;
+    background: linear-gradient(to right, var(--landing-surface), transparent);
+  }
+
+  .diagramScrollWrap::after {
+    right: 0;
+    background: linear-gradient(to left, var(--landing-surface), transparent);
+  }
+
+  .diagramScroll {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    padding-left: var(--diagram-bleed);
+  }
+
+  /* Chromium drops a scroll container's trailing padding once content overflows, and a block
+     child's right margin isn't counted in the scroll extent either. As a flex item the figure's
+     margin IS counted, giving the same end space as the leading padding. flex: 1 0 auto lets it
+     grow to fill when it fits and hold its intrinsic width (so it scrolls) when it doesn't. */
+  .diagramScroll > * {
+    flex: 1 0 auto;
+    margin-right: var(--diagram-bleed);
+  }
+}
+
+@media (max-width: 996px) {
+  .diagramScrollWrap {
+    --diagram-bleed: var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .diagramScrollWrap {
+    --diagram-bleed: var(--layout-padding-sm);
+  }
+}
+
+.diagramDivider {
+  height: 0;
+  border: none;
+  border-top: 1px solid var(--landing-divider);
+  margin: 2.5rem 0;
+}
+
+/* Certified, Compliant & Secure — label (matching the diagram's SECTION_LABEL) over the
+   shared ComplianceBadges, no card chrome. */
+.complianceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.complianceLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.securityLink {
+  display: inline-flex;
+  color: var(--oc-gray-5);
+  transition: color 150ms ease;
+}
+
+.securityLink:hover {
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .securityLink {
+  color: var(--oc-gray-5);
+}
+
+[data-theme='dark'] .securityLink:hover {
+  color: var(--oc-grape-5);
+}
+
+@media (max-width: 996px) {
+  .complianceCard {
+    padding: 2rem;
+  }
+}

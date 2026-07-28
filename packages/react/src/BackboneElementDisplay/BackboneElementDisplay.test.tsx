@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import type { BackboneElementDisplayProps } from './BackboneElementDisplay';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
@@ -13,11 +12,9 @@ describe('BackboneElementDisplay', () => {
   async function setup(args: BackboneElementDisplayProps): Promise<void> {
     await act(async () =>
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <BackboneElementDisplay {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <BackboneElementDisplay {...args} />
+        </MedplumProvider>
       )
     );
   }

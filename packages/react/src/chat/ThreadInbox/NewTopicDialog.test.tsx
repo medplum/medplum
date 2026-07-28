@@ -5,7 +5,6 @@ import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { NewTopicDialog } from './NewTopicDialog';
 
@@ -32,11 +31,7 @@ describe('NewTopicDialog', () => {
           allowPatientSelection={allowPatientSelection}
         />
       </>,
-      ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      )
+      ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
     );
   };
 

@@ -105,19 +105,19 @@ describe('External', () => {
 
   test('Missing code', async () => {
     const res = await request(app).get('/auth/external?code=&state=xyz');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Missing code');
   });
 
   test('Missing state', async () => {
     const res = await request(app).get('/auth/external?code=xyz&state=');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Missing state');
   });
 
   test('Invalid JSON state', async () => {
     const res = await request(app).get('/auth/external?code=xyz&state=xyz');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid state');
   });
 
@@ -129,7 +129,7 @@ describe('External', () => {
     });
 
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Identity provider not found');
   });
 
@@ -141,7 +141,7 @@ describe('External', () => {
     });
 
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Identity provider not found');
   });
 
@@ -157,7 +157,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
@@ -173,7 +173,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('External token does not contain email address');
   });
 
@@ -189,7 +189,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Email address does not match domain');
   });
 
@@ -208,7 +208,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual('localhost:3000');
@@ -233,7 +233,7 @@ describe('External', () => {
 
       // Simulate the external identity provider callback
       const res = await request(app).get(url);
-      expect(res.status).toBe(302);
+      expect(res).toHaveStatus(302);
 
       const redirect = new URL(res.header.location);
       expect(redirect.host).toStrictEqual('localhost:3000');
@@ -255,7 +255,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual(domain);
@@ -274,7 +274,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual(domain);
@@ -293,7 +293,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Identity provider not found');
   });
 
@@ -308,7 +308,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid project');
   });
 
@@ -323,7 +323,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
   });
 
@@ -338,7 +338,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
   });
 
@@ -431,7 +431,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual(domain);
@@ -483,7 +483,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
   });
 
@@ -523,7 +523,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
   });
 
@@ -563,7 +563,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('External token does not contain subject');
   });
 
@@ -604,7 +604,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual(domain);
@@ -654,7 +654,7 @@ describe('External', () => {
     fetchMock.mockImplementation(() => mockFetchJson(buildTokens(testEmail)));
 
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.hostname).toStrictEqual('myapp.example.com');
@@ -673,7 +673,7 @@ describe('External', () => {
     fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
 
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual('localhost:3000');
@@ -718,7 +718,7 @@ describe('External', () => {
     fetchMock.mockImplementation(() => mockFetchJson(buildTokens(testEmail)));
 
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     // Should fall back to default signin, NOT redirect to evil.com
     const redirect = new URL(res.header.location);
@@ -787,7 +787,7 @@ describe('External', () => {
 
     // Simulate the external identity provider callback
     const res = await request(app).get(url);
-    expect(res.status).toBe(302);
+    expect(res).toHaveStatus(302);
 
     const redirect = new URL(res.header.location);
     expect(redirect.host).toStrictEqual(domain);

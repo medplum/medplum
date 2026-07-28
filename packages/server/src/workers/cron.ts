@@ -30,18 +30,12 @@ export interface CronJobData {
 const queueName = 'CronQueue';
 
 export const initCronWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
-  const queue = new Queue<CronJobData>(queueName, {
-    ...defaultOptions,
-  });
+  const queueOptions = defaultQueueOptions(config);
+  const queue = new Queue<CronJobData>(queueName, queueOptions);
 
   let worker: Worker<CronJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'cron');
-    worker = new Worker<CronJobData>(queueName, execBot, {
-      ...defaultOptions,
-      ...workerBullmq,
-    });
+    worker = new Worker<CronJobData>(queueName, execBot, getWorkerBullmqConfig(config, 'cron', queueOptions));
     worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
     worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
   }

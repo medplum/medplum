@@ -297,8 +297,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${locationSchedule.id}`],
     });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
 
     expect(response.body).toMatchObject({
       resourceType: 'Bundle',
@@ -356,8 +355,7 @@ describe('Appointment/$find', () => {
       schedule: `Schedule/${practitionerSchedule.id}`,
     });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
 
     (response.body as Bundle<Appointment>).entry?.forEach((entry) => {
       expect(entry).toMatchObject({
@@ -432,8 +430,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body).not.toHaveProperty('issue');
+    expect(response).toHaveStatus(200);
     expect(response.body).toMatchObject({ resourceType: 'Bundle', type: 'searchset' });
     expect(response.body).not.toHaveProperty('entry');
   });
@@ -480,7 +477,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
     expect(starts).toEqual([
       new Date('2026-03-17T13:00:00-04:00').toISOString(),
@@ -533,7 +530,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
     expect(starts).toContain(new Date('2026-03-17T13:00:00-04:00').toISOString()); // 1pm EDT — ok
     expect(starts).not.toContain(new Date('2026-03-17T14:00:00-04:00').toISOString()); // 2pm EDT — blocked
@@ -601,8 +598,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body).not.toHaveProperty('issue');
+    expect(response).toHaveStatus(200);
 
     expect((response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start)).toEqual([
       '2026-03-16T19:00:00.000Z', // 12pm Phoenix / 9am Honolulu
@@ -629,7 +625,7 @@ describe('Appointment/$find', () => {
         },
       },
     ]);
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('errors when `service-type-reference` parameter cannot be resolved', async () => {
@@ -649,7 +645,7 @@ describe('Appointment/$find', () => {
         },
       },
     ]);
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('errors when `schedule` parameter is omitted', async () => {
@@ -658,7 +654,7 @@ describe('Appointment/$find', () => {
       end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
     });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toMatch(/schedule/);
   });
 
@@ -669,7 +665,7 @@ describe('Appointment/$find', () => {
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
       schedule: 'Schedule/00000000-0000-0000-0000-000000000001',
     });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Loading schedule failed');
     expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[0]']);
   });
@@ -707,7 +703,7 @@ describe('Appointment/$find', () => {
         expression: ['Parameters.schedule[0]'],
       },
     ]);
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
   });
 
   test('errors on a schedule with multiple actors', async () => {
@@ -734,7 +730,7 @@ describe('Appointment/$find', () => {
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
       schedule: `Schedule/${schedule.id}`,
     });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Scheduling only supported on schedules with exactly one actor');
   });
 
@@ -768,7 +764,7 @@ describe('Appointment/$find', () => {
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Schedule is not schedulable for requested service type');
     expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1]']);
   });
@@ -811,7 +807,7 @@ describe('Appointment/$find', () => {
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe("Scheduling parameters attribute 'duration' does not match");
 
     expect(response.body.issue[0].expression).toEqual([
@@ -850,7 +846,7 @@ describe('Appointment/$find', () => {
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe(
       "Scheduling parameters attribute 'alignmentTimezone' does not match"
     );
@@ -919,8 +915,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body).not.toHaveProperty('issue');
+    expect(response).toHaveStatus(200);
 
     const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
 
@@ -961,7 +956,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${locationSchedule.id}`],
     });
 
-    expect(response.status).toBe(400);
+    expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Search range starts after schedule planning horizon ends');
     expect(response.body.issue[0].expression).toEqual(['Parameters.schedule[1]']);
   });
@@ -987,8 +982,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
-    expect(response.body).not.toHaveProperty('issue');
+    expect(response).toHaveStatus(200);
 
     const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
 
@@ -1036,7 +1030,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
     });
 
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.body.entry).toHaveLength(2);
   });
 
@@ -1073,8 +1067,7 @@ describe('Appointment/$find', () => {
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
       schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${locationSchedule.id}`],
     });
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
 
     expect(response.body).toMatchObject({
       resourceType: 'Bundle',
@@ -1169,8 +1162,7 @@ describe('Appointment/$find', () => {
       schedule: [`Schedule/${schedule.id}`],
       'service-type-reference': `HealthcareService/${genericVisit.id}`,
     });
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.body).toMatchObject({
       resourceType: 'Bundle',
       type: 'searchset',
@@ -1201,8 +1193,7 @@ describe('Appointment/$find', () => {
       schedule: `Schedule/${practitionerSchedule.id}`,
     });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.body.entry).toHaveLength(20);
   });
 
@@ -1227,8 +1218,7 @@ describe('Appointment/$find', () => {
       _count: '1',
     });
 
-    expect(smallResponse.body).not.toHaveProperty('issue');
-    expect(smallResponse.status).toBe(200);
+    expect(smallResponse).toHaveStatus(200);
     expect(smallResponse.body.entry).toHaveLength(1);
 
     const largeResponse = await makeRequest({
@@ -1239,8 +1229,7 @@ describe('Appointment/$find', () => {
       _count: '1000',
     });
 
-    expect(largeResponse.body).not.toHaveProperty('issue');
-    expect(largeResponse.status).toBe(200);
+    expect(largeResponse).toHaveStatus(200);
     expect(largeResponse.body.entry).toHaveLength(1000);
   });
 
@@ -1271,7 +1260,7 @@ describe('Appointment/$find', () => {
         },
       },
     ]);
-    expect(smallResponse.status).toBe(400);
+    expect(smallResponse).toHaveStatus(400);
 
     const largeResponse = await makeRequest({
       start: new Date('2026-01-01T00:00:00-05:00').toISOString(),
@@ -1290,7 +1279,7 @@ describe('Appointment/$find', () => {
         },
       },
     ]);
-    expect(largeResponse.status).toBe(400);
+    expect(largeResponse).toHaveStatus(400);
   });
 
   test('it works when HealthcareService.type has no codes', async () => {
@@ -1341,8 +1330,7 @@ describe('Appointment/$find', () => {
         'service-type-reference': `HealthcareService/${emptyService.id}`,
       });
 
-    expect(response.body).not.toHaveProperty('issue');
-    expect(response.status).toBe(200);
+    expect(response).toHaveStatus(200);
     expect(response.body).toHaveProperty('entry');
     expect(response.body.entry).toHaveLength(4);
   });

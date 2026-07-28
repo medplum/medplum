@@ -35,20 +35,20 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
 
     const res3 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.sub).toBeDefined();
     expect(res3.body.profile).toBeDefined();
     expect(res3.body.name).toBe('Medplum Admin');
@@ -74,14 +74,14 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
     const accessToken = res2.body.access_token;
 
@@ -94,7 +94,7 @@ describe('OAuth2 UserInfo', () => {
     const res3 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.sub).toBeDefined();
     expect(res3.body.profile).toBeDefined();
     expect(res3.body.name).toBe('Profile User');
@@ -111,14 +111,14 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
 
     // Set a phone number
@@ -143,12 +143,12 @@ describe('OAuth2 UserInfo', () => {
           value: telecom,
         },
       ]);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     const res4 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body.phone_number).toBe(telecom[1].value);
   });
 
@@ -160,21 +160,21 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
 
     // Get the practitioner
     const res3 = await request(app)
       .get(`/fhir/R4/${res2.body.profile.reference}`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
 
     // Update the practitioner with an address
     const address = randomUUID();
@@ -186,12 +186,12 @@ describe('OAuth2 UserInfo', () => {
         ...res3.body,
         address: [{ city: address }],
       });
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
 
     const res5 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body.address.formatted).toBe(address);
   });
 
@@ -203,20 +203,20 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
 
     const res3 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.sub).toBeDefined();
     expect(res3.body.profile).toBeUndefined();
     expect(res3.body.name).toBeUndefined();
@@ -238,10 +238,10 @@ describe('OAuth2 UserInfo', () => {
         resourceType: profile.resourceType,
         id: profile.id,
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const res3 = await request(app).get(`/oauth2/userinfo`).set('Authorization', `Bearer ${accessToken}`);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.sub).toStrictEqual(user.id);
     expect(res3.body.email).toStrictEqual(user.email);
     expect(res3.body.profile).toStrictEqual(getReferenceString(profile));
@@ -315,10 +315,10 @@ describe('OAuth2 UserInfo', () => {
           },
         ],
       });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const res3 = await request(app).get(`/oauth2/userinfo`).set('Authorization', `Bearer ${accessToken}`);
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.sub).toStrictEqual(user.id);
     expect(res3.body.email).toStrictEqual(user.email);
     expect(res3.body.profile).toStrictEqual(getReferenceString(profile));

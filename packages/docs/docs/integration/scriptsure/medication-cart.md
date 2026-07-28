@@ -4,9 +4,6 @@ sidebar_position: 9
 
 # Medication Cart
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 The MedCart flow lets a clinician stage several prescriptions during one encounter and approve them all in a single signing session—instead of opening a separate widget per drug. The flow is:
 
@@ -69,7 +66,7 @@ Creates a draft `MedicationRequest` in Medplum via plain FHIR `createResource`�
 
 | Parameter | Type | Description |
 |---|---|---|
-| `medicationRequest` | `MedicationRequest` | The draft `MedicationRequest` to persist. Should have `status: 'draft'` and `intent: 'order'`. |
+| `medicationRequest` | `MedicationRequest` | The draft `MedicationRequest` to persist. Must have `status: 'draft'` and `intent: 'order'`—`$checkout-medications` rejects any MR that does not meet these requirements. |
 
 **Returns:** `Promise<MedicationRequest>`—the created resource with its Medplum-assigned `id`.
 
@@ -84,7 +81,7 @@ Per-line failures are returned in `items` rather than thrown—check `items[].st
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `patientId` | `string` | yes | Medplum `Patient` resource id |
-| `medicationRequestIds` | `string[]` | yes | Draft `MedicationRequest` ids to stage |
+| `medicationRequestIds` | `string[]` | yes | Draft `MedicationRequest` ids to stage. Each must have `status: 'draft'` and `intent: 'order'`—others are returned as `status: 'failed'` in `items`. |
 | `appId` | `string` | | Optional MedCart widget template id |
 
 **Response fields:**
@@ -119,6 +116,7 @@ Calls `POST /fhir/R4/MedicationRequest/$remove-cart-medication`. Removes one ite
 |---|---|---|---|
 | `patientId` | `string` | yes | Medplum `Patient` resource id |
 | `medicationRequestId` | `string` | yes | Draft `MedicationRequest` id to remove |
+| `action` | `'remove'` | yes (direct calls) | Required by the bot to identify which operation to run. The hook sets this automatically; callers invoking the operation directly with plain JSON must pass `"action": "remove"`. |
 
 **Response fields:**
 
@@ -137,6 +135,7 @@ Calls `POST /fhir/R4/MedicationRequest/$clear-cart`. Removes every item from the
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `patientId` | `string` | yes | Medplum `Patient` resource id |
+| `action` | `'clear'` | yes (direct calls) | Required by the bot to identify which operation to run. The hook sets this automatically; callers invoking the operation directly with plain JSON must pass `"action": "clear"`. |
 
 **Response fields:**
 

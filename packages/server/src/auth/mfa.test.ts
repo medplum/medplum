@@ -123,7 +123,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: authenticator.generate('1234567890') });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
     expect(res1.body.issue[0].details.text).toBe('Secret not found');
 
     // Start new login
@@ -132,7 +132,7 @@ describe('MFA', () => {
       password,
       scope: 'openid',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.login).toBeDefined();
 
     // Try to verify before enrolling, should fail
@@ -141,12 +141,12 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res2.body.login, token: authenticator.generate('1234567890') });
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
     expect(res3.body.issue[0].details.text).toBe('User not enrolled in MFA');
 
     // Get MFA status, should be disabled
     const res4 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body).toBeDefined();
     expect(res4.body.enrolled).toBe(false);
     expect(res4.body.enrollUri).toBeDefined();
@@ -155,7 +155,7 @@ describe('MFA', () => {
 
     // Get MFA status again, should be the same enroll URI
     const res5 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
     expect(res5.body).toBeDefined();
     expect(res5.body.enrollUri).toBe(res4.body.enrollUri);
 
@@ -165,7 +165,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: '1234567890' });
-    expect(res6.status).toBe(400);
+    expect(res6).toHaveStatus(400);
     expect(res6.body.issue[0].details.text).toBe('Invalid token');
 
     // Enroll MFA
@@ -174,7 +174,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: authenticator.generate(secret) });
-    expect(res7.status).toBe(200);
+    expect(res7).toHaveStatus(200);
 
     // Try to enroll again, should fail
     const res8 = await request(app)
@@ -182,12 +182,12 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: authenticator.generate(secret) });
-    expect(res8.status).toBe(400);
+    expect(res8).toHaveStatus(400);
     expect(res8.body.issue[0].details.text).toBe('Already enrolled');
 
     // Get MFA status, should be enrolled
     const res9 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(res9.status).toBe(200);
+    expect(res9).toHaveStatus(200);
     expect(res9.body).toBeDefined();
     expect(res9.body.enrolled).toBe(true);
 
@@ -197,7 +197,7 @@ describe('MFA', () => {
       password,
       scope: 'openid',
     });
-    expect(res10.status).toBe(200);
+    expect(res10).toHaveStatus(200);
     expect(res10.body.login).toBeDefined();
     expect(res10.body.code).not.toBeDefined();
 
@@ -207,7 +207,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res10.body.login, token: '' });
-    expect(res11.status).toBe(400);
+    expect(res11).toHaveStatus(400);
     expect(res11.body.issue[0].details.text).toBe('Missing token');
 
     // Verify with invalid token, should fail
@@ -216,7 +216,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res10.body.login, token: '1234567890' });
-    expect(res12.status).toBe(400);
+    expect(res12).toHaveStatus(400);
     expect(res12.body.issue[0].details.text).toBe('Invalid MFA token');
 
     // Verify MFA success
@@ -225,7 +225,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ login: res10.body.login, token: authenticator.generate(secret) });
-    expect(res13.status).toBe(200);
+    expect(res13).toHaveStatus(200);
     expect(res13.body.login).toBeDefined();
     expect(res13.body.code).toBeDefined();
   });
@@ -254,12 +254,12 @@ describe('MFA', () => {
       .send({
         token: '123',
       });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
     expect(res1.body).toMatchObject(badRequest('User not enrolled in MFA'));
 
     // Get status; should not be enrolled and should get a secret
     const res2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.enrolled).toBe(false);
     expect(res2.body).toBeDefined();
     expect(res2.body.enrollUri).toBeDefined();
@@ -270,12 +270,12 @@ describe('MFA', () => {
       password,
       scope: 'openid',
     });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body.login).toBeDefined();
 
     // Get MFA status, should be disabled
     const res4 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(res4.status).toBe(200);
+    expect(res4).toHaveStatus(200);
     expect(res4.body).toBeDefined();
     expect(res4.body.enrolled).toBe(false);
     expect(res4.body.enrollUri).toBeDefined();
@@ -288,14 +288,14 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: authenticator.generate(secret) });
-    expect(res5.status).toBe(200);
+    expect(res5).toHaveStatus(200);
 
     // Call disable without token, should fail
     const res6 = await request(app)
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json');
-    expect(res6.status).toBe(400);
+    expect(res6).toHaveStatus(400);
     expect(res6.body).toMatchObject(badRequest('Missing token'));
 
     // Call disable with invalid token, should fail
@@ -304,7 +304,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: 'invalid' });
-    expect(res7.status).toBe(400);
+    expect(res7).toHaveStatus(400);
     expect(res7.body).toMatchObject(badRequest('Invalid token'));
 
     // Call disable with token, should succeed
@@ -313,12 +313,12 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: authenticator.generate(secret) });
-    expect(res8.status).toBe(200);
+    expect(res8).toHaveStatus(200);
     expect(res8.body).toMatchObject(allOk);
 
     // Get status should not be enrolled and should have a new secret
     const res9 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(res9.status).toBe(200);
+    expect(res9).toHaveStatus(200);
     expect(res9.body.enrolled).toBe(false);
     expect(res9.body).toBeDefined();
     expect(res9.body.enrollUri).not.toBe(res4.body.enrollUri);
@@ -333,7 +333,7 @@ describe('MFA', () => {
       .send({
         token: authenticator.generate(secret2),
       });
-    expect(res10.status).toBe(400);
+    expect(res10).toHaveStatus(400);
     expect(res10.body).toMatchObject(badRequest('User not enrolled in MFA'));
   });
 
@@ -357,7 +357,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('MFA method not allowed'));
   });
 
@@ -379,7 +379,7 @@ describe('MFA', () => {
 
     // Status should advertise email as an allowed (but not yet enrolled) method
     const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(statusRes.status).toBe(200);
+    expect(statusRes).toHaveStatus(200);
     expect(statusRes.body.enrolled).toBe(false);
     expect(statusRes.body.allowedMethods).toEqual(expect.arrayContaining(['totp', 'email']));
 
@@ -388,14 +388,14 @@ describe('MFA', () => {
 
     // Status should now report email enrollment
     const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-    expect(status2.status).toBe(200);
+    expect(status2).toHaveStatus(200);
     expect(status2.body.enrolled).toBe(true);
     expect(status2.body.enrolledMethods).toEqual(['email']);
 
     // Logging in should require MFA and email a verification code automatically
     mockSESv2Client.resetHistory();
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(loginRes.status).toBe(200);
+    expect(loginRes).toHaveStatus(200);
     expect(loginRes.body.login).toBeDefined();
     expect(loginRes.body.code).not.toBeDefined();
     expect(loginRes.body.mfaRequired).toBe(true);
@@ -411,14 +411,14 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: '000000' === code ? '111111' : '000000' });
-    expect(badVerify.status).toBe(400);
+    expect(badVerify).toHaveStatus(400);
 
     // Verifying with the emailed code completes the login
     const verifyRes = await request(app)
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: code });
-    expect(verifyRes.status).toBe(200);
+    expect(verifyRes).toHaveStatus(200);
     expect(verifyRes.body.code).toBeDefined();
   });
 
@@ -450,7 +450,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email' });
-    expect(noToken.status).toBe(400);
+    expect(noToken).toHaveStatus(400);
     expect(noToken.body).toMatchObject(badRequest('Missing token'));
 
     // Request the verification code, but try to enroll with the wrong one
@@ -459,7 +459,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(challengeRes.status).toBe(200);
+    expect(challengeRes).toHaveStatus(200);
     const code = await getCodeFromEmail();
 
     const wrongToken = await request(app)
@@ -467,7 +467,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: '000000' === code ? '111111' : '000000' });
-    expect(wrongToken.status).toBe(400);
+    expect(wrongToken).toHaveStatus(400);
     expect(wrongToken.body).toMatchObject(badRequest('Invalid token'));
 
     // The user is still not enrolled or email-verified
@@ -482,7 +482,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: code });
-    expect(enrollRes.status).toBe(200);
+    expect(enrollRes).toHaveStatus(200);
     expect(enrollRes.body).toMatchObject(allOk);
 
     const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -498,7 +498,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: code });
-    expect(reuse.status).toBe(400);
+    expect(reuse).toHaveStatus(400);
     expect(reuse.body).toMatchObject(badRequest('Already enrolled'));
   });
 
@@ -534,7 +534,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(challengeRes.status).toBe(200);
+    expect(challengeRes).toHaveStatus(200);
     const code = await getCodeFromEmail();
 
     // ...meanwhile the access token refreshes, rotating the refresh secret from
@@ -552,7 +552,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: code });
-    expect(enrollRes.status).toBe(200);
+    expect(enrollRes).toHaveStatus(200);
     expect(enrollRes.body).toMatchObject(allOk);
   });
 
@@ -593,7 +593,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: code });
-    expect(verifyRes.status).toBe(200);
+    expect(verifyRes).toHaveStatus(200);
     expect(verifyRes.body.code).toBeDefined();
 
     // Entering the emailed code proves the user controls the email address
@@ -638,7 +638,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: code });
-    expect(verifyRes.status).toBe(400);
+    expect(verifyRes).toHaveStatus(400);
     expect(verifyRes.body).toMatchObject(badRequest('MFA code expired'));
   });
 
@@ -667,7 +667,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(totpSecret) });
-    expect(enrollTotp.status).toBe(200);
+    expect(enrollTotp).toHaveStatus(200);
 
     // Add email as a second method (reverifying the email via a code)
     await enrollEmailMfa(accessToken);
@@ -678,7 +678,7 @@ describe('MFA', () => {
     // Login should require MFA and report both methods, WITHOUT auto-sending an email
     mockSESv2Client.resetHistory();
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(loginRes.status).toBe(200);
+    expect(loginRes).toHaveStatus(200);
     expect(loginRes.body.mfaRequired).toBe(true);
     expect(loginRes.body.mfaMethods).toEqual(expect.arrayContaining(['totp', 'email']));
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
@@ -688,7 +688,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: authenticator.generate(totpSecret) });
-    expect(totpVerify.status).toBe(200);
+    expect(totpVerify).toHaveStatus(200);
     expect(totpVerify.body.code).toBeDefined();
   });
 
@@ -723,7 +723,7 @@ describe('MFA', () => {
     // Request a verification code to use email instead of TOTP
     mockSESv2Client.resetHistory();
     const sendRes = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
-    expect(sendRes.status).toBe(200);
+    expect(sendRes).toHaveStatus(200);
     expect(sendRes.body).toMatchObject(allOk);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
 
@@ -733,13 +733,13 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: code });
-    expect(verifyRes.status).toBe(200);
+    expect(verifyRes).toHaveStatus(200);
     expect(verifyRes.body.code).toBeDefined();
   });
 
   test('send-email requires a login', async () => {
     const res = await request(app).post('/auth/mfa/send-email').type('json').send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Missing login');
   });
 
@@ -770,7 +770,7 @@ describe('MFA', () => {
     });
 
     const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Login revoked'));
   });
 
@@ -801,7 +801,7 @@ describe('MFA', () => {
     });
 
     const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Login granted'));
   });
 
@@ -832,7 +832,7 @@ describe('MFA', () => {
     });
 
     const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Login already verified'));
   });
 
@@ -863,7 +863,7 @@ describe('MFA', () => {
     expect(loginRes.body.mfaRequired).toBe(true);
 
     const res = await request(app).post('/auth/mfa/send-email').type('json').send({ login: loginRes.body.login });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('User not enrolled in email MFA'));
   });
 
@@ -891,7 +891,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(noToken.status).toBe(400);
+    expect(noToken).toHaveStatus(400);
     expect(noToken.body).toMatchObject(badRequest('Missing token'));
 
     // Request an emailed verification code
@@ -900,7 +900,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(challengeRes.status).toBe(200);
+    expect(challengeRes).toHaveStatus(200);
     const code = await getCodeFromEmail();
 
     // A wrong code is rejected
@@ -909,7 +909,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: '000000' });
-    expect(wrongCode.status).toBe(400);
+    expect(wrongCode).toHaveStatus(400);
     expect(wrongCode.body).toMatchObject(badRequest('Invalid token'));
 
     // The emailed code disables MFA
@@ -918,7 +918,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: code });
-    expect(disableRes.status).toBe(200);
+    expect(disableRes).toHaveStatus(200);
     expect(disableRes.body).toMatchObject(allOk);
 
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -954,7 +954,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Email MFA not available'));
   });
 
@@ -1006,7 +1006,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email' });
-    expect(noToken.status).toBe(400);
+    expect(noToken).toHaveStatus(400);
     expect(noToken.body).toMatchObject(badRequest('Missing token'));
 
     // Remove the email factor
@@ -1015,7 +1015,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: authenticator.generate(secret) });
-    expect(removeRes.status).toBe(200);
+    expect(removeRes).toHaveStatus(200);
     expect(removeRes.body).toMatchObject(allOk);
 
     // Still enrolled, but only in TOTP now
@@ -1046,7 +1046,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(secret) });
-    expect(removeRes.status).toBe(200);
+    expect(removeRes).toHaveStatus(200);
 
     // Still enrolled in email; the authenticator secret was rotated
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
@@ -1085,7 +1085,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: code });
-    expect(removeRes.status).toBe(200);
+    expect(removeRes).toHaveStatus(200);
 
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status.body.enrolled).toBe(false);
@@ -1122,7 +1122,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp', token: code });
-    expect(removeRes.status).toBe(200);
+    expect(removeRes).toHaveStatus(200);
 
     const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status.body.enrolled).toBe(true);
@@ -1134,7 +1134,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: code });
-    expect(reuse.status).toBe(400);
+    expect(reuse).toHaveStatus(400);
     expect(reuse.body).toMatchObject(badRequest('Invalid token'));
   });
 
@@ -1160,7 +1160,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'sms', token: authenticator.generate(secret) });
-    expect(badMethod.status).toBe(400);
+    expect(badMethod).toHaveStatus(400);
     expect(badMethod.body).toMatchObject(badRequest('Invalid method'));
   });
 
@@ -1313,7 +1313,7 @@ describe('MFA', () => {
     }
 
     const res = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     if (enroll) {
       expect(res.body.mfaEnrollRequired).toBe(true);
       expect(res.body.code).toBeUndefined();
@@ -1357,7 +1357,7 @@ describe('MFA', () => {
     // The password step has no concrete project yet, so it is not gated; the
     // user is asked to pick a membership.
     const login = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(login.status).toBe(200);
+    expect(login).toHaveStatus(200);
     expect(login.body.code).toBeUndefined();
     expect(login.body.mfaEnrollRequired).toBeUndefined();
     expect(login.body.memberships).toHaveLength(2);
@@ -1370,7 +1370,7 @@ describe('MFA', () => {
       .post('/auth/profile')
       .type('json')
       .send({ login: login.body.login, profile: membershipB.id });
-    expect(profileRes.status).toBe(200);
+    expect(profileRes).toHaveStatus(200);
     expect(profileRes.body.code).toBeDefined();
     expect(profileRes.body.mfaEnrollRequired).toBeUndefined();
   });
@@ -1390,7 +1390,7 @@ describe('MFA', () => {
       .post('/auth/profile')
       .type('json')
       .send({ login: login.body.login, profile: membershipA.id });
-    expect(profileRes.status).toBe(200);
+    expect(profileRes).toHaveStatus(200);
     expect(profileRes.body.mfaEnrollRequired).toBe(true);
     expect(profileRes.body.code).toBeUndefined();
   });
@@ -1403,7 +1403,7 @@ describe('MFA', () => {
     await setUserMfaRequired(user, true);
 
     const login = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(login.status).toBe(200);
+    expect(login).toHaveStatus(200);
     expect(login.body.mfaEnrollRequired).toBe(true);
     expect(login.body.code).toBeUndefined();
     // Gated before the membership list is offered.
@@ -1425,7 +1425,7 @@ describe('MFA', () => {
       .post('/auth/profile')
       .type('json')
       .send({ login: login.body.login, profile: membershipA.id });
-    expect(profileRes.status).toBe(200);
+    expect(profileRes).toHaveStatus(200);
     expect(profileRes.body.mfaEnrollRequired).toBe(true);
     expect(profileRes.body.code).toBeUndefined();
   });
@@ -1453,7 +1453,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Missing token'));
   });
 
@@ -1487,7 +1487,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ token: 123 });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue).toBeDefined();
   });
 
@@ -1502,7 +1502,7 @@ describe('MFA', () => {
 
   test('login-enroll requires a login', async () => {
     const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Missing login');
   });
 
@@ -1525,7 +1525,7 @@ describe('MFA', () => {
 
     // The password login should require MFA enrollment
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(loginRes.status).toBe(200);
+    expect(loginRes).toHaveStatus(200);
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
 
     // Enroll in email-based MFA via login-enroll. No token is supplied here;
@@ -1537,7 +1537,7 @@ describe('MFA', () => {
       .post('/auth/mfa/login-enroll')
       .type('json')
       .send({ login: loginRes.body.login, method: 'email' });
-    expect(enrollRes.status).toBe(200);
+    expect(enrollRes).toHaveStatus(200);
     expect(enrollRes.body.mfaRequired).toBe(true);
     expect(enrollRes.body.mfaMethods).toEqual(['email']);
     expect(enrollRes.body.code).not.toBeDefined();
@@ -1554,7 +1554,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: code });
-    expect(verifyRes.status).toBe(200);
+    expect(verifyRes).toHaveStatus(200);
     expect(verifyRes.body.code).toBeDefined();
 
     const systemRepo = getGlobalSystemRepo();
@@ -1593,7 +1593,7 @@ describe('MFA', () => {
       .post('/auth/mfa/login-enroll')
       .type('json')
       .send({ login: loginRes.body.login, method: 'email' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Already enrolled'));
   });
 
@@ -1618,7 +1618,7 @@ describe('MFA', () => {
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
 
     const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: loginRes.body.login });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Secret not found'));
   });
 
@@ -1644,7 +1644,7 @@ describe('MFA', () => {
     expect(loginRes.body.mfaEnrollRequired).toBe(true);
 
     const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: loginRes.body.login });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Missing token'));
   });
 
@@ -1673,7 +1673,7 @@ describe('MFA', () => {
       .post('/auth/mfa/login-enroll')
       .type('json')
       .send({ login: loginRes.body.login, token: authenticator.generate(secret) });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // The user should now be enrolled in TOTP and the login granted a code
     expect(res.body.code).toBeDefined();
@@ -1710,7 +1710,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'email', token: authenticator.generate(secret) });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('User not enrolled in MFA method'));
   });
 
@@ -1817,7 +1817,7 @@ describe('MFA', () => {
             .set('Authorization', `Bearer ${accessToken}`)
             .type('json')
             .send({ method: factor, token });
-          expect(res.status).toBe(400);
+          expect(res).toHaveStatus(400);
           expect(res.body).toMatchObject(badRequest('Cannot remove the last MFA factor because MFA is required'));
 
           // The factor is still enrolled — the rejection left the user untouched.
@@ -1868,7 +1868,7 @@ describe('MFA', () => {
     // A password login is still challenged for MFA verification and is not yet
     // granted an authorization code.
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
-    expect(loginRes.status).toBe(200);
+    expect(loginRes).toHaveStatus(200);
     expect(loginRes.body.mfaRequired).toBe(true);
     expect(loginRes.body.mfaMethods).toEqual(['totp']);
     expect(loginRes.body.code).toBeUndefined();
@@ -1878,7 +1878,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .type('json')
       .send({ login: loginRes.body.login, token: authenticator.generate(secret) });
-    expect(verify.status).toBe(200);
+    expect(verify).toHaveStatus(200);
     expect(verify.body.code).toBeDefined();
   });
 
@@ -1966,7 +1966,7 @@ describe('MFA', () => {
         password: 'password!@#',
         scope: 'openid',
       });
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       return res.body;
     }
 
@@ -1997,7 +1997,7 @@ describe('MFA', () => {
       const secret = await makeLegacyEnrolledTotpUser(accessToken, user);
 
       const res = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       // The field old clients read:
       expect(res.body.enrolled).toBe(true);
       // For an already-enrolled user the secret must NOT be regenerated.
@@ -2016,7 +2016,7 @@ describe('MFA', () => {
 
       // Missing token -> validator rejects exactly as before.
       const missing = await request(app).post('/auth/mfa/verify').type('json').send({ login: login.login, token: '' });
-      expect(missing.status).toBe(400);
+      expect(missing).toHaveStatus(400);
       expect(missing.body.issue[0].details.text).toBe('Missing token');
 
       // Invalid token -> historical 'Invalid MFA token'.
@@ -2024,7 +2024,7 @@ describe('MFA', () => {
         .post('/auth/mfa/verify')
         .type('json')
         .send({ login: login.login, token: '000000' });
-      expect(invalid.status).toBe(400);
+      expect(invalid).toHaveStatus(400);
       expect(invalid.body.issue[0].details.text).toBe('Invalid MFA token');
 
       // Valid TOTP token -> success with an auth code, no method field needed.
@@ -2032,7 +2032,7 @@ describe('MFA', () => {
         .post('/auth/mfa/verify')
         .type('json')
         .send({ login: login.login, token: authenticator.generate(secret) });
-      expect(ok.status).toBe(200);
+      expect(ok).toHaveStatus(200);
       expect(ok.body.code).toBeDefined();
     });
 
@@ -2060,7 +2060,7 @@ describe('MFA', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json')
         .send({ token: authenticator.generate(secret) });
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toBe('Already enrolled');
     });
 
@@ -2085,7 +2085,7 @@ describe('MFA', () => {
         .post('/auth/mfa/login-enroll')
         .type('json')
         .send({ login: login.login, token: authenticator.generate(secret) });
-      expect(enroll.status).toBe(200);
+      expect(enroll).toHaveStatus(200);
       expect(enroll.body.code).toBeDefined();
 
       // The user is now enrolled and the method was backfilled to totp.
@@ -2098,7 +2098,7 @@ describe('MFA', () => {
       const { accessToken, user, email } = await registerLegacyAccount();
 
       const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-      expect(statusRes.status).toBe(200);
+      expect(statusRes).toHaveStatus(200);
       await withTestContext(async () => {
         const systemRepo = getGlobalSystemRepo();
         const current = await systemRepo.readResource<User>('User', user.id);
@@ -2109,7 +2109,7 @@ describe('MFA', () => {
       expect(login.mfaEnrollRequired).toBe(true);
 
       const res = await request(app).post('/auth/mfa/login-enroll').type('json').send({ login: login.login });
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toBe('Missing token');
     });
 
@@ -2123,7 +2123,7 @@ describe('MFA', () => {
         .post('/auth/mfa/disable')
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json');
-      expect(missing.status).toBe(400);
+      expect(missing).toHaveStatus(400);
       expect(missing.body).toMatchObject(badRequest('Missing token'));
 
       // Invalid token -> historical 'Invalid token'.
@@ -2132,7 +2132,7 @@ describe('MFA', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json')
         .send({ token: 'invalid' });
-      expect(invalid.status).toBe(400);
+      expect(invalid).toHaveStatus(400);
       expect(invalid.body).toMatchObject(badRequest('Invalid token'));
 
       // Valid TOTP token, no method -> full disable.
@@ -2141,7 +2141,7 @@ describe('MFA', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json')
         .send({ token: authenticator.generate(oldSecret) });
-      expect(ok.status).toBe(200);
+      expect(ok).toHaveStatus(200);
       expect(ok.body).toMatchObject(allOk);
 
       // User is fully disabled, methods cleared, and the secret was rotated
@@ -2161,7 +2161,7 @@ describe('MFA', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json')
         .send({ token: authenticator.generate(oldSecret) });
-      expect(again.status).toBe(400);
+      expect(again).toHaveStatus(400);
       expect(again.body).toMatchObject(badRequest('User not enrolled in MFA'));
     });
 
@@ -2172,7 +2172,7 @@ describe('MFA', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json')
         .send({ token: '123' });
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body).toMatchObject(badRequest('User not enrolled in MFA'));
     });
 
@@ -2193,7 +2193,7 @@ describe('MFA', () => {
       await makeLegacyEnrolledTotpUser(accessToken, user);
 
       const res = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.body.allowedMethods).toEqual(['totp']);
 
       // Enrolling email is rejected when the project hasn't opted in: the
@@ -2203,7 +2203,7 @@ describe('MFA', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .type('json')
         .send({ method: 'email' });
-      expect(enrollEmail.status).toBe(400);
+      expect(enrollEmail).toHaveStatus(400);
       expect(enrollEmail.body.issue[0].details.text).toBe('MFA method not allowed');
     });
 
@@ -2225,7 +2225,7 @@ describe('MFA', () => {
         .post('/auth/mfa/verify')
         .type('json')
         .send({ login: login.login, token: authenticator.generate(secret) });
-      expect(verify.status).toBe(200);
+      expect(verify).toHaveStatus(200);
       expect(verify.body.code).toBeDefined();
     });
   });

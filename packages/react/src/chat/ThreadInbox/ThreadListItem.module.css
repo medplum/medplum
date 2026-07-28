@@ -1,0 +1,6 @@
+.content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+}

@@ -71,7 +71,7 @@ describe('OrderMedicationPage', () => {
 
   test('soft-deletes the draft MedicationRequest (status=unknown + statusReason) when the order bot fails', async () => {
     const medplum = new MockClient();
-    medplum.setProfile(DrAliceSmith);
+    medplum.mock.setProfile(DrAliceSmith);
 
     // Drug name search returns a single in-memory Medication. Important: no routed-med-id
     // so the page's "expand to formulations" effect short-circuits to selectedFormat = termMedication
@@ -157,7 +157,7 @@ describe('OrderMedicationPage', () => {
     'infers days supply from a hyphenated compound number in the sig',
     async () => {
       const medplum = new MockClient();
-      medplum.setProfile(DrAliceSmith);
+      medplum.mock.setProfile(DrAliceSmith);
       searchMedicationsMock.mockResolvedValue([
         {
           resourceType: 'Medication',
@@ -212,7 +212,7 @@ describe('OrderMedicationPage', () => {
     'medication title combines the drug name with the selected formulation, not just the strength',
     async () => {
       const medplum = new MockClient();
-      medplum.setProfile(DrAliceSmith);
+      medplum.mock.setProfile(DrAliceSmith);
 
       // Drug-name search row: carries the product name + a routed-med-id so the
       // page expands to formulations (the path that previously dropped the name).
@@ -289,7 +289,7 @@ describe('OrderMedicationPage', () => {
 
   test('Add to cart creates the draft MedicationRequest without calling $order-medication or opening a widget', async () => {
     const medplum = new MockClient();
-    medplum.setProfile(DrAliceSmith);
+    medplum.mock.setProfile(DrAliceSmith);
 
     const searchHit: Medication = {
       resourceType: 'Medication',
@@ -347,7 +347,7 @@ describe('OrderMedicationPage', () => {
 
   test('does not show Add to cart when onAddedToCart is not provided', async () => {
     const medplum = new MockClient();
-    medplum.setProfile(DrAliceSmith);
+    medplum.mock.setProfile(DrAliceSmith);
     searchMedicationsMock.mockResolvedValue([]);
 
     await act(async () => {
@@ -374,7 +374,7 @@ describe('OrderMedicationPage', () => {
 
   test('re-prescription mode retries rejected and uncertain replacements without retaining a status reason', async () => {
     const medplum = new MockClient();
-    medplum.setProfile(DrAliceSmith);
+    medplum.mock.setProfile(DrAliceSmith);
     const readReference = vi.spyOn(medplum, 'readReference').mockResolvedValue(DrAliceSmith);
     const replacement: WithId<MedicationRequest> = {
       resourceType: 'MedicationRequest',

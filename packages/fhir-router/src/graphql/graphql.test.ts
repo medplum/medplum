@@ -459,7 +459,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0].issue?.[0]?.details?.text).toStrictEqual(
-      'Field "ObservationList" argument "_reference" of type "Patient_Observation_reference!" is required, but it was not provided.'
+      'Argument "Patient.ObservationList(_reference:)" of type "Patient_Observation_reference!" is required, but it was not provided.'
     );
   });
 
@@ -1168,7 +1168,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]?.issue?.[0]?.details?.text).toStrictEqual(
-      'Field "PatientUpdate" argument "res" of type "PatientCreate!" is required, but it was not provided.'
+      'Argument "MutationType.PatientUpdate(res:)" of type "PatientCreate!" is required, but it was not provided.'
     );
   });
 
@@ -1430,7 +1430,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     // GraphQL validation happens before our resolver, so we get a validation error in the OperationOutcome
     expect(res[0]?.issue?.[0]?.details?.text).toMatch(
-      /Field "PatientPatch" argument "patch" of type "\[PatchOperationInput!\]!" is required/
+      `Argument "MutationType.PatientPatch(patch:)" of type "[PatchOperationInput!]!" is required`
     );
   });
 
@@ -1454,7 +1454,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     // GraphQL type validation catches this before our resolver
     expect(res[0]?.issue?.[0]?.details?.text).toMatch(
-      /Expected value of type "\[PatchOperationInput!\]!", found "not-an-array"/
+      /Expected value of type "PatchOperationInput" to be an object, found: "not-an-array"/
     );
   });
 });

@@ -3,6 +3,10 @@
 import { MEDPLUM_VERSION } from './client';
 import { normalizeErrorString } from './outcomes';
 
+export const MEDPLUM_SEMVER_REGEX = /^\d+\.\d+\.\d+(-[0-9a-z]{7})?$/;
+
+export type MedplumSemver = `${number}.${number}.${number}` | `${number}.${number}.${number}-${string}`;
+
 export const MEDPLUM_RELEASES_URL = 'https://meta.medplum.com/releases';
 
 export type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
@@ -40,6 +44,46 @@ export function assertReleaseManifest(candidate: unknown): asserts candidate is 
 }
 
 /**
+ * Fetches and parses JSON from a Medplum releases file.
+ *
+ * Handles the machinery common to all releases requests: building the URL, appending the
+ * standard `a` (app name) and `c` (current version) query params plus any extra `params`, and
+ * throwing a descriptive error on a non-200 response.
+ * @param fileName - The releases file to fetch (e.g. `latest.json`, `v5.1.24.json`, `all.json`).
+ * @param appName - The name of the app to fetch the releases file for.
+ * @param errorContext - A human-readable clause describing the request, interpolated into the
+ * thrown error message (e.g. `fetching all release versions`).
+ * @param params - An optional list of key-value pairs to be appended to the URL query string.
+ * @returns The parsed JSON response.
+ */
+async function fetchReleasesJson<T>(
+  fileName: string,
+  appName: string,
+  errorContext: string,
+  params?: Record<string, string>
+): Promise<T> {
+  const url = new URL(`${MEDPLUM_RELEASES_URL}/${fileName}`);
+  url.searchParams.set('a', appName);
+  url.searchParams.set('c', MEDPLUM_VERSION);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  const res = await fetch(url.toString());
+  if (res.status !== 200) {
+    let message: string | undefined;
+    try {
+      message = ((await res.json()) as { message: string }).message;
+    } catch (err) {
+      console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
+    }
+    throw new Error(`Received status code ${res.status} while ${errorContext}`, { cause: new Error(message) });
+  }
+  return (await res.json()) as T;
+}
+
+/**
  * Fetches the manifest for a given Medplum release version.
  * @param appName - The name of the app to fetch the manifest for.
  * @param version - The version to fetch. If no `version` is provided, defaults to the `latest` version.
@@ -56,27 +100,12 @@ export async function fetchVersionManifest(
   let manifest = version ? releaseManifests.get(version) : undefined;
   if (!manifest) {
     const versionTag = version ? `v${version}` : 'latest';
-    const url = new URL(`${MEDPLUM_RELEASES_URL}/${versionTag}.json`);
-    url.searchParams.set('a', appName);
-    url.searchParams.set('c', MEDPLUM_VERSION);
-    if (params) {
-      for (const [key, value] of Object.entries(params)) {
-        url.searchParams.set(key, value);
-      }
-    }
-    const res = await fetch(url.toString());
-    if (res.status !== 200) {
-      let message: string | undefined;
-      try {
-        message = ((await res.json()) as { message: string }).message;
-      } catch (err) {
-        console.error(`Failed to parse message from body: ${normalizeErrorString(err)}`);
-      }
-      throw new Error(
-        `Received status code ${res.status} while fetching manifest for version '${version ?? 'latest'}'. Message: ${message}`
-      );
-    }
-    const response = (await res.json()) as ReleaseManifest;
+    const response = await fetchReleasesJson<ReleaseManifest>(
+      `${versionTag}.json`,
+      appName,
+      `fetching manifest for version '${version ?? 'latest'}'`,
+      params
+    );
     assertReleaseManifest(response);
     manifest = response;
     // `tag_name` is always `v${version}`, so this key matches the `version` lookup above for
@@ -93,8 +122,32 @@ export async function fetchVersionManifest(
  * @param version - A version string that should be tested for valid semver semantics.
  * @returns `true` if `version` is a valid semver version that conforms to the Medplum versioning system, otherwise `false`.
  */
-export function isValidMedplumSemver(version: string): boolean {
-  return /^\d+\.\d+\.\d+(-[0-9a-z]{7})?$/.test(version);
+export function isValidMedplumSemver(version: string): version is MedplumSemver {
+  return MEDPLUM_SEMVER_REGEX.test(version);
+}
+
+export function assertValidMedplumSemver(version: string): asserts version is MedplumSemver {
+  if (!MEDPLUM_SEMVER_REGEX.test(version)) {
+    throw new TypeError(`Version is not a valid Medplum semver (eg. 1.1.1 or 1.1.1-a1bc): ${version}`);
+  }
+}
+
+/**
+ * Compares two Medplum semver version strings, ignoring any trailing commit-hash suffix.
+ * @param a - The first version to compare.
+ * @param b - The second version to compare.
+ * @returns A negative number if `a` is older than `b`, a positive number if `a` is newer than `b`, or `0` if they resolve to the same release.
+ */
+export function compareVersions(a: MedplumSemver, b: MedplumSemver): number {
+  const aParts = a.split('-')[0].split('.').map(Number);
+  const bParts = b.split('-')[0].split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (aParts[i] ?? 0) - (bParts[i] ?? 0);
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  return 0;
 }
 
 /**
@@ -120,12 +173,34 @@ export async function checkIfValidMedplumVersion(appName: string, version: strin
  * @param appName - The name of the app to fetch the latest version for.
  * @returns A version string corresponding to the latest Medplum release version.
  */
-export async function fetchLatestVersionString(appName: string): Promise<string> {
+export async function fetchLatestVersionString(appName: string): Promise<MedplumSemver> {
   const latest = await fetchVersionManifest(appName);
   if (!latest.tag_name.startsWith('v')) {
     throw new Error(`Invalid release name found. Release tag '${latest.tag_name}' did not start with 'v'`);
   }
-  return latest.tag_name.slice(1);
+  const version = latest.tag_name.slice(1);
+  assertValidMedplumSemver(version);
+  return version;
+}
+
+/**
+ * Fetches the version strings for all published Medplum releases.
+ * @param appName - The name of the app to fetch the release list for.
+ * @param params - An optional list of key-value pairs to be appended to the URL query string.
+ * @returns An array of version strings (without the leading `v`), sorted from newest to oldest.
+ */
+export async function fetchAllVersionStrings(
+  appName: string,
+  params?: Record<string, string>
+): Promise<MedplumSemver[]> {
+  const response = await fetchReleasesJson<{ versions?: { version: string }[] }>(
+    'all.json',
+    appName,
+    'fetching all release versions',
+    params
+  );
+  const versions = (response.versions ?? []).map((release) => release.version).filter(isValidMedplumSemver);
+  return versions.toSorted(compareVersions).reverse();
 }
 
 /**
