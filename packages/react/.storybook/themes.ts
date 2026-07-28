@@ -1,4 +1,7 @@
 import { createTheme, MantineThemeOverride } from '@mantine/core';
+// Imported from source, not '@medplum/react', so Storybook picks up local changes
+// rather than a stale dist build.
+import { medplumModalTheme } from '../src/theme/modalTheme';
 
 const medplumDefault = createTheme({
   headings: {
@@ -16,6 +19,11 @@ const medplumDefault = createTheme({
     md: '0.875rem',
     lg: '1.0rem',
     xl: '1.125rem',
+  },
+  // Only the Medplum preset gets our modal chrome; the other presets exist to show
+  // how these components look under a host app's own theme.
+  components: {
+    Modal: medplumModalTheme,
   },
 });
 

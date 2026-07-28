@@ -152,6 +152,7 @@ export * from './ServiceRequestTimeline/ServiceRequestTimeline';
 export * from './SignatureInput/SignatureInput';
 export * from './SmartAppLaunchLink/SmartAppLaunchLink';
 export * from './StatusBadge/StatusBadge';
+export * from './theme/modalTheme';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';
 export * from './UnavailableNote/UnavailableNote';
