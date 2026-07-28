@@ -38,7 +38,7 @@ jobs:
         with:
           repo: ${{ github.repository }}
           pull-request: "true"
-          merge-immediately: "true"
+          merge-immediately: "false"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 

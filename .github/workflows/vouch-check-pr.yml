@@ -13,7 +13,7 @@ env:
   # Non-vouched (but not denounced) authors may still have their PR merged if
   # it's linked to an issue carrying this label, indicating we've explicitly
   # invited a community PR for that issue.
-  COMMUNITY_PR_LABEL: accepting-prs
+  COMMUNITY_PR_LABEL: open-to-community
 
 jobs:
   check:

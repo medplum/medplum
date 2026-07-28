@@ -65,7 +65,7 @@ If you find a bug on Medplum and open a GitHub Pull Request that fixes it, we'll
 Before starting implementation of a new feature, open an issue first to discuss your plans and to ensure it fits into
 our roadmap and plans for the app.
 
-If you're not yet an established contributor, your pull request needs to be linked to an issue labeled `accepting-prs`
+If you're not yet an established contributor, your pull request needs to be linked to an issue labeled `open-to-community`
 (for example with a "Fixes #123" or "Closes #123" reference, or via the GitHub "Development" panel) -- this shows
 we've explicitly invited a community PR for that work. A maintainer can add this label to an existing issue, including
 one you just opened, on request. Pull requests that aren't linked to a qualifying issue are closed automatically;
