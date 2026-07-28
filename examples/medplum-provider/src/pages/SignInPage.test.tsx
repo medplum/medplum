@@ -65,7 +65,7 @@ describe('SignInPage', () => {
     const client = setup();
 
     vi.spyOn(client, 'processCode').mockImplementation(async () => {
-      (client as MockClient).setProfile(DrAliceSmith);
+      (client as MockClient).mock.setProfile(DrAliceSmith);
       return DrAliceSmith;
     });
 

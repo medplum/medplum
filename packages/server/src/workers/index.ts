@@ -15,7 +15,7 @@ import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
 import { initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { applyGlobalConcurrency, getMedplumBullmqConfig, queueRegistry } from './utils';
 
 const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'dispatch', init: initDispatchWorker },
@@ -34,7 +34,7 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
  * Initializes all background workers.
  * @param config - The config to initialize the workers with. Should contain `redis` and optionally `bullmq` fields.
  */
-export function initWorkers(config: MedplumServerConfig): void {
+export async function initWorkers(config: MedplumServerConfig): Promise<void> {
   globalLogger.debug('Initializing workers...');
   const enabledWorkers = config.workers?.enabled;
   const enableAll = config.workers?.enabled?.includes('*');
@@ -45,6 +45,9 @@ export function initWorkers(config: MedplumServerConfig): void {
     // a queue can be disabled, in which case, don't register it
     if (queue) {
       queueRegistry.add(queueName, queue, worker);
+      // Fail startup if the global concurrency limit cannot be applied: it is unsafe to run the
+      // workers without it configured correctly.
+      await applyGlobalConcurrency(queue, getMedplumBullmqConfig(config, name));
     }
   }
   globalLogger.debug('Workers initialized');

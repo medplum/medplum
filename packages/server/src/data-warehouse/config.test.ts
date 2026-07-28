@@ -56,6 +56,7 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
     expect(parsed.password).toBe('secret');
     expect(parsed.searchParams.get('application_name')).toBe(DEFAULT_DW_DATABASE_APPLICATION_NAME);
     expect(parsed.searchParams.get('options')).toBe(`-c statement_timeout=${DEFAULT_DW_DATABASE_STATEMENT_TIMEOUT}`);
+    expect(parsed.searchParams.has('connect_timeout')).toBe(false);
   });
 
   test('uses custom queryTimeout in options', () => {
@@ -67,6 +68,33 @@ describe('buildPostgresConnectionUriFromMedplumDatabaseConfig', () => {
       queryTimeout: 3000,
     });
     expect(new URL(uri).searchParams.get('options')).toBe('-c statement_timeout=3000');
+  });
+
+  test.each([
+    [0, '0'],
+    [500, '1'],
+    [10_999, '10'],
+  ])('converts connectionTimeoutMs=%i to libpq connect_timeout=%s', (connectionTimeoutMs, expected) => {
+    const uri = buildPgConnectionURI({
+      host: 'db.example.com',
+      dbname: 'medplum',
+      username: 'medplum',
+      password: 'secret',
+      connectionTimeoutMs,
+    });
+    expect(new URL(uri).searchParams.get('connect_timeout')).toBe(expected);
+  });
+
+  test('rejects negative connectionTimeoutMs', () => {
+    expect(() =>
+      buildPgConnectionURI({
+        host: 'db.example.com',
+        dbname: 'medplum',
+        username: 'medplum',
+        password: 'secret',
+        connectionTimeoutMs: -1,
+      })
+    ).toThrowError(new RangeError('connectionTimeoutMs must be greater than or equal to 0'));
   });
 
   test('percent-encodes special characters in password', () => {
@@ -98,6 +126,18 @@ describe('appendMedplumDatabaseSslSearchParams', () => {
     const params = new URLSearchParams();
     appendMedplumDatabaseSslSearchParams(params, { require: true });
     expect(params.get('sslmode')).toBe('require');
+  });
+
+  test('sets sslmode=require when certificate verification is disabled', () => {
+    const params = new URLSearchParams();
+    appendMedplumDatabaseSslSearchParams(params, { rejectUnauthorized: false });
+    expect(params.get('sslmode')).toBe('require');
+  });
+
+  test('leaves the default sslmode when certificate verification has no CA', () => {
+    const params = new URLSearchParams();
+    appendMedplumDatabaseSslSearchParams(params, { rejectUnauthorized: true });
+    expect(params.has('sslmode')).toBe(false);
   });
 
   test('sets verify-full with sslrootcert when rejectUnauthorized and ca are set', () => {

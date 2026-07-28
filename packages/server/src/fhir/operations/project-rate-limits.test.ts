@@ -244,4 +244,54 @@ describe('Project $rate-limits operation', () => {
     // No consumedPoints part for members with no activity
     expect(getPartValue(membershipParams[0], 'consumedPoints')).toBeUndefined();
   });
+
+  test('Uses UserConfiguration fhirQuota for membership limit', async () => {
+    const member = await withTestContext(() => addTestUser(admin.project));
+
+    const userConfigRes = await request(app)
+      .post('/fhir/R4/UserConfiguration')
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .send({
+        resourceType: 'UserConfiguration',
+        option: [{ id: 'fhirQuota', valueInteger: 12345 }],
+      });
+    expect(userConfigRes.status).toBe(201);
+
+    const membershipsRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .set('X-Medplum', 'extended');
+    const memberships = membershipsRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
+    const memberMembership = memberships.find(
+      (m: ProjectMembership) => m.profile?.reference === getReferenceString(member.profile)
+    );
+    expect(memberMembership).toBeDefined();
+    if (!memberMembership) {
+      throw new Error('Expected membership for added project member');
+    }
+
+    const updateRes = await request(app)
+      .put(`/fhir/R4/ProjectMembership/${memberMembership.id}`)
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .send({
+        ...memberMembership,
+        userConfiguration: { reference: `UserConfiguration/${userConfigRes.body.id}` },
+      });
+    expect(updateRes.status).toBe(200);
+
+    // Generate activity so quota fields are included in the response
+    await request(app).get('/fhir/R4/Patient').set('Authorization', `Bearer ${member.accessToken}`);
+
+    const res = await request(app)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${memberMembership.id}`)
+      .set('Authorization', `Bearer ${admin.accessToken}`);
+
+    expect(res.status).toBe(200);
+    const body = res.body as Parameters;
+    const membershipParams = getParametersByName(body, 'membership');
+    expect(membershipParams).toHaveLength(1);
+    expect(getPartValue(membershipParams[0], 'membershipId')).toBe(memberMembership.id);
+    expect(getPartValue(membershipParams[0], 'limit')).toBe(12345);
+    expect(getPartValue(membershipParams[0], 'consumedPoints')).toBeDefined();
+  });
 });

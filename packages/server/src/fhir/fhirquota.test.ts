@@ -164,6 +164,8 @@ describe('FHIR Rate Limits', () => {
       withAccessToken: true,
       withRepo: true,
       withClient: true,
+      // Project fallback must not depend on the user's UserConfiguration override
+      project: { systemSetting: [{ name: 'totalFhirQuota', valueInteger: 10_000 }] },
     });
 
     const userConfig = await repo.createResource<UserConfiguration>({

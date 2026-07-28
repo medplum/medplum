@@ -293,6 +293,9 @@ export interface MedplumDatabaseConfig {
    */
   disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
+  minConnections?: number;
+  idleTimeoutMs?: number;
+  connectionTimeoutMs?: number;
   disableConnectionConfiguration?: boolean;
 }
 
@@ -320,6 +323,13 @@ export interface MedplumBullmqConfig {
    * @see {@link https://docs.bullmq.io/guide/workers/concurrency}
    */
   concurrency?: number;
+  /**
+   * Maximum number of jobs processed simultaneously across all workers for a queue (cluster-wide).
+   * Unlike `concurrency` (which is per-worker), this limit is enforced globally via Redis.
+   * When omitted, any previously-set global concurrency limit is removed.
+   * @see {@link https://docs.bullmq.io/guide/queues/global-concurrency}
+   */
+  globalConcurrency?: number;
   /**
    * Duration of the job lock in milliseconds while a worker is processing.
    * @see {@link https://docs.bullmq.io/guide/workers/stalled-jobs}
