@@ -31,7 +31,7 @@ describe('Well Known', () => {
       expect(key.kid).toBeDefined();
       expect(key.kid.length).toStrictEqual(36); // kid should be a UUID
       expect(isUUID(key.kid)).toStrictEqual(true);
-      expect(key.alg).toMatch(/^(RS256|ES256)$/);
+      expect(key.alg).toMatch(/^(RS256|ES256|ES384)$/);
       expect(key.kty).toMatch(/^(RSA|EC)$/);
       expect(key.use).toStrictEqual('sig');
 

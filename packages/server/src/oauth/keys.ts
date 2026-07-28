@@ -73,26 +73,36 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
 }
 
 /*
- * Signing algorithms.
+ * JWT signing algorithms.
  *
- * For the first 4 years of this project, we only supported RS256:
- * RS256 (RSA Signature with SHA-256): An asymmetric algorithm, which means that there are two keys:
- * one public key and one private key that must be kept secret. The server has the private key used to
- * generate the signature, and the consumer of the JWT retrieves a public key from the metadata
- * endpoints provided by the server and uses it to validate the JWT signature.
+ * For the first 4 years of this project, Medplum only supported RS256:
  *
- * Due to customer requests for FAPI 2 compliance, we are now expanding to support ES256:
- * ES256 (ECDSA using P-256 and SHA-256): An asymmetric algorithm using elliptic curve cryptography.
- * Like RS256, it uses a public/private key pair, but offers better performance characteristics,
- * smaller key sizes, and faster signature generation while providing equivalent security to 2048-bit RSA.
+ *   RS256 (RSA Signature with SHA-256)
  *
- * To support existing customers and deployments, we will continue to support existing keys using RS256.
- * All new keys will use ES256 by default.
+ * This remains one of the most widely deployed JWT algorithms and is used by
+ * providers such as AWS Cognito. It uses an RSA public/private key pair, where
+ * the server signs with the private key and clients verify signatures using the
+ * published public key.
  *
- * Note: AWS Cognito uses RS256. Auth0 supports RS256, HS256, and PS256 options.
+ * In 2025, we added support for elliptic curve algorithms in response to
+ * customer requests for FAPI 2 compliance. New keys defaulted to ES256 because
+ * it provides equivalent security to 2048-bit RSA with significantly smaller
+ * keys and better performance.
+ *
+ * As CMS interoperability programs evolved, some certification profiles began
+ * requiring ES384 (ECDSA using the P-384 curve with SHA-384). New keys now
+ * default to ES384 to satisfy those requirements while remaining compatible
+ * with modern OAuth 2.0 and OpenID Connect ecosystems.
+ *
+ * Existing deployments continue to support previously-generated RS256 and
+ * ES256 keys for backwards compatibility. New keys use ES384 by default.
+ *
+ * Notes:
+ * - AWS Cognito currently issues RS256 tokens.
+ * - Auth0 supports RS256, HS256, PS256, ES256, and ES384.
  */
 
-const PREFERRED_ALG = OAuthSigningAlgorithm.ES256;
+const PREFERRED_ALG = OAuthSigningAlgorithm.ES384;
 const LEGACY_DEFAULT_ALG = OAuthSigningAlgorithm.RS256;
 const DEFAULT_ACCESS_LIFETIME = '1h';
 const DEFAULT_REFRESH_LIFETIME = '2w';
@@ -155,7 +165,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
       kty: jwk.kty,
       use: 'sig',
     };
-    if (jwk.alg === OAuthSigningAlgorithm.ES256) {
+    if (jwk.alg === OAuthSigningAlgorithm.ES256 || jwk.alg === OAuthSigningAlgorithm.ES384) {
       publicKey.x = jwk.x;
       publicKey.y = jwk.y;
       publicKey.crv = jwk.crv;
@@ -299,7 +309,7 @@ export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; p
 
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    algorithms: [OAuthSigningAlgorithm.ES256, OAuthSigningAlgorithm.RS256],
+    algorithms: [OAuthSigningAlgorithm.ES256, OAuthSigningAlgorithm.ES384, OAuthSigningAlgorithm.RS256],
   };
 
   return jwtVerify(token, getKeyForHeader, verifyOptions);
