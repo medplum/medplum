@@ -1100,7 +1100,6 @@ describe('Appointment/$find', () => {
                 start: new Date('2026-03-17T13:00:00-04:00').toISOString(),
                 end: new Date('2026-03-17T13:30:00-04:00').toISOString(),
                 status: 'busy',
-                serviceType: [{ coding: [{ code: 'generic-visit' }] }],
               },
               // practitioner schedule: buffer before block
               {
@@ -1109,7 +1108,6 @@ describe('Appointment/$find', () => {
                 start: new Date('2026-03-17T12:40:00-04:00').toISOString(),
                 end: new Date('2026-03-17T13:00:00-04:00').toISOString(),
                 status: 'busy-unavailable',
-                serviceType: [{ coding: [{ code: 'generic-visit' }] }],
                 comment: 'buffer before appointment',
               },
               // practitioner schedule: buffer after block
@@ -1119,7 +1117,6 @@ describe('Appointment/$find', () => {
                 start: new Date('2026-03-17T13:30:00-04:00').toISOString(),
                 end: new Date('2026-03-17T13:45:00-04:00').toISOString(),
                 status: 'busy-unavailable',
-                serviceType: [{ coding: [{ code: 'generic-visit' }] }],
                 comment: 'buffer after appointment',
               },
               // location schedule: main appointment block
@@ -1129,7 +1126,6 @@ describe('Appointment/$find', () => {
                 start: new Date('2026-03-17T13:00:00-04:00').toISOString(),
                 end: new Date('2026-03-17T13:30:00-04:00').toISOString(),
                 status: 'busy',
-                serviceType: [{ coding: [{ code: 'generic-visit' }] }],
               },
             ],
           },
