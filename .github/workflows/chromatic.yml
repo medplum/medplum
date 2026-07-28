@@ -50,14 +50,14 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build -- --filter=@medplum/react
+        run: npm run build -- --filter=@medplum/storybook
 
       - name: Publish @medplum/react Chromatic
         uses: chromaui/action@94713c544284a14195de3b50ef24301579f1877e # v18.0.1
         with:
           projectToken: chpt_429b596edaecafb
-          workingDir: packages/react
-          buildScriptName: storybook
+          workingDir: packages/storybook
+          buildScriptName: build
           autoAcceptChanges: 'main'
           exitOnceUploaded: true
           exitZeroOnChanges: true

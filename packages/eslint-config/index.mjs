@@ -286,7 +286,7 @@ export const medplumEslintConfig = [
       'packages/eslint-config/index.cjs',
       'packages/expo-medplum-polyfills/build',
       'packages/generator/output/',
-      'packages/react/.storybook/',
+      'packages/storybook/.storybook/',
       'package-lock.json',
       '**/.turbo',
       '**/coverage/',
