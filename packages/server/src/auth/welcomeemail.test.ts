@@ -49,13 +49,19 @@ describe('Welcome email', () => {
   });
 
   describe('welcomeEmailText', () => {
-    test('Includes greeting, project name, and dynamic links', () => {
+    test('Includes greeting, quoted project name, and dynamic links', () => {
       const text = welcomeEmailText(CTX);
       expect(text).toContain('Hi Alexander');
-      expect(text).toContain('Your new project Hamilton Project is ready to go.');
+      expect(text).toContain('Your new project "Hamilton Project" is ready to go.');
       expect(text).toContain('https://app.example.com/signin');
       expect(text).toContain('https://app.example.com/admin/users');
       expect(text).toContain('support@example.com');
+    });
+
+    test('Indents nested sub-bullets with four leading spaces', () => {
+      const text = welcomeEmailText(CTX);
+      expect(text).toContain('\n    - Agentic Coding Guide:');
+      expect(text).toContain('\n    - Contribute:');
     });
 
     test('Contains no markup or bold markers', () => {

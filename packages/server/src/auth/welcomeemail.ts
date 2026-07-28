@@ -39,14 +39,14 @@ export function welcomeEmailText(ctx: WelcomeEmailContext): string {
   const greeting = ctx.firstName ? `Hi ${ctx.firstName}` : 'Hi';
   return `${greeting},
 
-Welcome to Medplum! Your new project ${ctx.projectName} is ready to go.
+Welcome to Medplum! Your new project "${ctx.projectName}" is ready to go.
 
 Here are a few things to help you get started:
 
 - Sign in to your project: ${ctx.appBaseUrl}signin
 - Read the docs: https://www.medplum.com/docs
-  - Agentic Coding Guide: https://www.medplum.com/docs/building-with-ai-coding-assistants
-  - Contribute: https://github.com/medplum/medplum#contributing
+    - Agentic Coding Guide: https://www.medplum.com/docs/building-with-ai-coding-assistants
+    - Contribute: https://github.com/medplum/medplum#contributing
 - Invite your teammates from the Admin panel: ${ctx.appBaseUrl}admin/users
 
 If you have any questions, just reply to this email or reach out to us at
