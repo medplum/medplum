@@ -106,12 +106,9 @@ const jobName = 'BatchJobData';
 const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
-// Entry-level async batch throughput, counted here because no other queue has an analogue; whole
-// jobs are counted generically for every queue as `jobsCompleted` (see `trackJobMetrics`). A
-// monotonic counter rather than a rate computed here, so the observability backend derives the rate
-// over whatever window it is asked about and the series survives a process restart. Only the
-// re-entrant path contributes, since the deprecated legacy path hands the whole bundle to the router
-// in a single call.
+// Entry-level throughput, counted here because no other queue has a sub-job unit of work; whole jobs
+// are counted for every queue as `jobsCompleted` (see `trackJobMetrics`). Only the re-entrant path
+// contributes, since the legacy path hands the whole bundle to the router in a single call.
 const PROCESSED_ENTRIES_METRIC = 'medplum.batch.entriesProcessed';
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {

@@ -36,11 +36,10 @@ const createMockQueue = (): {
 
 let mockSharedQueue: ReturnType<typeof createMockQueue> | undefined = createMockQueue();
 
-// Without a registered SDK, `metrics.getMeter()` hands back a no-op meter that returns the SAME
-// instrument singleton for every metric name, so spying on an instrument cannot tell one metric from
-// another. Mock the meter instead so each name gets its own mock, and recorded values can be asserted
-// per metric. Instruments are memoized by name in otel.ts, so this must be installed before the first
-// instrument is created.
+// Without a registered SDK, `metrics.getMeter()` returns a no-op meter whose instruments are shared
+// singletons across every metric name, so spying on one cannot distinguish metrics. Mocking the meter
+// gives each name its own mock. otel.ts memoizes instruments by name, so the mock must be installed
+// before the first instrument is created.
 const gaugeRecorders = new Map<string, ReturnType<typeof vi.fn>>();
 
 function gaugeRecorder(name: string): ReturnType<typeof vi.fn> {
@@ -218,13 +217,12 @@ describe('OpenTelemetry', () => {
     // We call getDatabasePool at the beginning of the listener callback
     expect(getDatabasePoolSpy).toHaveBeenCalled();
 
-    // Check that the queue methods were called for all 5 queues
-    // (subscription, cron, download, batch, set-accounts)
+    // Every queue is read: subscription, cron, download, batch, set-accounts
     expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(5);
     expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(5);
     expect(mockSharedQueue.getActiveCount).toHaveBeenCalledTimes(5);
 
-    // ...and that each count is published under the per-queue metric name, with the mocked value.
+    // Each count is published under its per-queue metric name, carrying the mocked value
     expect(gaugeRecorder('medplum.batch.waitingCount')).toHaveBeenCalledWith(5, undefined);
     expect(gaugeRecorder('medplum.batch.delayedCount')).toHaveBeenCalledWith(3, undefined);
     expect(gaugeRecorder('medplum.batch.activeCount')).toHaveBeenCalledWith(2, undefined);

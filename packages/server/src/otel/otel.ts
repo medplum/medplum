@@ -17,33 +17,24 @@ import { getSubscriptionQueue } from '../workers/subscription';
 /**
  * Metrics recorded once per queue.
  *
- * `waitingCount`, `delayedCount` and `activeCount` are gauges the heartbeat reads straight out of
- * Redis, so they report the state of the data structures backing that BullMQ queue (its streams) as
- * seen by the whole cluster, regardless of which instance took the reading. They answer "how much
- * work is sitting in this queue right now", which makes them the metrics for backlog and saturation.
+ * `waitingCount`, `delayedCount` and `activeCount` are gauges the heartbeat reads out of Redis, so
+ * they describe the streams backing the queue as the whole cluster sees them -- the metrics for
+ * backlog and saturation. `inFlightJobs` (an UpDownCounter moved up as a job starts and down as it
+ * settles) and `jobsCompleted` (incremented when a processor returns without throwing) are maintained
+ * by the worker itself and describe a single host, which is what makes per-host throughput derivable
+ * from them.
  *
- * `inFlightJobs` and `jobsCompleted` never consult Redis. Both are maintained by the worker as it
- * runs jobs, and so answer a different question: "what is THIS host doing". `inFlightJobs` is an
- * UpDownCounter moved up as a job starts and down as it settles; `jobsCompleted` is a monotonic
- * counter of jobs whose processor ran to the end without throwing. Because their data points are
- * timestamped as they happen and carry a `hostname` attribute, the observability backend can derive
- * per-host throughput from them -- something a cluster-wide gauge sampled once per heartbeat cannot
- * support.
- *
- * The gauges and the worker-side metrics are not expected to agree. `activeCount` counts everything
- * Redis considers active across every instance, including jobs leased by a host that has since died
- * and whose lock has not yet expired; `inFlightJobs` counts only what this process currently has on
- * the stack. Likewise `jobsCompleted` is a BullMQ-level signal: a job whose processor handled a
- * failure internally and returned normally still counts as completed.
+ * The two groups are not expected to agree: `activeCount` includes jobs leased by a host that has
+ * since died and whose lock has not yet expired, and `jobsCompleted` is a BullMQ-level signal, so a
+ * processor that handles a failure internally and returns normally still counts as completed.
  */
 export type QueueMetric = 'waitingCount' | 'delayedCount' | 'activeCount' | 'inFlightJobs' | 'jobsCompleted';
 
 /**
  * Builds the name of a per-queue metric.
  *
- * The queue is part of the metric name rather than an attribute, which is how these metrics have
- * always been reported. Prefer this over interpolating a name by hand so every per-queue metric
- * stays consistent and greppable.
+ * The queue belongs in the metric name rather than an attribute, matching how these have always been
+ * reported. Going through here keeps every per-queue metric consistently named and greppable.
  * @param queueName - The queue being measured.
  * @param metric - The quantity being measured.
  * @returns The metric name, e.g. `medplum.batch.activeCount`.
@@ -157,9 +148,9 @@ export function getUpDownCounter(name: string, options?: MetricOptions): UpDownC
 /**
  * Adds a signed delta to an UpDownCounter.
  *
- * Unlike a gauge, which reports an absolute reading, the collector sums the reported deltas. That
- * makes this the right instrument for a quantity that rises and falls and is only observable at the
- * moments it changes -- e.g. work in flight, incremented as it starts and decremented as it settles.
+ * The collector sums the reported deltas rather than keeping the last value as it would for a gauge,
+ * which makes this the instrument for a quantity that rises and falls and is only observable at the
+ * moments it changes.
  * @param name - The metric name.
  * @param n - The delta to add. Negative values decrement.
  * @param options - Optional metric attributes and options.
