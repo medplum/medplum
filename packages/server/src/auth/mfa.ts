@@ -7,7 +7,6 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
-import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -16,6 +15,7 @@ import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import type { MfaMethod } from './utils';
 import {
+  buildTotpEnrollment,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
   isMfaRequired,
@@ -84,23 +84,13 @@ export async function verifyConnectedFactor(user: User, login: Login, token: str
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  let user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
   const allowedMethods = getAllowedMfaMethods(ctx.project);
 
-  // Ensure the user has an authenticator secret so the TOTP QR code can always
-  // be shown, whether for initial enrollment or for adding TOTP as a second
-  // method to an account already enrolled in email-based MFA.
-  if (!user.mfaSecret) {
-    user = await ctx.systemRepo.updateResource({
-      ...user,
-      mfaSecret: authenticator.generateSecret(),
-    });
-  }
-
-  const accountName = `Medplum - ${user.email}`;
-  const issuer = 'medplum.com';
-  const secret = user.mfaSecret as string;
-  const otp = authenticator.keyuri(accountName, issuer, secret);
+  // The TOTP QR code can always be shown, whether for initial enrollment or for
+  // adding TOTP as a second method to an account already enrolled in
+  // email-based MFA, because a secret is generated on demand if missing.
+  const { enrollUri, enrollQrCode } = await buildTotpEnrollment(ctx.systemRepo, user);
 
   res.json({
     enrolled: Boolean(user.mfaEnrolled),
@@ -110,8 +100,8 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
     // it (the `/disable` endpoint enforces this server-side as well).
     mfaRequired: isMfaRequired(user, ctx.project),
     email: user.email,
-    enrollUri: otp,
-    enrollQrCode: await toDataURL(otp),
+    enrollUri,
+    enrollQrCode,
   });
 });
 
