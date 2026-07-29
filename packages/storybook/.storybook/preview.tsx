@@ -3,6 +3,7 @@ import '@mantine/core/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import '@medplum/react/styles.css';
 import { DARK_MODE_EVENT_NAME } from '@vueless/storybook-dark-mode';
 import { FC, useEffect } from 'react';
 import { BrowserRouter } from 'react-router';

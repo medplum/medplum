@@ -28,6 +28,7 @@ const config: StorybookConfig = {
     } else if (configType === 'DEVELOPMENT') {
       const aliasEntries: Record<string, string> = {
         '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
+        '@medplum/react': path.resolve(import.meta.dirname, '../../react/src'),
         '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
         '@medplum/mock': path.resolve(import.meta.dirname, '../../mock/src'),
         '@medplum/fhir-router': path.resolve(import.meta.dirname, '../../fhir-router/src'),
