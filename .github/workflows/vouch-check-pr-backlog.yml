@@ -22,9 +22,10 @@ jobs:
         id: list
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBERS_INPUT: ${{ github.event.inputs.pr-numbers }}
         run: |
-          if [ -n "${{ github.event.inputs.pr-numbers }}" ]; then
-            NUMBERS=$(echo "${{ github.event.inputs.pr-numbers }}" | tr ',' '\n' | jq -R 'select(length > 0) | tonumber' | jq -s -c '.')
+          if [ -n "$PR_NUMBERS_INPUT" ]; then
+            NUMBERS=$(echo "$PR_NUMBERS_INPUT" | tr ',' '\n' | jq -R 'select(length > 0) | tonumber' | jq -s -c '.')
           else
             NUMBERS=$(gh pr list --repo "${{ github.repository }}" --state open --limit 1000 --json number --jq '[.[].number]')
           fi

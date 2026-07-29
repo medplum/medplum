@@ -53,6 +53,7 @@ jobs:
       - name: Report merged-PR authors who aren't vouched
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOOKBACK_DAYS: ${{ github.event.inputs.lookback-days }}
         run: |
           set -euo pipefail
 
@@ -67,7 +68,7 @@ jobs:
             | sort -u || true; } \
             | jq -R -s -c 'split("\n") | map(select(length > 0))')
 
-          SINCE=$(date -u -d "${{ github.event.inputs.lookback-days }} days ago" +%Y-%m-%d)
+          SINCE=$(date -u -d "$LOOKBACK_DAYS days ago" +%Y-%m-%d)
           UNTIL=$(date -u +%Y-%m-%d)
 
           # GitHub's search API hard-caps any single query at 1000 total
@@ -123,7 +124,7 @@ jobs:
           ')
 
           {
-            echo "### Merged-PR authors (last ${{ github.event.inputs.lookback-days }} days) who aren't vouched"
+            echo "### Merged-PR authors (last $LOOKBACK_DAYS days) who aren't vouched"
             if [ -z "$REPORT" ]; then
               echo "None -- everyone with a recently merged PR is vouched."
             else
