@@ -100,7 +100,11 @@ jobs:
               if [ "$COUNT" -eq 1000 ]; then
                 echo "::warning::merged-PR count hit the 1000 search cap for $START..$END and can't be split further (single day); results may be incomplete"
               fi
-              PRS_JSON=$(jq -c -n --argjson a "$PRS_JSON" --argjson b "$BATCH" '$a + $b')
+              # Merge via process substitution (piped, no argv size limit),
+              # not --argjson (a command-line argument, capped by the OS --
+              # this accumulator grows unboundedly over a long lookback
+              # window and can exceed that cap on a repo this size).
+              PRS_JSON=$(jq -c -s 'add' <(echo "$PRS_JSON") <(echo "$BATCH"))
             fi
           done
 
