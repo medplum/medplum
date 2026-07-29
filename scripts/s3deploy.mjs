@@ -148,4 +148,7 @@ async function uploadAll(requests) {
   await Promise.all(uploads);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
