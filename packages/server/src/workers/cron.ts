@@ -16,7 +16,7 @@ import {
   findProjectMembership,
   getWorkerBullmqConfig,
   queueRegistry,
-  trackInFlightJobs,
+  trackJobMetrics,
 } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
@@ -43,7 +43,7 @@ export const initCronWorker: WorkerInitializer = (config, options?: WorkerInitia
   if (options?.workerEnabled !== false) {
     worker = new Worker<CronJobData>(
       queueName,
-      trackInFlightJobs('cron', execBot),
+      trackJobMetrics('cron', execBot),
       getWorkerBullmqConfig(config, 'cron', queueOptions)
     );
     worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));

@@ -35,7 +35,7 @@ import {
   isJobActive,
   moveToDelayedAndThrow,
   queueRegistry,
-  trackInFlightJobs,
+  trackJobMetrics,
   updateAsyncJobOutput,
 } from './utils';
 
@@ -106,17 +106,13 @@ const jobName = 'BatchJobData';
 const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
-// Async batch throughput. These are monotonic counters rather than a rate computed here, so that the
-// observability backend derives the rate over whatever window it is asked about, and so the series
-// survives a process restart.
-//
-// The two count different units of work, which the metric names alone do not convey:
-// `completed` counts whole batch jobs that ran to completion, so a job checkpointed and re-queued
-// across a deploy counts once, when it finally finishes. `processed` counts individual bundle
-// entries, and only the re-entrant path contributes, since the deprecated legacy path hands the whole
-// bundle to the router in a single call. The constants below stay explicit about which is which.
-const COMPLETED_JOBS_METRIC = 'medplum.batch.completed';
-const PROCESSED_ENTRIES_METRIC = 'medplum.batch.processed';
+// Entry-level async batch throughput, counted here because no other queue has an analogue; whole
+// jobs are counted generically for every queue as `jobsCompleted` (see `trackJobMetrics`). A
+// monotonic counter rather than a rate computed here, so the observability backend derives the rate
+// over whatever window it is asked about and the series survives a process restart. Only the
+// re-entrant path contributes, since the deprecated legacy path hands the whole bundle to the router
+// in a single call.
+const PROCESSED_ENTRIES_METRIC = 'medplum.batch.entriesProcessed';
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const queueOptions = defaultQueueOptions(config);
@@ -132,7 +128,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
   if (options?.workerEnabled !== false) {
     worker = new Worker<BatchJobData>(
       queueName,
-      trackInFlightJobs('batch', (job) => {
+      trackJobMetrics('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           if ('asyncJob' in job.data) {
@@ -396,7 +392,6 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       resourceType: 'Parameters',
       parameter: [{ name: 'results', valueReference: createReference(binary) }],
     });
-    incrementCounter(COMPLETED_JOBS_METRIC);
     await store.cleanup(chunkSeq);
   } catch (err) {
     // DelayedError means the job was intentionally re-queued; propagate for BullMQ to handle
@@ -582,7 +577,6 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
         resourceType: 'Parameters',
         parameter: [{ name: 'results', valueReference: createReference(binary) }],
       });
-      incrementCounter(COMPLETED_JOBS_METRIC);
     } else {
       logger.warn('Async batch request failed', { outcome });
       await exec.failJob(new OperationOutcomeError(outcome));

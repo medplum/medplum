@@ -22,17 +22,21 @@ import { getSubscriptionQueue } from '../workers/subscription';
  * seen by the whole cluster, regardless of which instance took the reading. They answer "how much
  * work is sitting in this queue right now", which makes them the metrics for backlog and saturation.
  *
- * `inFlightJobs` never consults Redis. It is an UpDownCounter each worker maintains for its own
- * process, incremented as a job starts and decremented as it settles, and so answers a different
- * question: "how busy is THIS host". Because its deltas are timestamped as they happen and carry a
- * `hostname` attribute, the observability backend can derive per-host job processing rates from it --
- * something a cluster-wide gauge sampled once per heartbeat cannot support.
+ * `inFlightJobs` and `jobsCompleted` never consult Redis. Both are maintained by the worker as it
+ * runs jobs, and so answer a different question: "what is THIS host doing". `inFlightJobs` is an
+ * UpDownCounter moved up as a job starts and down as it settles; `jobsCompleted` is a monotonic
+ * counter of jobs whose processor ran to the end without throwing. Because their data points are
+ * timestamped as they happen and carry a `hostname` attribute, the observability backend can derive
+ * per-host throughput from them -- something a cluster-wide gauge sampled once per heartbeat cannot
+ * support.
  *
- * The two are not expected to agree. `activeCount` counts everything Redis considers active across
- * every instance, including jobs leased by a host that has since died and whose lock has not yet
- * expired; `inFlightJobs` counts only what this process currently has on the stack.
+ * The gauges and the worker-side metrics are not expected to agree. `activeCount` counts everything
+ * Redis considers active across every instance, including jobs leased by a host that has since died
+ * and whose lock has not yet expired; `inFlightJobs` counts only what this process currently has on
+ * the stack. Likewise `jobsCompleted` is a BullMQ-level signal: a job whose processor handled a
+ * failure internally and returned normally still counts as completed.
  */
-export type QueueMetric = 'waitingCount' | 'delayedCount' | 'activeCount' | 'inFlightJobs';
+export type QueueMetric = 'waitingCount' | 'delayedCount' | 'activeCount' | 'inFlightJobs' | 'jobsCompleted';
 
 /**
  * Builds the name of a per-queue metric.

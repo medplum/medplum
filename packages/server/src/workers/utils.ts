@@ -10,7 +10,7 @@ import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../co
 import type { Repository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName } from '../otel/otel';
+import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
@@ -261,36 +261,42 @@ export function addVerboseQueueLogging<TDataType>(
 }
 
 /**
- * Wraps a worker's job processor so the number of jobs it is currently executing is reported as an
- * UpDownCounter.
+ * Wraps a worker's job processor to report how many jobs it currently has in flight and how many it
+ * has finished, as `inFlightJobs` and `jobsCompleted` on that queue.
  *
  * This wraps the processor rather than listening for the worker's `active`/`completed`/`failed`
  * events because those events do not pair up: BullMQ suppresses `failed` when a job is moved to
  * delayed (see {@link moveToDelayedAndThrow}) and suppresses both terminal events once the
- * connection is closing, either of which would leave the counter permanently incremented. The
- * `finally` block below runs on every exit path, so the increment and decrement always pair.
+ * connection is closing, either of which would leave the in-flight counter permanently incremented.
+ * The `finally` block below runs on every exit path, so the increment and decrement always pair.
  *
- * Note this counts jobs on THIS host, not queue-wide, and is deliberately not a substitute for the
- * `activeCount` gauge; see the `QueueMetric` type in `otel/otel.ts` for why the two differ and what
- * each is good for.
+ * A processor that throws counts as neither completed nor still in flight. That deliberately excludes
+ * jobs re-queued by {@link moveToDelayedAndThrow}, which throw `DelayedError` and will be counted by
+ * whichever attempt eventually runs to the end.
+ *
+ * Both metrics cover THIS host only. See the `QueueMetric` type in `otel/otel.ts` for how they relate
+ * to the cluster-wide gauges read from Redis.
  * @param workerName - The worker whose jobs are tracked.
  * @param processor - The worker's job processor.
- * @returns The processor, wrapped to maintain the in-flight metric.
+ * @returns The processor, wrapped to maintain the queue's job metrics.
  */
-export function trackInFlightJobs<TData, TResult, TName extends string>(
+export function trackJobMetrics<TData, TResult, TName extends string>(
   workerName: WorkerName,
   processor: Processor<TData, TResult, TName>
 ): Processor<TData, TResult, TName> {
-  const metricName = getQueueMetricName(workerName, 'inFlightJobs');
+  const inFlightMetric = getQueueMetricName(workerName, 'inFlightJobs');
+  const completedMetric = getQueueMetricName(workerName, 'jobsCompleted');
   // All three parameters are declared and forwarded so the wrapper's arity matches what BullMQ
   // introspects (`processor.length >= 3`) to decide whether to supply an abort signal. Dropping the
   // third parameter here would silently disable cancellation for a processor that accepts one.
   return async (job, token, signal) => {
-    addToUpDownCounter(metricName, 1, BASE_METRIC_OPTIONS);
+    addToUpDownCounter(inFlightMetric, 1, BASE_METRIC_OPTIONS);
     try {
-      return await processor(job, token, signal);
+      const result = await processor(job, token, signal);
+      incrementCounter(completedMetric, BASE_METRIC_OPTIONS);
+      return result;
     } finally {
-      addToUpDownCounter(metricName, -1, BASE_METRIC_OPTIONS);
+      addToUpDownCounter(inFlightMetric, -1, BASE_METRIC_OPTIONS);
     }
   };
 }

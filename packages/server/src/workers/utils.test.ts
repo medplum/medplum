@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Subscription } from '@medplum/fhirtypes';
 import type { Job, QueueOptions, Worker } from 'bullmq';
-import { Queue } from 'bullmq';
+import { DelayedError, Queue } from 'bullmq';
 import EventEmitter from 'node:events';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
@@ -17,7 +17,7 @@ import {
   DefaultQueueRegistry,
   getWorkerBullmqConfig,
   isJobSuccessful,
-  trackInFlightJobs,
+  trackJobMetrics,
 } from './utils';
 
 describe('worker utils', () => {
@@ -351,16 +351,19 @@ describe('worker utils', () => {
     });
   });
 
-  describe('trackInFlightJobs', () => {
+  describe('trackJobMetrics', () => {
     const job = { id: 'job-1' } as Job;
-    let counterSpy: MockInstance<typeof otelModule.addToUpDownCounter>;
+    let inFlightSpy: MockInstance<typeof otelModule.addToUpDownCounter>;
+    let completedSpy: MockInstance<typeof otelModule.incrementCounter>;
 
     beforeEach(() => {
-      counterSpy = vi.spyOn(otelModule, 'addToUpDownCounter');
+      inFlightSpy = vi.spyOn(otelModule, 'addToUpDownCounter');
+      completedSpy = vi.spyOn(otelModule, 'incrementCounter');
     });
 
     afterEach(() => {
-      counterSpy.mockRestore();
+      inFlightSpy.mockRestore();
+      completedSpy.mockRestore();
     });
 
     /**
@@ -370,38 +373,60 @@ describe('worker utils', () => {
      */
     function reportedDeltas(workerName: WorkerName): number[] {
       const metricName = otelModule.getQueueMetricName(workerName, 'inFlightJobs');
-      return counterSpy.mock.calls.filter((call) => call[0] === metricName).map((call) => call[1]);
+      return inFlightSpy.mock.calls.filter((call) => call[0] === metricName).map((call) => call[1]);
+    }
+
+    /**
+     * Counts how many times a worker's completion counter was incremented.
+     * @param workerName - The worker whose metric to read.
+     * @returns The number of increments.
+     */
+    function completions(workerName: WorkerName): number {
+      const metricName = otelModule.getQueueMetricName(workerName, 'jobsCompleted');
+      return completedSpy.mock.calls.filter((call) => call[0] === metricName).length;
     }
 
     test('increments while the job runs and decrements once it resolves', async () => {
       const processor = vi.fn(async () => {
-        // Mid-flight: the increment has landed and the decrement has not.
+        // Mid-flight: the increment has landed, and neither the decrement nor the completion has.
         expect(reportedDeltas('batch')).toStrictEqual([1]);
+        expect(completions('batch')).toBe(0);
         return 'result';
       });
 
-      await expect(trackInFlightJobs('batch', processor)(job)).resolves.toBe('result');
+      await expect(trackJobMetrics('batch', processor)(job)).resolves.toBe('result');
       expect(reportedDeltas('batch')).toStrictEqual([1, -1]);
+      expect(completions('batch')).toBe(1);
     });
 
-    test('decrements and rethrows when the job fails', async () => {
+    test('decrements and rethrows when the job fails, without counting a completion', async () => {
       const processor = vi.fn().mockRejectedValue(new Error('job blew up'));
 
-      await expect(trackInFlightJobs('reindex', processor)(job)).rejects.toThrow('job blew up');
+      await expect(trackJobMetrics('reindex', processor)(job)).rejects.toThrow('job blew up');
       expect(reportedDeltas('reindex')).toStrictEqual([1, -1]);
+      expect(completions('reindex')).toBe(0);
     });
 
-    test('names the metric after the worker, matching the other per-queue metrics', async () => {
-      await trackInFlightJobs('subscription', async () => undefined)(job);
+    test('does not count a completion for a job re-queued as delayed', async () => {
+      // moveToDelayedAndThrow throws DelayedError; the attempt that finally runs to the end counts.
+      const processor = vi.fn().mockRejectedValue(new DelayedError('queue is closing'));
 
-      expect(counterSpy).toHaveBeenCalledWith('medplum.subscription.inFlightJobs', 1, {
-        attributes: otelModule.BASE_METRIC_OPTIONS.attributes,
-      });
+      await expect(trackJobMetrics('batch', processor)(job)).rejects.toThrow(DelayedError);
+      expect(reportedDeltas('batch')).toStrictEqual([1, -1]);
+      expect(completions('batch')).toBe(0);
+    });
+
+    test('names both metrics after the worker, matching the other per-queue metrics', async () => {
+      await trackJobMetrics('subscription', async () => undefined)(job);
+
+      const expectedOptions = { attributes: otelModule.BASE_METRIC_OPTIONS.attributes };
+      expect(inFlightSpy).toHaveBeenCalledWith('medplum.subscription.inFlightJobs', 1, expectedOptions);
+      expect(completedSpy).toHaveBeenCalledWith('medplum.subscription.jobsCompleted', expectedOptions);
     });
 
     test('forwards all processor arguments and preserves arity', async () => {
       const processor = vi.fn().mockResolvedValue(undefined);
-      const wrapped = trackInFlightJobs('download', processor);
+      const wrapped = trackJobMetrics('download', processor);
       const signal = new AbortController().signal;
 
       // BullMQ reads `processor.length >= 3` to decide whether to supply an abort signal, so the

@@ -18,7 +18,7 @@ import {
   defaultQueueOptions,
   getWorkerBullmqConfig,
   queueRegistry,
-  trackInFlightJobs,
+  trackJobMetrics,
 } from './utils';
 
 /*
@@ -47,7 +47,7 @@ export const initSetAccountsWorker: WorkerInitializer = (config, options?: Worke
   if (options?.workerEnabled !== false) {
     worker = new Worker<SetAccountsJobData>(
       queueName,
-      trackInFlightJobs('set-accounts', (job) => {
+      trackJobMetrics('set-accounts', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execSetAccountsJob(job));
       }),

@@ -151,6 +151,7 @@ describe('OpenTelemetry', () => {
     expect(getQueueMetricName('batch', 'activeCount')).toBe('medplum.batch.activeCount');
     expect(getQueueMetricName('set-accounts', 'waitingCount')).toBe('medplum.set-accounts.waitingCount');
     expect(getQueueMetricName('subscription', 'inFlightJobs')).toBe('medplum.subscription.inFlightJobs');
+    expect(getQueueMetricName('cron', 'jobsCompleted')).toBe('medplum.cron.jobsCompleted');
   });
 
   test('Add to up down counter, disabled', async () => {

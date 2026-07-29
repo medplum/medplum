@@ -24,7 +24,7 @@ import {
   defaultQueueOptions,
   getWorkerBullmqConfig,
   queueRegistry,
-  trackInFlightJobs,
+  trackJobMetrics,
 } from './utils';
 
 export interface LambdaCleanerOptions {
@@ -65,7 +65,7 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
   if (options?.workerEnabled !== false) {
     worker = new Worker<LambdaCleanerJobData>(
       LambdaCleanerQueueName,
-      trackInFlightJobs('lambda-cleaner', (job) =>
+      trackJobMetrics('lambda-cleaner', (job) =>
         tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job))
       ),
       getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })

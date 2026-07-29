@@ -24,7 +24,7 @@ import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackInFlightJobs } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -56,7 +56,7 @@ export const initDownloadWorker: WorkerInitializer = (config, options?: WorkerIn
   if (options?.workerEnabled !== false) {
     worker = new Worker<DownloadJobData>(
       queueName,
-      trackInFlightJobs('download', (job) =>
+      trackJobMetrics('download', (job) =>
         tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job))
       ),
       getWorkerBullmqConfig(config, 'download', queueOptions)

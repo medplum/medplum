@@ -25,7 +25,7 @@ import {
   defaultQueueOptions,
   getWorkerBullmqConfig,
   queueRegistry,
-  trackInFlightJobs,
+  trackJobMetrics,
 } from './utils';
 
 export interface DataWarehouseSyncJobData {
@@ -87,7 +87,7 @@ export const initDataWarehouseSyncWorker: WorkerInitializer = (config, options?:
 
   const worker = new Worker<DataWarehouseSyncJobData>(
     DataWarehouseSyncQueueName,
-    trackInFlightJobs('data-warehouse-sync', async (job) => processDataWarehouseSyncJob(config, job)),
+    trackJobMetrics('data-warehouse-sync', async (job) => processDataWarehouseSyncJob(config, job)),
     getWorkerBullmqConfig(config, 'data-warehouse-sync', queueOptions, {
       lockDuration: DATA_WAREHOUSE_SYNC_LOCK_DURATION_MS,
       concurrency: 1, // Data warehouse sync is intentionally serialized.
