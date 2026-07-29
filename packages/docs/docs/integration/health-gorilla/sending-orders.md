@@ -339,14 +339,14 @@ Diagnosis codes are especially important for Medicare orders (see [capture diagn
 
 The order's `ServiceRequest.subject` must reference a `Patient` that satisfies the **Medplum Health Gorilla Patient** profile (`https://medplum.com/profiles/integrations/health-gorilla/StructureDefinition/MedplumHealthGorillaPatient`). Before transmitting an order, `send-to-health-gorilla` validates and syncs that patient to Health Gorilla; missing required demographics cause the send to fail.
 
-| Requirement | FHIR path | Notes |
-| --- | --- | --- |
-| Birth date | `Patient.birthDate` | Required |
-| Name | `Patient.name` | At least one name with `family` and at least one `given` |
-| Address | `Patient.address` | At least one address with `line`, `city`, `state`, and `postalCode`. If `country` is omitted, the send bot defaults it to `US` |
-| Medical record number (MRN) | `Patient.identifier` | Exactly one identifier with type code `MR` (`http://terminology.hl7.org/CodeSystem/v2-0203`) |
-| Phone | `Patient.telecom` | At least one phone with `use` of `home` or `mobile` |
-| Sex | `Patient.gender` **or** US Core Birth Sex | Either `gender`, or the [US Core Birth Sex](http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex) extension |
+| Requirement                 | FHIR path                                 | Notes                                                                                                                          |
+| --------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Birth date                  | `Patient.birthDate`                       | Required                                                                                                                       |
+| Name                        | `Patient.name`                            | At least one name with `family` and at least one `given`                                                                       |
+| Address                     | `Patient.address`                         | At least one address with `line`, `city`, `state`, and `postalCode`. If `country` is omitted, the send bot defaults it to `US` |
+| Medical record number (MRN) | `Patient.identifier`                      | Exactly one identifier with type code `MR` (`http://terminology.hl7.org/CodeSystem/v2-0203`)                                   |
+| Phone                       | `Patient.telecom`                         | At least one phone with `use` of `home` or `mobile`                                                                            |
+| Sex                         | `Patient.gender` **or** US Core Birth Sex | Either `gender`, or the [US Core Birth Sex](http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex) extension        |
 
 Email and work phone are allowed by the profile but are not required to send an order.
 
@@ -444,7 +444,7 @@ Actions:
 
 ### split-order Bot
 
-Some performing labs require a single multi-test order to be split into multiple requisitions before submission (for example, Sonora Quest). That lab-side constraint is why the `split-order` bot exists: it is a Medplum preprocessing step that turns one parent order into the per-requisition orders Health Gorilla expects for those labs.
+Some performing labs require a single multi-test order to be split into multiple requisitions before submission. That lab-side constraint is why the `split-order` bot exists: it is a Medplum preprocessing step that turns one parent order into the per-requisition orders Health Gorilla expects for those labs.
 
 When splitting is required, `send-to-health-gorilla` returns an error like the following, asking for the order to be split and resubmitted:
 
