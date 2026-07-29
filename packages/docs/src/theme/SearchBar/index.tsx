@@ -290,7 +290,9 @@ function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
   }, [assistantId, isDocsPage, ready]);
 
   // DocSearch hardcodes target="_blank" on Ask AI links. Intercept same-site
-  // clicks so navigation stays in this tab and the side panel remains open.
+  // clicks and route /docs links through Docusaurus's router (useHistory) so the
+  // panel stays open. Non-docs pages open in a new tab.
+  // Note: @docusaurus/router is react-router v5 and exports useHistory, not useNavigate.
   useEffect(() => {
     if (!isDocsPage) {
       return;
@@ -326,7 +328,7 @@ function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
       }
 
       const href = anchor.getAttribute('href');
-      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('javascript:')) {
+      if (!href || href.startsWith('#')) {
         return;
       }
 
@@ -337,23 +339,27 @@ function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
         return;
       }
 
+      // Positive protocol allowlist (addresses CodeQL incomplete scheme check).
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        return;
+      }
+
       const isSameSite = url.origin === window.location.origin || url.origin === siteOrigin;
       if (!isSameSite) {
         return;
       }
 
-      const isDocsPath = url.pathname === '/docs' || url.pathname.startsWith('/docs/');
-      if (!isDocsPath) {
-        // Non-docs Medplum pages would unmount the Ask AI panel — open in a new tab instead.
-        event.preventDefault();
-        event.stopPropagation();
-        window.open(url.href, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
       event.preventDefault();
       event.stopPropagation();
-      history.push(url.pathname + url.search + url.hash);
+
+      const path = url.pathname + url.search + url.hash;
+      if (path === '/docs' || path.startsWith('/docs/')) {
+        // Path-only navigation via Docusaurus router — keeps Ask AI mounted.
+        history.push(path);
+      } else {
+        // Non-docs Medplum pages would unmount the Ask AI panel.
+        window.open(url.href, '_blank', 'noopener,noreferrer');
+      }
     }
 
     document.addEventListener('click', handleClick, true);
