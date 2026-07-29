@@ -73,6 +73,32 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
 }
 
 /**
+ * Builds the authenticator (TOTP) enrollment payload for a user, generating and
+ * persisting an `mfaSecret` first if the user does not have one.
+ *
+ * A secret is only created up front when a user is invited with `mfaRequired`,
+ * so a user who comes under a requirement later — for example when the
+ * project-wide `mfaRequired` setting is enabled — reaches enrollment without
+ * one. Generating on demand keeps the QR code usable in that case. Users who
+ * already have a secret keep it, so the URI is stable across repeated calls.
+ * @param repo - The system repository used to persist a newly generated secret.
+ * @param user - The user enrolling in an authenticator app.
+ * @returns The enrollment URI and a QR code data URL for it.
+ */
+export async function buildTotpEnrollment(
+  repo: SystemRepository,
+  user: WithId<User>
+): Promise<{ enrollUri: string; enrollQrCode: string }> {
+  let mfaSecret = user.mfaSecret;
+  if (!mfaSecret) {
+    mfaSecret = authenticator.generateSecret();
+    await repo.updateResource<User>({ ...user, mfaSecret });
+  }
+  const enrollUri = authenticator.keyuri(`Medplum - ${user.email}`, 'medplum.com', mfaSecret);
+  return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
+}
+
+/**
  * Returns the MFA methods that a user has enrolled in.
  * Existing users enrolled before the introduction of `User.mfaMethod` are
  * treated as TOTP, which was the only method at the time.
@@ -215,15 +241,12 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const project = await getLoginProject(login);
 
   if (isMfaRequired(user, project) && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
-    const accountName = `Medplum - ${user.email}`;
-    const issuer = 'medplum.com';
-    const secret = user.mfaSecret as string;
-    const otp = authenticator.keyuri(accountName, issuer, secret);
+    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(systemRepo, user);
     res.json({
       login: login.id,
       mfaEnrollRequired: true,
-      enrollUri: otp,
-      enrollQrCode: await toDataURL(otp),
+      enrollUri,
+      enrollQrCode,
       allowedMfaMethods: getAllowedMfaMethods(project),
     });
     return;
