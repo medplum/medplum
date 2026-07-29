@@ -23,3 +23,22 @@
 #   - Denounce with a minus prefix: -username or -platform:username.
 #   - Optional free-text details after a space following the handle
 #     (e.g. a reason for denouncement).
+alexanderxlin
+andystoneman
+codyebberson
+deam65
+everett-williams
+filupnot
+finnbergquist
+ianplunkett
+maddyli
+mattlong
+mattwiller
+medplumbot
+noahsilas
+oleg-mp
+reshmakh
+techdavidy
+thatonebro
+the-alchemist
+timray721
