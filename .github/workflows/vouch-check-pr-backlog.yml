@@ -1,0 +1,52 @@
+on:
+  # Manual only: a one-off (or occasional, re-runnable) sweep of PRs that
+  # predate this vouch system, or that need re-checking after issues get
+  # labeled. vouch-check-pr.yml only ever sees PRs as they're opened/reopened,
+  # so it never touches the existing backlog on its own.
+  workflow_dispatch:
+    inputs:
+      pr-numbers:
+        description: "Comma-separated PR numbers to check (empty = all open PRs)"
+        required: false
+        default: ""
+
+name: "Vouch - Check PR Backlog"
+
+jobs:
+  list-prs:
+    runs-on: ubuntu-latest
+    outputs:
+      pr-numbers: ${{ steps.list.outputs.numbers }}
+    steps:
+      - name: List target PRs
+        id: list
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ github.event.inputs.pr-numbers }}" ]; then
+            NUMBERS=$(echo "${{ github.event.inputs.pr-numbers }}" | tr ',' '\n' | jq -R 'select(length > 0) | tonumber' | jq -s -c '.')
+          else
+            NUMBERS=$(gh pr list --repo "${{ github.repository }}" --state open --limit 1000 --json number --jq '[.[].number]')
+          fi
+          echo "Targeting PR numbers: $NUMBERS"
+          echo "numbers=$NUMBERS" >> "$GITHUB_OUTPUT"
+
+  # Matrix jobs cap out at 256 -- if the open-PR backlog ever exceeds that,
+  # batch it manually across a few runs using the pr-numbers input instead
+  # of trying to sweep everything in one go.
+  check:
+    needs: list-prs
+    if: needs.list-prs.outputs.pr-numbers != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        pr-number: ${{ fromJson(needs.list-prs.outputs.pr-numbers) }}
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    uses: ./.github/workflows/vouch-check-pr-shared.yml
+    with:
+      pr-number: ${{ matrix.pr-number }}
+    secrets: inherit
