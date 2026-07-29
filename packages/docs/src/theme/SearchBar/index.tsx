@@ -268,8 +268,12 @@ function DocSearch({ externalUrlRegex, ...props }: DocSearchProps): ReactNode {
 }
 
 function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
+  const history = useHistory();
   const { pathname } = useLocation();
   const { colorMode } = useColorMode();
+  const {
+    siteConfig: { url: siteUrl },
+  } = useDocusaurusContext();
   const [ready, setReady] = useState(Boolean(DocSearchSidepanel));
   const isDocsPage = pathname === '/docs' || pathname.startsWith('/docs/');
 
@@ -284,6 +288,70 @@ function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
       .then(() => setReady(true))
       .catch(console.error);
   }, [assistantId, isDocsPage, ready]);
+
+  // DocSearch hardcodes target="_blank" on Ask AI links. Intercept same-site
+  // clicks so navigation stays in this tab and the side panel remains open.
+  useEffect(() => {
+    if (!isDocsPage) {
+      return;
+    }
+
+    let siteOrigin: string;
+    try {
+      siteOrigin = new URL(siteUrl).origin;
+    } catch {
+      siteOrigin = window.location.origin;
+    }
+
+    function handleClick(event: MouseEvent): void {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const anchor = target.closest('a');
+      if (!anchor?.closest('.DocSearch-Sidepanel, .DocSearch-Sidepanel-Container')) {
+        return;
+      }
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('javascript:')) {
+        return;
+      }
+
+      let url: URL;
+      try {
+        url = new URL(href, window.location.origin);
+      } catch {
+        return;
+      }
+
+      const isSameSite = url.origin === window.location.origin || url.origin === siteOrigin;
+      if (!isSameSite) {
+        return;
+      }
+
+      const isDocsPath = url.pathname === '/docs' || url.pathname.startsWith('/docs/');
+      if (!isDocsPath) {
+        // Non-docs Medplum pages would unmount the Ask AI panel — open in a new tab instead.
+        event.preventDefault();
+        event.stopPropagation();
+        window.open(url.href, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      history.push(url.pathname + url.search + url.hash);
+    }
+
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [history, isDocsPage, siteUrl]);
 
   if (!isDocsPage || !askAi?.assistantId || !ready || !DocSearchSidepanel) {
     return null;
