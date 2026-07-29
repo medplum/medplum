@@ -50,7 +50,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build -- --filter=@medplum/storybook
+        run: npm run build:all -- --filter=@medplum/storybook
 
       - name: Publish @medplum/react Chromatic
         uses: chromaui/action@94713c544284a14195de3b50ef24301579f1877e # v18.0.1
