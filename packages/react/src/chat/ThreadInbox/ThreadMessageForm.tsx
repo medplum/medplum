@@ -16,7 +16,7 @@ import { ResourceInput } from '../../ResourceInput/ResourceInput';
  * @param topic - The current topic text.
  * @param onTopicChange - Called with the new topic text on every edit.
  * @param patient - The currently selected patient (the input's default value).
- * @param onPatientChange - Called with the new patient reference when the selection changes. When omitted, the patient field is not rendered.
+ * @param onPatientChange - Called with the new patient reference when the selection changes. When omitted, the patient field is read-only.
  * @param allowPatientSelection - When true, the patient field is an editable search input. When false (default), the field is pre-filled from `patient` and disabled.
  */
 export interface ThreadMessageFormProps {
@@ -34,24 +34,22 @@ export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element =>
   const allowPatientSelection = props.allowPatientSelection ?? false;
   return (
     <>
-      {onPatientChange && (
-        <Stack gap={0}>
-          <Text fw={500}>Patient</Text>
+      <Stack gap={0}>
+        <Text fw={500}>Patient</Text>
 
-          {allowPatientSelection && <Text c="dimmed">Select a patient</Text>}
+        {allowPatientSelection && <Text c="dimmed">Select a patient</Text>}
 
-          <ResourceInput
-            resourceType="Patient"
-            name="patient"
-            required={true}
-            defaultValue={patient}
-            disabled={!allowPatientSelection && !!patient}
-            onChange={(value) => {
-              onPatientChange(value ? createReference(value) : undefined);
-            }}
-          />
-        </Stack>
-      )}
+        <ResourceInput
+          resourceType="Patient"
+          name="patient"
+          required={!!onPatientChange}
+          defaultValue={patient}
+          disabled={!allowPatientSelection && !!patient}
+          onChange={(value) => {
+            onPatientChange?.(value ? createReference(value) : undefined);
+          }}
+        />
+      </Stack>
 
       <Stack gap={0}>
         <Text fw={500}>Practitioner</Text>

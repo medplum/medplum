@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Communication, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
@@ -29,7 +29,7 @@ describe('EditThreadDialog', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (thread: Communication = baseThread): void => {
+  const setup = (thread: Communication | Reference<Communication> = baseThread): void => {
     render(
       <>
         <Notifications />
@@ -52,10 +52,10 @@ describe('EditThreadDialog', () => {
     expect(screen.getByDisplayValue('Original topic')).toBeInTheDocument();
   });
 
-  test('omits the patient field for a practitioner-only thread', async () => {
+  test('shows an empty patient field for a practitioner-only thread', async () => {
     setup({ ...baseThread, subject: undefined, recipient: [{ reference: 'Practitioner/123' }] });
     await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
-    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+    expect(screen.getByText('Patient')).toBeInTheDocument();
   });
 
   test('saves the edited topic while preserving the patient recipient', async () => {
@@ -116,6 +116,15 @@ describe('EditThreadDialog', () => {
 
     await waitFor(() => expect(screen.getByText(/Save failed/i)).toBeInTheDocument());
     expect(mockOnClose).not.toHaveBeenCalled();
+  });
+
+  test('resolves a thread passed as a reference', async () => {
+    await medplum.createResource(baseThread);
+    setup({ reference: 'Communication/thread-1' });
+
+    await waitFor(() => expect(screen.getByText('Practitioner')).toBeInTheDocument());
+    expect(screen.getByDisplayValue('Original topic')).toBeInTheDocument();
+    expect(screen.getByText('Patient')).toBeInTheDocument();
   });
 
   test('renders the patient field from the reference even if it cannot be read', async () => {

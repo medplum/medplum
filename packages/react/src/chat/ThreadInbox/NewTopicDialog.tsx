@@ -7,7 +7,7 @@ import type { Communication, Patient, Practitioner, Reference } from '@medplum/f
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import classes from './MessageModal.module.css';
+import classes from './EditThreadDialog.module.css';
 import { ThreadMessageForm } from './ThreadMessageForm';
 
 /**
