@@ -108,12 +108,15 @@ const defaultCheckpointIntervalMs = 5000;
 
 // Async batch throughput. These are monotonic counters rather than a rate computed here, so that the
 // observability backend derives the rate over whatever window it is asked about, and so the series
-// survives a process restart. `COMPLETED_JOBS_METRIC` counts batch jobs that ran to completion, so a
-// job checkpointed and re-queued across a deploy counts once, when it finally finishes.
-// `PROCESSED_ENTRIES_METRIC` counts individual bundle entries; only the re-entrant path contributes,
-// since the deprecated legacy path hands the whole bundle to the router in a single call.
-const COMPLETED_JOBS_METRIC = 'medplum.batch.job.completed.count';
-const PROCESSED_ENTRIES_METRIC = 'medplum.batch.entry.processed.count';
+// survives a process restart.
+//
+// The two count different units of work, which the metric names alone do not convey:
+// `completed` counts whole batch jobs that ran to completion, so a job checkpointed and re-queued
+// across a deploy counts once, when it finally finishes. `processed` counts individual bundle
+// entries, and only the re-entrant path contributes, since the deprecated legacy path hands the whole
+// bundle to the router in a single call. The constants below stay explicit about which is which.
+const COMPLETED_JOBS_METRIC = 'medplum.batch.completed';
+const PROCESSED_ENTRIES_METRIC = 'medplum.batch.processed';
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const queueOptions = defaultQueueOptions(config);
