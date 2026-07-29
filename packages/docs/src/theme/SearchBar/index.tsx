@@ -295,6 +295,9 @@ function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
       apiKey={askAi.apiKey ?? algolia.apiKey}
       indexName={askAi.indexName ?? algolia.indexName}
       assistantId={askAi.assistantId}
+      // New Algolia assistants use Agent Studio; without this, /chat/token is sent
+      // with an empty body and fails with AI-201.
+      agentStudio
       theme={colorMode === 'dark' ? 'dark' : 'light'}
       button={{
         variant: 'floating',
