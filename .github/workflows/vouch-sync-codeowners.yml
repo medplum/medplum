@@ -1,0 +1,131 @@
+on:
+  # Does not run on a schedule since codeowners is very low velocity; manually triggering is sufficient for now.
+  workflow_dispatch:
+    inputs:
+      lookback-days:
+        description: 'How many days of merged PRs to scan for the unvouched-contributors report'
+        required: false
+        default: '90'
+
+name: 'Vouch - Sync CODEOWNERS'
+
+concurrency:
+  group: vouch-manage
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Every owner in our CODEOWNERS is a team (@medplum/core, @medplum/dev,
+      # etc.), so this always needs to resolve team membership via the org
+      # Teams API. The default GITHUB_TOKEN can't do that -- "members" isn't
+      # a grantable GITHUB_TOKEN permission scope at all, regardless of the
+      # `permissions:` block -- so this uses a dedicated GitHub App
+      # (VOUCH_APP_ID / VOUCH_APP_PRIVATE_KEY) installed on this repo with
+      # org Members: read-only plus repo Contents + Pull requests: read/write,
+      # rather than a PAT tied to a human or bot user account.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          app-id: ${{ vars.VOUCH_APP_ID }}
+          private-key: ${{ secrets.VOUCH_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: mitchellh/vouch/action/sync-codeowners@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
+        with:
+          repo: ${{ github.repository }}
+          pull-request: 'true'
+          merge-immediately: 'false'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # Informational only: surfaces recent merged-PR authors who aren't
+      # vouched (via CODEOWNERS/team membership or otherwise), as candidates
+      # a maintainer might want to vouch by hand. Doesn't gate anything, and
+      # re-reads VOUCHED.td via the Contents API rather than the local
+      # checkout, since the sync step above may have just merged a PR
+      # updating it. Read-only, so this uses the default GITHUB_TOKEN rather
+      # than the VOUCH_APP_ID/VOUCH_APP_PRIVATE_KEY App token.
+      - name: Report merged-PR authors who aren't vouched
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          VOUCHED_JSON=$( { gh api "repos/${{ github.repository }}/contents/.github/VOUCHED.td" --jq '.content' 2>/dev/null \
+            | base64 -d \
+            | grep -v '^#' \
+            | grep -v '^-' \
+            | grep -vE '^\s*$' \
+            | awk '{print $1}' \
+            | sed -E 's/^[A-Za-z0-9_-]+://' \
+            | tr '[:upper:]' '[:lower:]' \
+            | sort -u || true; } \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          SINCE=$(date -u -d "${{ github.event.inputs.lookback-days }} days ago" +%Y-%m-%d)
+          UNTIL=$(date -u +%Y-%m-%d)
+
+          # GitHub's search API hard-caps any single query at 1000 total
+          # results -- there's no cursor to page past that, since the cap is
+          # on the match count, not the pagination. Instead we adaptively
+          # bisect the merged-date range: a sub-range coming back with
+          # exactly 1000 results is a sign it may be truncated, so split it
+          # in half by date and re-query both halves, until every sub-range
+          # is safely under the cap.
+          RANGES=("$SINCE:$UNTIL")
+          PRS_JSON="[]"
+
+          while [ ${#RANGES[@]} -gt 0 ]; do
+            RANGE="${RANGES[0]}"
+            RANGES=("${RANGES[@]:1}")
+            START="${RANGE%%:*}"
+            END="${RANGE##*:}"
+
+            BATCH=$(gh search prs --repo "${{ github.repository }}" --merged \
+              --merged-at "${START}..${END}" --json number,author --limit 1000)
+            COUNT=$(echo "$BATCH" | jq 'length')
+
+            START_EPOCH=$(date -u -d "$START" +%s)
+            END_EPOCH=$(date -u -d "$END" +%s)
+            MID=$(date -u -d "@$(( (START_EPOCH + END_EPOCH) / 2 ))" +%Y-%m-%d)
+
+            if [ "$COUNT" -eq 1000 ] && [ "$MID" != "$START" ] && [ "$MID" != "$END" ]; then
+              RANGES+=("$START:$MID" "$MID:$END")
+            else
+              if [ "$COUNT" -eq 1000 ]; then
+                echo "::warning::merged-PR count hit the 1000 search cap for $START..$END and can't be split further (single day); results may be incomplete"
+              fi
+              PRS_JSON=$(jq -c -n --argjson a "$PRS_JSON" --argjson b "$BATCH" '$a + $b')
+            fi
+          done
+
+          # Group by (lowercased, non-bot) author login, count and list PR
+          # numbers per author, drop anyone already vouched, sort by
+          # descending merged-PR count.
+          REPORT=$(echo "$PRS_JSON" | jq -r --argjson vouched "$VOUCHED_JSON" '
+            map(select(.author.login | test("\\[bot\\]$") | not))
+            | map({login: (.author.login | ascii_downcase), number})
+            | group_by(.login)
+            | map({login: .[0].login, numbers: (map(.number) | sort | reverse)})
+            | map(select(.login as $l | $vouched | index($l) | not))
+            | sort_by(-(.numbers | length))
+            | map("| \(.login) | \(.numbers | length) | " + (.numbers | map("#\(.)") | join(", ")) + " |")
+            | .[]
+          ')
+
+          {
+            echo "### Merged-PR authors (last ${{ github.event.inputs.lookback-days }} days) who aren't vouched"
+            if [ -z "$REPORT" ]; then
+              echo "None -- everyone with a recently merged PR is vouched."
+            else
+              echo
+              echo "| Username | Merged PRs | PR Numbers |"
+              echo "|---|---|---|"
+              echo "$REPORT"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
