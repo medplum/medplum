@@ -250,7 +250,7 @@ describe('ThreadInbox', () => {
     await waitFor(() => expect(saveButton).toBeEnabled());
     await user.click(saveButton);
 
-    // Saving calls onSaved -> updateThread and closes the dialog.
+    // Saving calls onSaved -> refreshThreadMessages and closes the dialog.
     await waitFor(() => expect(updateSpy).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText('Message Settings')).not.toBeInTheDocument());
   });

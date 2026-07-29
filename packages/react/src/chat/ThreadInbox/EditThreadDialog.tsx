@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Modal, Stack, Text } from '@mantine/core';
-import { isReference } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { isReference, normalizeErrorString } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
-import classes from './messageModalStyles.module.css';
-import { showErrorNotification } from './notifications';
-import { ThreadMessageFields } from './ThreadMessageFields';
+import classes from './MessageModal.module.css';
+import { ThreadMessageForm } from './ThreadMessageForm';
 
 /**
  * Props for the EditThreadDialog component.
@@ -69,7 +69,7 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
       onSaved?.(saved);
       onClose();
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   };
 
@@ -88,7 +88,7 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
             </Stack>
           )}
 
-          <ThreadMessageFields
+          <ThreadMessageForm
             practitioners={initialPractitioners}
             onPractitionersChange={setPractitioners}
             topic={topic}

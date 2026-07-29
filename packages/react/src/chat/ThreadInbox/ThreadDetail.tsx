@@ -23,18 +23,23 @@ import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSu
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import classes from './ThreadDetail.module.css';
 
+/**
+ * Props for the ThreadDetail component.
+ * @param thread - The selected thread (parent Communication) to display.
+ * @param showPatientSummary - Whether to show the patient summary sidebar.
+ * @param sections - Optional sections configuration for the patient summary.
+ * @param uploadEnabled - Whether to show the attachment upload button in the chat input.
+ * @param onViewInDocuments - When provided, shows a "View in Documents" action on attachment messages that invokes this callback with the attachment's DocumentReference.
+ * @param onStatusChange - Fired when the user changes the thread status from the header menu.
+ * @param onOpenSettings - When provided, shows a Message Settings button in the header that invokes this callback.
+ */
 export interface ThreadDetailProps {
-  /** The selected thread (parent Communication) to display. */
   readonly thread: Communication;
-  /** Whether to show the patient summary sidebar. */
   readonly showPatientSummary?: boolean;
-  /** Optional sections configuration for the patient summary. */
   readonly sections?: PatientSummarySectionConfig[];
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
-  /** Fired when the user changes the thread status from the header menu. */
   readonly onStatusChange: (status: Communication['status']) => void;
-  /** When provided, shows a Message Settings button in the header that invokes this callback. */
   readonly onOpenSettings?: () => void;
 }
 

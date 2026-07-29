@@ -1,15 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Modal, Stack, Text } from '@mantine/core';
-import { createReference } from '@medplum/core';
+import { Box, Button, Modal, Stack } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { createReference, normalizeErrorString } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { ResourceInput } from '../../ResourceInput/ResourceInput';
-import classes from './messageModalStyles.module.css';
-import { showErrorNotification } from './notifications';
-import { ThreadMessageFields } from './ThreadMessageFields';
+import classes from './MessageModal.module.css';
+import { ThreadMessageForm } from './ThreadMessageForm';
 
 /**
  * Props for the NewTopicDialog component.
@@ -62,12 +61,11 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
 
     try {
       const createdCommunication = await medplum.createResource(communication);
-      // Close before onSubmit so that a URL-driven onClose (e.g. navigating away from
-      // a /new route) does not override navigation performed by the onSubmit handler.
+
       onClose();
       onSubmit?.(createdCommunication);
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   };
 
@@ -75,27 +73,14 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
     <Modal opened={opened} onClose={onClose} title="New Message" size="md" classNames={classes}>
       <Stack gap={0}>
         <Stack gap="lg" p="lg">
-          <Stack gap={0}>
-            <Text fw={500}>Patient</Text>
-            {allowPatientSelection && <Text c="dimmed">Select a patient</Text>}
-
-            <ResourceInput
-              resourceType="Patient"
-              name="patient"
-              required={true}
-              defaultValue={patient}
-              disabled={!allowPatientSelection && !!patient}
-              onChange={(value) => {
-                setPatient(value ? createReference(value) : undefined);
-              }}
-            />
-          </Stack>
-
-          <ThreadMessageFields
+          <ThreadMessageForm
             practitioners={initialPractitioners}
             onPractitionersChange={setPractitioners}
             topic={topic}
             onTopicChange={setTopic}
+            patient={patient}
+            onPatientChange={setPatient}
+            allowPatientSelection={allowPatientSelection}
           />
         </Stack>
 

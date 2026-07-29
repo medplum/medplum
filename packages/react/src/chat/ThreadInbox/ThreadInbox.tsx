@@ -3,8 +3,9 @@
 
 import { ActionIcon, Box, Center, Flex, Skeleton, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { Operator, parseSearchRequest } from '@medplum/core';
+import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
@@ -15,7 +16,6 @@ import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane'
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
-import { showErrorNotification } from './notifications';
 import { ParticipantFilter } from './ParticipantFilter';
 import { ThreadDetail } from './ThreadDetail';
 import classes from './ThreadInbox.module.css';
@@ -111,7 +111,6 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     total,
     handleThreadStatusChange,
     addThreadMessage,
-    updateThread,
     refreshThreadMessages,
   } = useThreadInbox({
     query,
@@ -141,7 +140,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   useEffect(() => {
     if (error) {
-      showErrorNotification(error);
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   }, [error]);
 
@@ -150,7 +149,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     try {
       await refreshThreadMessages();
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   };
 
@@ -247,9 +246,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           thread={selectedThread}
           opened={editModalOpened}
           onClose={closeEditModal}
-          // Update the thread in place rather than refetching, so a draft thread (no reply yet)
-          // stays in the list after editing its settings instead of being filtered out.
-          onSaved={(updated) => updateThread(updated)}
+          onSaved={() => {
+            refreshThreadMessages().catch((err) =>
+              showNotification({ color: 'red', message: normalizeErrorString(err) })
+            );
+          }}
         />
       )}
     </>
