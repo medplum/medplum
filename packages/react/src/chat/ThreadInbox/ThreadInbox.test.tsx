@@ -5,6 +5,7 @@ import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import * as reactHooks from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { act, render, screen, userEvent, waitFor } from '../../test-utils/render';
 import { ThreadInbox } from './ThreadInbox';
 
@@ -253,6 +254,49 @@ describe('ThreadInbox', () => {
     // Saving calls onSaved -> refreshThreadMessages and closes the dialog.
     await waitFor(() => expect(updateSpy).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByText('Message Settings')).not.toBeInTheDocument());
+  });
+
+  test('hides Message Settings for a draft thread with no reply yet', async () => {
+    const user = userEvent.setup();
+
+    const ui = (threadId: string | undefined, newTopicOpened: boolean): JSX.Element => (
+      <>
+        <Notifications />
+        <ThreadInbox
+          query="_sort=-_lastUpdated"
+          threadId={threadId}
+          showPatientSummary={false}
+          subject={HomerSimpson}
+          onNew={mockOnNew}
+          getThreadUri={mockGetThreadUri}
+          onChange={mockOnChange}
+          inProgressUri="/Communication?status=in-progress"
+          completedUri="/Communication?status=completed"
+          newTopicOpened={newTopicOpened}
+        />
+      </>
+    );
+
+    const { rerender } = render(ui(undefined, true), ({ children }) => (
+      <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+        {children}
+      </MedplumProvider>
+    ));
+
+    // Create the draft thread from the New Message dialog (patient pre-filled from subject,
+    // practitioner defaulted from the signed-in profile).
+    await user.type(await screen.findByPlaceholderText('Enter your topic'), 'Draft Topic');
+    const nextButton = screen.getByRole('button', { name: 'Next' });
+    await waitFor(() => expect(nextButton).toBeEnabled());
+    await user.click(nextButton);
+    await waitFor(() => expect(mockOnNew).toHaveBeenCalled());
+    const created = mockOnNew.mock.calls[0][0] as Communication;
+
+    // Select the draft thread, as navigating to it after creation would.
+    rerender(ui(created.id, false));
+
+    await waitFor(() => expect(screen.getAllByText('Draft Topic').length).toBeGreaterThan(0), { timeout: 3000 });
+    expect(screen.queryByRole('button', { name: 'Message settings' })).not.toBeInTheDocument();
   });
 
   test('shows patient summary when showPatientSummary is true and thread is selected', async () => {

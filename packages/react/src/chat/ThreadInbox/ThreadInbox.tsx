@@ -219,28 +219,36 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               getThreadUri={getThreadUri}
             />
           )}
-          renderDetail={(thread) => (
-            <ThreadDetail
-              thread={thread}
-              showPatientSummary={showPatientSummary}
-              sections={sections}
-              uploadEnabled={uploadEnabled}
-              onViewInDocuments={onViewInDocuments}
-              onStatusChange={handleTopicStatusChangeWithErrorHandling}
-              onOpenSettings={openEditModal}
-            />
-          )}
+          renderDetail={(thread) => {
+            // A draft thread (created locally, no reply yet) would be dropped from the list
+            // by the refetch after saving settings, so hide Message Settings until the
+            // thread has at least one message.
+            const isDraft = !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id);
+            return (
+              <ThreadDetail
+                thread={thread}
+                showPatientSummary={showPatientSummary}
+                sections={sections}
+                uploadEnabled={uploadEnabled}
+                onViewInDocuments={onViewInDocuments}
+                onStatusChange={handleTopicStatusChangeWithErrorHandling}
+                onOpenSettings={isDraft ? undefined : openEditModal}
+              />
+            );
+          }}
         />
       </div>
-      <NewTopicDialog
-        subject={subject}
-        opened={modalOpened}
-        onClose={closeModal}
-        onSubmit={handleNewTopicCompletion}
-        allowPatientSelection={allowPatientSelection}
-      />
-      {/* Mount only while open so every open is a fresh instance — any edits dismissed
-          without saving are abandoned, with no leftover form state. */}
+      {/* Both dialogs are mounted only while open so every open is a fresh instance — any
+          entries dismissed without saving are abandoned, with no leftover form state. */}
+      {modalOpened && (
+        <NewTopicDialog
+          subject={subject}
+          opened={modalOpened}
+          onClose={closeModal}
+          onSubmit={handleNewTopicCompletion}
+          allowPatientSelection={allowPatientSelection}
+        />
+      )}
       {selectedThread && editModalOpened && (
         <EditThreadDialog
           thread={selectedThread}
