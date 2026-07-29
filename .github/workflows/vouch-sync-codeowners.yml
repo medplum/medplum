@@ -1,12 +1,13 @@
 on:
+  # Does not run on a schedule since codeowners is very low velocity; manually triggering is sufficient for now.
   workflow_dispatch:
     inputs:
       lookback-days:
-        description: "How many days of merged PRs to scan for the unvouched-contributors report"
+        description: 'How many days of merged PRs to scan for the unvouched-contributors report'
         required: false
-        default: "90"
+        default: '90'
 
-name: "Vouch - Sync CODEOWNERS"
+name: 'Vouch - Sync CODEOWNERS'
 
 concurrency:
   group: vouch-manage
@@ -37,8 +38,8 @@ jobs:
       - uses: mitchellh/vouch/action/sync-codeowners@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
         with:
           repo: ${{ github.repository }}
-          pull-request: "true"
-          merge-immediately: "false"
+          pull-request: 'true'
+          merge-immediately: 'false'
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
@@ -48,7 +49,7 @@ jobs:
       # re-reads VOUCHED.td via the Contents API rather than the local
       # checkout, since the sync step above may have just merged a PR
       # updating it. Read-only, so this uses the default GITHUB_TOKEN rather
-      # than VOUCH_SYNC_TOKEN.
+      # than the VOUCH_APP_ID/VOUCH_APP_PRIVATE_KEY App token.
       - name: Report merged-PR authors who aren't vouched
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

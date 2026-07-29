@@ -2,7 +2,7 @@ on:
   pull_request_target:
     types: [opened, reopened]
 
-name: "Vouch - Check PR"
+name: 'Vouch - Check PR'
 
 permissions:
   issues: write
