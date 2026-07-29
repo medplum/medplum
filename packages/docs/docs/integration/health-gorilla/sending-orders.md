@@ -317,6 +317,7 @@ The parent order is represented by a `ServiceRequest` resource with the profile 
 - The performing laboratory (`ServiceRequest.performer`)
 - Overall order status (`ServiceRequest.status`)
 - Diagnosis codes (`ServiceRequest.reasonCode`)
+- Minimum Patient demographic information (`ServiceRequest.subject`)
 - Shared documentation (`ServiceRequest.supportingInfo`)
 
 Each individual test within the order is represented by its own `ServiceRequest` resource that:
