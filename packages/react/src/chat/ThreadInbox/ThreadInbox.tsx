@@ -171,6 +171,16 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     return map;
   }, [threadMessages]);
 
+  const isDraft = useCallback(
+    (thread: Communication): boolean =>
+      !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id),
+    [lastMessageByThreadId]
+  );
+
+  const handleMessageSent = useCallback(() => {
+    refreshThreadMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [refreshThreadMessages]);
+
   const tabs = useMemo<ListWithDetailPaneTab[]>(
     () => [
       { value: 'in-progress', label: 'In Progress', uri: inProgressUri },
@@ -219,23 +229,18 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               getThreadUri={getThreadUri}
             />
           )}
-          renderDetail={(thread) => {
-            // A draft thread (created locally, no reply yet) would be dropped from the list
-            // by the refetch after saving settings, so hide Message Settings until the
-            // thread has at least one message.
-            const isDraft = !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id);
-            return (
-              <ThreadDetail
-                thread={thread}
-                showPatientSummary={showPatientSummary}
-                sections={sections}
-                uploadEnabled={uploadEnabled}
-                onViewInDocuments={onViewInDocuments}
-                onStatusChange={handleTopicStatusChangeWithErrorHandling}
-                onOpenSettings={isDraft ? undefined : openEditModal}
-              />
-            );
-          }}
+          renderDetail={(thread) => (
+            <ThreadDetail
+              thread={thread}
+              showPatientSummary={showPatientSummary}
+              sections={sections}
+              uploadEnabled={uploadEnabled}
+              onViewInDocuments={onViewInDocuments}
+              onStatusChange={handleTopicStatusChangeWithErrorHandling}
+              onOpenSettings={isDraft(thread) ? undefined : openEditModal}
+              onMessageSent={handleMessageSent}
+            />
+          )}
         />
       </div>
       {/* Both dialogs are mounted only while open so every open is a fresh instance — any

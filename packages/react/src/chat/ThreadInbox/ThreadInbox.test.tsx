@@ -297,6 +297,33 @@ describe('ThreadInbox', () => {
 
     await waitFor(() => expect(screen.getAllByText('Draft Topic').length).toBeGreaterThan(0), { timeout: 3000 });
     expect(screen.queryByRole('button', { name: 'Message settings' })).not.toBeInTheDocument();
+
+    // Once the list knows the thread has a message, the refetch triggered by sending
+    // (onMessageSent -> refreshThreadMessages) makes the thread official and settings appear.
+    const reply: Communication = {
+      resourceType: 'Communication',
+      id: 'reply-1',
+      status: 'in-progress',
+      partOf: [{ reference: `Communication/${created.id}` }],
+      sent: '2024-01-01T10:00:00Z',
+      payload: [{ contentString: 'First message' }],
+    };
+    vi.mocked(medplum.search).mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: created }],
+    } as any);
+    vi.mocked(medplum.graphql).mockResolvedValue({
+      data: { [`thread_${created.id?.replaceAll('-', '')}`]: [reply] },
+    });
+
+    await user.type(screen.getByPlaceholderText('Type a message...'), 'First message');
+    await user.click(screen.getByRole('button', { name: 'Send message' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Message settings' })).toBeInTheDocument(), {
+      timeout: 3000,
+    });
   });
 
   test('shows patient summary when showPatientSummary is true and thread is selected', async () => {

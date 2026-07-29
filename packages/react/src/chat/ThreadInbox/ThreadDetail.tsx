@@ -32,6 +32,7 @@ import classes from './ThreadDetail.module.css';
  * @param onViewInDocuments - When provided, shows a "View in Documents" action on attachment messages that invokes this callback with the attachment's DocumentReference.
  * @param onStatusChange - Fired when the user changes the thread status from the header menu.
  * @param onOpenSettings - When provided, shows a Message Settings button in the header that invokes this callback.
+ * @param onMessageSent - Fired with the created Communication after the user sends a message in the chat.
  */
 export interface ThreadDetailProps {
   readonly thread: Communication;
@@ -41,6 +42,7 @@ export interface ThreadDetailProps {
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
   readonly onStatusChange: (status: Communication['status']) => void;
   readonly onOpenSettings?: () => void;
+  readonly onMessageSent?: (message: Communication) => void;
 }
 
 /**
@@ -58,6 +60,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
     onViewInDocuments,
     onStatusChange,
     onOpenSettings,
+    onMessageSent,
   } = props;
 
   return (
@@ -120,6 +123,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
                 excludeHeader={true}
                 uploadEnabled={uploadEnabled}
                 onViewInDocuments={onViewInDocuments}
+                onMessageSent={onMessageSent}
               />
             </Box>
           </Stack>
