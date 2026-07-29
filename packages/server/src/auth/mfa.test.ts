@@ -8,6 +8,7 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import type { ParsedMail } from 'mailparser';
 import { simpleParser } from 'mailparser';
 import { authenticator } from 'otplib';
 import request from 'supertest';
@@ -25,18 +26,40 @@ const app = express();
 let mockSESv2Client: AwsClientStub<SESv2Client>;
 
 /**
+ * Sets a string entry in `Project.setting`, replacing any existing entry of the same name.
+ * @param project - The project to update.
+ * @param name - The setting name.
+ * @param valueString - The setting value.
+ */
+async function setProjectSetting(project: WithId<Project>, name: string, valueString: string): Promise<void> {
+  const systemRepo = getGlobalSystemRepo();
+  await withTestContext(async () => {
+    // Read the current project so successive calls compose rather than clobber.
+    const current = await systemRepo.readResource<Project>('Project', project.id);
+    await systemRepo.updateResource<Project>({
+      ...current,
+      setting: [...(current.setting?.filter((s) => s.name !== name) ?? []), { name, valueString }],
+    });
+  });
+}
+
+/**
  * Sets the `allowedMfaMethods` project setting so email-based MFA enrollment is offered.
  * @param project - The project to update.
  * @param value - The comma-delimited list of allowed methods.
  */
 async function setAllowedMfaMethods(project: WithId<Project>, value: string): Promise<void> {
-  const systemRepo = getGlobalSystemRepo();
-  await withTestContext(() =>
-    systemRepo.updateResource<Project>({
-      ...project,
-      setting: [...(project.setting ?? []), { name: 'allowedMfaMethods', valueString: value }],
-    })
-  );
+  await setProjectSetting(project, 'allowedMfaMethods', value);
+}
+
+/**
+ * Parses the most recently sent email.
+ * @returns The parsed message.
+ */
+async function getLastEmail(): Promise<ParsedMail> {
+  const calls = mockSESv2Client.commandCalls(SendEmailCommand);
+  const args = calls[calls.length - 1].args[0].input;
+  return simpleParser(args.Content?.Raw?.Data as Buffer);
 }
 
 /**
@@ -44,14 +67,23 @@ async function setAllowedMfaMethods(project: WithId<Project>, value: string): Pr
  * @returns The verification code emailed to the user.
  */
 async function getCodeFromEmail(): Promise<string> {
-  const calls = mockSESv2Client.commandCalls(SendEmailCommand);
-  const args = calls[calls.length - 1].args[0].input;
-  const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
+  const parsed = await getLastEmail();
   const match = /\b(\d{6})\b/.exec(parsed.text as string);
   if (!match) {
     throw new Error('No verification code found in email: ' + parsed.text);
   }
   return match[1];
+}
+
+/**
+ * Reads the issuer and account label that an authenticator app would display for
+ * an enrollment URI. otplib formats the label as `<issuer>:<accountName>`.
+ * @param enrollUri - The `otpauth://` enrollment URI.
+ * @returns The issuer and account label.
+ */
+function parseEnrollUriLabels(enrollUri: string): { issuer: string | null; label: string } {
+  const url = new URL(enrollUri);
+  return { issuer: url.searchParams.get('issuer'), label: decodeURIComponent(url.pathname).replace(/^\//, '') };
 }
 
 /**
@@ -2267,6 +2299,108 @@ describe('MFA', () => {
         .send({ login: login.login, token: authenticator.generate(secret) });
       expect(verify).toHaveStatus(200);
       expect(verify.body.code).toBeDefined();
+    });
+  });
+
+  describe('Project branding', () => {
+    const brandName = 'Acme Health';
+
+    /**
+     * Registers a project whose MFA content is white-labeled with `brandName`,
+     * and which allows both MFA methods.
+     * @returns The new user's email, password, access token, and project.
+     */
+    async function registerBrandedProject(): Promise<{
+      email: string;
+      password: string;
+      accessToken: string;
+      project: WithId<Project>;
+    }> {
+      const email = `brand${randomUUID()}@example.com`;
+      const password = 'password!@#';
+      const { accessToken, project } = await withTestContext(() =>
+        registerNew({
+          firstName: 'Brand',
+          lastName: 'User',
+          projectName: `Brand Project ${randomUUID()}`,
+          email,
+          password,
+        })
+      );
+      await setProjectSetting(project, 'brandName', brandName);
+      await setAllowedMfaMethods(project, 'totp,email');
+      return { email, password, accessToken, project };
+    }
+
+    test('brandName brands the emailed code and the authenticator app entry', async () => {
+      const { email, password, accessToken } = await registerBrandedProject();
+
+      // The authenticator app entry names the project, not Medplum.
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(statusRes).toHaveStatus(200);
+      expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
+        issuer: brandName,
+        label: `${brandName}:${brandName} - ${email}`,
+      });
+
+      // The code emailed during enrollment is branded.
+      await enrollEmailMfa(accessToken);
+      const enrollEmailMessage = await getLastEmail();
+      expect(enrollEmailMessage.subject).toMatch(/^Your Acme Health verification code: \d{6}$/);
+      expect(enrollEmailMessage.text).toContain(`The ${brandName} Team`);
+      expect(enrollEmailMessage.text).not.toContain('Medplum');
+
+      // So is the code emailed automatically at login.
+      mockSESv2Client.resetHistory();
+      const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+      expect(loginRes).toHaveStatus(200);
+      expect(loginRes.body.mfaRequired).toBe(true);
+      const loginEmail = await getLastEmail();
+      expect(loginEmail.subject).toMatch(/^Your Acme Health verification code: \d{6}$/);
+      expect(loginEmail.text).not.toContain('Medplum');
+    });
+
+    test('brandName brands the enrollment QR code returned at login', async () => {
+      const { email, password, project } = await registerBrandedProject();
+
+      // A project-wide MFA requirement forces enrollment during login, so the
+      // enrollment URI is built from the login rather than an authenticated request.
+      await setProjectMfaRequired(project, true);
+
+      const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+      expect(loginRes).toHaveStatus(200);
+      expect(loginRes.body.mfaEnrollRequired).toBe(true);
+      expect(parseEnrollUriLabels(loginRes.body.enrollUri)).toEqual({
+        issuer: brandName,
+        label: `${brandName}:${brandName} - ${email}`,
+      });
+    });
+
+    test('projects without a brandName keep the Medplum defaults', async () => {
+      const email = `unbranded${randomUUID()}@example.com`;
+      const password = 'password!@#';
+      const { accessToken, project } = await withTestContext(() =>
+        registerNew({
+          firstName: 'Unbranded',
+          lastName: 'User',
+          projectName: `Unbranded Project ${randomUUID()}`,
+          email,
+          password,
+        })
+      );
+      await setAllowedMfaMethods(project, 'totp,email');
+
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(statusRes).toHaveStatus(200);
+      expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
+        issuer: 'medplum.com',
+        label: `medplum.com:Medplum - ${email}`,
+      });
+
+      await enrollEmailMfa(accessToken);
+      const parsed = await getLastEmail();
+      expect(parsed.subject).toMatch(/^Your Medplum verification code: \d{6}$/);
+      expect(parsed.text).toContain('The Medplum Team');
     });
   });
 });

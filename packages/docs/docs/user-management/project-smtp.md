@@ -7,7 +7,7 @@ tags: [auth]
 
 By default, all emails sent on behalf of your project use the Medplum server's email provider and sender address. Projects can instead send email through their own SMTP relay (such as SendGrid, Mailgun, or Amazon SES SMTP) so that emails arrive from your own domain.
 
-Project SMTP applies to all project-scoped emails. This includes emails sent via the [`sendEmail`](/docs/sdk/core.medplumclient.sendemail) API and system-generated emails for project-scoped users: user invites, password resets, email verification, and MFA reset notifications. The content of system-generated emails remains controlled by the Medplum server; project SMTP changes the transport and sender address. To customize email content, see [Custom Emails](/docs/user-management/custom-emails).
+Project SMTP applies to all project-scoped emails. This includes emails sent via the [`sendEmail`](/docs/sdk/core.medplumclient.sendemail) API and system-generated emails for project-scoped users: user invites, password resets, email verification, MFA verification codes, and MFA reset notifications. The content of system-generated emails remains controlled by the Medplum server; project SMTP changes the transport and sender address. To customize email content, see [Custom Emails](/docs/user-management/custom-emails), or [`brandName`](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps) to white-label MFA emails.
 
 ## Configuration
 

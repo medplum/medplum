@@ -55,6 +55,14 @@ npm run dev
 
 For production deployments, see [Install from scratch](/docs/self-hosting/install-from-scratch) or [Install on AWS](/docs/self-hosting/install-on-aws).
 
+## Server-generated content
+
+These variables only cover the app UI. Content the server generates on a user's behalf is branded per Project instead, so tenants on a shared server can each use their own name:
+
+- [`brandName`](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps) — MFA verification emails and authenticator app entries
+- [Project SMTP](/docs/user-management/project-smtp) — sender domain and address for all project emails
+- [Custom Emails](/docs/user-management/custom-emails) — full control of welcome and password reset email content
+
 ## Troubleshooting
 
 **Logo not showing?**

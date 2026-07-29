@@ -74,6 +74,53 @@ Use `valueString: 'email'` to offer email codes only, or `valueString: 'totp'` (
 Changing `allowedMfaMethods` affects which methods users can **newly enroll** in. Users already enrolled in a method that is later disallowed keep that method until they remove it.
 :::
 
+## Branding MFA emails and authenticator apps
+
+By default, MFA content names Medplum. A Project can white-label it with a `brandName` [`Project.setting`](/docs/self-hosting/project-settings) entry, which changes:
+
+- **Emailed codes** — the subject and body read "Your Acme Health verification code", signed "The Acme Health Team".
+- **Authenticator app entries** — enrollment QR codes use the brand name as the issuer and account label, so the entry the user adds to Google Authenticator (or similar) names your application instead of `medplum.com`.
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+
+```ts
+const project = await medplum.readResource('Project', projectId);
+await medplum.updateResource({
+  ...project,
+  setting: [
+    // Preserve any other settings, replacing brandName if it exists
+    ...(project.setting ?? []).filter((s) => s.name !== 'brandName'),
+    { name: 'brandName', valueString: 'Acme Health' },
+  ],
+});
+```
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum patch Project/<projectId> \
+'[{
+  "op": "add",
+  "path": "/setting/-",
+  "value": { "name": "brandName", "valueString": "Acme Health" }
+}]'
+```
+
+  </TabItem>
+</Tabs>
+
+When `brandName` is missing or blank, emails and authenticator entries keep the Medplum defaults.
+
+:::note[]
+`brandName` applies when content is generated, so it only affects new authenticator enrollments. Entries already added to a user's authenticator app keep their original label, and changing the setting never invalidates an existing secret.
+:::
+
+:::tip[]
+Combine this with [Project SMTP](/docs/user-management/project-smtp) to also send MFA codes from your own domain and sender address.
+:::
+
 ## Self-Enrollment
 
 Users can self-enroll in MFA through the Medplum App security settings. The methods offered depend on the Project's [`allowedMfaMethods`](#configuring-allowed-mfa-methods) setting.
@@ -158,18 +205,17 @@ curl https://api.medplum.com/admin/projects/:projectId/invite \
 
 For more details on the invite endpoint, see the [Invite User Endpoint](/docs/api/project-admin/invite) documentation.
 
-
 ## Admin MFA Reset
 
 Project admins can reset MFA for members who have lost access to a factor via the `POST /admin/projects/:projectId/members/:membershipId/mfa/reset` endpoint. In the Medplum App, this is available from the **Account Security** section of a member's detail page (**Admin → Users → _member_**), and as a bulk action on the users table.
 
 The request body accepts an optional `method` field:
 
-| `method`       | Effect                                                                 |
-| -------------- | ---------------------------------------------------------------------- |
-| _(omitted)_    | Resets `totp` — the backwards-compatible default                       |
-| `totp`         | Resets the authenticator app factor and rotates the TOTP secret        |
-| `email`        | Resets the email factor; the TOTP secret is left untouched             |
+| `method`    | Effect                                                          |
+| ----------- | --------------------------------------------------------------- |
+| _(omitted)_ | Resets `totp` — the backwards-compatible default                |
+| `totp`      | Resets the authenticator app factor and rotates the TOTP secret |
+| `email`     | Resets the email factor; the TOTP secret is left untouched      |
 
 Only the selected factor is reset; any other enrolled factors remain active. When reset:
 

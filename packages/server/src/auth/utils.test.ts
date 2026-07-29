@@ -3,7 +3,7 @@
 import { OperationOutcomeError } from '@medplum/core';
 import type { Project, User } from '@medplum/fhirtypes';
 import { MAX_PASSWORD_LENGTH } from '../constants';
-import { bcryptHashPassword, isMfaRequired } from './utils';
+import { bcryptHashPassword, getProjectBrandName, isMfaRequired } from './utils';
 
 describe('isMfaRequired', () => {
   function createMfaTestUser(mfaRequired?: boolean): User {
@@ -40,6 +40,31 @@ describe('isMfaRequired', () => {
     expect(isMfaRequired(createMfaTestUser(true), undefined)).toBe(true);
     // A project that does not require MFA leaves an unset user unaffected.
     expect(isMfaRequired(createMfaTestUser(), projectWithSetting(false))).toBe(false);
+  });
+});
+
+describe('getProjectBrandName', () => {
+  function projectWithBrandName(valueString: string | undefined): Project {
+    if (valueString === undefined) {
+      return { resourceType: 'Project' };
+    }
+    return { resourceType: 'Project', setting: [{ name: 'brandName', valueString }] };
+  }
+
+  test('Returns undefined when unset', () => {
+    expect(getProjectBrandName(undefined)).toBeUndefined();
+    expect(getProjectBrandName(projectWithBrandName(undefined))).toBeUndefined();
+    expect(getProjectBrandName({ resourceType: 'Project', setting: [] })).toBeUndefined();
+  });
+
+  test('Treats a blank brand name as unset', () => {
+    expect(getProjectBrandName(projectWithBrandName(''))).toBeUndefined();
+    expect(getProjectBrandName(projectWithBrandName('   '))).toBeUndefined();
+  });
+
+  test('Returns the trimmed brand name', () => {
+    expect(getProjectBrandName(projectWithBrandName('Acme Health'))).toBe('Acme Health');
+    expect(getProjectBrandName(projectWithBrandName('  Acme Health  '))).toBe('Acme Health');
   });
 });
 

@@ -60,6 +60,8 @@ The supported options that can be specified by a Super Admin in `Project.systemS
 
 The MFA methods users in a Project can enroll in are controlled by the `allowedMfaMethods` key in `Project.setting`, a comma-delimited list of `totp` and/or `email`. When unset, only authenticator-app (TOTP) MFA is offered. See [Configuring allowed MFA methods](/docs/auth/mfa#configuring-allowed-mfa-methods) for details and examples, including how to enable email-based MFA.
 
+The `brandName` key in `Project.setting` white-labels the MFA content Medplum generates: emailed verification codes and the authenticator app entries created by enrollment QR codes. When unset, both name Medplum. See [Branding MFA emails and authenticator apps](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps).
+
 ## Project SMTP
 
 Projects can send email through their own SMTP relay instead of the server-wide email provider, configured via `Project.secret` entries. See [Project SMTP](/docs/user-management/project-smtp) for the full configuration reference. Operators can disable this fleet-wide with the [`allowProjectSmtp`](/docs/self-hosting/server-config#allowprojectsmtp) server config setting.
