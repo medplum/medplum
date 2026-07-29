@@ -61447,7 +61447,8 @@
               "transaction-bundles",
               "validate-terminology",
               "range-search",
-              "log-streaming"
+              "log-streaming",
+              "async-batch"
             ]
           },
           "type": "array"

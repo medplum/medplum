@@ -238,7 +238,9 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/Communication" element={<MessagesPage />}>
                 <Route index element={<MessagesPage />} />
+                <Route path="new" element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
+                <Route path=":messageId/new" element={<MessagesPage />} />
               </Route>
               <Route path="/Task" element={<TasksPage />} />
               <Route path="/Task/:taskId" element={<TasksPage />} />

@@ -259,6 +259,32 @@ export function addVerboseQueueLogging<TDataType>(
   });
 }
 
+/**
+ * Applies the configured global concurrency limit to a queue.
+ *
+ * Global concurrency is a queue-level property persisted in Redis, so it must be set imperatively
+ * rather than through queue/worker constructor options. When `globalConcurrency` is configured, the
+ * limit is set; when it is omitted, any previously-set limit is removed so that clearing the config
+ * takes effect on the next startup.
+ *
+ * If the underlying Redis command fails, the error is allowed to propagate: it is unsafe to start
+ * the workers without the configured global concurrency applied, so the caller should let startup
+ * fail rather than run with the wrong limit.
+ * @param queue - The queue to apply the limit to.
+ * @param config - The merged BullMQ config for the queue's worker, if any.
+ */
+export async function applyGlobalConcurrency(
+  queue: Queue,
+  config: Partial<MedplumBullmqConfig> | undefined
+): Promise<void> {
+  const globalConcurrency = config?.globalConcurrency;
+  if (globalConcurrency === undefined) {
+    await queue.removeGlobalConcurrency();
+  } else {
+    await queue.setGlobalConcurrency(globalConcurrency);
+  }
+}
+
 export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<never> {
   if (job.token) {
     const delayMs = 60_000;
@@ -282,6 +308,25 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
 }
 
 /**
+ * Merges the BullMQ server config for a worker, in increasing order of precedence: the global
+ * `bullmq` server config, worker-specific defaults from code, and the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @param config - The server config.
+ * @param workerName - The worker to build the config for.
+ * @param workerDefaults - Worker-specific defaults that supersede the global `bullmq` server
+ * config (including the defaults added by `addDefaults`) but are overridden by the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @returns The merged BullMQ config for the worker.
+ */
+export function getMedplumBullmqConfig(
+  config: MedplumServerConfig,
+  workerName: WorkerName,
+  workerDefaults?: Partial<MedplumBullmqConfig>
+): Partial<MedplumBullmqConfig> {
+  return { ...config.bullmq, ...workerDefaults, ...config.workers?.bullmq?.[workerName] };
+}
+
+/**
  * Builds the effective `Worker` options by merging, in increasing order of precedence: the given
  * default queue options (for the shared `connection`), the global `bullmq` server config,
  * worker-specific defaults from code, and the per-worker `workers.bullmq.<workerName>` server
@@ -301,11 +346,10 @@ export function getWorkerBullmqConfig(
   queueOptions: QueueOptions,
   workerDefaults?: Partial<MedplumBullmqConfig>
 ): WorkerOptions {
-  const perWorker = config.workers?.bullmq?.[workerName];
   // `queueOptions.defaultJobOptions` field and potentially others is not a valid `WorkerOptions`
   // property. It rides along as an inert excess key on the returned object (harmless, since `Worker`
   // ignores unrecognized options)
-  return { ...queueOptions, ...config.bullmq, ...workerDefaults, ...perWorker };
+  return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults) };
 }
 
 export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {

@@ -363,7 +363,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         data={data}
         placeholder="Select items"
         searchable
-        defaultValue={currentAnswer || [typedValueToString(initialValue)]}
+        value={currentAnswer}
         required={required}
         onChange={(selected) => {
           if (selected.length === 0) {
@@ -592,12 +592,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
     available: isValueSetAvailable,
   } = useValueSetOptions(item.answerValueSet);
 
-  // Get initial values from response
-  const initialSelectedValues = item.answerValueSet
+  // Derive the selected values from the response rather than local state, so that answers
+  // rewritten by the form state (e.g. optionExclusive) are reflected in the checkboxes.
+  const selectedValues = item.answerValueSet
     ? (response?.answer?.map((a) => a.valueCoding) || []).filter((c): c is Coding => c !== undefined)
     : getCurrentMultiSelectAnswer(response);
-
-  const [selectedValues, setSelectedValues] = useState(initialSelectedValues);
 
   const options: [string, TypedValue][] = [];
 
@@ -641,7 +640,6 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
         newCodings = currentCodings.filter((c) => !deepEquals(c, optionValue.value));
       }
 
-      setSelectedValues(newCodings);
       if (newCodings.length === 0) {
         onChangeAnswer([{}]);
       } else {
@@ -658,7 +656,6 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
         newValues = currentValues.filter((v) => v !== optionValueStr);
       }
 
-      setSelectedValues(newValues);
       if (newValues.length === 0) {
         onChangeAnswer([{}]);
       } else {

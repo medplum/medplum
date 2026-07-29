@@ -4,4 +4,5 @@ export { BatchProcessor, buildBatchResponseBundle, processBatch } from './batch'
 export type { BatchEvent, BatchInitialState, BundlePreprocessInfo, LogEvent } from './batch';
 export * from './fhirrouter';
 export * from './repo';
+export * from './search-include';
 export * from './urlrouter';
