@@ -9,6 +9,7 @@ import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useControllableDisclosure } from '../../hooks/useControllableDisclosure';
 import { showErrorNotification } from '../../utils/notifications';
 import { FaxDetailPanel } from './FaxDetailPanel';
 import type { FaxTab } from './FaxListItem';
@@ -46,10 +47,11 @@ export function FaxBoard({
   const medplum = useMedplum();
   const navigate = useNavigate();
 
-  const [internalSendModalOpened, setInternalSendModalOpened] = useState(false);
-  const sendModalOpened = sendFaxOpened ?? internalSendModalOpened;
-  const openSendModal = onSendFaxOpen ?? ((): void => setInternalSendModalOpened(true));
-  const closeSendModal = onSendFaxClose ?? ((): void => setInternalSendModalOpened(false));
+  const [sendModalOpened, { open: openSendModal, close: closeSendModal }] = useControllableDisclosure({
+    opened: sendFaxOpened,
+    onOpen: onSendFaxOpen,
+    onClose: onSendFaxClose,
+  });
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
 

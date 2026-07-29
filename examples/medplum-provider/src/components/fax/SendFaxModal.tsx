@@ -225,6 +225,8 @@ export function SendFaxModal({
         message: '',
       });
 
+      // Close first: onClose may navigate back to the base path, and onFaxSent then
+      // navigates to the new fax — the sent fax's navigation must win.
       handleClose();
       onFaxSent?.(communication);
     } catch (error) {

@@ -9,6 +9,7 @@ import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useControllableDisclosure } from '../../hooks/useControllableDisclosure';
 import { showErrorNotification } from '../../utils/notifications';
 import { NewTaskModal } from './NewTaskModal';
 import { TaskDetailPanel } from './TaskDetailPanel';
@@ -70,10 +71,11 @@ export function TaskBoard({
   const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [internalNewTaskOpened, setInternalNewTaskOpened] = useState(false);
-  const newTaskModalOpened = newTaskOpened ?? internalNewTaskOpened;
-  const openNewTaskModal = onNewTaskOpen ?? ((): void => setInternalNewTaskOpened(true));
-  const closeNewTaskModal = onNewTaskClose ?? ((): void => setInternalNewTaskOpened(false));
+  const [newTaskModalOpened, { open: openNewTaskModal, close: closeNewTaskModal }] = useControllableDisclosure({
+    opened: newTaskOpened,
+    onOpen: onNewTaskOpen,
+    onClose: onNewTaskClose,
+  });
   const [total, setTotal] = useState<number | undefined>(undefined);
   const requestIdRef = useRef(0);
   const fetchingRef = useRef(false);

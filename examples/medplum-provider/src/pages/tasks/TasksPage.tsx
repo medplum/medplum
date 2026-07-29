@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
+import { useNewInUrl } from '../../hooks/useNewInUrl';
 import { normalizeTaskSearch } from '../../utils/task-search';
 import classes from './TasksPage.module.css';
 
@@ -18,8 +19,12 @@ export function TasksPage(): JSX.Element {
   const profile = useMedplumProfile();
   const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
 
-  const isNewTask = location.pathname.endsWith('/new');
   const basePath = taskId ? `/Task/${taskId}` : '/Task';
+  const {
+    isNew: isNewTask,
+    openNew: onNewTaskOpen,
+    closeNew: onNewTaskClose,
+  } = useNewInUrl(basePath, parsedSearch ? formatSearchQuery(parsedSearch) : '');
 
   useEffect(() => {
     const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search);
@@ -43,14 +48,6 @@ export function TasksPage(): JSX.Element {
   // Preserve the /new suffix so auto-selecting a task keeps the new task modal open.
   const getTaskUri = (task: Task): string => {
     return `/Task/${task.id}${isNewTask ? '/new' : ''}${formatSearchQuery(parsedSearch)}`;
-  };
-
-  const onNewTaskOpen = (): void => {
-    navigate(`${basePath}/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
-  };
-
-  const onNewTaskClose = (): void => {
-    navigate(`${basePath}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
   const onDelete = (_: Task): void => {

@@ -3,19 +3,23 @@
 import type { SearchRequest } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { FaxBoard } from '../../components/fax/FaxBoard';
 import type { FaxTab } from '../../components/fax/FaxListItem';
+import { useNewInUrl } from '../../hooks/useNewInUrl';
 import classes from './FaxPage.module.css';
 
 const FAX_QUERY_BASE = '_count=20&_sort=-_lastUpdated';
 const INBOX_URI = `/Fax/Communication?${FAX_QUERY_BASE}&category=inbound`;
 const SENT_URI = `/Fax/Communication?${FAX_QUERY_BASE}&category=outbound`;
 
+function getFaxBasePath(faxId: string | undefined): string {
+  return faxId ? `/Fax/Communication/${faxId}` : '/Fax/Communication';
+}
+
 export function FaxPage(): JSX.Element {
   const { faxId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   const category = searchParams.get('category');
@@ -23,26 +27,18 @@ export function FaxPage(): JSX.Element {
   const activeTab: FaxTab = category === 'outbound' ? 'sent' : 'inbox';
   const query = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}${offset ? `&_offset=${offset}` : ''}`;
 
-  const isNewFax = location.pathname.endsWith('/new');
-  const basePath = faxId ? `/Fax/Communication/${faxId}` : '/Fax/Communication';
+  const { isNew: isNewFax, openNew: onSendFaxOpen, closeNew: onSendFaxClose } = useNewInUrl(
+    getFaxBasePath(faxId),
+    `?${query}`
+  );
 
   // Preserve the /new suffix so auto-selecting a fax keeps the send fax modal open.
   const getFaxUri = (fax: Communication): string => {
-    const base = fax.id ? `/Fax/Communication/${fax.id}` : '/Fax/Communication';
-    return `${base}${isNewFax ? '/new' : ''}?${query}`;
+    return `${getFaxBasePath(fax.id)}${isNewFax ? '/new' : ''}?${query}`;
   };
 
   const onNew = (fax: Communication): void => {
-    const base = fax.id ? `/Fax/Communication/${fax.id}` : '/Fax/Communication';
-    navigate(`${base}?${query}`)?.catch(console.error);
-  };
-
-  const onSendFaxOpen = (): void => {
-    navigate(`${basePath}/new?${query}`)?.catch(console.error);
-  };
-
-  const onSendFaxClose = (): void => {
-    navigate(`${basePath}?${query}`)?.catch(console.error);
+    navigate(`${getFaxBasePath(fax.id)}?${query}`)?.catch(console.error);
   };
 
   // Pagination: write the new offset to the URL (drops the selected fax so the new

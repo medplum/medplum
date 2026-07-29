@@ -88,6 +88,8 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
         message: 'Task created successfully',
       });
 
+      // Close first: onClose may navigate back to the base path, and onTaskCreated then
+      // navigates to the new task — the created task's navigation must win.
       handleClose();
       onTaskCreated?.(createdTask);
     } catch (error) {
