@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useLocation, useNavigate } from 'react-router';
 
+/**
+ * NewInUrlState is the result of the useNewInUrl hook.
+ * @property isNew - Whether the current URL ends with `/new` (i.e. the "create new" modal should be open).
+ * @property openNew - Navigates to `${basePath}/new${suffix}` to open the modal.
+ * @property closeNew - Navigates to `${basePath}${suffix}` to close the modal.
+ */
 export interface NewInUrlState {
-  /** Whether the current URL ends with `/new` (i.e. the "create new" modal should be open). */
   isNew: boolean;
-  /** Navigates to `${basePath}/new${suffix}` to open the modal. */
   openNew: () => void;
-  /** Navigates to `${basePath}${suffix}` to close the modal. */
   closeNew: () => void;
 }
 

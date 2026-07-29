@@ -2,14 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useDisclosure } from '@mantine/hooks';
 
+/**
+ * ControllableDisclosureProps is the optional controlled state for the useControllableDisclosure hook.
+ * @property opened - Controlled open state. When provided, `onOpen`/`onClose` are expected to update it.
+ * @property onOpen - Called instead of the internal open handler when provided.
+ * @property onClose - Called instead of the internal close handler when provided.
+ */
 export interface ControllableDisclosureProps {
-  /** Controlled open state. When provided, `onOpen`/`onClose` are expected to update it. */
   opened?: boolean;
-  /** Called instead of the internal open handler when provided. */
   onOpen?: () => void;
-  /** Called instead of the internal close handler when provided. */
   onClose?: () => void;
 }
+
+/**
+ * ControllableDisclosureHandlers are the resolved open/close handlers returned by the useControllableDisclosure hook.
+ * @property open - Opens the disclosure.
+ * @property close - Closes the disclosure.
+ */
+export interface ControllableDisclosureHandlers {
+  open: () => void;
+  close: () => void;
+}
+
+export type ControllableDisclosureState = [opened: boolean, handlers: ControllableDisclosureHandlers];
 
 /**
  * Like Mantine's `useDisclosure`, but optionally controlled by the parent.
@@ -19,9 +34,7 @@ export interface ControllableDisclosureProps {
  * @param controlled - Optional controlled state and handlers.
  * @returns The resolved open state and open/close handlers.
  */
-export function useControllableDisclosure(
-  controlled: ControllableDisclosureProps
-): [boolean, { open: () => void; close: () => void }] {
+export function useControllableDisclosure(controlled: ControllableDisclosureProps): ControllableDisclosureState {
   const [internalOpened, handlers] = useDisclosure(false);
   return [
     controlled.opened ?? internalOpened,
