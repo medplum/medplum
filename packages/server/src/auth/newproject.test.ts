@@ -1,14 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, Operator } from '@medplum/core';
+import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
+import * as emailModule from '../email/email';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupRecaptchaMock } from '../test.setup';
+import { WELCOME_EMAIL_SUBJECT } from './welcomeemail';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -74,6 +77,75 @@ describe('New project', () => {
       projectName: 'Hamilton Project',
     });
     expect(res6).toHaveStatus(400);
+  });
+
+  test('Sends welcome email to the new project owner', async () => {
+    const sendEmailSpy = vi.spyOn(emailModule, 'sendEmail').mockResolvedValue(undefined);
+    try {
+      const email = `alex${randomUUID()}@example.com`;
+      const res1 = await request(app).post('/auth/newuser').type('json').send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+      expect(res1.status).toBe(200);
+
+      const res2 = await request(app).post('/auth/newproject').type('json').send({
+        login: res1.body.login,
+        projectName: 'Welcome Email Project',
+      });
+      expect(res2.status).toBe(200);
+
+      const welcomeCall = sendEmailSpy.mock.calls.find((call) => call[1]?.subject === WELCOME_EMAIL_SUBJECT);
+      expect(welcomeCall).toBeDefined();
+      expect(welcomeCall?.[1].to).toBe(email);
+      expect(welcomeCall?.[1].text).toContain('Welcome Email Project');
+      // The project is passed so sendEmail can resolve project-level sender settings.
+      expect(welcomeCall?.[2]?.resourceType).toBe('Project');
+    } finally {
+      sendEmailSpy.mockRestore();
+    }
+  });
+
+  test('Does not send welcome email when the user already owns a project', async () => {
+    const sendEmailSpy = vi.spyOn(emailModule, 'sendEmail').mockResolvedValue(undefined);
+    try {
+      const email = `alex${randomUUID()}@example.com`;
+      const res1 = await request(app).post('/auth/newuser').type('json').send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+      expect(res1.status).toBe(200);
+
+      // Simulate the user already owning a project, so the new one is not their first.
+      const systemRepo = getGlobalSystemRepo();
+      const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+      await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Existing Project',
+        owner: login.user as Reference<User>,
+      });
+
+      const res2 = await request(app).post('/auth/newproject').type('json').send({
+        login: res1.body.login,
+        projectName: 'Second Project',
+      });
+      expect(res2.status).toBe(200);
+
+      const welcomeCall = sendEmailSpy.mock.calls.find((call) => call[1]?.subject === WELCOME_EMAIL_SUBJECT);
+      expect(welcomeCall).toBeUndefined();
+    } finally {
+      sendEmailSpy.mockRestore();
+    }
   });
 
   test('Default ClientApplication is restricted to project', async () => {
