@@ -316,6 +316,7 @@ The parent order is represented by a `ServiceRequest` resource with the profile 
 - The ordering provider (`ServiceRequest.requester`)
 - The performing laboratory (`ServiceRequest.performer`)
 - Overall order status (`ServiceRequest.status`)
+- Diagnosis codes (`ServiceRequest.reasonCode`)
 - Shared documentation (`ServiceRequest.supportingInfo`)
 
 Each individual test within the order is represented by its own `ServiceRequest` resource that:
@@ -323,6 +324,50 @@ Each individual test within the order is represented by its own `ServiceRequest`
 - Links back to the parent order using `ServiceRequest.basedOn`
 - Contains the specific test code from the performing lab's compendium
 - Holds test-specific details, including Ask on Order Entry (AoE) questions.
+
+### Diagnosis codes
+
+ICD-10 diagnosis codes belong on the **parent** lab order as `ServiceRequest.reasonCode`. Child test `ServiceRequest` resources do not carry diagnoses; they only hold the lab test `code`.
+
+When using `useHealthGorillaLabOrder`, call `setDiagnoses` (or `addDiagnosis` / `removeDiagnosis`) with ICD-10 `CodeableConcept`s — typically from a `ValueSetAutocomplete` bound to `http://hl7.org/fhir/sid/icd-10-cm`. `createOrderBundle` passes that state into `createLabOrderBundle()`, which writes it to the parent order's `reasonCode`.
+
+If you build the order bundle yourself, set `reasonCode` on the parent order to ICD-10 `CodeableConcept`s before calling `$health-gorilla-send`. The `send-to-health-gorilla` bot reads `reasonCode` from the parent order and includes those codes on the outbound Health Gorilla `RequestGroup`. For Health Gorilla compatibility, it rewrites coding systems from `http://hl7.org/fhir/sid/icd-10-cm` to `http://hl7.org/fhir/sid/icd-10`.
+
+Diagnosis codes are especially important for Medicare orders (see [capture diagnosis codes for Medicare patients](/docs/integration/health-gorilla#show-abn-and-capture-diagnosis-codes-for-medicare-patients)).
+
+### Patient requirements
+
+The order's `ServiceRequest.subject` must reference a `Patient` that satisfies the **Medplum Health Gorilla Patient** profile (`https://medplum.com/profiles/integrations/health-gorilla/StructureDefinition/MedplumHealthGorillaPatient`). Before transmitting an order, `send-to-health-gorilla` validates and syncs that patient to Health Gorilla; missing required demographics cause the send to fail.
+
+| Requirement | FHIR path | Notes |
+| --- | --- | --- |
+| Birth date | `Patient.birthDate` | Required |
+| Name | `Patient.name` | At least one name with `family` and at least one `given` |
+| Address | `Patient.address` | At least one address with `line`, `city`, `state`, and `postalCode`. If `country` is omitted, the send bot defaults it to `US` |
+| Medical record number (MRN) | `Patient.identifier` | Exactly one identifier with type code `MR` (`http://terminology.hl7.org/CodeSystem/v2-0203`) |
+| Phone | `Patient.telecom` | At least one phone with `use` of `home` or `mobile` |
+| Sex | `Patient.gender` **or** US Core Birth Sex | Either `gender`, or the [US Core Birth Sex](http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex) extension |
+
+Email and work phone are allowed by the profile but are not required to send an order.
+
+Example of the required MRN identifier:
+
+```json
+{
+  "type": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+        "code": "MR"
+      }
+    ]
+  },
+  "system": "https://example.com/mrn",
+  "value": "123456"
+}
+```
+
+Use FHIR profile validation in your project so patients are complete at registration time, rather than discovering gaps only when an order is submitted.
 
 ### Supporting Resources
 
@@ -391,7 +436,7 @@ Actions:
 
 1. Syncs patient and practitioner data with Health Gorilla
 2. Assigns Health Gorilla identifiers
-3. Transmits order with billing information
+3. Transmits order with billing information and diagnosis codes from `ServiceRequest.reasonCode`
 4. Updates order status
 5. Downloads and stores:
    - Requisition forms
@@ -399,7 +444,9 @@ Actions:
 
 ### split-order Bot
 
-In some cases, the `send-to-health-gorilla`, but will return an error as follows, asking for the order to be split and resubmitted.
+Some performing labs require a single multi-test order to be split into multiple requisitions before submission (for example, Sonora Quest). That lab-side constraint is why the `split-order` bot exists: it is a Medplum preprocessing step that turns one parent order into the per-requisition orders Health Gorilla expects for those labs.
+
+When splitting is required, `send-to-health-gorilla` returns an error like the following, asking for the order to be split and resubmitted:
 
 ```ts
 {
@@ -428,7 +475,7 @@ In some cases, the `send-to-health-gorilla`, but will return an error as follows
 
 ```
 
-In this case, you can use the split order but to create new orders based off of the original. Each of these orders can then be submitted to `send-to-health-gorilla`
+In that case, use the `split-order` bot to create new orders from the original. Each of those orders can then be submitted to `send-to-health-gorilla`.
 
 Example payload:
 
