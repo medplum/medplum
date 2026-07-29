@@ -10,8 +10,8 @@ import type {
   StoredDocSearchHit,
   UseDocSearchKeyboardEventsProps,
 } from '@docsearch/react';
-import { useDocSearchKeyboardEvents } from '@docsearch/react/useDocSearchKeyboardEvents';
 import type { DocSearchSidepanelProps } from '@docsearch/react/sidepanel';
+import { useDocSearchKeyboardEvents } from '@docsearch/react/useDocSearchKeyboardEvents';
 import Head from '@docusaurus/Head';
 import Link from '@docusaurus/Link';
 import { useHistory, useLocation } from '@docusaurus/router';
@@ -25,8 +25,8 @@ import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import './styles.css';
 
@@ -71,7 +71,9 @@ function importDocSearchSidepanelIfNeeded(): Promise<void> {
   );
 }
 
-function useNavigator({ externalUrlRegex }: Pick<DocSearchProps, 'externalUrlRegex'>): DocSearchModalProps['navigator'] {
+function useNavigator({
+  externalUrlRegex,
+}: Pick<DocSearchProps, 'externalUrlRegex'>): DocSearchModalProps['navigator'] {
   const history = useHistory();
   const [navigator] = useState<DocSearchModalProps['navigator']>(() => {
     return {
@@ -271,10 +273,7 @@ function AskAiSidePanel({ algolia }: { algolia: DocSearchV4Props }): ReactNode {
   const [ready, setReady] = useState(Boolean(DocSearchSidepanel));
   const isDocsPage = pathname === '/docs' || pathname.startsWith('/docs/');
 
-  const askAi =
-    typeof algolia.askAi === 'string'
-      ? { assistantId: algolia.askAi }
-      : algolia.askAi;
+  const askAi = typeof algolia.askAi === 'string' ? { assistantId: algolia.askAi } : algolia.askAi;
   const assistantId = askAi?.assistantId;
 
   useEffect(() => {
