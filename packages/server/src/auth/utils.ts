@@ -23,6 +23,7 @@ import type { Handler, NextFunction, Request, Response } from 'express';
 import { randomInt } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
+import { getProjectAppName } from '../branding';
 import { getConfig } from '../config/loader';
 import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
@@ -36,8 +37,8 @@ import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export type MfaMethod = 'totp' | 'email';
 
-/** Brand name used in MFA emails for projects that have not been white-labeled. */
-const DEFAULT_BRAND_NAME = 'Medplum';
+/** App name used in MFA emails for projects that have not been white-labeled. */
+const DEFAULT_APP_NAME = 'Medplum';
 
 /** Authenticator app issuer used for projects that have not been white-labeled. */
 const DEFAULT_MFA_ISSUER = 'medplum.com';
@@ -60,17 +61,6 @@ export function getAllowedMfaMethods(project: Project | undefined): MfaMethod[] 
     .map((s) => s.trim())
     .filter((s): s is MfaMethod => s === 'totp' || s === 'email');
   return methods.length > 0 ? methods : ['totp'];
-}
-
-/**
- * Returns the brand name that a project has configured for user-facing content,
- * or undefined if the project has not been white-labeled. Controlled by the
- * `brandName` project setting.
- * @param project - The project to read the setting from.
- * @returns The configured brand name, or undefined if unset or blank.
- */
-export function getProjectBrandName(project: Project | undefined): string | undefined {
-  return project?.setting?.find((s) => s.name === 'brandName')?.valueString?.trim() || undefined;
 }
 
 /**
@@ -99,12 +89,12 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
  * one. Generating on demand keeps the QR code usable in that case. Users who
  * already have a secret keep it, so the URI is stable across repeated calls.
  *
- * The issuer is the project's brand name, and the account name identifies the
- * user, so the entry reads as "Acme Health" / "alice@example.com" in the user's
- * authenticator app. Projects without a `brandName` keep the `medplum.com`
- * issuer. Note that the issuer is what the user sees as the entry's title, so it
- * carries the branding; the Key URI spec forbids colons in either field because
- * authenticator apps split the label on the first one.
+ * The issuer is the project's app name and the account name identifies the user,
+ * so the entry reads as "Acme Health" / "alice@example.com" in the user's
+ * authenticator app. Authenticator apps show the issuer as the entry's title, so
+ * it is the part that carries the branding; the Key URI spec forbids colons in
+ * either field because apps split the label on the first one. Projects without an
+ * `appName` keep the `medplum.com` issuer.
  * @param repo - The system repository used to persist a newly generated secret.
  * @param user - The user enrolling in an authenticator app.
  * @param project - The project the user is logging in to, if known.
@@ -120,7 +110,7 @@ export async function buildTotpEnrollment(
     mfaSecret = authenticator.generateSecret();
     await repo.updateResource<User>({ ...user, mfaSecret });
   }
-  const issuer = (getProjectBrandName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
+  const issuer = (getProjectAppName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
   const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
 }
@@ -146,7 +136,7 @@ export function getEnrolledMfaMethods(user: User): MfaMethod[] {
  * @param login - The login to attach the hashed code to.
  * @param user - The user to email.
  * @param project - The project the user is logging in to, if known. Supplies the
- * brand name in the message and any project-level SMTP configuration.
+ * app name in the message and any project-level SMTP configuration.
  */
 export async function sendMfaEmailCode(
   login: WithId<Login>,
@@ -159,21 +149,21 @@ export async function sendMfaEmailCode(
   const expiresAt = new Date(Date.now() + EMAIL_MFA_CODE_EXPIRATION_MS).toISOString();
   await systemRepo.updateResource<Login>({ ...login, emailMfa: { codeHash, expiresAt } });
   const expirationMinutes = Math.floor(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
-  const brandName = getProjectBrandName(project) ?? DEFAULT_BRAND_NAME;
+  const appName = getProjectAppName(project) ?? DEFAULT_APP_NAME;
   await sendEmail(
     systemRepo,
     {
       to: user.email,
-      subject: `Your ${brandName} verification code: ${code}`,
+      subject: `Your ${appName} verification code: ${code}`,
       text: [
-        `Below is your requested ${brandName} verification code. You can copy it into the open browser window to confirm your login.`,
+        `Below is your requested ${appName} verification code. You can copy it into the open browser window to confirm your login.`,
         '',
         code,
         '',
         `This code will expire in ${expirationMinutes} minutes. If you did not try to sign in, you can safely ignore this email.`,
         '',
         'Thank you,',
-        `The ${brandName} Team`,
+        `The ${appName} Team`,
         '',
       ].join('\n'),
     },

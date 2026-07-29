@@ -2303,10 +2303,10 @@ describe('MFA', () => {
   });
 
   describe('Project branding', () => {
-    const brandName = 'Acme Health';
+    const appName = 'Acme Health';
 
     /**
-     * Registers a project whose MFA content is white-labeled with `brandName`,
+     * Registers a project whose MFA content is white-labeled with `appName`,
      * and which allows both MFA methods.
      * @returns The new user's email, password, access token, and project.
      */
@@ -2327,28 +2327,28 @@ describe('MFA', () => {
           password,
         })
       );
-      await setProjectSetting(project, 'brandName', brandName);
+      await setProjectSetting(project, 'appName', appName);
       await setAllowedMfaMethods(project, 'totp,email');
       return { email, password, accessToken, project };
     }
 
-    test('brandName brands the emailed code and the authenticator app entry', async () => {
+    test('appName brands the emailed code and the authenticator app entry', async () => {
       const { email, password, accessToken } = await registerBrandedProject();
 
       // The authenticator app entry is titled with the project and identifies the
-      // user by email, so the brand is not repeated in the account label.
+      // user by email, so the app name is not repeated in the account label.
       const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
       expect(statusRes).toHaveStatus(200);
       expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
-        issuer: brandName,
-        label: `${brandName}:${email}`,
+        issuer: appName,
+        label: `${appName}:${email}`,
       });
 
       // The code emailed during enrollment is branded.
       await enrollEmailMfa(accessToken);
       const enrollEmailMessage = await getLastEmail();
       expect(enrollEmailMessage.subject).toMatch(/^Your Acme Health verification code: \d{6}$/);
-      expect(enrollEmailMessage.text).toContain(`The ${brandName} Team`);
+      expect(enrollEmailMessage.text).toContain(`The ${appName} Team`);
       expect(enrollEmailMessage.text).not.toContain('Medplum');
 
       // So is the code emailed automatically at login.
@@ -2361,7 +2361,7 @@ describe('MFA', () => {
       expect(loginEmail.text).not.toContain('Medplum');
     });
 
-    test('brandName brands the enrollment QR code returned at login', async () => {
+    test('appName brands the enrollment QR code returned at login', async () => {
       const { email, password, project } = await registerBrandedProject();
 
       // A project-wide MFA requirement forces enrollment during login, so the
@@ -2372,12 +2372,12 @@ describe('MFA', () => {
       expect(loginRes).toHaveStatus(200);
       expect(loginRes.body.mfaEnrollRequired).toBe(true);
       expect(parseEnrollUriLabels(loginRes.body.enrollUri)).toEqual({
-        issuer: brandName,
-        label: `${brandName}:${email}`,
+        issuer: appName,
+        label: `${appName}:${email}`,
       });
     });
 
-    test('projects without a brandName keep the Medplum defaults', async () => {
+    test('projects without a appName keep the Medplum defaults', async () => {
       const email = `unbranded${randomUUID()}@example.com`;
       const password = 'password!@#';
       const { accessToken, project } = await withTestContext(() =>
@@ -2404,7 +2404,7 @@ describe('MFA', () => {
       expect(parsed.text).toContain('The Medplum Team');
     });
 
-    test('a colon in brandName does not corrupt the authenticator app entry', async () => {
+    test('a colon in appName does not corrupt the authenticator app entry', async () => {
       const email = `colon-brand${randomUUID()}@example.com`;
       const password = 'password!@#';
       const { accessToken, project } = await withTestContext(() =>
@@ -2417,9 +2417,9 @@ describe('MFA', () => {
         })
       );
 
-      // Authenticator apps split the label on the first colon, so a brand name
+      // Authenticator apps split the label on the first colon, so a app name
       // containing one would otherwise be read as a truncated issuer.
-      await setProjectSetting(project, 'brandName', 'Acme: Health');
+      await setProjectSetting(project, 'appName', 'Acme: Health');
 
       const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
       expect(statusRes).toHaveStatus(200);

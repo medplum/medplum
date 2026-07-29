@@ -76,10 +76,10 @@ Changing `allowedMfaMethods` affects which methods users can **newly enroll** in
 
 ## Branding MFA emails and authenticator apps
 
-By default, MFA content names Medplum. A Project can white-label it with a `brandName` [`Project.setting`](/docs/self-hosting/project-settings) entry, which changes:
+By default, MFA content names Medplum. A Project can white-label it with an `appName` [`Project.setting`](/docs/self-hosting/project-settings) entry — the server-side counterpart to the app's build-time [`MEDPLUM_APP_NAME`](/docs/self-hosting/branding), which the server cannot read — and it changes:
 
 - **Emailed codes** — the subject and body read "Your Acme Health verification code", signed "The Acme Health Team".
-- **Authenticator app entries** — enrollment QR codes use the brand name as the TOTP issuer, so the entry the user scans into Google Authenticator (or similar) is titled `Acme Health` rather than `medplum.com`, listed under the user's email address:
+- **Authenticator app entries** — enrollment QR codes use the app name as the TOTP issuer, so the entry the user scans into Google Authenticator (or similar) is titled `Acme Health` rather than `medplum.com`, listed under the user's email address:
 
 ```
 Acme Health
@@ -94,9 +94,9 @@ const project = await medplum.readResource('Project', projectId);
 await medplum.updateResource({
   ...project,
   setting: [
-    // Preserve any other settings, replacing brandName if it exists
-    ...(project.setting ?? []).filter((s) => s.name !== 'brandName'),
-    { name: 'brandName', valueString: 'Acme Health' },
+    // Preserve any other settings, replacing appName if it exists
+    ...(project.setting ?? []).filter((s) => s.name !== 'appName'),
+    { name: 'appName', valueString: 'Acme Health' },
   ],
 });
 ```
@@ -109,25 +109,23 @@ medplum patch Project/<projectId> \
 '[{
   "op": "add",
   "path": "/setting/-",
-  "value": { "name": "brandName", "valueString": "Acme Health" }
+  "value": { "name": "appName", "valueString": "Acme Health" }
 }]'
 ```
 
   </TabItem>
 </Tabs>
 
-When `brandName` is missing or blank, emails and authenticator entries keep the Medplum defaults. Colons are removed from the brand name before it is used as the TOTP issuer, because authenticator apps treat a colon as the separator between the issuer and the account name.
+When `appName` is missing or blank, emails and authenticator entries keep the Medplum defaults. Colons are removed from the app name before it is used as the TOTP issuer, because authenticator apps treat a colon as the separator between the issuer and the account name.
+
+With [Project SMTP](/docs/user-management/project-smtp) configured, `appName` also becomes the From display name, so the message shows as "Acme Health" in the recipient's inbox rather than a bare address. It is not applied to the server's own sender, because a display name that disagrees with the sender domain is a signal mail clients treat as suspicious.
 
 :::note[]
-`brandName` applies when content is generated, so it only affects new authenticator enrollments. Entries already added to a user's authenticator app keep their original title, and changing the setting never invalidates an existing secret.
+`appName` applies when content is generated, so it only affects new authenticator enrollments. Entries already added to a user's authenticator app keep their original title, and changing the setting never invalidates an existing secret.
 :::
 
 :::note[]
-`brandName` currently covers MFA content. Welcome, password reset, and invite emails still name Medplum — use [Custom Emails](/docs/user-management/custom-emails) to replace those.
-:::
-
-:::tip[]
-Combine this with [Project SMTP](/docs/user-management/project-smtp) to also send MFA codes from your own domain and sender address.
+`appName` currently covers MFA content and the email sender name. Welcome, password reset, and invite emails still name Medplum — use [Custom Emails](/docs/user-management/custom-emails) to replace those. The login page is branded separately, per client, via [`ClientApplication.signInForm`](/docs/api/fhir/medplum/clientapplication).
 :::
 
 ## Self-Enrollment

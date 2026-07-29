@@ -104,6 +104,27 @@ export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpC
 }
 
 /**
+ * Adds a display name to a from address so recipients see the project's app name in
+ * their inbox list rather than a bare address. Returns nodemailer's object form
+ * so it handles header quoting and encoding of the name.
+ *
+ * Only used when the project sends through its own SMTP relay: a display name
+ * that disagrees with the sender domain is a phishing signal that mail clients
+ * flag, so a project's app name is never attached to the server's own sender.
+ * Addresses that already carry a display name are left alone, letting a project
+ * override this by putting one in `smtpFromAddress`.
+ * @param fromAddress - The resolved from address.
+ * @param appName - The project's app name, if it has one.
+ * @returns The from address, with a display name when one applies.
+ */
+export function applyFromDisplayName(fromAddress: string, appName: string | undefined): string | Address {
+  if (!appName || fromAddress.includes('<')) {
+    return fromAddress;
+  }
+  return { name: appName, address: fromAddress };
+}
+
+/**
  * Converts nodemailer addresses to an array of strings.
  * @param input - nodemailer address input.
  * @returns Array of string addresses.
