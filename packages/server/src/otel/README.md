@@ -26,9 +26,9 @@ OpenTelemetry supports publishing four primary types of metrics:
   on demand.
   - e.g. jobs currently in flight, incremented as each starts and decremented as it settles
 
-> **NOTE**: Prefer a Counter over deriving a rate in the server: the observability backend can compute rates from a
-> monotonic total, and it does so without being tied to this process's lifetime. Compute a rate here only when the
-> underlying total is not itself exported as a metric.
+> **NOTE**: Do not compute rates ("X per second") in the server. Export a Counter and let the observability backend
+> derive the rate: it can then do so over whatever window it is asked about, rather than the one hard-coded here, and
+> the series is not tied to a single process's lifetime.
 
 [otel]: https://opentelemetry.io/docs/what-is-opentelemetry/
 

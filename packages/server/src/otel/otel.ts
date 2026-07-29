@@ -8,7 +8,7 @@ import v8 from 'node:v8';
 import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
-import { getBatchQueue, getBatchThroughputTotals } from '../workers/batch';
+import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
 import { getDownloadQueue } from '../workers/download';
 import { getSetAccountsQueue } from '../workers/set-accounts';
@@ -169,33 +169,6 @@ export function addToUpDownCounter(name: string, n: number, options?: RecordMetr
   return true;
 }
 
-/** The previous sample of each rate metric, used to turn running totals into per-second rates. */
-const rateSamples = new Map<string, { total: number; timestamp: number }>();
-
-/**
- * Records the per-second rate of a running total as a gauge.
- *
- * The caller supplies the monotonically increasing total; the delta since the previous sample is
- * divided by the wall-clock time between the two samples. The first sample of a given metric only
- * establishes a baseline and records nothing, since there is no interval to divide by yet. A total
- * that moved backwards (e.g. the source counter was reset) is treated as no progress rather than a
- * negative rate.
- * @param name - The metric name.
- * @param total - The running total. Expected to be monotonically increasing.
- * @param options - Optional metric attributes and options.
- * @returns True if a rate was recorded, false if metrics are disabled or no interval is available.
- */
-export function setRateGauge(name: string, total: number, options?: RecordMetricOptions): boolean {
-  const timestamp = Date.now();
-  const previous = rateSamples.get(name);
-  rateSamples.set(name, { total, timestamp });
-  if (!previous || timestamp <= previous.timestamp) {
-    return false;
-  }
-  const elapsedSeconds = (timestamp - previous.timestamp) / 1000;
-  return setGauge(name, Math.max(0, total - previous.total) / elapsedSeconds, options);
-}
-
 function isOtelMetricsEnabled(): boolean {
   return !!process.env.OTLP_METRICS_ENDPOINT;
 }
@@ -258,18 +231,6 @@ export function initOtelHeartbeat(): void {
         setGauge(getQueueMetricName(queueName, 'activeCount'), await queue.getActiveCount());
       }
     }
-
-    // Async batch throughput. The worker maintains running totals; the rate is the delta between
-    // consecutive heartbeats, so these are per-process rates for whatever batches this instance ran.
-    const batchTotals = getBatchThroughputTotals();
-    setRateGauge('medplum.batch.completedPerSecond', batchTotals.completedJobs, {
-      ...BASE_METRIC_OPTIONS,
-      options: { unit: '{job}/s' },
-    });
-    setRateGauge('medplum.batch.entriesPerSecond', batchTotals.processedEntries, {
-      ...BASE_METRIC_OPTIONS,
-      options: { unit: '{entry}/s' },
-    });
   };
   heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
 }
@@ -282,6 +243,4 @@ export function cleanupOtelHeartbeat(): void {
   if (queueEntries) {
     queueEntries = undefined;
   }
-  // Drop rate baselines so a restarted heartbeat does not divide a fresh delta by a stale interval.
-  rateSamples.clear();
 }
