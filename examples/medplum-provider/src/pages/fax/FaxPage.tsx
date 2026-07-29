@@ -27,10 +27,11 @@ export function FaxPage(): JSX.Element {
   const activeTab: FaxTab = category === 'outbound' ? 'sent' : 'inbox';
   const query = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}${offset ? `&_offset=${offset}` : ''}`;
 
-  const { isNew: isNewFax, openNew: onSendFaxOpen, closeNew: onSendFaxClose } = useNewInUrl(
-    getFaxBasePath(faxId),
-    `?${query}`
-  );
+  const {
+    isNew: isNewFax,
+    openNew: onSendFaxOpen,
+    closeNew: onSendFaxClose,
+  } = useNewInUrl(getFaxBasePath(faxId), `?${query}`);
 
   // Preserve the /new suffix so auto-selecting a fax keeps the send fax modal open.
   const getFaxUri = (fax: Communication): string => {
