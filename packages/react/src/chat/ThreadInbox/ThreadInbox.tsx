@@ -223,7 +223,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
             // A draft thread (created locally, no reply yet) would be dropped from the list
             // by the refetch after saving settings, so hide Message Settings until the
             // thread has at least one message.
-            const isDraft = !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id);
+            const isDraft =
+              !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id);
             return (
               <ThreadDetail
                 thread={thread}
