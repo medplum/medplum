@@ -32,6 +32,9 @@ import { ThreadListItem } from './ThreadListItem';
  * @param onChange - A function to handle search changes.
  * @param inProgressUri - The URI for in-progress threads.
  * @param completedUri - The URI for completed threads.
+ * @param newTopicOpened - Controlled open state for the new topic dialog. When provided, use `onNewTopicOpen` and `onNewTopicClose` to update it.
+ * @param onNewTopicOpen - Called when the user clicks the new message button. Required when `newTopicOpened` is provided.
+ * @param onNewTopicClose - Called when the new topic dialog is closed. Required when `newTopicOpened` is provided.
  */
 
 export interface ThreadInboxProps {
@@ -48,6 +51,9 @@ export interface ThreadInboxProps {
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
   readonly allowPatientSelection?: boolean;
+  readonly newTopicOpened?: boolean;
+  readonly onNewTopicOpen?: () => void;
+  readonly onNewTopicClose?: () => void;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -65,10 +71,15 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     inProgressUri,
     completedUri,
     allowPatientSelection = false,
+    onNewTopicOpen,
+    onNewTopicClose,
   } = props;
 
   const navigate = useMedplumNavigate();
-  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [internalModalOpened, { open: openInternalModal, close: closeInternalModal }] = useDisclosure(false);
+  const modalOpened = props.newTopicOpened ?? internalModalOpened;
+  const openModal = onNewTopicOpen ?? openInternalModal;
+  const closeModal = onNewTopicClose ?? closeInternalModal;
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 

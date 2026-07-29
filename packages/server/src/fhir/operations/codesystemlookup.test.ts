@@ -496,6 +496,7 @@ describe('CodeSystem lookup', () => {
   test('Correctly renders imported properties of different types', async () => {
     const res = await request(app)
       .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$import`)
+      .set('X-Medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send({

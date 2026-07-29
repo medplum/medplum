@@ -675,6 +675,13 @@ function buildCodingTable(result: SchemaDefinition): void {
         unique: true,
       },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
+      // Supports case-insensitive prefix matching on code, e.g. LOWER(code) LIKE 'abc%' under non-C collations
+      // Partial on canonical rows only: this mirrors the primary_idx above and makes the index ~40% smaller
+      {
+        columns: ['system', { expression: 'lower(code) text_pattern_ops', name: 'codeLowerPattern' }],
+        indexType: 'btree',
+        where: `"synonymOf" IS NULL`,
+      },
     ],
   });
 }

@@ -32,13 +32,16 @@ export function MessagesPage(): JSX.Element {
     [currentSearch]
   );
 
+  const isNewMessage = location.pathname.endsWith('/new');
+  const basePath = messageId ? `/Communication/${messageId}` : '/Communication';
+
   useEffect(() => {
     const isDetailView = Boolean(messageId);
     if (!isDetailView && normalizedSearch !== currentSearch) {
       const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
-      navigate(`/Communication${prefix}`, { replace: true })?.catch(console.error);
+      navigate(`${isNewMessage ? `${basePath}/new` : basePath}${prefix}`, { replace: true })?.catch(console.error);
     }
-  }, [currentSearch, navigate, normalizedSearch, messageId]);
+  }, [currentSearch, navigate, normalizedSearch, messageId, isNewMessage, basePath]);
 
   const onChange = (search: SearchRequest): void => {
     navigate(`/Communication${formatSearchQuery(search)}`)?.catch(console.error);
@@ -71,6 +74,14 @@ export function MessagesPage(): JSX.Element {
     navigate(getThreadUri(message))?.catch(console.error);
   };
 
+  const onNewTopicOpen = (): void => {
+    navigate(`${basePath}/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+  };
+
+  const onNewTopicClose = (): void => {
+    navigate(`${basePath}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
+  };
+
   const onViewInDocuments = (reference: Reference<DocumentReference>): void => {
     medplum
       .readReference(reference)
@@ -92,6 +103,9 @@ export function MessagesPage(): JSX.Element {
         allowPatientSelection={true}
         onNew={onNew}
         getThreadUri={getThreadUri}
+        newTopicOpened={isNewMessage}
+        onNewTopicOpen={onNewTopicOpen}
+        onNewTopicClose={onNewTopicClose}
         onViewInDocuments={onViewInDocuments}
         onChange={onChange}
         inProgressUri={inProgressUri}
