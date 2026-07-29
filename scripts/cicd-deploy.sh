@@ -174,5 +174,6 @@ fi
 # Deploy docs last since it is the slowest
 if [[ "$DEPLOY_DOCS" = true ]]; then
   echo "Deploy docs"
+  npm run build:docs
   source ./scripts/deploy-docs.sh
 fi
