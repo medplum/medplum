@@ -2335,12 +2335,13 @@ describe('MFA', () => {
     test('brandName brands the emailed code and the authenticator app entry', async () => {
       const { email, password, accessToken } = await registerBrandedProject();
 
-      // The authenticator app entry names the project, not Medplum.
+      // The authenticator app entry is titled with the project and identifies the
+      // user by email, so the brand is not repeated in the account label.
       const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
       expect(statusRes).toHaveStatus(200);
       expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
         issuer: brandName,
-        label: `${brandName}:${brandName} - ${email}`,
+        label: `${brandName}:${email}`,
       });
 
       // The code emailed during enrollment is branded.
@@ -2372,7 +2373,7 @@ describe('MFA', () => {
       expect(loginRes.body.mfaEnrollRequired).toBe(true);
       expect(parseEnrollUriLabels(loginRes.body.enrollUri)).toEqual({
         issuer: brandName,
-        label: `${brandName}:${brandName} - ${email}`,
+        label: `${brandName}:${email}`,
       });
     });
 
@@ -2394,13 +2395,64 @@ describe('MFA', () => {
       expect(statusRes).toHaveStatus(200);
       expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
         issuer: 'medplum.com',
-        label: `medplum.com:Medplum - ${email}`,
+        label: `medplum.com:${email}`,
       });
 
       await enrollEmailMfa(accessToken);
       const parsed = await getLastEmail();
       expect(parsed.subject).toMatch(/^Your Medplum verification code: \d{6}$/);
       expect(parsed.text).toContain('The Medplum Team');
+    });
+
+    test('a colon in brandName does not corrupt the authenticator app entry', async () => {
+      const email = `colon-brand${randomUUID()}@example.com`;
+      const password = 'password!@#';
+      const { accessToken, project } = await withTestContext(() =>
+        registerNew({
+          firstName: 'Colon',
+          lastName: 'Brand',
+          projectName: `Colon Brand Project ${randomUUID()}`,
+          email,
+          password,
+        })
+      );
+
+      // Authenticator apps split the label on the first colon, so a brand name
+      // containing one would otherwise be read as a truncated issuer.
+      await setProjectSetting(project, 'brandName', 'Acme: Health');
+
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(statusRes).toHaveStatus(200);
+      expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
+        issuer: 'Acme Health',
+        label: `Acme Health:${email}`,
+      });
+    });
+
+    test('a user without an email is identified by id, never "undefined"', async () => {
+      const email = `no-email${randomUUID()}@example.com`;
+      const password = 'password!@#';
+      const { accessToken, user } = await withTestContext(() =>
+        registerNew({
+          firstName: 'No',
+          lastName: 'Email',
+          projectName: `No Email Project ${randomUUID()}`,
+          email,
+          password,
+        })
+      );
+
+      // Users can be invited without an email address, so the account label must
+      // still identify them.
+      const systemRepo = getGlobalSystemRepo();
+      await withTestContext(() => systemRepo.updateResource<User>({ ...user, email: undefined }));
+
+      const statusRes = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+      expect(statusRes).toHaveStatus(200);
+      expect(parseEnrollUriLabels(statusRes.body.enrollUri)).toEqual({
+        issuer: 'medplum.com',
+        label: `medplum.com:${user.id}`,
+      });
     });
   });
 });

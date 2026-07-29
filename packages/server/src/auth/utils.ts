@@ -36,7 +36,7 @@ import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export type MfaMethod = 'totp' | 'email';
 
-/** Brand name used in MFA content for projects that have not been white-labeled. */
+/** Brand name used in MFA emails for projects that have not been white-labeled. */
 const DEFAULT_BRAND_NAME = 'Medplum';
 
 /** Authenticator app issuer used for projects that have not been white-labeled. */
@@ -99,9 +99,12 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
  * one. Generating on demand keeps the QR code usable in that case. Users who
  * already have a secret keep it, so the URI is stable across repeated calls.
  *
- * The account label and issuer carry the project's brand name, so the entry the
- * user adds to their authenticator app names the application they signed in to.
- * Projects without a `brandName` keep the historical Medplum labels.
+ * The issuer is the project's brand name, and the account name identifies the
+ * user, so the entry reads as "Acme Health" / "alice@example.com" in the user's
+ * authenticator app. Projects without a `brandName` keep the `medplum.com`
+ * issuer. Note that the issuer is what the user sees as the entry's title, so it
+ * carries the branding; the Key URI spec forbids colons in either field because
+ * authenticator apps split the label on the first one.
  * @param repo - The system repository used to persist a newly generated secret.
  * @param user - The user enrolling in an authenticator app.
  * @param project - The project the user is logging in to, if known.
@@ -117,9 +120,8 @@ export async function buildTotpEnrollment(
     mfaSecret = authenticator.generateSecret();
     await repo.updateResource<User>({ ...user, mfaSecret });
   }
-  const brandName = getProjectBrandName(project);
-  const accountName = `${brandName ?? DEFAULT_BRAND_NAME} - ${user.email}`;
-  const enrollUri = authenticator.keyuri(accountName, brandName ?? DEFAULT_MFA_ISSUER, mfaSecret);
+  const issuer = (getProjectBrandName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
+  const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
 }
 

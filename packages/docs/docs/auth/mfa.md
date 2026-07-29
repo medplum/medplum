@@ -79,7 +79,12 @@ Changing `allowedMfaMethods` affects which methods users can **newly enroll** in
 By default, MFA content names Medplum. A Project can white-label it with a `brandName` [`Project.setting`](/docs/self-hosting/project-settings) entry, which changes:
 
 - **Emailed codes** — the subject and body read "Your Acme Health verification code", signed "The Acme Health Team".
-- **Authenticator app entries** — enrollment QR codes use the brand name as the issuer and account label, so the entry the user adds to Google Authenticator (or similar) names your application instead of `medplum.com`.
+- **Authenticator app entries** — enrollment QR codes use the brand name as the TOTP issuer, so the entry the user scans into Google Authenticator (or similar) is titled `Acme Health` rather than `medplum.com`, listed under the user's email address:
+
+```
+Acme Health
+alice@example.com          123 456
+```
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -111,10 +116,14 @@ medplum patch Project/<projectId> \
   </TabItem>
 </Tabs>
 
-When `brandName` is missing or blank, emails and authenticator entries keep the Medplum defaults.
+When `brandName` is missing or blank, emails and authenticator entries keep the Medplum defaults. Colons are removed from the brand name before it is used as the TOTP issuer, because authenticator apps treat a colon as the separator between the issuer and the account name.
 
 :::note[]
-`brandName` applies when content is generated, so it only affects new authenticator enrollments. Entries already added to a user's authenticator app keep their original label, and changing the setting never invalidates an existing secret.
+`brandName` applies when content is generated, so it only affects new authenticator enrollments. Entries already added to a user's authenticator app keep their original title, and changing the setting never invalidates an existing secret.
+:::
+
+:::note[]
+`brandName` currently covers MFA content. Welcome, password reset, and invite emails still name Medplum — use [Custom Emails](/docs/user-management/custom-emails) to replace those.
 :::
 
 :::tip[]
