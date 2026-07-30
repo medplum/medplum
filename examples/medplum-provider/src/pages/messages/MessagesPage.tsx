@@ -44,7 +44,8 @@ export function MessagesPage(): JSX.Element {
   }, [currentSearch, navigate, normalizedSearch, messageId, isNewMessage, basePath]);
 
   const onChange = (search: SearchRequest): void => {
-    navigate(`/Communication${formatSearchQuery(search)}`)?.catch(console.error);
+    // Keep the selected thread open when the list search changes (pagination, filters)
+    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
   const getThreadUri = (topic: Communication): string => {
@@ -72,6 +73,10 @@ export function MessagesPage(): JSX.Element {
 
   const onNew = (message: Communication): void => {
     navigate(getThreadUri(message))?.catch(console.error);
+  };
+
+  const onSelectFirst = (thread: Communication): void => {
+    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
   };
 
   const onNewTopicOpen = (): void => {
@@ -102,6 +107,7 @@ export function MessagesPage(): JSX.Element {
         sections={sections}
         allowPatientSelection={true}
         onNew={onNew}
+        onSelectFirst={onSelectFirst}
         getThreadUri={getThreadUri}
         newTopicOpened={isNewMessage}
         onNewTopicOpen={onNewTopicOpen}
