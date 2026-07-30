@@ -7,13 +7,14 @@ import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
+import { useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { ListWithDetailPaneTab } from '../../ListWithDetailPane/ListWithDetailPane';
 import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
+import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
 import { ThreadDetail } from './ThreadDetail';
@@ -28,6 +29,7 @@ import { ThreadListItem } from './ThreadListItem';
  * @param showPatientSummary - Whether to show the patient summary.
  * @param sections - Optional sections configuration for the patient summary.
  * @param onNew - A function to handle a new thread.
+ * @param onSelectFirst - Fired with the first thread when the list loads with nothing selected; use it to navigate to that thread (with replace) so the inbox auto-selects it.
  * @param getThreadUri - A function to build thread URIs.
  * @param onChange - A function to handle search changes.
  * @param inProgressUri - The URI for in-progress threads.
@@ -44,6 +46,7 @@ export interface ThreadInboxProps {
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
   readonly onNew: (message: Communication) => void;
+  readonly onSelectFirst?: (thread: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
   readonly onChange: (search: SearchRequest) => void;
   readonly inProgressUri: string;
@@ -64,6 +67,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     showPatientSummary = false,
     sections,
     onNew,
+    onSelectFirst,
     getThreadUri,
     uploadEnabled,
     onViewInDocuments,
@@ -75,11 +79,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     onNewTopicClose,
   } = props;
 
-  const navigate = useMedplumNavigate();
   const [internalModalOpened, { open: openInternalModal, close: closeInternalModal }] = useDisclosure(false);
   const modalOpened = props.newTopicOpened ?? internalModalOpened;
   const openModal = onNewTopicOpen ?? openInternalModal;
   const closeModal = onNewTopicClose ?? closeInternalModal;
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
@@ -138,11 +142,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   }, [error]);
 
@@ -151,11 +151,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     try {
       await refreshThreadMessages();
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   };
 
@@ -176,6 +172,16 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     }
     return map;
   }, [threadMessages]);
+
+  const isDraft = useCallback(
+    (thread: Communication): boolean =>
+      !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id),
+    [lastMessageByThreadId]
+  );
+
+  const handleMessageSent = useCallback(() => {
+    refreshThreadMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [refreshThreadMessages]);
 
   const tabs = useMemo<ListWithDetailPaneTab[]>(
     () => [
@@ -204,12 +210,14 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
         <ListWithDetailPane<Communication>
           items={items}
           loading={loading}
-          selectedKey={selectedThread?.id}
+          selectedKey={selectedThread?.id ?? threadId}
           selected={selectedThread}
+          // Suppress auto-select while the new-topic dialog is open (e.g. a URL-driven
+          // /new route with no selection) — selecting would navigate away and close it.
+          onSelectFirst={modalOpened ? undefined : onSelectFirst}
           listWidth={380}
           tabs={tabs}
           activeTab={status}
-          onTabChange={(value) => navigate(value === 'in-progress' ? inProgressUri : completedUri)}
           headerActions={headerActions}
           skeleton={<ThreadListSkeleton />}
           emptyList={<EmptyMessagesState />}
@@ -233,17 +241,35 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               uploadEnabled={uploadEnabled}
               onViewInDocuments={onViewInDocuments}
               onStatusChange={handleTopicStatusChangeWithErrorHandling}
+              onOpenSettings={isDraft(thread) ? undefined : openEditModal}
+              onMessageSent={handleMessageSent}
             />
           )}
         />
       </div>
-      <NewTopicDialog
-        subject={subject}
-        opened={modalOpened}
-        onClose={closeModal}
-        onSubmit={handleNewTopicCompletion}
-        allowPatientSelection={allowPatientSelection}
-      />
+      {/* Both dialogs are mounted only while open so every open is a fresh instance — any
+          entries dismissed without saving are abandoned, with no leftover form state. */}
+      {modalOpened && (
+        <NewTopicDialog
+          subject={subject}
+          opened={modalOpened}
+          onClose={closeModal}
+          onSubmit={handleNewTopicCompletion}
+          allowPatientSelection={allowPatientSelection}
+        />
+      )}
+      {selectedThread && editModalOpened && (
+        <EditThreadDialog
+          thread={selectedThread}
+          opened={editModalOpened}
+          onClose={closeEditModal}
+          onSaved={() => {
+            refreshThreadMessages().catch((err) =>
+              showNotification({ color: 'red', message: normalizeErrorString(err) })
+            );
+          }}
+        />
+      )}
     </>
   );
 }

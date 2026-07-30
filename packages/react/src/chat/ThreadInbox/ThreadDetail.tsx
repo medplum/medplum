@@ -1,26 +1,48 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Flex, Menu, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Divider,
+  Flex,
+  Group,
+  Menu,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  Tooltip,
+} from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
-import { IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import classes from './ThreadDetail.module.css';
 
+/**
+ * Props for the ThreadDetail component.
+ * @param thread - The selected thread (parent Communication) to display.
+ * @param showPatientSummary - Whether to show the patient summary sidebar.
+ * @param sections - Optional sections configuration for the patient summary.
+ * @param uploadEnabled - Whether to show the attachment upload button in the chat input.
+ * @param onViewInDocuments - When provided, shows a "View in Documents" action on attachment messages that invokes this callback with the attachment's DocumentReference.
+ * @param onStatusChange - Fired when the user changes the thread status from the header menu.
+ * @param onOpenSettings - When provided, shows a Message Settings button in the header that invokes this callback.
+ * @param onMessageSent - Fired with the created Communication after the user sends a message in the chat.
+ */
 export interface ThreadDetailProps {
-  /** The selected thread (parent Communication) to display. */
   readonly thread: Communication;
-  /** Whether to show the patient summary sidebar. */
   readonly showPatientSummary?: boolean;
-  /** Optional sections configuration for the patient summary. */
   readonly sections?: PatientSummarySectionConfig[];
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
-  /** Fired when the user changes the thread status from the header menu. */
   readonly onStatusChange: (status: Communication['status']) => void;
+  readonly onOpenSettings?: () => void;
+  readonly onMessageSent?: (message: Communication) => void;
 }
 
 /**
@@ -30,7 +52,16 @@ export interface ThreadDetailProps {
  * @returns The ThreadDetail React node.
  */
 export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
-  const { thread, showPatientSummary = false, sections, uploadEnabled, onViewInDocuments, onStatusChange } = props;
+  const {
+    thread,
+    showPatientSummary = false,
+    sections,
+    uploadEnabled,
+    onViewInDocuments,
+    onStatusChange,
+    onOpenSettings,
+    onMessageSent,
+  } = props;
 
   return (
     <>
@@ -43,28 +74,45 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
                 {thread.topic?.text ?? 'Messages'}
               </Text>
 
-              <Menu position="bottom-end" shadow="md">
-                <Menu.Target>
-                  <Button
-                    variant="light"
-                    color={getStatusColor(thread.status)}
-                    rightSection={thread.status === 'completed' ? undefined : <IconChevronDown size={16} />}
-                    radius="xl"
-                    size="sm"
-                  >
-                    {thread.status
-                      .split('-')
-                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(' ')}
-                  </Button>
-                </Menu.Target>
-
-                {thread.status !== 'completed' && (
-                  <Menu.Dropdown>
-                    <Menu.Item onClick={() => onStatusChange('completed')}>Completed</Menu.Item>
-                  </Menu.Dropdown>
+              <Group gap="xs">
+                {onOpenSettings && (
+                  <Tooltip label="Message Settings" position="bottom" openDelay={500}>
+                    <ActionIcon
+                      aria-label="Message settings"
+                      variant="transparent"
+                      radius="xl"
+                      size={32}
+                      className="outline-icon-button"
+                      onClick={onOpenSettings}
+                    >
+                      <IconInfoCircle size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                 )}
-              </Menu>
+
+                <Menu position="bottom-end" shadow="md">
+                  <Menu.Target>
+                    <Button
+                      variant="light"
+                      color={getStatusColor(thread.status)}
+                      rightSection={thread.status === 'completed' ? undefined : <IconChevronDown size={16} />}
+                      radius="xl"
+                      size="sm"
+                    >
+                      {thread.status
+                        .split('-')
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ')}
+                    </Button>
+                  </Menu.Target>
+
+                  {thread.status !== 'completed' && (
+                    <Menu.Dropdown>
+                      <Menu.Item onClick={() => onStatusChange('completed')}>Completed</Menu.Item>
+                    </Menu.Dropdown>
+                  )}
+                </Menu>
+              </Group>
             </Flex>
             <Divider />
             <Box flex={1} h="100%">
@@ -75,6 +123,7 @@ export function ThreadDetail(props: ThreadDetailProps): JSX.Element {
                 excludeHeader={true}
                 uploadEnabled={uploadEnabled}
                 onViewInDocuments={onViewInDocuments}
+                onMessageSent={onMessageSent}
               />
             </Box>
           </Stack>

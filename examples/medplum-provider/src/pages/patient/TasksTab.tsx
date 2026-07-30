@@ -54,7 +54,9 @@ export function TasksTab(): JSX.Element {
   };
 
   const onChange = (search: SearchRequest): void => {
-    navigate(`/Patient/${patientId}/Task${formatSearchQuery(search)}`)?.catch(console.error);
+    // Keep the selected task open when the list search changes (pagination, filters)
+    const basePath = taskId ? `/Patient/${patientId}/Task/${taskId}` : `/Patient/${patientId}/Task`;
+    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
   const myTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner' && f.code !== 'patient') || [];

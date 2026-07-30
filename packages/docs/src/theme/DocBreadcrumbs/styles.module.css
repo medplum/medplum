@@ -1,0 +1,19 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 0.35rem;
+  column-gap: 1rem;
+  margin-bottom: var(--ifm-spacing-vertical);
+}
+
+/* The breadcrumbs nav carries its own bottom margin normally; since the row
+   now owns that spacing (to stay aligned with the downloads next to it),
+   zero the nav's own margin out. */
+.row > nav {
+  margin-bottom: 0;
+}

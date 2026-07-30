@@ -42,12 +42,12 @@ export function FaxPage(): JSX.Element {
     navigate(`${getFaxBasePath(fax.id)}?${query}`)?.catch(console.error);
   };
 
-  // Pagination: write the new offset to the URL (drops the selected fax so the new
-  // page auto-selects its first item via the board's onSelectFirst).
+  // Pagination: write the new offset to the URL, keeping the selected fax open
   const onChange = (search: SearchRequest): void => {
     const newOffset = search.offset ?? 0;
     const next = `${FAX_QUERY_BASE}&category=${category ?? 'inbound'}${newOffset > 0 ? `&_offset=${newOffset}` : ''}`;
-    navigate(`/Fax/Communication?${next}`)?.catch(console.error);
+    const basePath = faxId ? `/Fax/Communication/${faxId}` : '/Fax/Communication';
+    navigate(`${basePath}?${next}`)?.catch(console.error);
   };
 
   return (
