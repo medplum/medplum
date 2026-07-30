@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
+import { useNewInUrl } from '../../hooks/useNewInUrl';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 import classes from './MessagesPage.module.css';
 /**
@@ -32,8 +33,12 @@ export function MessagesPage(): JSX.Element {
     [currentSearch]
   );
 
-  const isNewMessage = location.pathname.endsWith('/new');
   const basePath = messageId ? `/Communication/${messageId}` : '/Communication';
+  const {
+    isNew: isNewMessage,
+    openNew: onNewTopicOpen,
+    closeNew: onNewTopicClose,
+  } = useNewInUrl(basePath, formatSearchQuery(parsedSearch));
 
   useEffect(() => {
     const isDetailView = Boolean(messageId);
@@ -77,14 +82,6 @@ export function MessagesPage(): JSX.Element {
 
   const onSelectFirst = (thread: Communication): void => {
     navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
-  };
-
-  const onNewTopicOpen = (): void => {
-    navigate(`${basePath}/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
-  };
-
-  const onNewTopicClose = (): void => {
-    navigate(`${basePath}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
   const onViewInDocuments = (reference: Reference<DocumentReference>): void => {
