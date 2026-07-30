@@ -1160,7 +1160,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         parseSearchRequest(`Organization?_has:Patient:_compartment:_id=${patient.id}`)
       );
       // Both compartment Organizations returned
-      expect(searchResult.entry).toHaveLength(2);
       expect(searchResult.entry?.map((e) => e.resource?.id)).toContainExactly([organizationA.id, organizationB.id]);
     }));
 
@@ -1185,8 +1184,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       const searchResult = await repo.search(
         parseSearchRequest(`Patient?_compartment:Organization.name=${organizationA.name}`)
       );
-      expect(searchResult.entry).toHaveLength(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+      expect(searchResult.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
     }));
 
   test('Chained filter with _compartment as middle link', () =>
@@ -1210,8 +1208,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       const searchResult = await repo.search(
         parseSearchRequest(`Encounter?patient._compartment:Organization.name=${organization.name?.substring(0, 8)}`)
       );
-      expect(searchResult.entry).toHaveLength(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(encounter.id);
+      expect(searchResult.entry?.map((e) => e.resource?.id)).toStrictEqual([encounter.id]);
     }));
 
   test('Empty _id', async () =>

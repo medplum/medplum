@@ -200,6 +200,9 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         code: '_compartment',
         type: 'reference',
         expression: resourceType + '.meta.compartment',
+        // Must be lazy-loaded: `getOrInitTypeSchema` runs to pre-populate
+        // each resource type's search parameters, before the entire list
+        // of resource types is available
         get target(): string[] {
           compartmentTargets ??= getResourceTypes();
           return compartmentTargets;
