@@ -173,17 +173,6 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     return map;
   }, [threadMessages]);
 
-  // Auto-select the first thread when the list loads with nothing selected. Selection is
-  // URL-driven, so the consumer navigates to the thread (same pattern as the fax board's
-  // onSelectFirst).
-  useEffect(() => {
-    // Skip while the new-topic dialog is open (e.g. a URL-driven /new route with no
-    // selection) — selecting would navigate away and close it.
-    if (!threadId && !loading && !modalOpened && items.length > 0) {
-      onSelectFirst?.(items[0]);
-    }
-  }, [threadId, loading, modalOpened, items, onSelectFirst]);
-
   const isDraft = useCallback(
     (thread: Communication): boolean =>
       !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id),
@@ -221,8 +210,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
         <ListWithDetailPane<Communication>
           items={items}
           loading={loading}
-          selectedKey={selectedThread?.id}
+          selectedKey={selectedThread?.id ?? threadId}
           selected={selectedThread}
+          // Suppress auto-select while the new-topic dialog is open (e.g. a URL-driven
+          // /new route with no selection) — selecting would navigate away and close it.
+          onSelectFirst={modalOpened ? undefined : onSelectFirst}
           listWidth={380}
           tabs={tabs}
           activeTab={status}

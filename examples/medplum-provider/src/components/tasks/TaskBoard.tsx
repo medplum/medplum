@@ -59,16 +59,24 @@ export function TaskBoard({
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<WithId<Task>[]>([]);
   const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [memoizedQuery, setMemoizedQuery] = useState(query);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
   const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
   const [total, setTotal] = useState<number | undefined>(undefined);
   const requestIdRef = useRef(0);
-  const fetchingRef = useRef(false);
 
   const [filters, setFilters] = useState<FilterState>({
     performerType: undefined,
   });
+
+  // Adjust state during render (useResourceBoard pattern) so a new query shows the
+  // skeleton on that same render — the auto-select effect never acts on the previous
+  // query's tasks (e.g. selecting the old tab's first task).
+  if (query !== memoizedQuery) {
+    setMemoizedQuery(query);
+    setLoading(true);
+  }
 
   // Parse pagination and status filters from query
   const searchParams = useMemo(() => new URLSearchParams(query), [query]);
@@ -88,14 +96,10 @@ export function TaskBoard({
   );
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    if (fetchingRef.current) {
-      return;
-    }
-    fetchingRef.current = true;
     const currentRequestId = ++requestIdRef.current;
 
     try {
-      const tasks = await medplum.searchResources('Task', query, { cache: 'no-cache' });
+      const tasks = await medplum.searchResources('Task', memoizedQuery, { cache: 'no-cache' });
 
       if (currentRequestId !== requestIdRef.current) {
         return;
@@ -122,29 +126,15 @@ export function TaskBoard({
         throw error;
       }
     } finally {
-      fetchingRef.current = false;
-    }
-  }, [medplum, filters.performerType, query]);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchTasks()
-      .catch(showErrorNotification)
-      .finally(() => setLoading(false));
-  }, [fetchTasks]);
-
-  // Auto-select first task when list loads and no task is selected, or when selected task is not in list
-  useEffect(() => {
-    if (!loading && tasks.length > 0) {
-      const selectedTaskInList = selectedTaskId && tasks.some((task) => task.id === selectedTaskId);
-      if (!selectedTaskInList) {
-        const firstTask = tasks[0];
-        if (firstTask?.id) {
-          navigate(getTaskUri(firstTask))?.catch(console.error);
-        }
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
       }
     }
-  }, [loading, tasks, selectedTaskId, navigate, getTaskUri]);
+  }, [medplum, filters.performerType, memoizedQuery]);
+
+  useEffect(() => {
+    fetchTasks().catch(showErrorNotification);
+  }, [fetchTasks]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -245,13 +235,11 @@ export function TaskBoard({
         items={tasks}
         loading={loading}
         selectedKey={selectedKey}
+        onSelectFirst={(task) => navigate(getTaskUri(task), { replace: true })?.catch(console.error)}
         renderItem={(task) => <TaskListItem task={task} getTaskUri={getTaskUri} />}
         emptyList={<EmptyTasksState />}
         tabs={tabs}
         activeTab={isMyTasks ? 'my' : 'all'}
-        onTabChange={(value) => {
-          navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
-        }}
         headerActions={headerActions}
         selected={selectedTask}
         renderDetail={(task) => (

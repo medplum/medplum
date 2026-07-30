@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface UseThreadInboxOptions {
@@ -34,38 +34,53 @@ It also provides a function to update the status of the selected thread.
 export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseThreadInboxReturn {
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
+  const [memoizedQuery, setMemoizedQuery] = useState(query);
   const [threadMessages, setThreadMessages] = useState<[Communication, Communication | undefined][]>([]);
   const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
   const [error, setError] = useState<Error | null>(null);
   const [total, setTotal] = useState<number | undefined>(undefined);
+  const loadRequestIdRef = useRef(0);
+
+  // Adjust state during render (useResourceBoard pattern) so a new query reports loading
+  // on that same render — consumers never act on the previous query's threadMessages
+  // (e.g. auto-selecting the old tab's first thread).
+  if (query !== memoizedQuery) {
+    setMemoizedQuery(query);
+    setLoading(true);
+  }
 
   const fetchAllCommunications = useCallback(async (): Promise<void> => {
-    const searchParams = new URLSearchParams(query);
-    searchParams.append('identifier:not', 'http://medplum.com/ai-message|');
-    searchParams.append('part-of:missing', 'true');
-    searchParams.append('_has:Communication:part-of:_id:not', 'null');
+    const requestId = ++loadRequestIdRef.current;
+    try {
+      const searchParams = new URLSearchParams(memoizedQuery);
+      searchParams.append('identifier:not', 'http://medplum.com/ai-message|');
+      searchParams.append('part-of:missing', 'true');
+      searchParams.append('_has:Communication:part-of:_id:not', 'null');
 
-    const bundle = await medplum.search('Communication', searchParams.toString(), { cache: 'no-cache' });
-    const parents =
-      bundle.entry
-        ?.map((entry) => entry.resource as Communication)
-        .filter((r): r is Communication => r !== undefined) || [];
+      const bundle = await medplum.search('Communication', searchParams.toString(), { cache: 'no-cache' });
+      if (requestId !== loadRequestIdRef.current) {
+        return;
+      }
+      const parents =
+        bundle.entry
+          ?.map((entry) => entry.resource as Communication)
+          .filter((r): r is Communication => r !== undefined) || [];
 
-    if (bundle.total !== undefined) {
-      setTotal(bundle.total);
-    }
+      if (bundle.total !== undefined) {
+        setTotal(bundle.total);
+      }
 
-    if (parents.length === 0) {
-      setThreadMessages([]);
-      return;
-    }
+      if (parents.length === 0) {
+        setThreadMessages([]);
+        return;
+      }
 
-    const queryParts = parents.map((parent) => {
-      const safeId = parent.id?.replaceAll('-', '') || '';
-      const alias = `thread_${safeId}`;
-      const ref = getReferenceString(parent);
+      const queryParts = parents.map((parent) => {
+        const safeId = parent.id?.replaceAll('-', '') || '';
+        const alias = `thread_${safeId}`;
+        const ref = getReferenceString(parent);
 
-      return `
+        return `
           ${alias}: CommunicationList(
             part_of: "${ref}"
             _sort: "-sent"
@@ -89,38 +104,41 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
             status
           }
         `;
-    });
+      });
 
-    const fullQuery = `
+      const fullQuery = `
         query {
           ${queryParts.join('\n')}
         }
       `;
 
-    const response = await medplum.graphql(fullQuery);
+      const response = await medplum.graphql(fullQuery);
+      if (requestId !== loadRequestIdRef.current) {
+        return;
+      }
 
-    const threadsWithReplies = parents
-      .map((parent) => {
-        const safeId = parent.id?.replaceAll('-', '') || '';
-        const alias = `thread_${safeId}`;
-        const childList = response.data[alias] as Communication[] | undefined;
-        const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;
-        return [parent, lastMessage];
-      })
-      .filter((thread): thread is [Communication, Communication] => thread[1] !== undefined);
+      const threadsWithReplies = parents
+        .map((parent) => {
+          const safeId = parent.id?.replaceAll('-', '') || '';
+          const alias = `thread_${safeId}`;
+          const childList = response.data[alias] as Communication[] | undefined;
+          const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;
+          return [parent, lastMessage];
+        })
+        .filter((thread): thread is [Communication, Communication] => thread[1] !== undefined);
 
-    setThreadMessages(threadsWithReplies);
-  }, [medplum, query]);
+      setThreadMessages(threadsWithReplies);
+    } finally {
+      if (requestId === loadRequestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [medplum, memoizedQuery]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchAllCommunications()
-      .catch((err: Error) => {
-        setError(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    fetchAllCommunications().catch((err: Error) => {
+      setError(err);
+    });
   }, [fetchAllCommunications]);
 
   useEffect(() => {

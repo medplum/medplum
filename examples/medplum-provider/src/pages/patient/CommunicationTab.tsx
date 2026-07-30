@@ -39,8 +39,13 @@ export function CommunicationTab(): JSX.Element {
     }
   }, [currentSearch, navigate, normalizedSearch, patientId]);
 
+  const basePath = messageId
+    ? `/Patient/${patientId}/Communication/${messageId}`
+    : `/Patient/${patientId}/Communication`;
+
   const onChange = (search: SearchRequest): void => {
-    navigate(`/Patient/${patientId}/Communication${formatSearchQuery(search)}`)?.catch(console.error);
+    // Keep the selected thread open when the list search changes (pagination, filters)
+    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
   const getThreadUri = (topic: Communication): string => {
