@@ -219,9 +219,7 @@ describe('ThreadInbox', () => {
 
     await setup();
 
-    await waitFor(() =>
-      expect(mockOnSelectFirst).toHaveBeenCalledWith(expect.objectContaining({ id: 'comm-first' }))
-    );
+    await waitFor(() => expect(mockOnSelectFirst).toHaveBeenCalledWith(expect.objectContaining({ id: 'comm-first' })));
   });
 
   test('shows empty messages state when no messages are found', async () => {
