@@ -3,7 +3,8 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { PassThrough, type Readable } from 'node:stream';
+import { PassThrough  } from 'node:stream';
+import type {Readable} from 'node:stream';
 import type { Mock } from 'vitest';
 import { main } from '.';
 import { writeMultipartRelatedBody } from './dicomweb';
@@ -48,14 +49,7 @@ describe('CLI DICOMweb', () => {
     const boundary = contentType.split('boundary=')[1];
     const sentBody = await post.mock.results[0].value;
     expect(sentBody).toBe(
-      [
-        `--${boundary}`,
-        'Content-Type: application/dicom',
-        '',
-        'dicom bytes',
-        `--${boundary}--`,
-        '',
-      ].join('\r\n')
+      [`--${boundary}`, 'Content-Type: application/dicom', '', 'dicom bytes', `--${boundary}--`, ''].join('\r\n')
     );
     expect(console.log).toHaveBeenCalledWith('STOW-RS response received', sentBody);
   });
