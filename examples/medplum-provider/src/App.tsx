@@ -211,7 +211,9 @@ export function App(): JSX.Element | null {
                 <Route path="Communication" element={<CommunicationTab />} />
                 <Route path="Communication/:messageId" element={<CommunicationTab />} />
                 <Route path="Task" element={<TasksTab />} />
+                <Route path="Task/new" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
+                <Route path="Task/:taskId/new" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />

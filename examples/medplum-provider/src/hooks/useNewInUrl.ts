@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 /**
@@ -24,13 +25,18 @@ export interface NewInUrlState {
 export function useNewInUrl(basePath: string, suffix: string): NewInUrlState {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const openNew = useCallback((): void => {
+    navigate(`${basePath}/new${suffix}`)?.catch(console.error);
+  }, [navigate, basePath, suffix]);
+
+  const closeNew = useCallback((): void => {
+    navigate(`${basePath}${suffix}`)?.catch(console.error);
+  }, [navigate, basePath, suffix]);
+
   return {
     isNew: location.pathname.endsWith('/new'),
-    openNew: (): void => {
-      navigate(`${basePath}/new${suffix}`)?.catch(console.error);
-    },
-    closeNew: (): void => {
-      navigate(`${basePath}${suffix}`)?.catch(console.error);
-    },
+    openNew,
+    closeNew,
   };
 }
