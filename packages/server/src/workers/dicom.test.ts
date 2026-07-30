@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
+import type { Binary, DicomInstance, DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Readable } from 'node:stream';
 import { initAppServices, shutdownApp } from '../app';
@@ -25,22 +26,28 @@ vi.mock('dcmjs', () => ({
   __esModule: true,
   default: {
     async: {
-      AsyncDicomReader: vi.fn().mockImplementation(() => ({
-        stream: {
-          fromAsyncStream: mockFromAsyncStream,
-        },
-        readFile: mockReadFile,
-      })),
+      AsyncDicomReader: vi.fn().mockImplementation(function () {
+        return {
+          stream: {
+            fromAsyncStream: mockFromAsyncStream,
+          },
+          readFile: mockReadFile,
+        };
+      }),
     },
     data: {
       DicomMetaDictionary: {
-        naturalizeDataset: vi.fn(() => mockNaturalized),
+        naturalizeDataset: vi.fn(function () {
+          return mockNaturalized;
+        }),
       },
     },
     utilities: {
-      DicomMetadataListener: vi.fn().mockImplementation(() => ({
-        startObject: mockStartObject,
-      })),
+      DicomMetadataListener: vi.fn().mockImplementation(function () {
+        return {
+          startObject: mockStartObject,
+        };
+      }),
     },
   },
 }));
@@ -94,7 +101,7 @@ describe('DICOM Worker', () => {
             resourceType: 'DicomInstance',
             id: 'instance-id',
             raw: { reference: 'Binary/new' },
-          } as DicomInstance & { id: string },
+          } as WithId<DicomInstance>,
           {
             resourceType: 'DicomInstance',
             raw: { reference: 'Binary/old' },
@@ -119,7 +126,7 @@ describe('DICOM Worker', () => {
         resourceType: 'DicomInstance',
         id: 'instance-id',
         raw: { reference: 'Binary/same' },
-      } as DicomInstance & { id: string },
+      } as WithId<DicomInstance>,
       {
         resourceType: 'DicomInstance',
         raw: { reference: 'Binary/same' },
@@ -137,7 +144,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob skips instance without metadata', async () => {
-    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(noop);
     const instance = await createDicomInstance();
     mockReadResult = { dict: { PixelData: true } };
 
@@ -250,7 +257,7 @@ describe('DICOM Worker', () => {
     expect(info).toHaveBeenCalledWith('DICOM processing error', { id: instance.id, err: expect.any(Error) });
   });
 
-  async function createDicomInstance(options?: Partial<DicomInstance>): Promise<DicomInstance & { id: string }> {
+  async function createDicomInstance(options?: Partial<DicomInstance>): Promise<WithId<DicomInstance>> {
     const raw = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'application/dicom',
@@ -280,11 +287,15 @@ describe('DICOM Worker', () => {
   }
 });
 
+function noop(): void {
+  // Do nothing
+}
+
 function createJob(id: string): Job<DicomJobData> {
   return { data: { id } } as Job<DicomJobData>;
 }
 
-function getFirstPixelData(instance: DicomInstance): NonNullable<DicomInstance['pixelData']>[number] {
+function getFirstPixelData(instance: DicomInstance): Reference<Binary> {
   expect(instance.pixelData).toHaveLength(1);
-  return instance.pixelData?.[0] as NonNullable<DicomInstance['pixelData']>[number];
+  return instance.pixelData?.[0] as Reference<Binary>;
 }
