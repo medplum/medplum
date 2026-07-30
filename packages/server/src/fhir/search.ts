@@ -1672,7 +1672,11 @@ function buildChainedSearchUsingReferenceTable(
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
   let innerQuery: SelectQuery;
-  if (link.implementation.type === SearchParameterType.CANONICAL) {
+  if (link.code === '_compartment') {
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      getCompartmentJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+    );
+  } else if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
       getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
@@ -1687,7 +1691,13 @@ function buildChainedSearchUsingReferenceTable(
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
     validateSearchResourceType(repo, link.targetType as ResourceType);
-    if (link.implementation.type === SearchParameterType.CANONICAL) {
+    if (link.code === '_compartment') {
+      // Compartment search is joined directly to the target table as a special case
+      const nextTable = innerQuery.getNextJoinAlias();
+      const join = getCompartmentJoinCondition(currentTable, link, nextTable);
+      innerQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
+      currentTable = nextTable;
+    } else if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
       const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
@@ -1723,6 +1733,19 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
   const join = getCanonicalJoinCondition(currentTable, link, nextTable);
   selectQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
   return nextTable;
+}
+
+/**
+ * Constructs the condition to join on the `_compartment` search parameter.
+ * @param currentTable - The "current" resource table (the outer query table for the first link).
+ * @param link - The current link of the chained search.
+ * @param nextTable - The resource table joined for this link.
+ * @returns The join expression.
+ */
+function getCompartmentJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+  const holder = link.direction === Direction.FORWARD ? currentTable : nextTable;
+  const otherEnd = link.direction === Direction.FORWARD ? nextTable : currentTable;
+  return new Condition(new Column(otherEnd, 'id'), 'IN_SUBQUERY', new Column(holder, link.implementation.columnName));
 }
 
 /**
@@ -1786,7 +1809,8 @@ function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
-  if (link.implementation.type === SearchParameterType.CANONICAL) {
+  if (link.implementation.type === SearchParameterType.CANONICAL || link.code === '_compartment') {
+    // Compartment and canonical links join the far resource table directly
     return link.targetType;
   } else if (link.direction === Direction.FORWARD) {
     return `${link.originType}_References`;

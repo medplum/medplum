@@ -1144,7 +1144,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(location.id);
     }));
 
-  test('Reverse filter by _compartment', () =>
+  test('Reverse filter by _compartment:_id', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
       const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
@@ -1159,6 +1159,50 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       );
       expect(searchResult.entry).toHaveLength(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(organization.id);
+    }));
+
+  test('Forward filter by _compartment.name', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
+      const organization = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Compartment Chain Org ' + randomUUID(),
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [createReference(organization)] },
+      });
+
+      const searchResult = await repo.search(
+        parseSearchRequest(`Patient?_compartment:Organization.name=${organization.name}`)
+      );
+      expect(searchResult.entry).toHaveLength(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+    }));
+
+  test('Chained filter with _compartment as middle link', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
+      const organization = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: randomUUID(),
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [createReference(organization)] },
+      });
+      const encounter = await repo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'finished',
+        class: { code: 'test' },
+        subject: createReference(patient),
+      });
+
+      const searchResult = await repo.search(
+        parseSearchRequest(`Encounter?patient._compartment:Organization.name=${organization.name?.substring(0, 8)}`)
+      );
+      expect(searchResult.entry).toHaveLength(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(encounter.id);
     }));
 
   test('Empty _id', async () =>
