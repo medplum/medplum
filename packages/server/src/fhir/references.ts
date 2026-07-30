@@ -32,7 +32,12 @@ import type { Repository } from './repo';
  * a criteria that requires Project.id matches the admin's ProjectMembership.project
  * reference which will always fail for linked projects.
  */
-const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project', 'ProjectMembership.user'];
+const SYSTEM_REFERENCE_PATHS = [
+  'Project.owner',
+  'Project.link.project',
+  'ProjectMembership.user',
+  'ProjectMembership.invitedBy',
+];
 
 async function validateReferences(
   repo: Repository,
