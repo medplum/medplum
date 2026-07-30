@@ -1745,7 +1745,10 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
 function getCompartmentJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
   const holder = link.direction === Direction.FORWARD ? currentTable : nextTable;
   const otherEnd = link.direction === Direction.FORWARD ? nextTable : currentTable;
-  return new Condition(new Column(otherEnd, 'id'), 'IN_SUBQUERY', new Column(holder, link.implementation.columnName));
+  return new Conjunction([
+    new Condition(new Column(otherEnd, 'id'), 'IN_SUBQUERY', new Column(holder, link.implementation.columnName)),
+    new Condition(new Column(nextTable, 'projectId'), '=', new Column(currentTable, 'projectId')),
+  ]);
 }
 
 /**
@@ -1805,7 +1808,10 @@ function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink
   }
 
   const eq = link.implementation.array ? 'IN_SUBQUERY' : '=';
-  return new Condition(new Column(targetTable, 'url'), eq, new Column(sourceTable, link.implementation.columnName));
+  return new Conjunction([
+    new Condition(new Column(targetTable, 'url'), eq, new Column(sourceTable, link.implementation.columnName)),
+    new Condition(new Column(nextTable, 'projectId'), '=', new Column(currentTable, 'projectId')),
+  ]);
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
