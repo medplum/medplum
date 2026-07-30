@@ -18,6 +18,10 @@ Internally, `$ccda-export` builds an IPS-style patient summary ([`$summary`](./p
 - **ONC Certification Compliance**: Meet certification requirements for patient data export capabilities
 - **Referral Documentation**: Provide comprehensive clinical summaries when referring patients to specialists
 
+## Try it in the Medplum App
+
+You can exercise this operation from the patient **Export** tab without calling the API directly. Open `https://app.medplum.com/Patient/<PATIENT_ID>/export` and use the export format controls to choose **C-CDA** (CCD) or **C-CDA Referral**, optionally set author and date filters, then download the resulting XML.
+
 ## Invocation
 
 ```
