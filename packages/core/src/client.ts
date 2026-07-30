@@ -404,6 +404,21 @@ export interface MedplumClientOptions {
   defaultHeaders?: Record<string, string>;
 
   /**
+   * Default search parameters merged into every FHIR search request.
+   *
+   * These are applied by {@link MedplumClient.fhirSearchUrl} to `search`, `searchOne`,
+   * `searchResources`, and `searchResourcePages`. They are *not* applied to reads by ID.
+   *
+   * A parameter is only added when the caller's own query does not already include it,
+   * so an explicit search param always takes precedence over the default.
+   *
+   * This is a client-side convenience for scoping queries (for example, a `_compartment`
+   * filter). It does not enforce access control; the server still applies the user's
+   * access policy. Use {@link MedplumClient.setDefaultSearchParams} to change these at runtime.
+   */
+  defaultSearchParams?: URLSearchParams;
+
+  /**
    * Prefix to add to all keys when using `localStorage` as the backing store for `ClientStorage` (the default option in the browser).
    *
    * Default is `''` (no prefix).
@@ -1032,6 +1047,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly fhircastHubUrl: string;
   private readonly cdsServicesUrl: string;
   private readonly defaultHeaders: Record<string, string>;
+  private defaultSearchParams?: URLSearchParams;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
@@ -1081,6 +1097,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.clientSecret = options?.clientSecret ?? '';
     this.credentialsInHeader = options?.authCredentialsMethod === 'header';
     this.defaultHeaders = options?.defaultHeaders ?? {};
+    this.defaultSearchParams = options?.defaultSearchParams;
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
     this.logLevel = this.initializeLogLevel(options);
@@ -1247,6 +1264,30 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   getDefaultHeaders(): Record<string, string> {
     return this.defaultHeaders;
+  }
+
+  /**
+   * Returns the default search parameters merged into every FHIR search request.
+   * @category Search
+   * @returns The default search parameters, or undefined if none are set.
+   */
+  getDefaultSearchParams(): URLSearchParams | undefined {
+    return this.defaultSearchParams;
+  }
+
+  /**
+   * Sets the default search parameters merged into every FHIR search request.
+   *
+   * See {@link MedplumClientOptions.defaultSearchParams} for details on how these are applied.
+   * Passing `undefined` clears the defaults. Changing the defaults invalidates all cached
+   * search results and dispatches a "change" event so that subscribed views refresh.
+   * @category Search
+   * @param params - The default search parameters, or undefined to clear them.
+   */
+  setDefaultSearchParams(params: URLSearchParams | undefined): void {
+    this.defaultSearchParams = params;
+    this.invalidateAll();
+    this.dispatchEvent({ type: 'change' });
   }
 
   /**
@@ -1743,6 +1784,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const url = this.fhirUrl(resourceType);
     if (query) {
       url.search = getQueryString(query);
+    }
+    if (this.defaultSearchParams) {
+      // Merge in default search parameters, but never override a param the caller set explicitly.
+      // Snapshot the caller's keys *before* appending so that:
+      //  - a default with repeated values (e.g. two `_compartment` entries) is applied in full,
+      //    rather than being truncated after the first append flips `has(key)` to true, and
+      //  - a param the caller already set (including on the re-entrant searchOne -> search path,
+      //    where the query already carries the merged default) always wins and is left untouched.
+      const explicitKeys = new Set(url.searchParams.keys());
+      for (const [key, value] of this.defaultSearchParams) {
+        if (!explicitKeys.has(key)) {
+          url.searchParams.append(key, value);
+        }
+      }
     }
     return url;
   }

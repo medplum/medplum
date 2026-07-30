@@ -321,6 +321,46 @@ describe('Client', () => {
     expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
   });
 
+  test('defaultSearchParams', () => {
+    // Applied from the constructor option
+    const client = new MedplumClient({ defaultSearchParams: new URLSearchParams({ _compartment: 'Organization/abc' }) });
+    expect(client.fhirSearchUrl('Patient', undefined).searchParams.get('_compartment')).toBe('Organization/abc');
+
+    // Merged alongside a caller's query
+    const withQuery = client.fhirSearchUrl('Patient', 'name=Alice');
+    expect(withQuery.searchParams.get('name')).toBe('Alice');
+    expect(withQuery.searchParams.get('_compartment')).toBe('Organization/abc');
+
+    // An explicit param always wins over the default
+    const explicit = client.fhirSearchUrl('Patient', '_compartment=Organization/xyz');
+    expect(explicit.searchParams.getAll('_compartment')).toStrictEqual(['Organization/xyz']);
+
+    // Multiple default values for the same key are all applied (AND semantics via repeated param)
+    const multi = new MedplumClient({
+      defaultSearchParams: new URLSearchParams([
+        ['_compartment', 'Organization/abc'],
+        ['_compartment', 'Patient/123'],
+      ]),
+    });
+    expect(multi.fhirSearchUrl('Observation', undefined).searchParams.getAll('_compartment')).toStrictEqual([
+      'Organization/abc',
+      'Patient/123',
+    ]);
+
+    // Runtime setter updates the default and clears it
+    client.setDefaultSearchParams(new URLSearchParams({ _compartment: 'Patient/123' }));
+    expect(client.getDefaultSearchParams()?.get('_compartment')).toBe('Patient/123');
+    expect(client.fhirSearchUrl('Observation', undefined).searchParams.get('_compartment')).toBe('Patient/123');
+    client.setDefaultSearchParams(undefined);
+    expect(client.getDefaultSearchParams()).toBeUndefined();
+    expect(client.fhirSearchUrl('Observation', undefined).searchParams.has('_compartment')).toBe(false);
+
+    // Default: no params merged
+    const clientWithout = new MedplumClient();
+    expect(clientWithout.getDefaultSearchParams()).toBeUndefined();
+    expect(clientWithout.fhirSearchUrl('Patient', undefined).searchParams.has('_compartment')).toBe(false);
+  });
+
   test('storagePrefix option', () => {
     localStorage.clear();
 
