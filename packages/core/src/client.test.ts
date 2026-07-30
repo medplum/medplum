@@ -323,7 +323,9 @@ describe('Client', () => {
 
   test('defaultSearchParams', () => {
     // Applied from the constructor option
-    const client = new MedplumClient({ defaultSearchParams: new URLSearchParams({ _compartment: 'Organization/abc' }) });
+    const client = new MedplumClient({
+      defaultSearchParams: new URLSearchParams({ _compartment: 'Organization/abc' }),
+    });
     expect(client.fhirSearchUrl('Patient', undefined).searchParams.get('_compartment')).toBe('Organization/abc');
 
     // Merged alongside a caller's query

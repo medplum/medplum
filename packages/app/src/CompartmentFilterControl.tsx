@@ -75,8 +75,8 @@ export function CompartmentFilterControl(): JSX.Element {
             Compartment filter
           </Text>
           <Text size="xs" c="dimmed">
-            Scope all searches to one or more compartments (matches any). Pick any resource; the server still
-            enforces your access policy.
+            Scope all searches to one or more compartments (matches any). Pick any resource; the server still enforces
+            your access policy.
           </Text>
           {pending.length > 0 && (
             <Pill.Group>
