@@ -178,6 +178,8 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
     globalSchema.types[resourceType] = typeSchema;
   }
 
+  let compartmentTargets: string[] | undefined; // Lazy-loaded
+
   // Binary has no search parameters; not even those inherited from Resource
   if (!typeSchema.searchParams && resourceType !== 'Binary') {
     typeSchema.searchParams = {
@@ -198,6 +200,10 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         code: '_compartment',
         type: 'reference',
         expression: resourceType + '.meta.compartment',
+        get target(): string[] {
+          compartmentTargets ??= getResourceTypes();
+          return compartmentTargets;
+        },
       } as SearchParameter,
       _profile: {
         base: [resourceType],

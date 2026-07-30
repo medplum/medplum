@@ -1144,6 +1144,23 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(location.id);
     }));
 
+  test('Reverse filter by _compartment', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
+      const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [createReference(organization)] },
+      });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(organization) });
+
+      const searchResult = await repo.search(
+        parseSearchRequest(`Organization?_has:Patient:_compartment:_id=${patient.id}`)
+      );
+      expect(searchResult.entry).toHaveLength(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(organization.id);
+    }));
+
   test('Empty _id', async () =>
     withTestContext(async () => {
       const searchResult1 = await repo.search({
