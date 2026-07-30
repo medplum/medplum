@@ -26,6 +26,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { incrementCounter } from '../otel/otel';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -34,6 +35,7 @@ import {
   isJobActive,
   moveToDelayedAndThrow,
   queueRegistry,
+  trackJobMetrics,
   updateAsyncJobOutput,
 } from './utils';
 
@@ -104,6 +106,11 @@ const jobName = 'BatchJobData';
 const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
+// Entry-level throughput, counted here because no other queue has a sub-job unit of work; whole jobs
+// are counted for every queue as `jobsCompleted` (see `trackJobMetrics`). Only the re-entrant path
+// contributes, since the legacy path hands the whole bundle to the router in a single call.
+const PROCESSED_ENTRIES_METRIC = 'medplum.batch.entriesProcessed';
+
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<BatchJobData>(queueName, {
@@ -118,7 +125,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
   if (options?.workerEnabled !== false) {
     worker = new Worker<BatchJobData>(
       queueName,
-      (job) => {
+      trackJobMetrics('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           if ('asyncJob' in job.data) {
@@ -129,7 +136,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
             throw new TypeError('Unrecognized BatchJobData', { cause: job.data });
           }
         });
-      },
+      }),
       getWorkerBullmqConfig(config, 'batch', queueOptions, { concurrency: 15 })
     );
 
@@ -342,6 +349,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
       await processor.processNextEntry();
       sinceCheckpoint++;
+      incrementCounter(PROCESSED_ENTRIES_METRIC);
 
       if (sinceCheckpoint >= checkpointEntries || Date.now() - lastCheckpointTime >= checkpointIntervalMs) {
         await checkpoint();
