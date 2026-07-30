@@ -88,11 +88,11 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
         <Stack gap={0}>
           <Stack gap="lg" p="lg">
             <ThreadMessageForm
-              practitioners={initialPractitioners}
+              defaultPractitioners={initialPractitioners}
               onPractitionersChange={setPractitioners}
               topic={topic}
               onTopicChange={setTopic}
-              patient={patientRef}
+              defaultPatient={patientRef}
             />
           </Stack>
 

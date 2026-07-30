@@ -11,26 +11,29 @@ import { ResourceInput } from '../../ResourceInput/ResourceInput';
  * Props for the ThreadMessageForm component — the shared Patient + Practitioner + Topic fields
  * (plus the trailing divider before the action button) used by the New Message and Message
  * Settings dialogs.
- * @param practitioners - The currently selected practitioner recipients (the input's default value).
+ * The patient and practitioner inputs are uncontrolled: the `default*` props seed them on
+ * mount only, and later edits are reported through the `on*Change` callbacks. Mount the form
+ * only once the defaults are known (both dialogs mount it after the thread is resolved).
+ * @param defaultPractitioners - The initial practitioner recipients (init-only, uncontrolled input).
  * @param onPractitionersChange - Called with the new practitioner reference list when the selection changes.
- * @param topic - The current topic text.
+ * @param topic - The current topic text (controlled).
  * @param onTopicChange - Called with the new topic text on every edit.
- * @param patient - The currently selected patient (the input's default value).
+ * @param defaultPatient - The initial patient (init-only, uncontrolled input).
  * @param onPatientChange - Called with the new patient reference when the selection changes. When omitted, the patient field is read-only.
- * @param allowPatientSelection - When true, the patient field is an editable search input. When false (default), the field is pre-filled from `patient` and disabled.
+ * @param allowPatientSelection - When true, the patient field is an editable search input. When false (default), the field is pre-filled from `defaultPatient` and disabled.
  */
 export interface ThreadMessageFormProps {
-  practitioners: Reference<Practitioner>[];
+  defaultPractitioners: Reference<Practitioner>[];
   onPractitionersChange: (practitioners: Reference<Practitioner>[]) => void;
   topic: string;
   onTopicChange: (topic: string) => void;
-  patient?: Reference<Patient>;
+  defaultPatient?: Reference<Patient>;
   onPatientChange?: (patient: Reference<Patient> | undefined) => void;
   allowPatientSelection?: boolean;
 }
 
 export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element => {
-  const { practitioners, onPractitionersChange, topic, onTopicChange, patient, onPatientChange } = props;
+  const { defaultPractitioners, onPractitionersChange, topic, onTopicChange, defaultPatient, onPatientChange } = props;
   const allowPatientSelection = props.allowPatientSelection ?? false;
   return (
     <>
@@ -43,8 +46,8 @@ export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element =>
           resourceType="Patient"
           name="patient"
           required={!!onPatientChange}
-          defaultValue={patient}
-          disabled={!allowPatientSelection && !!patient}
+          defaultValue={defaultPatient}
+          disabled={!allowPatientSelection && !!defaultPatient}
           onChange={(value) => {
             onPatientChange?.(value ? createReference(value) : undefined);
           }}
@@ -58,7 +61,7 @@ export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element =>
         <MultiResourceInput<Practitioner>
           resourceType="Practitioner"
           name="practitioners"
-          defaultValue={practitioners}
+          defaultValue={defaultPractitioners}
           onChange={(resources) =>
             onPractitionersChange(resources.map((practitioner) => createReference(practitioner)))
           }

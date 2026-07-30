@@ -74,11 +74,11 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
       <Stack gap={0}>
         <Stack gap="lg" p="lg">
           <ThreadMessageForm
-            practitioners={initialPractitioners}
+            defaultPractitioners={initialPractitioners}
             onPractitionersChange={setPractitioners}
             topic={topic}
             onTopicChange={setTopic}
-            patient={patient}
+            defaultPatient={patient}
             onPatientChange={setPatient}
             allowPatientSelection={allowPatientSelection}
           />
