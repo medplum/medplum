@@ -5,14 +5,13 @@ import { EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
-import { getProjectAppName } from '../branding';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { applyFromDisplayName, getFromAddress, getProjectSmtpConfig } from './utils';
+import { applyFromDisplayName, getFromAddress, getProjectAppName, getProjectSmtpConfig } from './utils';
 
 /**
  * Sends an email using the AWS SES service.

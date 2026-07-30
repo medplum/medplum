@@ -104,6 +104,18 @@ export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpC
 }
 
 /**
+ * Returns the app name that a project has configured for user-facing content, or
+ * undefined if the project has not been white-labeled. Controlled by the
+ * `appName` project setting. Used for the email sender display name below, and
+ * by MFA for email content and the authenticator app issuer.
+ * @param project - The project to read the setting from.
+ * @returns The configured app name, or undefined if unset or blank.
+ */
+export function getProjectAppName(project: Project | undefined): string | undefined {
+  return project?.setting?.find((s) => s.name === 'appName')?.valueString?.trim() || undefined;
+}
+
+/**
  * Adds a display name to a from address so recipients see the project's app name in
  * their inbox list rather than a bare address. Returns nodemailer's object form
  * so it handles header quoting and encoding of the name.
