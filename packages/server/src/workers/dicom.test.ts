@@ -17,15 +17,15 @@ import { queueRegistry } from './utils';
 
 let mockReadResult: { meta?: Record<string, unknown>; dict?: Record<string, unknown> };
 let mockNaturalized: Record<string, unknown>;
-const mockFromAsyncStream = jest.fn();
-const mockReadFile = jest.fn();
-const mockStartObject = jest.fn();
+const mockFromAsyncStream = vi.fn();
+const mockReadFile = vi.fn();
+const mockStartObject = vi.fn();
 
-jest.mock('dcmjs', () => ({
+vi.mock('dcmjs', () => ({
   __esModule: true,
   default: {
     async: {
-      AsyncDicomReader: jest.fn().mockImplementation(() => ({
+      AsyncDicomReader: vi.fn().mockImplementation(() => ({
         stream: {
           fromAsyncStream: mockFromAsyncStream,
         },
@@ -34,11 +34,11 @@ jest.mock('dcmjs', () => ({
     },
     data: {
       DicomMetaDictionary: {
-        naturalizeDataset: jest.fn(() => mockNaturalized),
+        naturalizeDataset: vi.fn(() => mockNaturalized),
       },
     },
     utilities: {
-      DicomMetadataListener: jest.fn().mockImplementation(() => ({
+      DicomMetadataListener: vi.fn().mockImplementation(() => ({
         startObject: mockStartObject,
       })),
     },
@@ -59,7 +59,7 @@ describe('DICOM Worker', () => {
   });
 
   beforeEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     mockReadResult = { meta: { TransferSyntaxUID: '1.2.840.10008.1.2.4.50' }, dict: { PixelData: true } };
     mockNaturalized = {
       TransferSyntaxUID: '1.2.840.10008.1.2.4.50',
@@ -78,14 +78,14 @@ describe('DICOM Worker', () => {
   });
 
   test('getDicomQueue returns queue from registry', () => {
-    const queue = { add: jest.fn() };
-    jest.spyOn(queueRegistry, 'get').mockReturnValue(queue as any);
+    const queue = { add: vi.fn() };
+    vi.spyOn(queueRegistry, 'get').mockReturnValue(queue as any);
     expect(getDicomQueue()).toBe(queue);
   });
 
   test('addDicomJobs queues job when raw binary changes', async () => {
-    const add = jest.fn();
-    jest.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);
+    const add = vi.fn();
+    vi.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);
 
     await withTestContext(
       () =>
@@ -111,8 +111,8 @@ describe('DICOM Worker', () => {
   });
 
   test('addDicomJobs skips job when raw binary is unchanged', async () => {
-    const add = jest.fn();
-    jest.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);
+    const add = vi.fn();
+    vi.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);
 
     await addDicomJobs(
       {
@@ -137,7 +137,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob skips instance without metadata', async () => {
-    const info = jest.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
     const instance = await createDicomInstance();
     mockReadResult = { dict: { PixelData: true } };
 
@@ -147,7 +147,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob skips instance without DICOM dict', async () => {
-    const info = jest.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
     const instance = await createDicomInstance();
     mockReadResult = { meta: { TransferSyntaxUID: '1.2.840.10008.1.2.4.50' } };
 
@@ -157,7 +157,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob skips instance without pixel data', async () => {
-    const info = jest.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
     const instance = await createDicomInstance();
     mockNaturalized = { TransferSyntaxUID: '1.2.840.10008.1.2.4.50' };
 
@@ -167,7 +167,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob skips empty pixel data array', async () => {
-    const info = jest.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
     const instance = await createDicomInstance();
     mockNaturalized = { TransferSyntaxUID: '1.2.840.10008.1.2.4.50', PixelData: [] };
 
@@ -177,7 +177,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob logs unexpected nested pixel data and stores valid frames', async () => {
-    const info = jest.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
     const instance = await createDicomInstance({
       pixelData: [{ reference: 'Binary/replaced' }],
     });
@@ -242,7 +242,7 @@ describe('DICOM Worker', () => {
   });
 
   test('execDicomJob rethrows processing errors', async () => {
-    const info = jest.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
+    const info = vi.spyOn(getLogger(), 'info').mockImplementation(() => undefined);
     const instance = await createDicomInstance();
     mockReadFile.mockRejectedValueOnce(new Error('reader failed'));
 

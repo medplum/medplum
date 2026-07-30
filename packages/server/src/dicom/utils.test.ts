@@ -202,7 +202,7 @@ describe('DICOM utils', () => {
     const stream = new PassThrough();
     stream.on('error', () => undefined);
     const err = new Error('write failed');
-    jest.spyOn(stream, 'write').mockImplementation(() => {
+    vi.spyOn(stream, 'write').mockImplementation(() => {
       throw err;
     });
 

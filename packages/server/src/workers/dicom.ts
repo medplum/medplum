@@ -4,7 +4,7 @@
 import type { WithId } from '@medplum/core';
 import { createReference, isGone, normalizeOperationOutcome } from '@medplum/core';
 import type { Binary, DicomInstance } from '@medplum/fhirtypes';
-import type { Job, QueueBaseOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
@@ -14,7 +14,7 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { async, data, utilities } = dcmjs;
@@ -36,10 +36,7 @@ const queueName = 'DicomQueue';
 const jobName = 'DicomJobData';
 
 export const initDicomWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions: QueueBaseOptions = {
-    connection: getBullmqRedisConnectionOptions(config),
-  };
-
+  const defaultOptions = defaultQueueOptions(config);
   const queue = new Queue<DicomJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
@@ -53,14 +50,12 @@ export const initDicomWorker: WorkerInitializer = (config, options?: WorkerIniti
 
   let worker: Worker<DicomJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'dicom');
     worker = new Worker<DicomJobData>(
       queueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDicomJob(job)),
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-      }
+      trackJobMetrics('dicom', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDicomJob(job))
+      ),
+      getWorkerBullmqConfig(config, 'dicom', defaultOptions)
     );
     worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
     worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
