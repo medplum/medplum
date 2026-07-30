@@ -7,7 +7,7 @@ import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
+import { useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
@@ -29,6 +29,7 @@ import { ThreadListItem } from './ThreadListItem';
  * @param showPatientSummary - Whether to show the patient summary.
  * @param sections - Optional sections configuration for the patient summary.
  * @param onNew - A function to handle a new thread.
+ * @param onSelectFirst - Fired with the first thread when the list loads with nothing selected; use it to navigate to that thread (with replace) so the inbox auto-selects it.
  * @param getThreadUri - A function to build thread URIs.
  * @param onChange - A function to handle search changes.
  * @param inProgressUri - The URI for in-progress threads.
@@ -45,6 +46,7 @@ export interface ThreadInboxProps {
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
   readonly onNew: (message: Communication) => void;
+  readonly onSelectFirst?: (thread: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
   readonly onChange: (search: SearchRequest) => void;
   readonly inProgressUri: string;
@@ -65,6 +67,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     showPatientSummary = false,
     sections,
     onNew,
+    onSelectFirst,
     getThreadUri,
     uploadEnabled,
     onViewInDocuments,
@@ -76,7 +79,6 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     onNewTopicClose,
   } = props;
 
-  const navigate = useMedplumNavigate();
   const [internalModalOpened, { open: openInternalModal, close: closeInternalModal }] = useDisclosure(false);
   const modalOpened = props.newTopicOpened ?? internalModalOpened;
   const openModal = onNewTopicOpen ?? openInternalModal;
@@ -171,6 +173,17 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     return map;
   }, [threadMessages]);
 
+  // Auto-select the first thread when the list loads with nothing selected. Selection is
+  // URL-driven, so the consumer navigates to the thread (same pattern as the fax board's
+  // onSelectFirst).
+  useEffect(() => {
+    // Skip while the new-topic dialog is open (e.g. a URL-driven /new route with no
+    // selection) — selecting would navigate away and close it.
+    if (!threadId && !loading && !modalOpened && items.length > 0) {
+      onSelectFirst?.(items[0]);
+    }
+  }, [threadId, loading, modalOpened, items, onSelectFirst]);
+
   const isDraft = useCallback(
     (thread: Communication): boolean =>
       !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id),
@@ -213,7 +226,6 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           listWidth={380}
           tabs={tabs}
           activeTab={status}
-          onTabChange={(value) => navigate(value === 'in-progress' ? inProgressUri : completedUri)}
           headerActions={headerActions}
           skeleton={<ThreadListSkeleton />}
           emptyList={<EmptyMessagesState />}

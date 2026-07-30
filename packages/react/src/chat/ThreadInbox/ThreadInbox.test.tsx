@@ -23,6 +23,7 @@ const mockCommunication: Communication | undefined = {
 };
 
 const mockOnNew = vi.fn();
+const mockOnSelectFirst = vi.fn();
 const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
 const mockOnChange = vi.fn();
 const mockNavigate = vi.fn();
@@ -65,6 +66,7 @@ describe('ThreadInbox', () => {
             showPatientSummary={props?.showPatientSummary ?? false}
             subject={props?.subject}
             onNew={mockOnNew}
+            onSelectFirst={mockOnSelectFirst}
             getThreadUri={mockGetThreadUri}
             onChange={mockOnChange}
             inProgressUri="/Communication?status=in-progress"
@@ -188,6 +190,38 @@ describe('ThreadInbox', () => {
     await waitFor(() => {
       expect(screen.getByText('Select a message from the list to view details')).toBeInTheDocument();
     });
+  });
+
+  test('fires onSelectFirst with the first thread when none is selected', async () => {
+    const thread: Communication = {
+      resourceType: 'Communication',
+      id: 'comm-first',
+      status: 'in-progress',
+      topic: { text: 'First Topic' },
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+    };
+    const reply: Communication = {
+      resourceType: 'Communication',
+      id: 'reply-first',
+      status: 'in-progress',
+      partOf: [{ reference: 'Communication/comm-first' }],
+      sent: '2024-01-01T10:00:00Z',
+      payload: [{ contentString: 'Hello' }],
+    };
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: thread }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({ data: { thread_commfirst: [reply] } });
+
+    await setup();
+
+    await waitFor(() =>
+      expect(mockOnSelectFirst).toHaveBeenCalledWith(expect.objectContaining({ id: 'comm-first' }))
+    );
   });
 
   test('shows empty messages state when no messages are found', async () => {

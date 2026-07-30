@@ -74,6 +74,10 @@ export function MessagesPage(): JSX.Element {
     navigate(getThreadUri(message))?.catch(console.error);
   };
 
+  const onSelectFirst = (thread: Communication): void => {
+    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
+  };
+
   const onNewTopicOpen = (): void => {
     navigate(`${basePath}/new${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
@@ -102,6 +106,7 @@ export function MessagesPage(): JSX.Element {
         sections={sections}
         allowPatientSelection={true}
         onNew={onNew}
+        onSelectFirst={onSelectFirst}
         getThreadUri={getThreadUri}
         newTopicOpened={isNewMessage}
         onNewTopicOpen={onNewTopicOpen}

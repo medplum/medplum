@@ -64,6 +64,10 @@ export function MessagesPage(): JSX.Element {
     navigate(getThreadUri(message))?.catch(console.error);
   };
 
+  const onSelectFirst = (thread: Communication): void => {
+    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
+  };
+
   return (
     <div className={classes.container}>
       <ThreadInbox
@@ -71,6 +75,7 @@ export function MessagesPage(): JSX.Element {
         query={formatSearchQuery(parsedSearch).substring(1)}
         subject={profile?.resourceType === 'Patient' ? profile : undefined}
         onNew={onNew}
+        onSelectFirst={onSelectFirst}
         getThreadUri={getThreadUri}
         onChange={onChange}
         inProgressUri={inProgressUri}
