@@ -366,21 +366,11 @@ describe('worker utils', () => {
       completedSpy.mockRestore();
     });
 
-    /**
-     * Collects the signed deltas reported to a worker's in-flight metric.
-     * @param workerName - The worker whose metric to read.
-     * @returns The deltas, in the order they were reported.
-     */
     function reportedDeltas(workerName: WorkerName): number[] {
       const metricName = otelModule.getQueueMetricName(workerName, 'inFlightJobs');
       return inFlightSpy.mock.calls.filter((call) => call[0] === metricName).map((call) => call[1]);
     }
 
-    /**
-     * Counts how many times a worker's completion counter was incremented.
-     * @param workerName - The worker whose metric to read.
-     * @returns The number of increments.
-     */
     function completions(workerName: WorkerName): number {
       const metricName = otelModule.getQueueMetricName(workerName, 'jobsCompleted');
       return completedSpy.mock.calls.filter((call) => call[0] === metricName).length;
@@ -402,9 +392,9 @@ describe('worker utils', () => {
     test('decrements and rethrows when the job fails, without counting a completion', async () => {
       const processor = vi.fn().mockRejectedValue(new Error('job blew up'));
 
-      await expect(trackJobMetrics('reindex', processor)(job)).rejects.toThrow('job blew up');
-      expect(reportedDeltas('reindex')).toStrictEqual([1, -1]);
-      expect(completions('reindex')).toBe(0);
+      await expect(trackJobMetrics('cron', processor)(job)).rejects.toThrow('job blew up');
+      expect(reportedDeltas('cron')).toStrictEqual([1, -1]);
+      expect(completions('cron')).toBe(0);
     });
 
     test('does not count a completion for a job re-queued as delayed', async () => {

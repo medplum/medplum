@@ -34,7 +34,6 @@ import {
   isJobCompatible,
   moveToDelayedAndThrow,
   queueRegistry,
-  trackJobMetrics,
   updateAsyncJobOutput,
 } from './utils';
 
@@ -110,9 +109,7 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
   if (options?.workerEnabled !== false) {
     worker = new Worker<ReindexJobData>(
       ReindexQueueName,
-      trackJobMetrics('reindex', async (job) =>
-        tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job))
-      ),
+      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
       getWorkerBullmqConfig(config, 'reindex', defaultOptions)
     );
     addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({

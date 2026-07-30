@@ -30,15 +30,6 @@ import { getSubscriptionQueue } from '../workers/subscription';
  */
 export type QueueMetric = 'waitingCount' | 'delayedCount' | 'activeCount' | 'inFlightJobs' | 'jobsCompleted';
 
-/**
- * Builds the name of a per-queue metric.
- *
- * The queue belongs in the metric name rather than an attribute, matching how these have always been
- * reported. Going through here keeps every per-queue metric consistently named and greppable.
- * @param queueName - The queue being measured.
- * @param metric - The quantity being measured.
- * @returns The metric name, e.g. `medplum.batch.activeCount`.
- */
 export function getQueueMetricName(queueName: WorkerName, metric: QueueMetric): string {
   return `medplum.${queueName}.${metric}`;
 }
@@ -145,22 +136,11 @@ export function getUpDownCounter(name: string, options?: MetricOptions): UpDownC
   return result;
 }
 
-/**
- * Adds a signed delta to an UpDownCounter.
- *
- * The collector sums the reported deltas rather than keeping the last value as it would for a gauge,
- * which makes this the instrument for a quantity that rises and falls and is only observable at the
- * moments it changes.
- * @param name - The metric name.
- * @param n - The delta to add. Negative values decrement.
- * @param options - Optional metric attributes and options.
- * @returns True if the delta was recorded, false if metrics are disabled.
- */
-export function addToUpDownCounter(name: string, n: number, options?: RecordMetricOptions): boolean {
+export function addToUpDownCounter(name: string, delta: number, options?: RecordMetricOptions): boolean {
   if (!isOtelMetricsEnabled()) {
     return false;
   }
-  getUpDownCounter(name, options?.options).add(n, options?.attributes);
+  getUpDownCounter(name, options?.options).add(delta, options?.attributes);
   return true;
 }
 
