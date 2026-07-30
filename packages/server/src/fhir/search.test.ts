@@ -1147,34 +1147,43 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
   test('Reverse filter by _compartment:_id', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
-      const organization = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const organizationA = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const organizationB = await repo.createResource<Organization>({ resourceType: 'Organization' });
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { accounts: [createReference(organization)] },
+        meta: { accounts: [createReference(organizationA), createReference(organizationB)] },
       });
-      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(organization) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(organizationA) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(organizationB) });
 
       const searchResult = await repo.search(
         parseSearchRequest(`Organization?_has:Patient:_compartment:_id=${patient.id}`)
       );
-      expect(searchResult.entry).toHaveLength(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(organization.id);
+      // Both compartment Organizations returned
+      expect(searchResult.entry).toHaveLength(2);
+      expect(searchResult.entry?.map((e) => e.resource?.id)).toContainExactly([organizationA.id, organizationB.id]);
     }));
 
   test('Forward filter by _compartment.name', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
-      const organization = await repo.createResource<Organization>({
+
+      // Both Organizations considered, but only one matches
+      const organizationA = await repo.createResource<Organization>({
         resourceType: 'Organization',
         name: 'Compartment Chain Org ' + randomUUID(),
       });
+      const organizationB = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Other Org ' + randomUUID(),
+      });
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { accounts: [createReference(organization)] },
+        meta: { accounts: [createReference(organizationB), createReference(organizationA)] },
       });
 
       const searchResult = await repo.search(
-        parseSearchRequest(`Patient?_compartment:Organization.name=${organization.name}`)
+        parseSearchRequest(`Patient?_compartment:Organization.name=${organizationA.name}`)
       );
       expect(searchResult.entry).toHaveLength(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
