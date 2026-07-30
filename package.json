@@ -27,6 +27,7 @@
     "trailingComma": "es5"
   },
   "overrides": {
+    "adm-zip": "0.6.0",
     "esbuild": "0.28.1",
     "typescript": "6.0.3",
     "uuid": "14.0.1",
