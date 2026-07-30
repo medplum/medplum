@@ -117,7 +117,7 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON)
       .send({});
-    expect(res.status).toBe(415);
+    expect(res).toHaveStatus(415);
   });
 
   test('Get study', async () => {
@@ -155,7 +155,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/unknown/series`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Study not found' });
   });
 
@@ -177,7 +177,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
     expect(res.body).toContainEqual({
       '00080016': { vr: 'UI', Value: ['1.2.3'] },
@@ -189,7 +189,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/unknown/series/456/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Study not found' });
   });
 
@@ -197,7 +197,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/unknown/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Series not found' });
   });
 
@@ -235,7 +235,7 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .buffer(true)
       .parse(binaryParser);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toContain('multipart/related');
     const body = Buffer.from(res.body).toString();
     expect(body).toContain('Content-Type: image/jpeg');
@@ -246,7 +246,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/789/frames/0`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject({ error: 'Invalid frame number' });
   });
 
@@ -254,7 +254,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/unknown/frames/1`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Instance not found' });
   });
 
@@ -262,7 +262,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/unknown/series/456/instances/789/frames/1`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Study not found' });
   });
 
@@ -270,7 +270,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/unknown/instances/789/frames/1`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Series not found' });
   });
 
@@ -278,7 +278,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/789/frames/2`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(416);
+    expect(res).toHaveStatus(416);
     expect(res.body).toMatchObject({ error: 'Requested frame number exceeds total frames available' });
   });
 
@@ -286,7 +286,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/790/frames/1`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
     expect(res.body).toMatchObject({ error: 'Pixel data not found for instance' });
   });
 
@@ -294,7 +294,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/791/frames/1`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(500);
+    expect(res).toHaveStatus(500);
     expect(res.body).toMatchObject({ error: 'Error reading pixel data' });
   });
 
@@ -311,7 +311,7 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'multipart/related')
       .send('bad multipart body');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.text).toBe('Error processing DICOM upload');
   });
 
@@ -329,7 +329,7 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', contentType)
       .send(body);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(JSON.stringify(res.body)).toContain('1.2.840.10008.5.1.4.1.1.7');
     expect(JSON.stringify(res.body)).toContain('1.2.826.0.1.3680043.10.543.1');
   });
