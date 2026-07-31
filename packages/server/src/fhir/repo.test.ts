@@ -50,6 +50,7 @@ import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { deleteResourceCacheEntry } from './repository/resource-cache';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -579,6 +580,37 @@ describe('FHIR Repo', () => {
 
       expect(patient2.id).toStrictEqual(patient1.id);
       expect(patient2.meta?.versionId).toStrictEqual(patient1.meta?.versionId);
+    }));
+
+  test('Update resource stored without meta', () =>
+    withTestContext(async () => {
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['NoMeta'], family: 'NoMeta' }],
+      });
+
+      // Simulate a row seeded outside the normal write path, which leaves the
+      // stored content with no meta at all. Updating it used to throw a bare
+      // TypeError ("Cannot set properties of undefined") surfaced as a
+      // "Database error", rather than applying the update.
+      const { meta: _meta, ...withoutMeta } = patient1;
+      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      await client.query('UPDATE "Patient" SET content = $1 WHERE id = $2', [
+        JSON.stringify(withoutMeta),
+        patient1.id,
+      ]);
+      // Reads are served from the resource cache, which still holds the
+      // well-formed version written above.
+      await deleteResourceCacheEntry('Patient', patient1.id);
+
+      const patient2 = await systemRepo.updateResource<Patient>({
+        ...patient1,
+        name: [{ given: ['NoMeta'], family: 'Updated' }],
+      });
+
+      expect(patient2.id).toStrictEqual(patient1.id);
+      expect(patient2.name?.[0]?.family).toStrictEqual('Updated');
+      expect(patient2.meta?.versionId).toBeDefined();
     }));
 
   test('Update patient multiple names', () =>

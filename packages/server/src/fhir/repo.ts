@@ -972,7 +972,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
-      (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
+      // A stored resource is normally written with meta, but a row seeded outside
+      // the normal write path may not have it. Without this the assignment below
+      // throws a bare TypeError that surfaces as an opaque "Database error".
+      existing.meta ??= {};
+      existing.meta.compartment = this.getCompartments(existing); // Update compartments with latest rules
       if (!this.canPerformInteraction(interaction, existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
