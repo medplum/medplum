@@ -870,7 +870,7 @@ describe('FHIR Routes', () => {
       .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ versionId: randomUUID() });
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 
   test('ProjectMembership with null access policy', async () =>
