@@ -168,6 +168,7 @@ fi
 
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
   echo "Deploy GraphiQL"
+  npm run build -- --force --filter=@medplum/graphiql
   source ./scripts/deploy-graphiql.sh
 fi
 
