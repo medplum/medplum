@@ -394,12 +394,36 @@ function getActiveLink(
  * @param linkHref - A candidate link href.
  * @returns The link score.
  */
+  const NAVBAR_LINK_ALIAS:Record<string,string[]>={
+    '/admin/super/asyncjob':['/AsyncJob']
+  }
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
   const linkUrl = new URL(linkHref, 'https://example.com');
-  if (currentPathname !== linkUrl.pathname) {
+
+  const isAbsoluteRoot =linkUrl.pathname==='/'
+  let matchesPath = false;
+  if(isAbsoluteRoot){
+    matchesPath=currentPathname==='/'||currentPathname==='/Patient'
+  }else{
+    matchesPath=currentPathname.startsWith(linkUrl.pathname)
+    const aliases=NAVBAR_LINK_ALIAS[linkUrl.pathname]
+     if (!matchesPath && aliases) {
+      matchesPath = aliases.some(alias=>currentPathname.startsWith(alias))
+    }
+  }
+  if(!matchesPath){
     return 0;
   }
-  const ignoredParams = ['_count', '_offset'];
+  let count=linkUrl.pathname.length
+ if (currentPathname === linkUrl.pathname) {
+    count += 100;
+  }
+  const aliases=NAVBAR_LINK_ALIAS[linkUrl.pathname];
+  if(aliases ?.some(alias=>currentPathname.startsWith(alias))){
+    count +=50
+  }
+
+ const ignoredParams = ['_count', '_offset', '_fields', '_sort'];
   for (const [key, value] of linkUrl.searchParams.entries()) {
     if (ignoredParams.includes(key)) {
       continue;
@@ -408,7 +432,7 @@ function getLinkScore(currentPathname: string, currentSearchParams: URLSearchPar
       return 0;
     }
   }
-  let count = 1;
+  
   for (const [key, value] of currentSearchParams.entries()) {
     if (ignoredParams.includes(key)) {
       continue;
