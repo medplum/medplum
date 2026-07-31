@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Kbd, Stack, Text } from '@mantine/core';
+import { Group, Kbd, Stack, Text } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { SpotlightActionData, SpotlightActionGroupData } from '@mantine/spotlight';
 import { Spotlight as MantineSpotlight } from '@mantine/spotlight';
@@ -9,7 +9,7 @@ import type { Patient, ServiceRequest, ValueSetExpansionContains } from '@medplu
 import type { MedplumNavigateFunction } from '@medplum/react-hooks';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import classes from './Spotlight.module.css';
@@ -20,6 +20,66 @@ export type HeaderSearchTypes = Patient | ServiceRequest;
 
 export interface SpotlightProps {
   readonly patientsOnly?: boolean;
+  /**
+   * Optional app-provided quick actions, shown under an "Actions" group in the empty (open) state.
+   * Each is keyboard-navigable like a search result.
+   */
+  readonly staticActions?: SpotlightActionData[];
+}
+
+function ShortcutKey({ children }: { readonly children: ReactNode }): JSX.Element {
+  return <span className={classes.shortcutKey}>{children}</span>;
+}
+
+function ShortcutHints(): JSX.Element {
+  return (
+    <Group gap="lg" justify="flex-start" align="center" wrap="wrap" className={classes.shortcutHints}>
+      <Group gap={6} align="center" wrap="nowrap">
+        <span className={classes.groupLabel}>Open search</span>
+        <ShortcutKey>⌘</ShortcutKey>
+        <ShortcutKey>K</ShortcutKey>
+      </Group>
+      <Group gap={6} align="center" wrap="nowrap">
+        <span className={classes.groupLabel}>Select</span>
+        <ShortcutKey>↑</ShortcutKey>
+        <ShortcutKey>↓</ShortcutKey>
+      </Group>
+      <Group gap={6} align="center" wrap="nowrap">
+        <span className={classes.groupLabel}>Open / Go</span>
+        <ShortcutKey>↵</ShortcutKey>
+      </Group>
+    </Group>
+  );
+}
+
+/**
+ * Filters action groups by query (matching label or description), dropping empty groups.
+ * Mirrors Mantine's built-in `defaultSpotlightFilter` behavior for the composable API.
+ * @param query - The search query.
+ * @param groups - The action groups to filter.
+ * @returns The filtered action groups.
+ */
+function filterActionGroups(query: string, groups: SpotlightActionGroupData[]): SpotlightActionGroupData[] {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    return groups;
+  }
+  const result: SpotlightActionGroupData[] = [];
+  for (const group of groups) {
+    const actions = group.actions.filter(
+      (a) =>
+        String(a.label ?? '')
+          .toLowerCase()
+          .includes(q) ||
+        String(a.description ?? '')
+          .toLowerCase()
+          .includes(q)
+    );
+    if (actions.length > 0) {
+      result.push({ group: group.group, actions });
+    }
+  }
+  return result;
 }
 
 interface SearchGraphQLResponse {
@@ -43,14 +103,15 @@ function KeyboardHint(): JSX.Element {
   );
 }
 
-export function Spotlight({ patientsOnly }: SpotlightProps): JSX.Element {
+export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
-  const [nothingFoundMessage, setNothingFoundMessage] = useState<React.ReactNode>(<KeyboardHint />);
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
   const [actions, setActions] = useState<SpotlightActionGroupData[]>([]);
 
-  const debouncedSearch = useDebouncedCallback((query: string) => {
-    const graphqlQuery = buildGraphQLQuery(query);
+  const debouncedSearch = useDebouncedCallback((searchQuery: string) => {
+    const graphqlQuery = buildGraphQLQuery(searchQuery);
 
     if (patientsOnly) {
       // Only search patients
@@ -62,14 +123,14 @@ export function Spotlight({ patientsOnly }: SpotlightProps): JSX.Element {
           setActions(patientsToActions(patients, navigate));
         })
         .catch(console.error)
-        .finally(() => setNothingFoundMessage('No results found'));
+        .finally(() => setSearching(false));
     } else {
       // Search patients, service requests, and resource types
       Promise.all([
         medplum.graphql(graphqlQuery),
         medplum.valueSetExpand({
           url: 'https://medplum.com/fhir/ValueSet/resource-types',
-          filter: query,
+          filter: searchQuery,
           count: 5,
         }),
       ])
@@ -79,45 +140,42 @@ export function Spotlight({ patientsOnly }: SpotlightProps): JSX.Element {
           setActions(resourcesToActions(resources, resourceTypes, navigate));
         })
         .catch(console.error)
-        .finally(() => setNothingFoundMessage('No results found'));
+        .finally(() => setSearching(false));
     }
   }, DEBOUNCE_MS);
 
-  const handleQueryChange = (query: string): void => {
-    if (!query) {
+  const handleQueryChange = (newQuery: string): void => {
+    setQuery(newQuery);
+    if (!newQuery) {
       debouncedSearch.cancel();
-      setNothingFoundMessage(<KeyboardHint />);
+      setSearching(false);
       setActions([]);
       return;
     }
-
-    setNothingFoundMessage('Searching...');
-    debouncedSearch(query);
+    setSearching(true);
+    debouncedSearch(newQuery);
   };
 
+  const showStaticActions = !query && !!staticActions?.length;
+  const filteredActions = query ? filterActionGroups(query, actions) : [];
+
+  // Empty-state content, shown (via Spotlight.Empty) only when no actions are listed.
+  let emptyContent: ReactNode;
+  if (!showStaticActions && filteredActions.length === 0) {
+    if (searching) {
+      emptyContent = 'Searching...';
+    } else if (query) {
+      emptyContent = 'No results found';
+    } else {
+      emptyContent = <KeyboardHint />;
+    }
+  }
+
   return (
-    <MantineSpotlight
-      actions={actions}
-      nothingFound={nothingFoundMessage}
+    <MantineSpotlight.Root
+      query={query}
+      onQueryChange={handleQueryChange}
       radius="md"
-      highlightQuery
-      searchProps={
-        {
-          leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
-          placeholder: 'Start typing to search…',
-          type: 'search',
-          autoComplete: 'off',
-          autoCorrect: 'off',
-          spellCheck: false,
-          name: patientsOnly ? 'provider-spotlight-search' : 'spotlight-search',
-          // Tell common password managers to ignore this field
-          'data-1p-ignore': 'true',
-          'data-lpignore': 'true',
-          leftSectionProps: {
-            style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' },
-          },
-        } as any
-      }
       classNames={{
         body: classes.body,
         content: classes.content,
@@ -127,9 +185,63 @@ export function Spotlight({ patientsOnly }: SpotlightProps): JSX.Element {
         actionSection: classes.actionSection,
         actionDescription: classes.actionDescription,
         actionsGroup: classes.actionsGroup,
+        empty: classes.emptyState,
+        footer: classes.footer,
       }}
-      onQueryChange={handleQueryChange}
-    />
+    >
+      <MantineSpotlight.Search
+        leftSection={<IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />}
+        placeholder="Start typing to search…"
+        type="search"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        name={patientsOnly ? 'provider-spotlight-search' : 'spotlight-search'}
+        // Tell common password managers to ignore this field
+        {...({ 'data-1p-ignore': 'true', 'data-lpignore': 'true' } as any)}
+        leftSectionProps={{ style: { marginLeft: 'calc(var(--mantine-spacing-md) - 12px)' } }}
+      />
+
+      <MantineSpotlight.ActionsList>
+        {showStaticActions && (
+          <MantineSpotlight.ActionsGroup label="Actions">
+            {staticActions?.map((action) => (
+              <MantineSpotlight.Action
+                key={action.id}
+                label={action.label}
+                description={action.description}
+                leftSection={action.leftSection}
+                onClick={action.onClick}
+              />
+            ))}
+          </MantineSpotlight.ActionsGroup>
+        )}
+
+        {!!query &&
+          filteredActions.map((group) => (
+            <MantineSpotlight.ActionsGroup key={group.group} label={group.group}>
+              {group.actions.map((action) => (
+                <MantineSpotlight.Action
+                  key={action.id}
+                  label={action.label}
+                  description={action.description}
+                  leftSection={action.leftSection}
+                  onClick={action.onClick}
+                  highlightQuery
+                  // `group` is forwarded to the action element for grouping/testing selectors.
+                  {...({ group: group.group } as Record<string, unknown>)}
+                />
+              ))}
+            </MantineSpotlight.ActionsGroup>
+          ))}
+
+        {emptyContent && <MantineSpotlight.Empty>{emptyContent}</MantineSpotlight.Empty>}
+      </MantineSpotlight.ActionsList>
+
+      <MantineSpotlight.Footer>
+        <ShortcutHints />
+      </MantineSpotlight.Footer>
+    </MantineSpotlight.Root>
   );
 }
 

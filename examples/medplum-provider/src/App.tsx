@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SpotlightActionData } from '@mantine/spotlight';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -18,7 +19,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
@@ -71,6 +72,7 @@ export function App(): JSX.Element | null {
   const profile = useMedplumProfile();
   const doseSpotCount = useDoseSpotNotifications();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const project = medplum.getProject();
   const setupDisabledByProject =
@@ -87,6 +89,34 @@ export function App(): JSX.Element | null {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
     setSetupDismissedByUser(true);
   };
+
+  // Each action navigates to a `/new` route; the destination page opens its own modal from the URL.
+  const spotlightActions: SpotlightActionData[] = [
+    {
+      id: 'action-new-patient-intake',
+      label: 'New Patient Intake',
+      leftSection: <IconUserPlus size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: () => navigate('/onboarding')?.catch(console.error),
+    },
+    {
+      id: 'action-new-message',
+      label: 'New Message',
+      leftSection: <IconMail size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: () => navigate('/Communication/new')?.catch(console.error),
+    },
+    {
+      id: 'action-new-task',
+      label: 'New Task',
+      leftSection: <IconClipboardCheck size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: () => navigate('/Task/new')?.catch(console.error),
+    },
+    {
+      id: 'action-send-fax',
+      label: 'Send a Fax',
+      leftSection: <IconPrinter size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: () => navigate('/Fax/Communication/new')?.catch(console.error),
+    },
+  ];
 
   if (medplum.isLoading()) {
     return null;
@@ -178,6 +208,7 @@ export function App(): JSX.Element | null {
       }
       resourceTypeSearchDisabled={true}
       spotlightPatientsOnly={true}
+      spotlightActions={spotlightActions}
     >
       <Suspense fallback={<Loading />}>
         <Routes>

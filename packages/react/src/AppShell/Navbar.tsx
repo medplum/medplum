@@ -11,6 +11,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
+import type { SpotlightActionData } from '@mantine/spotlight';
 import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
@@ -59,6 +60,7 @@ export interface NavbarProps {
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
   readonly patientsOnly?: boolean;
+  readonly spotlightActions?: SpotlightActionData[];
   readonly userMenuEnabled?: boolean;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
@@ -123,7 +125,9 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </Tooltip>
               </Box>
             )}
-            {props.spotlightEnabled && <Spotlight patientsOnly={props.patientsOnly} />}
+            {props.spotlightEnabled && (
+              <Spotlight patientsOnly={props.patientsOnly} staticActions={props.spotlightActions} />
+            )}
             {!props.resourceTypeSearchDisabled && (
               <MantineAppShell.Section mb="sm">
                 <ResourceTypeInput
