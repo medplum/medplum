@@ -7,7 +7,12 @@ import { mergeConfig } from 'vite';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
-  stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
+  stories: [
+    '../src/stories/Introduction.mdx',
+    '../src/**/*.mdx',
+    '../src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../../react/src/**/*.stories.@(js|jsx|ts|tsx)',
+  ],
   addons: ['@storybook/addon-links', '@storybook/addon-docs', '@vueless/storybook-dark-mode'],
   staticDirs: ['../public'],
   framework: {
@@ -23,6 +28,7 @@ const config: StorybookConfig = {
     } else if (configType === 'DEVELOPMENT') {
       const aliasEntries: Record<string, string> = {
         '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
+        '@medplum/react': path.resolve(import.meta.dirname, '../../react/src'),
         '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
         '@medplum/mock': path.resolve(import.meta.dirname, '../../mock/src'),
         '@medplum/fhir-router': path.resolve(import.meta.dirname, '../../fhir-router/src'),
