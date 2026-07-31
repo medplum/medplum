@@ -166,17 +166,17 @@ if [[ "$DEPLOY_APP" = true ]]; then
   source ./scripts/deploy-app.sh
 fi
 
-if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
-  echo "Deploy GraphiQL"
-  npm run build -- --force --filter=@medplum/graphiql
-  source ./scripts/deploy-graphiql.sh
-fi
-
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
   source ./scripts/build-docker-server.sh --latest
   source ./scripts/deploy-server.sh
+fi
+
+if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
+  echo "Deploy GraphiQL"
+  npm run build -- --force --filter=@medplum/graphiql
+  source ./scripts/deploy-graphiql.sh
 fi
 
 if [[ "$DEPLOY_STORYBOOK" = true ]]; then
