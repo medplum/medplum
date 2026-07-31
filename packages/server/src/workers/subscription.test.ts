@@ -1928,6 +1928,46 @@ describe('Subscription Worker', () => {
       await expect(findAndExecSubscriptionJob(patient2, 'update')).rejects.toThrow('Job not found');
     }));
 
+  test('Resend with versionId', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+            valueString: '%previous.name!=%current.name',
+          },
+        ],
+      });
+
+      // v2 changes the name, so the criteria was met at the time of v2
+      const v1 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'Alice' }] });
+      const v2 = await repo.updateResource<Patient>({ ...v1, name: [{ family: 'Bob' }] });
+      // v3 leaves the name alone, so the criteria is not met at the current version
+      await repo.updateResource<Patient>({ ...v2, active: true });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      // Resending the current version does not match, because %previous is v2 with the same name
+      await systemRepo.resendSubscriptions<Patient>('Patient', v1.id);
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Resending v2 matches, because %previous is v1 with a different name
+      await systemRepo.resendSubscriptions<Patient>('Patient', v1.id, { versionId: v2.meta?.versionId });
+      expect(queue.add).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ subscriptionId: subscription.id, versionId: v2.meta?.versionId })
+      );
+    }));
+
   test('Error during FhirPath evaluation should not result in other Subscriptions not firing', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';

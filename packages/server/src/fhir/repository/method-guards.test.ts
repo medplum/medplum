@@ -94,7 +94,6 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'createTransactionScopedRepo',
   'assertUsable',
   'authorizeBinarySecurityContext',
-  'warnIfAmbiguousPreviousVersion',
 ]);
 
 interface MethodInvocation {
@@ -103,11 +102,7 @@ interface MethodInvocation {
   invoke: (repo: Repository) => unknown;
 }
 
-const guardedPatient: WithId<Patient> = {
-  resourceType: 'Patient',
-  id: NIL,
-  meta: { lastUpdated: new Date().toISOString() },
-};
+const guardedPatient: WithId<Patient> = { resourceType: 'Patient', id: NIL };
 
 /**
  * Representative invocations for each guarded public method/getter/setter. Each invocation
@@ -311,11 +306,6 @@ const guardedInvocations: MethodInvocation[] = [
         },
         []
       ),
-  },
-  {
-    name: 'readPreviousVersion',
-    kind: 'method',
-    invoke: (repo) => repo.readPreviousVersion(guardedPatient),
   },
 ];
 

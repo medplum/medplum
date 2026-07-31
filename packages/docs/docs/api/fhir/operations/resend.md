@@ -36,7 +36,7 @@ The operation takes an optional `option` parameter, which is an object containin
 | `verbose`      | Indicates if verbose logging should be enabled.                                                                                                                                                                                                                                                                                      | `boolean`                                | `false`       |
 | `interaction`  | [`Subscriptions`](/docs/api/fhir/resources/subscription) can be configured to trigger only when a resource is created or deleted as opposed to any update. This option allows you to specify which interaction type will be sent.                                                                                                    | `update` &#124; `create` &#124; `delete` | `update`      |
 | `subscription` | A specific [`Subscription`](/docs/api/fhir/resources/subscription) to trigger, formatted as `Subscription/<id>`. If left undefined, all [`Subscriptions`](/docs/api/fhir/resources/subscription) will be triggered.                                                                                                                  | `string`                                 | `undefined`   |
-| `versionId`    | Resend subscriptions for a specific historical version of the resource instead of the current version. When set, the `%previous` passed to subscription evaluation is the version immediately prior to this one in history (if any). Useful for replaying a failed notification when the resource has since been updated.     | `string`                                 | `undefined`   |
+| `versionId`    | Resend subscriptions for a specific historical version of the resource rather than the current version. `%previous` is then the version immediately prior to it.                                                                                                                                                                      | `string`                                 | `undefined`   |
 
 ## Invoke the `$resend` operation
 
@@ -76,9 +76,7 @@ curl 'https://api.medplum.com/fhir/R4/<resourceType>/<resourceId>/$resend' \
 
 ### Replay a specific historical version
 
-To replay a subscription using a specific past version of the resource (rather than the current version), pass `versionId`. The server will load that exact version, set `%previous` to the version immediately preceding it in history, and evaluate subscriptions against that pair.
-
-Here, `%previous` refers to the prior-version resource exposed to [expression-based subscription criteria](/docs/subscriptions/subscription-extensions#expression-based-criteria), which diff `%previous` against `%current` to decide whether to fire.
+To replay a notification for a past version of the resource rather than the current version, pass `versionId`. The server loads that exact version, and sets `%previous` to the version immediately preceding it in history, so [expression-based subscription criteria](/docs/subscriptions/subscription-extensions#expression-based-criteria) that diff `%previous` against `%current` see the same state as the original event.
 
 ```ts
 await medplum.post(medplum.fhirUrl('Patient', patientId, '$resend'), {
@@ -87,11 +85,7 @@ await medplum.post(medplum.fhirUrl('Patient', patientId, '$resend'), {
 });
 ```
 
-If the supplied `versionId` does not exist in history, the operation returns `404 Not Found`.
-
-When `versionId` is supplied without an explicit `interaction`, the server derives one from the version's position in history: the first version of a resource resolves to `create`, any later version resolves to `update`. Pass `interaction` explicitly to override this — e.g. `interaction: 'update'` against a first version (which has no prior) returns `412 Precondition Failed`.
-
-When neither `versionId` nor `interaction` is supplied, `interaction` defaults to `update` and the resource must have a prior version in history; otherwise the operation returns `412 Precondition Failed`.
+If the `versionId` does not exist in the resource's history, the operation returns `404 Not Found`.
 
 ### Output
 
