@@ -1,11 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { HealthcareService } from '@medplum/fhirtypes';
-import {
-  extractServiceTypeReferences,
-  serviceTypeIncludesService,
-  toServiceTypeCodeableConcepts,
-} from './scheduling';
+import { extractServiceTypeReferences, serviceTypeIncludesService, toServiceTypeCodeableConcepts } from './scheduling';
 
 const service: HealthcareService = {
   resourceType: 'HealthcareService',
