@@ -1,0 +1,51 @@
+{
+  "name": "medplum-proxy-demo",
+  "version": "5.1.27",
+  "description": "Example of a pass-through proxy that injects Medplum M2M client credentials, paired with a frontend that requires no client-side auth",
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p server/tsconfig.json && tsc && vite build",
+    "dev": "concurrently -n proxy,client -c yellow,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "tsx watch server/proxy.ts",
+    "dev:client": "vite",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "@mantine/core": "8.3.18",
+    "@mantine/hooks": "8.3.18",
+    "@mantine/notifications": "8.3.18",
+    "@medplum/core": "5.1.27",
+    "@medplum/eslint-config": "5.1.27",
+    "@medplum/fhirtypes": "5.1.27",
+    "@medplum/react": "5.1.27",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.4",
+    "concurrently": "9.1.2",
+    "dotenv": "17.4.2",
+    "express": "5.2.1",
+    "postcss": "8.5.22",
+    "postcss-preset-mantine": "1.18.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tsx": "4.23.1",
+    "typescript": "6.0.3",
+    "vite": "8.1.5"
+  },
+  "packageManager": "npm@10.9.8",
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}
