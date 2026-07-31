@@ -553,10 +553,10 @@ describe('FHIR Repo', () => {
 
     test('skips siblings sharing the same lastUpdated and warns', () =>
       withTestContext(async () => {
-        const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+        const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
         // Fake only the clock (not timer fns) so consecutive updates can be
         // forced to share the exact same server-assigned `lastUpdated`.
-        jest.useFakeTimers({
+        vi.useFakeTimers({
           doNotFake: [
             'setTimeout',
             'setInterval',
@@ -573,10 +573,10 @@ describe('FHIR Repo', () => {
         try {
           const base = Date.now();
           // v1 in the past
-          jest.setSystemTime(base - 2000);
+          vi.setSystemTime(base - 2000);
           const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
           // v2 and v3 share the same instant -> tie among priors
-          jest.setSystemTime(base - 1000);
+          vi.setSystemTime(base - 1000);
           const v2 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
@@ -588,7 +588,7 @@ describe('FHIR Repo', () => {
             active: false,
           });
           // v4 is the newest, with a unique timestamp
-          jest.setSystemTime(base);
+          vi.setSystemTime(base);
           const v4 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
@@ -606,15 +606,15 @@ describe('FHIR Repo', () => {
             })
           );
         } finally {
-          jest.useRealTimers();
+          vi.useRealTimers();
           warnSpy.mockRestore();
         }
       }));
 
     test('warns when incoming resource ties with chosen prior', () =>
       withTestContext(async () => {
-        const warnSpy = jest.spyOn(getLogger(), 'warn').mockImplementation(() => {});
-        jest.useFakeTimers({
+        const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+        vi.useFakeTimers({
           doNotFake: [
             'setTimeout',
             'setInterval',
@@ -630,11 +630,11 @@ describe('FHIR Repo', () => {
         });
         try {
           const base = Date.now();
-          jest.setSystemTime(base - 1000);
+          vi.setSystemTime(base - 1000);
           const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
           // v2 and v3 share the same instant; v3 is the incoming resource, so it
           // ties with its chosen prior (v2).
-          jest.setSystemTime(base);
+          vi.setSystemTime(base);
           const v2 = await systemRepo.updateResource<Patient>({
             resourceType: 'Patient',
             id: v1.id,
@@ -656,7 +656,7 @@ describe('FHIR Repo', () => {
             })
           );
         } finally {
-          jest.useRealTimers();
+          vi.useRealTimers();
           warnSpy.mockRestore();
         }
       }));
