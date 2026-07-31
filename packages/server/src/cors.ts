@@ -44,6 +44,7 @@ const prefixes = [
   '/admin/',
   '/auth/',
   '/cds-services',
+  '/dicomweb/',
   '/email/',
   '/fhir/',
   '/fhircast/',
