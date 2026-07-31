@@ -3,7 +3,12 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { createReference, ReadablePromise } from '@medplum/core';
+import {
+  createReference,
+  ReadablePromise,
+  SchedulingParametersURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type {
   Appointment,
   Bundle,
@@ -19,8 +24,6 @@ import { act, getByText, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { SchedulingParametersURI } from '../../utils/scheduling';
-import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { SchedulePage } from './SchedulePage';
 
 describe('SchedulePage', () => {
@@ -402,7 +405,7 @@ describe('$find/$book component integration tests', () => {
     // Add scheduling parameter extension to Alice's schedule
     await medplum.updateResource({
       ...DrAliceSmithSchedule,
-      serviceType: toCodeableReferenceLike(healthcareService),
+      serviceType: toServiceTypeCodeableConcepts(healthcareService),
       extension: [
         {
           url: SchedulingParametersURI,
