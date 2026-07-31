@@ -491,7 +491,7 @@ async function finalizeContextChangeRequest(
   await publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
-  res.status(202).json({ success: true, event: payload });
+  res.status(202).send();
 }
 
 async function closeCurrentContext(projectId: string, topic: string): Promise<void> {
