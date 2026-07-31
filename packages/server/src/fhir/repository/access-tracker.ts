@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { EMPTY } from '@medplum/core';
 import type { TransactionOptions } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
+import { globalShardResourceTypes } from '../sharding';
 
-export type RepositoryAccessLayer = 'sql' | 'cache';
 export type RepositoryAccessOperation = 'read' | 'write' | 'transaction' | 'configuration';
 
-export type NormalizedResourceTypes = ReadonlySet<ResourceType>;
-export type ResourceTypeInput = ResourceType | readonly ResourceType[] | NormalizedResourceTypes;
+export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
 
 export interface RepositoryAccessOptions {
   /** The resource types involved in the operation */
@@ -26,214 +26,160 @@ export interface ExecuteSqlOptions extends RepositoryAccessOptions {
 
 export interface TransactionSqlOptions extends RepositoryAccessOptions, TransactionOptions {}
 
-type TransactionAccessFrame = {
+/**
+ * Everything a transaction touched. Savepoints share the outermost transaction since they
+ * run on the same connection. Access in a savepoint that later rolls back is still counted
+ * since the code path attempted it.
+ */
+type TransactionAccessRollup = {
   sqlReadCount: number;
   sqlWriteCount: number;
-  cacheReadCount: number;
-  cacheWriteCount: number;
   readResourceTypes: Set<ResourceType>;
   writeResourceTypes: Set<ResourceType>;
-  specialResourceTypes: Set<ResourceType>;
-  otherResourceTypes: Set<ResourceType>;
+  globalResourceTypes: Set<ResourceType>;
+  projectResourceTypes: Set<ResourceType>;
   sources: Set<string>;
 };
 
-const splitTrackedResourceTypes = new Set<ResourceType>(['Project', 'ProjectMembership', 'User']);
+export type TransactionAccessStatus = 'committed' | 'rolled_back';
 
+/**
+ * Logs operations that span the multiple shards at two granularities: each
+ * statement as it happens, and each transaction rolled up when it ends.
+ *
+ * Legacy project's live on the global shard, so a mixed operation still resolves to a
+ * single physical shard and runs fine. The logs produced here are the inventory of
+ * cross-logical shard access; i.e. what has to be split up before a project can move
+ * off the global shard without hitting errors.
+ */
 export class RepositoryAccessTracker {
-  readonly transactionFrames: TransactionAccessFrame[] = [];
+  private rollup: TransactionAccessRollup | undefined;
 
-  getCurrentTransactionFrame(): TransactionAccessFrame | undefined {
-    return this.transactionFrames.at(-1);
-  }
-
-  private hasTrackedTransaction(): boolean {
-    return this.transactionFrames.length > 0;
-  }
-
-  pushTransactionFrame(): void {
-    this.transactionFrames.push(createTransactionAccessFrame());
-  }
-
-  popTransactionFrame(): TransactionAccessFrame {
-    const frame = this.transactionFrames.pop();
-    if (!frame) {
-      throw new Error('No transaction frame');
+  /**
+   * Starts tracking a physical transaction. Call only for the outermost transaction; nested
+   * savepoints record into the rollup already in progress.
+   */
+  startTransaction(): void {
+    if (this.rollup) {
+      // A rollup already in progress means a previous transaction on this connection never finished,
+      // which is a bug in this class's bookkeeping — but the transaction being started is real work.
+      // Warn and overwrite rather than throwing, so a lost diagnostic does not fail the request.
+      getLogger().warn('[RepoSplit] Transaction access rollup was not finished', {
+        sources: Array.from(this.rollup.sources),
+      });
     }
-    return frame;
-  }
 
-  mergeLastTransactionFrame(): void {
-    const popped = this.popTransactionFrame();
-    const current = this.getCurrentTransactionFrame();
-    if (!current) {
-      throw new Error('No current transaction frame');
-    }
-    mergeTransactionAccessFrame(current, popped);
+    this.rollup = {
+      sqlReadCount: 0,
+      sqlWriteCount: 0,
+      readResourceTypes: new Set(),
+      writeResourceTypes: new Set(),
+      globalResourceTypes: new Set(),
+      projectResourceTypes: new Set(),
+      sources: new Set(),
+    };
   }
 
   /**
-   * Folds every live transaction frame into a single aggregate frame, empties the stack, and
-   * returns the aggregate (or undefined if no frames were live). Used on abnormal termination —
-   * e.g. when ROLLBACK itself fails and the whole transaction is torn down at once — where the
-   * normal per-level commit/rollback bookkeeping cannot run. Inner savepoint frames may still be
-   * unmerged at that point (a failed `ROLLBACK TO SAVEPOINT` skips {@link mergeLastTransactionFrame}),
-   * so they are folded in here to give the caller the full picture for a final log.
-   * @returns The aggregate of all live frames, or undefined if the stack was empty.
+   * Stops tracking the current physical transaction, logging its rollup if it spanned shards.
+   * Safe to call when no transaction is being tracked.
+   * @param status - How the transaction ended.
    */
-  collapseTransactionFrames(): TransactionAccessFrame | undefined {
-    while (this.transactionFrames.length > 1) {
-      this.mergeLastTransactionFrame();
-    }
-    return this.transactionFrames.pop();
-  }
-
-  logTransactionAccess(frame: TransactionAccessFrame, status: 'committed' | 'rolled_back'): void {
-    if (!frame.specialResourceTypes.size || !frame.otherResourceTypes.size) {
+  finishTransaction(status: TransactionAccessStatus): void {
+    const rollup = this.rollup;
+    this.rollup = undefined;
+    if (!rollup?.globalResourceTypes.size || !rollup.projectResourceTypes.size) {
       return;
     }
 
     getLogger().info('[RepoSplit] Mixed transaction access', {
       scope: 'transaction',
       status,
-      specialResourceTypes: Array.from(frame.specialResourceTypes),
-      otherResourceTypes: Array.from(frame.otherResourceTypes),
-      readResourceTypes: Array.from(frame.readResourceTypes),
-      writeResourceTypes: Array.from(frame.writeResourceTypes),
-      sqlReadCount: frame.sqlReadCount,
-      sqlWriteCount: frame.sqlWriteCount,
-      cacheReadCount: frame.cacheReadCount,
-      cacheWriteCount: frame.cacheWriteCount,
-      sources: Array.from(frame.sources),
+      globalResourceTypes: Array.from(rollup.globalResourceTypes),
+      projectResourceTypes: Array.from(rollup.projectResourceTypes),
+      readResourceTypes: Array.from(rollup.readResourceTypes),
+      writeResourceTypes: Array.from(rollup.writeResourceTypes),
+      sqlReadCount: rollup.sqlReadCount,
+      sqlWriteCount: rollup.sqlWriteCount,
+      sources: Array.from(rollup.sources),
     });
   }
 
+  /**
+   * Records one SQL access: logs it if it spans shards, and folds it into the rollup of the
+   * transaction in progress, if any.
+   * @param operation - What the access does.
+   * @param resourceTypes - The resource types the access touches.
+   * @param source - Short label identifying the call site.
+   */
   recordResourceAccess(
-    layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
-    resourceTypes: ReadonlySet<ResourceType>,
+    resourceTypes: ResourceTypeInput,
     source: string | undefined
   ): void {
-    const access = partitionResourceTypes(resourceTypes);
-    if (access.all.size === 0) {
+    if (operation === 'configuration') {
       return;
     }
 
-    if (access.special.size > 0 && access.other.size > 0) {
+    const all = normalizeResourceTypes(resourceTypes);
+    if (all.size === 0) {
+      return;
+    }
+
+    let global: ResourceType[] | undefined;
+    let project: ResourceType[] | undefined;
+    for (const resourceType of all) {
+      if (globalShardResourceTypes.has(resourceType)) {
+        (global ??= []).push(resourceType);
+      } else {
+        (project ??= []).push(resourceType);
+      }
+    }
+
+    if (global && project) {
       getLogger().info('[RepoSplit] Mixed resource access', {
         scope: 'statement',
-        layer,
         operation,
         source,
-        inTransaction: this.hasTrackedTransaction(),
-        specialResourceTypes: Array.from(access.special),
-        otherResourceTypes: Array.from(access.other),
-        resourceTypes: Array.from(access.all),
+        inTransaction: this.rollup !== undefined,
+        globalResourceTypes: global,
+        projectResourceTypes: project,
       });
     }
 
-    const frame = this.getCurrentTransactionFrame();
-    if (frame) {
-      updateTransactionAccessFrame(frame, layer, operation, source, access);
+    const rollup = this.rollup;
+    if (!rollup) {
+      return;
     }
-  }
 
-  static normalizeResourceTypes(input: ResourceTypeInput): ReadonlySet<ResourceType> {
-    return typeof input === 'string' ? new Set([input]) : new Set(input);
+    if (operation === 'read') {
+      rollup.sqlReadCount++;
+      addAll(rollup.readResourceTypes, all);
+    } else if (operation === 'write') {
+      rollup.sqlWriteCount++;
+      addAll(rollup.writeResourceTypes, all);
+    }
+    addAll(rollup.globalResourceTypes, global);
+    addAll(rollup.projectResourceTypes, project);
+    if (source) {
+      rollup.sources.add(source);
+    }
   }
 }
 
-function updateTransactionAccessFrame(
-  frame: TransactionAccessFrame,
-  layer: RepositoryAccessLayer,
-  operation: RepositoryAccessOperation,
-  source: string | undefined,
-  access: ResourceTypePartition
-): void {
-  if (operation === 'read') {
-    if (layer === 'sql') {
-      frame.sqlReadCount++;
-    } else {
-      frame.cacheReadCount++;
-    }
-    for (const resourceType of access.all) {
-      frame.readResourceTypes.add(resourceType);
-    }
-  } else if (operation === 'write') {
-    if (layer === 'sql') {
-      frame.sqlWriteCount++;
-    } else {
-      frame.cacheWriteCount++;
-    }
-    for (const resourceType of access.all) {
-      frame.writeResourceTypes.add(resourceType);
-    }
-  }
-  for (const resourceType of access.special) {
-    frame.specialResourceTypes.add(resourceType);
-  }
-  for (const resourceType of access.other) {
-    frame.otherResourceTypes.add(resourceType);
-  }
-  if (source) {
-    frame.sources.add(source);
+function addAll(target: Set<ResourceType>, values: Iterable<ResourceType> | undefined): void {
+  for (const value of values ?? EMPTY) {
+    target.add(value);
   }
 }
 
-function createTransactionAccessFrame(): TransactionAccessFrame {
-  return {
-    sqlReadCount: 0,
-    sqlWriteCount: 0,
-    cacheReadCount: 0,
-    cacheWriteCount: 0,
-    readResourceTypes: new Set<ResourceType>(),
-    writeResourceTypes: new Set<ResourceType>(),
-    specialResourceTypes: new Set<ResourceType>(),
-    otherResourceTypes: new Set<ResourceType>(),
-    sources: new Set<string>(),
-  };
-}
-
-type ResourceTypePartition = {
-  readonly all: Set<ResourceType>;
-  readonly special: Set<ResourceType>;
-  readonly other: Set<ResourceType>;
-};
-
-function partitionResourceTypes(resourceTypes: ReadonlySet<ResourceType>): ResourceTypePartition {
-  const all = new Set<ResourceType>();
-  const special = new Set<ResourceType>();
-  const other = new Set<ResourceType>();
-
-  for (const resourceType of resourceTypes) {
-    all.add(resourceType);
-    if (splitTrackedResourceTypes.has(resourceType)) {
-      special.add(resourceType);
-    } else {
-      other.add(resourceType);
-    }
-  }
-
-  return { all, special, other };
-}
-
-const setsToMerge = ['readResourceTypes', 'writeResourceTypes', 'specialResourceTypes', 'otherResourceTypes'] as const;
-
-function mergeTransactionAccessFrame(target: TransactionAccessFrame, source: TransactionAccessFrame): void {
-  target.sqlReadCount += source.sqlReadCount;
-  target.sqlWriteCount += source.sqlWriteCount;
-  target.cacheReadCount += source.cacheReadCount;
-  target.cacheWriteCount += source.cacheWriteCount;
-
-  for (const set of setsToMerge) {
-    for (const item of source[set]) {
-      target[set].add(item);
-    }
-  }
-
-  for (const sourceName of source.sources) {
-    target.sources.add(sourceName);
-  }
+/**
+ * Coerces the accepted resource-type shapes into a set.
+ * @param input - One resource type, or a list or set of them.
+ * @returns The resource types as a set.
+ */
+export function normalizeResourceTypes(input: ResourceTypeInput): ReadonlySet<ResourceType> {
+  return typeof input === 'string' ? new Set([input]) : new Set(input);
 }
 
 /**
@@ -284,15 +230,16 @@ export const repoAccess = {
   /**
    * Use when acquiring a READER client only to issue session/transaction configuration — e.g.
    * `SET statement_timeout = 2000` — rather than to read resource data. No resources should be read.
+   * @param resourceTypes - The resource type(s) whose queries the statement configures.
    * @param options - Optional overrides.
    * @param options.source - Short label identifying the call site.
    * @returns Options describing the reader configuration access.
    */
-  sqlReadConfig: (options?: { source?: string }): ExecuteSqlOptions => {
+  sqlReadConfig: (resourceTypes: ResourceTypeInput, options?: { source?: string }): ExecuteSqlOptions => {
     return {
       mode: DatabaseMode.READER,
       operation: 'configuration',
-      resourceTypes: new Set(),
+      resourceTypes,
       source: options?.source,
     };
   },
@@ -301,16 +248,17 @@ export const repoAccess = {
    * Use when acquiring the WRITER client only to issue configuration statements — e.g.
    * `set_config('statement_timeout', ..., true)` inside a transaction — rather than to read or
    * write resource data. Like {@link repoAccess.sqlReadConfig} but on the writer (the connection a
-   * transaction is pinned to). Carries no resource types, so nothing is recorded against tracking.
+   * transaction is pinned to).
+   * @param resourceTypes - The resource type(s) whose queries the statement configures.
    * @param options - Optional overrides.
    * @param options.source - Short label identifying the call site.
    * @returns Options describing the writer configuration access.
    */
-  sqlWriteConfig: (options?: { source?: string }): ExecuteSqlOptions => {
+  sqlWriteConfig: (resourceTypes: ResourceTypeInput, options?: { source?: string }): ExecuteSqlOptions => {
     return {
       mode: DatabaseMode.WRITER,
       operation: 'configuration',
-      resourceTypes: new Set(),
+      resourceTypes,
       source: options?.source,
     };
   },

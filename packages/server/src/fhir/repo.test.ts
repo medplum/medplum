@@ -50,6 +50,7 @@ import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -376,25 +377,16 @@ describe('FHIR Repo', () => {
     expect((results[5] as OperationOutcomeError).outcome.id).toBe('not-found');
   });
 
-  test('Logs mixed cache access for readReferences across split resource types', async () => {
+  test('Does not log mixed cache access for readReferences across split resource types', async () => {
+    // Redis is not sharded, so a bulk cache read spanning shards is not a routing event. The
+    // per-reference database reads it falls back to are each single-type, so nothing is mixed.
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
     const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Cache Project' });
     const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
 
     await systemRepo.readReferences([{ reference: `Project/${project.id}` }, { reference: `Patient/${patient.id}` }]);
 
-    expect(infoSpy).toHaveBeenCalledWith(
-      '[RepoSplit] Mixed resource access',
-      expect.objectContaining({
-        scope: 'statement',
-        layer: 'cache',
-        operation: 'read',
-        source: 'repo.getCacheEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
-      })
-    );
+    expect(infoSpy).not.toHaveBeenCalledWith('[RepoSplit] Mixed resource access', expect.anything());
   });
 
   test('Logs mixed SQL access for multi-type search across split resource types', async () => {
@@ -413,12 +405,10 @@ describe('FHIR Repo', () => {
       '[RepoSplit] Mixed resource access',
       expect.objectContaining({
         scope: 'statement',
-        layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
       })
     );
   });
@@ -444,8 +434,8 @@ describe('FHIR Repo', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'committed',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
         readResourceTypes: expect.toContainExactly(['Patient', 'Project']),
         writeResourceTypes: expect.toContainExactly([]),
       })
@@ -818,7 +808,7 @@ describe('FHIR Repo', () => {
 
       expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
       expect(
-        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+        getShardSystemRepo(PLACEHOLDER_SHARD_ID, undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
       const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);

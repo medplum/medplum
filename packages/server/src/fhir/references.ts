@@ -8,14 +8,13 @@ import {
   crawlTypedValueAsync,
   createReference,
   createStructureIssue,
-  isResourceType,
   normalizeErrorString,
   OperationOutcomeError,
   parseSearchRequest,
   PropertyType,
   toTypedValue,
 } from '@medplum/core';
-import type { OperationOutcomeIssue, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repo';
 
@@ -184,15 +183,4 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
   );
 
   return resource;
-}
-
-export function getResourceTypesFromReferences(references: Iterable<Reference>): ResourceType[] {
-  const resourceTypes = new Set<ResourceType>();
-  for (const reference of references) {
-    const resourceType = reference.reference?.split('/')[0];
-    if (resourceType && isResourceType(resourceType)) {
-      resourceTypes.add(resourceType);
-    }
-  }
-  return Array.from(resourceTypes);
 }
