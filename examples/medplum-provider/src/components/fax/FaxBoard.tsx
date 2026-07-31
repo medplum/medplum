@@ -8,7 +8,7 @@ import { ResourceBoard, useMedplum } from '@medplum/react';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { FaxDetailPanel } from './FaxDetailPanel';
 import type { FaxTab } from './FaxListItem';
@@ -39,10 +39,19 @@ export function FaxBoard({
 }: FaxBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [sendModalOpened, setSendModalOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
+
+  // Open the Send Fax modal when navigated here with that intent (e.g. from the global search).
+  const sendFaxSignal = (location.state as { sendFax?: number } | null)?.sendFax;
+  useEffect(() => {
+    if (sendFaxSignal) {
+      setSendModalOpened(true);
+    }
+  }, [sendFaxSignal]);
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { AppShellHeaderConfiguration, AppShellNavbarConfiguration } from '@mantine/core';
 import { AppShell as MantineAppShell } from '@mantine/core';
+import type { SpotlightActionData } from '@mantine/spotlight';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { Suspense, useState } from 'react';
@@ -36,6 +37,8 @@ export interface AppShellProps {
   readonly layoutVersion?: 'v1' | 'v2';
   readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
+  /** App-provided quick actions shown under an "Actions" group in the search modal's open state. */
+  readonly spotlightActions?: SpotlightActionData[];
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -124,6 +127,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         opened={navbarOpen}
         spotlightEnabled={true}
         patientsOnly={props.spotlightPatientsOnly}
+        spotlightActions={props.spotlightActions}
         userMenuEnabled={true}
         version={props.version}
         showLayoutVersionToggle={props.showLayoutVersionToggle}
@@ -165,6 +169,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           displayAddBookmark={props.displayAddBookmark}
           resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
           patientsOnly={props.spotlightPatientsOnly}
+          spotlightActions={props.spotlightActions}
         />
       ) : undefined;
   }

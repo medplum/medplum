@@ -21,7 +21,8 @@ export function TasksPage(): JSX.Element {
   useEffect(() => {
     const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search);
     if (needsNavigation) {
-      navigate(`/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
+      // Preserve navigation state (e.g. the "open New Task" intent from global search) across the redirect.
+      navigate(`/Task${formatSearchQuery(normalizedSearch)}`, { state: location.state })?.catch(console.error);
     } else {
       setParsedSearch(normalizedSearch);
     }

@@ -46,6 +46,8 @@ export interface ThreadInboxProps {
   readonly onEditPatient?: () => void;
   /** Fires with the selected thread's patient subject so the host can wire header actions/modals. */
   readonly onPatientChange?: (patient: Reference<Patient> | undefined) => void;
+  /** Change this to a new value (e.g. Date.now()) to programmatically open the New Message dialog. */
+  readonly openNewMessageSignal?: number;
   readonly onNew: (message: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
   readonly onChange: (search: SearchRequest) => void;
@@ -66,6 +68,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     patientHeaderMenuItems,
     onEditPatient,
     onPatientChange,
+    openNewMessageSignal,
     onNew,
     getThreadUri,
     uploadEnabled,
@@ -118,6 +121,13 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   useEffect(() => {
     onPatientChange?.(subjectReference ? { reference: subjectReference } : undefined);
   }, [subjectReference, onPatientChange]);
+
+  // Allow the host to programmatically open the New Message dialog (e.g. from the global search).
+  useEffect(() => {
+    if (openNewMessageSignal !== undefined) {
+      openModal();
+    }
+  }, [openNewMessageSignal, openModal]);
 
   const handleParticipantsChange = useCallback(
     (participants: Reference<Patient | Practitioner>[]) => {

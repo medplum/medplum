@@ -24,6 +24,7 @@ export function MessagesPage(): JSX.Element {
   const PharmacyDialogComponent = usePharmacyDialog();
   const [threadPatient, setThreadPatient] = useState<Reference<Patient>>();
   const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(threadPatient);
+  const newMessageSignal = (location.state as { newMessage?: number } | null)?.newMessage;
 
   const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
@@ -39,9 +40,10 @@ export function MessagesPage(): JSX.Element {
     const isDetailView = Boolean(messageId);
     if (!isDetailView && normalizedSearch !== currentSearch) {
       const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
-      navigate(`/Communication${prefix}`, { replace: true })?.catch(console.error);
+      // Preserve navigation state (e.g. the "open New Message" intent) across the redirect.
+      navigate(`/Communication${prefix}`, { replace: true, state: location.state })?.catch(console.error);
     }
-  }, [currentSearch, navigate, normalizedSearch, messageId]);
+  }, [currentSearch, navigate, normalizedSearch, messageId, location.state]);
 
   const onChange = (search: SearchRequest): void => {
     navigate(`/Communication${formatSearchQuery(search)}`)?.catch(console.error);
@@ -96,6 +98,7 @@ export function MessagesPage(): JSX.Element {
         patientHeaderMenuItems={headerMenuItems}
         onEditPatient={openEditModal}
         onPatientChange={setThreadPatient}
+        openNewMessageSignal={newMessageSignal}
         allowPatientSelection={true}
         onNew={onNew}
         getThreadUri={getThreadUri}
