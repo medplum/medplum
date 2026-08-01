@@ -35,38 +35,49 @@ fi
 
 DEPLOYABLE_PACKAGES=("@medplum/app" "@medplum/server" "@medplum/graphiql" "@medplum/storybook" "@medplum/docs")
 
-# Determine which deployable packages have changed since $TURBO_SCM_BASE
-PACKAGES_CHANGED=$(npx turbo query affected --packages "${DEPLOYABLE_PACKAGES[@]}" \
-  | jq -r '.data.affectedPackages.items[].name')
+# Invoking this script with `--force` deploys the full deployable set
+# regardless of the diff; otherwise we deploy only the affected packages.
+if [[ "$FORCE" = true ]]; then
+  PACKAGES_TO_DEPLOY=("${DEPLOYABLE_PACKAGES[@]}")
+else
+  # Determine which deployable packages have changed since $TURBO_SCM_BASE
+  PACKAGES_CHANGED=$(npx turbo query affected --packages "${DEPLOYABLE_PACKAGES[@]}" \
+    | jq -r '.data.affectedPackages.items[].name')
 
-# Build all affected packages
-if [[ -n "$PACKAGES_CHANGED" ]]; then
-  CHANGED_FILTERS=()
+  PACKAGES_TO_DEPLOY=()
   while IFS= read -r pkg; do
-    CHANGED_FILTERS+=(--filter="$pkg")
+    [[ -n "$pkg" ]] && PACKAGES_TO_DEPLOY+=("$pkg")
   done <<< "$PACKAGES_CHANGED"
+fi
+
+# Build the packages we are going to deploy
+if [[ ${#PACKAGES_TO_DEPLOY[@]} -gt 0 ]]; then
+  BUILD_FILTERS=()
+  for pkg in "${PACKAGES_TO_DEPLOY[@]}"; do
+    BUILD_FILTERS+=(--filter="$pkg")
+  done
 
   # We use `--force` because the `build` task in `@medplum/core` has an implicit
   # build-time dependency on the git hash (used to bake it in to `MEDPLUM_VERSION`),
   # and we don't want to read an old version string from the turborepo build cache.
-  npx turbo run build --force "${CHANGED_FILTERS[@]}"
+  npx turbo run build --force "${BUILD_FILTERS[@]}"
 fi
 
-
-# Set DEPLOY_* based on whether each package appears in the turbo affected output.
-# -F: match the name literally (the `@` and `/` are not treated as regex)
-# -w: whole-word match, so `@medplum/app` won't match a hypothetical `@medplum/app-foo`
-# -q: quiet, we only care about the exit status
-package_changed() {
-  grep -Fqw -- "$1" <<< "$PACKAGES_CHANGED"
+# Set DEPLOY_* based on membership in the deploy set we just built. Each line of
+# PACKAGES_TO_DEPLOY is a complete package name, so we compare it exactly.
+package_will_deploy() {
+  local target="$1"
+  for pkg in "${PACKAGES_TO_DEPLOY[@]}"; do
+    [[ "$pkg" == "$target" ]] && return 0
+  done
+  return 1
 }
 
-# FORCE deploys everything; otherwise deploy only affected packages
-if [[ "$FORCE" = true ]] || package_changed "@medplum/app";       then DEPLOY_APP=true;       else DEPLOY_APP=false;       fi
-if [[ "$FORCE" = true ]] || package_changed "@medplum/docs";      then DEPLOY_DOCS=true;      else DEPLOY_DOCS=false;      fi
-if [[ "$FORCE" = true ]] || package_changed "@medplum/graphiql";  then DEPLOY_GRAPHIQL=true;  else DEPLOY_GRAPHIQL=false;  fi
-if [[ "$FORCE" = true ]] || package_changed "@medplum/server";    then DEPLOY_SERVER=true;    else DEPLOY_SERVER=false;    fi
-if [[ "$FORCE" = true ]] || package_changed "@medplum/storybook"; then DEPLOY_STORYBOOK=true; else DEPLOY_STORYBOOK=false; fi
+if package_will_deploy "@medplum/app";       then DEPLOY_APP=true;       else DEPLOY_APP=false;       fi
+if package_will_deploy "@medplum/docs";      then DEPLOY_DOCS=true;      else DEPLOY_DOCS=false;      fi
+if package_will_deploy "@medplum/graphiql";  then DEPLOY_GRAPHIQL=true;  else DEPLOY_GRAPHIQL=false;  fi
+if package_will_deploy "@medplum/server";    then DEPLOY_SERVER=true;    else DEPLOY_SERVER=false;    fi
+if package_will_deploy "@medplum/storybook"; then DEPLOY_STORYBOOK=true; else DEPLOY_STORYBOOK=false; fi
 
 #
 # Send a slack message
