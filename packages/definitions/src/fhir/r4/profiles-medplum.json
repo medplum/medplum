@@ -9426,27 +9426,11 @@
                     },
                     {
                       "url": "http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type",
-                      "valueUri": "integer"
-                    },
-                    {
-                      "url": "http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type",
                       "valueUri": "boolean"
                     },
                     {
                       "url": "http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type",
-                      "valueUri": "dateTime"
-                    },
-                    {
-                      "url": "http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type",
-                      "valueUri": "decimal"
-                    },
-                    {
-                      "url": "http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type",
-                      "valueUri": "uri"
-                    },
-                    {
-                      "url": "http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type",
-                      "valueUri": "id"
+                      "valueUri": "Quantity"
                     }
                   ],
                   "name": "value",
