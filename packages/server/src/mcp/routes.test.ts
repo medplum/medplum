@@ -20,7 +20,9 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { Repository } from '../fhir/repo';
 import { initTestAuth } from '../test.setup';
+import { clampMcpSearchCount } from './server';
 
 type TransportType = 'stream' | 'sse';
 
@@ -30,6 +32,7 @@ interface McpSearchResponse {
     title: string;
     url: string;
   }[];
+  total?: number;
 }
 
 interface McpFetchResponse {
@@ -37,11 +40,6 @@ interface McpFetchResponse {
   title: string;
   text: string;
   url: string;
-  metadata: {
-    resourceType: string;
-    versionId?: string;
-    lastUpdated?: string;
-  };
 }
 
 async function connectMcpClient(port: number, transportType: TransportType, accessToken: string): Promise<Client> {
@@ -134,6 +132,15 @@ describe('MCP Routes', () => {
     expect(res).toHaveStatus(400);
   });
 
+  test('MCP search count is bounded', () => {
+    expect(clampMcpSearchCount(undefined)).toBe(20);
+    expect(clampMcpSearchCount(Number.NaN)).toBe(20);
+    expect(clampMcpSearchCount(-1)).toBe(20);
+    expect(clampMcpSearchCount(0)).toBe(0);
+    expect(clampMcpSearchCount(5)).toBe(5);
+    expect(clampMcpSearchCount(500)).toBe(100);
+  });
+
   test.each<TransportType>(['stream', 'sse'])('MCP with %s transport', async (transportType: TransportType) => {
     const client = await connectMcpClient(port, transportType, accessToken);
 
@@ -170,26 +177,53 @@ describe('MCP Routes', () => {
       }
 
       // 1. create
+      const family = `McpTest${transportType}${randomUUID().slice(0, 8)}`;
       const createResult = await fhirRequest<Patient>('POST', 'Patient', {
         resourceType: 'Patient',
-        name: [{ family: 'Doe', given: ['John'] }],
+        name: [{ family, given: ['John'] }],
       });
       expect(createResult.resourceType).toBe('Patient');
 
       // 2. MCP search
-      const searchToolResult = await client.callTool({
+      const searchSpy = vi.spyOn(Repository.prototype, 'search');
+      try {
+        const searchToolResult = await client.callTool({
+          name: 'search',
+          arguments: { query: `Patient?_id=${createResult.id}&_count=500&_total=accurate` },
+        });
+        expect(searchToolResult.isError).not.toBe(true);
+        const searchToolJson = getToolJson<McpSearchResponse>(searchToolResult);
+        expect(searchToolResult.structuredContent).toEqual(searchToolJson);
+        expect(searchToolJson.results).toEqual([
+          expect.objectContaining({
+            id: `Patient/${createResult.id}`,
+            title: `John ${family}`,
+            url: `http://localhost:${port}/fhir/R4/Patient/${createResult.id}`,
+          }),
+        ]);
+        expect(searchToolJson.total).toBe(1);
+        expect(searchSpy).toHaveBeenLastCalledWith(expect.objectContaining({ count: 100 }));
+
+        await client.callTool({
+          name: 'search',
+          arguments: {
+            query: `Patient?_id=${createResult.id}&_include=Patient:organization&_revinclude=Observation:subject`,
+          },
+        });
+        const lastSearchRequest = searchSpy.mock.calls[searchSpy.mock.calls.length - 1][0];
+        expect(lastSearchRequest.count).toBe(20);
+        expect(lastSearchRequest.include).toBeUndefined();
+        expect(lastSearchRequest.revInclude).toBeUndefined();
+      } finally {
+        searchSpy.mockRestore();
+      }
+
+      const invalidSearchResult = await client.callTool({
         name: 'search',
-        arguments: { query: `Patient?_id=${createResult.id}&_count=500` },
+        arguments: { query: `Patient/${createResult.id}/Observation` },
       });
-      expect(searchToolResult.isError).not.toBe(true);
-      const searchToolJson = getToolJson<McpSearchResponse>(searchToolResult);
-      expect(searchToolResult.structuredContent).toMatchObject(searchToolJson);
-      expect(searchToolJson.results).toEqual([
-        expect.objectContaining({
-          id: `Patient/${createResult.id}`,
-          url: `http://localhost:${port}/fhir/R4/Patient/${createResult.id}`,
-        }),
-      ]);
+      expect(invalidSearchResult.isError).toBe(true);
+      expect(getToolJson<OperationOutcome>(invalidSearchResult).resourceType).toBe('OperationOutcome');
 
       // 3. MCP fetch
       const fetchToolResult = await client.callTool({
@@ -202,9 +236,30 @@ describe('MCP Routes', () => {
       expect(fetchToolJson).toMatchObject({
         id: `Patient/${createResult.id}`,
         url: `http://localhost:${port}/fhir/R4/Patient/${createResult.id}`,
-        metadata: { resourceType: 'Patient' },
       });
       expect((JSON.parse(fetchToolJson.text) as Patient).id).toBe(createResult.id);
+
+      const bigPatient = await fhirRequest<Patient>('POST', 'Patient', {
+        resourceType: 'Patient',
+        name: [{ family: 'Y'.repeat(300) }],
+        extension: [{ url: 'https://example.com/large', valueString: 'x'.repeat(60_000) }],
+      });
+      const bigFetchResult = await client.callTool({
+        name: 'fetch',
+        arguments: { id: `Patient/${bigPatient.id}` },
+      });
+      const bigFetchJson = getToolJson<McpFetchResponse>(bigFetchResult);
+      expect(bigFetchResult.isError).not.toBe(true);
+      expect(bigFetchJson.text.length).toBeLessThan(51_000);
+      expect(bigFetchJson.text).toContain('[truncated');
+      expect(bigFetchJson.title.length).toBeLessThanOrEqual(200);
+      await fhirRequest('DELETE', `Patient/${bigPatient.id}`);
+
+      for (const id of ['example-id', `Patient/${createResult.id}/_history/1`, `Binary/${randomUUID()}`]) {
+        const invalidFetchResult = await client.callTool({ name: 'fetch', arguments: { id } });
+        expect(invalidFetchResult.isError).toBe(true);
+        expect(getToolJson<OperationOutcome>(invalidFetchResult).resourceType).toBe('OperationOutcome');
+      }
 
       // 4. MCP search and fetch respect access policies
       const limitedAccessToken = await initTestAuth({
@@ -225,12 +280,14 @@ describe('MCP Routes', () => {
           arguments: { query: `Patient?_id=${createResult.id}` },
         });
         expect(patientSearchResult.isError).toBe(true);
+        expect(getToolJson<OperationOutcome>(patientSearchResult).resourceType).toBe('OperationOutcome');
 
         const patientFetchResult = await limitedClient.callTool({
           name: 'fetch',
           arguments: { id: `Patient/${createResult.id}` },
         });
         expect(patientFetchResult.isError).toBe(true);
+        expect(getToolJson<OperationOutcome>(patientFetchResult).resourceType).toBe('OperationOutcome');
       } finally {
         await limitedClient.close();
       }

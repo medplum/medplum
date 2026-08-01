@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SearchRequest, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import {
+  badRequest,
   concatUrls,
   DEFAULT_SEARCH_COUNT,
   getDisplayString,
@@ -9,11 +10,14 @@ import {
   isString,
   MEDPLUM_VERSION,
   MedplumClient,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
   parseReference,
   parseSearchRequest,
 } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
@@ -21,6 +25,8 @@ import { getFullUrl } from '../fhir/response';
 import { getLogger } from '../logger';
 
 const MCP_MAX_SEARCH_COUNT = 100;
+const MCP_MAX_TITLE_LENGTH = 200;
+const MCP_MAX_FETCH_LENGTH = 50_000;
 
 interface McpSearchResult {
   id: string;
@@ -30,6 +36,7 @@ interface McpSearchResult {
 
 interface McpSearchResponse extends Record<string, unknown> {
   results: McpSearchResult[];
+  total?: number;
 }
 
 interface McpFetchResponse extends Record<string, unknown> {
@@ -37,11 +44,6 @@ interface McpFetchResponse extends Record<string, unknown> {
   title: string;
   text: string;
   url: string;
-  metadata: {
-    resourceType: string;
-    versionId?: string;
-    lastUpdated?: string;
-  };
 }
 
 function withJsonContent<T extends object>(
@@ -56,42 +58,47 @@ function withJsonContent<T extends object>(
   };
 }
 
-function applyMcpSearchCount(searchRequest: SearchRequest): void {
-  if (searchRequest.count === undefined) {
-    searchRequest.count = DEFAULT_SEARCH_COUNT;
-  } else {
-    searchRequest.count = Math.min(Math.max(searchRequest.count, 1), MCP_MAX_SEARCH_COUNT);
+export function clampMcpSearchCount(count: number | undefined): number {
+  if (count === undefined || !Number.isFinite(count) || count < 0) {
+    return DEFAULT_SEARCH_COUNT;
   }
+  return Math.min(count, MCP_MAX_SEARCH_COUNT);
+}
+
+function getMcpTitle(resource: WithId<Resource>): string {
+  const reference = getReferenceString(resource);
+  const title = getDisplayString(resource) || reference;
+  return title.length > MCP_MAX_TITLE_LENGTH ? `${title.slice(0, MCP_MAX_TITLE_LENGTH - 3)}...` : title;
 }
 
 function toMcpSearchResult(resource: WithId<Resource>): McpSearchResult {
   const id = getReferenceString(resource);
   return {
     id,
-    title: getDisplayString(resource) || id,
+    title: getMcpTitle(resource),
     url: getFullUrl(resource.resourceType, resource.id),
   };
 }
 
 function toMcpFetchResponse(resource: WithId<Resource>): McpFetchResponse {
   const id = getReferenceString(resource);
-  const metadata: McpFetchResponse['metadata'] = {
-    resourceType: resource.resourceType,
-  };
-
-  if (resource.meta?.versionId) {
-    metadata.versionId = resource.meta.versionId;
-  }
-  if (resource.meta?.lastUpdated) {
-    metadata.lastUpdated = resource.meta.lastUpdated;
-  }
+  const json = JSON.stringify(resource);
 
   return {
     id,
-    title: getDisplayString(resource) || id,
-    text: JSON.stringify(resource),
+    title: getMcpTitle(resource),
+    text:
+      json.length > MCP_MAX_FETCH_LENGTH
+        ? `${json.slice(0, MCP_MAX_FETCH_LENGTH)}... [truncated ${json.length} character resource]`
+        : json,
     url: getFullUrl(resource.resourceType, resource.id),
-    metadata,
+  };
+}
+
+function withOperationOutcome(err: unknown): CallToolResult {
+  return {
+    content: [{ type: 'text', text: JSON.stringify(normalizeOperationOutcome(err)) }],
+    isError: true,
   };
 }
 
@@ -104,7 +111,11 @@ export function getMcpServer(): McpServer {
   server.registerTool(
     'search',
     {
-      description: 'Search FHIR resources with a FHIR search query such as "Patient?name=Smith&_count=10".',
+      title: 'FHIR Search',
+      description:
+        'Search FHIR resources using a FHIR search string such as "Patient?name=Smith&_count=10". ' +
+        `Returns at most ${MCP_MAX_SEARCH_COUNT} matches (default ${DEFAULT_SEARCH_COUNT}); use _offset to page. ` +
+        'Each result id is a FHIR reference that can be passed to fetch. _include and _revinclude are ignored.',
       inputSchema: {
         query: z.string().describe('FHIR search query, for example "Patient?name=Smith&_count=10".'),
       },
@@ -116,6 +127,7 @@ export function getMcpServer(): McpServer {
             url: z.string(),
           })
         ),
+        total: z.number().optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -124,20 +136,48 @@ export function getMcpServer(): McpServer {
         openWorldHint: false,
       },
     },
-    async ({ query }) => {
+    async ({ query }): Promise<CallToolResult> => {
       getLogger().debug(`Performing search for: "${query}"`);
-      const ctx = getAuthenticatedContext();
-      const searchRequest = parseSearchRequest(query);
-      applyMcpSearchCount(searchRequest);
-      const results = (await ctx.repo.searchResources(searchRequest)).map(toMcpSearchResult);
-      return withJsonContent<McpSearchResponse>({ results });
+      try {
+        const resourceType = query.split('?')[0];
+        if (!/^[A-Z][A-Za-z0-9]*$/.test(resourceType)) {
+          throw new OperationOutcomeError(
+            badRequest('Search query must start with a resource type, for example "Patient?name=Smith"')
+          );
+        }
+
+        const ctx = getAuthenticatedContext();
+        const searchRequest = parseSearchRequest(query);
+        delete searchRequest.include;
+        delete searchRequest.revInclude;
+        searchRequest.count = clampMcpSearchCount(searchRequest.count);
+
+        const bundle = await ctx.repo.search(searchRequest);
+        const results = (bundle.entry ?? []).flatMap((entry) => {
+          const resource = entry.resource;
+          if (entry.search?.mode !== 'match' || !resource?.id) {
+            return [];
+          }
+          return [toMcpSearchResult(resource)];
+        });
+        const response: McpSearchResponse = { results };
+        if (bundle.total !== undefined) {
+          response.total = bundle.total;
+        }
+        return withJsonContent(response);
+      } catch (err) {
+        return withOperationOutcome(err);
+      }
     }
   );
 
   server.registerTool(
     'fetch',
     {
-      description: 'Fetch a single FHIR resource by reference returned from search, such as "Patient/123".',
+      title: 'FHIR Read',
+      description:
+        'Fetch one FHIR resource using a reference returned by search, such as "Patient/123". ' +
+        'Very large resources are truncated, and Binary resources are not supported.',
       inputSchema: {
         id: z.string().describe('FHIR resource reference returned by search, for example "Patient/123".'),
       },
@@ -146,11 +186,6 @@ export function getMcpServer(): McpServer {
         title: z.string(),
         text: z.string(),
         url: z.string(),
-        metadata: z.object({
-          resourceType: z.string(),
-          versionId: z.string().optional(),
-          lastUpdated: z.string().optional(),
-        }),
       },
       annotations: {
         readOnlyHint: true,
@@ -159,12 +194,26 @@ export function getMcpServer(): McpServer {
         openWorldHint: false,
       },
     },
-    async ({ id }) => {
+    async ({ id }): Promise<CallToolResult> => {
       getLogger().debug(`Performing fetch for ID: "${id}"`);
-      const ctx = getAuthenticatedContext();
-      const [resourceType, resourceId] = parseReference<Resource>({ reference: id });
-      const resource = await ctx.repo.readResource<Resource>(resourceType, resourceId);
-      return withJsonContent(toMcpFetchResponse(resource));
+      try {
+        const parts = id.split('/');
+        if (parts.length !== 2 || !/^[A-Z][A-Za-z0-9]*$/.test(parts[0]) || !parts[1]) {
+          throw new OperationOutcomeError(
+            badRequest('The id must be a FHIR reference of the form "ResourceType/id", for example "Patient/123"')
+          );
+        }
+        if (parts[0] === 'Binary') {
+          throw new OperationOutcomeError(badRequest('Binary resources are not supported by the fetch tool'));
+        }
+
+        const ctx = getAuthenticatedContext();
+        const [resourceType, resourceId] = parseReference<Resource>({ reference: id });
+        const resource = await ctx.repo.readResource<Resource>(resourceType, resourceId);
+        return withJsonContent(toMcpFetchResponse(resource));
+      } catch (err) {
+        return withOperationOutcome(err);
+      }
     }
   );
 
