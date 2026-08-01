@@ -35,20 +35,22 @@ fi
 
 DEPLOYABLE_PACKAGES=("@medplum/app" "@medplum/server" "@medplum/graphiql" "@medplum/storybook" "@medplum/docs")
 
-# Turn the deployable package list into repeated `--filter=<pkg>` args
-DEPLOYABLE_FILTERS=()
-for pkg in "${DEPLOYABLE_PACKAGES[@]}"; do
-  DEPLOYABLE_FILTERS+=(--filter="$pkg")
-done
+# Determine which deployable packages have changed since $TURBO_SCM_BASE
+PACKAGES_CHANGED=$(npx turbo query affected --packages "${DEPLOYABLE_PACKAGES[@]}" \
+  | jq -r '.data.affectedPackages.items[].name')
 
-PACKAGES_CHANGED=$(npx turbo ls --affected "${DEPLOYABLE_FILTERS[@]}")
+# Build all affected packages
+if [[ -n "$PACKAGES_CHANGED" ]]; then
+  CHANGED_FILTERS=()
+  while IFS= read -r pkg; do
+    CHANGED_FILTERS+=(--filter="$pkg")
+  done <<< "$PACKAGES_CHANGED"
 
-# Build all packages with changes since $TURBO_SCM_BASE
-#
-# We use `--force` because the `build` task in `@medplum/core` has an implicit
-# build-time dependency on the git hash (used to bake it in to `MEDPLUM_VERSION`),
-# and we don't want to read an old version string from the turborepo build cache.
-npx turbo run build --affected --force "${DEPLOYABLE_FILTERS[@]}"
+  # We use `--force` because the `build` task in `@medplum/core` has an implicit
+  # build-time dependency on the git hash (used to bake it in to `MEDPLUM_VERSION`),
+  # and we don't want to read an old version string from the turborepo build cache.
+  npx turbo run build --force "${CHANGED_FILTERS[@]}"
+fi
 
 
 # Set DEPLOY_* based on whether each package appears in the turbo affected output.
