@@ -9,6 +9,8 @@
 # Echo commands
 set -x
 
+set -o pipefail
+
 # Initialize FORCE flag to false
 FORCE=false
 
@@ -40,9 +42,13 @@ DEPLOYABLE_PACKAGES=("@medplum/app" "@medplum/server" "@medplum/graphiql" "@medp
 if [[ "$FORCE" = true ]]; then
   PACKAGES_TO_DEPLOY=("${DEPLOYABLE_PACKAGES[@]}")
 else
-  # Determine which deployable packages have changed since $TURBO_SCM_BASE
-  PACKAGES_CHANGED=$(npx turbo query affected --packages "${DEPLOYABLE_PACKAGES[@]}" \
-    | jq -r '.data.affectedPackages.items[].name')
+  # Determine which deployable packages have changed since $TURBO_SCM_BASE.
+  # Fail loudly if the query itself fails (bad flag, turbo error, malformed JSON).
+  if ! PACKAGES_CHANGED=$(npx turbo query affected --packages "${DEPLOYABLE_PACKAGES[@]}" \
+      | jq -r '.data.affectedPackages.items[].name'); then
+    echo "ERROR: failed to determine affected packages via 'turbo query affected'" >&2
+    exit 1
+  fi
 
   PACKAGES_TO_DEPLOY=()
   while IFS= read -r pkg; do
