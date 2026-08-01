@@ -104,8 +104,8 @@ describe('Spotlight', () => {
 
   describe('staticActions', () => {
     const staticActions = [
-      { id: 'action-new-task', label: 'New Task', onClick: vi.fn() },
-      { id: 'action-send-fax', label: 'Send a Fax', onClick: vi.fn() },
+      { id: 'action-new-task', href: '/Task/new', label: 'New Task', onClick: vi.fn() },
+      { id: 'action-send-fax', href: '/Fax/Communication/new', label: 'Send a Fax', onClick: vi.fn() },
     ];
 
     test('lists static actions in the empty state', async () => {
@@ -139,6 +139,38 @@ describe('Spotlight', () => {
 
       expect(screen.queryByText('New Task')).not.toBeInTheDocument();
       expect(screen.getByText('Searching...')).toBeInTheDocument();
+    });
+
+    test('renders actions with an href as anchors', async () => {
+      await setup(true, { staticActions });
+
+      const action = document.querySelector('[data-action][group="Actions"]') as HTMLAnchorElement;
+      expect(action.tagName).toBe('A');
+      expect(action).toHaveAttribute('href', '/Task/new');
+    });
+
+    test('leaves modified clicks to the browser so the link opens in a new tab', async () => {
+      await setup(true, { staticActions });
+
+      // Runs after the component's handler; also stops jsdom from acting on the anchor
+      const defaultPrevented: boolean[] = [];
+      document.addEventListener(
+        'click',
+        (event) => {
+          defaultPrevented.push(event.defaultPrevented);
+          event.preventDefault();
+        },
+        { once: true }
+      );
+
+      const action = document.querySelector('[data-action][group="Actions"]') as HTMLElement;
+      await act(async () => {
+        fireEvent.click(action, { metaKey: true });
+      });
+
+      // The browser opens the new tab; the SPA must neither swallow the click nor navigate the current tab
+      expect(defaultPrevented).toEqual([false]);
+      expect(staticActions[0].onClick).not.toHaveBeenCalled();
     });
   });
 
@@ -337,6 +369,9 @@ describe('Spotlight', () => {
       );
 
       const patientAction = document.querySelector('[data-action][group="Patients"]') as HTMLElement;
+      // Results are anchors, so they support right-click "Open in new tab"
+      expect(patientAction).toHaveAttribute('href', '/Patient/patient-123');
+
       await act(async () => {
         fireEvent.click(patientAction);
       });

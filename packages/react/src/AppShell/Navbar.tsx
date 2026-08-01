@@ -11,7 +11,6 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import type { SpotlightActionData } from '@mantine/spotlight';
 import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
@@ -26,6 +25,7 @@ import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { HeaderDropdown } from './HeaderDropdown';
 import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
+import type { SpotlightLinkAction } from './Spotlight';
 import { Spotlight } from './Spotlight';
 
 export interface NavbarLink {
@@ -60,7 +60,7 @@ export interface NavbarProps {
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
   readonly patientsOnly?: boolean;
-  readonly spotlightActions?: SpotlightActionData[];
+  readonly spotlightActions?: SpotlightLinkAction[];
   readonly userMenuEnabled?: boolean;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;

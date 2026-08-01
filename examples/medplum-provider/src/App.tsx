@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SpotlightActionData } from '@mantine/spotlight';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
+import type { SpotlightLinkAction } from '@medplum/react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
@@ -90,28 +90,33 @@ export function App(): JSX.Element | null {
     setSetupDismissedByUser(true);
   };
 
-  // Each action navigates to a `/new` route; the destination page opens its own modal from the URL.
-  const spotlightActions: SpotlightActionData[] = [
+  // Each action points at a `/new` route; the destination page opens its own modal from the URL.
+  // `href` also makes them real links, so they can be opened in a new tab.
+  const spotlightActions: SpotlightLinkAction[] = [
     {
       id: 'action-new-patient-intake',
+      href: '/onboarding',
       label: 'New Patient Intake',
       leftSection: <IconUserPlus size={16} color="var(--mantine-color-dimmed)" />,
       onClick: () => navigate('/onboarding')?.catch(console.error),
     },
     {
       id: 'action-new-message',
+      href: '/Communication/new',
       label: 'New Message',
       leftSection: <IconMail size={16} color="var(--mantine-color-dimmed)" />,
       onClick: () => navigate('/Communication/new')?.catch(console.error),
     },
     {
       id: 'action-new-task',
+      href: '/Task/new',
       label: 'New Task',
       leftSection: <IconClipboardCheck size={16} color="var(--mantine-color-dimmed)" />,
       onClick: () => navigate('/Task/new')?.catch(console.error),
     },
     {
       id: 'action-send-fax',
+      href: '/Fax/Communication/new',
       label: 'Send a Fax',
       leftSection: <IconPrinter size={16} color="var(--mantine-color-dimmed)" />,
       onClick: () => navigate('/Fax/Communication/new')?.catch(console.error),

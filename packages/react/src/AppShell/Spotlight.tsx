@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Kbd, Stack, Text } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
-import type { SpotlightActionData, SpotlightActionGroupData } from '@mantine/spotlight';
-import { Spotlight as MantineSpotlight } from '@mantine/spotlight';
+import type { SpotlightActionData } from '@mantine/spotlight';
+import { Spotlight as MantineSpotlight, spotlight } from '@mantine/spotlight';
 import { formatHumanName, isUUID } from '@medplum/core';
 import type { Patient, ServiceRequest, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { MedplumNavigateFunction } from '@medplum/react-hooks';
@@ -18,13 +18,23 @@ const DEBOUNCE_MS = 200;
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
 
+/**
+ * A Spotlight entry. Setting `href` renders it as an anchor rather than a button, so the browser's
+ * "Open link in new tab" context menu and Cmd/Ctrl+click both work. A plain click still routes
+ * through `onClick` (i.e. the SPA router) instead of triggering a full page load.
+ */
+export interface SpotlightLinkAction extends SpotlightActionData {
+  readonly href?: string;
+}
+
+interface SpotlightLinkActionGroup {
+  readonly group: string;
+  readonly actions: SpotlightLinkAction[];
+}
+
 export interface SpotlightProps {
   readonly patientsOnly?: boolean;
-  /**
-   * Optional app-provided quick actions, shown under an "Actions" group in the empty (open) state.
-   * Each is keyboard-navigable like a search result.
-   */
-  readonly staticActions?: SpotlightActionData[];
+  readonly staticActions?: SpotlightLinkAction[];
 }
 
 function ShortcutKey({ children }: { readonly children: ReactNode }): JSX.Element {
@@ -52,6 +62,50 @@ function ShortcutHints(): JSX.Element {
   );
 }
 
+interface SpotlightActionItemProps {
+  readonly action: SpotlightLinkAction;
+  readonly group?: string;
+  readonly highlightQuery?: boolean;
+}
+
+/**
+ * Renders one Spotlight entry, as an anchor when the action has an `href`.
+ * @param props - The Spotlight action item props.
+ * @param props.action - The action to render.
+ * @param props.group - The name of the group the action belongs to.
+ * @param props.highlightQuery - Whether to highlight the search query within the label.
+ * @returns The rendered Spotlight action.
+ */
+function SpotlightActionItem({ action, group, highlightQuery }: SpotlightActionItemProps): JSX.Element {
+  const { href, onClick } = action;
+
+  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
+    // Let the browser take modified clicks on a real link (new tab / new window / download)
+    // and leave the palette open, since the current page isn't going anywhere.
+    if (href && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) {
+      return;
+    }
+    event.preventDefault();
+    onClick?.(event);
+    spotlight.close();
+  };
+
+  return (
+    <MantineSpotlight.Action
+      label={action.label}
+      description={action.description}
+      leftSection={action.leftSection}
+      highlightQuery={highlightQuery}
+      // Closing is handled in `handleClick` so modified clicks can keep the palette open.
+      closeSpotlightOnTrigger={false}
+      onClick={handleClick}
+      // `component`/`href` pass through to the polymorphic UnstyledButton underneath, which
+      // `SpotlightActionProps` types as button-only. `group` is a grouping/testing selector hook.
+      {...({ ...(href && { component: 'a', href }), group } as Record<string, unknown>)}
+    />
+  );
+}
+
 /**
  * Filters action groups by query (matching label or description), dropping empty groups.
  * Mirrors Mantine's built-in `defaultSpotlightFilter` behavior for the composable API.
@@ -59,12 +113,12 @@ function ShortcutHints(): JSX.Element {
  * @param groups - The action groups to filter.
  * @returns The filtered action groups.
  */
-function filterActionGroups(query: string, groups: SpotlightActionGroupData[]): SpotlightActionGroupData[] {
+function filterActionGroups(query: string, groups: SpotlightLinkActionGroup[]): SpotlightLinkActionGroup[] {
   const q = query.trim().toLowerCase();
   if (!q) {
     return groups;
   }
-  const result: SpotlightActionGroupData[] = [];
+  const result: SpotlightLinkActionGroup[] = [];
   for (const group of groups) {
     const actions = group.actions.filter(
       (a) =>
@@ -108,7 +162,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
   const navigate = useMedplumNavigate();
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [actions, setActions] = useState<SpotlightActionGroupData[]>([]);
+  const [actions, setActions] = useState<SpotlightLinkActionGroup[]>([]);
 
   const debouncedSearch = useDebouncedCallback((searchQuery: string) => {
     const graphqlQuery = buildGraphQLQuery(searchQuery);
@@ -206,13 +260,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
         {showStaticActions && (
           <MantineSpotlight.ActionsGroup label="Actions">
             {staticActions?.map((action) => (
-              <MantineSpotlight.Action
-                key={action.id}
-                label={action.label}
-                description={action.description}
-                leftSection={action.leftSection}
-                onClick={action.onClick}
-              />
+              <SpotlightActionItem key={action.id} action={action} group="Actions" />
             ))}
           </MantineSpotlight.ActionsGroup>
         )}
@@ -221,16 +269,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
           filteredActions.map((group) => (
             <MantineSpotlight.ActionsGroup key={group.group} label={group.group}>
               {group.actions.map((action) => (
-                <MantineSpotlight.Action
-                  key={action.id}
-                  label={action.label}
-                  description={action.description}
-                  leftSection={action.leftSection}
-                  onClick={action.onClick}
-                  highlightQuery
-                  // `group` is forwarded to the action element for grouping/testing selectors.
-                  {...({ group: group.group } as Record<string, unknown>)}
-                />
+                <SpotlightActionItem key={action.id} action={action} group={group.group} highlightQuery />
               ))}
             </MantineSpotlight.ActionsGroup>
           ))}
@@ -317,16 +356,35 @@ function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
   return result;
 }
 
-function patientsToActions(patients: Patient[], navigate: MedplumNavigateFunction): SpotlightActionGroupData[] {
-  const patientActions: SpotlightActionData[] = patients
+/**
+ * Builds an action whose `href` is both the anchor target (for right-click / Cmd+click) and the
+ * route a plain click hands to the SPA router.
+ * @param action - The action data, including the destination `href`.
+ * @param navigate - The navigate function used for plain clicks.
+ * @returns The action with its `onClick` wired to `href`.
+ */
+function navigateAction(
+  action: Omit<SpotlightLinkAction, 'onClick'> & { href: string },
+  navigate: MedplumNavigateFunction
+): SpotlightLinkAction {
+  return { ...action, onClick: () => navigate(action.href) };
+}
+
+function patientsToActions(patients: Patient[], navigate: MedplumNavigateFunction): SpotlightLinkActionGroup[] {
+  const patientActions: SpotlightLinkAction[] = patients
     .filter((p): p is Patient & { id: string } => Boolean(p.id))
-    .map((patient) => ({
-      id: patient.id,
-      label: patient.name ? formatHumanName(patient.name[0]) : patient.id,
-      description: patient.birthDate,
-      leftSection: <ResourceAvatar value={patient} radius="xl" size={24} />,
-      onClick: () => navigate(`/Patient/${patient.id}`),
-    }));
+    .map((patient) =>
+      navigateAction(
+        {
+          id: patient.id,
+          href: `/Patient/${patient.id}`,
+          label: patient.name ? formatHumanName(patient.name[0]) : patient.id,
+          description: patient.birthDate,
+          leftSection: <ResourceAvatar value={patient} radius="xl" size={24} />,
+        },
+        navigate
+      )
+    );
 
   return patientActions.length > 0 ? [{ group: 'Patients', actions: patientActions }] : [];
 }
@@ -335,39 +393,54 @@ function resourcesToActions(
   resources: HeaderSearchTypes[],
   resourceTypes: ValueSetExpansionContains[],
   navigate: MedplumNavigateFunction
-): SpotlightActionGroupData[] {
-  const result: SpotlightActionGroupData[] = [];
+): SpotlightLinkActionGroup[] {
+  const result: SpotlightLinkActionGroup[] = [];
 
   // Resource types
-  const resourceTypeActions: SpotlightActionData[] = resourceTypes.map((rt) => ({
-    id: `resource-type-${rt.code}`,
-    label: rt.display ?? rt.code ?? '',
-    description: 'Resource Type',
-    onClick: () => navigate(`/${rt.code}`),
-  }));
+  const resourceTypeActions: SpotlightLinkAction[] = resourceTypes.map((rt) =>
+    navigateAction(
+      {
+        id: `resource-type-${rt.code}`,
+        href: `/${rt.code}`,
+        label: rt.display ?? rt.code ?? '',
+        description: 'Resource Type',
+      },
+      navigate
+    )
+  );
   if (resourceTypeActions.length > 0) {
     result.push({ group: 'Resource Types', actions: resourceTypeActions });
   }
 
-  const patientActions: SpotlightActionData[] = [];
-  const serviceRequestActions: SpotlightActionData[] = [];
+  const patientActions: SpotlightLinkAction[] = [];
+  const serviceRequestActions: SpotlightLinkAction[] = [];
 
   for (const resource of resources) {
     if (resource.resourceType === 'Patient' && resource.id) {
-      patientActions.push({
-        id: resource.id,
-        label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
-        description: resource.birthDate,
-        leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
-        onClick: () => navigate(`/Patient/${resource.id}`),
-      });
+      patientActions.push(
+        navigateAction(
+          {
+            id: resource.id,
+            href: `/Patient/${resource.id}`,
+            label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
+            description: resource.birthDate,
+            leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
+          },
+          navigate
+        )
+      );
     } else if (resource.resourceType === 'ServiceRequest' && resource.id) {
-      serviceRequestActions.push({
-        id: resource.id,
-        label: resource.id,
-        description: resource.subject?.display,
-        onClick: () => navigate(`/ServiceRequest/${resource.id}`),
-      });
+      serviceRequestActions.push(
+        navigateAction(
+          {
+            id: resource.id,
+            href: `/ServiceRequest/${resource.id}`,
+            label: resource.id,
+            description: resource.subject?.display,
+          },
+          navigate
+        )
+      );
     }
   }
 
