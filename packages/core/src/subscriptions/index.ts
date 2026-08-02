@@ -165,7 +165,11 @@ export class SubscriptionManager {
         }
         const bundle = parsedData;
         // Get criteria for event
-        const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
+        const status = bundle?.entry?.[0]?.resource as SubscriptionStatus | undefined;
+        if (!status) {
+          console.warn('Received WebSocket message without a SubscriptionStatus resource; ignoring');
+          return;
+        }
 
         // Handle heartbeat
         if (status.type === 'heartbeat') {
