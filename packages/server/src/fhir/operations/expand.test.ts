@@ -105,6 +105,24 @@ describe('Expand', () => {
     expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('null byte');
   });
 
+  test('Filter token limit', async () => {
+    const url = 'http://hl7.org/fhir/ValueSet/observation-codes';
+    const acceptedFilter = Array(10).fill('rate').join(' ');
+    const accepted = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=${encodeURIComponent(acceptedFilter)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(accepted).toHaveStatus(200);
+
+    const rejectedFilter = Array(11).fill('rate').join(' ');
+    const rejected = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=${encodeURIComponent(rejectedFilter)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(rejected).toHaveStatus(400);
+    expect((rejected.body as OperationOutcome).issue?.[0].details?.text).toContain(
+      'Filter value cannot contain more than 10 tokens'
+    );
+  });
+
   test('Success', async () => {
     const res = await request(app)
       .get(
