@@ -103,11 +103,15 @@ export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpC
   return defaultFrom;
 }
 
+/** App name used in user-facing content for projects that have not been white-labeled. */
+export const DEFAULT_APP_NAME = 'Medplum';
+
 /**
  * Returns the app name that a project has configured for user-facing content, or
  * undefined if the project has not been white-labeled. Controlled by the
- * `appName` project setting. Used for the email sender display name below, and
- * by MFA for email content and the authenticator app issuer.
+ * `appName` project setting. Used for the email sender display name below, for
+ * invite and password-reset email content, and by MFA for email content and the
+ * authenticator app issuer.
  * @param project - The project to read the setting from.
  * @returns The configured app name, or undefined if unset or blank.
  */

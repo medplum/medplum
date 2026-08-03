@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import type { WithId } from '@medplum/core';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type {
   AccessPolicy,
+  Project,
   BundleEntry,
   Patient,
   Practitioner,
@@ -25,7 +27,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { addTestUser, createTestProject, initTestAuth, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
@@ -2115,4 +2117,93 @@ describe('Admin Invite', () => {
 
       expect(membership.accessPolicy).toBeUndefined();
     }));
+
+  describe('Project branding', () => {
+    const appName = 'Acme Health';
+
+    async function setProjectSetting(project: WithId<Project>, name: string, valueString: string): Promise<void> {
+      const systemRepo = getGlobalSystemRepo();
+      await withTestContext(async () => {
+        // Read the current project so successive calls compose rather than clobber.
+        const current = await systemRepo.readResource<Project>('Project', project.id);
+        await systemRepo.updateResource<Project>({
+          ...current,
+          setting: [...(current.setting?.filter((s) => s.name !== name) ?? []), { name, valueString }],
+        });
+      });
+    }
+
+    test('appName brands the new-user invite email', async () => {
+      const { project, accessToken } = await withTestContext(() =>
+        registerNew({
+          firstName: 'Alice',
+          lastName: 'Smith',
+          projectName: 'Alice Project',
+          email: `alice${randomUUID()}@example.com`,
+          password: 'password!@#',
+        })
+      );
+      await setProjectSetting(project, 'appName', appName);
+
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+        });
+      expect(res).toHaveStatus(200);
+      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
+
+      const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+      const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+      expect(parsed.subject).toBe(`Welcome to ${appName}`);
+      expect(parsed.text).toContain(`Thank you,\n${appName}`);
+    });
+
+    test('appName brands the existing-user invite email', async () => {
+      const aliceRegistration = await withTestContext(() =>
+        registerNew({
+          firstName: 'Alice',
+          lastName: 'Smith',
+          projectName: 'Alice Project',
+          email: `alice${randomUUID()}@example.com`,
+          password: 'password!@#',
+        })
+      );
+      await setProjectSetting(aliceRegistration.project, 'appName', appName);
+
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      await withTestContext(() =>
+        registerNew({
+          firstName: 'Bob',
+          lastName: 'Jones',
+          projectName: 'Bob Project',
+          email: bobEmail,
+          password: 'password!@#',
+        })
+      );
+
+      const res = await request(app)
+        .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+        .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+        });
+      expect(res).toHaveStatus(200);
+      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
+
+      const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+      const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+      expect(parsed.subject).toBe(`${appName}: Welcome to Alice Project`);
+      expect(parsed.text).toContain(`Thank you,\n${appName}`);
+    });
+  });
+
 });
