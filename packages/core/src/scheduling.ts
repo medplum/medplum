@@ -84,8 +84,7 @@ export function serviceTypeIncludesService(
   const reference = getReferenceString(service);
   return serviceType.some((concept) => {
     const serviceReference = getExtensionValue(concept, ServiceTypeReferenceURI) as
-      | Reference<HealthcareService>
-      | undefined;
+      Reference<HealthcareService> | undefined;
     return serviceReference?.reference === reference;
   });
 }
