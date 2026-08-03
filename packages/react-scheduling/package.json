@@ -54,7 +54,6 @@
   "module": "dist/esm/index.mjs",
   "types": "dist/esm/index.d.ts",
   "files": [
-    ".env.defaults",
     "dist/cjs",
     "dist/esm"
   ],
@@ -81,7 +80,6 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.4",
     "clsx": "2.1.1",
-    "dotenv": "17.4.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "temporal-polyfill": "1.0.1",
