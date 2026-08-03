@@ -46,12 +46,21 @@ export type EventCategory = 'open' | 'close' | 'update' | 'select' | 'other';
 
 export function getEventCategory(eventName: string): EventCategory {
   const lower = eventName.toLowerCase();
+  // `Home-open` represents the *lack* of a FHIR resource context, so it only borrows the
+  // `-open` suffix and has no anchor resource to establish a current context from.
+  // Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-2-5-Home-open.html
+  if (lower === 'home-open') {
+    return 'other';
+  }
   if (lower.endsWith('-open')) {
     return 'open';
   }
   if (lower.endsWith('-close')) {
     return 'close';
   }
+  // `DiagnosticReport-update` is the only update event in the event catalog, so it's the only
+  // one we handle today.
+  // Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-Events.html
   if (lower === 'diagnosticreport-update') {
     return 'update';
   }
