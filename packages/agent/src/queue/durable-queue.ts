@@ -1201,8 +1201,7 @@ export class DurableQueue {
    */
   findSeenByControlId(channelName: string, msgControlId: string): InboundRow | null {
     const raw = this.findSeenByControlIdStmt.get(channelName, msgControlId) as
-      | Record<string, SQLInputValue>
-      | undefined;
+      Record<string, SQLInputValue> | undefined;
     return raw ? rowFromSql(raw) : null;
   }
 

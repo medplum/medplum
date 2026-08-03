@@ -1,11 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue, WithId } from '@medplum/core';
-import { allOk, append, badRequest, EMPTY, forbidden, OperationOutcomeError } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  allOk,
+  append,
+  badRequest,
+  EMPTY,
+  forbidden,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
+import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery, Union } from '../sql';
 import { makeOperationDefinition } from './definitions';
@@ -113,16 +121,25 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('Parameter `url` not permitted for instance operation', 'Parameters.parameter')];
   } else if (req.params.id) {
     conceptMap = await repo.readResource('ConceptMap', req.params.id);
+    if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, conceptMap)) {
+      return [forbidden];
+    }
   } else if (params.url) {
     conceptMap = await findTerminologyResource(repo, 'ConceptMap', params.url, { ownProjectOnly: !isSuperAdmin });
   } else {
     return [badRequest('ConceptMap to import into must be specified', `Parameters.parameter.where(name = 'url')`)];
   }
 
-  await repo.withTransaction(async (txRepo) => {
-    const db = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-    return importConceptMap(db, conceptMap, params.mapping);
-  });
+  await repo.withTransaction(
+    async (txRepo) => {
+      // `importConceptMap` operates only on ConceptMap derivative tables
+      const db = txRepo.getDatabaseClient(
+        repoAccess.sqlWrite('ConceptMap', { source: 'conceptMapImportHandler.client' })
+      );
+      await importConceptMap(db, conceptMap, params.mapping);
+    },
+    { resourceTypes: ['ConceptMap'], source: 'conceptMapImportHandler' }
+  );
   return [allOk, conceptMap];
 }
 

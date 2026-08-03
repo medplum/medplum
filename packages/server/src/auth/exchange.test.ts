@@ -134,7 +134,7 @@ describe('Token Exchange', () => {
       externalAccessToken: '',
       clientId: defaultClient.id,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Missing externalAccessToken');
   });
 
@@ -143,7 +143,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: '',
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Missing clientId');
   });
 
@@ -152,7 +152,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: defaultClient.id,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Invalid client');
   });
 
@@ -163,7 +163,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: externalAuthClient.id,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
@@ -174,7 +174,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: externalAuthClient.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -189,7 +189,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: externalAuthConfigClientId,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -200,7 +200,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'firebase-token',
       clientId: gcipAuthClient.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith(
       'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=test-api-key',
@@ -226,7 +226,7 @@ describe('Token Exchange', () => {
       projectId: '',
       clientId: externalAuthClient.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Invalid token request', async () => {
@@ -236,7 +236,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: externalAuthClient.id,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
@@ -248,7 +248,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'xyz',
       clientId: subjectAuthClient.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -259,7 +259,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'firebase-token',
       clientId: gcipSubjectAuthClient.id,
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.access_token).toBeTruthy();
   });
 
@@ -270,7 +270,7 @@ describe('Token Exchange', () => {
       externalAccessToken: 'firebase-token',
       clientId: gcipAuthClient.id,
     });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
   });
 });

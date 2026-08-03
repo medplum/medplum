@@ -23,6 +23,7 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
+import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
@@ -91,7 +92,7 @@ export function App(): JSX.Element | null {
     return null;
   }
 
-  return (
+  const appShellContent = (
     <AppShell
       logo={<Logo size={24} />}
       pathname={location.pathname}
@@ -210,7 +211,9 @@ export function App(): JSX.Element | null {
                 <Route path="Communication" element={<CommunicationTab />} />
                 <Route path="Communication/:messageId" element={<CommunicationTab />} />
                 <Route path="Task" element={<TasksTab />} />
+                <Route path="Task/new" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
+                <Route path="Task/:taskId/new" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
@@ -237,12 +240,18 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/Communication" element={<MessagesPage />}>
                 <Route index element={<MessagesPage />} />
+                <Route path="new" element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
+                <Route path=":messageId/new" element={<MessagesPage />} />
               </Route>
               <Route path="/Task" element={<TasksPage />} />
+              <Route path="/Task/new" element={<TasksPage />} />
               <Route path="/Task/:taskId" element={<TasksPage />} />
+              <Route path="/Task/:taskId/new" element={<TasksPage />} />
               <Route path="/Fax/Communication" element={<FaxPage />} />
+              <Route path="/Fax/Communication/new" element={<FaxPage />} />
               <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
+              <Route path="/Fax/Communication/:faxId/new" element={<FaxPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
@@ -275,4 +284,6 @@ export function App(): JSX.Element | null {
       </Suspense>
     </AppShell>
   );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
 }

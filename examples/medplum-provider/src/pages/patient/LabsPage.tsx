@@ -134,16 +134,6 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
     ];
   }, [patientId]);
 
-  const handleTabChange = useCallback(
-    (value: string): void => {
-      const tab = tabs.find((t) => t.value === value);
-      if (tab) {
-        navigate(tab.uri)?.catch(console.error);
-      }
-    },
-    [navigate, tabs]
-  );
-
   const count = search.count ?? DEFAULT_COUNT;
   const page = Math.floor((search.offset ?? 0) / count) + 1;
   const pageCount = Math.max(1, Math.ceil(total / count));
@@ -190,7 +180,6 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         refresh={fetchData}
         tabs={tabs}
         activeTab={activeTab}
-        onTabChange={handleTabChange}
         headerActions={headerActions}
         emptyList={<EmptyLabsState activeTab={activeTab} />}
         emptyDetail={<LabSelectEmpty activeTab={activeTab} />}

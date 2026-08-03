@@ -19,5 +19,5 @@ export const migration: CustomPostDeployMigration = {
 
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
-  await fns.query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS "ConceptMapping_map_source_target_idx"`);
+  await fns.idempotentCreateIndex(client, results, 'Coding_system_codeLowerPattern_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_codeLowerPattern_idx" ON "Coding" ("system", lower(code) text_pattern_ops) WHERE ("synonymOf" IS NULL)`);
 }

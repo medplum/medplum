@@ -49,7 +49,7 @@ describe('CDS Hooks', () => {
         },
       });
 
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     cdsHookBot = res1.body as WithId<Bot>;
 
     const res2 = await request(app)
@@ -91,7 +91,7 @@ describe('CDS Hooks', () => {
   `,
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const res3 = await request(app)
       .post('/fhir/R4/Bot')
@@ -103,7 +103,7 @@ describe('CDS Hooks', () => {
         runtimeVersion: 'vmcontext',
       });
 
-    expect(res3.status).toBe(201);
+    expect(res3).toHaveStatus(201);
     normalBot = res3.body as WithId<Bot>;
   });
 
@@ -115,7 +115,7 @@ describe('CDS Hooks', () => {
     const res = await request(app)
       .get('/cds-services')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body).toEqual({
       services: [
         {
@@ -155,7 +155,7 @@ describe('CDS Hooks', () => {
           },
         },
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.body).toBeDefined();
     expect(res.body.cards).toBeDefined();
@@ -170,6 +170,6 @@ describe('CDS Hooks', () => {
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
       });
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 });

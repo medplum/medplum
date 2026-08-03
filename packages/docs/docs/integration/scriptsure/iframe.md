@@ -4,9 +4,6 @@ sidebar_position: 4
 
 # Prescribing iFrame
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 ScriptSure offers a fully hosted prescribing UI that can be embedded directly in your application as an authenticated iFrame. This is an alternative to building a custom prescribing flow using the ScriptSure APIs–rather than integrating drug search, order creation, and pharmacy management individually, the iFrame provides all of that in a single pre-built interface. It handles EULA acceptance, identity proofing, DDI/allergy checks, and prescription submission out of the box.
 

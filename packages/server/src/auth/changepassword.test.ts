@@ -12,7 +12,6 @@ import { loadTestConfig } from '../config/loader';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
-vi.mock('hibp');
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -52,7 +51,7 @@ describe('Change Password', () => {
         newPassword: 'password!@#123',
       });
 
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('Missing old password', async () => {
@@ -74,7 +73,7 @@ describe('Change Password', () => {
         newPassword: 'password!@#123',
       });
 
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
   });
 
   test('Old password not set', async () => {
@@ -89,7 +88,7 @@ describe('Change Password', () => {
         newPassword: 'password!@#123',
       });
 
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Existing password not set', 'oldPassword'));
   });
 
@@ -112,7 +111,7 @@ describe('Change Password', () => {
         newPassword: 'password!@#123',
       });
 
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Incorrect password', 'oldPassword'));
   });
 
@@ -138,7 +137,7 @@ describe('Change Password', () => {
         newPassword: 'breached',
       });
 
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject(badRequest('Password found in breach database'));
   });
 });

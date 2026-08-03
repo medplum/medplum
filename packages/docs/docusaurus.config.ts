@@ -4,6 +4,20 @@ import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
 import { themes as prismThemes } from 'prism-react-renderer';
 
+/**
+ * Algolia DocSearch credentials for docs search + Ask AI side panel.
+ *
+ * Search appId / apiKey / indexName are public (search-only key; safe to commit).
+ * askAiAssistantId comes from Algolia Dashboard → DocSearch → Ask AI.
+ */
+const ALGOLIA = {
+  appId: '6A1DXS603N',
+  // Public search-only API key (safe to commit)
+  apiKey: '06bafd15f5a637275ed20297927355f9',
+  indexName: 'medplum',
+  askAiAssistantId: 'c8e02cae-c0cf-4dd1-bba6-344a75826944',
+} as const;
+
 const config: Config = {
   title: 'Medplum',
   tagline: 'Fast and easy healthcare dev',
@@ -290,24 +304,20 @@ const config: Config = {
     },
     image: 'img/medplum-og-cover-image.png',
     algolia: {
-      // The application ID provided by Algolia
-      appId: '6A1DXS603N',
-
-      // Public API key: it is safe to commit it
-      apiKey: '75b991071ef4ef1145d63c0a4d0d4665',
-
-      indexName: 'medplum',
-
-      // Optional: see doc section below
+      appId: ALGOLIA.appId,
+      apiKey: ALGOLIA.apiKey,
+      indexName: ALGOLIA.indexName,
       contextualSearch: true,
-
-      // Optional: Algolia search parameters
       searchParameters: {},
-
-      // Optional: path for search page that enabled by default (`false` to disable it)
       searchPagePath: 'search',
-
-      //... other Algolia params
+      // Enables the Ask AI side panel when an assistant ID is configured
+      ...(ALGOLIA.askAiAssistantId
+        ? {
+            askAi: {
+              assistantId: ALGOLIA.askAiAssistantId,
+            },
+          }
+        : {}),
     },
   } satisfies Preset.ThemeConfig,
   markdown: {

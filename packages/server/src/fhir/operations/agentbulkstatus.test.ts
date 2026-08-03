@@ -53,7 +53,7 @@ describe('Agent/$bulk-status', () => {
 
     const responses = await Promise.all(promises);
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
-      expect(responses[i].status).toBe(201);
+      expect(responses[i]).toHaveStatus(201);
       agents[i] = responses[i].body;
     }
 
@@ -67,7 +67,7 @@ describe('Agent/$bulk-status', () => {
         name: 'Medplum Agent',
         status: 'active',
       } satisfies Agent);
-    expect(agent1Res.status).toStrictEqual(201);
+    expect(agent1Res).toHaveStatus(201);
 
     const agent2Res = await request(app)
       .post('/fhir/R4/Agent')
@@ -79,7 +79,7 @@ describe('Agent/$bulk-status', () => {
         name: 'Old Medplum Agent',
         status: 'off',
       } satisfies Agent);
-    expect(agent2Res.status).toStrictEqual(201);
+    expect(agent2Res).toHaveStatus(201);
 
     connectedAgent = agent1Res.body;
     disabledAgent = agent2Res.body;
@@ -117,7 +117,7 @@ describe('Agent/$bulk-status', () => {
     const res = await request(app)
       .get('/fhir/R4/Agent/$bulk-status')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const bundle = res.body as Bundle<Parameters>;
     expect(bundle.resourceType).toBe('Bundle');
@@ -154,7 +154,7 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ 'name:contains': 'Medplum' })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const bundle = res.body as Bundle<Parameters>;
     expect(bundle.resourceType).toBe('Bundle');
@@ -186,7 +186,7 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ 'name:contains': 'Medplum', status: 'active' })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const bundle = res.body as Bundle<Parameters>;
     expect(bundle.resourceType).toBe('Bundle');
@@ -212,7 +212,7 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ name: 'INVALID_AGENT', status: 'active' })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -237,7 +237,7 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ name: 'Test Agent 2' })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const bundle = res.body as Bundle<Parameters>;
     expect(bundle.resourceType).toBe('Bundle');
@@ -270,7 +270,7 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ 'name:contains': 'Medplum', _count: MAX_AGENTS_PER_PAGE + 1 })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expectBundleToContainStatusEntry(res.body, connectedAgent, {
       status: AgentConnectionState.CONNECTED,

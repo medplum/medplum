@@ -1,0 +1,233 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+.section {
+  font-family: var(--landing-font-display);
+  background: var(--oc-grape-0);
+  color: var(--landing-color-heading);
+  padding: 6rem 0 2rem;
+  position: relative;
+  margin-top: 10rem;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(to bottom, transparent, var(--oc-grape-0));
+  pointer-events: none;
+}
+
+.inner {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 6rem;
+  align-items: start;
+  padding-inline: var(--layout-padding);
+}
+
+.copyCol {
+  text-align: left;
+  padding-top: 2rem;
+}
+
+.headline {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  margin: 0 0 1rem;
+  color: var(--landing-color-heading);
+}
+
+.body {
+  font-family: var(--landing-font-display);
+  color: var(--landing-color-body-alt);
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 400;
+  margin: 1rem 0 2rem;
+}
+
+.buttons {
+  display: flex;
+  gap: var(--landing-stack-gap);
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Primary dropdown trigger (passed to BuildDropdown) + secondary link share one shape. */
+.startButton,
+.whiteButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--landing-btn-gap);
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-btn-weight);
+  font-size: var(--landing-btn-size);
+  padding: var(--landing-btn-padding);
+  border-radius: var(--landing-btn-radius);
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--landing-transition);
+  text-align: center;
+  justify-content: center;
+}
+
+.startButton {
+  background: var(--oc-grape-8);
+  color: #fff;
+}
+
+.startButton:hover {
+  background: var(--oc-grape-9);
+  color: #fff;
+}
+
+.whiteButton {
+  background: #fff;
+  color: var(--landing-color-heading);
+  box-shadow: var(--landing-shadow-cta-white);
+}
+
+.whiteButton:hover {
+  background: #fff;
+  color: var(--oc-grape-8);
+  text-decoration: none;
+}
+
+[data-theme='dark'] .section {
+  background: var(--oc-gray-9);
+}
+
+[data-theme='dark'] .section::before {
+  background: linear-gradient(to bottom, transparent, var(--oc-gray-9));
+}
+
+[data-theme='dark'] .whiteButton {
+  background: var(--landing-surface-elevated);
+  color: var(--oc-gray-2);
+  box-shadow: var(--landing-shadow-cta-white);
+}
+
+[data-theme='dark'] .whiteButton:hover {
+  background: var(--landing-surface-elevated);
+  color: var(--oc-grape-5);
+}
+
+[data-theme='dark'] .body {
+  color: var(--landing-color-body-alt);
+}
+
+/* ---- Browser window (the custom app being built) ----------------------
+   The right & bottom edges fade to the section background, so the window reads as a crop
+   of the top-left of a larger, only-partially-seen app. */
+
+/* Drop-shadow on the column wrapper (not the masked node) so the shadow isn't clipped.
+   Negative offset biases it toward the top-left; the inner mask still fades right/bottom. */
+.browserCol {
+  filter: drop-shadow(-10px -8px 36px rgba(var(--oc-grape-2-rgb), 0.75));
+  width: 100%;
+  max-width: 1024px;
+  justify-self: end;
+}
+
+.browser {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1024px;
+  background: var(--landing-surface-elevated);
+  border-radius: 12px 0 0 0;
+  overflow: hidden;
+  -webkit-mask-image:
+    linear-gradient(to right, #000 80%, transparent 100%), linear-gradient(to bottom, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, #000 80%, transparent 95%), linear-gradient(to bottom, #000 20%, transparent 80%);
+  mask-composite: intersect;
+}
+
+/* Native 1024×731 screenshots — frame matches source aspect ratio so slides are not cropped or upscaled. */
+.browserImage {
+  position: relative;
+  aspect-ratio: 1024 / 731;
+  overflow: hidden;
+  background: var(--landing-surface-inset);
+}
+
+/* Stacked slides that cross-fade. Sized to the frame at native aspect ratio (no object-fit scaling). */
+.slide {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-position: left top;
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+.slideActive {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+}
+
+[data-theme='dark'] .browserCol {
+  filter: drop-shadow(-10px -8px 36px rgba(0, 0, 0, 0.45));
+}
+
+/* Light-mode screenshots — keep the slide frame on a light surface in dark theme. */
+[data-theme='dark'] .browserImage {
+  background: var(--oc-gray-0);
+}
+
+/* ---- Responsive ------------------------------------------------------- */
+@media (max-width: 996px) {
+  /* Match the home page CTA banner at this breakpoint: 4rem/3rem padding, and keep the 10rem
+     top gap (home doesn't shrink it) so the space before the CTA matches. */
+  .section {
+    padding: 4rem 0 3rem;
+    margin-top: 10rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    padding-inline: var(--layout-padding-md);
+  }
+}
+
+@media (max-width: 600px) {
+  .grid {
+    padding-inline: var(--layout-padding-sm);
+  }
+
+  .buttons {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .buttons > a,
+  .startButton {
+    width: 100%;
+  }
+}

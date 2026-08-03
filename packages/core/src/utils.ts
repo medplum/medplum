@@ -49,11 +49,7 @@ export interface SleepOptions {
  * See: https://github.com/microsoft/TypeScript/issues/32951
  */
 export type QueryTypes =
-  | URLSearchParams
-  | string[][]
-  | Record<string, string | number | boolean | undefined>
-  | string
-  | undefined;
+  URLSearchParams | string[][] | Record<string, string | number | boolean | undefined> | string | undefined;
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 

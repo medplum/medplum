@@ -83,7 +83,8 @@ echo "Last completed step: $LAST_STEP"
 # Exclude known problem packages
 # ioredis - v5.9.x broke BullMQ, holding off on updating until late Jan 2026
 # pdfmake, @types/pdfmake - v0.3.x introduced breaking changes to the API
-EXCLUDE="ioredis pdfmake @types/pdfmake"
+# vitest-websocket-mock - Newer versions changed the way they extend vitest, causing typing issues
+EXCLUDE="ioredis pdfmake @types/pdfmake vitest-websocket-mock"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
@@ -98,9 +99,9 @@ fi
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # otplib - version 13+ requires ESM, holding back until server supports ESM
-# temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
 # @mantine/* - version 9 has a few small backwards-incompatible changes, namely affecting at least our `PatientSummary` component, which would make it hard to support both Mantine 8 and 9 simultaneously
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib temporal-polyfill @mantine/*"
+# typescript - v7 needs us to do some work before we can use it
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/* typescript"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

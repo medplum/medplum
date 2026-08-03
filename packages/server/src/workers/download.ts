@@ -24,7 +24,7 @@ import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -49,21 +49,17 @@ const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
-  const queue = new Queue<DownloadJobData>(queueName, {
-    ...defaultOptions,
-  });
+  const queueOptions = defaultQueueOptions(config);
+  const queue = new Queue<DownloadJobData>(queueName, queueOptions);
 
   let worker: Worker<DownloadJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'download');
     worker = new Worker<DownloadJobData>(
       queueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-      }
+      trackJobMetrics('download', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job))
+      ),
+      getWorkerBullmqConfig(config, 'download', queueOptions)
     );
     worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
     worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));

@@ -160,7 +160,7 @@ export async function preparePostDeployMigrationAsyncJob(
 
       return asyncJob;
     },
-    { serializable: true }
+    { serializable: true, resourceTypes: 'AsyncJob', source: 'preparePostDeployMigrationAsyncJob' }
   );
 }
 

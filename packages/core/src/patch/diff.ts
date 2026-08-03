@@ -71,12 +71,7 @@ export interface TestOperation {
 }
 
 export type Operation =
-  | AddOperation
-  | RemoveOperation
-  | ReplaceOperation
-  | MoveOperation
-  | CopyOperation
-  | TestOperation;
+  AddOperation | RemoveOperation | ReplaceOperation | MoveOperation | CopyOperation | TestOperation;
 
 export function isDestructive({ op }: Operation): boolean {
   return op === 'remove' || op === 'replace' || op === 'copy' || op === 'move';

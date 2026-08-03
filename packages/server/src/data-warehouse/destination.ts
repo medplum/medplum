@@ -23,10 +23,26 @@ export interface DestinationQueryContext {
 
 export interface DataWarehouseDestination {
   readonly type: DataWarehouseDestinationType;
-  /** DuckDB setup that does not require or open a Postgres connection. */
+  /**
+   * DuckDB instance setup (extensions, secrets, ATTACH) that does not require Postgres.
+   * Run once per DuckDB instance; shared by later connections from that instance.
+   */
   getSetupQueries(): string[];
-  /** Postgres attach SQL run after destination-side state (e.g. watermarks) is resolved. */
+  /**
+   * DuckDB session settings (`SET ...`) that are connection-scoped.
+   * Run on every connection opened from the instance.
+   */
+  getConnectionSetupQueries(): string[];
+  /**
+   * ATTACH Postgres is DuckDB's way of connecting to a database. run after all destination-side state (e.g. watermarks) has been resolved,
+   * It is intentionally not done at the beginning of sync because we want to avoid
+   * any potential idle-connection issues while watermarks from Icebergare are being read.
+   */
   getPostgresAttachQueries(connectionString: string): string[];
+  /**
+   * Verifies (or creates) the destination target for a source table.
+   * Called per table during watermark collection, before reading that table's watermark.
+   */
   ensureTargetExists(tableSpec: WarehouseSourceTable, namespace: string): Promise<void>;
   buildSourcePredicate(
     connection: DuckdbConnection,
@@ -50,6 +66,10 @@ export class LocalParquetWarehouseDestination implements DataWarehouseDestinatio
   }
 
   getSetupQueries(): string[] {
+    return [];
+  }
+
+  getConnectionSetupQueries(): string[] {
     return [];
   }
 

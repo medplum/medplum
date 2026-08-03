@@ -98,7 +98,7 @@ describe('Execute', () => {
           }
         `,
       });
-    expect(streamingRes.status).toBe(201);
+    expect(streamingRes).toHaveStatus(201);
     streamingBot = streamingRes.body as Bot;
   });
 
@@ -114,7 +114,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
@@ -130,7 +130,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send({ message: 'hello' });
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
@@ -162,7 +162,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toContain('Failed to parse streaming headers');
     });
 
@@ -190,7 +190,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toContain('Lambda error: Unhandled');
     });
 
@@ -228,7 +228,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
       expect(res.text).toContain('data: Split test');
     });
@@ -269,7 +269,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(400);
+      expect(res).toHaveStatus(400);
       expect(res.headers['content-type']).toBe('application/json');
       expect(res.body.resourceType).toBe('OperationOutcome');
       expect(res.body.issue[0].details.text).toBe('Test error');
@@ -307,7 +307,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(500);
+      expect(res).toHaveStatus(500);
       expect(res.headers['content-type']).toBe('application/json');
       expect(res.body).toMatchObject({ errorType: 'Error', errorMessage: 'Something failed' });
     });
@@ -341,7 +341,7 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken)
         .send('input');
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect(res.body).toStrictEqual({}); // since content-type is not application/json, supertest does not parse the body and leaves it as an empty object
       expect(JSON.parse(res.text)).toStrictEqual({ chunks: [{ chunk: 1 }, { chunk: 2 }] });
     });

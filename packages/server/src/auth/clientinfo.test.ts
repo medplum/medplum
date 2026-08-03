@@ -23,13 +23,36 @@ describe('OAuth utils', () => {
 
   test('Success with SignInForm', async () => {
     const res = await request(app).get(`/auth/clientinfo/${client.id}`).type('json');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.welcomeString).toBe(client.signInForm?.welcomeString);
     expect(res.body.logo.url).toBe(client.signInForm?.logo?.url);
   });
 
+  test('Returns showScopeSelection', async () => {
+    const clientWithScopeSelection = await createTestClient({
+      client: { signInForm: { welcomeString: 'No scopes please', showScopeSelection: false } },
+    });
+    const res = await request(app).get(`/auth/clientinfo/${clientWithScopeSelection.id}`).type('json');
+    expect(res).toHaveStatus(200);
+    expect(res.body.welcomeString).toBe('No scopes please');
+    expect(res.body.showScopeSelection).toBe(false);
+  });
+
+  test('Omits showScopeSelection when not configured', async () => {
+    const res = await request(app).get(`/auth/clientinfo/${client.id}`).type('json');
+    expect(res).toHaveStatus(200);
+    expect(res.body.showScopeSelection).toBeUndefined();
+  });
+
+  test('Empty object when SignInForm is not configured', async () => {
+    const clientWithoutSignInForm = await createTestClient({ client: { signInForm: undefined } });
+    const res = await request(app).get(`/auth/clientinfo/${clientWithoutSignInForm.id}`).type('json');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toStrictEqual({});
+  });
+
   test('Invalid client', async () => {
     const res = await request(app).get(`/auth/clientinfo/INVALIDID`).type('json');
-    expect(res.status).toBe(404);
+    expect(res).toHaveStatus(404);
   });
 });

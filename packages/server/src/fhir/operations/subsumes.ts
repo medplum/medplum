@@ -5,7 +5,7 @@ import { allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { DatabaseMode } from '../../database';
+import { repoAccess } from '../repository/access-tracker';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
@@ -78,7 +78,8 @@ export async function isSubsumed(
 ): Promise<boolean> {
   const { repo } = getAuthenticatedContext();
   const base = selectCoding(codeSystem.id, baseCode);
-  const db = repo.getDatabaseClient(DatabaseMode.READER);
+  // used on non resource type tables derived from CodeSystem
+  const db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'isSubsumed' }));
 
   const parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
   if (!parentProperty) {

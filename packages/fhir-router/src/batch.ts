@@ -16,8 +16,10 @@ import type {
   BundleEntry,
   BundleEntryRequest,
   OperationOutcome,
+  Parameters,
   ParametersParameter,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -29,13 +31,17 @@ const maxSerializableTransactionEntries = 8;
 
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
-type BundleEntryIdentity = { placeholder: string; reference: string };
+interface BundleEntryIdentity {
+  placeholder: string;
+  reference: string;
+}
 
-export type BundlePreprocessInfo = {
+export interface BundlePreprocessInfo {
   ordering: number[];
   requiresStrongTransaction: boolean;
   updates: number;
-};
+  resourceTypes: Set<ResourceType>;
+}
 
 /**
  * The durable, JSON-serializable state produced by preprocessing a batch bundle. This is
@@ -201,7 +207,10 @@ export class BatchProcessor {
           this.state = cloneState(preTransactionState);
           return this.processEntriesAndBuild();
         }),
-      { serializable: bundleInfo.requiresStrongTransaction }
+      {
+        serializable: bundleInfo.requiresStrongTransaction,
+        resourceTypes: bundleInfo.resourceTypes,
+      }
     );
   }
 
@@ -248,6 +257,7 @@ export class BatchProcessor {
       bundle: this.bundle,
       bundleInfo: {
         ordering: this.bundleInfo.ordering,
+        resourceTypes: this.bundleInfo.resourceTypes,
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
       },
@@ -381,6 +391,7 @@ export class BatchProcessor {
       'history-instance': [],
     };
     const seenIdentities = new Set<string>();
+    const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
 
@@ -409,6 +420,17 @@ export class BatchProcessor {
           badRequest(`Invalid REST interaction in batch: ${entry.request?.method} ${entry.request?.url}`)
         );
       }
+
+      // Track the resource type touched by this entry, derived from the parsed route.
+      // The URL is used rather than entry.resource since reads/deletes have no resource
+      // and PATCH carries a Binary/Parameters payload instead of the target resource.
+      // System-level interactions (search-system, history-system, nested bundles) have no
+      // resource type and are skipped. GraphQL and custom operations can touch arbitrary
+      // resource types that are not derivable from the URL, so they are under-reported here.
+      const entryResourceType = route?.params?.resourceType as ResourceType | undefined;
+      if (entryResourceType) {
+        resourceTypes.add(entryResourceType);
+      }
       if (interaction === 'create' && entry.request?.ifNoneExist) {
         // Conditional create requires strong (serializable) transaction to
         // guarantee uniqueness of created resource
@@ -435,6 +457,7 @@ export class BatchProcessor {
       ordering,
       requiresStrongTransaction,
       updates,
+      resourceTypes,
     };
   }
 
@@ -725,7 +748,15 @@ export class BatchProcessor {
 
       body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
     } else if (patchResource?.resourceType === 'Parameters') {
+      if (isFhirPathPatchParameters(patchResource)) {
+        // FHIRPath Patch: pass the Parameters resource through unchanged so that
+        // repo.patchResource applies it via fhirpathPatchTypedValue, matching the
+        // standalone PATCH code path. rewriteIds recurses through the operation
+        // parts, rewriting any local bundle references embedded in values.
+        return this.rewriteIds(patchResource);
+      }
       if (patchResource.parameter) {
+        // JSON Patch expressed as Parameters (operations use a `op` part)
         body = [];
         for (const param of patchResource.parameter) {
           if (param.name === 'operation') {
@@ -820,6 +851,20 @@ export class BatchProcessor {
   private isTransaction(): boolean {
     return this.bundle.type === 'transaction' && Boolean(this.req.config?.transactions);
   }
+}
+
+/**
+ * Determines whether a PATCH Parameters resource represents a FHIRPath Patch rather than a JSON Patch.
+ * FHIRPath Patch operations carry a `type` part (add/insert/delete/replace/move), whereas JSON Patch
+ * expressed as Parameters carries an `op` part. This lets the batch processor pass FHIRPath patches
+ * through unchanged to `repo.patchResource`, which applies them via `fhirpathPatchTypedValue`.
+ * @param parameters - The Parameters resource from a PATCH Bundle entry.
+ * @returns True if the Parameters resource is a FHIRPath Patch.
+ */
+function isFhirPathPatchParameters(parameters: Parameters): boolean {
+  return Boolean(
+    parameters.parameter?.some((p) => p.name === 'operation' && p.part?.some((part) => part.name === 'type'))
+  );
 }
 
 function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): BundleEntry {

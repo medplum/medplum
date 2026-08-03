@@ -63,7 +63,7 @@ describe('Agent/$upgrade', () => {
 
     const responses = await Promise.all(promises);
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
-      expect(responses[i].status).toBe(201);
+      expect(responses[i]).toHaveStatus(201);
       agents[i] = responses[i].body;
     }
 
@@ -91,7 +91,7 @@ describe('Agent/$upgrade', () => {
       .get('/fhir/R4/Agent/$upgrade')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -119,7 +119,7 @@ describe('Agent/$upgrade', () => {
       .get('/fhir/R4/Agent/$upgrade?timeout=1000')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -147,7 +147,7 @@ describe('Agent/$upgrade', () => {
       .get('/fhir/R4/Agent/$upgrade?timeout=100000')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -171,7 +171,7 @@ describe('Agent/$upgrade', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const outcome = res.body as OperationOutcome;
 
     expect(outcome).toMatchObject(allOk);
@@ -194,7 +194,7 @@ describe('Agent/$upgrade', () => {
       .get('/fhir/R4/Agent/$upgrade?timeout=INVALID')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<Partial<OperationOutcome>>({
       resourceType: 'OperationOutcome',
       issue: expect.arrayContaining<OperationOutcomeIssue>([
@@ -230,7 +230,7 @@ describe('Agent/$upgrade', () => {
       .get('/fhir/R4/Agent/$upgrade')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (let i = 0; i < agents.length; i++) {
@@ -246,7 +246,7 @@ describe('Agent/$upgrade', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     const outcome = res.body as OperationOutcome;
     expect(outcome).toMatchObject(badRequest('Something is broken'));
@@ -275,7 +275,7 @@ describe('Agent/$upgrade', () => {
       .get('/fhir/R4/Agent/$upgrade')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (let i = 0; i < agents.length; i++) {
@@ -291,7 +291,7 @@ describe('Agent/$upgrade', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(500);
+    expect(res).toHaveStatus(500);
 
     const outcome = res.body as OperationOutcome;
     expect(outcome).toMatchObject(serverError(new Error('Invalid response received from agent')));
@@ -319,7 +319,7 @@ describe('Agent/$upgrade', () => {
       .query({ force: true })
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -332,7 +332,7 @@ describe('Agent/$upgrade', () => {
       .query({ force: true })
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const outcome = res.body as OperationOutcome;
     expect(outcome).toMatchObject(allOk);

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { SNOMED, UCUM, createReference } from '@medplum/core';
+import { SNOMED, UCUM } from '@medplum/core';
 import type { DiagnosticReport, Observation, ObservationDefinition } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 
@@ -559,7 +559,6 @@ export const HDLDefinition: ObservationDefinition = {
 };
 
 export const CreatinineObservation: Observation = {
-  id: 'obs-1',
   resourceType: 'Observation',
   status: 'final',
   category: [{ text: 'Kidney' }, { text: 'Day 2' }],
@@ -632,7 +631,6 @@ export const CreatinineObservation: Observation = {
 export const ExampleReport: DiagnosticReport = {
   ...HomerDiagnosticReport,
   resourceType: 'DiagnosticReport',
-  id: 'report-1',
   status: 'final',
   category: [
     {
@@ -656,7 +654,6 @@ export const ExampleReport: DiagnosticReport = {
       display: 'Test Organization',
     },
   ],
-  result: [createReference(CreatinineObservation)],
   conclusion: 'All observations within normal limits',
 };
 

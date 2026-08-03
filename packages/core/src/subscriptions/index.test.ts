@@ -3,7 +3,7 @@
 import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
-import type { CriteriaState, SubscriptionEventMap } from '.';
+import type { BackgroundJobInteraction, CriteriaState, SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
@@ -2043,5 +2043,46 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
       }
     });
+  });
+
+  describe('Supported interaction matching logic', () => {
+    const SUPPORTED_INTERACTION_URL = 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction';
+
+    function buildSubscription(interactions: BackgroundJobInteraction[]): Subscription {
+      return {
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'test subscription',
+        criteria: 'Communication',
+        channel: { type: 'rest-hook', endpoint: 'Bot/123' },
+        extension: interactions.map((valueCode) => ({ url: SUPPORTED_INTERACTION_URL, valueCode })),
+      };
+    }
+
+    test.each([
+      // No extension → every interaction is supported (including delete)
+      { interactions: [], received: 'create', expected: true },
+      { interactions: [], received: 'update', expected: true },
+      { interactions: [], received: 'delete', expected: true },
+      // Single extension → only the declared interaction is supported
+      { interactions: ['create'], received: 'create', expected: true },
+      { interactions: ['create'], received: 'update', expected: false },
+      { interactions: ['create'], received: 'delete', expected: false },
+      // Multiple extensions → any declared interaction is supported, others (e.g. delete) are not
+      { interactions: ['create', 'update'], received: 'create', expected: true },
+      { interactions: ['create', 'update'], received: 'update', expected: true },
+      { interactions: ['create', 'update'], received: 'delete', expected: false },
+    ] as { interactions: BackgroundJobInteraction[]; received: BackgroundJobInteraction; expected: boolean }[])(
+      'interactions=$interactions received=$received → $expected',
+      async ({ interactions, received, expected }) => {
+        const matches = await resourceMatchesSubscriptionCriteria({
+          resource: { id: '123', resourceType: 'Communication', status: 'in-progress' },
+          subscription: buildSubscription(interactions),
+          context: { interaction: received },
+          getPreviousResource: async () => undefined,
+        });
+        expect(matches).toStrictEqual(expected);
+      }
+    );
   });
 });

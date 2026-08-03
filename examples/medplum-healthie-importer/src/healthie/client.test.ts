@@ -48,14 +48,13 @@ describe('HealthieClient', () => {
         },
       };
 
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve(mockResponse),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve(mockResponse),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       const result = await healthieClient.query('{ users { id name } }');
@@ -79,14 +78,13 @@ describe('HealthieClient', () => {
         errors: [{ message: 'GraphQL Error' }],
       };
 
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve(mockResponse),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve(mockResponse),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       await expect(healthieClient.query('{ users { id name } }')).rejects.toThrow('GraphQL Error');
@@ -111,23 +109,21 @@ describe('HealthieClient', () => {
 
       // First call returns 429, second succeeds
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({}),
-              ok: false,
-              status: 429,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({}),
+            ok: false,
+            status: 429,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockSuccessResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockSuccessResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await clientWithRetry.query('{ users { id } }');
@@ -148,23 +144,21 @@ describe('HealthieClient', () => {
 
       // First call returns 500, second succeeds
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({}),
-              ok: false,
-              status: 500,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({}),
+            ok: false,
+            status: 500,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockSuccessResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockSuccessResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await clientWithRetry.query('{ users { id } }');
@@ -185,23 +179,21 @@ describe('HealthieClient', () => {
 
       // Return 429 with Retry-After header
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve({}),
-              ok: false,
-              status: 429,
-              headers: { get: (name: string) => (name === 'Retry-After' ? '1' : null) },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({}),
+            ok: false,
+            status: 429,
+            headers: { get: (name: string) => (name === 'Retry-After' ? '1' : null) },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockSuccessResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockSuccessResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await clientWithRetry.query('{ users { id } }');
@@ -220,14 +212,13 @@ describe('HealthieClient', () => {
         errors: [{ message: 'Invalid query' }],
       };
 
-      mockFetch.mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve(mockErrorResponse),
-            ok: true,
-            status: 200,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve(mockErrorResponse),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
       );
 
       await expect(clientWithRetry.query('{ invalid }')).rejects.toThrow('GraphQL Error: Invalid query');
@@ -250,23 +241,21 @@ describe('HealthieClient', () => {
 
       // First call returns rate limit error, second succeeds
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockRateLimitResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockRateLimitResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockSuccessResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockSuccessResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await clientWithRetry.query('{ users { id } }');
@@ -290,23 +279,21 @@ describe('HealthieClient', () => {
       };
 
       mockFetch
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockRateLimitResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockRateLimitResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         )
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockSuccessResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockSuccessResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await clientWithRetry.query('{ users { id } }');
@@ -328,14 +315,13 @@ describe('HealthieClient', () => {
       // First call throws network error, second succeeds
       mockFetch
         .mockImplementationOnce(() => Promise.reject(new Error('Network error')))
-        .mockImplementationOnce(
-          (): Promise<MockResponse> =>
-            Promise.resolve({
-              json: () => Promise.resolve(mockSuccessResponse),
-              ok: true,
-              status: 200,
-              headers: { get: () => null },
-            })
+        .mockImplementationOnce((): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve(mockSuccessResponse),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
         );
 
       const result = await clientWithRetry.query('{ users { id } }');
@@ -351,14 +337,13 @@ describe('HealthieClient', () => {
       });
 
       // All calls return 503
-      mockFetch.mockImplementation(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({}),
-            ok: false,
-            status: 503,
-            headers: { get: () => null },
-          })
+      mockFetch.mockImplementation((): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({}),
+          ok: false,
+          status: 503,
+          headers: { get: () => null },
+        })
       );
 
       await expect(clientWithRetry.query('{ users { id } }')).rejects.toThrow();

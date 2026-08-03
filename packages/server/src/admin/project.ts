@@ -10,6 +10,7 @@ import { resetPassword } from '../auth/resetpassword';
 import { setPassword } from '../auth/setpassword';
 import type { MfaMethod } from '../auth/utils';
 import { getEnrolledMfaMethods } from '../auth/utils';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { reconcileDefaultAccessPolicy } from '../fhir/accesspolicy';
@@ -31,7 +32,11 @@ projectAdminRouter.post(
   '/setpassword',
   [
     body('email').isEmail().withMessage('Valid email address is required'),
-    body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
+    body('password')
+      .isLength({ min: MIN_PASSWORD_LENGTH })
+      .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+      .isByteLength({ max: MAX_PASSWORD_LENGTH })
+      .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -159,30 +164,27 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
   // Check if the user is project-scoped (has a project field matching the current project)
   if (user.project?.reference === getReferenceString(ctx.project)) {
     // Wrap search and delete operations in a transaction
-    await systemRepo.withTransaction(async (txRepo) => {
-      // Check if there are other ProjectMemberships for this user
-      // (search before deleting to get accurate count)
-      const otherMemberships = await txRepo.searchResources<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        filters: [
-          {
-            code: 'user',
-            operator: Operator.EQUALS,
-            value: getReferenceString(user),
-          },
-        ],
-        count: 2,
-      });
+    await systemRepo.withTransaction(
+      async (txRepo) => {
+        // Check if there are other ProjectMemberships for this user
+        // (search before deleting to get accurate count)
+        const otherMemberships = await txRepo.searchResources<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
+          count: 2,
+        });
 
-      // Delete the ProjectMembership
-      await txRepo.deleteResource('ProjectMembership', membershipId);
+        // Delete the ProjectMembership
+        await txRepo.deleteResource('ProjectMembership', membershipId);
 
-      // Delete the User resource if it's project-scoped and this was their only membership
-      // (project-scoped users should only have memberships in one project)
-      if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
-        await txRepo.deleteResource('User', user.id);
-      }
-    });
+        // Delete the User resource if it's project-scoped and this was their only membership
+        // (project-scoped users should only have memberships in one project)
+        if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
+          await txRepo.deleteResource('User', user.id);
+        }
+      },
+      { resourceTypes: ['ProjectMembership', 'User'], source: 'projectAdmin.deleteMember' }
+    );
   } else {
     // User is not project-scoped, just delete the ProjectMembership
     await ctx.repo.deleteResource('ProjectMembership', membershipId);
