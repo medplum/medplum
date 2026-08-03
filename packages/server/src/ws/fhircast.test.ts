@@ -4,6 +4,7 @@ import type { FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
+  createFhircastMessagePayload,
   createReference,
   generateId,
   getReferenceString,
@@ -108,6 +109,72 @@ describe('FHIRcast WebSocket', () => {
             expect(obj.event['hub.event']).toBe('Patient-open');
           })
           .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
+
+    // `DiagnosticReport-select` and `syncerror` establish no context of their own, so the hub only relays them
+    test('Send `DiagnosticReport-select` and `syncerror` to subscriber', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['DiagnosticReport-select', 'syncerror'],
+            })
+          );
+
+        const pathname = new URL(res1.body['hub.channel.endpoint']).pathname;
+
+        const publishEvent = async (payload: FhircastMessagePayload): Promise<void> => {
+          const res = await request(server)
+            .post(`/fhircast/STU3/${topic}`)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send(payload);
+          expect(res).toHaveStatus(202);
+        };
+
+        await request(server)
+          .ws(pathname)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .exec(async () => {
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'DiagnosticReport-select', [
+                { key: 'report', reference: { reference: `DiagnosticReport/${generateId()}` } },
+                { key: 'select', reference: { reference: `Observation/${generateId()}` } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-select'>) => {
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('DiagnosticReport-select');
+            expect(obj.event.context).toHaveLength(2);
+          })
+          .sendJson({ id: generateId(), status: 200 })
+          .exec(async () => {
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'syncerror', [
+                { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload<'syncerror'>) => {
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('syncerror');
+            expect(obj.event.context[0].key).toBe('operationoutcome');
+          })
+          .sendJson({ id: generateId(), status: 200 })
           .close()
           .expectClosed();
       }));

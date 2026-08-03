@@ -42,6 +42,42 @@ import {
   setTopicCurrentContext,
 } from './utils';
 
+export type EventCategory = 'open' | 'close' | 'update' | 'select' | 'other';
+
+export function getEventCategory(eventName: string): EventCategory {
+  const lower = eventName.toLowerCase();
+  // `Home-open` represents the *lack* of a FHIR resource context, so it only borrows the
+  // `-open` suffix and has no anchor resource to establish a current context from.
+  // Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-2-5-Home-open.html
+  if (lower === 'home-open') {
+    return 'other';
+  }
+  if (lower.endsWith('-open')) {
+    return 'open';
+  }
+  if (lower.endsWith('-close')) {
+    return 'close';
+  }
+  // `DiagnosticReport-update` is the only update event in the event catalog, so it's the only
+  // one we handle today.
+  // Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-Events.html
+  if (lower === 'diagnosticreport-update') {
+    return 'update';
+  }
+  if (lower.endsWith('-select')) {
+    return 'select';
+  }
+  return 'other';
+}
+
+const EVENT_HANDLERS: Record<EventCategory, (req: Request, res: Response) => Promise<void>> = {
+  open: handleOpenContextChangeRequest,
+  close: handleCloseContextChangeRequest,
+  update: handleUpdateContextChangeRequest,
+  select: handleOtherContextChangeRequest,
+  other: handleOtherContextChangeRequest, // No-op for userlogout, heartbeat, etc.
+};
+
 export const fhircastSTU2Router = Router();
 export const fhircastSTU3Router = Router();
 
@@ -241,18 +277,8 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
 
 async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
   const { event } = req.body as FhircastMessagePayload;
-  // Check if this an open event
-  if (event['hub.event'].endsWith('-open')) {
-    await handleOpenContextChangeRequest(req, res);
-  } else if (event['hub.event'].endsWith('-close')) {
-    await handleCloseContextChangeRequest(req, res);
-  } else if (event['hub.event'].toLowerCase() === 'diagnosticreport-update') {
-    await handleUpdateContextChangeRequest(req, res);
-  } else {
-    // Default handler just to publishes the message to all subscribers
-    const ctx = getAuthenticatedContext();
-    await finalizeContextChangeRequest(res, ctx.project.id, req.body);
-  }
+  const eventCategory = getEventCategory(event['hub.event']);
+  await EVENT_HANDLERS[eventCategory](req, res);
 }
 
 async function handleOpenContextChangeRequest(req: Request, res: Response): Promise<void> {
@@ -375,6 +401,11 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html
   await setTopicCurrentContext(projectId, event['hub.topic'], currentContext);
   await finalizeContextChangeRequest(res, projectId, req.body);
+}
+
+async function handleOtherContextChangeRequest(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
+  await finalizeContextChangeRequest(res, ctx.project.id, req.body);
 }
 
 function processUpdateBundle(updatesBundle: Bundle, currentContext: CurrentContext<'DiagnosticReport'>): void {
