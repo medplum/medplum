@@ -72,6 +72,7 @@ describe('Calendar', () => {
         onSelectAppointment={onSelectAppointment}
         onDoubleClickAppointment={onDoubleClickAppointment}
         onRangeChange={onRangeChange}
+        focus="Appointment"
       />
     );
   };

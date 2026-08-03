@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, Box, Button, Center, Group, Loader, Stack, Text } from '@mantine/core';
+import { ActionIcon, Alert, Box, Button, Center, Group, Loader, SegmentedControl, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, isNotFound, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Practitioner, Reference, Schedule } from '@medplum/fhirtypes';
@@ -9,9 +9,13 @@ import { IconAlertCircle, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { AvailabilityManager } from '../../components/schedule/AvailabilityManager';
 import { ScheduleDetails } from '../../components/schedule/ScheduleDetails';
+import { assertNever } from '../../utils/assert';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './SchedulePage.module.css';
+
+type Mode = 'Scheduling' | 'Availability';
 
 /**
  * Schedule page that displays the practitioner's schedule.
@@ -25,6 +29,7 @@ export function SchedulePage(): JSX.Element | null {
   const profile = useMedplumProfile() as Practitioner;
   const project = medplum.getProject();
   const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
+  const [mode, setMode] = useState<Mode>('Scheduling');
 
   const [selectedActor, setSelectedActor] = useState<Reference<Practitioner> | undefined>(
     // When mounting, if no schedule was selected via the URL parameters, default
@@ -189,7 +194,13 @@ export function SchedulePage(): JSX.Element | null {
       mainContent = <OperationOutcomeAlert outcome={readOutcome} m="xl" />;
     }
   } else if (schedule) {
-    mainContent = <ScheduleDetails schedule={schedule} />;
+    if (mode === 'Scheduling') {
+      mainContent = <ScheduleDetails schedule={schedule} />;
+    } else if (mode === 'Availability') {
+      mainContent = <AvailabilityManager schedule={schedule} />;
+    } else {
+      assertNever(mode);
+    }
   } else if (selectedActor) {
     const noScheduleText = selectedActor.display
       ? `No schedule found for ${selectedActor.display}.`
@@ -218,15 +229,22 @@ export function SchedulePage(): JSX.Element | null {
             disabled={isLoadingById}
           />
         </Box>
-        {schedule && schedulingEnabled && (
-          <ActionIcon
-            variant="subtle"
-            aria-label="Schedule settings"
-            onClick={() => navigate(`/Calendar/Schedule/${id}/settings`)}
-          >
-            <IconSettings />
-          </ActionIcon>
-        )}
+        <Group align="center">
+          {schedule && schedulingEnabled && (
+            <ActionIcon
+              variant="subtle"
+              aria-label="Schedule settings"
+              onClick={() => navigate(`/Calendar/Schedule/${id}/settings`)}
+            >
+              <IconSettings />
+            </ActionIcon>
+          )}
+          <SegmentedControl
+            value={mode}
+            onChange={(newMode) => setMode(newMode as Mode)}
+            data={['Scheduling', 'Availability'] satisfies Mode[]}
+          />
+        </Group>
       </Group>
       {mainContent}
     </Stack>
