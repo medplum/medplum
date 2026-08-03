@@ -650,6 +650,7 @@ describe('ConceptMap $translate', () => {
       .post(`/fhir/R4/ConceptMap/${map.id}/$import`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
@@ -783,6 +784,7 @@ describe('ConceptMap $translate', () => {
       .post(`/fhir/R4/ConceptMap/${map.id}/$import`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [

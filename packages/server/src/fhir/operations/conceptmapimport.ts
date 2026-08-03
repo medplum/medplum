@@ -128,13 +128,14 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('Parameter `url` not permitted for instance operation', 'Parameters.parameter')];
   } else if (req.params.id) {
     conceptMap = await repo.readResource('ConceptMap', req.params.id);
-    if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, conceptMap)) {
-      return [forbidden];
-    }
   } else if (params.url) {
     conceptMap = await findTerminologyResource(repo, 'ConceptMap', params.url, { ownProjectOnly: !isSuperAdmin });
   } else {
     return [badRequest('ConceptMap to import into must be specified', `Parameters.parameter.where(name = 'url')`)];
+  }
+
+  if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, conceptMap)) {
+    return [forbidden];
   }
 
   await repo.withTransaction(
