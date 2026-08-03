@@ -33,7 +33,7 @@ This is intended to be used inside an application built using [`@medplum/react`]
 ```tsx
 import { getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
-import { MedplumProvider } from '@medplum/react';
+import { useMedplumProfile, useSearchResources } from '@medplum/react';
 import { Calendar } from '@medplum/react-scheduling'
 
 export function ScheduleView(props: { practitioner: Practitioner }) {
@@ -47,7 +47,7 @@ export function ScheduleView(props: { practitioner: Practitioner }) {
   if (loading) {
     return <>Loading...</>;
   }
-  return <Calendar appointments={appointments} slots={[]}>
+  return <Calendar appointments={appointments} slots={[]} />
 }
 ```
 
