@@ -3,8 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "inputs": ["$TURBO_DEFAULT$", "../../scripts/cicd-deploy.sh"],
-      "outputs": ["storybook-static/**"]
+      "inputs": ["$TURBO_DEFAULT$", "../../scripts/cicd-deploy.sh"]
     }
   }
 }

@@ -11,5 +11,5 @@ set -e
 # Echo commands
 set -x
 
-# Fast upload the docs to S3
+# Fast upload the storybook to S3
 node scripts/s3deploy.mjs packages/storybook/storybook-static "s3://${STORYBOOK_BUCKET}"

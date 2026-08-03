@@ -28,97 +28,45 @@ echo "$COMMIT_MESSAGE"
 # Fall back to HEAD~1 when GITHUB_BEFORE is absent (workflow_dispatch)
 # cat-file -e checks that we have the commit locally in order to diff successfully
 if [[ -n "$GITHUB_BEFORE" ]] && git cat-file -e "$GITHUB_BEFORE" 2>/dev/null; then
-  FILES_CHANGED=$(git diff --name-only HEAD "$GITHUB_BEFORE")
+  export TURBO_SCM_BASE=$GITHUB_BEFORE
 else
-  FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
-fi
-echo "$FILES_CHANGED"
-
-DEPLOY_APP=false
-DEPLOY_DOCS=false
-DEPLOY_GRAPHIQL=false
-DEPLOY_SERVER=false
-DEPLOY_STORYBOOK=false
-
-#
-# Inspect files changed
-#
-
-if [[ "$FILES_CHANGED" =~ build.yml ]]; then
-  DEPLOY_SERVER=true
+  export TURBO_SCM_BASE=HEAD~1
 fi
 
-if [[ "$FILES_CHANGED" =~ Dockerfile ]]; then
-  DEPLOY_SERVER=true
+DEPLOYABLE_PACKAGES=("@medplum/app" "@medplum/server" "@medplum/graphiql" "@medplum/storybook" "@medplum/docs")
+
+# Determine which deployable packages have changed since $TURBO_SCM_BASE
+PACKAGES_CHANGED=$(npx turbo query affected --packages "${DEPLOYABLE_PACKAGES[@]}" \
+  | jq -r '.data.affectedPackages.items[].name')
+
+# Build all affected packages
+if [[ -n "$PACKAGES_CHANGED" ]]; then
+  CHANGED_FILTERS=()
+  while IFS= read -r pkg; do
+    CHANGED_FILTERS+=(--filter="$pkg")
+  done <<< "$PACKAGES_CHANGED"
+
+  # We use `--force` because the `build` task in `@medplum/core` has an implicit
+  # build-time dependency on the git hash (used to bake it in to `MEDPLUM_VERSION`),
+  # and we don't want to read an old version string from the turborepo build cache.
+  npx turbo run build --force "${CHANGED_FILTERS[@]}"
 fi
 
-if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
-  DEPLOY_APP=true
-  DEPLOY_DOCS=true
-  DEPLOY_GRAPHIQL=true
-  DEPLOY_SERVER=true
-fi
 
-if [[ "$FILES_CHANGED" =~ deploy-introspection-schema.sh ]]; then
-  DEPLOY_GRAPHIQL=true
-fi
+# Set DEPLOY_* based on whether each package appears in the turbo affected output.
+# -F: match the name literally (the `@` and `/` are not treated as regex)
+# -w: whole-word match, so `@medplum/app` won't match a hypothetical `@medplum/app-foo`
+# -q: quiet, we only care about the exit status
+package_changed() {
+  grep -Fqw -- "$1" <<< "$PACKAGES_CHANGED"
+}
 
-if [[ "$FILES_CHANGED" =~ packages/app ]]; then
-  DEPLOY_APP=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/ccda ]]; then
-  DEPLOY_SERVER=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/core ]]; then
-  DEPLOY_APP=true
-  DEPLOY_DOCS=true
-  DEPLOY_SERVER=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
-  DEPLOY_APP=true
-  DEPLOY_SERVER=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
-  DEPLOY_DOCS=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/fhir-router ]]; then
-  DEPLOY_SERVER=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/fhirtypes ]]; then
-  DEPLOY_APP=true
-  DEPLOY_SERVER=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/graphiql ]]; then
-  DEPLOY_GRAPHIQL=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/server ]]; then
-  DEPLOY_SERVER=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/storybook ]]; then
-  DEPLOY_STORYBOOK=true
-fi
-
-if [[ "$FILES_CHANGED" =~ packages/react ]]; then
-  DEPLOY_APP=true
-  DEPLOY_STORYBOOK=true
-fi
-
-if [[ "$FORCE" = true ]]; then
-  DEPLOY_APP=true
-  DEPLOY_DOCS=true
-  DEPLOY_GRAPHIQL=true
-  DEPLOY_SERVER=true
-  DEPLOY_STORYBOOK=true
-fi
+# FORCE deploys everything; otherwise deploy only affected packages
+if [[ "$FORCE" = true ]] || package_changed "@medplum/app";       then DEPLOY_APP=true;       else DEPLOY_APP=false;       fi
+if [[ "$FORCE" = true ]] || package_changed "@medplum/docs";      then DEPLOY_DOCS=true;      else DEPLOY_DOCS=false;      fi
+if [[ "$FORCE" = true ]] || package_changed "@medplum/graphiql";  then DEPLOY_GRAPHIQL=true;  else DEPLOY_GRAPHIQL=false;  fi
+if [[ "$FORCE" = true ]] || package_changed "@medplum/server";    then DEPLOY_SERVER=true;    else DEPLOY_SERVER=false;    fi
+if [[ "$FORCE" = true ]] || package_changed "@medplum/storybook"; then DEPLOY_STORYBOOK=true; else DEPLOY_STORYBOOK=false; fi
 
 #
 # Send a slack message
@@ -168,26 +116,22 @@ fi
 
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
-  npm run build -- --force --filter=@medplum/server
   source ./scripts/build-docker-server.sh --latest
   source ./scripts/deploy-server.sh
 fi
 
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
   echo "Deploy GraphiQL"
-  npm run build -- --force --filter=@medplum/graphiql
   source ./scripts/deploy-graphiql.sh
 fi
 
 if [[ "$DEPLOY_STORYBOOK" = true ]]; then
   echo "Deploy storybook"
-  npm run build -- --filter=@medplum/storybook
   source ./scripts/deploy-storybook.sh
 fi
 
 # Deploy docs last since it is the slowest
 if [[ "$DEPLOY_DOCS" = true ]]; then
   echo "Deploy docs"
-  npm run build:docs
   source ./scripts/deploy-docs.sh
 fi
