@@ -4,6 +4,8 @@ import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutc
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
+import { callOpenAi, streamOpenAi } from '../../ai/openai';
+import type { AiContext, AiResult } from '../../ai/types';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
@@ -75,10 +77,6 @@ type AIOperationParameters = {
   messages: string;
   model: string;
   tools?: string;
-  temperature?: number;
-};
-
-type AICallOptions = {
   temperature?: number;
 };
 
@@ -162,6 +160,15 @@ export async function aiOperation(
     }
   }
 
+  const context: AiContext = {
+    messages,
+    model: params.model,
+    tools,
+    temperature: params.temperature,
+    apiKey,
+    baseUrl,
+  };
+
   if (acceptsStreaming) {
     if (!res) {
       return [badRequest('Streaming requires Express response object')];
@@ -173,9 +180,7 @@ export async function aiOperation(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    await streamAIToClient(messages, apiKey, baseUrl, params.model, tools, res, {
-      temperature: params.temperature,
-    });
+    await streamToClient(context, res);
     res.end();
 
     // Return undefined for streaming - response already sent
@@ -183,101 +188,38 @@ export async function aiOperation(
   }
 
   try {
-    const result = (await callAI(messages, apiKey, baseUrl, params.model, tools, false, {
-      temperature: params.temperature,
-    })) as {
-      content: string | null;
-      tool_calls: any[];
-    };
-    return buildParametersResponse(result);
+    return buildParametersResponse(await callOpenAi(context));
   } catch (error) {
     return [badRequest('Failed to call AI API: ' + (error as Error).message)];
   }
 }
-
 /**
- * Streams AI response from OpenAI directly to the client via SSE.
- * This function bridges the OpenAI stream to the Express response without collecting.
- * Note: Tool calls are not supported in streaming mode.
- * @param messages - The conversation messages
- * @param apiKey - OpenAI API key
- * @param baseUrl - Base URL of the OpenAI-compatible API (no trailing slash)
- * @param model - Model to use
- * @param tools - Optional tools array (ignored in streaming mode)
+ * Writes a streamed AI response to the client as SSE.
+ *
+ * Owns the wire contract the client reads — `{ content }` frames as text arrives, then at most
+ * one `{ tool_calls }` frame, then `[DONE]`. The provider decides what events occur; this
+ * decides how they are framed, so a second provider needs no knowledge of either SSE or Express.
+ * @param context - The request and its credentials
  * @param res - Express response to write SSE data to
- * @param options - Optional OpenAI parameters (temperature)
  */
-export async function streamAIToClient(
-  messages: any[],
-  apiKey: string,
-  baseUrl: string,
-  model: string,
-  tools: any[] | undefined,
-  res: ExpressResponse,
-  options?: AICallOptions
-): Promise<void> {
-  const ctx = getAuthenticatedContext();
-  const response = (await callAI(messages, apiKey, baseUrl, model, tools, true, options)) as Response;
-  if (!response.body) {
-    throw new Error('No response body available for streaming');
-  }
-
-  // Stream OpenAI response directly to client using TextDecoderStream
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        res.write('data: [DONE]\n\n');
-        break;
-      }
-
-      buffer += value;
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6).trim();
-
-          if (data === '[DONE]') {
-            continue;
-          }
-
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices[0]?.delta;
-
-            if (!delta?.content) {
-              continue;
-            }
-
-            res.write(`data: ${JSON.stringify({ content: delta.content })}\n\n`);
-            res.flush();
-          } catch (e) {
-            // Skip malformed JSON
-            ctx.logger.error('Error parsing SSE data:', { error: e });
-          }
-        }
-      }
+async function streamToClient(context: AiContext, res: ExpressResponse): Promise<void> {
+  await streamOpenAi(context, (event) => {
+    if (event.type === 'content') {
+      res.write(`data: ${JSON.stringify({ content: event.text })}\n\n`);
+      res.flush();
+    } else {
+      res.write(`data: ${JSON.stringify({ tool_calls: event.toolCalls })}\n\n`);
     }
-  } finally {
-    reader.releaseLock();
-  }
+  });
+  res.write('data: [DONE]\n\n');
 }
 
 /**
- * Builds a FHIR Parameters response from AI result.
- * @param result - The AI response
- * @param result.content - The text content from the AI
- * @param result.tool_calls - Array of tool calls from the AI
+ * Builds a FHIR Parameters response from an AI result.
+ * @param result - The AI response, with tool call arguments already parsed
  * @returns FHIR response
  */
-function buildParametersResponse(result: { content: string | null; tool_calls: any[] }): FhirResponse {
+function buildParametersResponse(result: AiResult): FhirResponse {
   const parameters: ParametersParameter[] = [];
 
   if (result.content) {
@@ -287,19 +229,10 @@ function buildParametersResponse(result: { content: string | null; tool_calls: a
     });
   }
 
-  if (result.tool_calls?.length) {
-    const toolCallsWithParsedArgs = result.tool_calls.map((tc) => ({
-      id: tc.id,
-      type: tc.type,
-      function: {
-        name: tc.function.name,
-        arguments: JSON.parse(tc.function.arguments),
-      },
-    }));
-
+  if (result.toolCalls.length > 0) {
     parameters.push({
       name: 'tool_calls',
-      valueString: JSON.stringify(toolCallsWithParsedArgs),
+      valueString: JSON.stringify(result.toolCalls),
     });
   }
 
@@ -310,73 +243,4 @@ function buildParametersResponse(result: { content: string | null; tool_calls: a
       parameter: parameters,
     },
   ];
-}
-
-/**
- * Calls OpenAI API with optional streaming support.
- * @param messages - The conversation messages
- * @param apiKey - OpenAI API key
- * @param baseUrl - Base URL of the OpenAI-compatible API (no trailing slash)
- * @param model - Model to use
- * @param tools - Optional tools array
- * @param stream - Whether to enable streaming
- * @param options - Optional OpenAI parameters (temperature)
- * @returns For non-streaming: parsed response with content and tool calls. For streaming: raw Response object.
- */
-export async function callAI(
-  messages: any[],
-  apiKey: string,
-  baseUrl: string,
-  model: string,
-  tools?: any[],
-  stream = false,
-  options?: AICallOptions
-): Promise<{ content: string | null; tool_calls: any[] } | Response> {
-  const requestBody: any = {
-    model: model,
-    messages: messages,
-  };
-
-  if (options?.temperature !== undefined) {
-    requestBody.temperature = options.temperature;
-  }
-
-  if (stream) {
-    requestBody.stream = true;
-  } else if (tools && tools.length > 0) {
-    requestBody.tools = tools;
-    requestBody.tool_choice = 'auto';
-  }
-
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  // For streaming, return raw response
-  if (stream) {
-    return response;
-  }
-
-  // For non-streaming, parse and return structured data
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const error = new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
-    );
-    (error as Error & { statusCode: number }).statusCode = response.status;
-    throw error;
-  }
-
-  const completion = await response.json();
-  const message = completion.choices[0].message;
-
-  return {
-    content: message.content,
-    tool_calls: message.tool_calls || [],
-  };
 }

@@ -4,6 +4,7 @@ import { ContentType } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import type { Response } from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
@@ -1055,5 +1056,203 @@ describe('AI Operation', () => {
     // Verify no Parameters format in response
     expect(res.text).not.toContain('"resourceType":"Parameters"');
     expect(res.text).not.toContain('"parameter"');
+  });
+
+  describe('Streaming with tool calls', () => {
+    /**
+     * Builds a mock fetch response that yields `chunks` from the SSE reader, one read at a time.
+     * @param chunks - Raw SSE text to emit, in order
+     * @returns A mock fetch response shaped like the one `callAI` returns for streams
+     */
+    function mockSseStream(chunks: string[]): object {
+      let index = 0;
+      return {
+        ok: true,
+        status: 200,
+        body: {
+          pipeThrough: vi.fn().mockReturnValue({
+            getReader: vi.fn().mockReturnValue({
+              read: vi.fn().mockImplementation(async () => {
+                if (index < chunks.length) {
+                  return { done: false, value: chunks[index++] };
+                }
+                return { done: true, value: undefined };
+              }),
+              releaseLock: vi.fn(),
+            }),
+          }),
+        },
+      };
+    }
+
+    /**
+     * Splits an SSE response body into its `data:` payloads.
+     * @param text - The raw response body
+     * @returns The payloads verbatim, and the subset parsed as JSON (excluding `[DONE]`)
+     */
+    function parseSse(text: string): { payloads: string[]; frames: any[] } {
+      const payloads = text
+        .split('\n\n')
+        .filter((line: string) => line.startsWith('data: '))
+        .map((line: string) => line.slice(6).trim());
+      const frames: any[] = [];
+      for (const payload of payloads) {
+        if (payload === '[DONE]') {
+          continue;
+        }
+        frames.push(JSON.parse(payload));
+      }
+      return { payloads, frames };
+    }
+
+    /**
+     * Sends a streaming `$ai` request.
+     * @param params - Parameters to send, beyond the required messages and model
+     * @returns The supertest response
+     */
+    async function postStreaming(params: { name: string; valueString: string }[] = []): Promise<Response> {
+      return request(app)
+        .post('/fhir/R4/$ai')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Accept', 'text/event-stream')
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'messages', valueString: JSON.stringify([{ role: 'user', content: 'Find Frodo' }]) },
+            { name: 'model', valueString: 'gpt-4' },
+            ...params,
+          ],
+        });
+    }
+
+    test('Sends tools and stream together', async () => {
+      global.fetch = vi.fn().mockResolvedValue(mockSseStream([]));
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+      expect(res).toHaveStatus(200);
+
+      // Regression guard: tools used to be dropped whenever stream was set, which made
+      // streaming and tool calling mutually exclusive.
+      const body = JSON.parse((global.fetch as Mock).mock.calls[0][1].body);
+      expect(body.stream).toBe(true);
+      expect(body.tools).toStrictEqual(fhirTools);
+      expect(body.tool_choice).toBe('auto');
+    });
+
+    test('Reassembles a tool call split across chunks', async () => {
+      global.fetch = vi.fn().mockResolvedValue(
+        mockSseStream([
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_abc","type":"function","function":{"name":"fhir_request","arguments":""}}]}}]}\n\n',
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"method\\":\\"GET\\","}}]}}]}\n\n',
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\"path\\":\\"Patient?name=Frodo\\"}"}}]}}]}\n\n',
+        ])
+      );
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+      expect(res).toHaveStatus(200);
+
+      const { payloads, frames } = parseSse(res.text);
+      expect(frames).toHaveLength(1);
+      expect(frames[0].tool_calls).toStrictEqual([
+        {
+          id: 'call_abc',
+          type: 'function',
+          function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Patient?name=Frodo' } },
+        },
+      ]);
+
+      // The client needs the completed call before it stops reading
+      expect(payloads[payloads.length - 1]).toBe('[DONE]');
+    });
+
+    test('Streams content and tool calls in the same turn', async () => {
+      global.fetch = vi.fn().mockResolvedValue(
+        mockSseStream([
+          'data: {"choices":[{"delta":{"content":"Looking"}}]}\n\n',
+          'data: {"choices":[{"delta":{"content":" that up"}}]}\n\n',
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\",\\"path\\":\\"Patient\\"}"}}]}}]}\n\n',
+        ])
+      );
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+      expect(res).toHaveStatus(200);
+
+      const { frames } = parseSse(res.text);
+      // Content forwards as it arrives; the tool call can only be sent once complete
+      expect(frames.map((f) => f.content).filter(Boolean)).toStrictEqual(['Looking', ' that up']);
+      expect(frames[frames.length - 1].tool_calls).toHaveLength(1);
+      expect(frames[frames.length - 1].tool_calls[0].function.arguments).toStrictEqual({
+        method: 'GET',
+        path: 'Patient',
+      });
+    });
+
+    test('Reassembles parallel tool calls independently', async () => {
+      global.fetch = vi.fn().mockResolvedValue(
+        mockSseStream([
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_a","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\\"Task\\"}"}},{"index":0,"function":{"arguments":"\\"Patient\\"}"}}]}}]}\n\n',
+        ])
+      );
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+      expect(res).toHaveStatus(200);
+
+      const { frames } = parseSse(res.text);
+      expect(frames).toHaveLength(1);
+      // Interleaved fragments must land on the call matching their index, not the latest one
+      expect(frames[0].tool_calls).toStrictEqual([
+        { id: 'call_a', type: 'function', function: { name: 'fhir_request', arguments: { path: 'Patient' } } },
+        { id: 'call_b', type: 'function', function: { name: 'fhir_request', arguments: { path: 'Task' } } },
+      ]);
+    });
+
+    test('Passes through arguments that never became valid JSON', async () => {
+      global.fetch = vi.fn().mockResolvedValue(
+        mockSseStream([
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_cut","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\""}}]}}]}\n\n',
+        ])
+      );
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+      expect(res).toHaveStatus(200);
+
+      const { frames } = parseSse(res.text);
+      // A truncated fragment is handed to the client as-is rather than throwing away the call
+      expect(frames[0].tool_calls[0].function.arguments).toBe('{"method":"GET"');
+    });
+
+    test('Ignores chunks that carry no choices', async () => {
+      global.fetch = vi.fn().mockResolvedValue(
+        mockSseStream([
+          'data: {"choices":[{"delta":{"content":"before"}}]}\n\n',
+          'data: {"usage":{"prompt_tokens":10,"completion_tokens":2}}\n\n',
+          'data: {"choices":[{"delta":{"content":"after"}}]}\n\n',
+        ])
+      );
+
+      const res = await postStreaming();
+      expect(res).toHaveStatus(200);
+
+      // A usage-only chunk must not abort the stream or leak provider metadata
+      const { frames } = parseSse(res.text);
+      expect(frames.map((f) => f.content)).toStrictEqual(['before', 'after']);
+      expect(res.text).not.toContain('prompt_tokens');
+    });
+
+    test('Sends no tool_calls frame when the model requests none', async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(mockSseStream(['data: {"choices":[{"delta":{"content":"Just prose"}}]}\n\n']));
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+      expect(res).toHaveStatus(200);
+
+      const { payloads, frames } = parseSse(res.text);
+      expect(frames).toStrictEqual([{ content: 'Just prose' }]);
+      expect(payloads).toStrictEqual(['{"content":"Just prose"}', '[DONE]']);
+    });
   });
 });
