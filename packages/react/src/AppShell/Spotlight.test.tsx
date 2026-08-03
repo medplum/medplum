@@ -141,6 +141,16 @@ describe('Spotlight', () => {
       expect(screen.getByText('Searching...')).toBeInTheDocument();
     });
 
+    test('navigates to href when an action has no onClick', async () => {
+      await setup(true, { staticActions: [{ id: 'action-new-task', href: '/Task/new', label: 'New Task' }] });
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('New Task'));
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/Task/new');
+    });
+
     test('renders actions with an href as anchors', async () => {
       await setup(true, { staticActions });
 

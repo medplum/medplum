@@ -6,7 +6,6 @@ import type { SpotlightActionData } from '@mantine/spotlight';
 import { Spotlight as MantineSpotlight, spotlight } from '@mantine/spotlight';
 import { formatHumanName, isUUID } from '@medplum/core';
 import type { Patient, ServiceRequest, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import type { MedplumNavigateFunction } from '@medplum/react-hooks';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -20,8 +19,9 @@ export type HeaderSearchTypes = Patient | ServiceRequest;
 
 /**
  * A Spotlight entry. Setting `href` renders it as an anchor rather than a button, so the browser's
- * "Open link in new tab" context menu and Cmd/Ctrl+click both work. A plain click still routes
- * through `onClick` (i.e. the SPA router) instead of triggering a full page load.
+ * "Open link in new tab" context menu and Cmd/Ctrl+click both work. A plain click is handed to the
+ * SPA router instead of triggering a full page load; pass `onClick` to do something other than
+ * navigate to `href`.
  */
 export interface SpotlightLinkAction extends SpotlightActionData {
   readonly href?: string;
@@ -37,26 +37,22 @@ export interface SpotlightProps {
   readonly staticActions?: SpotlightLinkAction[];
 }
 
-function ShortcutKey({ children }: { readonly children: ReactNode }): JSX.Element {
-  return <span className={classes.shortcutKey}>{children}</span>;
-}
-
 function ShortcutHints(): JSX.Element {
   return (
     <Group gap="lg" justify="flex-start" align="center" wrap="wrap" className={classes.shortcutHints}>
       <Group gap={6} align="center" wrap="nowrap">
         <span className={classes.groupLabel}>Open search</span>
-        <ShortcutKey>⌘</ShortcutKey>
-        <ShortcutKey>K</ShortcutKey>
+        <Kbd>⌘</Kbd>
+        <Kbd>K</Kbd>
       </Group>
       <Group gap={6} align="center" wrap="nowrap">
         <span className={classes.groupLabel}>Select</span>
-        <ShortcutKey>↑</ShortcutKey>
-        <ShortcutKey>↓</ShortcutKey>
+        <Kbd>↑</Kbd>
+        <Kbd>↓</Kbd>
       </Group>
       <Group gap={6} align="center" wrap="nowrap">
         <span className={classes.groupLabel}>Open / Go</span>
-        <ShortcutKey>↵</ShortcutKey>
+        <Kbd>↵</Kbd>
       </Group>
     </Group>
   );
@@ -77,16 +73,23 @@ interface SpotlightActionItemProps {
  * @returns The rendered Spotlight action.
  */
 function SpotlightActionItem({ action, group, highlightQuery }: SpotlightActionItemProps): JSX.Element {
+  const navigate = useMedplumNavigate();
   const { href, onClick } = action;
 
-  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
+  // Typed as HTMLElement because the action renders as an anchor whenever `href` is set.
+  const handleClick: React.MouseEventHandler<HTMLElement> = (event) => {
     // Let the browser take modified clicks on a real link (new tab / new window / download)
     // and leave the palette open, since the current page isn't going anywhere.
     if (href && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) {
       return;
     }
     event.preventDefault();
-    onClick?.(event);
+    if (onClick) {
+      // Same button-only typing as `component`/`href` below; the event is an anchor's when `href` is set.
+      onClick(event as React.MouseEvent<HTMLButtonElement>);
+    } else if (href) {
+      navigate(href);
+    }
     spotlight.close();
   };
 
@@ -108,29 +111,21 @@ function SpotlightActionItem({ action, group, highlightQuery }: SpotlightActionI
 
 /**
  * Filters action groups by query (matching label or description), dropping empty groups.
- * Mirrors Mantine's built-in `defaultSpotlightFilter` behavior for the composable API.
+ * Mantine's `defaultSpotlightFilter` is internal to `@mantine/spotlight` and the composable API
+ * has no `filter` prop, so the same label/description matching is applied here.
  * @param query - The search query.
  * @param groups - The action groups to filter.
  * @returns The filtered action groups.
  */
 function filterActionGroups(query: string, groups: SpotlightLinkActionGroup[]): SpotlightLinkActionGroup[] {
   const q = query.trim().toLowerCase();
-  if (!q) {
-    return groups;
-  }
   const result: SpotlightLinkActionGroup[] = [];
-  for (const group of groups) {
-    const actions = group.actions.filter(
-      (a) =>
-        String(a.label ?? '')
-          .toLowerCase()
-          .includes(q) ||
-        String(a.description ?? '')
-          .toLowerCase()
-          .includes(q)
+  for (const { group, actions } of groups) {
+    const matches = actions.filter(
+      (a) => a.label?.toLowerCase().includes(q) || a.description?.toLowerCase().includes(q)
     );
-    if (actions.length > 0) {
-      result.push({ group: group.group, actions });
+    if (matches.length > 0) {
+      result.push({ group, actions: matches });
     }
   }
   return result;
@@ -159,7 +154,6 @@ function KeyboardHint(): JSX.Element {
 
 export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useMedplumNavigate();
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [actions, setActions] = useState<SpotlightLinkActionGroup[]>([]);
@@ -174,7 +168,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
         .then((response: SearchGraphQLResponse) => {
           const resources = getResourcesFromResponse(response);
           const patients = resources.filter((r): r is Patient => r.resourceType === 'Patient');
-          setActions(patientsToActions(patients, navigate));
+          setActions(patientsToActions(patients));
         })
         .catch(console.error)
         .finally(() => setSearching(false));
@@ -191,7 +185,7 @@ export function Spotlight({ patientsOnly, staticActions }: SpotlightProps): JSX.
         .then(([graphqlResponse, valueSetResult]) => {
           const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
           const resourceTypes = valueSetResult.expansion?.contains ?? [];
-          setActions(resourcesToActions(resources, resourceTypes, navigate));
+          setActions(resourcesToActions(resources, resourceTypes));
         })
         .catch(console.error)
         .finally(() => setSearching(false));
@@ -356,58 +350,37 @@ function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
   return result;
 }
 
-/**
- * Builds an action whose `href` is both the anchor target (for right-click / Cmd+click) and the
- * route a plain click hands to the SPA router.
- * @param action - The action data, including the destination `href`.
- * @param navigate - The navigate function used for plain clicks.
- * @returns The action with its `onClick` wired to `href`.
- */
-function navigateAction(
-  action: Omit<SpotlightLinkAction, 'onClick'> & { href: string },
-  navigate: MedplumNavigateFunction
-): SpotlightLinkAction {
-  return { ...action, onClick: () => navigate(action.href) };
+function patientToAction(patient: Patient & { id: string }): SpotlightLinkAction {
+  return {
+    id: patient.id,
+    href: `/Patient/${patient.id}`,
+    label: patient.name ? formatHumanName(patient.name[0]) : patient.id,
+    description: patient.birthDate,
+    leftSection: <ResourceAvatar value={patient} radius="xl" size={24} />,
+  };
 }
 
-function patientsToActions(patients: Patient[], navigate: MedplumNavigateFunction): SpotlightLinkActionGroup[] {
+function patientsToActions(patients: Patient[]): SpotlightLinkActionGroup[] {
   const patientActions: SpotlightLinkAction[] = patients
     .filter((p): p is Patient & { id: string } => Boolean(p.id))
-    .map((patient) =>
-      navigateAction(
-        {
-          id: patient.id,
-          href: `/Patient/${patient.id}`,
-          label: patient.name ? formatHumanName(patient.name[0]) : patient.id,
-          description: patient.birthDate,
-          leftSection: <ResourceAvatar value={patient} radius="xl" size={24} />,
-        },
-        navigate
-      )
-    );
+    .map(patientToAction);
 
   return patientActions.length > 0 ? [{ group: 'Patients', actions: patientActions }] : [];
 }
 
 function resourcesToActions(
   resources: HeaderSearchTypes[],
-  resourceTypes: ValueSetExpansionContains[],
-  navigate: MedplumNavigateFunction
+  resourceTypes: ValueSetExpansionContains[]
 ): SpotlightLinkActionGroup[] {
   const result: SpotlightLinkActionGroup[] = [];
 
   // Resource types
-  const resourceTypeActions: SpotlightLinkAction[] = resourceTypes.map((rt) =>
-    navigateAction(
-      {
-        id: `resource-type-${rt.code}`,
-        href: `/${rt.code}`,
-        label: rt.display ?? rt.code ?? '',
-        description: 'Resource Type',
-      },
-      navigate
-    )
-  );
+  const resourceTypeActions: SpotlightLinkAction[] = resourceTypes.map((rt) => ({
+    id: `resource-type-${rt.code}`,
+    href: `/${rt.code}`,
+    label: rt.display ?? rt.code ?? '',
+    description: 'Resource Type',
+  }));
   if (resourceTypeActions.length > 0) {
     result.push({ group: 'Resource Types', actions: resourceTypeActions });
   }
@@ -417,30 +390,14 @@ function resourcesToActions(
 
   for (const resource of resources) {
     if (resource.resourceType === 'Patient' && resource.id) {
-      patientActions.push(
-        navigateAction(
-          {
-            id: resource.id,
-            href: `/Patient/${resource.id}`,
-            label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
-            description: resource.birthDate,
-            leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
-          },
-          navigate
-        )
-      );
+      patientActions.push(patientToAction(resource as Patient & { id: string }));
     } else if (resource.resourceType === 'ServiceRequest' && resource.id) {
-      serviceRequestActions.push(
-        navigateAction(
-          {
-            id: resource.id,
-            href: `/ServiceRequest/${resource.id}`,
-            label: resource.id,
-            description: resource.subject?.display,
-          },
-          navigate
-        )
-      );
+      serviceRequestActions.push({
+        id: resource.id,
+        href: `/ServiceRequest/${resource.id}`,
+        label: resource.id,
+        description: resource.subject?.display,
+      });
     }
   }
 

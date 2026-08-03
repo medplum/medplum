@@ -66,13 +66,8 @@
   text-transform: none;
 }
 
-/* List titles / Searching: Searching's left padding */
-.actionsGroup::before,
-.emptyState .groupLabel {
-  padding-inline: var(--mantine-spacing-md);
-}
-
 .actionsGroup::before {
+  padding-inline: var(--mantine-spacing-md);
   padding-bottom: 2px;
 }
 
@@ -81,11 +76,6 @@
   padding-top: calc(var(--mantine-spacing-md) - 2px);
   padding-inline: var(--mantine-spacing-md);
   padding-bottom: var(--mantine-spacing-md);
-}
-
-/* Avoid double horizontal padding when emptyState wraps the Searching label */
-.emptyState:has(.groupLabel) {
-  padding-inline: 0;
 }
 
 /* Footer with keyboard shortcut hints — match Actions title inset */
@@ -97,21 +87,4 @@
 
 .shortcutHints {
   width: 100%;
-}
-
-.shortcutKey {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
-  border-radius: var(--mantine-radius-sm);
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
-  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-5));
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
 }
