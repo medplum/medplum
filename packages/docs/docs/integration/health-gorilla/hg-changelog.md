@@ -10,7 +10,7 @@ This page tracks updates, improvements, and changes to the HealthGorilla integra
 
 ## [August 2026]
 
-- Order Update Reliability: Fixed `If-Match` version conflicts in `send-to-health-gorilla` when stamping requisition and identifiers after submit. AOE `QuestionnaireResponse` entries are now included in the optimistic-locking version list, and conflicted PATCH entries are retried without re-sending already-applied updates.
+- Order Update Reliability: Fixed `If-Match` version conflicts in `send-to-health-gorilla` when stamping requisition and identifiers after submit. AOE `QuestionnaireResponse` entries are now included in the optimistic locking version list, and conflicted PATCH entries are retried without re-sending already applied updates.
 
 ## [July 2026]
 
