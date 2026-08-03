@@ -2,19 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { extractServiceTypeReferences, serviceTypeIncludesService, toServiceTypeCodeableConcepts } from './scheduling';
+import type { WithId } from './utils';
+import { createReference } from './utils';
 
-const service: HealthcareService = {
+const service = {
   resourceType: 'HealthcareService',
   id: 'service-1',
   name: 'Office visit',
-};
+} satisfies WithId<HealthcareService>;
 
 describe('serviceType CodeableConcepts', () => {
   test('converts, matches, and extracts HealthcareService references', () => {
-    const serviceWithId = { ...service, id: 'service-1' };
-    const serviceType = toServiceTypeCodeableConcepts(serviceWithId);
+    const serviceType = toServiceTypeCodeableConcepts(service);
 
-    expect(serviceTypeIncludesService(serviceType, serviceWithId)).toBe(true);
+    expect(serviceTypeIncludesService(serviceType, service)).toBe(true);
     expect(extractServiceTypeReferences(serviceType)).toEqual([
       expect.objectContaining({ reference: 'HealthcareService/service-1' }),
     ]);
@@ -23,7 +24,6 @@ describe('serviceType CodeableConcepts', () => {
   test('preserves service type coding while adding a reference', () => {
     const serviceWithType = {
       ...service,
-      id: 'service-1',
       type: [{ coding: [{ system: 'http://example.com/service', code: 'office' }] }],
     };
     const serviceType = toServiceTypeCodeableConcepts(serviceWithType);
@@ -32,9 +32,16 @@ describe('serviceType CodeableConcepts', () => {
     expect(serviceTypeIncludesService(serviceType, serviceWithType)).toBe(true);
   });
 
+  test('matches a HealthcareService reference', () => {
+    const serviceType = toServiceTypeCodeableConcepts(service);
+
+    expect(serviceTypeIncludesService(serviceType, createReference(service))).toBe(true);
+    expect(serviceTypeIncludesService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(false);
+  });
+
   test('does not match an unrelated service', () => {
-    const serviceType = toServiceTypeCodeableConcepts({ ...service, id: 'service-1' });
+    const serviceType = toServiceTypeCodeableConcepts(service);
     expect(serviceTypeIncludesService(serviceType, { ...service, id: 'service-2' })).toBe(false);
-    expect(serviceTypeIncludesService(undefined, { ...service, id: 'service-1' })).toBe(false);
+    expect(serviceTypeIncludesService(undefined, service)).toBe(false);
   });
 });

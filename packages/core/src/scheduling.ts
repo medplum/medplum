@@ -5,6 +5,31 @@ import type { WithId } from './utils';
 import { createReference, getExtension, getExtensionValue, getReferenceString, isDefined } from './utils';
 
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
+
+/**
+ * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
+ *
+ * In R5/R6, `serviceType` attributes change from `CodeableConcept[]` to
+ * `CodeableReference<HealthcareService>`. We approximate that in R4 with this extension.
+ *
+ * Example: a Schedule whose serviceType refers to a HealthcareService:
+ * ```json
+ * {
+ *   "resourceType": "Schedule",
+ *   "actor": [{ "reference": "Practitioner/abc" }],
+ *   "serviceType": [
+ *     {
+ *       "extension": [
+ *         {
+ *           "url": "https://medplum.com/fhir/service-type-reference",
+ *           "valueReference": { "reference": "HealthcareService/123" }
+ *         }
+ *       ]
+ *     }
+ *   ]
+ * }
+ * ```
+ */
 export const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
 
@@ -53,8 +78,16 @@ export function serviceTypeIncludesService(
   serviceType: CodeableConcept[] | undefined,
   service: WithId<HealthcareService> | (Reference<HealthcareService> & { reference: string })
 ): boolean {
+  if (!serviceType?.length) {
+    return false;
+  }
   const reference = getReferenceString(service);
-  return extractServiceTypeReferences(serviceType).some((serviceReference) => serviceReference.reference === reference);
+  return serviceType.some((concept) => {
+    const serviceReference = getExtensionValue(concept, ServiceTypeReferenceURI) as
+      | Reference<HealthcareService>
+      | undefined;
+    return serviceReference?.reference === reference;
+  });
 }
 
 /**
