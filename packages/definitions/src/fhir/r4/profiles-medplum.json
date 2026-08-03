@@ -810,7 +810,7 @@
             }],
             "binding" : {
               "strength" : "required",
-              "valueSet" : "https://medplum.com/fhir/CodeSystem/client-application-status"
+              "valueSet" : "https://medplum.com/fhir/ValueSet/client-application-status"
             }
           },
           {
