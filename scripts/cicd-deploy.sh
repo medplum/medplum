@@ -181,7 +181,7 @@ fi
 
 if [[ "$DEPLOY_STORYBOOK" = true ]]; then
   echo "Deploy storybook"
-  npm run build -- --filter=@medplum/storybook
+  npm run build:all -- --filter=@medplum/storybook
   source ./scripts/deploy-storybook.sh
 fi
 
