@@ -361,6 +361,7 @@ describe('ConceptMap/$import', () => {
       .post(`/fhir/R4/ConceptMap/$import`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Parameters',
         parameter: [
