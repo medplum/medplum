@@ -3,8 +3,8 @@
 import { ContentType } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
-import request from 'supertest';
 import type { Response } from 'supertest';
+import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
@@ -1141,13 +1141,15 @@ describe('AI Operation', () => {
     });
 
     test('Reassembles a tool call split across chunks', async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        mockSseStream([
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_abc","type":"function","function":{"name":"fhir_request","arguments":""}}]}}]}\n\n',
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"method\\":\\"GET\\","}}]}}]}\n\n',
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\"path\\":\\"Patient?name=Frodo\\"}"}}]}}]}\n\n',
-        ])
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          mockSseStream([
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_abc","type":"function","function":{"name":"fhir_request","arguments":""}}]}}]}\n\n',
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"method\\":\\"GET\\","}}]}}]}\n\n',
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\"path\\":\\"Patient?name=Frodo\\"}"}}]}}]}\n\n',
+          ])
+        );
 
       const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
       expect(res).toHaveStatus(200);
@@ -1167,13 +1169,15 @@ describe('AI Operation', () => {
     });
 
     test('Streams content and tool calls in the same turn', async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        mockSseStream([
-          'data: {"choices":[{"delta":{"content":"Looking"}}]}\n\n',
-          'data: {"choices":[{"delta":{"content":" that up"}}]}\n\n',
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\",\\"path\\":\\"Patient\\"}"}}]}}]}\n\n',
-        ])
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          mockSseStream([
+            'data: {"choices":[{"delta":{"content":"Looking"}}]}\n\n',
+            'data: {"choices":[{"delta":{"content":" that up"}}]}\n\n',
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\",\\"path\\":\\"Patient\\"}"}}]}}]}\n\n',
+          ])
+        );
 
       const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
       expect(res).toHaveStatus(200);
@@ -1189,13 +1193,15 @@ describe('AI Operation', () => {
     });
 
     test('Reassembles parallel tool calls independently', async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        mockSseStream([
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_a","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\\"Task\\"}"}},{"index":0,"function":{"arguments":"\\"Patient\\"}"}}]}}]}\n\n',
-        ])
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          mockSseStream([
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_a","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"function":{"arguments":"\\"Task\\"}"}},{"index":0,"function":{"arguments":"\\"Patient\\"}"}}]}}]}\n\n',
+          ])
+        );
 
       const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
       expect(res).toHaveStatus(200);
@@ -1210,11 +1216,13 @@ describe('AI Operation', () => {
     });
 
     test('Passes through arguments that never became valid JSON', async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        mockSseStream([
-          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_cut","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\""}}]}}]}\n\n',
-        ])
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          mockSseStream([
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_cut","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\""}}]}}]}\n\n',
+          ])
+        );
 
       const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
       expect(res).toHaveStatus(200);
@@ -1225,13 +1233,15 @@ describe('AI Operation', () => {
     });
 
     test('Ignores chunks that carry no choices', async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        mockSseStream([
-          'data: {"choices":[{"delta":{"content":"before"}}]}\n\n',
-          'data: {"usage":{"prompt_tokens":10,"completion_tokens":2}}\n\n',
-          'data: {"choices":[{"delta":{"content":"after"}}]}\n\n',
-        ])
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(
+          mockSseStream([
+            'data: {"choices":[{"delta":{"content":"before"}}]}\n\n',
+            'data: {"usage":{"prompt_tokens":10,"completion_tokens":2}}\n\n',
+            'data: {"choices":[{"delta":{"content":"after"}}]}\n\n',
+          ])
+        );
 
       const res = await postStreaming();
       expect(res).toHaveStatus(200);
