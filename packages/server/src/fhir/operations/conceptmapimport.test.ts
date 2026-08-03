@@ -13,7 +13,7 @@ import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 import { Column, Condition, SelectQuery } from '../sql';
-import { importConceptMap } from './conceptmapimport';
+import { importConceptMapResource } from './conceptmapimport';
 
 const app = express();
 const ICD10 = 'http://hl7.org/fhir/sid/icd-10-us';
@@ -64,7 +64,7 @@ describe('importConceptMap()', () => {
 
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const db = await pool.connect();
-    await importConceptMap(db, resource);
+    await importConceptMapResource(db, resource);
     db.release();
 
     const results = await getMappingRows(pool, resource);
@@ -129,7 +129,7 @@ describe('importConceptMap()', () => {
 
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const db = await pool.connect();
-    await importConceptMap(db, resource);
+    await importConceptMapResource(db, resource);
     db.release();
 
     const results = await getMappingRows(pool, resource);
@@ -507,6 +507,57 @@ describe('ConceptMap/$import', () => {
     const pool = getDatabasePool(DatabaseMode.READER);
     const results = await getMappingRows(pool, map);
     expect(results).toHaveLength(0);
+  });
+
+  test('Import does not clobber or duplicate inline mappings', async () => {
+    const resource: ConceptMap = {
+      resourceType: 'ConceptMap',
+      version: '4.0.1',
+      status: 'draft',
+      group: [
+        {
+          source: SNOMED,
+          target: ICD10,
+          element: [
+            {
+              code: '263204007',
+              target: [
+                { code: 'S52.209A', equivalence: 'equivalent' },
+                { code: 'S52.209D', equivalence: 'equivalent' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const map = await repo.createResource(resource);
+    const pool = getDatabasePool(DatabaseMode.READER);
+
+    const initial = await getMappingRows(pool, map);
+    expect(initial).toHaveLength(2);
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${map.id}/$import`)
+      .set('X-Medplum', 'extended')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: 'http://snomed.info/sct', code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+
+    const result = await getMappingRows(pool, map);
+    expect(result).toHaveLength(3);
   });
 });
 

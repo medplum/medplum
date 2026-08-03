@@ -11,7 +11,14 @@ import {
   OperationOutcomeError,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Coding, ConceptMap, ConceptMapGroupElementTargetDependsOn } from '@medplum/fhirtypes';
+import type {
+  Coding,
+  ConceptMap,
+  ConceptMapGroup,
+  ConceptMapGroupElement,
+  ConceptMapGroupElementTarget,
+  ConceptMapGroupElementTargetDependsOn,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
@@ -136,65 +143,70 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
       const db = txRepo.getDatabaseClient(
         repoAccess.sqlWrite('ConceptMap', { source: 'conceptMapImportHandler.client' })
       );
-      await importConceptMap(db, conceptMap, params.mapping);
+      await importConceptMappings(db, conceptMap, params.mapping);
     },
     { resourceTypes: ['ConceptMap'], source: 'conceptMapImportHandler' }
   );
   return [allOk, conceptMap];
 }
 
-export async function importConceptMap(
+export async function importConceptMapResource(db: PgQueryable, conceptMap: WithId<ConceptMap>): Promise<void> {
+  const resourceMappings = gatherResourceMappings(conceptMap);
+  await importConceptMappings(db, conceptMap, resourceMappings);
+}
+
+export async function importConceptMappings(
   db: PgQueryable,
   conceptMap: WithId<ConceptMap>,
   mappings: readonly ConceptMapping[] = EMPTY
 ): Promise<void> {
   const mappingRows: MappingRow[] = [];
   const attributeRows: (Omit<AttributeRow, 'mapping'>[] | undefined)[] = [];
-
-  const resourceMappings = gatherResourceMappings(conceptMap);
-  for (const mapping of resourceMappings) {
-    // Resource rows already validated
-    addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
-  }
   for (const mapping of mappings) {
     addRowsForMapping(mapping, conceptMap, mappingRows, attributeRows);
   }
 
-  const uniqueMappings = await prepareMappingRows(db, mappingRows);
-  await writeMappingRows(db, uniqueMappings, attributeRows);
+  const hydratedMappings = await prepareMappingRows(db, mappingRows);
+  await writeMappingRows(db, hydratedMappings, attributeRows);
 }
 
 function gatherResourceMappings(conceptMap: WithId<ConceptMap>): ConceptMapping[] {
   const mappings: ConceptMapping[] = [];
-
   for (const group of conceptMap.group ?? EMPTY) {
-    for (const mapping of group.element ?? EMPTY) {
-      if (!mapping.code) {
+    for (const element of group.element ?? EMPTY) {
+      if (!element.code) {
         continue;
       }
-      for (const target of mapping.target ?? EMPTY) {
-        const entry: ConceptMapping = {
-          source: { system: group.source, code: mapping.code, display: mapping.display },
-          target: { system: group.target, code: target.code, display: target.display },
-          relationship: target.equivalence,
-          comment: target.comment,
-        };
-
-        for (const dependency of target.dependsOn ?? EMPTY) {
-          const value = getAttributeValue(dependency);
-          entry.dependsOn = append(entry.dependsOn, { code: dependency.property, value });
-        }
-        for (const product of target.product ?? EMPTY) {
-          const value = getAttributeValue(product);
-          entry.product = append(entry.product, { code: product.property, value });
-        }
-
+      for (const target of element.target ?? EMPTY) {
+        const entry = buildMappingEntry(group, element, target);
         mappings.push(entry);
       }
     }
   }
-
   return mappings;
+}
+
+function buildMappingEntry(
+  group: ConceptMapGroup,
+  element: ConceptMapGroupElement,
+  target: ConceptMapGroupElementTarget
+): ConceptMapping {
+  const entry: ConceptMapping = {
+    source: { system: group.source, code: element.code, display: element.display },
+    target: { system: group.target, code: target.code, display: target.display },
+    relationship: target.equivalence,
+    comment: target.comment,
+  };
+
+  for (const dependency of target.dependsOn ?? EMPTY) {
+    const value = getAttributeValue(dependency);
+    entry.dependsOn = append(entry.dependsOn, { code: dependency.property, value });
+  }
+  for (const product of target.product ?? EMPTY) {
+    const value = getAttributeValue(product);
+    entry.product = append(entry.product, { code: product.property, value });
+  }
+  return entry;
 }
 
 function getAttributeValue(attr: ConceptMapGroupElementTargetDependsOn): TypedValue {
@@ -232,6 +244,14 @@ type AttributeRow = {
   value?: string;
 };
 
+/**
+ * Transforms a logical concept mapping into the database row(s) that represent it,
+ * which may be spread across the `ConceptMapping` and `ConceptMapping_Attribute` tables.
+ * @param mapping - The mapping to transform.
+ * @param conceptMap - The related ConceptMap resource for the mapping.
+ * @param mappingRows - The accumulated `ConceptMapping` rows for this import.
+ * @param attributeRows - The accumulated `ConceptMapping_Attribute` rows for this import.
+ */
 function addRowsForMapping(
   mapping: ConceptMapping,
   conceptMap: WithId<ConceptMap>,
@@ -282,6 +302,13 @@ function addRowsForMapping(
   attributeRows.push(mappingAttributes);
 }
 
+/**
+ * Prepares `ConceptMapping` rows for insertion into the DB by hydrating their references
+ * with the the correct database IDs of the interned system URL strings for the source/target codes.
+ * @param db - Database connection.
+ * @param rows - Mapping rows to hydrate.
+ * @returns The hydrated mapping rows, ready for insertion into the DB.
+ */
 async function prepareMappingRows(
   db: PgQueryable,
   rows: MappingRow[]
@@ -329,6 +356,13 @@ async function prepareMappingRows(
   return rows as (MappingRow & { sourceSystem: number; targetSystem: number })[];
 }
 
+/**
+ * Writes mapping and attribute rows to the database, maintaining
+ * referential integrity between a row and its associated attributes.
+ * @param db - Database connection.
+ * @param mappings - Mapping rows to insert.
+ * @param attributes - Attribute rows to insert.
+ */
 async function writeMappingRows(
   db: PgQueryable,
   mappings: MappingRow[],
