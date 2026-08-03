@@ -125,6 +125,16 @@ describe('OpenAI provider', () => {
       expect(result.toolCalls).toStrictEqual([]);
     });
 
+    test('Throws when the response contains no choices', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({ choices: [] }),
+      });
+
+      await expect(callOpenAi(baseContext)).rejects.toThrow('OpenAI response contained no choices');
+    });
+
     test('Throws with statusCode on a non-ok response', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -246,6 +256,21 @@ describe('OpenAI provider', () => {
 
     test('Emits nothing for a stream with no content and no tool calls', async () => {
       expect(await collectEvents([])).toStrictEqual([]);
+    });
+
+    test('Throws with statusCode on a non-ok response', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: vi.fn().mockResolvedValue({ error: { message: 'Incorrect API key provided' } }),
+      });
+
+      // Without this check the error body parses as zero SSE frames, so the caller sees an empty
+      // but apparently successful stream.
+      await expect(streamOpenAi(baseContext, () => undefined)).rejects.toThrow(
+        'OpenAI API error: 401 Unauthorized - Incorrect API key provided'
+      );
     });
 
     test('Throws when the response has no body', async () => {

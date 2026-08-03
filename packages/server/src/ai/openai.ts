@@ -87,6 +87,26 @@ async function postChatCompletions(context: AiContext, stream: boolean): Promise
 }
 
 /**
+ * Throws a descriptive error if the provider rejected the request.
+ *
+ * Both transports need this. A streaming request that skips the check reads an error body that
+ * contains no `data:` lines, so it emits nothing and looks like an empty but successful answer.
+ * @param response - The provider's response
+ * @throws An error carrying the HTTP status, for callers that map it onto their own response
+ */
+async function throwIfNotOk(response: Response): Promise<void> {
+  if (response.ok) {
+    return;
+  }
+  const errorData = await response.json().catch(() => ({}));
+  const error = new Error(
+    `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
+  );
+  (error as Error & { statusCode: number }).statusCode = response.status;
+  throw error;
+}
+
+/**
  * Accumulates streamed tool call deltas into `acc`, keyed by the delta's index.
  * @param acc - Sparse array of in-progress tool calls, indexed as the provider indexes them
  * @param deltas - The `delta.tool_calls` entries from a single SSE chunk
@@ -133,18 +153,13 @@ function toAiToolCalls(acc: StreamedToolCall[]): AiToolCall[] {
  */
 export async function callOpenAi(context: AiContext): Promise<AiResult> {
   const response = await postChatCompletions(context, false);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    const error = new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorData?.error?.message || 'Unknown error'}`
-    );
-    (error as Error & { statusCode: number }).statusCode = response.status;
-    throw error;
-  }
+  await throwIfNotOk(response);
 
   const completion = await response.json();
-  const message = completion.choices[0].message;
+  const message = completion.choices?.[0]?.message;
+  if (!message) {
+    throw new Error('OpenAI response contained no choices');
+  }
 
   return {
     content: message.content,
@@ -169,6 +184,7 @@ export async function callOpenAi(context: AiContext): Promise<AiResult> {
  */
 export async function streamOpenAi(context: AiContext, onEvent: (event: AiStreamEvent) => void): Promise<void> {
   const response = await postChatCompletions(context, true);
+  await throwIfNotOk(response);
   if (!response.body) {
     throw new Error('No response body available for streaming');
   }

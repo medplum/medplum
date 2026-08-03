@@ -1242,6 +1242,26 @@ describe('AI Operation', () => {
       expect(res.text).not.toContain('prompt_tokens');
     });
 
+    test('Reports an upstream failure in-band and still closes the stream', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: vi.fn().mockResolvedValue({ error: { message: 'Incorrect API key provided' } }),
+      });
+
+      const res = await postStreaming([{ name: 'tools', valueString: JSON.stringify(fhirTools) }]);
+
+      // The 200 and SSE headers are already committed, so the failure cannot become an HTTP
+      // error status — it has to arrive as a frame, and the stream must still terminate.
+      expect(res).toHaveStatus(200);
+
+      const { payloads, frames } = parseSse(res.text);
+      expect(frames).toHaveLength(1);
+      expect(frames[0].error).toContain('401');
+      expect(payloads[payloads.length - 1]).toBe('[DONE]');
+    });
+
     test('Sends no tool_calls frame when the model requests none', async () => {
       global.fetch = vi
         .fn()

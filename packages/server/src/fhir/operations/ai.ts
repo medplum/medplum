@@ -7,6 +7,7 @@ import type { Response as ExpressResponse, Request } from 'express';
 import { callOpenAi, streamOpenAi } from '../../ai/openai';
 import type { AiContext, AiResult } from '../../ai/types';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { sendOutcome } from '../outcomes';
 import { sendFhirResponse } from '../response';
 import { makeOperationDefinition } from './definitions';
@@ -193,25 +194,37 @@ export async function aiOperation(
     return [badRequest('Failed to call AI API: ' + (error as Error).message)];
   }
 }
+
 /**
  * Writes a streamed AI response to the client as SSE.
  *
  * Owns the wire contract the client reads — `{ content }` frames as text arrives, then at most
  * one `{ tool_calls }` frame, then `[DONE]`. The provider decides what events occur; this
  * decides how they are framed, so a second provider needs no knowledge of either SSE or Express.
+ *
+ * Never throws. The 200 and the SSE headers are already on the wire by the time this runs, so a
+ * failure cannot become an HTTP error status — letting one escape would leave the client waiting
+ * on a stream that never terminates. Failures are reported in-band as an `{ error }` frame and
+ * the stream is always closed with `[DONE]`.
  * @param context - The request and its credentials
  * @param res - Express response to write SSE data to
  */
 async function streamToClient(context: AiContext, res: ExpressResponse): Promise<void> {
-  await streamOpenAi(context, (event) => {
-    if (event.type === 'content') {
-      res.write(`data: ${JSON.stringify({ content: event.text })}\n\n`);
+  try {
+    await streamOpenAi(context, (event) => {
+      if (event.type === 'content') {
+        res.write(`data: ${JSON.stringify({ content: event.text })}\n\n`);
+      } else {
+        res.write(`data: ${JSON.stringify({ tool_calls: event.toolCalls })}\n\n`);
+      }
       res.flush();
-    } else {
-      res.write(`data: ${JSON.stringify({ tool_calls: event.toolCalls })}\n\n`);
-    }
-  });
+    });
+  } catch (error) {
+    getLogger().error('AI streaming failed', { error });
+    res.write(`data: ${JSON.stringify({ error: normalizeErrorString(error) })}\n\n`);
+  }
   res.write('data: [DONE]\n\n');
+  res.flush();
 }
 
 /**
