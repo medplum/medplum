@@ -81,9 +81,7 @@ describe('SchedulingTransientIdentifier', () => {
 
   test('get on a resource that was `set` upon returns the ID', () => {
     const id = 'cb103a82-f313-4b22-8918-ed8de4b4143d';
-    const slot = buildSlot([
-      { system: 'https://medplum.com/fhir/scheduling-transient-id', value: id, use: 'temp' },
-    ]);
+    const slot = buildSlot([{ system: 'https://medplum.com/fhir/scheduling-transient-id', value: id, use: 'temp' }]);
 
     expect(SchedulingTransientIdentifier.get(slot)).toEqual(id);
   });
