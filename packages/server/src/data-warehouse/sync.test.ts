@@ -392,20 +392,17 @@ describe('syncData metrics', () => {
       destination,
     });
 
-    expect(incrementCounterSpy).toHaveBeenCalledWith(
-      'medplum.datawarehouse.sync.tables',
-      { attributes: { table: 'patient_history', result: 'success' } }
-    );
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.tables', {
+      attributes: { table: 'patient_history', result: 'success' },
+    });
     expect(incrementCounterSpy).toHaveBeenCalledWith(
       'medplum.datawarehouse.sync.rows',
       { attributes: { table: 'patient_history' } },
       7
     );
-    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
-      'medplum.datawarehouse.sync.duration',
-      expect.any(Number),
-      { attributes: { table: 'patient_history' } }
-    );
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.duration', expect.any(Number), {
+      attributes: { table: 'patient_history' },
+    });
     expect(recordHistogramValueSpy).toHaveBeenCalledWith(
       'medplum.datawarehouse.sync.watermarkDuration',
       expect.any(Number),

@@ -410,11 +410,7 @@ async function runWarehouseTableSync(
         const destination = options.destination.getDestinationName(watermark.spec);
 
         if (watermark.status === 'skipped-missing-table') {
-          const skipped = buildSkippedTableResult(
-            destination,
-            'skipped-missing-table',
-            watermark.watermarkDurationMs
-          );
+          const skipped = buildSkippedTableResult(destination, 'skipped-missing-table', watermark.watermarkDurationMs);
           recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
           tables.push(skipped);
           await reportSkippedTableProgress(
