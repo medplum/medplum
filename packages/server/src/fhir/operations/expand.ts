@@ -41,6 +41,7 @@ import {
 } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'expand');
+const MAX_FILTER_TOKENS = 10;
 
 type ValueSetExpandParameters = {
   url?: string;
@@ -67,6 +68,9 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   }
   if (filter?.includes('\0')) {
     throw new OperationOutcomeError(badRequest('Filter value cannot contain null bytes'));
+  }
+  if (filter && filter.trim().split(/\s+/g).length > MAX_FILTER_TOKENS) {
+    return [badRequest(`Filter value cannot contain more than ${MAX_FILTER_TOKENS} tokens`)];
   }
 
   const repo = getAuthenticatedContext().repo;

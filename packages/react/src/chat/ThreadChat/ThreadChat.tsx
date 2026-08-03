@@ -72,12 +72,22 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
           subject: thread.subject,
         });
         setCommunications([...communications, communication]);
+        // Touch the thread header so its meta.lastUpdated tracks message activity
+        if (thread.id) {
+          try {
+            await medplum.patchResource('Communication', thread.id, [
+              { op: 'add', path: '/sent', value: communication.sent },
+            ]);
+          } catch (err) {
+            onError?.(err as Error);
+          }
+        }
         onMessageSent?.(communication);
       };
 
       buildAndSend().catch(console.error);
     },
-    [medplum, profileRef, thread, threadRef, communications, onMessageSent]
+    [medplum, profileRef, thread, threadRef, communications, onMessageSent, onError]
   );
 
   // Currently we only support `delivered` on chats with 2 participants

@@ -88,8 +88,8 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
         message: 'Task created successfully',
       });
 
-      onTaskCreated?.(createdTask);
       handleClose();
+      onTaskCreated?.(createdTask);
     } catch (error) {
       notifications.show({
         color: 'red',

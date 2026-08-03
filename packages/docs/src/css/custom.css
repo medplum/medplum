@@ -351,7 +351,11 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   overflow: hidden;
 }
 
-.responsive-iframe-wrapper iframe {
+/* Applies to youtube iframe, cookieYes video placeholder (which is
+ * dropped in as a replacement when the viewer has not accepted
+ * cookies). */
+.responsive-iframe-wrapper iframe,
+.responsive-iframe-wrapper > .video-placeholder-youtube {
   position: absolute;
   top: 0;
   left: 0;

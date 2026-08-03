@@ -3,11 +3,12 @@ import '@mantine/core/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import '@medplum/react/styles.css';
 import { DARK_MODE_EVENT_NAME } from '@vueless/storybook-dark-mode';
 import { FC, useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
+import { useFakeTimers } from 'sinon';
 import { addons } from 'storybook/preview-api';
-import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
 import { themePresetMap, themePresets } from './themes';
 
 export const parameters = {
@@ -41,7 +42,10 @@ export const globalTypes = {
 // wrap initialization of MockClient and initial page navigation
 // so that resources created in MockFetchClient#initMockRepo have
 // consistent timestamps between storybook runs
-const clock = createGlobalTimer();
+const clock = useFakeTimers({
+  now: new Date(2020, 4, 4, 12, 5),
+  toFake: ['Date'],
+});
 const medplum = new MockClient();
 medplum.get('/').then(() => {
   clock.restore();

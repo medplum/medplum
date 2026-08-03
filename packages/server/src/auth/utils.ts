@@ -26,6 +26,7 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
+import { getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
@@ -35,6 +36,12 @@ import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export type MfaMethod = 'totp' | 'email';
+
+/** App name used in MFA emails for projects that have not been white-labeled. */
+const DEFAULT_APP_NAME = 'Medplum';
+
+/** Authenticator app issuer used for projects that have not been white-labeled. */
+const DEFAULT_MFA_ISSUER = 'medplum.com';
 
 /**
  * Returns the MFA methods that a project allows users to enroll in.
@@ -81,20 +88,30 @@ export function isMfaRequired(user: User, project: Project | undefined): boolean
  * project-wide `mfaRequired` setting is enabled — reaches enrollment without
  * one. Generating on demand keeps the QR code usable in that case. Users who
  * already have a secret keep it, so the URI is stable across repeated calls.
+ *
+ * The issuer is the project's app name and the account name identifies the user,
+ * so the entry reads as "Acme Health" / "alice@example.com" in the user's
+ * authenticator app. Authenticator apps show the issuer as the entry's title, so
+ * it is the part that carries the branding; the Key URI spec forbids colons in
+ * either field because apps split the label on the first one. Projects without an
+ * `appName` keep the `medplum.com` issuer.
  * @param repo - The system repository used to persist a newly generated secret.
  * @param user - The user enrolling in an authenticator app.
+ * @param project - The project the user is logging in to, if known.
  * @returns The enrollment URI and a QR code data URL for it.
  */
 export async function buildTotpEnrollment(
   repo: SystemRepository,
-  user: WithId<User>
+  user: WithId<User>,
+  project: Project | undefined
 ): Promise<{ enrollUri: string; enrollQrCode: string }> {
   let mfaSecret = user.mfaSecret;
   if (!mfaSecret) {
     mfaSecret = authenticator.generateSecret();
     await repo.updateResource<User>({ ...user, mfaSecret });
   }
-  const enrollUri = authenticator.keyuri(`Medplum - ${user.email}`, 'medplum.com', mfaSecret);
+  const issuer = (getProjectAppName(project) ?? DEFAULT_MFA_ISSUER).replaceAll(':', '');
+  const enrollUri = authenticator.keyuri(user.email ?? user.id, issuer, mfaSecret);
   return { enrollUri, enrollQrCode: await toDataURL(enrollUri) };
 }
 
@@ -118,29 +135,40 @@ export function getEnrolledMfaMethods(user: User): MfaMethod[] {
  * The code is cleared once it is verified (see verifyMfaToken).
  * @param login - The login to attach the hashed code to.
  * @param user - The user to email.
+ * @param project - The project the user is logging in to, if known. Supplies the
+ * app name in the message and any project-level SMTP configuration.
  */
-export async function sendMfaEmailCode(login: WithId<Login>, user: User): Promise<void> {
+export async function sendMfaEmailCode(
+  login: WithId<Login>,
+  user: User,
+  project: WithId<Project> | undefined
+): Promise<void> {
   const systemRepo = getGlobalSystemRepo();
   const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
   const codeHash = await bcryptHashPassword(code);
   const expiresAt = new Date(Date.now() + EMAIL_MFA_CODE_EXPIRATION_MS).toISOString();
   await systemRepo.updateResource<Login>({ ...login, emailMfa: { codeHash, expiresAt } });
   const expirationMinutes = Math.floor(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
-  await sendEmail(systemRepo, {
-    to: user.email,
-    subject: `Your Medplum verification code: ${code}`,
-    text: [
-      'Below is your requested Medplum verification code. You can copy it into the open browser window to confirm your login.',
-      '',
-      code,
-      '',
-      `This code will expire in ${expirationMinutes} minutes. If you did not try to sign in, you can safely ignore this email.`,
-      '',
-      'Thank you,',
-      'The Medplum Team',
-      '',
-    ].join('\n'),
-  });
+  const appName = getProjectAppName(project) ?? DEFAULT_APP_NAME;
+  await sendEmail(
+    systemRepo,
+    {
+      to: user.email,
+      subject: `Your ${appName} verification code: ${code}`,
+      text: [
+        `Below is your requested ${appName} verification code. You can copy it into the open browser window to confirm your login.`,
+        '',
+        code,
+        '',
+        `This code will expire in ${expirationMinutes} minutes. If you did not try to sign in, you can safely ignore this email.`,
+        '',
+        'Thank you,',
+        `The ${appName} Team`,
+        '',
+      ].join('\n'),
+    },
+    project
+  );
 }
 
 /**
@@ -216,7 +244,7 @@ export async function createProjectMembership(
  * @param login - The login resource.
  * @returns The project, or undefined if the login has no concrete project.
  */
-async function getLoginProject(login: Login): Promise<Project | undefined> {
+export async function getLoginProject(login: Login): Promise<WithId<Project> | undefined> {
   const reference = login.project?.reference;
   if (!reference || reference === 'Project/new') {
     return undefined;
@@ -241,7 +269,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const project = await getLoginProject(login);
 
   if (isMfaRequired(user, project) && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
-    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(systemRepo, user);
+    const { enrollUri, enrollQrCode } = await buildTotpEnrollment(systemRepo, user, project);
     res.json({
       login: login.id,
       mfaEnrollRequired: true,
@@ -259,7 +287,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     // emailMfa means a code has already been issued for this login, so
     // don't re-send (e.g. when the login status endpoint is queried again).
     if (mfaMethods.length === 1 && mfaMethods[0] === 'email' && !login.emailMfa) {
-      await sendMfaEmailCode(login as WithId<Login>, user);
+      await sendMfaEmailCode(login as WithId<Login>, user, project);
     }
     res.json({ login: login.id, mfaRequired: true, mfaMethods, email: user.email });
     return;

@@ -18,6 +18,7 @@ import {
   buildTotpEnrollment,
   getAllowedMfaMethods,
   getEnrolledMfaMethods,
+  getLoginProject,
   isMfaRequired,
   sendLoginResult,
   sendMfaEmailCode,
@@ -90,7 +91,7 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   // The TOTP QR code can always be shown, whether for initial enrollment or for
   // adding TOTP as a second method to an account already enrolled in
   // email-based MFA, because a secret is generated on demand if missing.
-  const { enrollUri, enrollQrCode } = await buildTotpEnrollment(ctx.systemRepo, user);
+  const { enrollUri, enrollQrCode } = await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
 
   res.json({
     enrolled: Boolean(user.mfaEnrolled),
@@ -284,7 +285,7 @@ mfaRouter.post(
       return;
     }
 
-    await sendMfaEmailCode(login, user);
+    await sendMfaEmailCode(login, user, await getLoginProject(login));
     sendOutcome(res, allOk);
   }
 );
@@ -309,7 +310,7 @@ mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Reques
     return;
   }
 
-  await sendMfaEmailCode(ctx.login as WithId<Login>, user);
+  await sendMfaEmailCode(ctx.login as WithId<Login>, user, ctx.project);
   sendOutcome(res, allOk);
 });
 
