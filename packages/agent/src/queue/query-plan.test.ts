@@ -9,6 +9,7 @@ import { createMockLogger } from '../test-utils';
 import { DurableQueue } from './durable-queue';
 import {
   CLAIM_NEXT,
+  CLAIM_NEXT_PAUSE_ON_REJECT,
   FIND_BY_CALLBACK,
   FIND_SEEN_BY_CONTROL_ID,
   LIST_QUEUED_IDS_FOR_CHANNEL,
@@ -36,6 +37,14 @@ const CASES: { name: string; sql: string; params: unknown[]; index: string }[] =
   { name: 'findSeenByControlId', sql: FIND_SEEN_BY_CONTROL_ID, params: ['ch', 'mc'], index: 'idx_inbound_dup_lookup' },
   // claimNext binds `now` twice: processing_started_at + the next_attempt_at backoff predicate.
   { name: 'claimNext', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_channel_state_id' },
+  // Pause-on-reject variant binds `channelName` a fourth time for the NOT EXISTS
+  // rejected-row gate, which also rides idx_inbound_channel_state_id.
+  {
+    name: 'claimNextPauseOnReject',
+    sql: CLAIM_NEXT_PAUSE_ON_REJECT,
+    params: [0, 'ch', 0, 'ch'],
+    index: 'idx_inbound_channel_state_id',
+  },
   { name: 'markSent', sql: MARK_SENT, params: [0, 'cb'], index: 'uq_inbound_callback' },
   { name: 'findByCallback', sql: FIND_BY_CALLBACK, params: ['cb'], index: 'uq_inbound_callback' },
   // Startup / recovery
