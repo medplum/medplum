@@ -4,6 +4,7 @@
 import { vi } from 'vitest';
 import type { Expression } from '../fhir/sql';
 import { Condition, SqlBuilder } from '../fhir/sql';
+import * as otelModule from '../otel/otel';
 import type { WarehouseSourceTable } from './config';
 import * as dataWarehouseConfig from './config';
 import type { DataWarehouseDestination, DestinationQueryContext } from './destination';
@@ -352,6 +353,161 @@ describe('syncData', () => {
     expect(onProgress).toHaveBeenCalledWith(
       expect.stringContaining(`table 9/9`),
       expect.objectContaining({ tablesCompleted: 9, tablesTotal: 9 })
+    );
+  });
+});
+
+describe('syncData metrics', () => {
+  const patientSource: WarehouseSourceTable = {
+    postgresTable: 'Patient_History',
+    icebergTable: 'patient_history',
+  };
+  const observationSource: WarehouseSourceTable = {
+    postgresTable: 'Observation_History',
+    icebergTable: 'observation_history',
+  };
+
+  let incrementCounterSpy: ReturnType<typeof vi.spyOn>;
+  let recordHistogramValueSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.spyOn(dataWarehouseConfig, 'buildPgConnectionURI').mockReturnValue('postgresql://unused');
+    incrementCounterSpy = vi.spyOn(otelModule, 'incrementCounter').mockImplementation(() => true);
+    recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    incrementCounterSpy.mockRestore();
+    recordHistogramValueSpy.mockRestore();
+  });
+
+  test('records rows, duration, watermarkDuration, and tables metrics on successful sync', async () => {
+    const destination = createFakeDestination({
+      writeRows: async () => 7,
+    });
+
+    await syncData({
+      database: {},
+      warehouseSources: [patientSource],
+      destination,
+    });
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.tables',
+      { attributes: { table: 'patient_history', result: 'success' } }
+    );
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.rows',
+      { attributes: { table: 'patient_history' } },
+      7
+    );
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.duration',
+      expect.any(Number),
+      { attributes: { table: 'patient_history' } }
+    );
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.watermarkDuration',
+      expect.any(Number),
+      { attributes: { table: 'patient_history' } }
+    );
+  });
+
+  test('records skipped tables metric with conflict skipReason', async () => {
+    const destination = createFakeDestination({
+      writeRows: async () => {
+        throw new Error('HTTP 409 Conflict 409: commit conflict during compaction');
+      },
+    });
+
+    await syncData({
+      database: {},
+      warehouseSources: [patientSource],
+      destination,
+    });
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.tables', {
+      attributes: { table: 'patient_history', result: 'skipped', skipReason: 'conflict' },
+    });
+    expect(incrementCounterSpy).not.toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.rows',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.watermarkDuration',
+      expect.any(Number),
+      { attributes: { table: 'patient_history' } }
+    );
+    expect(recordHistogramValueSpy).not.toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.duration',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  test('records skipped tables metric with watermark skipReason', async () => {
+    const destination = createFakeDestination({
+      buildSourcePredicate: async () => {
+        throw new Error('iceberg_column_stats failed');
+      },
+    });
+
+    await syncData({
+      database: {},
+      warehouseSources: [patientSource],
+      destination,
+    });
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.tables', {
+      attributes: { table: 'patient_history', result: 'skipped', skipReason: 'watermark' },
+    });
+  });
+
+  test('records skipped tables metric with missing_table skipReason', async () => {
+    const destination = createFakeDestination({
+      ensureTargetExists: async () => {
+        throw new Error('Managed Iceberg table does not exist');
+      },
+    });
+
+    await syncData({
+      database: {},
+      warehouseSources: [patientSource],
+      destination,
+    });
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.tables', {
+      attributes: { table: 'patient_history', result: 'skipped', skipReason: 'missing_table' },
+    });
+  });
+
+  test('records per-table metrics for mixed success and skip outcomes', async () => {
+    const destination = createFakeDestination({
+      writeRows: async (_connection, context) => {
+        if (context.tableSpec.icebergTable === patientSource.icebergTable) {
+          throw new Error('CommitFailedException: concurrent commit');
+        }
+        return 3;
+      },
+    });
+
+    await syncData({
+      database: {},
+      warehouseSources: [patientSource, observationSource],
+      destination,
+    });
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.tables', {
+      attributes: { table: 'patient_history', result: 'skipped', skipReason: 'conflict' },
+    });
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.datawarehouse.sync.tables', {
+      attributes: { table: 'observation_history', result: 'success' },
+    });
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.datawarehouse.sync.rows',
+      { attributes: { table: 'observation_history' } },
+      3
     );
   });
 });
