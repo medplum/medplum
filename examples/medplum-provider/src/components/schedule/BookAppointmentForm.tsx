@@ -10,6 +10,9 @@ import {
   isCoding,
   isDefined,
   isReference,
+  SchedulingEncounterCodingURI,
+  SchedulingPlanDefinitionURI,
+  SchedulingTransientIdentifier,
 } from '@medplum/core';
 import type {
   Appointment,
@@ -26,11 +29,6 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import {
-  SchedulingEncounterCodingURI,
-  SchedulingPlanDefinitionURI,
-  SchedulingTransientIdentifier,
-} from '../../utils/scheduling';
 
 type BookAppointmentFormProps = {
   appointment: Appointment;

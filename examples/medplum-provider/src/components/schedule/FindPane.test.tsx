@@ -5,7 +5,9 @@ import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import {
   ReadablePromise,
+  SchedulingEncounterCodingURI,
   SchedulingParametersURI,
+  SchedulingPlanDefinitionURI,
   ServiceTypeReferenceURI,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -25,7 +27,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter } from '../../utils/encounter';
-import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 import { FindPane } from './FindPane';
 
 vi.mock('../../utils/encounter', () => ({ createEncounter: vi.fn() }));
