@@ -12,6 +12,25 @@ const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {
   diagnosticreport: 'DiagnosticReport',
 } as Record<string, FhircastAnchorResourceType>;
 
+export type EventCategory = 'open' | 'close' | 'update' | 'select' | 'other';
+
+export function getEventCategory(eventName: string): EventCategory {
+  const lower = eventName.toLowerCase();
+  if (lower.endsWith('-open')) {
+    return 'open';
+  }
+  if (lower.endsWith('-close')) {
+    return 'close';
+  }
+  if (lower.endsWith('-update')) {
+    return 'update';
+  }
+  if (lower.endsWith('-select')) {
+    return 'select';
+  }
+  return 'other';
+}
+
 export function getTopicCurrentContextKey(projectId: string, topic: string): string {
   return `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
 }

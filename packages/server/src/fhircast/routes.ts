@@ -33,10 +33,12 @@ import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
+import type { EventCategory } from './utils';
 import {
   cleanupContextForResource,
   extractAnchorResourceType,
   getCurrentContext,
+  getEventCategory,
   getTopicContextStorageKey,
   getTopicCurrentContextKey,
   setTopicCurrentContext,
@@ -77,6 +79,16 @@ const eventsSupported = [
   'DiagnosticReport-select',
   'DiagnosticReport-update',
 ];
+
+type ContextChangeHandler = (req: Request, res: Response) => Promise<void>;
+
+const EVENT_HANDLERS: Record<EventCategory, ContextChangeHandler> = {
+  open: handleOpenContextChangeRequest,
+  close: handleCloseContextChangeRequest,
+  update: handleUpdateContextChangeRequest,
+  select: publishContextChangeRequest,
+  other: publishContextChangeRequest,
+};
 
 publicSTU2Routes.get('/.well-known/fhircast-configuration', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -241,18 +253,13 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
 
 async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
   const { event } = req.body as FhircastMessagePayload;
-  // Check if this an open event
-  if (event['hub.event'].endsWith('-open')) {
-    await handleOpenContextChangeRequest(req, res);
-  } else if (event['hub.event'].endsWith('-close')) {
-    await handleCloseContextChangeRequest(req, res);
-  } else if (event['hub.event'].toLowerCase() === 'diagnosticreport-update') {
-    await handleUpdateContextChangeRequest(req, res);
-  } else {
-    // Default handler just to publishes the message to all subscribers
-    const ctx = getAuthenticatedContext();
-    await finalizeContextChangeRequest(res, ctx.project.id, req.body);
-  }
+  const category = getEventCategory(event['hub.event']);
+  await EVENT_HANDLERS[category](req, res);
+}
+
+async function publishContextChangeRequest(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
+  await finalizeContextChangeRequest(res, ctx.project.id, req.body);
 }
 
 async function handleOpenContextChangeRequest(req: Request, res: Response): Promise<void> {

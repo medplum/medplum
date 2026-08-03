@@ -5,7 +5,7 @@ import type { OperationOutcome } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
 import { closeRedis, getCacheRedis, initRedis } from '../redis';
-import { getTopicForUser } from './utils';
+import { getEventCategory, getTopicForUser } from './utils';
 
 describe('FHIRcast Utils', () => {
   beforeAll(async () => {
@@ -15,6 +15,40 @@ describe('FHIRcast Utils', () => {
 
   afterAll(async () => {
     await closeRedis();
+  });
+
+  describe('getEventCategory', () => {
+    test('Open events', () => {
+      expect(getEventCategory('Patient-open')).toBe('open');
+      expect(getEventCategory('Encounter-open')).toBe('open');
+      expect(getEventCategory('ImagingStudy-open')).toBe('open');
+      expect(getEventCategory('DiagnosticReport-open')).toBe('open');
+    });
+
+    test('Close events', () => {
+      expect(getEventCategory('Patient-close')).toBe('close');
+      expect(getEventCategory('Encounter-close')).toBe('close');
+      expect(getEventCategory('ImagingStudy-close')).toBe('close');
+      expect(getEventCategory('DiagnosticReport-close')).toBe('close');
+    });
+
+    test('Update events', () => {
+      expect(getEventCategory('DiagnosticReport-update')).toBe('update');
+    });
+
+    test('Select events', () => {
+      expect(getEventCategory('DiagnosticReport-select')).toBe('select');
+    });
+
+    test('Other events', () => {
+      expect(getEventCategory('syncerror')).toBe('other');
+      expect(getEventCategory('Observation-create')).toBe('other');
+    });
+
+    test('Event name matching is case-insensitive', () => {
+      expect(getEventCategory('patient-OPEN')).toBe('open');
+      expect(getEventCategory('diagnosticreport-SELECT')).toBe('select');
+    });
   });
 
   describe('getTopicForUser', () => {
