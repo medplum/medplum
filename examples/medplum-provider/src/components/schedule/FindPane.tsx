@@ -9,7 +9,6 @@ import {
   getReferenceString,
   hasSchedulingParameters,
   isDefined,
-  SchedulingTransientIdentifier,
 } from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
@@ -21,6 +20,7 @@ import { BookAppointmentForm } from '../../components/schedule/BookAppointmentFo
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
+import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
