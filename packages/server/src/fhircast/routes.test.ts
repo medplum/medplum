@@ -14,6 +14,8 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
+import type { EventCategory } from './routes';
+import { getEventCategory } from './routes';
 import { setTopicCurrentContext } from './utils';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2';
@@ -897,5 +899,33 @@ describe('FHIRcast routes', () => {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'No DiagnosticReport currently open for this topic' } }],
     });
+  });
+});
+
+describe('getEventCategory', () => {
+  test.each<[string, EventCategory]>([
+    ['DiagnosticReport-open', 'open'],
+    ['Patient-open', 'open'],
+    ['Encounter-open', 'open'],
+    ['ImagingStudy-open', 'open'],
+    ['DiagnosticReport-close', 'close'],
+    ['Patient-close', 'close'],
+    ['Encounter-close', 'close'],
+    ['ImagingStudy-close', 'close'],
+    ['DiagnosticReport-update', 'update'],
+    ['DiagnosticReport-select', 'select'],
+    ['Patient-select', 'select'],
+    // `Home-open` carries no anchor resource, so it must not be treated like the other `-open` events
+    ['Home-open', 'other'],
+    ['syncerror', 'other'],
+    ['userlogout', 'other'],
+    ['userhibernate', 'other'],
+    ['heartbeat', 'other'],
+    // Event names are matched case-insensitively
+    ['PATIENT-OPEN', 'open'],
+    ['home-OPEN', 'other'],
+    ['diagnosticreport-UPDATE', 'update'],
+  ])('%s -> %s', (eventName, expected) => {
+    expect(getEventCategory(eventName)).toStrictEqual(expected);
   });
 });
