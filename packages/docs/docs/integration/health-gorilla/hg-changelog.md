@@ -8,11 +8,30 @@ sidebar_position: 99
 
 This page tracks updates, improvements, and changes to the HealthGorilla integration in Medplum.
 
+## [August 2026]
+
+- Order Update Reliability: Fixed `If-Match` version conflicts in `send-to-health-gorilla` when stamping requisition and identifiers after submit. AOE `QuestionnaireResponse` entries are now included in the optimistic-locking version list, and conflicted PATCH entries are retried without re-sending already-applied updates.
+
+## [July 2026]
+
+- Installation Hardening: Improved Health Gorilla install and tenant-creation scripts, including clearer organization upsert flows and install documentation.
+
+## [June 2026]
+
+- Practice-Level Lab Account Numbers: `send-to-health-gorilla` now resolves organization/practice-level lab account numbers (AN) from the Practitioner lab-org-account extension when building orders.
+
+## [May 2026]
+
+- Order Splitting Extension: When Health Gorilla requires order splitting, `send-to-health-gorilla` copies the `operationoutcome-order-splitting` extension onto the lab-order `ServiceRequest` while setting status to `on-hold`. The `split-order` bot behavior is unchanged and still accepts groups via `Parameters`.
+- Installation Tooling: Added organization upsert support and clarified shared-project vs legacy per-customer bot deploy flows.
+
 ## [April 2026]
 
 - Security Enhancement: Removed email sync to Health Gorilla in the `sync-practitioner` bot to prevent self-service password reset attacks.
 - Shared Project Deployment: Health Gorilla bots and OperationDefinitions can now be deployed from a shared Medplum project, streamlining customer installations.
 - Subscription Management: The integration now automatically recreates Health Gorilla subscriptions when the webhook URL becomes stale.
+- Physician-Level Lab Account Numbers: `sync-practitioner` now syncs physician-level lab account numbers (AN identifiers) to Health Gorilla `PractitionerRole` resources.
+- Practice Location Assignment: Practitioners can be enrolled into specific Health Gorilla practice locations at creation time.
 
 ## [March 2026]
 
