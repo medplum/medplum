@@ -7,6 +7,26 @@ export class MockConsole {
     this.messages.push(params.join(' '));
   }
 
+  error(...params: any[]): void {
+    this.messages.push(params.join(' '));
+  }
+
+  warn(...params: any[]): void {
+    this.messages.push(params.join(' '));
+  }
+
+  info(...params: any[]): void {
+    this.messages.push(params.join(' '));
+  }
+
+  debug(...params: any[]): void {
+    this.messages.push(params.join(' '));
+  }
+
+  trace(...params: any[]): void {
+    this.messages.push(params.join(' '));
+  }
+
   toString(): string {
     return this.messages.join('\n');
   }
