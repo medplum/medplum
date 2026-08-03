@@ -202,13 +202,15 @@ function parseDatabaseRows(rows: any[]): ConceptMapTranslateMatch[] {
     }
 
     if (kind && match) {
-      const propertyName = kind as 'property' | 'dependsOn' | 'product';
-      if (propertyName === 'property') {
+      if (kind === 'property') {
         const property: ConceptMapTranslateMatchProperty = { uri, value: { type, value: JSON.parse(value) } };
         match.property = append(match.property, property);
-      } else {
+      } else if (kind === 'dependsOn') {
         const attribute = { attribute: uri, value: { type, value: JSON.parse(value) } };
-        match[propertyName] = append(match[propertyName], attribute);
+        match.dependsOn = append(match.dependsOn, attribute);
+      } else if (kind === 'product') {
+        const attribute = { attribute: uri, value: { type, value: JSON.parse(value) } };
+        match.product = append(match.product, attribute);
       }
     }
   }
