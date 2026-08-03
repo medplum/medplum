@@ -33,11 +33,10 @@ This is intended to be used inside an application built using [`@medplum/react`]
 ```tsx
 import { getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
-import { useMedplumProfile, useSearchResources } from '@medplum/react';
+import { useSearchResources } from '@medplum/react';
 import { Calendar } from '@medplum/react-scheduling'
 
 export function ScheduleView(props: { practitioner: Practitioner }) {
-  const profile = useMedplumProfile();
   const [appointments, loading] = useSearchResources(
     'Appointment',
     {
