@@ -338,7 +338,11 @@ const SKIP_REASON_BY_STATUS: Record<SyncTableSkipReason, string> = {
   'skipped-missing-table': 'missing_table',
 };
 
-/** Records per-table OTEL metrics; `table` is icebergTable, not a local Parquet path. */
+/**
+ * Records per-table OTEL metrics; `table` is icebergTable, not a local Parquet path.
+ * @param result - Sync outcome for one warehouse table.
+ * @param table - Iceberg table name used as the metric `table` attribute.
+ */
 function recordSyncTableMetrics(result: SyncTableResult, table: string): void {
   const attributes = { table };
   recordHistogramValue('medplum.datawarehouse.sync.watermarkDuration', result.watermarkDurationMs / 1000, {
