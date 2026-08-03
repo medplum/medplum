@@ -34,7 +34,7 @@ export interface SyncOptions {
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
-export type SyncTableSkipReason = 'skipped-conflict' | 'skipped-watermark' | 'skipped-missing-table';
+export type SyncTableSkipReason = 'conflict' | 'watermark' | 'missing-table';
 
 export interface SyncTableResult {
   destination: string;
@@ -57,7 +57,7 @@ interface WarehouseTableWatermark {
    * Present when this table will not be written: Iceberg watermark read failed, or the
    * destination target is missing.
    */
-  status?: 'skipped-watermark' | 'skipped-missing-table';
+  status?: 'watermark' | 'missing-table';
 }
 
 function getSyncSourceConnectionString(options: SyncOptions): string {
@@ -192,9 +192,9 @@ async function readWarehouseTableWatermark(
       watermarkDurationMs: Date.now() - watermarkStartTime,
     };
   } catch (err) {
-    const status = phase === 'ensure' ? 'skipped-missing-table' : 'skipped-watermark';
+    const status = phase === 'ensure' ? 'missing-table' : 'watermark';
     globalLogger.warn(
-      status === 'skipped-missing-table'
+      status === 'missing-table'
         ? `Data warehouse destination table missing for table=${destination}`
         : `Failed reading data warehouse watermark for table=${destination}`,
       {
@@ -218,8 +218,8 @@ async function readWarehouseTableWatermark(
  * Per-table existence checks and Iceberg watermark DuckDB reads fan out across
  * watermark connections on the same instance (one query per connection). All watermark
  * work finishes before this returns so the caller can attach Postgres afterwards.
- * Per-table failures are logged and returned as skip entries (`skipped-missing-table` or
- * `skipped-watermark`); successful tables still sync.
+ * Per-table failures are logged and returned as skip entries (`missing-table` or
+ * `watermark`); successful tables still sync.
  *
  * @param instance - Shared DuckDB instance used to open watermark connections.
  * @param options - Sync options including destination and warehouse source tables.
@@ -332,12 +332,6 @@ function buildSkippedTableResult(
   };
 }
 
-const SKIP_REASON_BY_STATUS: Record<SyncTableSkipReason, string> = {
-  'skipped-conflict': 'conflict',
-  'skipped-watermark': 'watermark',
-  'skipped-missing-table': 'missing_table',
-};
-
 /**
  * Records per-table OTEL metrics; `table` is icebergTable, not a local Parquet path.
  * @param result - Sync outcome for one warehouse table.
@@ -345,26 +339,30 @@ const SKIP_REASON_BY_STATUS: Record<SyncTableSkipReason, string> = {
  */
 function recordSyncTableMetrics(result: SyncTableResult, table: string): void {
   const attributes = { table };
-  recordHistogramValue('medplum.datawarehouse.sync.watermarkDuration', result.watermarkDurationMs / 1000, {
+  recordHistogramValue('medplum.dataWarehouse.sync.watermarkDuration', result.watermarkDurationMs / 1000, {
     attributes,
+    options: { unit: 's' },
   });
 
   if (result.status) {
-    incrementCounter('medplum.datawarehouse.sync.tables', {
+    incrementCounter('medplum.dataWarehouse.sync.tables', {
       attributes: {
         ...attributes,
         result: 'skipped',
-        skipReason: SKIP_REASON_BY_STATUS[result.status],
+        skipReason: result.status,
       },
     });
     return;
   }
 
-  incrementCounter('medplum.datawarehouse.sync.tables', {
+  incrementCounter('medplum.dataWarehouse.sync.tables', {
     attributes: { ...attributes, result: 'success' },
   });
-  incrementCounter('medplum.datawarehouse.sync.rows', { attributes }, result.rowsInserted);
-  recordHistogramValue('medplum.datawarehouse.sync.duration', result.syncDurationMs / 1000, { attributes });
+  incrementCounter('medplum.dataWarehouse.sync.rows', { attributes }, result.rowsInserted);
+  recordHistogramValue('medplum.dataWarehouse.sync.duration', result.syncDurationMs / 1000, {
+    attributes,
+    options: { unit: 's' },
+  });
 }
 
 async function reportSkippedTableProgress(
@@ -409,8 +407,8 @@ async function runWarehouseTableSync(
         const tablesCompleted = index + 1;
         const destination = options.destination.getDestinationName(watermark.spec);
 
-        if (watermark.status === 'skipped-missing-table') {
-          const skipped = buildSkippedTableResult(destination, 'skipped-missing-table', watermark.watermarkDurationMs);
+        if (watermark.status === 'missing-table') {
+          const skipped = buildSkippedTableResult(destination, 'missing-table', watermark.watermarkDurationMs);
           recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
           tables.push(skipped);
           await reportSkippedTableProgress(
@@ -423,8 +421,8 @@ async function runWarehouseTableSync(
           continue;
         }
 
-        if (watermark.status === 'skipped-watermark') {
-          const skipped = buildSkippedTableResult(destination, 'skipped-watermark', watermark.watermarkDurationMs);
+        if (watermark.status === 'watermark') {
+          const skipped = buildSkippedTableResult(destination, 'watermark', watermark.watermarkDurationMs);
           recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
           tables.push(skipped);
           await reportSkippedTableProgress(options, destination, 'watermark read failed', tablesCompleted, tablesTotal);
@@ -451,7 +449,7 @@ async function runWarehouseTableSync(
             }
           );
 
-          const skipped = buildSkippedTableResult(destination, 'skipped-conflict', watermark.watermarkDurationMs);
+          const skipped = buildSkippedTableResult(destination, 'conflict', watermark.watermarkDurationMs);
           recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
           tables.push(skipped);
           await reportSkippedTableProgress(
