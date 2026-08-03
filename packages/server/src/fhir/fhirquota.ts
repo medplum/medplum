@@ -197,13 +197,11 @@ export class FhirRateLimiter {
     const userBlock = blockedUsers.get(this.userKey);
     if (userBlock) {
       if (Date.now() <= userBlock.resetTimestamp) {
-        this.setState(userBlock.result);
         await this.block(points, userBlock.result);
       } else {
         blockedUsers.delete(this.userKey);
       }
     }
-    return undefined;
   }
 
   private trackActiveConsumer(consumedPoints: number): void {
@@ -230,13 +228,25 @@ export class FhirRateLimiter {
    * @throws {OperationOutcomeError} 429 error
    */
   async block(points: number, result: RateLimiterRes): Promise<void> {
-    if (this.enabled) {
-      blockedUsers.set(this.userKey, { result, resetTimestamp: Date.now() + result.msBeforeNext });
-
-      const outcome = deepClone(tooManyRequests);
-      outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
-      throw new OperationOutcomeError(outcome);
+    if (!this.enabled) {
+      return;
     }
+
+    // Maintain existing reset timestamp
+    const resetTimestamp = blockedUsers.get(this.userKey)?.resetTimestamp ?? Date.now() + result.msBeforeNext;
+    const liveResult = new RateLimiterRes(
+      result.remainingPoints,
+      Math.max(0, resetTimestamp - Date.now()),
+      result.consumedPoints,
+      result.isFirstInDuration
+    );
+
+    blockedUsers.set(this.userKey, { result: liveResult, resetTimestamp });
+    this.setState(liveResult);
+
+    const outcome = deepClone(tooManyRequests);
+    outcome.issue[0].diagnostics = JSON.stringify({ ...liveResult, limit: this.limiter.points });
+    throw new OperationOutcomeError(outcome);
   }
 
   async recordRead(num = 1): Promise<void> {

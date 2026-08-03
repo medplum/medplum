@@ -154,6 +154,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'questionnaires/parsing-questionnaire-responses' },
       ],
     },
+    { type: 'doc', id: 'consent/index', label: 'Consent & Signatures' },
     {
       type: 'category',
       label: 'Diagnostic Catalog & Coding',
