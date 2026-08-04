@@ -60,13 +60,30 @@ Calls `POST /fhir/R4/Medication/$drug-search`. Returns `Medication[]`.
 | `term` | `string` | Free-text drug search term |
 | `ndc` | `string` | National Drug Code |
 | `rxNorm` | `string` | RxNorm code |
-| `routedMedId` | `number` | Vendor routed medication id |
+| `routedMedId` | `number` | Vendor routed medication id — returns the drug's formulations |
+| `gcnSeqnos` | `number[]` | Vendor formulation keys under `routedMedId`, taken from the name-search hit. Used only when the drug has no formulations; see below |
 | `searchOtc` | `boolean` | Include over-the-counter drugs |
 | `searchSupply` | `boolean` | Include supplies |
 | `searchBrand` | `boolean` | Include brand-name drugs |
 | `searchGeneric` | `boolean` | Include generic drugs |
 | `includeCode` | `boolean` | Include coding in returned `Medication` resources |
 | `quantityQualifiers` | `boolean` | Return quantity qualifiers instead of `Medication[]` |
+
+### Drugs with no formulations
+
+Some products — over-the-counter, topical, and multi-strength generics — have no rows in the
+vendor's dose-format table, so a `routedMedId` search alone returns nothing even though the drug
+exists and is prescribable. Each of the drug's formulation keys is a strength, so passing them
+resolves the strengths individually:
+
+```ts
+const strengths = await searchMedications({ routedMedId: 6143, gcnSeqnos: [8346, 22528, 22530] });
+```
+
+A name-search `Medication` carries one `https://scriptsure.com/gcn-seqno` identifier per key, so
+the caller can read them straight off the search hit. Expect fewer results than keys passed —
+discontinued formulations resolve to nothing and are omitted. These results carry a dispensable
+NDC but no pre-built sig lines, so the caller supplies the quantity and directions.
 
 ## `orderMedication`
 
@@ -106,7 +123,7 @@ Calls `POST /fhir/R4/MedicationRequest/$order-medication`. Creates or updates a 
 | `ndc` | `string` | | National Drug Code — preferred drug identifier |
 | `rxNorm` | `string` | | RxNorm code |
 | `routedMedId` | `number` | | Vendor routed medication id |
-| `gcnSeqno` | `number` | | Vendor formulation key. Pair with `routedMedId` to order a drug that has no dose-level formulation to resolve an NDC from (OTC / topical / multi-strength generics whose formulation lookup returns nothing) |
+| `gcnSeqno` | `number` | | Vendor formulation key. Pair with `routedMedId` to order a drug that has no dose-level formulation to resolve an NDC from. Usually resolves to a real NDC anyway — see [Drugs with no formulations](#drugs-with-no-formulations) — so this is a fallback for the rare product with no marketed package |
 | `drugName` | `string` | | Drug name. Required with `gcnSeqno`, since there is no dose-level record to derive it from |
 | `line1` | `string` | | Dose text for a `gcnSeqno`-keyed line, e.g. `"solution"` |
 | `quantityQualifier` | `string` | | NCI unit code for the quantity (e.g. `C48542` tablet) |
@@ -116,6 +133,13 @@ Calls `POST /fhir/R4/MedicationRequest/$order-medication`. Creates or updates a 
 | `useSubstitution` | `boolean` | | Whether generic substitution is allowed |
 
 Supply exactly one drug identity per line: `ndc`, `rxNorm`, or `routedMedId` (+ `gcnSeqno` when the drug has no formulations).
+
+:::note
+A line keyed on `gcnSeqno` with no NDC is only prescribable through this operation: cart checkout
+(`$checkout-medications`) accepts one, but the vendor's cart UI leaves it incomplete and the
+prescriber cannot send it. This applies only when no NDC could be resolved at all — see
+[Drugs with no formulations](#drugs-with-no-formulations).
+:::
 
 **Response fields:**
 
