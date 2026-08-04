@@ -158,9 +158,6 @@ export function GetStartedPage(): JSX.Element {
   return (
     <Box className={classes.page} py="6rem">
       <Container size="md" className={classes.container}>
-        {/* Header, with the admin-only missing-dependencies banner above it. The banner lives in a
-            tight group so it never inherits the 6rem section rhythm; when it renders null (non-admin
-            or nothing missing) the Stack gap simply collapses, leaving the header spacing unchanged. */}
         <Stack gap="2.5rem" mb="6rem">
           <WorkflowDependenciesPanel />
           <Box>

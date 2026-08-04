@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Anchor,
   Badge,
   Box,
   Button,
@@ -36,6 +35,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
+import { DocsLink } from '../DocsLink';
 import { BenefitsTable } from '../insurance/BenefitsTable';
 
 interface EncounterCoverageEligibilityModalProps {
@@ -271,13 +271,9 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
                 ) : (
                   <>
                     No eligibility check found. Contact support to enable eligibility checks, or{' '}
-                    <Anchor
-                      href="https://www.medplum.com/docs/integration/stedi/insurance-eligibility/eligibility-checks"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <DocsLink path="integration/stedi/insurance-eligibility/eligibility-checks">
                       learn about insurance eligibility
-                    </Anchor>
+                    </DocsLink>
                     .
                   </>
                 )}

@@ -72,7 +72,7 @@ export function MissingDependenciesNotice(props: MissingDependenciesNoticeProps)
       </Text>
       {dependencyList}
       <Text size="sm" c="dimmed">
-        Link the required project{plural ? 's' : ''} to enable this workflow.
+        Link the required {plural ? 'projects' : 'project'} to enable this workflow.
       </Text>
     </UnavailableNotice>
   );
