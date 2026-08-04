@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Binary, Resource } from '@medplum/fhirtypes';
+import type { Binary } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { getPresignedUrl } from '../storage/loader';
@@ -79,7 +79,7 @@ class Rewriter {
     }
 
     if (typeof input === 'object') {
-      if ((input as unknown as Resource).resourceType === 'Binary') {
+      if ('resourceType' in input && input.resourceType === 'Binary') {
         // Be careful to never rewrite URLs within a Binary resource.
         // Even though Binary does not have a URL property,
         // it could have a url property within an extension or other nonstandard property.
@@ -87,42 +87,19 @@ class Rewriter {
         return input;
       }
 
-      const entries = [];
-      for (const entry of Object.entries(input)) {
-        entries.push(await this.rewriteProperty(entry));
+      for (const key in input) {
+        if (Object.hasOwn(input, key)) {
+          const value = input[key];
+          input[key] = (await this.rewriteAttachmentUrl(key, value)) ?? (await this.rewriteValue<any>(value));
+        }
       }
-      return Object.fromEntries(entries) as unknown as T;
+      return input;
     }
 
     return input;
   }
 
-  /**
-   * Rewrites an object property.
-   * @param keyValue - The key/value pair to rewrite.
-   * @param keyValue."0" - The key.
-   * @param keyValue."1" - The value.
-   * @returns The rewritten key/value pair.
-   */
-  async rewriteProperty([key, value]: [string, any]): Promise<[string, any]> {
-    const url = await this.rewriteAttachmentUrl([key, value]);
-    if (url) {
-      return [key, url];
-    }
-
-    return [key, await this.rewriteValue(value)];
-  }
-
-  /**
-   * Tries to rewrite an attachment URL property.
-   * If successful, returns the rewritten URL.
-   * Otherwise, returns undefined.
-   * @param keyValue - The key/value pair to rewrite.
-   * @param keyValue."0" - The key.
-   * @param keyValue."1" - The value.
-   * @returns The rewritten URL or undefined.
-   */
-  async rewriteAttachmentUrl([key, value]: [string, any]): Promise<string | boolean | undefined> {
+  async rewriteAttachmentUrl(key: string, value: any): Promise<string | undefined> {
     if ((key !== 'url' && key !== 'path') || typeof value !== 'string') {
       // Not a URL property or not a string value.
       return undefined;

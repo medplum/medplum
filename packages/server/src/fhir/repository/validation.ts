@@ -127,11 +127,15 @@ async function validateTerminology(
   tokens: Record<string, TypedValueWithPath[]>,
   issues: OperationOutcomeIssue[]
 ): Promise<void> {
-  for (const [url, values] of Object.entries(tokens)) {
+  for (const url in tokens) {
+    if (!Object.hasOwn(tokens, url)) {
+      continue;
+    }
+
     const valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
 
     const resultCache: Record<string, boolean | undefined> = Object.create(null);
-    for (const value of values) {
+    for (const value of tokens[url]) {
       let codings: Coding[] | undefined;
       switch (value.type) {
         case 'CodeableConcept':
