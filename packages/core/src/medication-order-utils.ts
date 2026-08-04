@@ -197,6 +197,13 @@ export interface MedicationSearchParams {
   readonly ndc?: string;
   readonly rxNorm?: string;
   readonly routedMedId?: number;
+  /**
+   * Vendor formulation keys under {@link routedMedId}, from the name-search hit.
+   * Only used when the drug has no dose-level products: each key is resolved to
+   * its marketed strength so the caller still gets selectable formulations
+   * instead of an empty result. Ignored otherwise.
+   */
+  readonly gcnSeqnos?: number[];
   readonly searchOtc?: boolean;
   readonly searchSupply?: boolean;
   readonly searchBrand?: boolean;
@@ -386,6 +393,9 @@ export function medicationSearchParamsToParameters(params: MedicationSearchParam
   }
   if (params.routedMedId !== undefined) {
     parameter.push(param('routedMedId', 'valueInteger', params.routedMedId));
+  }
+  for (const gcnSeqno of params.gcnSeqnos ?? []) {
+    parameter.push(param('gcnSeqnos', 'valueInteger', gcnSeqno));
   }
   if (params.searchOtc !== undefined) {
     parameter.push(param('searchOtc', 'valueBoolean', params.searchOtc));

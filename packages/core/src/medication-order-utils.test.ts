@@ -242,6 +242,15 @@ describe('Custom FHIR operation Parameters helpers', () => {
     ]);
   });
 
+  test('medicationSearchParamsToParameters repeats gcnSeqnos, one parameter per key', () => {
+    const result = medicationSearchParamsToParameters({ routedMedId: 6143, gcnSeqnos: [8346, 22528] });
+    expect(result.parameter).toEqual([
+      { name: 'routedMedId', valueInteger: 6143 },
+      { name: 'gcnSeqnos', valueInteger: 8346 },
+      { name: 'gcnSeqnos', valueInteger: 22528 },
+    ]);
+  });
+
   test('medicationOrderRequestToParameters emits one drugs entry per line', () => {
     const req: MedicationOrderRequest = {
       patientId: 'pat-1',
