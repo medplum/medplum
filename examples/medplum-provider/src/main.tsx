@@ -6,7 +6,7 @@ import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider, medplumModalTheme } from '@medplum/react';
 import '@medplum/react-scheduling/styles.css';
 import '@medplum/react/styles.css';
 import { StrictMode } from 'react';
@@ -37,6 +37,9 @@ const theme = createTheme({
     md: '0.875rem',
     lg: '1.0rem',
     xl: '1.125rem',
+  },
+  components: {
+    Modal: medplumModalTheme,
   },
 });
 

@@ -1,4 +1,5 @@
 import { createTheme, MantineThemeOverride } from '@mantine/core';
+import { medplumModalTheme } from '@medplum/react';
 
 const medplumDefault = createTheme({
   headings: {
@@ -16,6 +17,11 @@ const medplumDefault = createTheme({
     md: '0.875rem',
     lg: '1.0rem',
     xl: '1.125rem',
+  },
+  // Only the Medplum preset gets our modal chrome; the other presets exist to show
+  // how these components look under a host app's own theme.
+  components: {
+    Modal: medplumModalTheme,
   },
 });
 
