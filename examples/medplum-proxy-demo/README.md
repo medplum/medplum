@@ -93,16 +93,27 @@ cp .env.defaults .env
 
 ## Running
 
+Install dependencies once:
+
 ```bash
 npm install
-npm run dev
 ```
 
-This starts both the proxy server (`http://localhost:8104`) and the Vite dev server
-(`http://localhost:3000`) together. Open `http://localhost:3000` -- you'll see a `Patient` search
-table with no sign-in step.
+Then start the proxy server and the frontend in **two separate terminals**.
 
-To run them separately: `npm run dev:server` and `npm run dev:client`.
+Terminal 1 -- proxy server (`http://localhost:8104`):
+
+```bash
+npm run dev:server
+```
+
+Terminal 2 -- frontend (`http://localhost:3000`):
+
+```bash
+npm run dev:client
+```
+
+Open `http://localhost:3000` -- you'll see a `Patient` search table with no sign-in step.
 
 ## How the proxy stays out of the way
 

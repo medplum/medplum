@@ -8,7 +8,6 @@
   "private": true,
   "scripts": {
     "build": "tsc -p server/tsconfig.json && tsc && vite build",
-    "dev": "concurrently -n proxy,client -c yellow,cyan \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch server/proxy.ts",
     "dev:client": "vite",
     "lint": "eslint .",
@@ -33,7 +32,6 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.4",
-    "concurrently": "9.1.2",
     "dotenv": "17.4.2",
     "express": "5.2.1",
     "postcss": "8.5.22",
