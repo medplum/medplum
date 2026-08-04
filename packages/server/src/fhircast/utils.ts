@@ -156,15 +156,13 @@ export async function getTopicForUser(userId: string): Promise<string> {
   const topicKey = `medplum:fhircast:topic:${userId}`;
 
   // Sets the topic key to the new topic if it doesn't exist, then gets either existing or the new topic
-  // 3600 seconds is the configured expiry time for the associated token, so this should work
-  // Per the spec, the lease time of a subscription should not exceed the token expiry time
-  // Source: https://fhircast.org/specification/STU2/#session-discovery:~:text=.%20If%20using%20OAuth%202.0%2C%20the%20Hub%20SHALL%20limit%20the%20subscription%20lease%20seconds%20to%20be%20less%20than%20or%20equal%20to%20the%20access%20token%27s%20expiration.
+  // The topic expires with the lease granted to subscriptions against it, see FHIRCAST_LEASE_SECONDS
 
   const results = await getCacheRedis()
     .multi()
     .set(topicKey, newTopic, 'NX')
     .get(topicKey)
-    .expire(topicKey, 3600)
+    .expire(topicKey, FHIRCAST_LEASE_SECONDS)
     .exec();
 
   if (!results) {
