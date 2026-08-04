@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ParametersParameter } from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
 import type { AiContext, AiResult } from '../../ai/openai';
 import { callOpenAi, streamOpenAi } from '../../ai/openai';
@@ -13,6 +13,16 @@ import { sendFhirResponse } from '../response';
 import { makeOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
+function param(
+  use: 'in' | 'out',
+  name: string,
+  type: string,
+  documentation: string,
+  min = 0
+): OperationDefinitionParameter {
+  return { name, use, min, max: '1', type, documentation };
+}
+
 const operation = makeOperationDefinition(
   { scope: 'system' },
   {
@@ -21,72 +31,25 @@ const operation = makeOperationDefinition(
     name: 'ai',
     code: 'ai',
     parameter: [
-      {
-        name: 'messages',
-        use: 'in',
-        min: 1,
-        max: '1',
-        type: 'string',
-        documentation: 'JSON string containing the conversation messages array',
-      },
-      {
-        name: 'model',
-        use: 'in',
-        min: 1,
-        max: '1',
-        type: 'string',
-        documentation:
-          'Model to use (e.g., gpt-4, gpt-3.5-turbo). Any OpenAI-compatible model name is accepted when LLM_BASE_URL points to a LiteLLM proxy.',
-      },
-      {
-        name: 'tools',
-        use: 'in',
-        min: 0,
-        max: '1',
-        type: 'string',
-        documentation: 'JSON string containing the tools array (optional)',
-      },
-      {
-        name: 'temperature',
-        use: 'in',
-        min: 0,
-        max: '1',
-        type: 'decimal',
-        documentation: 'Sampling temperature (optional)',
-      },
-      {
-        name: 'content',
-        use: 'out',
-        min: 0,
-        max: '1',
-        type: 'string',
-        documentation: 'AI response content',
-      },
-      {
-        name: 'tool_calls',
-        use: 'out',
-        min: 0,
-        max: '1',
-        type: 'string',
-        documentation: 'JSON string containing tool calls array',
-      },
-      {
-        name: 'provider',
-        use: 'out',
-        min: 0,
-        max: '1',
-        type: 'string',
-        documentation: 'Which provider answered, and therefore whose schema the raw output follows',
-      },
-      {
-        name: 'raw',
-        use: 'out',
-        min: 0,
-        max: '1',
-        type: 'string',
-        documentation:
-          'JSON string containing the provider response verbatim, for callers that need what content and tool_calls omit (finish reason, token usage, refusals)',
-      },
+      param('in', 'messages', 'string', 'JSON string containing the conversation messages array', 1),
+      param(
+        'in',
+        'model',
+        'string',
+        'Model to use (e.g., gpt-4, gpt-3.5-turbo). Any OpenAI-compatible model name is accepted when LLM_BASE_URL points to a LiteLLM proxy.',
+        1
+      ),
+      param('in', 'tools', 'string', 'JSON string containing the tools array (optional)'),
+      param('in', 'temperature', 'decimal', 'Sampling temperature (optional)'),
+      param('out', 'content', 'string', 'AI response content'),
+      param('out', 'tool_calls', 'string', 'JSON string containing tool calls array'),
+      param('out', 'provider', 'string', 'Which provider answered, and therefore whose schema raw follows'),
+      param(
+        'out',
+        'raw',
+        'string',
+        'JSON string containing the provider response verbatim, for callers that need what content and tool_calls omit (finish reason, token usage, refusals)'
+      ),
     ],
   }
 );
