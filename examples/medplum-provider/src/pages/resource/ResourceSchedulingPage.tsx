@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Group, Input, Loader, Stack, Title } from '@mantine/core';
-import { EMPTY, getExtensionValue } from '@medplum/core';
+import { EMPTY, getExtensionValue, SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '@medplum/core';
 import type {
   Coding,
   Extension,
@@ -19,7 +19,6 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { AlphaBanner } from '../../components/AlphaBanner';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 
 interface HealthcareServiceSchedulingFormProps {
   readonly service: HealthcareService;

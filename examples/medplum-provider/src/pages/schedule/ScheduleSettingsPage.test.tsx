@@ -3,6 +3,12 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import {
+  SchedulingParametersURI,
+  serviceTypeIncludesService,
+  ServiceTypeReferenceURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -10,11 +16,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { SchedulingParametersURI } from '../../utils/scheduling';
-import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../utils/servicetype';
 import { ScheduleSettings, ScheduleSettingsPage } from './ScheduleSettingsPage';
-
-const ServiceTypeReferenceURI = 'https://medplum.com/fhir/service-type-reference';
 
 describe('ScheduleSettings', () => {
   let medplum: MockClient;
@@ -90,7 +92,7 @@ describe('ScheduleSettings', () => {
     test('switch is checked when the service is already linked to the schedule', async () => {
       const schedule: Schedule = {
         ...defaultSchedule,
-        serviceType: toCodeableReferenceLike(schedulableService),
+        serviceType: toServiceTypeCodeableConcepts(schedulableService),
       };
       await act(async () => renderSettings(schedule));
       expect(screen.getByRole('switch', { name: 'Annual Checkup' })).toBeChecked();
@@ -206,7 +208,7 @@ describe('ScheduleSettings', () => {
       const user = userEvent.setup();
       const schedule: Schedule = {
         ...defaultSchedule,
-        serviceType: toCodeableReferenceLike(schedulableService),
+        serviceType: toServiceTypeCodeableConcepts(schedulableService),
       };
       const updateSpy = vi.spyOn(medplum, 'updateResource');
       await act(async () => renderSettings(schedule));
@@ -217,7 +219,7 @@ describe('ScheduleSettings', () => {
 
       await waitFor(() => {
         const [savedSchedule] = updateSpy.mock.calls[0] as [Schedule];
-        expect(isCodeableReferenceLikeTo(savedSchedule.serviceType, schedulableService)).toBeFalsy();
+        expect(serviceTypeIncludesService(savedSchedule.serviceType, schedulableService)).toBeFalsy();
       });
     });
   });
