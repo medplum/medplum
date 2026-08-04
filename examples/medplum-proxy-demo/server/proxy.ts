@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { config as loadEnv } from 'dotenv';
-import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import { copyFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -138,7 +138,13 @@ function buildProxyMiddleware(config: ProxyConfig, tokens: M2MTokenCache) {
     // user/tenant is allowed to perform this request, apply per-user rate limiting, etc. That
     // layer is entirely separate from -- and sits in front of -- the Medplum M2M credential
     // below, which only proves the *proxy itself* is a trusted client of Medplum.
-    const targetUrl = new URL(req.originalUrl.replace(/^\//, ''), config.medplumBaseUrl).toString();
+    const targetUrl = new URL(req.originalUrl.replace(/^\//, ''), config.medplumBaseUrl);
+
+    if (targetUrl.origin !== new URL(config.medplumBaseUrl).origin) {
+      res.status(400).send('Invalid request target');
+      return;
+    }
+
     const hasBody = !['GET', 'HEAD'].includes(req.method) && Buffer.isBuffer(req.body) && req.body.length > 0;
 
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -154,7 +160,7 @@ function buildProxyMiddleware(config: ProxyConfig, tokens: M2MTokenCache) {
       // only place a Medplum credential is ever attached to the request.
       headers.set('Authorization', `Bearer ${accessToken}`);
 
-      const upstream = await fetch(targetUrl, {
+      const upstream = await fetch(targetUrl.toString(), {
         method: req.method,
         headers,
         body: hasBody ? (req.body as Buffer) : undefined,
