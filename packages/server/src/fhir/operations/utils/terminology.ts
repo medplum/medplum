@@ -201,7 +201,12 @@ export function addPropertyFilter(
   const multiValue = condition.op.endsWith('in');
   const values = multiValue ? condition.value.split(',') : condition.value;
   const whereClauses = [
-    new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+    // Properties are only linked to the primary Coding row; synonym rows (e.g. translated
+    // displays selected via displayLanguage) match through their `synonymOf` reference
+    new Disjunction([
+      new Condition(new Column('Coding_Property', 'coding'), '=', new Column(query.effectiveTableName, 'id')),
+      new Condition(new Column('Coding_Property', 'coding'), '=', new Column(query.effectiveTableName, 'synonymOf')),
+    ]),
     new Condition(new Column('Coding_Property', 'property'), '=', property.id),
   ];
   if (condition.op !== 'exists') {

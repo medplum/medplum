@@ -587,14 +587,18 @@ function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): 
     return query; // Cannot add database filter; all found Coding rows must be considered selectable
   }
 
-  // LEFT JOIN to check if abstract property is present
+  // LEFT JOIN to check if abstract property is present; the property is only linked to the
+  // primary Coding row, so synonym rows (e.g. translated displays) match through `synonymOf`
   const propertyTable = query.getNextJoinAlias();
   query.join(
     'LEFT JOIN',
     'Coding_Property',
     propertyTable,
     new Conjunction([
-      new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column(propertyTable, 'coding')),
+      new Disjunction([
+        new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column(propertyTable, 'coding')),
+        new Condition(new Column(query.effectiveTableName, 'synonymOf'), '=', new Column(propertyTable, 'coding')),
+      ]),
       new Condition(new Column(propertyTable, 'property'), '=', property.id),
     ])
   );

@@ -6,6 +6,7 @@ import type {
   CodeSystem,
   OperationOutcome,
   ValueSet,
+  ValueSetComposeIncludeFilter,
   ValueSetExpansion,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
@@ -1337,6 +1338,87 @@ describe('Expand', () => {
     const expansion = res2.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(160);
     expect(expansion.contains?.find((c) => c.code === 'ERECCAP')).toBeUndefined();
+  });
+
+  describe('Property filter with displayLanguage', () => {
+    // Translated displays are stored as synonym Coding rows, while properties are only linked to the
+    // primary Coding row; the property filter must follow `synonymOf` to see them
+    let codeSystem: CodeSystem;
+
+    beforeAll(async () => {
+      codeSystem = {
+        resourceType: 'CodeSystem',
+        url: 'http://example.com/CodeSystem/' + randomUUID(),
+        content: 'example',
+        status: 'draft',
+        property: [{ code: 'mptype', type: 'string' }],
+        concept: [
+          {
+            code: 'MP1',
+            display: 'gabapentin 100 mg oral capsule',
+            designation: [{ language: 'fr', value: 'gabapentine 100 mg capsule orale' }],
+            property: [{ code: 'mptype', valueString: 'DIN' }],
+          },
+          {
+            code: 'TM1',
+            display: 'gabapentin',
+            designation: [{ language: 'fr', value: 'gabapentine' }],
+          },
+        ],
+      };
+      const csRes = await request(app)
+        .post('/fhir/R4/CodeSystem')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(codeSystem);
+      expect(csRes).toHaveStatus(201);
+    });
+
+    async function expandWithFilter(
+      filter: ValueSetComposeIncludeFilter,
+      query?: string
+    ): Promise<ValueSetExpansion> {
+      const valueSet: ValueSet = {
+        resourceType: 'ValueSet',
+        status: 'draft',
+        url: 'https://example.com/ValueSet/' + randomUUID(),
+        compose: { include: [{ system: codeSystem.url, filter: [filter] }] },
+      };
+      const vsRes = await request(app)
+        .post('/fhir/R4/ValueSet')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(valueSet);
+      expect(vsRes).toHaveStatus(201);
+
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}${query ? '&' + query : ''}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      return res.body.expansion as ValueSetExpansion;
+    }
+
+    test('Returns translated display for concepts matching = filter', async () => {
+      const filter: ValueSetComposeIncludeFilter = { property: 'mptype', op: '=', value: 'DIN' };
+
+      // Sanity check: without displayLanguage, the filter matches the primary row
+      const defaultExpansion = await expandWithFilter(filter);
+      expect(defaultExpansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: codeSystem.url, code: 'MP1', display: 'gabapentin 100 mg oral capsule' },
+      ]);
+
+      const frExpansion = await expandWithFilter(filter, 'displayLanguage=fr');
+      expect(frExpansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: codeSystem.url, code: 'MP1', display: 'gabapentine 100 mg capsule orale' },
+      ]);
+    });
+
+    test('Excludes translated rows of concepts matching exists=false filter', async () => {
+      const filter: ValueSetComposeIncludeFilter = { property: 'mptype', op: 'exists', value: 'false' };
+
+      const frExpansion = await expandWithFilter(filter, 'displayLanguage=fr');
+      expect(frExpansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: codeSystem.url, code: 'TM1', display: 'gabapentine' },
+      ]);
+    });
   });
 
   test('Reference to other ValueSet', async () => {
