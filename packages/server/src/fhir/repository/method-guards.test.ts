@@ -10,6 +10,8 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
+import { SelectQuery } from '../sql';
+import { repoAccess } from './access-tracker';
 
 type MemberKind = 'method' | 'getter' | 'setter';
 
@@ -110,8 +112,49 @@ const guardedPatient: WithId<Patient> = { resourceType: 'Patient', id: NIL };
 const guardedInvocations: MethodInvocation[] = [
   { name: 'getSystemRepo', kind: 'method', invoke: (repo) => repo.getSystemRepo() },
   { name: 'setMode', kind: 'method', invoke: (repo) => repo.setMode('reader') },
-  { name: 'getDatabaseClient', kind: 'method', invoke: (repo) => repo.getDatabaseClient(DatabaseMode.WRITER) },
-  { name: 'withTransaction', kind: 'method', invoke: (repo) => repo.withTransaction(async () => undefined) },
+  {
+    name: 'getDatabaseClient',
+    kind: 'method',
+    invoke: (repo) => repo.getDatabaseClient(repoAccess.sqlWriteConfig()),
+  },
+  {
+    name: 'sqlRead',
+    kind: 'method',
+    invoke: (repo) => repo.sqlRead(new SelectQuery('Patient').column('id').limit(0), 'Patient'),
+  },
+  {
+    name: 'sqlWrite',
+    kind: 'method',
+    // not actually writing anything, just testing the guard
+    invoke: (repo) => repo.sqlWrite(new SelectQuery('Patient').column('id').limit(0), 'Patient'),
+  },
+  {
+    name: 'executeSql',
+    kind: 'method',
+    invoke: (repo) =>
+      repo.executeSql(new SelectQuery('Patient').column('id').limit(0), {
+        mode: DatabaseMode.WRITER,
+        operation: 'read',
+        resourceTypes: ['Patient'],
+        source: 'test',
+      }),
+  },
+  {
+    name: 'executeRawSql',
+    kind: 'method',
+    invoke: (repo) =>
+      repo.executeRawSql('SELECT 1', [], {
+        mode: DatabaseMode.WRITER,
+        operation: 'read',
+        resourceTypes: [],
+        source: 'test',
+      }),
+  },
+  {
+    name: 'withTransaction',
+    kind: 'method',
+    invoke: (repo) => repo.withTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' }),
+  },
   { name: 'withOverrideConfig', kind: 'method', invoke: (repo) => repo.withOverrideConfig({ extendedMode: true }) },
   {
     name: 'withStatementTimeout',
@@ -120,7 +163,11 @@ const guardedInvocations: MethodInvocation[] = [
   },
   { name: 'preCommit', kind: 'method', invoke: (repo) => repo.preCommit(async () => undefined) },
   { name: 'postCommit', kind: 'method', invoke: (repo) => repo.postCommit(async () => undefined) },
-  { name: 'ensureInTransaction', kind: 'method', invoke: (repo) => repo.ensureInTransaction(async () => undefined) },
+  {
+    name: 'ensureInTransaction',
+    kind: 'method',
+    invoke: (repo) => repo.ensureInTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' }),
+  },
   { name: 'recordFhirQuota', kind: 'method', invoke: (repo) => repo.recordFhirQuota(1) },
 
   // Reads
@@ -346,17 +393,20 @@ describe('transaction-scoped repository guards', () => {
       withTestContext(async () => {
         const cloned = repo.clone();
         let observedError: unknown;
-        await cloned.withTransaction(async () => {
-          try {
-            // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-            const result = entry.invoke(cloned);
-            if (result instanceof Promise) {
-              await result;
+        await cloned.withTransaction(
+          async () => {
+            try {
+              // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
+              const result = entry.invoke(cloned);
+              if (result instanceof Promise) {
+                await result;
+              }
+            } catch (err) {
+              observedError = err;
             }
-          } catch (err) {
-            observedError = err;
-          }
-        });
+          },
+          { resourceTypes: [], source: 'repo-guard.test' }
+        );
         expect(observedError).toBeInstanceOf(Error);
         expect((observedError as Error).message).toContain('transaction-scoped repository');
       })
@@ -368,9 +418,11 @@ describe('transaction-scoped repository guards', () => {
       const cloned = repo.clone();
       cloned[Symbol.dispose]();
 
-      expect(() => cloned.getDatabaseClient(DatabaseMode.WRITER)).toThrow('Already closed');
+      expect(() => cloned.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
       await expect(cloned.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow('Already closed');
-      await expect(cloned.withTransaction(async () => undefined)).rejects.toThrow('Already closed');
+      await expect(
+        cloned.withTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' })
+      ).rejects.toThrow('Already closed');
     }));
 });
 

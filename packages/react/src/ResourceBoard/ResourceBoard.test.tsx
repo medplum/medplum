@@ -4,7 +4,6 @@ import type { Bundle, Communication, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { ResourceBoardProps } from './ResourceBoard';
 import { ResourceBoard } from './ResourceBoard';
@@ -56,11 +55,9 @@ describe('ResourceBoard', () => {
           {...props}
         />,
         ({ children }) => (
-          <MemoryRouter>
-            <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-              {children}
-            </MedplumProvider>
-          </MemoryRouter>
+          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+            {children}
+          </MedplumProvider>
         )
       );
       await Promise.resolve();
@@ -182,10 +179,27 @@ describe('ResourceBoard', () => {
       ],
       activeTab: 'inbox',
     });
+    // The tab itself is the anchor — no button wrapper — so the whole pill is one link.
     expect(screen.getByText('Inbox').closest('a')).toHaveAttribute('href', '/inbox');
     expect(screen.getByText('Sent').closest('a')).toHaveAttribute('href', '/sent');
-    expect(screen.getByText('Inbox').closest('button')).toHaveAttribute('data-active');
-    expect(screen.getByText('Sent').closest('button')).not.toHaveAttribute('data-active');
+    expect(screen.getByText('Inbox').closest('button')).toBeNull();
+    expect(screen.getByText('Inbox').closest('a')).toHaveAttribute('data-active');
+    expect(screen.getByText('Sent').closest('a')).not.toHaveAttribute('data-active');
+  });
+
+  test('clicking the tab pill outside the label still navigates', async () => {
+    await setup({
+      tabs: [
+        { value: 'inbox', label: 'Inbox', uri: '/inbox' },
+        { value: 'sent', label: 'Sent', uri: '/sent' },
+      ],
+      activeTab: 'inbox',
+    });
+    // The pill's padding is part of the link, not a dead zone around it.
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sent').closest('a') as HTMLElement);
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('/sent');
   });
 
   test('aux tab click is left to the browser', async () => {
@@ -292,11 +306,9 @@ describe('ResourceBoard', () => {
       renderDetail: () => <div />,
     };
     const { rerender } = render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-          <ResourceBoard {...props} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+        <ResourceBoard {...props} />
+      </MedplumProvider>
     );
     await waitFor(() => expect(screen.getByTestId('item-a')).toBeInTheDocument());
     expect(medplum.search).toHaveBeenCalledTimes(1);
@@ -304,11 +316,9 @@ describe('ResourceBoard', () => {
     // Same value, new identity: no refetch
     await act(async () => {
       rerender(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-            <ResourceBoard {...props} search={{ resourceType: 'Communication' }} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+          <ResourceBoard {...props} search={{ resourceType: 'Communication' }} />
+        </MedplumProvider>
       );
     });
     expect(medplum.search).toHaveBeenCalledTimes(1);
@@ -316,11 +326,9 @@ describe('ResourceBoard', () => {
     // Different value: refetch
     await act(async () => {
       rerender(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum} navigate={mockNavigate}>
-            <ResourceBoard {...props} search={{ resourceType: 'Communication', offset: 20 }} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum} navigate={mockNavigate}>
+          <ResourceBoard {...props} search={{ resourceType: 'Communication', offset: 20 }} />
+        </MedplumProvider>
       );
     });
     await waitFor(() => expect(medplum.search).toHaveBeenCalledTimes(2));

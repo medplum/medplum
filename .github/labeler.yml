@@ -10,10 +10,17 @@ documentation:
           - packages/docs/src/**/*
 
 example:
+  - all:
+      - changed-files:
+          - any-glob-to-any-file:
+              - packages/examples/src/**/*
+              - examples/*/src/**/*
+          - all-globs-to-all-files: '!examples/medplum-provider/**'
+
+provider-app:
   - changed-files:
       - any-glob-to-any-file:
-          - packages/examples/src/**/*
-          - examples/*/src/**/*
+          - examples/medplum-provider/src/**/*
 
 auth:
   - changed-files:

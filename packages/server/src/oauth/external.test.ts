@@ -73,7 +73,7 @@ describe('External auth', () => {
 
   test('Not a JWT', async () => {
     const res = await request(app).get(`/oauth2/userinfo`).set('Authorization', 'Bearer opaque_string');
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Missing issuer', async () => {
@@ -81,7 +81,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Unknown issuer', async () => {
@@ -89,7 +89,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Missing fhirUser and sub', async () => {
@@ -97,7 +97,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Remote call to userinfo fails', async () => {
@@ -110,7 +110,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Profile not found', async () => {
@@ -123,7 +123,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Profile without membership', async () => {
@@ -138,7 +138,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Success by reference', async () => {
@@ -153,13 +153,13 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Call it again to ensure caching works
     const res2 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('Success by search string', async () => {
@@ -172,7 +172,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Success by absolute URL', async () => {
@@ -185,7 +185,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Success by ext.fhirUser', async () => {
@@ -198,7 +198,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Success by sub claim', async () => {
@@ -213,7 +213,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Sub claim with caching', async () => {
@@ -226,13 +226,13 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     // Call again - should use cache (no second fetch mock needed)
     const res2 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('Sub claim with unknown externalId', async () => {
@@ -245,7 +245,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Sub claim with remote userinfo failure', async () => {
@@ -260,7 +260,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('fhirUser takes precedence over sub', async () => {
@@ -277,7 +277,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
   });
 
   test('Sub claim with inactive membership', async () => {
@@ -303,7 +303,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Sub claim with duplicate externalId returns 401', async () => {
@@ -335,7 +335,7 @@ describe('External auth', () => {
     const res = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 });
 

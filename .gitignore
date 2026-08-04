@@ -26,7 +26,7 @@ packages/graphiql/public/
 storybook-static/
 
 # Chromatic
-packages/react/build-storybook.log
+packages/storybook/build-storybook.log
 
 # Jest code coverage
 coverage/
@@ -107,7 +107,8 @@ playwright/.cache/
 .cursor/
 
 # Claude
-.claude/
+.claude/*
+!.claude/skills/
 CLAUDE.md
 AGENTS.md
 

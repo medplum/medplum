@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import type { Parameters, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
+import type { CodeSystem, Parameters, ParametersParameter, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -56,7 +56,7 @@ describe('ValueSet validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testValueSet);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     valueSet = res.body as ValueSet;
   });
 
@@ -76,7 +76,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'WARD' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -109,7 +109,7 @@ describe('ValueSet validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'url', valueUri: valueSet.url }, ...params],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -128,7 +128,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'RETIREE' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -147,7 +147,7 @@ describe('ValueSet validate-code', () => {
           { name: 'display', valueString: 'ant' },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -166,7 +166,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system: 'http://example.com/other', code: 'foo' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -185,7 +185,7 @@ describe('ValueSet validate-code', () => {
           { name: 'code', valueCode: 'RETIREE' },
         ],
       });
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
   });
 
@@ -201,7 +201,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'NOK' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -220,7 +220,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: 'PEDC' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -239,7 +239,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system: 'http://loinc.org', code: '10727-6' } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -259,7 +259,7 @@ describe('ValueSet validate-code', () => {
           { name: 'display', valueString: 'Cat parasites' },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
@@ -271,7 +271,7 @@ describe('ValueSet validate-code', () => {
       .get(`/fhir/R4/ValueSet/$validate-code?url=${valueSet.url}&system=${system}&code=WARD`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -283,7 +283,7 @@ describe('ValueSet validate-code', () => {
       .get(`/fhir/R4/ValueSet/${valueSet.id}/$validate-code?system=${system}&code=WARD`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
@@ -299,11 +299,151 @@ describe('ValueSet validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system, code: 'WARD' } }],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
     expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
+  });
+
+  test('Validates code against an include with multiple filters', async () => {
+    const multiSystem = 'http://example.com/multi-filter-' + randomUUID();
+    const codeSystem = {
+      resourceType: 'CodeSystem',
+      url: multiSystem,
+      status: 'active',
+      content: 'complete',
+      hierarchyMeaning: 'is-a',
+      property: [{ code: 'kind', type: 'code' }],
+      concept: [
+        {
+          code: 'ROOT',
+          display: 'Root',
+          concept: [
+            { code: 'CHILD1', display: 'Child One', property: [{ code: 'kind', valueCode: 'primary' }] },
+            { code: 'CHILD2', display: 'Child Two', property: [{ code: 'kind', valueCode: 'secondary' }] },
+          ],
+        },
+      ],
+    } satisfies CodeSystem;
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(codeSystem);
+    expect(csRes).toHaveStatus(201);
+
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/multi-filter-vs-' + randomUUID(),
+        status: 'active',
+        compose: {
+          include: [
+            {
+              system: multiSystem,
+              filter: [
+                { property: 'concept', op: 'descendent-of', value: 'ROOT' },
+                { property: 'kind', op: '=', value: 'primary' },
+              ],
+            },
+          ],
+        },
+      } satisfies ValueSet);
+    expect(vsRes).toHaveStatus(201);
+    const vs = vsRes.body as ValueSet;
+
+    const validateRes = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: vs.url },
+          {
+            name: 'codeableConcept',
+            valueCodeableConcept: {
+              coding: [
+                { system: multiSystem, code: 'ROOT' },
+                { system: multiSystem, code: 'CHILD2' },
+                { system: multiSystem, code: 'CHILD1' },
+              ],
+            },
+          },
+        ],
+      });
+    expect(validateRes).toHaveStatus(200);
+    const output = validateRes.body as Parameters;
+    expect(output.parameter).toContainExactly([
+      { name: 'result', valueBoolean: true },
+      { name: 'display', valueString: 'Child One' },
+    ]);
+  });
+
+  test('Validates system-less coding matched by a later include', async () => {
+    // Create two different CodeSystems, each containing one code
+    const systemA = 'http://example.com/system-a-' + randomUUID();
+    const systemB = 'http://example.com/system-b-' + randomUUID();
+    const candidateCodes = [
+      [systemA, 'ALPHA', 'Alpha from A'],
+      [systemB, 'TARGET', 'Target from B'],
+    ];
+    for (const [url, code, display] of candidateCodes) {
+      const csRes = await request(app)
+        .post('/fhir/R4/CodeSystem')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'CodeSystem',
+          url,
+          status: 'active',
+          content: 'complete',
+          concept: [{ code, display }],
+        } satisfies CodeSystem);
+      expect(csRes).toHaveStatus(201);
+    }
+
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/two-system-vs-' + randomUUID(),
+        status: 'active',
+        compose: {
+          // Two includes with different systems; the target code exists only in the second.
+          include: [
+            { system: systemA, concept: [{ code: 'ALPHA' }] },
+            { system: systemB, concept: [{ code: 'TARGET' }] },
+          ],
+        },
+      } satisfies ValueSet);
+    expect(vsRes).toHaveStatus(201);
+    const vs = vsRes.body as ValueSet;
+
+    const validateRes = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: vs.url },
+          // Look up bare code without system
+          { name: 'coding', valueCoding: { code: 'TARGET' } },
+        ],
+      });
+    expect(validateRes).toHaveStatus(200);
+    // Display string should correctly be resolved from the second CodeSystem include
+    expect(validateRes.body.parameter).toContainExactly([
+      { name: 'result', valueBoolean: true },
+      { name: 'display', valueString: 'Target from B' },
+    ]);
   });
 
   test('Falls back to validating system URL when CodeSystem unavailable', async () => {
@@ -318,7 +458,7 @@ describe('ValueSet validate-code', () => {
         status: 'active',
         compose: { include: [{ system }] },
       } satisfies ValueSet);
-    expect(res.status).toStrictEqual(201);
+    expect(res).toHaveStatus(201);
     const vs = res.body as ValueSet;
 
     const res2 = await request(app)
@@ -332,7 +472,7 @@ describe('ValueSet validate-code', () => {
           { name: 'coding', valueCoding: { system, code: randomUUID() } },
         ],
       });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);

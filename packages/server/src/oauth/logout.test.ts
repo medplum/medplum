@@ -22,7 +22,7 @@ describe('Revoke', () => {
 
   test('Unauthenticated', async () => {
     const res = await request(app).post('/oauth2/logout').type('json').send({});
-    expect(res.status).toBe(401);
+    expect(res).toHaveStatus(401);
   });
 
   test('Success', async () => {
@@ -43,7 +43,7 @@ describe('Revoke', () => {
 
     // Get user info (should succeed)
     const res1 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${accessToken}`);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     // Logout (should succeed)
     const res2 = await request(app)
@@ -51,11 +51,11 @@ describe('Revoke', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     // Get user info (should fail)
     const res3 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${accessToken}`);
-    expect(res3.status).toBe(401);
+    expect(res3).toHaveStatus(401);
 
     // Logout (should fail)
     const res4 = await request(app)
@@ -63,6 +63,6 @@ describe('Revoke', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({});
-    expect(res4.status).toBe(401);
+    expect(res4).toHaveStatus(401);
   });
 });

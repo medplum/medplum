@@ -302,6 +302,31 @@ export {
 } from './test.setup.fetch';
 
 /**
+ * Spies on `process.stdout.write` and swallows everything written to it, keeping
+ * log output (from any `Logger` instance) out of the terminal during a test.
+ *
+ * Because all loggers ultimately write through `process.stdout.write`, this silences
+ * `globalLogger` and any request-context logger alike, without altering logger
+ * behavior or having to mock individual log methods.
+ *
+ * The returned spy must be restored once the test (or suite) finishes, e.g.:
+ *
+ * ```ts
+ * let stdoutSpy: vi.SpyInstance;
+ * beforeEach(() => { stdoutSpy = mockStdoutWrite(); });
+ * afterEach(() => { stdoutSpy.mockRestore(); });
+ * ```
+ *
+ * Note: this suppresses the terminal output only. To assert on what was logged,
+ * spy on the relevant logger method directly (e.g. `vi.spyOn(getLogger(), 'info')`).
+ *
+ * @returns The spy installed on `process.stdout.write`; call `mockRestore()` to undo.
+ */
+export function mockStdoutWrite(): MockInstance<typeof process.stdout.write> {
+  return vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+}
+
+/**
  * Returns true if the resource is in an entry in the bundle.
  * @param bundle - A bundle of resources.
  * @param resource - The resource to search for.

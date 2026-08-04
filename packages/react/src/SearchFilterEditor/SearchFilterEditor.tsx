@@ -12,10 +12,11 @@ import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import {
   addFilter,
-  buildFieldNameString,
+  buildSearchParamFieldLabel,
   deleteFilter,
   getOpString,
   getSearchOperators,
+  isMetaSearchParam,
   setFilters,
 } from '../SearchControl/SearchUtils';
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
@@ -127,6 +128,17 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   const searchParam = props.searchParams[value.code];
   const operators = searchParam && getSearchOperators(searchParam);
 
+  const fieldOptions = [];
+  const metaOptions = [];
+  for (const param of Object.keys(props.searchParams)) {
+    const option = { value: param, label: buildSearchParamFieldLabel(param) };
+    if (isMetaSearchParam(param)) {
+      metaOptions.push(option);
+    } else {
+      fieldOptions.push(option);
+    }
+  }
+
   return (
     <tr>
       <td>
@@ -136,7 +148,8 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           onChange={(e) => setFilterCode(e.currentTarget.value)}
           data={[
             '',
-            ...Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) })),
+            ...(fieldOptions.length > 0 ? [{ group: 'Fields', items: fieldOptions }] : []),
+            ...(metaOptions.length > 0 ? [{ group: 'Metadata', items: metaOptions }] : []),
           ]}
         />
       </td>

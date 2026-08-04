@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk } from '@medplum/core';
+import { allOk, notFound } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
@@ -192,6 +192,34 @@ describe('CLI Bots', () => {
     const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
+  });
+
+  test('Deploy bot fails when deploy operation returns an error outcome', async () => {
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [notFound]);
+
+    const bot = await medplum.createResource<Bot>({ id: randomUUID(), resourceType: 'Bot' });
+
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(
+      JSON.stringify({
+        bots: [
+          {
+            name: 'hello-world',
+            id: bot.id,
+            source: 'src/hello-world.ts',
+            dist: 'dist/hello-world.js',
+          },
+        ],
+      })
+    );
+
+    await expect(main(['node', 'index.js', 'bot', 'deploy', 'hello-world'])).rejects.toThrow(
+      'Process exited with exit code 1'
+    );
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
   });
 
   test('Deploy bot for multiple bot with wildcards ', async () => {

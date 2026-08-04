@@ -20,6 +20,7 @@ export function UsersPage(): JSX.Element {
       <MemberTable
         profileTypeOptions={profileTypeOptions}
         fields={['user', 'profile', 'profile-type', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
+        showMfaEnrollment
         toolbarLeft={
           <Button
             component={MedplumLink}

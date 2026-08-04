@@ -55,9 +55,7 @@ export type FhirResponseOptions = {
 };
 
 export type FhirResponse =
-  | [OperationOutcome]
-  | [OperationOutcome, Resource]
-  | [OperationOutcome, Resource, FhirResponseOptions];
+  [OperationOutcome] | [OperationOutcome, Resource] | [OperationOutcome, Resource, FhirResponseOptions];
 
 export type FhirRouteOptions = {
   batch?: boolean;
@@ -246,7 +244,10 @@ async function conditionalUpdate(
   const resource = req.body;
 
   const search = parseSearchRequest(resourceType as ResourceType, req.query);
-  const result = await repo.conditionalUpdate(resource, search, { assignedId: options?.batch });
+  const result = await repo.conditionalUpdate(resource, search, {
+    assignedId: options?.batch,
+    ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
+  });
   return [result.outcome, result.resource];
 }
 
@@ -276,7 +277,9 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   if (!Array.isArray(patch) && !isResource(patch, 'Parameters')) {
     return [badRequest('Invalid patch body')];
   }
-  const resource = await repo.patchResource(resourceType as ResourceType, id, patch);
+  const resource = await repo.patchResource(resourceType as ResourceType, id, patch, {
+    ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
+  });
   return [allOk, resource];
 }
 
@@ -292,15 +295,15 @@ async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise
   }
 
   const search = parseSearchRequest(resourceType as ResourceType, req.query);
-  const resource = await repo.conditionalPatch(search, patch);
+  const resource = await repo.conditionalPatch(search, patch, {
+    ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
+  });
   return [allOk, resource];
 }
 
 /** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
 export type RestInteraction =
-  | CapabilityStatementRestInteraction['code']
-  | CapabilityStatementRestResourceInteraction['code']
-  | 'operation';
+  CapabilityStatementRestInteraction['code'] | CapabilityStatementRestResourceInteraction['code'] | 'operation';
 
 export type FhirRouteMetadata = {
   interaction: RestInteraction;

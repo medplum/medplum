@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
-import { isAddPharmacyResponse, isOrganizationArray } from '@medplum/core';
+import { isAddPharmacyResponse, isOrganizationArray, resolveId } from '@medplum/core';
 import type { Identifier, Organization } from '@medplum/fhirtypes';
 import { useCallback } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
@@ -35,7 +35,12 @@ export function usePharmacySearch<T extends PharmacySearchParams = PharmacySearc
 
   const searchPharmacies = useCallback(
     async (params: T): Promise<Organization[]> => {
-      const response = await medplum.executeBot(searchBotIdentifier, params);
+      const { organization, ...searchParams } = params;
+      const organizationId = resolveId(organization);
+      const response = await medplum.executeBot(
+        searchBotIdentifier,
+        organizationId ? { ...searchParams, organizationId } : searchParams
+      );
 
       if (!isOrganizationArray(response)) {
         throw new Error('Invalid response from pharmacy search');
@@ -52,6 +57,7 @@ export function usePharmacySearch<T extends PharmacySearchParams = PharmacySearc
         patientId: params.patientId,
         pharmacy: params.pharmacy,
         setAsPrimary: params.setAsPrimary,
+        organizationId: resolveId(params.organization),
       });
 
       if (!isAddPharmacyResponse(response)) {

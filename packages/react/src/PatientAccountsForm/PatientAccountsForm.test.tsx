@@ -6,7 +6,6 @@ import { allOk } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PatientAccountsForm } from './PatientAccountsForm';
 
@@ -44,14 +43,12 @@ describe('PatientAccountsForm', () => {
 
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MantineProvider>
-            <Notifications />
-            <MedplumProvider medplum={client}>
-              <PatientAccountsForm patient={patient} />
-            </MedplumProvider>
-          </MantineProvider>
-        </MemoryRouter>
+        <MantineProvider>
+          <Notifications />
+          <MedplumProvider medplum={client}>
+            <PatientAccountsForm patient={patient} />
+          </MedplumProvider>
+        </MantineProvider>
       );
     });
     return client;

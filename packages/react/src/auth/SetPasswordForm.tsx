@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Button, Flex, Group, PasswordInput, Stack, Title } from '@mantine/core';
+import { Anchor, Button, Flex, Group, Stack, Title } from '@mantine/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
@@ -10,6 +10,7 @@ import { Document } from '../Document/Document';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import { PasswordInput } from '../PasswordInput/PasswordInput';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
 export interface SetPasswordFormProps {

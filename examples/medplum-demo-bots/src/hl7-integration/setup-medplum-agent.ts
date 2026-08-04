@@ -85,13 +85,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
       status: 'active',
       name: `${organization.name} Agent`,
       identifier: [agentId],
-      channel: endpoints.map(
-        (endpoint, index): AgentChannel => ({
-          name: endpoint.name ?? '',
-          endpoint: createReference(endpoint),
-          targetReference: createReference(bots[index]),
-        })
-      ),
+      channel: endpoints.map((endpoint, index): AgentChannel => ({
+        name: endpoint.name ?? '',
+        endpoint: createReference(endpoint),
+        targetReference: createReference(bots[index]),
+      })),
     },
     {
       identifier: `${agentId.system}|${agentId.value}`,

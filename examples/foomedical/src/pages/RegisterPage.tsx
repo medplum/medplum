@@ -17,6 +17,7 @@ export function RegisterPage(): JSX.Element {
           clientId={import.meta.env.MEDPLUM_CLIENT_ID}
           recaptchaSiteKey={import.meta.env.RECAPTCHA_SITE_KEY}
           onSuccess={() => navigate('/')?.catch(console.error)}
+          onSignIn={() => navigate('/signin')?.catch(console.error)}
         >
           <h2>Register with Foo Medical</h2>
         </RegisterForm>

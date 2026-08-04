@@ -14,7 +14,7 @@ import {
 import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
+import { useMedplum, useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
 import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch, IconX } from '@tabler/icons-react';
 import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
@@ -68,11 +68,13 @@ export interface NavbarProps {
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
+  const medplum = useMedplum();
   const navigate = useMedplumNavigate();
   const profile = useMedplumProfile();
   const activeLink = getActiveLink(props.pathname, props.searchParams, props.menus);
   const [userMenuOpened, setUserMenuOpened] = useState(false);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
+  const projectDisplay = medplum.getProject()?.name ?? medplum.getActiveLogin()?.project.display;
 
   function onLinkClick(e: SyntheticEvent, to: string): void {
     e.stopPropagation();
@@ -218,7 +220,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             >
               <Menu.Target>
                 <UnstyledButton
-                  className={classes.link}
+                  className={`${classes.link} ${classes.userLink}`}
                   pl="7"
                   aria-label="User menu"
                   data-active={userMenuOpened || undefined}
@@ -226,8 +228,15 @@ export function Navbar(props: NavbarProps): JSX.Element {
                   bd="1px 0 0 0 solid var(--mantine-color-gray-200)"
                 >
                   <ResourceAvatar value={profile} radius="xl" size={24} />
-                  <span className={classes.linkLabel} data-opened={opened || undefined}>
-                    {formatHumanName(profile?.name?.[0])}
+                  <span className={classes.userLinkLabel} data-opened={opened || undefined}>
+                    <Text span inherit truncate>
+                      {formatHumanName(profile?.name?.[0])}
+                    </Text>
+                    {projectDisplay && (
+                      <Text span inherit fz="xs" c="dimmed" truncate title={projectDisplay}>
+                        {projectDisplay}
+                      </Text>
+                    )}
                   </span>
                 </UnstyledButton>
               </Menu.Target>

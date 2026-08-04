@@ -1,0 +1,56 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/* Default wrapper: sections that already sit inside a padded container only need the bottom gap. */
+.header {
+  margin-bottom: var(--landing-section-header-gap);
+}
+
+/* Intro wrapper: full-bleed sections constrain + pad their own header (e.g. ProductsApps). */
+.intro {
+  max-width: var(--layout-max-width);
+  margin: 0 auto var(--landing-section-header-gap);
+  padding: 0 var(--layout-padding);
+}
+
+.headline {
+  font-family: var(--landing-font-display);
+  font-weight: var(--landing-section-weight);
+  font-size: var(--landing-section-size);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
+  text-wrap-style: balance;
+  margin: 0 0 1rem;
+  color: var(--landing-color-heading);
+}
+
+.lead {
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-lead-size);
+  line-height: var(--landing-lead-leading);
+  font-weight: var(--landing-lead-weight);
+  color: var(--landing-color-body-alt);
+  margin: 0;
+  max-width: 64%;
+}
+
+@media (max-width: 996px) {
+  .intro {
+    padding: 0 var(--layout-padding-md);
+  }
+
+  .lead {
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 600px) {
+  .intro {
+    padding: 0 var(--layout-padding-sm);
+  }
+
+  /* ProductsHowItWorks lets its lead fill the width at the smallest breakpoint. */
+  .leadFullMobile {
+    max-width: 100%;
+  }
+}

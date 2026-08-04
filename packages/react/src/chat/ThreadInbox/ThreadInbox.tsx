@@ -1,41 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  ActionIcon,
-  Box,
-  Button,
-  Center,
-  Divider,
-  Flex,
-  Group,
-  Menu,
-  Pagination,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  ThemeIcon,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Box, Center, Flex, Skeleton, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
-import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
+import { useThreadInbox } from '@medplum/react-hooks';
+import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { PatientSummary } from '../../PatientSummary/PatientSummary';
+import type { ListWithDetailPaneTab } from '../../ListWithDetailPane/ListWithDetailPane';
+import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
-import { ThreadChat } from '../ThreadChat/ThreadChat';
-import { ChatList } from './ChatList';
+import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
+import { ThreadDetail } from './ThreadDetail';
 import classes from './ThreadInbox.module.css';
+import { ThreadListItem } from './ThreadListItem';
 
 /**
  * ThreadInbox is a component that displays a list of threads and allows the user to select a thread to view.
@@ -45,10 +29,14 @@ import classes from './ThreadInbox.module.css';
  * @param showPatientSummary - Whether to show the patient summary.
  * @param sections - Optional sections configuration for the patient summary.
  * @param onNew - A function to handle a new thread.
+ * @param onSelectFirst - Fired with the first thread when the list loads with nothing selected; use it to navigate to that thread (with replace) so the inbox auto-selects it.
  * @param getThreadUri - A function to build thread URIs.
  * @param onChange - A function to handle search changes.
  * @param inProgressUri - The URI for in-progress threads.
  * @param completedUri - The URI for completed threads.
+ * @param newTopicOpened - Controlled open state for the new topic dialog. When provided, use `onNewTopicOpen` and `onNewTopicClose` to update it.
+ * @param onNewTopicOpen - Called when the user clicks the new message button. Required when `newTopicOpened` is provided.
+ * @param onNewTopicClose - Called when the new topic dialog is closed. Required when `newTopicOpened` is provided.
  */
 
 export interface ThreadInboxProps {
@@ -58,6 +46,7 @@ export interface ThreadInboxProps {
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
   readonly onNew: (message: Communication) => void;
+  readonly onSelectFirst?: (thread: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
   readonly onChange: (search: SearchRequest) => void;
   readonly inProgressUri: string;
@@ -65,6 +54,9 @@ export interface ThreadInboxProps {
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
   readonly allowPatientSelection?: boolean;
+  readonly newTopicOpened?: boolean;
+  readonly onNewTopicOpen?: () => void;
+  readonly onNewTopicClose?: () => void;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -75,6 +67,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     showPatientSummary = false,
     sections,
     onNew,
+    onSelectFirst,
     getThreadUri,
     uploadEnabled,
     onViewInDocuments,
@@ -82,10 +75,15 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     inProgressUri,
     completedUri,
     allowPatientSelection = false,
+    onNewTopicOpen,
+    onNewTopicClose,
   } = props;
 
-  const navigate = useMedplumNavigate();
-  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [internalModalOpened, { open: openInternalModal, close: closeInternalModal }] = useDisclosure(false);
+  const modalOpened = props.newTopicOpened ?? internalModalOpened;
+  const openModal = onNewTopicOpen ?? openInternalModal;
+  const closeModal = onNewTopicClose ?? closeInternalModal;
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
@@ -142,16 +140,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     [currentSearch, onChange]
   );
 
-  const skeletonTitleWidths = [80, 72, 68, 64];
-  const skeletonSubtitleWidths = [85, 78, 70, 60];
-
   useEffect(() => {
     if (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   }, [error]);
 
@@ -160,11 +151,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     try {
       await refreshThreadMessages();
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
     }
   };
 
@@ -173,173 +160,116 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     onNew(message);
   };
 
+  // The list renders the parent thread (topic) of each tuple; the last message is
+  // looked up by thread id when rendering each row.
+  const items = useMemo(() => threadMessages.map(([topic]) => topic), [threadMessages]);
+  const lastMessageByThreadId = useMemo(() => {
+    const map = new Map<string, Communication | undefined>();
+    for (const [topic, last] of threadMessages) {
+      if (topic.id) {
+        map.set(topic.id, last);
+      }
+    }
+    return map;
+  }, [threadMessages]);
+
+  const isDraft = useCallback(
+    (thread: Communication): boolean =>
+      !!thread.id && lastMessageByThreadId.has(thread.id) && !lastMessageByThreadId.get(thread.id),
+    [lastMessageByThreadId]
+  );
+
+  const handleMessageSent = useCallback(() => {
+    refreshThreadMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [refreshThreadMessages]);
+
+  const tabs = useMemo<ListWithDetailPaneTab[]>(
+    () => [
+      { value: 'in-progress', label: 'In Progress', uri: inProgressUri },
+      { value: 'completed', label: 'Completed', uri: completedUri },
+    ],
+    [inProgressUri, completedUri]
+  );
+
+  const pageCount = total !== undefined ? Math.ceil(total / itemsPerPage) : 0;
+
+  const headerActions = (
+    <>
+      <ParticipantFilter selectedParticipants={selectedParticipants} onFilterChange={handleParticipantsChange} />
+      <Tooltip label="New Message" position="bottom" openDelay={500}>
+        <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openModal}>
+          <IconPlus size={16} />
+        </ActionIcon>
+      </Tooltip>
+    </>
+  );
+
   return (
     <>
       <div className={classes.container}>
-        <Flex direction="row" h="100%" w="100%">
-          {/* Left sidebar - Messages list */}
-          <Flex direction="column" w={380} h="100%" className={classes.rightBorder}>
-            <Paper h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
-              <ScrollArea style={{ flex: 1 }} scrollbarSize={10} type="hover" scrollHideDelay={250}>
-                <Flex h={64} align="center" justify="space-between" p="md">
-                  <Tabs
-                    value={status}
-                    onChange={(value) => {
-                      navigate(value === 'in-progress' ? inProgressUri : completedUri);
-                    }}
-                    variant="unstyled"
-                    className="pill-tabs"
-                  >
-                    <Tabs.List>
-                      <Tabs.Tab value="in-progress">In Progress</Tabs.Tab>
-                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
-                    </Tabs.List>
-                  </Tabs>
-                  <Group gap="xs">
-                    <ParticipantFilter
-                      selectedParticipants={selectedParticipants}
-                      onFilterChange={handleParticipantsChange}
-                    />
-                    <Tooltip label="New Message" position="bottom" openDelay={500}>
-                      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openModal}>
-                        <IconPlus size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Flex>
-                <Divider />
-                {loading ? (
-                  <Stack gap="md" p="md">
-                    {Array.from({ length: 10 }).map((_, index) => {
-                      const titleWidth = skeletonTitleWidths[index % skeletonTitleWidths.length];
-                      const subtitleWidth = skeletonSubtitleWidths[index % skeletonSubtitleWidths.length];
-                      return (
-                        <Flex key={index} gap="sm" align="flex-start">
-                          <Skeleton height={40} width={40} radius="50%" />
-                          <Box style={{ flex: 1 }}>
-                            <Flex direction="column" gap="xs">
-                              <Skeleton height={16} width={`${titleWidth}%`} />
-                              <Skeleton height={14} width={`${subtitleWidth}%`} />
-                            </Flex>
-                          </Box>
-                        </Flex>
-                      );
-                    })}
-                  </Stack>
-                ) : (
-                  threadMessages.length > 0 && (
-                    <ChatList
-                      threads={threadMessages}
-                      selectedCommunication={selectedThread}
-                      getThreadUri={getThreadUri}
-                    />
-                  )
-                )}
-                {threadMessages.length === 0 && !loading && <EmptyMessagesState />}
-              </ScrollArea>
-              {!loading && total !== undefined && total > itemsPerPage && (
-                <Box p="md">
-                  <Center>
-                    <Pagination
-                      value={currentPage}
-                      total={Math.ceil(total / itemsPerPage)}
-                      onChange={(page) => {
-                        const offset = (page - 1) * itemsPerPage;
-                        onChange({
-                          ...currentSearch,
-                          offset,
-                        });
-                      }}
-                      size="sm"
-                      siblings={1}
-                      boundaries={1}
-                    />
-                  </Center>
-                </Box>
-              )}
-            </Paper>
-          </Flex>
-
-          {selectedThread ? (
-            <>
-              {/* Main chat area */}
-              <Flex direction="column" style={{ flex: 1 }} h="100%" className={classes.rightBorder}>
-                <Paper h="100%">
-                  <Stack h="100%" gap={0}>
-                    <Flex h={64} align="center" justify="space-between" p="md">
-                      <Text fw={800} truncate fz="lg">
-                        {selectedThread.topic?.text ?? 'Messages'}
-                      </Text>
-
-                      <Menu position="bottom-end" shadow="md">
-                        <Menu.Target>
-                          <Button
-                            variant="light"
-                            color={getStatusColor(selectedThread.status)}
-                            rightSection={
-                              selectedThread.status === 'completed' ? undefined : <IconChevronDown size={16} />
-                            }
-                            radius="xl"
-                            size="sm"
-                          >
-                            {selectedThread.status
-                              .split('-')
-                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                              .join(' ')}
-                          </Button>
-                        </Menu.Target>
-
-                        {selectedThread.status !== 'completed' && (
-                          <Menu.Dropdown>
-                            <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
-                              Completed
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        )}
-                      </Menu>
-                    </Flex>
-                    <Divider />
-                    <Flex direction="column" style={{ flex: 1 }} h="100%">
-                      <ThreadChat
-                        key={`${getReferenceString(selectedThread)}`}
-                        title={'Messages'}
-                        thread={selectedThread}
-                        excludeHeader={true}
-                        uploadEnabled={uploadEnabled}
-                        onViewInDocuments={onViewInDocuments}
-                      />
-                    </Flex>
-                  </Stack>
-                </Paper>
-              </Flex>
-
-              {/* Right sidebar - Patient summary */}
-              {selectedThread.subject && showPatientSummary && (
-                <Flex direction="column" w={300} h="100%">
-                  <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-                    <PatientSummary
-                      key={selectedThread.id}
-                      patient={selectedThread.subject as Reference<Patient>}
-                      sections={sections}
-                    />
-                  </ScrollArea>
-                </Flex>
-              )}
-            </>
-          ) : (
-            <Flex direction="column" style={{ flex: 1 }} h="100%">
-              <NoMessages />
-            </Flex>
+        <ListWithDetailPane<Communication>
+          items={items}
+          loading={loading}
+          selectedKey={selectedThread?.id ?? threadId}
+          selected={selectedThread}
+          // Suppress auto-select while the new-topic dialog is open (e.g. a URL-driven
+          // /new route with no selection) — selecting would navigate away and close it.
+          onSelectFirst={modalOpened ? undefined : onSelectFirst}
+          listWidth={380}
+          tabs={tabs}
+          activeTab={status}
+          headerActions={headerActions}
+          skeleton={<ThreadListSkeleton />}
+          emptyList={<EmptyMessagesState />}
+          emptyDetail={<NoMessages />}
+          refresh={refreshThreadMessages}
+          page={currentPage}
+          pageCount={pageCount}
+          onPageChange={(page) => onChange({ ...currentSearch, offset: (page - 1) * itemsPerPage })}
+          renderItem={(item) => (
+            <ThreadListItem
+              topic={item}
+              lastCommunication={item.id ? lastMessageByThreadId.get(item.id) : undefined}
+              getThreadUri={getThreadUri}
+            />
           )}
-        </Flex>
+          renderDetail={(thread) => (
+            <ThreadDetail
+              thread={thread}
+              showPatientSummary={showPatientSummary}
+              sections={sections}
+              uploadEnabled={uploadEnabled}
+              onViewInDocuments={onViewInDocuments}
+              onStatusChange={handleTopicStatusChangeWithErrorHandling}
+              onOpenSettings={isDraft(thread) ? undefined : openEditModal}
+              onMessageSent={handleMessageSent}
+            />
+          )}
+        />
       </div>
-      <NewTopicDialog
-        subject={subject}
-        opened={modalOpened}
-        onClose={closeModal}
-        onSubmit={handleNewTopicCompletion}
-        allowPatientSelection={allowPatientSelection}
-      />
+      {/* Both dialogs are mounted only while open so every open is a fresh instance — any
+          entries dismissed without saving are abandoned, with no leftover form state. */}
+      {modalOpened && (
+        <NewTopicDialog
+          subject={subject}
+          opened={modalOpened}
+          onClose={closeModal}
+          onSubmit={handleNewTopicCompletion}
+          allowPatientSelection={allowPatientSelection}
+        />
+      )}
+      {selectedThread && editModalOpened && (
+        <EditThreadDialog
+          thread={selectedThread}
+          opened={editModalOpened}
+          onClose={closeEditModal}
+          onSaved={() => {
+            refreshThreadMessages().catch((err) =>
+              showNotification({ color: 'red', message: normalizeErrorString(err) })
+            );
+          }}
+        />
+      )}
     </>
   );
 }
@@ -361,16 +291,6 @@ function NoMessages(): JSX.Element {
   );
 }
 
-function getStatusColor(status: Communication['status']): string {
-  if (status === 'completed') {
-    return 'green';
-  }
-  if (status === 'stopped') {
-    return 'red';
-  }
-  return 'blue';
-}
-
 function EmptyMessagesState(): JSX.Element {
   return (
     <Flex direction="column" h="100%" justify="center" align="center">
@@ -381,5 +301,29 @@ function EmptyMessagesState(): JSX.Element {
         </Text>
       </Stack>
     </Flex>
+  );
+}
+
+function ThreadListSkeleton(): JSX.Element {
+  const titleWidths = [80, 72, 68, 64];
+  const subtitleWidths = [85, 78, 70, 60];
+  return (
+    <Stack gap="md" p="md">
+      {Array.from({ length: 10 }).map((_, index) => {
+        const titleWidth = titleWidths[index % titleWidths.length];
+        const subtitleWidth = subtitleWidths[index % subtitleWidths.length];
+        return (
+          <Flex key={index} gap="sm" align="flex-start">
+            <Skeleton height={40} width={40} radius="50%" />
+            <Box style={{ flex: 1 }}>
+              <Flex direction="column" gap="xs">
+                <Skeleton height={16} width={`${titleWidth}%`} />
+                <Skeleton height={14} width={`${subtitleWidth}%`} />
+              </Flex>
+            </Box>
+          </Flex>
+        );
+      })}
+    </Stack>
   );
 }

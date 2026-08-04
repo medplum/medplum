@@ -4,7 +4,7 @@ import { Alert, Button, Group, Loader, Stack, Switch, Text, Title, Tooltip } fro
 import type { WithId } from '@medplum/core';
 import { deepClone, EMPTY, formatReferenceString, getExtensionValue, getReferenceString } from '@medplum/core';
 import type { HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
-import { Document, MedplumLink, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, OperationOutcomeAlert, useMedplum } from '@medplum/react';
 import { useResource, useSearchResources } from '@medplum/react-hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -23,7 +23,7 @@ const MAX_PAGE_SIZE = 1000;
 
 export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | null {
   const medplum = useMedplum();
-  const [services, servicesLoading] = useSearchResources('HealthcareService', {
+  const [services, servicesLoading, servicesOutcome] = useSearchResources('HealthcareService', {
     _sort: 'name',
     _count: MAX_PAGE_SIZE.toString(),
   });
@@ -33,20 +33,6 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
   // Store a copy of the Schedule that we can mutate while the viewer manipulates
   // the UI
   const [schedule, setSchedule] = useState(deepClone(props.schedule));
-
-  if (servicesLoading) {
-    return <Loader />;
-  }
-
-  if (!services?.length) {
-    return (
-      <Group>
-        <Alert color="red" variant="outline">
-          No HealthcareServices found.
-        </Alert>
-      </Group>
-    );
-  }
 
   function toggleServiceType(service: WithId<HealthcareService>, enabled: boolean): void {
     setDirty(true);
@@ -86,6 +72,10 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
     }
   }
 
+  if (servicesLoading) {
+    return <Loader />;
+  }
+
   return (
     <Stack gap="lg">
       <Stack gap="0">
@@ -95,13 +85,19 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
           <DocsLink path="scheduling">configuring Scheduling</DocsLink>.
         </Text>
       </Stack>
-      {services.length >= MAX_PAGE_SIZE && (
+      <OperationOutcomeAlert outcome={servicesOutcome} />
+      {!services?.length && (
+        <Alert color="red" variant="outline">
+          No HealthcareServices found.
+        </Alert>
+      )}
+      {(services?.length ?? 0) >= MAX_PAGE_SIZE && (
         <Alert color="yellow" variant="outline" icon={<IconAlertCircle />}>
           HealthcareService page size reached; some rows may not have been fetched.
         </Alert>
       )}
       <Stack gap="sm">
-        {services.map((service) => {
+        {services?.map((service) => {
           const schedulable = hasSchedulingParameters(service);
           return (
             <Group key={service.id}>

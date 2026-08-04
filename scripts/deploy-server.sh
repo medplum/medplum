@@ -15,9 +15,8 @@ if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
   exit 1
 fi
 
-GITHUB_SHA="${GITHUB_SHA:-$(git rev-parse HEAD)}"
-if [[ -z "${GITHUB_SHA}" ]]; then
-  echo "GITHUB_SHA is missing"
+if [[ -z "${SERVER_DOCKER_IMAGE}" ]]; then
+  echo "SERVER_DOCKER_IMAGE is missing"
   exit 1
 fi
 
@@ -28,12 +27,12 @@ set -o pipefail
 # Echo commands
 set -x
 
-# The immutable image we want the service to run
-IMAGE="${SERVER_DOCKERHUB_REPOSITORY}:${GITHUB_SHA}"
+# The immutable image digest we want the service to run
+IMAGE="${SERVER_DOCKER_IMAGE}"
 
 # Pin an ECS service to $IMAGE by registering a new task definition revision
 # based on the currently-deployed one. This replaces `--force-new-deployment`
-# against a mutable `:latest` tag with a deploy of a specific git SHA.
+# against a mutable `:latest` tag with a deploy of a specific image digest.
 deploy_service() {
   local cluster="$1"
   local service="$2"
@@ -58,7 +57,7 @@ deploy_service() {
     --output json \
     | jq --arg repo "$SERVER_DOCKERHUB_REPOSITORY" --arg image "$IMAGE" '
         .containerDefinitions |= map(
-          if (.image | startswith($repo + ":")) then .image = $image else . end
+          if (.image | startswith($repo + ":") or startswith($repo + "@sha256:")) then .image = $image else . end
         )
         | del(
             .taskDefinitionArn,

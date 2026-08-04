@@ -3,9 +3,9 @@
 import type { ILogger, MedplumClient, WithId } from '@medplum/core';
 import { LogLevel, TypedEventTarget, sleep } from '@medplum/core';
 import type { Endpoint } from '@medplum/fhirtypes';
+import { getFreePort } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
-import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import type { Mock } from 'vitest';
@@ -108,26 +108,6 @@ export function createTestHl7ClientPool(
   const heartbeatEmitter = options.heartbeatEmitter ?? new TypedEventTarget();
   const pool = new Hl7ClientPool({ ...options, messageTracker, heartbeatEmitter });
   return { pool, messageTracker, heartbeatEmitter };
-}
-
-// Used only for tests that need a free port number with *nothing* listening on it.
-// For tests that start an Hl7Server, prefer `server.start(0)` which returns the OS-assigned
-// port and never has a release-then-rebind window.
-export async function getFreePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-    server.listen(0, () => {
-      const { port } = server.address() as { port: number };
-      server.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(port);
-        }
-      });
-    });
-    server.on('error', reject);
-  });
 }
 
 export async function createEndpointWithRandomPort(

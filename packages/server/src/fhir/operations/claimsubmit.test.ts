@@ -79,7 +79,7 @@ async function deployClaimOperation(
     .set('Content-Type', ContentType.FHIR_JSON)
     .set('Authorization', 'Bearer ' + accessToken)
     .send({ resourceType: 'Bot', name: 'Claim Submit Bot', runtimeVersion: 'vmcontext' });
-  expect(res1.status).toBe(201);
+  expect(res1).toHaveStatus(201);
   const bot = res1.body as WithId<Bot>;
 
   const res2 = await request(app)
@@ -87,7 +87,7 @@ async function deployClaimOperation(
     .set('Content-Type', ContentType.FHIR_JSON)
     .set('Authorization', 'Bearer ' + accessToken)
     .send({ code: getClaimResponseBotCode(insurerDisplay) });
-  expect(res2.status).toBe(200);
+  expect(res2).toHaveStatus(200);
 
   const res3 = await request(app)
     .post('/fhir/R4/OperationDefinition')
@@ -111,7 +111,7 @@ async function deployClaimOperation(
       resource: ['Claim'],
       parameter: [{ use: 'out', name: 'return', type: 'ClaimResponse', min: 1, max: '1' }],
     });
-  expect(res3.status).toBe(201);
+  expect(res3).toHaveStatus(201);
 }
 
 function bodyWith(resource?: Bundle | Claim): object {
@@ -140,7 +140,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith(minimalClaim));
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(JSON.stringify(res.body)).toMatch(/not configured/i);
   });
 
@@ -151,7 +151,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith({ ...minimalClaim, use: 'preauthorization' }));
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(JSON.stringify(res.body)).toMatch(/PRIOR_AUTH_SUBMIT_OPERATION/);
   });
 
@@ -164,7 +164,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith(minimalClaim));
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(JSON.stringify(res.body)).toMatch(/not available/i);
   });
 
@@ -178,7 +178,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith(minimalClaim));
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     // A single 'return' output of a resource type is sent as the bare resource, not wrapped in Parameters.
     expect(res.body.resourceType).toBe('ClaimResponse');
     expect(res.body.outcome).toBe('complete');
@@ -194,7 +194,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(minimalClaim);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ClaimResponse');
     expect(res.body.outcome).toBe('complete');
   });
@@ -211,7 +211,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith({ ...minimalClaim, use: 'preauthorization' }));
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ClaimResponse');
     expect(res.body.use).toBe('preauthorization');
     expect(res.body.insurer?.display).toBe('Prior Auth Payer');
@@ -238,7 +238,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bundle);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ClaimResponse');
     expect(res.body.insurer?.display).toBe('Prior Auth Payer');
   });
@@ -259,7 +259,7 @@ describe('Claim $submit', () => {
           entry: [{ resource: { resourceType: 'Patient', id: 'example' } }],
         })
       );
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(JSON.stringify(res.body)).toMatch(/Claim submit must contain at least one Claim resource/i);
   });
 
@@ -273,14 +273,14 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(minimalClaim);
-    expect(createRes.status).toBe(201);
+    expect(createRes).toHaveStatus(201);
     const claimId = createRes.body.id;
 
     const res = await request(app)
       .post(`/fhir/R4/Claim/${claimId}/$submit`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('ClaimResponse');
     // Confirms the Claim read from the URL was forwarded to the bot as the body.
     expect(res.body.patient?.reference).toBe('Patient/example');
@@ -296,7 +296,7 @@ describe('Claim $submit', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send(bodyWith());
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.resourceType).toBe('OperationOutcome');
     expect(res.body.issue[0].severity).toBe('error');
   });

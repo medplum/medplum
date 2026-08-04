@@ -132,22 +132,25 @@ async function replaceExisting<T extends Resource & { url?: string }>(
   projectId: string
 ): Promise<WithId<T>> {
   const systemRepo = repo.getSystemRepo();
-  return systemRepo.withTransaction(async (systemRepo) => {
-    if (resource.url) {
-      const bundle = await systemRepo.search({
-        resourceType: resource.resourceType,
-        filters: [
-          { code: 'url', operator: Operator.EQUALS, value: resource.url },
-          { code: '_project', operator: Operator.EQUALS, value: projectId },
-        ],
-      });
-      for (const entry of bundle.entry ?? EMPTY) {
-        const existing = entry.resource as WithId<T>;
-        await systemRepo.deleteResource(existing.resourceType, existing.id);
+  return systemRepo.withTransaction(
+    async (systemRepo) => {
+      if (resource.url) {
+        const bundle = await systemRepo.search({
+          resourceType: resource.resourceType,
+          filters: [
+            { code: 'url', operator: Operator.EQUALS, value: resource.url },
+            { code: '_project', operator: Operator.EQUALS, value: projectId },
+          ],
+        });
+        for (const entry of bundle.entry ?? EMPTY) {
+          const existing = entry.resource as WithId<T>;
+          await systemRepo.deleteResource(existing.resourceType, existing.id);
+        }
       }
-    }
-    return systemRepo.createResource(cleanSeedResource(resource));
-  });
+      return systemRepo.createResource(cleanSeedResource(resource));
+    },
+    { resourceTypes: resource.resourceType, source: 'rebuild-base-definitions.replaceExisting' }
+  );
 }
 
 function cleanSeedResource<T extends Resource>(resource: T): T {

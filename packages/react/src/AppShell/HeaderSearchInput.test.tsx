@@ -3,7 +3,6 @@
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
-import { MemoryRouter } from 'react-router';
 import { act, clickAutocompleteOption, fireEvent, render, screen, typeInAutocomplete } from '../test-utils/render';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
@@ -82,11 +81,9 @@ const navigateMock = vi.fn();
 
 function setup(): void {
   render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum} navigate={navigateMock}>
-        <HeaderSearchInput />
-      </MedplumProvider>
-    </MemoryRouter>
+    <MedplumProvider medplum={medplum} navigate={navigateMock}>
+      <HeaderSearchInput />
+    </MedplumProvider>
   );
 }
 

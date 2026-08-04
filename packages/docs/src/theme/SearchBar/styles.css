@@ -35,3 +35,16 @@
   border-color: var(--oc-grape-5);
   color: var(--oc-grape-5);
 }
+
+/* Ask AI floating side-panel — portal to body; keep above page chrome */
+.DocSearch-SidepanelButton.floating {
+  --docsearch-sidepanel-primary: var(--ifm-color-primary);
+  --docsearch-sidepanel-primary-dark: var(--ifm-color-primary-dark);
+  z-index: calc(var(--ifm-z-index-fixed) + 10);
+}
+
+.DocSearch-Sidepanel-Container {
+  --docsearch-primary-color: var(--ifm-color-primary);
+  --docsearch-highlight-color: var(--ifm-color-primary);
+  z-index: calc(var(--ifm-z-index-fixed) + 11);
+}

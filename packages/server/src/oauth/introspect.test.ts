@@ -25,19 +25,19 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
     const token = res2.body.access_token;
 
     const res3 = await request(app).post(`/oauth2/introspect`).send({ token });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     const result = res3.body;
     expect(result.active).toEqual(true);
     expect(result.iss).toBeDefined();
@@ -52,14 +52,14 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
     const token = res2.body.access_token;
 
@@ -67,10 +67,10 @@ describe('OAuth2 UserInfo', () => {
       .post('/oauth2/logout')
       .set('Authorization', 'Bearer ' + token)
       .send();
-    expect(resLogout.status).toBe(200);
+    expect(resLogout).toHaveStatus(200);
 
     const res3 = await request(app).post(`/oauth2/introspect`).send({ token });
-    expect(res3.status).toBe(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body).toStrictEqual({ active: false });
   });
 
@@ -82,14 +82,14 @@ describe('OAuth2 UserInfo', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
     });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.access_token).toBeDefined();
     const token = res2.body.access_token;
 
@@ -97,6 +97,6 @@ describe('OAuth2 UserInfo', () => {
       .post(`/oauth2/introspect`)
       .set('Authorization', 'Bearer ' + token)
       .send({});
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
   });
 });

@@ -63,7 +63,7 @@ describe('Agent/$reload-config', () => {
 
     const responses = await Promise.all(promises);
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
-      expect(responses[i].status).toBe(201);
+      expect(responses[i]).toHaveStatus(201);
       agents[i] = responses[i].body;
     }
 
@@ -93,7 +93,7 @@ describe('Agent/$reload-config', () => {
       .get('/fhir/R4/Agent/$reload-config')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -117,7 +117,7 @@ describe('Agent/$reload-config', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const outcome = res.body as OperationOutcome;
 
     expect(outcome).toMatchObject(allOk);
@@ -143,7 +143,7 @@ describe('Agent/$reload-config', () => {
       .get('/fhir/R4/Agent/$reload-config')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (let i = 0; i < agents.length; i++) {
@@ -159,7 +159,7 @@ describe('Agent/$reload-config', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     const outcome = res.body as OperationOutcome;
     expect(outcome).toMatchObject(badRequest('Something is broken'));
@@ -191,7 +191,7 @@ describe('Agent/$reload-config', () => {
       .get('/fhir/R4/Agent/$reload-config')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (let i = 0; i < agents.length; i++) {
@@ -207,7 +207,7 @@ describe('Agent/$reload-config', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(500);
+    expect(res).toHaveStatus(500);
 
     const outcome = res.body as OperationOutcome;
     expect(outcome).toMatchObject(serverError(new Error('Invalid response received from agent')));

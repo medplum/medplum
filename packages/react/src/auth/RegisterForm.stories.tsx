@@ -29,7 +29,12 @@ export function Basic(): JSX.Element {
 export function WithFooter(): JSX.Element {
   return (
     <div style={{ minHeight: '100vh' }}>
-      <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
+      <RegisterForm
+        type="project"
+        recaptchaSiteKey={recaptchaSiteKey}
+        onSuccess={() => alert('Registered!')}
+        onSignIn={() => alert('Sign In')}
+      >
         <Logo size={32} />
         <Title order={3} py="lg">
           Register a new account

@@ -10,19 +10,19 @@ import type {
   AgentUpgradeResponse,
 } from '@medplum/core';
 import {
+  allOk,
+  clearReleaseCache,
   ContentType,
+  createReference,
+  getReferenceString,
   Hl7Message,
   LogLevel,
   MEDPLUM_VERSION,
   ReconnectingWebSocket,
-  allOk,
-  clearReleaseCache,
-  createReference,
-  getReferenceString,
   sleep,
 } from '@medplum/core';
 import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
-import { Hl7Client, Hl7Server } from '@medplum/hl7';
+import { getFreePort, Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
@@ -42,7 +42,7 @@ import type { AgentHl7ChannelConnection } from './hl7';
 import { AgentHl7Channel } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
-import { createEndpointWithRandomPort, getFreePort, waitFor } from './test-utils';
+import { createEndpointWithRandomPort, waitFor } from './test-utils';
 import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
