@@ -44,6 +44,7 @@ import {
   getDateProperty,
   getDisplayString,
   getExtension,
+  getExtensions,
   getExtensionValue,
   getIdentifier,
   getImageSrc,
@@ -744,6 +745,46 @@ describe('Core Utils', () => {
 
     expect(getExtension(resource, 'http://example.com')).toBe(resource.extension?.[0]);
     expect(getExtension(resource, 'http://example.com', 'key1')).toBe(resource.extension?.[0]?.extension?.[0]);
+  });
+
+  test('Get repeating extension objects', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        { url: 'http://example.com/basic', valueString: 'abcde' },
+        {
+          url: 'http://example.com/complex',
+          extension: [
+            { url: 'key1', valueCode: 'foo' },
+            { url: 'key2', valueString: 'other' },
+            { url: 'key1', valueCode: 'bar' },
+          ],
+        },
+        {
+          url: 'http://example.com/complex',
+          extension: [{ url: 'key1', valueCode: 'baz' }],
+        },
+      ],
+    };
+
+    // Every match at one level, where getExtension would read only the first.
+    expect(getExtensions(resource, 'http://example.com/complex')).toHaveLength(2);
+    expect(getExtension(resource, 'http://example.com/complex', 'key1')).toHaveProperty('valueCode', 'foo');
+
+    // Repeats are gathered across every matching parent, not just the first.
+    expect(getExtensions(resource, 'http://example.com/complex', 'key1').map((e) => e.valueCode)).toStrictEqual([
+      'foo',
+      'bar',
+      'baz',
+    ]);
+
+    expect(getExtensions(resource, 'http://example.com/basic')).toStrictEqual([resource.extension?.[0]]);
+    expect(getExtensions(resource, 'http://example.com/missing')).toStrictEqual([]);
+    expect(getExtensions(resource, 'http://example.com/basic', 'nope')).toStrictEqual([]);
+    // No URL to match, and inputs that hold no extensions at all.
+    expect(getExtensions(resource)).toStrictEqual([]);
+    expect(getExtensions(undefined, 'http://example.com/basic')).toStrictEqual([]);
+    expect(getExtensions({ resourceType: 'Patient' }, 'http://example.com/basic')).toStrictEqual([]);
   });
 
   test('Stringify', () => {

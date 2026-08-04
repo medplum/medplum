@@ -530,6 +530,26 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
 }
 
 /**
+ * Returns every extension reachable by the given extension URLs.
+ *
+ * Like `getExtension`, but does not stop at the first match: extensions that repeat under one URL are
+ * all returned, at every level. Use it for extensions defined with a cardinality above one, where
+ * `getExtension` would silently read only the first.
+ * @param resource - The base resource, data type, or extension. Anything that may hold an `extension` array.
+ * @param urls - Array of extension URLs. Each entry represents descending a level in a nested extension.
+ * @returns Every matching extension, in document order. Empty if none match or no URL is given.
+ */
+export function getExtensions(resource: any, ...urls: string[]): Extension[] {
+  const [url, ...rest] = urls;
+  if (!url) {
+    return [];
+  }
+
+  const matches = (resource?.extension as Extension[] | undefined)?.filter((e) => e.url === url) ?? [];
+  return rest.length > 0 ? matches.flatMap((match) => getExtensions(match, ...rest)) : matches;
+}
+
+/**
  * Returns the FHIR JSON string representation of the input value.
  *
  * Removes properties with empty string values.
