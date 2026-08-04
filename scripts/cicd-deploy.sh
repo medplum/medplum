@@ -107,8 +107,14 @@ if [[ "$FILES_CHANGED" =~ packages/storybook ]]; then
   DEPLOY_STORYBOOK=true
 fi
 
-if [[ "$FILES_CHANGED" =~ packages/react ]]; then
+# Tricky: `packages/react-scheduling` should not affect `app`, so
+# we need to be careful not to use a matching prefix here.
+if [[ "$FILES_CHANGED" =~ packages/react/ ]]; then
   DEPLOY_APP=true
+  DEPLOY_STORYBOOK=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/react-scheduling ]]; then
   DEPLOY_STORYBOOK=true
 fi
 
