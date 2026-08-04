@@ -1373,10 +1373,7 @@ describe('Expand', () => {
       expect(csRes).toHaveStatus(201);
     });
 
-    async function expandWithFilter(
-      filter: ValueSetComposeIncludeFilter,
-      query?: string
-    ): Promise<ValueSetExpansion> {
+    async function expandWithFilter(filter: ValueSetComposeIncludeFilter, query?: string): Promise<ValueSetExpansion> {
       const valueSet: ValueSet = {
         resourceType: 'ValueSet',
         status: 'draft',
