@@ -182,6 +182,20 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
   {ExampleCode}
 </MedplumCodeBlock>
 
+#### Windows that cross midnight
+
+When `availableEndTime` is less than or equal to `availableStartTime`, the window is read as continuing into the following day. An entry of `{ daysOfWeek: ['tue'], availableStartTime: '22:00:00', availableEndTime: '06:00:00' }` means 10pm Tuesday until 6am Wednesday. This is also how 24-hour availability is expressed without `allDay`: `00:00:00` to `00:00:00` on all seven days, since the FHIR [`time`](https://hl7.org/fhir/R4/datatypes.html#time) type does not permit `24:00`.
+
+Because `00:00:00` is read as the following midnight rather than as the start of the same day, it is the correct way to say "until end of day". Do not use `23:59:59` for this: it leaves a one-second gap that splits the window in two, which prevents booking anything that spans midnight.
+
+A window is keyed to the day it **starts** on, and only that day needs to appear in `daysOfWeek`. An entry on `fri` ending at `06:00:00` makes Saturday morning bookable without `sat` being listed anywhere.
+
+:::note[Windows that cross midnight and other FHIR systems]
+
+This reading is Medplum's convention. The FHIR specification does not define what an end time before a start time means, and imposes no invariant either way, so the data is valid FHIR but other systems may not interpret it the same way.
+
+:::
+
 ## Service Level Availability
 
 ### Service Types and HealthcareService
@@ -289,6 +303,14 @@ In this example:
 - Cardiac surgery availability is defined in `America/Los_Angeles` time zone (Mon-Wed 11am-3pm America/Los Angeles)
 - Call Center availability is defined in `America/New_York` time zone (Mon-Wed 9am-5pm Eastern)
 - Each service type's availability times are interpreted independently based on their respective timezones
+
+## Editing Availability in a React App
+
+Rather than hand-authoring the [`availability` extension](#availability-extension), the [`@medplum/react`](/docs/react) library provides a `ScheduleAvailabilityEditor` component. It edits a Schedule's weekly `availability` override for a given visit service type, or, with the `schedule` prop omitted, the [service-level default](#service-level-availability) hours themselves. It implements the [override behavior](#override-behavior) described above through a single switch, and is used in the [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app.
+
+`@medplum/core` exports the framework-agnostic helpers the component is built on, for reading and writing the `availability` override without the UI (for example, in a bot or a custom editor).
+
+See the [`ScheduleAvailabilityEditor` docs in Storybook](https://storybook.medplum.com/?path=/docs/medplum-scheduleavailabilityeditor--docs) for interactive examples, the behavior in detail, and the full component and utility API.
 
 ## Examples
 
@@ -582,3 +604,4 @@ A few constraints trip people up most often when configuring availability:
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
 
 - `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet implemented.
+- Editing availability on a calendar view, by dragging hours across days rather than picking times, is a possible future enhancement to the example app. The `ScheduleAvailabilityEditor` component covers this today with time pickers.
