@@ -5,10 +5,10 @@ import type { WithId } from '@medplum/core';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type {
   AccessPolicy,
-  Project,
   BundleEntry,
   Patient,
   Practitioner,
+  Project,
   ProjectMembership,
   Reference,
   RelatedPerson,
@@ -2205,5 +2205,4 @@ describe('Admin Invite', () => {
       expect(parsed.text).toContain(`Thank you,\n${appName}`);
     });
   });
-
 });

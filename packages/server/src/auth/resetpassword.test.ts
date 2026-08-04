@@ -11,11 +11,11 @@ import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
 import { vi } from 'vitest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupRecaptchaMock, withTestContext } from '../test.setup';
-import { inviteUser } from '../admin/invite';
 import { registerNew } from './register';
 
 const { mockCreateTransport, mockSendMail } = vi.hoisted(() => {
@@ -564,5 +564,4 @@ describe('Reset Password', () => {
       expect(parsed.text).toContain(`Thank you,\n${appName}`);
     });
   });
-
 });
