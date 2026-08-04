@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { vi } from 'vitest';
+import type { AiContext } from './openai';
 import { callOpenAi, streamOpenAi } from './openai';
-import type { AiContext, AiStreamEvent } from './types';
+
+/** The event `streamOpenAi` reports, derived so the provider need not export the type. */
+type StreamEvent = Parameters<Parameters<typeof streamOpenAi>[1]>[0];
 
 const baseContext: AiContext = {
   messages: [{ role: 'user', content: 'Find Frodo' }],
@@ -57,9 +60,9 @@ function mockSseStream(chunks: string[]): object {
  * @param context - Optional context overrides
  * @returns The emitted events, in order
  */
-async function collectEvents(chunks: string[], context?: Partial<AiContext>): Promise<AiStreamEvent[]> {
+async function collectEvents(chunks: string[], context?: Partial<AiContext>): Promise<StreamEvent[]> {
   global.fetch = vi.fn().mockResolvedValue(mockSseStream(chunks));
-  const events: AiStreamEvent[] = [];
+  const events: StreamEvent[] = [];
   await streamOpenAi({ ...baseContext, ...context }, (event) => events.push(event));
   return events;
 }
@@ -133,6 +136,44 @@ describe('OpenAI provider', () => {
       });
 
       await expect(callOpenAi(baseContext)).rejects.toThrow('OpenAI response contained no choices');
+    });
+
+    test('Reads a call to a tool that takes no arguments as an empty object', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: null,
+                tool_calls: [{ id: 'call_now', type: 'function', function: { name: 'current_time', arguments: '' } }],
+              },
+            },
+          ],
+        }),
+      });
+
+      const result = await callOpenAi(baseContext);
+      expect(result.toolCalls[0].function.arguments).toStrictEqual({});
+    });
+
+    test('Drops response fields that arrive in an unusable shape', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({
+          choices: [{ message: { content: { text: 'not a string' }, tool_calls: [{ id: 'call_bare' }] } }],
+        }),
+      });
+
+      const result = await callOpenAi(baseContext);
+      // An OpenAI-compatible proxy can send anything; nothing unusable reaches the caller, and a
+      // tool call missing its `function` must not throw a TypeError on the way out
+      expect(result.content).toBeNull();
+      expect(result.toolCalls).toStrictEqual([
+        { id: 'call_bare', type: 'function', function: { name: undefined, arguments: {} } },
+      ]);
     });
 
     test('Throws with statusCode on a non-ok response', async () => {

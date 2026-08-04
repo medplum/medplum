@@ -4,8 +4,8 @@ import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutc
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
+import type { AiContext, AiResult } from '../../ai/openai';
 import { callOpenAi, streamOpenAi } from '../../ai/openai';
-import type { AiContext, AiResult } from '../../ai/types';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { sendOutcome } from '../outcomes';

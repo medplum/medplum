@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isObject } from '@medplum/core';
 import { getLogger } from '../logger';
-import type { AiContext, AiResult, AiStreamEvent, AiToolCall } from './types';
 
 /**
  * The OpenAI chat-completions provider.
@@ -9,10 +9,61 @@ import type { AiContext, AiResult, AiStreamEvent, AiToolCall } from './types';
  * Everything specific to OpenAI's wire format lives here: request body shape, the
  * `/chat/completions` endpoint, and SSE delta parsing. Callers work in terms of
  * {@link AiResult} and {@link AiStreamEvent} and never see an OpenAI payload, so a second
- * provider only has to translate its own format to those types.
+ * provider only has to produce those same types.
  *
  * Also serves any OpenAI-compatible API, such as a LiteLLM proxy pointed at by `LLM_BASE_URL`.
+ * Such a proxy is under no obligation to send exactly what OpenAI sends, so responses are
+ * treated as unknown JSON and checked field by field rather than cast into shape.
  */
+
+/**
+ * What a caller asks the model to do, plus the credentials to do it with.
+ *
+ * `messages` and `tools` are forwarded to the provider verbatim, so they stay `unknown[]`
+ * instead of restating OpenAI's request schema here. Credentials travel with each request
+ * rather than in a module singleton, because they come from `Project.secret` and therefore
+ * differ between projects on the same server.
+ */
+export interface AiContext {
+  readonly messages: unknown[];
+  readonly model: string;
+  readonly tools?: unknown[];
+  readonly temperature?: number;
+  readonly apiKey: string;
+  /** Base URL of the provider's API, with no trailing slash. */
+  readonly baseUrl: string;
+}
+
+/**
+ * A tool call the model requested, with `arguments` parsed out of the JSON string it arrives as.
+ *
+ * A truncated or malformed call keeps `arguments` as that raw string, so callers must expect
+ * either. A call carrying no arguments at all becomes `{}`.
+ */
+interface AiToolCall {
+  readonly id?: string;
+  readonly type: string;
+  readonly function: {
+    readonly name?: string;
+    readonly arguments: unknown;
+  };
+}
+
+/** The complete result of a non-streaming call. */
+export interface AiResult {
+  readonly content: string | null;
+  readonly toolCalls: AiToolCall[];
+}
+
+/**
+ * A provider-neutral event from a streaming call.
+ *
+ * Content arrives incrementally and is emitted as it does. Tool calls are only actionable once
+ * complete, so a provider emits at most one `tool_calls` event, after all content.
+ */
+type AiStreamEvent =
+  | { readonly type: 'content'; readonly text: string }
+  | { readonly type: 'tool_calls'; readonly toolCalls: AiToolCall[] };
 
 /**
  * A tool call reassembled from streamed deltas.
@@ -29,9 +80,13 @@ interface StreamedToolCall {
 /**
  * Parses tool call arguments, which OpenAI sends as a JSON string.
  * @param raw - The raw arguments string
- * @returns The parsed value, or `raw` unchanged if it is not valid JSON
+ * @returns The parsed value, `{}` if there were no arguments, or `raw` unchanged if it is not valid JSON
  */
 function parseArguments(raw: string): unknown {
+  if (raw === '') {
+    // A call to a tool that takes no parameters arrives with its arguments empty or absent.
+    return {};
+  }
   try {
     return JSON.parse(raw);
   } catch {
@@ -47,8 +102,8 @@ function parseArguments(raw: string): unknown {
  * @param stream - Whether to ask for a streamed response
  * @returns The request body to POST
  */
-function buildRequestBody(context: AiContext, stream: boolean): any {
-  const requestBody: any = {
+function buildRequestBody(context: AiContext, stream: boolean): Record<string, unknown> {
+  const requestBody: Record<string, unknown> = {
     model: context.model,
     messages: context.messages,
   };
@@ -111,22 +166,30 @@ async function throwIfNotOk(response: Response): Promise<void> {
  * @param acc - Sparse array of in-progress tool calls, indexed as the provider indexes them
  * @param deltas - The `delta.tool_calls` entries from a single SSE chunk
  */
-function accumulateToolCallDeltas(acc: StreamedToolCall[], deltas: any[]): void {
+function accumulateToolCallDeltas(acc: StreamedToolCall[], deltas: unknown[]): void {
   for (const delta of deltas) {
-    const index = delta.index ?? 0;
+    if (!isObject(delta)) {
+      continue;
+    }
+    // A fragment with no usable index belongs to the first call, which is all a stream with a
+    // single tool call ever has. An unusable index would otherwise land on a non-element key
+    // and be dropped silently.
+    const index =
+      typeof delta.index === 'number' && Number.isInteger(delta.index) && delta.index >= 0 ? delta.index : 0;
     acc[index] ??= { arguments: '' };
     const call = acc[index];
-    if (delta.id) {
+    const fn = isObject(delta.function) ? delta.function : undefined;
+    if (typeof delta.id === 'string') {
       call.id = delta.id;
     }
-    if (delta.type) {
+    if (typeof delta.type === 'string') {
       call.type = delta.type;
     }
-    if (delta.function?.name) {
-      call.name = delta.function.name;
+    if (typeof fn?.name === 'string') {
+      call.name = fn.name;
     }
-    if (delta.function?.arguments) {
-      call.arguments += delta.function.arguments;
+    if (typeof fn?.arguments === 'string') {
+      call.arguments += fn.arguments;
     }
   }
 }
@@ -137,13 +200,11 @@ function accumulateToolCallDeltas(acc: StreamedToolCall[], deltas: any[]): void 
  * @returns The completed tool calls
  */
 function toAiToolCalls(acc: StreamedToolCall[]): AiToolCall[] {
-  return acc
-    .filter((call) => call)
-    .map((call) => ({
-      id: call.id,
-      type: call.type ?? 'function',
-      function: { name: call.name, arguments: parseArguments(call.arguments) },
-    }));
+  return acc.filter(Boolean).map((call) => ({
+    id: call.id,
+    type: call.type ?? 'function',
+    function: { name: call.name, arguments: parseArguments(call.arguments) },
+  }));
 }
 
 /**
@@ -154,20 +215,40 @@ function toAiToolCalls(acc: StreamedToolCall[]): AiToolCall[] {
 export async function callOpenAi(context: AiContext): Promise<AiResult> {
   const response = await postChatCompletions(context, false);
   await throwIfNotOk(response);
+  return parseCompletion(await response.json());
+}
 
-  const completion = await response.json();
-  const message = completion.choices?.[0]?.message;
-  if (!message) {
+/**
+ * Reads the model's answer out of a chat-completions payload.
+ *
+ * Every field is checked rather than trusted: content that is not a string would otherwise reach
+ * the FHIR response as an unusable `valueString`, and a tool call missing its `function` would
+ * throw a `TypeError` far from its cause.
+ * @param completion - The parsed response body
+ * @returns The model's content and any tool calls it requested
+ * @throws If the payload carries no message at all
+ */
+function parseCompletion(completion: unknown): AiResult {
+  const choice = isObject(completion) && Array.isArray(completion.choices) ? completion.choices[0] : undefined;
+  const message = isObject(choice) ? choice.message : undefined;
+  if (!isObject(message)) {
     throw new Error('OpenAI response contained no choices');
   }
 
+  const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
   return {
-    content: message.content,
-    toolCalls: ((message.tool_calls || []) as any[]).map((toolCall) => ({
-      id: toolCall.id,
-      type: toolCall.type ?? 'function',
-      function: { name: toolCall.function.name, arguments: parseArguments(toolCall.function.arguments) },
-    })),
+    content: typeof message.content === 'string' ? message.content : null,
+    toolCalls: toolCalls.filter(isObject).map((toolCall) => {
+      const fn = isObject(toolCall.function) ? toolCall.function : undefined;
+      return {
+        id: typeof toolCall.id === 'string' ? toolCall.id : undefined,
+        type: typeof toolCall.type === 'string' ? toolCall.type : 'function',
+        function: {
+          name: typeof fn?.name === 'string' ? fn.name : undefined,
+          arguments: parseArguments(typeof fn?.arguments === 'string' ? fn.arguments : ''),
+        },
+      };
+    }),
   };
 }
 
@@ -218,18 +299,17 @@ export async function streamOpenAi(context: AiContext, onEvent: (event: AiStream
           }
 
           try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta;
+            const parsed: unknown = JSON.parse(data);
+            const choice = isObject(parsed) && Array.isArray(parsed.choices) ? parsed.choices[0] : undefined;
+            const delta = isObject(choice) && isObject(choice.delta) ? choice.delta : undefined;
 
-            if (delta?.tool_calls) {
+            if (Array.isArray(delta?.tool_calls)) {
               accumulateToolCallDeltas(toolCalls, delta.tool_calls);
             }
 
-            if (!delta?.content) {
-              continue;
+            if (typeof delta?.content === 'string' && delta.content !== '') {
+              onEvent({ type: 'content', text: delta.content });
             }
-
-            onEvent({ type: 'content', text: delta.content });
           } catch (e) {
             // Skip malformed JSON
             getLogger().error('Error parsing SSE data:', { error: e });
