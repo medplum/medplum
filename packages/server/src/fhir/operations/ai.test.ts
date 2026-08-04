@@ -120,10 +120,20 @@ describe('AI Operation', () => {
 
     expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Parameters');
-    expect((res.body as Parameters).parameter).toHaveLength(2);
+    expect((res.body as Parameters).parameter).toHaveLength(4);
     expect((res.body as Parameters).parameter?.[0]?.name).toBe('content');
     expect((res.body as Parameters).parameter?.[0]?.valueString).toBe('Here are the matching patients');
     expect((res.body as Parameters).parameter?.[1]?.name).toBe('tool_calls');
+
+    // The normalized view is accompanied by the provider's own payload, so a caller can reach
+    // what normalizing omits without a second request
+    const params = res.body as Parameters;
+    expect(params.parameter?.find((p) => p.name === 'provider')?.valueString).toBe('openai');
+    const raw = JSON.parse(params.parameter?.find((p) => p.name === 'raw')?.valueString as string);
+    expect(raw.choices[0].message.content).toBe('Here are the matching patients');
+    expect(raw.choices[0].message.tool_calls[0].function.arguments).toBe(
+      JSON.stringify({ method: 'GET', path: 'Patient?phone=718-564-9483' })
+    );
 
     const toolCalls = JSON.parse((res.body as Parameters).parameter?.[1]?.valueString as string);
     expect(toolCalls).toHaveLength(1);
@@ -1090,19 +1100,29 @@ describe('AI Operation', () => {
      * @param text - The raw response body
      * @returns The payloads verbatim, and the subset parsed as JSON (excluding `[DONE]`)
      */
-    function parseSse(text: string): { payloads: string[]; frames: any[] } {
+    function parseSse(text: string): { payloads: string[]; frames: Record<string, unknown>[] } {
       const payloads = text
         .split('\n\n')
         .filter((line: string) => line.startsWith('data: '))
         .map((line: string) => line.slice(6).trim());
-      const frames: any[] = [];
+      const frames: Record<string, unknown>[] = [];
       for (const payload of payloads) {
         if (payload === '[DONE]') {
           continue;
         }
-        frames.push(JSON.parse(payload));
+        frames.push(JSON.parse(payload) as Record<string, unknown>);
       }
       return { payloads, frames };
+    }
+
+    /**
+     * Selects the frames of one kind, since every frame carries exactly one key.
+     * @param frames - The parsed frames
+     * @param key - The frame key to keep, e.g. `content` or `tool_calls`
+     * @returns The values carried under `key`, in order
+     */
+    function framesOfKind(frames: Record<string, unknown>[], key: string): unknown[] {
+      return frames.filter((frame) => key in frame).map((frame) => frame[key]);
     }
 
     /**
@@ -1155,8 +1175,9 @@ describe('AI Operation', () => {
       expect(res).toHaveStatus(200);
 
       const { payloads, frames } = parseSse(res.text);
-      expect(frames).toHaveLength(1);
-      expect(frames[0].tool_calls).toStrictEqual([
+      const toolCallFrames = framesOfKind(frames, 'tool_calls');
+      expect(toolCallFrames).toHaveLength(1);
+      expect(toolCallFrames[0]).toStrictEqual([
         {
           id: 'call_abc',
           type: 'function',
@@ -1184,12 +1205,16 @@ describe('AI Operation', () => {
 
       const { frames } = parseSse(res.text);
       // Content forwards as it arrives; the tool call can only be sent once complete
-      expect(frames.map((f) => f.content).filter(Boolean)).toStrictEqual(['Looking', ' that up']);
-      expect(frames[frames.length - 1].tool_calls).toHaveLength(1);
-      expect(frames[frames.length - 1].tool_calls[0].function.arguments).toStrictEqual({
-        method: 'GET',
-        path: 'Patient',
-      });
+      expect(framesOfKind(frames, 'content')).toStrictEqual(['Looking', ' that up']);
+      expect(framesOfKind(frames, 'tool_calls')).toStrictEqual([
+        [
+          {
+            id: 'call_1',
+            type: 'function',
+            function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Patient' } },
+          },
+        ],
+      ]);
     });
 
     test('Reassembles parallel tool calls independently', async () => {
@@ -1207,9 +1232,10 @@ describe('AI Operation', () => {
       expect(res).toHaveStatus(200);
 
       const { frames } = parseSse(res.text);
-      expect(frames).toHaveLength(1);
+      const toolCallFrames = framesOfKind(frames, 'tool_calls');
+      expect(toolCallFrames).toHaveLength(1);
       // Interleaved fragments must land on the call matching their index, not the latest one
-      expect(frames[0].tool_calls).toStrictEqual([
+      expect(toolCallFrames[0]).toStrictEqual([
         { id: 'call_a', type: 'function', function: { name: 'fhir_request', arguments: { path: 'Patient' } } },
         { id: 'call_b', type: 'function', function: { name: 'fhir_request', arguments: { path: 'Task' } } },
       ]);
@@ -1229,10 +1255,12 @@ describe('AI Operation', () => {
 
       const { frames } = parseSse(res.text);
       // A truncated fragment is handed to the client as-is rather than throwing away the call
-      expect(frames[0].tool_calls[0].function.arguments).toBe('{"method":"GET"');
+      expect(framesOfKind(frames, 'tool_calls')).toStrictEqual([
+        [{ id: 'call_cut', type: 'function', function: { name: 'fhir_request', arguments: '{"method":"GET"' } }],
+      ]);
     });
 
-    test('Ignores chunks that carry no choices', async () => {
+    test('Forwards a chunk that carries no choices as raw only', async () => {
       global.fetch = vi
         .fn()
         .mockResolvedValue(
@@ -1246,10 +1274,11 @@ describe('AI Operation', () => {
       const res = await postStreaming();
       expect(res).toHaveStatus(200);
 
-      // A usage-only chunk must not abort the stream or leak provider metadata
+      // A usage-only chunk must not abort the stream, and it produces no content frame. It does
+      // reach the client as raw: token usage is exactly what a caller cannot get any other way.
       const { frames } = parseSse(res.text);
-      expect(frames.map((f) => f.content)).toStrictEqual(['before', 'after']);
-      expect(res.text).not.toContain('prompt_tokens');
+      expect(framesOfKind(frames, 'content')).toStrictEqual(['before', 'after']);
+      expect(framesOfKind(frames, 'raw')).toContainEqual({ usage: { prompt_tokens: 10, completion_tokens: 2 } });
     });
 
     test('Reports an upstream failure in-band and still closes the stream', async () => {
@@ -1281,8 +1310,13 @@ describe('AI Operation', () => {
       expect(res).toHaveStatus(200);
 
       const { payloads, frames } = parseSse(res.text);
-      expect(frames).toStrictEqual([{ content: 'Just prose' }]);
-      expect(payloads).toStrictEqual(['{"content":"Just prose"}', '[DONE]']);
+      expect(frames).toStrictEqual([
+        { content: 'Just prose' },
+        { raw: { choices: [{ delta: { content: 'Just prose' } }] } },
+      ]);
+      // A turn that requested no tools ends without a tool_calls frame at all, rather than an empty one
+      expect(framesOfKind(frames, 'tool_calls')).toStrictEqual([]);
+      expect(payloads[payloads.length - 1]).toBe('[DONE]');
     });
   });
 });

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import type { AiContext } from './openai';
 import { callOpenAi, streamOpenAi } from './openai';
@@ -67,6 +68,16 @@ async function collectEvents(chunks: string[], context?: Partial<AiContext>): Pr
   return events;
 }
 
+/**
+ * Runs a streaming call and collects only the normalized events.
+ * @param chunks - Raw SSE text the provider will read
+ * @param context - Optional context overrides
+ * @returns The emitted events with the verbatim `raw` copies dropped, in order
+ */
+async function collectNormalized(chunks: string[], context?: Partial<AiContext>): Promise<StreamEvent[]> {
+  return (await collectEvents(chunks, context)).filter((event) => event.type !== 'raw');
+}
+
 describe('OpenAI provider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,7 +117,7 @@ describe('OpenAI provider', () => {
         },
       ]);
 
-      const [url, init] = (global.fetch as any).mock.calls[0];
+      const [url, init] = (global.fetch as Mock).mock.calls[0];
       expect(url).toBe('https://api.openai.com/v1/chat/completions');
       const body = JSON.parse(init.body);
       expect(body.model).toBe('gpt-4');
@@ -201,7 +212,7 @@ describe('OpenAI provider', () => {
 
   describe('streamOpenAi', () => {
     test('Emits content events in order', async () => {
-      const events = await collectEvents([
+      const events = await collectNormalized([
         'data: {"choices":[{"delta":{"content":"Progressive"}}]}\n\n',
         'data: {"choices":[{"delta":{"content":" streaming"}}]}\n\n',
       ]);
@@ -215,7 +226,7 @@ describe('OpenAI provider', () => {
     test('Sends stream and tools together', async () => {
       await collectEvents([], { tools: fhirTools });
 
-      const body = JSON.parse((global.fetch as any).mock.calls[0][1].body);
+      const body = JSON.parse((global.fetch as Mock).mock.calls[0][1].body);
       // Streaming and tool calling must not be mutually exclusive
       expect(body.stream).toBe(true);
       expect(body.tools).toStrictEqual(fhirTools);
@@ -223,7 +234,7 @@ describe('OpenAI provider', () => {
     });
 
     test('Reassembles a tool call split across chunks, emitted last', async () => {
-      const events = await collectEvents(
+      const events = await collectNormalized(
         [
           'data: {"choices":[{"delta":{"content":"Looking"}}]}\n\n',
           'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_abc","type":"function","function":{"name":"fhir_request","arguments":""}}]}}]}\n\n',
@@ -250,7 +261,7 @@ describe('OpenAI provider', () => {
     });
 
     test('Routes interleaved fragments to the call matching their index', async () => {
-      const events = await collectEvents(
+      const events = await collectNormalized(
         [
           'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_a","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
           'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","type":"function","function":{"name":"fhir_request","arguments":"{\\"path\\":"}}]}}]}\n\n',
@@ -270,7 +281,7 @@ describe('OpenAI provider', () => {
     });
 
     test('Passes through arguments that never became valid JSON', async () => {
-      const events = await collectEvents(
+      const events = await collectNormalized(
         [
           'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_cut","type":"function","function":{"name":"fhir_request","arguments":"{\\"method\\":\\"GET\\""}}]}}]}\n\n',
         ],
@@ -278,24 +289,47 @@ describe('OpenAI provider', () => {
       );
 
       // A truncated fragment reaches the caller as-is rather than dropping the call
-      expect((events[0] as any).toolCalls[0].function.arguments).toBe('{"method":"GET"');
+      expect(events).toStrictEqual([
+        {
+          type: 'tool_calls',
+          toolCalls: [
+            { id: 'call_cut', type: 'function', function: { name: 'fhir_request', arguments: '{"method":"GET"' } },
+          ],
+        },
+      ]);
     });
 
-    test('Ignores chunks that carry no choices', async () => {
-      const events = await collectEvents([
+    test('Derives no normalized event from a chunk that carries no choices', async () => {
+      const events = await collectNormalized([
         'data: {"choices":[{"delta":{"content":"before"}}]}\n\n',
         'data: {"usage":{"prompt_tokens":10,"completion_tokens":2}}\n\n',
         'data: {"choices":[{"delta":{"content":"after"}}]}\n\n',
       ]);
 
-      // A usage-only chunk must neither abort the stream nor emit an event
+      // A usage-only chunk must not abort the stream, and it normalizes to nothing
       expect(events).toStrictEqual([
         { type: 'content', text: 'before' },
         { type: 'content', text: 'after' },
       ]);
     });
 
-    test('Emits nothing for a stream with no content and no tool calls', async () => {
+    test('Reports every parsed chunk verbatim, including one that normalizes to nothing', async () => {
+      const events = await collectEvents([
+        'data: {"choices":[{"delta":{"content":"before"}},{"finish_reason":null}]}\n\n',
+        'data: {"usage":{"prompt_tokens":10,"completion_tokens":2}}\n\n',
+        'data: [DONE]\n\n',
+      ]);
+
+      // Whatever normalizing drops — a usage summary, a finish reason — is still reachable, and
+      // each raw event follows the events derived from the same chunk
+      expect(events).toStrictEqual([
+        { type: 'content', text: 'before' },
+        { type: 'raw', chunk: { choices: [{ delta: { content: 'before' } }, { finish_reason: null }] } },
+        { type: 'raw', chunk: { usage: { prompt_tokens: 10, completion_tokens: 2 } } },
+      ]);
+    });
+
+    test('Emits nothing for a stream with no chunks', async () => {
       expect(await collectEvents([])).toStrictEqual([]);
     });
 

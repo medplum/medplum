@@ -70,6 +70,23 @@ const operation = makeOperationDefinition(
         type: 'string',
         documentation: 'JSON string containing tool calls array',
       },
+      {
+        name: 'provider',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation: 'Which provider answered, and therefore whose schema the raw output follows',
+      },
+      {
+        name: 'raw',
+        use: 'out',
+        min: 0,
+        max: '1',
+        type: 'string',
+        documentation:
+          'JSON string containing the provider response verbatim, for callers that need what content and tool_calls omit (finish reason, token usage, refusals)',
+      },
     ],
   }
 );
@@ -141,7 +158,7 @@ export async function aiOperation(
   }
 
   const params = parseInputParameters<AIOperationParameters>(operation, req);
-  let messages: any[];
+  let messages: unknown[];
   try {
     messages = JSON.parse(params.messages);
   } catch (error) {
@@ -152,7 +169,7 @@ export async function aiOperation(
     return [badRequest('Messages must be an array')];
   }
 
-  let tools: any[] | undefined;
+  let tools: unknown[] | undefined;
   if (params.tools) {
     try {
       tools = JSON.parse(params.tools);
@@ -198,9 +215,11 @@ export async function aiOperation(
 /**
  * Writes a streamed AI response to the client as SSE.
  *
- * Owns the wire contract the client reads — `{ content }` frames as text arrives, then at most
- * one `{ tool_calls }` frame, then `[DONE]`. The provider decides what events occur; this
- * decides how they are framed, so a second provider needs no knowledge of either SSE or Express.
+ * Owns the wire contract the client reads — `{ content }` frames as text arrives, a `{ raw }`
+ * frame per upstream chunk, then at most one `{ tool_calls }` frame, then `[DONE]`. Each frame
+ * carries exactly one key, so a client can ignore the kinds it has no use for. The provider
+ * decides what events occur; this decides how they are framed, so a second provider needs no
+ * knowledge of either SSE or Express.
  *
  * Never throws. The 200 and the SSE headers are already on the wire by the time this runs, so a
  * failure cannot become an HTTP error status — letting one escape would leave the client waiting
@@ -212,11 +231,19 @@ export async function aiOperation(
 async function streamToClient(context: AiContext, res: ExpressResponse): Promise<void> {
   try {
     await streamOpenAi(context, (event) => {
-      if (event.type === 'content') {
-        res.write(`data: ${JSON.stringify({ content: event.text })}\n\n`);
-      } else {
-        res.write(`data: ${JSON.stringify({ tool_calls: event.toolCalls })}\n\n`);
+      let frame: Record<string, unknown>;
+      switch (event.type) {
+        case 'content':
+          frame = { content: event.text };
+          break;
+        case 'tool_calls':
+          frame = { tool_calls: event.toolCalls };
+          break;
+        case 'raw':
+          frame = { raw: event.chunk };
+          break;
       }
+      res.write(`data: ${JSON.stringify(frame)}\n\n`);
       res.flush();
     });
   } catch (error) {
@@ -229,6 +256,10 @@ async function streamToClient(context: AiContext, res: ExpressResponse): Promise
 
 /**
  * Builds a FHIR Parameters response from an AI result.
+ *
+ * `content` and `tool_calls` are the normalized view and are omitted when empty, so a client
+ * that only reads them is unaffected by which provider answered. `provider` and `raw` are always
+ * present, carrying the provider's own payload for clients that need what normalizing drops.
  * @param result - The AI response, with tool call arguments already parsed
  * @returns FHIR response
  */
@@ -248,6 +279,9 @@ function buildParametersResponse(result: AiResult): FhirResponse {
       valueString: JSON.stringify(result.toolCalls),
     });
   }
+
+  parameters.push({ name: 'provider', valueString: result.provider });
+  parameters.push({ name: 'raw', valueString: JSON.stringify(result.raw) });
 
   return [
     allOk,

@@ -8,8 +8,10 @@ import { getLogger } from '../logger';
  *
  * Everything specific to OpenAI's wire format lives here: request body shape, the
  * `/chat/completions` endpoint, and SSE delta parsing. Callers work in terms of
- * {@link AiResult} and {@link AiStreamEvent} and never see an OpenAI payload, so a second
- * provider only has to produce those same types.
+ * {@link AiResult} and {@link AiStreamEvent}, so a second provider only has to produce those
+ * same types. Those types also carry the provider's payload verbatim, but only as an opt-in
+ * extra alongside the normalized fields — nothing a caller needs in order to act on a response
+ * requires reading it.
  *
  * Also serves any OpenAI-compatible API, such as a LiteLLM proxy pointed at by `LLM_BASE_URL`.
  * Such a proxy is under no obligation to send exactly what OpenAI sends, so responses are
@@ -49,21 +51,36 @@ interface AiToolCall {
   };
 }
 
-/** The complete result of a non-streaming call. */
+/**
+ * The complete result of a non-streaming call.
+ *
+ * `content` and `toolCalls` are normalized so a caller can act on any provider without knowing
+ * which one answered. `raw` is that provider's payload untouched, for callers that need what
+ * normalizing leaves behind — `finish_reason`, token usage, refusals, a model fingerprint —
+ * and `provider` tells them whose schema `raw` follows.
+ */
 export interface AiResult {
   readonly content: string | null;
   readonly toolCalls: AiToolCall[];
+  readonly provider: string;
+  readonly raw: unknown;
 }
 
 /**
  * A provider-neutral event from a streaming call.
  *
  * Content arrives incrementally and is emitted as it does. Tool calls are only actionable once
- * complete, so a provider emits at most one `tool_calls` event, after all content.
+ * complete, so a provider emits at most one `tool_calls` event, after all content. Every chunk
+ * that parsed is additionally reported verbatim as a `raw` event, so nothing the provider sent
+ * is lost to normalization.
  */
 type AiStreamEvent =
   | { readonly type: 'content'; readonly text: string }
-  | { readonly type: 'tool_calls'; readonly toolCalls: AiToolCall[] };
+  | { readonly type: 'tool_calls'; readonly toolCalls: AiToolCall[] }
+  | { readonly type: 'raw'; readonly chunk: unknown };
+
+/** Names this provider's schema in {@link AiResult.provider}, for callers that read `raw`. */
+const PROVIDER = 'openai';
 
 /**
  * A tool call reassembled from streamed deltas.
@@ -237,6 +254,8 @@ function parseCompletion(completion: unknown): AiResult {
 
   const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
   return {
+    provider: PROVIDER,
+    raw: completion,
     content: typeof message.content === 'string' ? message.content : null,
     toolCalls: toolCalls.filter(isObject).map((toolCall) => {
       const fn = isObject(toolCall.function) ? toolCall.function : undefined;
@@ -259,7 +278,8 @@ function parseCompletion(completion: unknown): AiResult {
  * incrementally because they are only actionable once complete, so their fragments are
  * accumulated and emitted as a single `tool_calls` event once the stream ends. A turn may
  * therefore produce content, tool calls, or both — letting an agent loop stream its final
- * answer on the same call that discovers it has no more tools to run.
+ * answer on the same call that discovers it has no more tools to run. Each parsed chunk is also
+ * reported as a `raw` event; a chunk that fails to parse is logged and reported as neither.
  * @param context - The request and its credentials
  * @param onEvent - Called for each event, in the order the provider produces them
  */
@@ -310,6 +330,11 @@ export async function streamOpenAi(context: AiContext, onEvent: (event: AiStream
             if (typeof delta?.content === 'string' && delta.content !== '') {
               onEvent({ type: 'content', text: delta.content });
             }
+
+            // Reported after the events derived from it, so a caller that only reads normalized
+            // events sees them in the same order it would without raw passthrough. Chunks that
+            // carry no delta at all — a usage summary, a keep-alive — reach the caller only here.
+            onEvent({ type: 'raw', chunk: parsed });
           } catch (e) {
             // Skip malformed JSON
             getLogger().error('Error parsing SSE data:', { error: e });
