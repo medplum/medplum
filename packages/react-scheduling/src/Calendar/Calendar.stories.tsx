@@ -52,6 +52,7 @@ export const Basic = (): JSX.Element => {
   const appointments: Appointment[] = [
     {
       resourceType: 'Appointment',
+      id: 'appt-1',
       status: 'booked',
       start: '2020-05-05T17:00:00Z',
       end: '2020-05-05T18:00:00Z',
@@ -71,7 +72,12 @@ export const Basic = (): JSX.Element => {
 
   return (
     <div style={{ height: 600, padding: '1em' }}>
-      <Calendar slots={slots} appointments={appointments} />
+      <Calendar
+        slots={slots}
+        appointments={appointments}
+        onSelectAppointment={(appointment) => alert(`Selected appointment ${appointment.id}`)}
+        onDoubleClickAppointment={(appointment) => alert(`Double-clicked appointment ${appointment.id}`)}
+      />
     </div>
   );
 };
