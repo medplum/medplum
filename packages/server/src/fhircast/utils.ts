@@ -12,6 +12,95 @@ const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {
   diagnosticreport: 'DiagnosticReport',
 } as Record<string, FhircastAnchorResourceType>;
 
+/**
+ * The lease granted to a subscription, in seconds.
+ *
+ * Matches the access token expiry, since the spec requires the lease to be no longer than it.
+ * Source: https://fhircast.org/specification/STU3/#session-discovery
+ */
+export const FHIRCAST_LEASE_SECONDS = 3600;
+
+export type FhircastVersion = 'STU2' | 'STU3';
+
+/**
+ * What the Hub remembers about a single subscriber, keyed by the endpoint it was issued.
+ *
+ * The version records which hub the subscription came in on, since it decides the shape of the
+ * confirmation the subscriber is sent when it connects.
+ */
+export type FhircastSubscription = {
+  projectId: string;
+  topic: string;
+  events: string[];
+  version: FhircastVersion;
+};
+
+export function getEndpointSubscriptionKey(endpoint: string): string {
+  return `medplum:fhircast:endpoint:${endpoint}:subscription`;
+}
+
+/**
+ * Names the subscriber a Hub message is meant for, when it is not meant for the whole topic.
+ *
+ * Everything a topic publishes goes to one channel, so a message aimed at a single subscriber
+ * carries its endpoint and is dropped by every other socket. The Hub strips this key before
+ * forwarding, keeping the endpoint off the wire of the subscribers it is not addressed to.
+ */
+export const TARGET_ENDPOINT_KEY = '_targetEndpoint';
+
+export async function setEndpointSubscription(endpoint: string, subscription: FhircastSubscription): Promise<void> {
+  await getCacheRedis().set(
+    getEndpointSubscriptionKey(endpoint),
+    JSON.stringify(subscription),
+    'EX',
+    FHIRCAST_LEASE_SECONDS
+  );
+}
+
+export async function getEndpointSubscription(endpoint: string): Promise<FhircastSubscription | undefined> {
+  const subscriptionStr = await getCacheRedis().get(getEndpointSubscriptionKey(endpoint));
+  if (!subscriptionStr) {
+    return undefined;
+  }
+  return JSON.parse(subscriptionStr);
+}
+
+export async function deleteEndpointSubscription(endpoint: string): Promise<void> {
+  await getCacheRedis().del(getEndpointSubscriptionKey(endpoint));
+}
+
+/**
+ * Parses the `hub.events` field of a subscription request.
+ *
+ * The spec calls for a comma-separated list. Whitespace around the names is tolerated because
+ * form-encoded requests commonly carry it, but it never separates two events.
+ * Source: https://fhircast.org/specification/STU3/#subscribing-and-unsubscribing
+ * @param events - The raw `hub.events` value.
+ * @returns The event names, in the order requested.
+ */
+export function parseFhircastEvents(events: unknown): string[] {
+  if (typeof events !== 'string') {
+    return [];
+  }
+  return events
+    .split(',')
+    .map((event) => event.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Extracts the endpoint a subscription was issued under from the `hub.channel.endpoint` URL
+ * previously handed to the subscriber. Subscribers echo the whole URL back when unsubscribing.
+ * @param endpointUrl - The endpoint URL, or a bare endpoint.
+ * @returns The endpoint, or `undefined` if the URL has no path segments.
+ */
+export function extractEndpoint(endpointUrl: unknown): string | undefined {
+  if (typeof endpointUrl !== 'string') {
+    return undefined;
+  }
+  return endpointUrl.split('/').filter(Boolean).pop();
+}
+
 export function getTopicCurrentContextKey(projectId: string, topic: string): string {
   return `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
 }

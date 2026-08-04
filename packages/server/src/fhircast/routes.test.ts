@@ -4,7 +4,6 @@ import type { CurrentContext, FhircastEventContext, FhircastEventPayload, WithId
 import { ContentType, createFhircastMessagePayload, generateId, isOperationOutcome } from '@medplum/core';
 import type { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
-import type { ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import request from 'superwstest';
@@ -16,29 +15,11 @@ import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { EventCategory } from './routes';
 import { getEventCategory } from './routes';
-import { setTopicCurrentContext } from './utils';
+import { extractEndpoint, getEndpointSubscription, setTopicCurrentContext } from './utils';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2';
 const STU3_BASE_ROUTE = '/fhircast/STU3';
 const HUB_ALIAS_ROUTE = '/api/hub';
-
-type ExecResult = Awaited<ReturnType<ChainableCommander['exec']>>;
-
-class MockChainableCommander {
-  result: ExecResult = null;
-  setnx(): this {
-    return this;
-  }
-  get(): this {
-    return this;
-  }
-  async exec(): Promise<[Error | null, unknown][] | null> {
-    return this.result;
-  }
-  setNextExecResult(result: ExecResult): void {
-    this.result = result;
-  }
-}
 
 describe('FHIRcast routes', () => {
   let app: express.Express;
@@ -221,73 +202,67 @@ describe('FHIRcast routes', () => {
     }
   });
 
-  test('Subscribing twice to the same topic yields the same url', async () => {
-    const res1 = await request(server)
-      .post(STU3_BASE_ROUTE)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res1).toHaveStatus(202);
-    expect(res1.body['hub.channel.endpoint']).toMatch(/ws:\/\/localhost:8103\/ws\/fhircast\/*/);
-    expect(res1.body['hub.channel.endpoint']).not.toContain('topic');
+  test('Each subscription to a topic yields its own endpoint and remembers its events', async () => {
+    const topic = randomUUID();
+    const subscribe = async (events: string): Promise<string> => {
+      const res = await request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': topic,
+          'hub.events': events,
+        });
+      expect(res).toHaveStatus(202);
+      expect(res.body['hub.channel.endpoint']).toMatch(/ws:\/\/localhost:8103\/ws\/fhircast\/*/);
+      expect(res.body['hub.channel.endpoint']).not.toContain(topic);
+      return res.body['hub.channel.endpoint'];
+    };
 
-    const res2 = await request(server)
-      .post(STU3_BASE_ROUTE)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res2).toHaveStatus(202);
-    expect(res2.body['hub.channel.endpoint']).toStrictEqual(res1.body['hub.channel.endpoint']);
+    const endpoint1 = await subscribe('Patient-open');
+    const endpoint2 = await subscribe('ImagingStudy-open,ImagingStudy-close');
+    expect(endpoint2).not.toStrictEqual(endpoint1);
+
+    await expect(getEndpointSubscription(extractEndpoint(endpoint1) as string)).resolves.toStrictEqual({
+      projectId: project.id,
+      topic,
+      events: ['Patient-open'],
+      version: 'STU3',
+    });
+    await expect(getEndpointSubscription(extractEndpoint(endpoint2) as string)).resolves.toStrictEqual({
+      projectId: project.id,
+      topic,
+      events: ['ImagingStudy-open', 'ImagingStudy-close'],
+      version: 'STU3',
+    });
   });
 
-  test('Subscribing to the same topic from a different project yields a different endpoint', async () => {
-    const res1 = await request(server)
+  test('Whitespace around `hub.events` is not tracked as part of the event name', async () => {
+    const topic = randomUUID();
+    const res = await request(server)
       .post(STU3_BASE_ROUTE)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         'hub.channel.type': 'websocket',
         'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
+        'hub.topic': topic,
+        'hub.events': 'Patient-open, Patient-close',
       });
-    expect(res1).toHaveStatus(202);
-    expect(res1.body['hub.channel.endpoint']).toMatch(/ws:\/\/localhost:8103\/ws\/fhircast\/*/);
-    expect(res1.body['hub.channel.endpoint']).not.toContain('topic');
+    expect(res).toHaveStatus(202);
 
-    const res2 = await request(server)
-      .post(STU3_BASE_ROUTE)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + tokenForAnotherProject)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-    expect(res2).toHaveStatus(202);
-    expect(res2.body['hub.channel.endpoint']).not.toStrictEqual(res1.body['hub.channel.endpoint']);
+    const endpoint = extractEndpoint(res.body['hub.channel.endpoint']) as string;
+    await expect(getEndpointSubscription(endpoint)).resolves.toMatchObject({
+      events: ['Patient-open', 'Patient-close'],
+    });
   });
 
-  test('Redis returns `null`', async () => {
-    const redis = getCacheRedis();
-    const mockCommander = new MockChainableCommander();
-    const mockFn = (() => {
-      return mockCommander;
-    }) as unknown as (commands?: unknown[][]) => ChainableCommander;
-    const redisMulti = vi.spyOn(redis, 'multi').mockImplementation(mockFn);
-
-    mockCommander.setNextExecResult(null);
+  test('Redis fails to store the subscription', async () => {
+    const redisSet = vi
+      .spyOn(getCacheRedis(), 'set')
+      .mockRejectedValue(new Error('Something happened when querying Redis'));
 
     const res = await request(server)
       .post(STU3_BASE_ROUTE)
@@ -309,57 +284,17 @@ describe('FHIRcast routes', () => {
           severity: 'error',
           code: 'exception',
           details: { text: 'Internal server error' },
-          diagnostics: 'Error: Failed to get endpoint for topic',
+          diagnostics: 'Error: Failed to create subscription for topic',
         },
       ],
     });
 
-    redisMulti.mockRestore();
-  });
-
-  test('Redis result contains error', async () => {
-    const redis = getCacheRedis();
-    const mockCommander = new MockChainableCommander();
-    const mockFn = (() => {
-      return mockCommander;
-    }) as unknown as (commands?: unknown[][]) => ChainableCommander;
-    const redisMulti = vi.spyOn(redis, 'multi').mockImplementation(mockFn);
-
-    mockCommander.setNextExecResult([
-      [null, 'OK'],
-      [new Error('Something happened when querying Redis'), null],
-    ]);
-
-    const res = await request(server)
-      .post(STU3_BASE_ROUTE)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'subscribe',
-        'hub.topic': 'topic',
-        'hub.events': 'Patient-open',
-      });
-
-    expect(res).toHaveStatus(500);
-    expect(isOperationOutcome(res.body)).toStrictEqual(true);
-    expect(res.body).toMatchObject({
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          severity: 'error',
-          code: 'exception',
-          details: { text: 'Internal server error' },
-          diagnostics: 'Error: Failed to get endpoint for topic',
-        },
-      ],
-    });
-
-    redisMulti.mockRestore();
+    redisSet.mockRestore();
   });
 
   test('Unsubscribe', async () => {
     for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const topic = randomUUID();
       const subRes = await request(server)
         .post(route)
         .set('Content-Type', ContentType.JSON)
@@ -367,19 +302,18 @@ describe('FHIRcast routes', () => {
         .send({
           'hub.channel.type': 'websocket',
           'hub.mode': 'subscribe',
-          'hub.topic': 'topic',
+          'hub.topic': topic,
           'hub.events': 'Patient-open',
         });
       expect(subRes).toHaveStatus(202);
-      expect(subRes.body['hub.channel.endpoint']).toBeDefined();
-
-      const pathname = new URL(subRes.body['hub.channel.endpoint']).pathname;
+      const endpointUrl = subRes.body['hub.channel.endpoint'];
+      expect(endpointUrl).toBeDefined();
 
       await request(server)
-        .ws(pathname)
+        .ws(new URL(endpointUrl).pathname)
         .expectJson((obj) => {
           // Connection verification message
-          expect(obj['hub.topic']).toBe('topic');
+          expect(obj['hub.topic']).toBe(topic);
         })
         .exec(async () => {
           const unsubRes = await request(server)
@@ -389,21 +323,168 @@ describe('FHIRcast routes', () => {
             .send({
               'hub.channel.type': 'websocket',
               'hub.mode': 'unsubscribe',
-              'hub.topic': 'topic',
+              'hub.topic': topic,
               'hub.events': 'Patient-open',
+              endpoint: endpointUrl,
             });
           expect(unsubRes).toHaveStatus(202);
-          expect(unsubRes.body['hub.channel.endpoint']).toBeDefined();
+          expect(unsubRes.body['hub.channel.endpoint']).toStrictEqual(endpointUrl);
         })
         .expectJson({
-          'hub.topic': 'topic',
+          'hub.topic': topic,
           'hub.mode': 'denied',
           'hub.reason': 'Subscriber unsubscribed from topic',
           'hub.events': 'Patient-open',
         })
         .close()
         .expectClosed();
+
+      // The subscription record is gone, so a reconnect to this endpoint would be denied
+      await expect(getEndpointSubscription(extractEndpoint(endpointUrl) as string)).resolves.toBeUndefined();
     }
+  });
+
+  test('Unsubscribe without an endpoint denies every subscriber on the topic', async () => {
+    const topic = randomUUID();
+    const subRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': topic,
+        'hub.events': 'Patient-open',
+      });
+    expect(subRes).toHaveStatus(202);
+
+    await request(server)
+      .ws(new URL(subRes.body['hub.channel.endpoint']).pathname)
+      .expectJson((obj) => {
+        expect(obj['hub.mode']).toBe('subscribe');
+      })
+      .exec(async () => {
+        const unsubRes = await request(server)
+          .post(STU3_BASE_ROUTE)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'unsubscribe',
+            'hub.topic': topic,
+            'hub.events': 'Patient-open',
+          });
+        expect(unsubRes).toHaveStatus(202);
+        expect(unsubRes.body['hub.channel.endpoint']).toBeUndefined();
+      })
+      .expectJson((obj) => {
+        expect(obj['hub.mode']).toBe('denied');
+      })
+      .close()
+      .expectClosed();
+  });
+
+  test('Unsubscribe leaves the topic`s other subscribers connected', async () => {
+    const topic = randomUUID();
+    const subscribe = async (): Promise<string> => {
+      const res = await request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': topic,
+          'hub.events': 'Patient-open',
+        });
+      expect(res).toHaveStatus(202);
+      return res.body['hub.channel.endpoint'];
+    };
+
+    const endpointToKeep = await subscribe();
+    const endpointToCancel = await subscribe();
+
+    await request(server)
+      .ws(new URL(endpointToKeep).pathname)
+      .expectJson((obj) => {
+        expect(obj['hub.mode']).toBe('subscribe');
+      })
+      .exec(async () => {
+        await request(server)
+          .ws(new URL(endpointToCancel).pathname)
+          .expectJson((obj) => {
+            expect(obj['hub.mode']).toBe('subscribe');
+          })
+          .exec(async () => {
+            const unsubRes = await request(server)
+              .post(STU3_BASE_ROUTE)
+              .set('Content-Type', ContentType.JSON)
+              .set('Authorization', 'Bearer ' + accessToken)
+              .send({
+                'hub.channel.type': 'websocket',
+                'hub.mode': 'unsubscribe',
+                'hub.topic': topic,
+                'hub.events': 'Patient-open',
+                endpoint: endpointToCancel,
+              });
+            expect(unsubRes).toHaveStatus(202);
+          })
+          .expectJson((obj) => {
+            expect(obj['hub.mode']).toBe('denied');
+          })
+          .close()
+          .expectClosed();
+
+        await request(server)
+          .post(`${STU3_BASE_ROUTE}/${topic}`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            createFhircastMessagePayload(topic, 'Patient-open', [
+              { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
+            ])
+          );
+      })
+      // The denial went to the other subscriber, so the next thing this one hears is the event
+      .expectJson((obj) => {
+        expect(obj.event['hub.event']).toBe('Patient-open');
+      })
+      .close()
+      .expectClosed();
+  });
+
+  test('Unsubscribe cannot cancel a subscription from another project', async () => {
+    const topic = randomUUID();
+    const subRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': topic,
+        'hub.events': 'Patient-open',
+      });
+    expect(subRes).toHaveStatus(202);
+    const endpointUrl = subRes.body['hub.channel.endpoint'];
+
+    const unsubRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + tokenForAnotherProject)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'unsubscribe',
+        'hub.topic': topic,
+        'hub.events': 'Patient-open',
+        endpoint: endpointUrl,
+      });
+    expect(unsubRes).toHaveStatus(202);
+
+    await expect(getEndpointSubscription(extractEndpoint(endpointUrl) as string)).resolves.toMatchObject({
+      projectId: project.id,
+      topic,
+    });
   });
 
   test('Publish event missing timestamp', async () => {
