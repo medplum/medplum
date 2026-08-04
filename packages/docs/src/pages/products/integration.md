@@ -39,6 +39,20 @@ Before starting an integration, we recommend filling out the following checklist
 - [ ] How can you request credentials/access to a test environment?
 - [ ] What process is required to gain access to production?
 
+## Custom Integrations
+
+Beyond the pre-built integrations, **any system that exposes an API (REST/FHIR), HL7, or SFTP interface can be connected to Medplum**. Because integrations are built as [Bots](/docs/bots) - code that runs on your Medplum project - you are not limited to a fixed catalog of vendors. If a service can send or receive data over one of these interfaces, an integration to it can be built.
+
+Common examples of custom integrations include:
+
+- **E-signature** - services like DocuSign or Dropbox Sign expose REST APIs and webhooks, so consent forms and agreements can be sent, tracked, and stored back to FHIR resources
+- **Payments and billing** - REST APIs from processors and billing clearinghouses
+- **Scheduling, CRM, and messaging** - most modern digital health tools expose a REST API with webhooks
+
+This approach is **portable**. Because the integration logic lives in Bots that you own and control, you are not locked into a single vendor. If you switch e-signature providers - or want to move an existing vendor's workflow onto Medplum itself - you own the integration code and can re-point it at a new system.
+
+We plan to publish a companion guide on common patterns for building these custom integrations. In the meantime, if you have a specific integration in mind, please contact us at hello@medplum.com or in our [Discord](https://discord.gg/medplum).
+
 ## Examples: Integrations by Interface Type
 
 To get started integrating services into Medplum, it can be useful to think about **which type of medical applications have which type of interfaces**. Medplum provides the infrastructure that helps connect systems like these together.
