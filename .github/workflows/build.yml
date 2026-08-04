@@ -122,6 +122,7 @@ jobs:
           if changed '^packages/app/'; then deploy_app=true; fi
           if changed '^packages/docs/'; then deploy_docs=true; fi
           if changed '^examples/medplum-provider/'; then deploy_provider=true; fi
+          if changed '^examples/react-scheduling/'; then deploy_provider=true; fi
 
           deploy_any=false
           if [ "$deploy_app" = true ] || [ "$deploy_docs" = true ] || [ "$deploy_provider" = true ]; then
