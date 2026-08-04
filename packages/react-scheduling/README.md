@@ -24,6 +24,7 @@ Note the following peer dependencies:
 - [@mantine/core](https://www.npmjs.com/package/@mantine/core)
 - [@mantine/hooks](https://www.npmjs.com/package/@mantine/hooks)
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
+- [@medplum/fhirtypes](https://www.npmjs.com/package/@medplum/fhirtypes)
 
 
 ## Basic Usage

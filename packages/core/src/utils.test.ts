@@ -1829,7 +1829,13 @@ describe('assertNever', () => {
     expect(() => {
       // @ts-expect-error Testing assertNever violation
       assertNever('oops');
-    }).toThrow('Unexpected value: oops');
+    }).toThrow('Unexpected value: "oops"');
+
+    // When receiving an object, make sure we don't emit the useless "[object Object]" string.
+    expect(() => {
+      // @ts-expect-error Testing assertNever violation
+      assertNever({ type: 'test' });
+    }).toThrow(`Unexpected value: {"type":"test"}`);
   });
 
   test('triggers typescript error when a union type is not fully handled', () => {
@@ -1849,7 +1855,7 @@ describe('assertNever', () => {
     }
 
     expect(handle('a')).toBe(1);
-    expect(() => handle('c')).toThrow('Unexpected value: c');
+    expect(() => handle('c')).toThrow('Unexpected value: "c"');
   });
 
   test('is usable as an exhaustive check in a switch statement', () => {

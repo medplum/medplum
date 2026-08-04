@@ -1599,7 +1599,7 @@ export function isDefined<T>(value: T | undefined | null): value is T {
  * @param value - The value that should never be present
  */
 export function assertNever(value: never): never {
-  throw new Error(`Unexpected value: ${value}`);
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }
 
 /** Constant empty array. */
