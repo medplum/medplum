@@ -63,7 +63,7 @@
     "@types/react-dom": "19.2.3",
     "@vueless/storybook-dark-mode": "10.0.8",
     "chromatic": "18.1.0",
-    "postcss": "8.5.22",
+    "postcss": "8.5.23",
     "postcss-preset-mantine": "1.18.0",
     "postcss-simple-vars": "7.0.1",
     "react": "19.2.8",
