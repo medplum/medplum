@@ -426,14 +426,7 @@ export interface NackedRow extends InboundRowBase {
  * can distinguish "not yet set" from "absent property."
  */
 export type InboundRow =
-  | QueuedRow
-  | DelayedRow
-  | ClaimedRow
-  | InflightRow
-  | ProcessedRow
-  | RejectedRow
-  | FailedRow
-  | NackedRow;
+  QueuedRow | DelayedRow | ClaimedRow | InflightRow | ProcessedRow | RejectedRow | FailedRow | NackedRow;
 
 /**
  * Narrows a (possibly null) {@link InboundRow} to the union member for `state`,
