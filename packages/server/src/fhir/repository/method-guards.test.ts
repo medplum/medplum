@@ -98,6 +98,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'callbackTarget',
   'boundEntry',
   'inOwnTransaction',
+  'recordCacheAccess',
   'assertUsable',
   'authorizeBinarySecurityContext',
 ]);

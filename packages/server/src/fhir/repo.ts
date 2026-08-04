@@ -101,7 +101,7 @@ import { FhirQuotaCost } from './fhirquota';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
-import { replaceConditionalReferences, validateResourceReferences } from './references';
+import { getResourceTypesFromReferences, replaceConditionalReferences, validateResourceReferences } from './references';
 import type {
   ExecuteSqlOptions,
   RepositoryAccessOptions,
@@ -2549,6 +2549,7 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.inOwnTransaction()) {
       return undefined;
     }
+    this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
     return getResourceCacheEntry<T>(resourceType, id);
   }
 
@@ -2563,6 +2564,7 @@ export class Repository extends FhirRepository implements Disposable {
       return new Array(references.length);
     }
 
+    this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
     return getResourceCacheEntries(references);
   }
 
@@ -2580,6 +2582,7 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
+    this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
     await setResourceCacheEntry(resource);
   }
 
@@ -2595,6 +2598,7 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
+    this.recordCacheAccess('write', resourceType, 'repo.deleteCacheEntry');
     await deleteResourceCacheEntry(resourceType, id);
   }
 
@@ -2610,7 +2614,30 @@ export class Repository extends FhirRepository implements Disposable {
       return;
     }
 
+    this.recordCacheAccess('write', resourceType, 'repo.deleteCacheEntries');
     await deleteResourceCacheEntries(resourceType, ids);
+  }
+
+  /**
+   * Records a resource cache access against the shard-boundary inventory.
+   *
+   * Called after each cache method's transaction guard, so it reflects an actual Redis round trip: a
+   * write deferred by an open transaction records later, when its post-commit callback re-enters.
+   *
+   * Recorded against this repository's own shard rather than routed by the types it touches. A cache
+   * access that spans shards is exactly what this inventory exists to surface, so it has to be logged
+   * rather than rejected — and `resolveShardId` would throw on it. Revisit once the cache is
+   * partitioned alongside the databases and a cache access has a shard of its own to resolve to.
+   * @param operation - Whether the access reads or writes.
+   * @param resourceTypes - The resource types the access touches.
+   * @param source - Short label identifying the call site.
+   */
+  private recordCacheAccess(operation: 'read' | 'write', resourceTypes: ResourceTypeInput, source: string): void {
+    const types = normalizeResourceTypes(resourceTypes);
+    if (types.size === 0) {
+      return;
+    }
+    this.connections.entryFor(this.shardId).connection.recordResourceAccess('cache', operation, types, source);
   }
 
   async ensureInTransaction<TResult>(
@@ -2620,7 +2647,7 @@ export class Repository extends FhirRepository implements Disposable {
     this.assertUsable();
     const { entry } = this.connectionFor(options);
     if (entry.connection.isInTransaction()) {
-      entry.connection.recordResourceAccess('transaction', options.resourceTypes, options.source);
+      entry.connection.recordResourceAccess('sql', 'transaction', options.resourceTypes, options.source);
       return callback(this);
     }
 

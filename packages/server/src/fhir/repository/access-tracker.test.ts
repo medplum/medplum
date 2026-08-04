@@ -44,10 +44,11 @@ describe('RepositoryAccessTracker', () => {
   });
 
   test('Logs a statement that spans shards', () => {
-    tracker.recordResourceAccess('read', ['User', 'Patient'], 'test.mixedRead');
+    tracker.recordResourceAccess('sql', 'read', ['User', 'Patient'], 'test.mixedRead');
 
     expect(infoSpy).toHaveBeenCalledWith('[RepoSplit] Mixed resource access', {
       scope: 'statement',
+      layer: 'sql',
       operation: 'read',
       source: 'test.mixedRead',
       inTransaction: false,
@@ -61,17 +62,17 @@ describe('RepositoryAccessTracker', () => {
     ['only project-scoped types', ['Patient', 'Observation'] as ResourceType[]],
     ['no types at all', [] as ResourceType[]],
   ])('Ignores a statement touching %s', (_label, resourceTypes) => {
-    tracker.recordResourceAccess('read', resourceTypes, 'test.notMixed');
+    tracker.recordResourceAccess('sql', 'read', resourceTypes, 'test.notMixed');
     expect(infoSpy).not.toHaveBeenCalled();
   });
 
   test('Rolls up a transaction that spans shards', () => {
     tracker.startTransaction();
-    tracker.recordResourceAccess('transaction', ['Project'], 'test.tx');
-    tracker.recordResourceAccess('read', 'ProjectMembership', 'test.readMembership');
-    tracker.recordResourceAccess('write', 'Practitioner', 'test.writeProfile');
-    tracker.recordResourceAccess('write', 'AccessPolicy', 'test.writeProfile');
-    tracker.recordResourceAccess('configuration', [], 'test.setTimeout');
+    tracker.recordResourceAccess('sql', 'transaction', ['Project'], 'test.tx');
+    tracker.recordResourceAccess('sql', 'read', 'ProjectMembership', 'test.readMembership');
+    tracker.recordResourceAccess('sql', 'write', 'Practitioner', 'test.writeProfile');
+    tracker.recordResourceAccess('sql', 'write', 'AccessPolicy', 'test.writeProfile');
+    tracker.recordResourceAccess('sql', 'configuration', [], 'test.setTimeout');
     infoSpy.mockClear(); // discard the per-statement logs
     tracker.finishTransaction('committed');
 
@@ -84,13 +85,15 @@ describe('RepositoryAccessTracker', () => {
       writeResourceTypes: ['Practitioner', 'AccessPolicy'],
       sqlReadCount: 1,
       sqlWriteCount: 2,
+      cacheReadCount: 0,
+      cacheWriteCount: 0,
       sources: ['test.tx', 'test.readMembership', 'test.writeProfile'],
     });
   });
 
   test('Reports how the transaction ended', () => {
     tracker.startTransaction();
-    tracker.recordResourceAccess('write', ['User', 'Patient'], 'test.tx');
+    tracker.recordResourceAccess('sql', 'write', ['User', 'Patient'], 'test.tx');
     tracker.finishTransaction('rolled_back');
 
     expect(infoSpy).toHaveBeenCalledWith(
@@ -101,7 +104,7 @@ describe('RepositoryAccessTracker', () => {
 
   test('Marks statements recorded inside a transaction', () => {
     tracker.startTransaction();
-    tracker.recordResourceAccess('read', ['User', 'Patient'], 'test.tx');
+    tracker.recordResourceAccess('sql', 'read', ['User', 'Patient'], 'test.tx');
 
     expect(infoSpy).toHaveBeenCalledWith(
       '[RepoSplit] Mixed resource access',
@@ -111,8 +114,8 @@ describe('RepositoryAccessTracker', () => {
 
   test('Does not roll up a transaction that stays on one shard', () => {
     tracker.startTransaction();
-    tracker.recordResourceAccess('write', 'Patient', 'test.tx');
-    tracker.recordResourceAccess('read', 'Observation', 'test.tx');
+    tracker.recordResourceAccess('sql', 'write', 'Patient', 'test.tx');
+    tracker.recordResourceAccess('sql', 'read', 'Observation', 'test.tx');
     tracker.finishTransaction('committed');
 
     expect(infoSpy).not.toHaveBeenCalled();
@@ -121,7 +124,7 @@ describe('RepositoryAccessTracker', () => {
   test('Stops recording once the transaction ends', () => {
     tracker.startTransaction();
     tracker.finishTransaction('committed');
-    tracker.recordResourceAccess('read', ['User', 'Patient'], 'test.afterCommit');
+    tracker.recordResourceAccess('sql', 'read', ['User', 'Patient'], 'test.afterCommit');
 
     expect(infoSpy).toHaveBeenCalledWith(
       '[RepoSplit] Mixed resource access',
@@ -143,7 +146,7 @@ describe('RepositoryAccessTracker double start', () => {
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
     try {
       tracker.startTransaction();
-      tracker.recordResourceAccess('read', ['User', 'Patient'], 'test.abandoned');
+      tracker.recordResourceAccess('sql', 'read', ['User', 'Patient'], 'test.abandoned');
       infoSpy.mockClear();
 
       // A lost diagnostic must not fail the transaction being started.

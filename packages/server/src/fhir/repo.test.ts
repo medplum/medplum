@@ -377,16 +377,24 @@ describe('FHIR Repo', () => {
     expect((results[5] as OperationOutcomeError).outcome.id).toBe('not-found');
   });
 
-  test('Does not log mixed cache access for readReferences across split resource types', async () => {
-    // Redis is not sharded, so a bulk cache read spanning shards is not a routing event. The
-    // per-reference database reads it falls back to are each single-type, so nothing is mixed.
+  test('Logs mixed cache access for readReferences across split resource types', async () => {
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
     const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Split Cache Project' });
     const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
 
     await systemRepo.readReferences([{ reference: `Project/${project.id}` }, { reference: `Patient/${patient.id}` }]);
 
-    expect(infoSpy).not.toHaveBeenCalledWith('[RepoSplit] Mixed resource access', expect.anything());
+    expect(infoSpy).toHaveBeenCalledWith(
+      '[RepoSplit] Mixed resource access',
+      expect.objectContaining({
+        scope: 'statement',
+        layer: 'cache',
+        operation: 'read',
+        source: 'repo.getCacheEntries',
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
+      })
+    );
   });
 
   test('Logs mixed SQL access for multi-type search across split resource types', async () => {
@@ -405,6 +413,7 @@ describe('FHIR Repo', () => {
       '[RepoSplit] Mixed resource access',
       expect.objectContaining({
         scope: 'statement',
+        layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
         globalResourceTypes: expect.toContainExactly(['Project']),

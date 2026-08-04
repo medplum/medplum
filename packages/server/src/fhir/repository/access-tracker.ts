@@ -8,6 +8,13 @@ import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import { globalShardResourceTypes } from '../sharding';
 
+/**
+ * Which store an access goes to. Both are shard-scoped: the resource cache is keyed per resource and
+ * will be partitioned alongside the databases, so a cache access that spans shards is a routing event
+ * for the same reason a SQL one is.
+ */
+export type RepositoryAccessLayer = 'sql' | 'cache';
+
 export type RepositoryAccessOperation = 'read' | 'write' | 'transaction' | 'configuration';
 
 export type ResourceTypeInput = ResourceType | readonly ResourceType[] | ReadonlySet<ResourceType>;
@@ -34,6 +41,8 @@ export interface TransactionSqlOptions extends RepositoryAccessOptions, Transact
 type TransactionAccessRollup = {
   sqlReadCount: number;
   sqlWriteCount: number;
+  cacheReadCount: number;
+  cacheWriteCount: number;
   readResourceTypes: Set<ResourceType>;
   writeResourceTypes: Set<ResourceType>;
   globalResourceTypes: Set<ResourceType>;
@@ -72,6 +81,8 @@ export class RepositoryAccessTracker {
     this.rollup = {
       sqlReadCount: 0,
       sqlWriteCount: 0,
+      cacheReadCount: 0,
+      cacheWriteCount: 0,
       readResourceTypes: new Set(),
       writeResourceTypes: new Set(),
       globalResourceTypes: new Set(),
@@ -101,18 +112,22 @@ export class RepositoryAccessTracker {
       writeResourceTypes: Array.from(rollup.writeResourceTypes),
       sqlReadCount: rollup.sqlReadCount,
       sqlWriteCount: rollup.sqlWriteCount,
+      cacheReadCount: rollup.cacheReadCount,
+      cacheWriteCount: rollup.cacheWriteCount,
       sources: Array.from(rollup.sources),
     });
   }
 
   /**
-   * Records one SQL access: logs it if it spans shards, and folds it into the rollup of the
-   * transaction in progress, if any.
+   * Records one access: logs it if it spans shards, and folds it into the rollup of the transaction in
+   * progress, if any.
+   * @param layer - Which store the access goes to.
    * @param operation - What the access does.
    * @param resourceTypes - The resource types the access touches.
    * @param source - Short label identifying the call site.
    */
   recordResourceAccess(
+    layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
     resourceTypes: ResourceTypeInput,
     source: string | undefined
@@ -139,6 +154,7 @@ export class RepositoryAccessTracker {
     if (global && project) {
       getLogger().info('[RepoSplit] Mixed resource access', {
         scope: 'statement',
+        layer,
         operation,
         source,
         inTransaction: this.rollup !== undefined,
@@ -153,10 +169,18 @@ export class RepositoryAccessTracker {
     }
 
     if (operation === 'read') {
-      rollup.sqlReadCount++;
+      if (layer === 'sql') {
+        rollup.sqlReadCount++;
+      } else {
+        rollup.cacheReadCount++;
+      }
       addAll(rollup.readResourceTypes, all);
     } else if (operation === 'write') {
-      rollup.sqlWriteCount++;
+      if (layer === 'sql') {
+        rollup.sqlWriteCount++;
+      } else {
+        rollup.cacheWriteCount++;
+      }
       addAll(rollup.writeResourceTypes, all);
     }
     addAll(rollup.globalResourceTypes, global);

@@ -13,6 +13,7 @@ import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
 import type {
   ExecuteSqlOptions,
+  RepositoryAccessLayer,
   RepositoryAccessOperation,
   RepositoryAccessOptions,
   ResourceTypeInput,
@@ -260,11 +261,12 @@ export class RepositoryConnection implements Disposable {
   }
 
   recordResourceAccess(
+    layer: RepositoryAccessLayer,
     operation: RepositoryAccessOperation,
     resourceTypes: ResourceTypeInput,
     source: string | undefined
   ): void {
-    this.accessTracker.recordResourceAccess(operation, resourceTypes, source);
+    this.accessTracker.recordResourceAccess(layer, operation, resourceTypes, source);
   }
 
   /**
@@ -279,7 +281,7 @@ export class RepositoryConnection implements Disposable {
    * @returns The database client.
    */
   getDatabaseClient(scope: ConnectionScope, options: ExecuteSqlOptions): PgQueryable {
-    this.recordResourceAccess(options.operation, options.resourceTypes, options.source);
+    this.recordResourceAccess('sql', options.operation, options.resourceTypes, options.source);
     this.assertNotClosed();
     this.assertScope(scope);
     if (this.conn) {
@@ -530,7 +532,7 @@ export class RepositoryConnection implements Disposable {
             serializable: options.serializable ?? false,
           });
         }
-        this.recordResourceAccess('transaction', options.resourceTypes, options.source);
+        this.recordResourceAccess('sql', 'transaction', options.resourceTypes, options.source);
         const result = await callback(txScope);
         await this.commitTransaction(txScope);
         if (attempt > 0) {
