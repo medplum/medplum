@@ -75,29 +75,26 @@ export class AgentHl7Channel extends BaseChannel {
   // source of truth, so we track it here and the durable path reads it directly.
   private enhancedMode: EnhancedMode = undefined;
   /**
-   * Bounded pool of workers draining this channel's durable queue. Each worker is
-   * an ordinary single-in-flight {@link ChannelQueueWorker}; concurrency comes
-   * from running several of them, and the partition-aware claim (see CLAIM_NEXT)
-   * guarantees at most one ever holds a given logical channel in flight. Sized to
-   * {@link maxWorkers} (default 1 = the pre-logical-channel single-worker behavior).
+   * Bounded pool of workers draining this channel's durable queue, sized to
+   * {@link maxWorkers} (default 1). Each is an ordinary single-in-flight
+   * {@link ChannelQueueWorker}; concurrency comes from running several of them,
+   * and each one's post-claim partition check keeps at most one message of a given
+   * logical channel in flight across the whole pool.
    */
   workers: ChannelQueueWorker[] = [];
   /**
    * Excess workers removed from {@link workers} by a pool shrink that are still
    * draining their in-flight dispatch ({@link resizeWorkerPool} calls
-   * `stop({ drain: true })`). They must stay reachable until they settle: a
-   * server response or a WS disconnect for their in-flight row still has to reach
-   * them (see {@link allWorkers}), or the drain drops it. Each removes itself once
-   * its `stop()` resolves.
+   * `stop({ drain: true })`). Each removes itself once its `stop()` resolves.
    */
   private drainingWorkers: ChannelQueueWorker[] = [];
   /**
-   * Every worker that may still own an in-flight dispatch: the active pool plus
-   * any still draining after a shrink. Response routing ({@link routeServerResponse})
-   * and WS-disconnect handling must consult BOTH — a worker spliced out of
-   * {@link workers} but still awaiting its server response is otherwise
-   * unreachable, so its response is dropped (spurious failure / duplicate dispatch).
-   * @returns The active pool plus any workers still draining after a shrink.
+   * @returns Every worker that may still own an in-flight dispatch: the active
+   * pool plus any still draining after a shrink. Response routing
+   * ({@link routeServerResponse}) and WS-disconnect handling must consult BOTH — a
+   * worker spliced out of {@link workers} while still awaiting its server response
+   * is otherwise unreachable, and its response is dropped (spurious failure /
+   * duplicate dispatch).
    */
   get allWorkers(): ChannelQueueWorker[] {
     return this.drainingWorkers.length === 0 ? this.workers : [...this.workers, ...this.drainingWorkers];
@@ -193,12 +190,9 @@ export class AgentHl7Channel extends BaseChannel {
         log: this.log,
         retryPolicy: this.retryPolicy,
         sendAck: (response) => this.sendToRemote(response),
-        // Compute the partition from the CURRENT spec at claim time. The arrow
-        // reads `this.logicalChannelKeySpec` live, so a spec change reaches the
-        // pool without recreating workers (they outlive reloads).
+        // The arrow reads `this.logicalChannelKeySpec` live, so a spec change
+        // reaches the pool without recreating workers (they outlive reloads).
         computeKey: (originalMessage) => this.computeLogicalChannelKeyForStoredMessage(originalMessage),
-        // Wake the whole pool when a worker releases a partition on settle, so an
-        // idle sibling claims the promoted row without waiting on its poll.
         notifyPool: () => this.notifyWorkers(),
       });
       worker.start();
@@ -258,8 +252,8 @@ export class AgentHl7Channel extends BaseChannel {
    *
    * NOT on the live dispatch path — a worker keys a claimed row from its stored
    * bytes via {@link computeLogicalChannelKeyForStoredMessage}. This variant takes
-   * an already-parsed {@link Hl7Message} and is used for diagnostics and to assert
-   * (in tests) that a spec reload took effect; both reflect the same current spec.
+   * an already-parsed {@link Hl7Message}, for diagnostics and for asserting that a
+   * spec reload took effect; both read the same current spec.
    * @param message - The parsed inbound HL7 message.
    * @returns The logical channel key (partition) for the message.
    */
@@ -277,12 +271,11 @@ export class AgentHl7Channel extends BaseChannel {
   /**
    * Routes a server `agent:transmit:response` to the pool worker that owns it.
    *
-   * The response's callback identifies exactly one in-flight dispatch. We ask each
-   * worker — the active pool AND any still draining after a shrink ({@link allWorkers})
-   * — to resolve it if it's theirs; the first that does wins and we stop. A worker
-   * spliced out by a shrink may still own this response, so it must be consulted or
-   * its dispatch is lost. If none owns it, the response is *late* (its row already
-   * timed out/settled) — we apply it once via any worker, since every worker shares
+   * The response's callback identifies exactly one in-flight dispatch, so we ask
+   * each worker in turn — the active pool AND any still draining after a shrink
+   * ({@link allWorkers}), since a spliced-out worker may still own this response —
+   * and the first to claim it wins. If none owns it, the response is *late* (its
+   * row already timed out/settled) and any worker can apply it: every worker shares
    * this channel's queue, retry policy, and ACK sender, so the late-settle is
    * identical whichever handles it. See {@link ChannelQueueWorker.tryResolveInFlight}
    * / {@link ChannelQueueWorker.applyLateResponse}.
@@ -317,17 +310,10 @@ export class AgentHl7Channel extends BaseChannel {
    *
    * - Invalid spec: {@link parseLogicalChannelKeySpec} already warned; we keep the
    *   previously-applied spec so a typo can't silently re-partition the channel.
-   * - Valid: adopt the parsed spec. Fresh intake and the common re-dispatch paths
-   *   (retry/requeue/restart) re-derive a row's partition at CLAIM time from this
-   *   spec, so they need no rewrite. The exception is a spec CHANGE: rows not
-   *   actively being claimed (backing-off `queued`, parked `delayed`) keep their
-   *   last-stamped key, and the partition busy-check trusts stored keys — so on a
-   *   real change we recompute the stored key of every `queued`/`delayed` row
-   *   under the new spec (see {@link DurableQueue.recomputeLogicalChannelKeys}),
-   *   which also un-parks `delayed` rows. Only the leader (the process that
-   *   claims) needs this, so non-leaders skip it and re-key at claim time if they
-   *   later take the lease. `claimed`/`inflight` rows finish under their current
-   *   partition (a bounded transitional window).
+   * - Valid: adopt the parsed spec. Rows re-derive their partition at CLAIM time,
+   *   so nothing stored needs rewriting — except on a spec CHANGE, which calls
+   *   {@link DurableQueue.recomputeLogicalChannelKeys} to refresh the rows claiming
+   *   can't reach on its own.
    * @param params - The endpoint URL query params.
    */
   private applyLogicalChannelKeySpec(params: URLSearchParams): void {
@@ -348,10 +334,10 @@ export class AgentHl7Channel extends BaseChannel {
     if (!queue) {
       return;
     }
-    // Only the dispatching leader claims, so only it needs stored keys refreshed
-    // for the busy-check; a non-leader is a no-op here and re-keys at claim time if
-    // it later takes the lease. Skipping non-leaders also keeps the recompute off a
-    // demoted process (it never rewrites dispatch state it doesn't own).
+    // Only the dispatching leader claims, so only it needs stored keys refreshed;
+    // a non-leader re-keys at claim time if it later takes the lease. Skipping it
+    // here also keeps the recompute off a demoted process, which must not rewrite
+    // dispatch state it no longer owns.
     if (!queue.isLeader()) {
       return;
     }
@@ -387,10 +373,9 @@ export class AgentHl7Channel extends BaseChannel {
   /**
    * Computes a stored row's logical channel key from its persisted bytes under the
    * channel's CURRENT spec. Injected into each {@link ChannelQueueWorker} as its
-   * claim-time `computeKey`, so the partition is always derived fresh from the live
-   * spec. Synchronous and never throws: a row that no longer parses as HL7 falls
-   * back to the default partition (`''`), so the worker's await-free critical
-   * section can rely on it.
+   * claim-time `computeKey`. Synchronous and never throws — a row that no longer
+   * parses as HL7 falls back to the default partition (`''`) — so the worker's
+   * await-free critical section can rely on it.
    * @param originalMessage - The row's `original_message` bytes (UTF-8 HL7 text).
    * @returns The computed logical channel key.
    */
@@ -545,14 +530,7 @@ export class AgentHl7Channel extends BaseChannel {
     // auto-ACKs exactly as before.
     const queueOn = this.app.getDurableQueue() !== undefined;
 
-    // Per-channel Path-2 (queue → Bot) auto-retry policy. Split into
-    // refreshRetryPolicy so a settings-only reload (no address change) can push a
-    // new policy at the running pool without going through the full reconfigure.
     this.refreshRetryPolicy();
-
-    // Logical channels: pool size + partition spec. Split into
-    // refreshLogicalChannelConfig so a settings-only reload (no address change)
-    // can push new values at the running pool without a full reconfigure.
     this.refreshLogicalChannelConfig();
 
     const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
@@ -606,14 +584,12 @@ export class AgentHl7Channel extends BaseChannel {
    * over agent-wide settings (`channelMaxWorkers` / `channelLogicalChannelKey`)
    * over the built-in defaults, then reconciles the worker pool.
    *
-   * Split out from {@link configureHl7ServerAndConnections} — and called
-   * unconditionally by both it and {@link reloadConfig}'s no-address-change branch
-   * — for the same reason as {@link refreshRetryPolicy}: unlike that method's
-   * other inputs (endpoint URL params, which only change when the address string
-   * changes), these ALSO read agent-wide settings that an operator can change on
-   * their own with no endpoint edit. Gating it behind an address change would mean
-   * a settings-only update never reaches a running channel until an unrelated
-   * address edit or a restart (the config-propagation gap this closes).
+   * Called unconditionally by {@link configureHl7ServerAndConnections} and by
+   * {@link reloadConfig}'s no-address-change branch, for the same reason as
+   * {@link refreshRetryPolicy}: these inputs include agent-wide settings an
+   * operator can change with no endpoint edit at all, so gating the refresh behind
+   * an address change would leave a settings-only update unapplied until an
+   * unrelated address edit or a restart.
    */
   private refreshLogicalChannelConfig(): void {
     const params = new URL(this.getEndpoint().address).searchParams;
@@ -623,17 +599,15 @@ export class AgentHl7Channel extends BaseChannel {
     const maxWorkersChanged = newMaxWorkers !== this.maxWorkers;
     this.maxWorkers = newMaxWorkers;
 
-    // Whether the partition spec is actually changing — computed BEFORE apply so we
-    // can gate the config-combination warnings on a real change (below). Mirrors
-    // applyLogicalChannelKeySpec's own change check.
+    // Mirrors applyLogicalChannelKeySpec's own change check, computed BEFORE apply
+    // so the warnings below can gate on a real change.
     const rawSpec = params.get('logicalChannelKey') ?? this.app.getChannelLogicalChannelKey() ?? '';
     const specChanged = rawSpec !== this.appliedLogicalChannelKeyRaw;
 
     this.applyLogicalChannelKeySpec(params);
 
-    // Config-combination warnings: emit ONLY when maxWorkers or the spec actually
-    // changed, so an unrelated settings-only reload (which now runs this method
-    // every time) doesn't re-log the same no-effect warnings on every reload.
+    // Config-combination warnings: emit ONLY on a real change, since this method
+    // runs on every reload and would otherwise re-log the same no-effect warnings.
     if (maxWorkersChanged || specChanged) {
       if (this.maxWorkers > 1 && !queueOn) {
         this.log.warn('maxWorkers > 1 has no effect without the durable queue (concurrent processing requires it)');
@@ -655,8 +629,6 @@ export class AgentHl7Channel extends BaseChannel {
       }
     }
 
-    // Reconcile the pool to maxWorkers (workers outlive reloads); resizeWorkerPool
-    // also starts/stops workers to match and re-pushes the retry policy.
     this.resizeWorkerPool();
   }
 
@@ -1380,7 +1352,7 @@ export function resolveRetryPolicy(
   return policy;
 }
 
-/** Default worker-pool size for a channel: 1, i.e. the pre-logical-channel single serial worker. */
+/** Default worker-pool size for a channel: 1, i.e. one fully serial worker. */
 export const DEFAULT_MAX_WORKERS = 1;
 
 /**
@@ -1397,15 +1369,14 @@ export const MAX_MAX_WORKERS = 64;
  * Resolves the channel's worker-pool size: how many messages (across distinct
  * logical channels) it may process concurrently. Precedence mirrors the retry
  * knobs — endpoint `maxWorkers` URL param over the agent-wide `channelMaxWorkers`
- * setting over {@link DEFAULT_MAX_WORKERS}. The value is clamped to an integer in
- * `[1, MAX_MAX_WORKERS]`; invalid URL params warn and fall through, and a value
- * above the ceiling is clamped with a warning (whatever the source) so a
- * misconfiguration degrades to a sane pool instead of a runaway one.
+ * setting over {@link DEFAULT_MAX_WORKERS} — clamped to an integer in
+ * `[1, MAX_MAX_WORKERS]`, warning on an invalid param or an over-ceiling value
+ * from any source, so a misconfiguration degrades to a sane pool.
  *
- * Note this only bounds *concurrency*; per-logical-channel ordering is enforced
- * by the worker's post-claim partition check regardless of pool size, so raising
- * it never reorders a partition. With the default single logical channel it also
- * has no visible effect — the partition check keeps just one row in flight per key.
+ * This bounds *concurrency* only: per-logical-channel ordering comes from the
+ * worker's post-claim partition check regardless of pool size, so raising it never
+ * reorders a partition — and with no partition spec it has no visible effect at
+ * all, since the check keeps one row in flight per key.
  * @param params - The endpoint URL query params.
  * @param agentDefault - The agent-wide `channelMaxWorkers` setting (undefined = not set).
  * @param logger - Logger used to warn on an invalid or out-of-range value.

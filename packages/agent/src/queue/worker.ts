@@ -267,25 +267,21 @@ export interface ChannelQueueWorkerOptions {
   sendAck: (response: AgentTransmitResponse, row: InboundRow) => boolean;
   /**
    * Computes a claimed row's logical-channel key (FIFO partition) from its stored
-   * bytes under the channel's CURRENT spec. Injected (not read off the channel) so
-   * the worker stays decoupled from the channel and the key always reflects the
-   * live spec — computing it at claim time is what keeps the partition correct
-   * across retries/requeues/restarts/spec changes. Must be synchronous and must
-   * not throw (a row that no longer parses falls back to the default `''`
-   * partition); the worker calls it inside an await-free critical section.
+   * bytes under the channel's CURRENT spec. Injected rather than read off the
+   * channel so the worker stays decoupled from it and the key always reflects the
+   * live spec. Must be synchronous and must not throw (a row that no longer parses
+   * falls back to the default `''` partition) — the worker calls it inside an
+   * await-free critical section.
    *
-   * Optional: defaults to `() => ''` (a single, fully-serialized logical channel —
-   * the no-partitioning behavior). Production always injects the channel's real
-   * computer; the default keeps single-channel unit tests terse.
+   * Defaults to `() => ''`: one fully-serialized logical channel, i.e. no
+   * partitioning. Production always injects the channel's real computer.
    */
   computeKey?: (originalMessage: Buffer) => string;
   /**
-   * Nudges the whole worker pool (all sibling workers) so an idle one immediately
-   * claims a row this worker just released. Called after waking a partition on a
-   * terminal settle. Injected because a worker only knows its own `notify()`.
-   *
-   * Optional: defaults to a no-op (a released row is then picked up on the next
-   * idle poll instead of immediately). Production injects the pool notifier.
+   * Nudges the whole worker pool so an idle sibling immediately claims a row this
+   * worker just released by waking a partition. Injected because a worker only
+   * knows its own `notify()`. Defaults to a no-op, leaving the released row for
+   * the next idle poll.
    */
   notifyPool?: () => void;
 }
@@ -440,11 +436,10 @@ export class ChannelQueueWorker {
   /**
    * Resolves the current in-flight dispatch if `response`'s callback matches it.
    *
-   * Split out from {@link onServerResponse} so a channel with a worker pool can
-   * route a response to its true owner: it asks each worker in turn, and only the
-   * one holding that callback resolves. A non-owner returns false with no side
-   * effects (no DB lookup, no logging) — critical in a pool, where every other
-   * worker would otherwise mislog the response as belonging to a foreign row.
+   * Separate from {@link applyLateResponse} so a channel with a worker pool can
+   * find a response's true owner by asking each worker in turn. A non-owner
+   * returns false with NO side effects (no DB lookup, no logging) — otherwise
+   * every other worker in the pool mislogs the response as a foreign row.
    * @param response - The server response received over the WS.
    * @returns True if this worker owned the callback and resolved its dispatch.
    */
@@ -552,14 +547,13 @@ export class ChannelQueueWorker {
    *   stopped agent leaves no row stuck mid-flight.
    *
    * - **Drain** (`{ drain: true }` — shrinking `maxWorkers` on a reload): stop
-   *   claiming new work but let the current dispatch settle on its own (its server
-   *   response, or the response-timeout, drives it terminal) before the loop
-   *   exits, bounded by the response timeout. A pool resize is NOT a shutdown, so
-   *   cancelling the in-flight row would needlessly re-dispatch it in guaranteed
-   *   mode (duplicate Bot execution) or strand a spurious `failed` row. We keep
-   *   the heartbeat watchdog attached through the drain so a concurrent lease loss
-   *   still tears the worker down at once (a demoted process must stop writing
-   *   immediately), removing it only once the loop has exited.
+   *   claiming new work but let the current dispatch settle on its own before the
+   *   loop exits, bounded by the response timeout. A pool resize is NOT a
+   *   shutdown, so cancelling the in-flight row would needlessly re-dispatch it in
+   *   guaranteed mode (duplicate Bot execution) or strand a spurious `failed` row.
+   *   The heartbeat watchdog stays attached through the drain — a concurrent lease
+   *   loss must still tear the worker down at once, since a demoted process may
+   *   not keep writing — and is removed only once the loop has exited.
    * @param options - Stop options.
    * @param options.drain - `true` to let the in-flight row settle instead of cancelling it.
    */
@@ -670,14 +664,12 @@ export class ChannelQueueWorker {
 
   private async process(row: InboundRow): Promise<void> {
     // ── Partition gate ─────────────────────────────────────────────────────
-    // MUST stay synchronous (NO `await`) from the `claimNext()` in loop() through
-    // to the write below. The loop does `claimNext()` then `await process(row)`,
-    // so this block runs before the first suspension point (dispatch). That is
-    // what makes the claim→key decision atomic against sibling pool workers on the
-    // single JS thread: no other worker can observe this row between the claim and
-    // the moment its partition key is recorded (or it is parked). Introducing an
-    // `await` here reopens the race where two workers dispatch the same logical
-    // channel concurrently, out of order.
+    // MUST stay synchronous (NO `await`) from loop()'s `claimNext()` through to the
+    // write below, which on the single JS thread is what makes the claim→key
+    // decision atomic against sibling pool workers: no other worker can observe
+    // this row between the claim and the moment its key is recorded (or it is
+    // parked). An `await` here lets two workers dispatch the same logical channel
+    // concurrently, out of order.
     const key = this.computeKey(row.originalMessage);
     if (this.queue.isPartitionBlocked(this.channelName, key, row.id)) {
       // An earlier message in this logical channel is still in play. Park the row

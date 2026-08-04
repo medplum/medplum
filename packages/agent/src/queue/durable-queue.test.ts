@@ -379,10 +379,10 @@ describe('DurableQueue', () => {
     queue.claimNext('R', now);
     queue.scheduleRetry(r1.row.id, 1, 'Server returned 503', QueueErrorCode.ServerError, now + 5000);
 
-    // claimNext is partition-unaware now: with r1 backing off, the next eligible
-    // queued row (r2) IS handed out. Per-partition FIFO — keeping r2 behind a
-    // backing-off r1 of the same key — is enforced by the worker's post-claim
-    // partition check, not by claimNext.
+    // claimNext is partition-unaware: with r1 backing off, the next eligible queued
+    // row (r2) IS handed out. Per-partition FIFO — keeping r2 behind a backing-off
+    // r1 of the same key — is enforced by the worker's post-claim partition check,
+    // not by claimNext.
     expect(queue.claimNext('R', now)?.id).toBe(r2.row.id);
 
     // r1 remains gated by its OWN backoff: not claimable until now+5000, then it

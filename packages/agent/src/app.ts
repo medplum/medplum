@@ -1275,15 +1275,12 @@ export class App {
     }
     // When the durable queue is on, an HL7 channel is owned end-to-end by its
     // worker pool: inbound messages never use the legacy in-memory path, so their
-    // responses must not either. Consume the response here unconditionally —
-    // regardless of the current pool size. Gating on `workers.length > 0` was a
-    // bug: a pool momentarily empty (e.g. workers stepped down on a lease loss,
-    // then a reconfigure filtered them out) would let a late response fall through
-    // to addToHl7Queue and re-send a stale ACK to the source. routeServerResponse
-    // hands the response to the worker that owns the callback; if none does — a
-    // late response whose row already settled/requeued, or an empty pool with no
-    // owner at all — it logs and drops it. Returning true regardless keeps it off
-    // the legacy path.
+    // responses must not either. Consume the response unconditionally, WITHOUT
+    // testing the pool size — an empty pool (workers stepped down on a lease loss)
+    // would otherwise let a late response fall through to addToHl7Queue and re-send
+    // a stale ACK to the source. routeServerResponse hands it to the worker owning
+    // the callback, and logs and drops it when none does (a row that already
+    // settled/requeued, or an empty pool with no owner at all).
     channel.routeServerResponse(response);
     return true;
   }

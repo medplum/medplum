@@ -38,10 +38,10 @@ import {
 const CASES: { name: string; sql: string; params: unknown[]; index: string }[] = [
   // Hot path
   { name: 'findSeenByControlId', sql: FIND_SEEN_BY_CONTROL_ID, params: ['ch', 'mc'], index: 'idx_inbound_dup_lookup' },
-  // claimNext is partition-UNAWARE now: it binds `now` twice (processing_started_at
-  // + the next_attempt_at backoff predicate) and its head scan (channel + state,
-  // ordered by id) rides idx_inbound_channel_state_id. The partition check moved
-  // to isPartitionBlocked (below), so claimNext no longer touches the vchannel index.
+  // claimNext is partition-UNAWARE: it binds `now` twice (processing_started_at +
+  // the next_attempt_at backoff predicate) and its head scan (channel + state,
+  // ordered by id) rides idx_inbound_channel_state_id. The partition check lives in
+  // isPartitionBlocked (below), so claimNext never touches the vchannel index.
   { name: 'claimNext head scan', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_channel_state_id' },
   // The post-claim partition check + its wake ride idx_inbound_vchannel_claim
   // (channel_name, logical_channel_key, state, id) — the FIFO/concurrency index.

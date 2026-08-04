@@ -28,8 +28,7 @@ import { QueueErrorCode } from './types';
 /**
  * Insert a new `queued` row. Column order matches {@link DurableQueue.enqueue}'s
  * bind order. `logical_channel_key` is deliberately NOT set here — it defaults to
- * `''` and is written at claim time from the channel's current spec (see
- * {@link SET_LOGICAL_CHANNEL_KEY}), so no stored key can ever go stale.
+ * `''` and is written at claim time (see {@link SET_LOGICAL_CHANNEL_KEY}).
  */
 export const ENQUEUE = `
   INSERT INTO inbound_hl7_messages (
@@ -58,20 +57,19 @@ export const ENQUEUE_REJECTED = `
 
 // --- Logical channels (claim-time partitioning) ---
 //
-// The partition of a row (its `logical_channel_key`) is computed at CLAIM time
-// from the channel's *current* spec, not at intake — so it can never go stale
-// across retries, requeues, restarts, or spec changes. Right after claiming a
-// row a worker computes its key and either writes it (SET_LOGICAL_CHANNEL_KEY,
-// then dispatch) or, if the partition is occupied by an earlier message
+// A row's partition (`logical_channel_key`) is computed at CLAIM time from the
+// channel's *current* spec, not at intake, so it can never go stale across
+// retries, requeues, restarts, or spec changes. Right after claiming a row a
+// worker computes its key and either writes it (SET_LOGICAL_CHANNEL_KEY, then
+// dispatch) or, if the partition is occupied by an earlier message
 // (IS_PARTITION_BLOCKED), parks the row `delayed` (MARK_DELAYED) until the
 // blocker settles (WAKE_PARTITION). See ChannelQueueWorker's post-claim check.
 
 /**
  * Records the freshly-computed partition on the just-claimed row, immediately
- * before dispatch. Guarded on `state = 'claimed'`: the worker computes the key
+ * before dispatch. Guarded on `state = 'claimed'` — the worker computes the key
  * synchronously between `claimNext` and this write (no `await` in between), so
- * the row is provably still `claimed` and this is the row's own worker writing
- * its own key. A `queued` guard (the pre-rework shape) would silently no-op here.
+ * the row is provably still `claimed` and this is its own worker writing it.
  */
 export const SET_LOGICAL_CHANNEL_KEY = `
   UPDATE inbound_hl7_messages
@@ -80,15 +78,15 @@ export const SET_LOGICAL_CHANNEL_KEY = `
 `;
 
 /**
- * Is the logical channel `key` occupied by an EARLIER message than `id`? True
- * when any other row in the same partition with a lower id is still in play
- * (`queued` and backing off, `delayed` behind an even-earlier row, `claimed`, or
- * `inflight`). The `id <` bound plus FIFO claim ordering is what preserves
- * per-partition order: the claim always takes the lowest-id queued row, so a
- * claimed candidate need only check whether anything ahead of it in its
- * partition is unfinished. `delayed` MUST be in this set so an over-eager wake
- * (a row promoted while an even-earlier one is still parked) re-delays rather
- * than dispatching out of order. Served by `idx_inbound_vchannel_claim`. [index-guarded]
+ * Is the logical channel `key` occupied by a message EARLIER than `id`? True when
+ * a lower-id row of the same partition is still in play (`queued` and backing
+ * off, `delayed` behind an even-earlier row, `claimed`, or `inflight`). The `id <`
+ * bound plus FIFO claim ordering is what preserves per-partition order: the claim
+ * always takes the lowest-id queued row, so a claimed candidate need only check
+ * whether anything ahead of it in its partition is unfinished. `delayed` MUST be
+ * in this set so an over-eager wake (a row promoted while an even-earlier one is
+ * still parked) re-delays rather than dispatching out of order. Served by
+ * `idx_inbound_vchannel_claim`. [index-guarded]
  */
 export const IS_PARTITION_BLOCKED = `
   SELECT 1 FROM inbound_hl7_messages
@@ -150,19 +148,16 @@ export const FLIP_DELAYED_FOR_CHANNEL = `
 
 // --- Logical-channel key recompute (spec change only) ---
 //
-// Claim-time keying keeps a row's partition current across the COMMON paths
-// (retry/requeue/restart re-claim → re-key). A `logicalChannelKey` SPEC CHANGE is
-// the one path claim-time keying can't cover alone: rows not actively being
-// claimed (backing-off `queued`, parked `delayed`) keep the key they were last
-// stamped with, and IS_PARTITION_BLOCKED trusts stored keys — so a same-new-
-// partition message could skip ahead of an older not-yet-re-claimed one. On a
-// spec change we recompute the stored key of every `queued` and `delayed` row
-// from its bytes (and un-park `delayed` → `queued`). This is the rare, operator-
-// initiated path, so unlike the removed intake-time recompute it is NOT hot; it is
-// chunked (paginated by id) so a large backlog doesn't materialize every blob at
-// once, and lease-gated so only the dispatching leader runs it. `claimed`/`inflight`
-// rows are left alone — they finish under their current partition (a bounded,
-// unavoidable transitional window).
+// A `logicalChannelKey` SPEC CHANGE is the one path claim-time keying can't cover
+// alone: rows not actively being claimed (backing-off `queued`, parked `delayed`)
+// keep the key they were last stamped with, and IS_PARTITION_BLOCKED trusts stored
+// keys — so a same-new-partition message could skip ahead of an older
+// not-yet-re-claimed one. On a spec change we recompute the stored key of every
+// `queued`/`delayed` row from its bytes (and un-park `delayed` → `queued`). Being
+// rare and operator-initiated it can afford to be chunked (paginated by id, so a
+// large backlog doesn't materialize every blob at once) and lease-gated (only the
+// dispatching leader runs it). `claimed`/`inflight` rows are left alone — they
+// finish under their current partition, a bounded transitional window.
 
 /** One id-paginated batch of `queued`/`delayed` rows (with bytes) to recompute; `id > ?` is the cursor. */
 export const SELECT_QUEUED_OR_DELAYED_FOR_RECOMPUTE = `
@@ -217,22 +212,20 @@ export const FIND_SEEN_BY_CONTROL_ID = `
 
 /**
  * FIFO claim: flip the oldest ready `queued` row for the channel to `claimed` in
- * one statement, so concurrent workers can't double-claim. Deliberately
- * partition-UNAWARE — the logical-channel partition is enforced *after* the
- * claim, by the worker: it computes the row's key (from the current spec) and
- * either dispatches it or parks it `delayed` if an earlier same-partition message
- * is still in play (see {@link IS_PARTITION_BLOCKED} / {@link MARK_DELAYED}).
- * Because the claim always takes the lowest id, the head of every partition is
- * always claimed before any of its followers, which is what lets the cheap
- * post-claim check preserve per-partition order without SQL knowing the key.
- * `delayed` rows are excluded (state = 'queued' only), so a parked follower is
- * skipped until {@link WAKE_PARTITION} promotes it — no repeated re-claiming.
+ * one statement, so concurrent workers can't double-claim. A row is claimable iff
+ * it is `queued` for this channel and its retry backoff has elapsed
+ * (`next_attempt_at`).
  *
- * A row is claimable iff it is `queued` for this channel and its retry backoff
- * has elapsed (`next_attempt_at`). Moving the partition logic out of SQL also
- * makes this a single index seek on `idx_inbound_channel_state_id` regardless of
- * backlog depth, instead of the correlated per-partition subqueries the
- * partition-aware claim used.
+ * Deliberately partition-UNAWARE — the logical-channel partition is enforced only
+ * once the claim returns, by the worker: it computes the row's key (from the
+ * current spec) and either dispatches it or parks it `delayed` if an earlier
+ * same-partition message is still in play (see {@link IS_PARTITION_BLOCKED} /
+ * {@link MARK_DELAYED}). Because the claim always takes the lowest id, the head of
+ * every partition is claimed before any of its followers, which is what lets the
+ * cheap post-claim check preserve per-partition order without SQL knowing the key
+ * — and keeps this a single index seek on `idx_inbound_channel_state_id`
+ * regardless of backlog depth. `delayed` rows are excluded (state = 'queued'
+ * only), so a parked follower is skipped until {@link WAKE_PARTITION} promotes it.
  *
  * The claim clears `next_attempt_at` so a re-claimed retry row carries no stale
  * schedule, and clears `last_error`/`error_code` so a crash during THIS attempt
@@ -462,12 +455,11 @@ export const RECOVER_CLAIMED = `
 
 /**
  * Crash recovery, parked leg: a row left `delayed` was only waiting behind an
- * earlier same-partition message; it never dispatched, so it returns to `queued`
- * unconditionally and re-evaluates its partition at the next claim (which also
- * re-derives its key under whatever spec is current after the restart). No
- * attempt_count adjustment — {@link MARK_DELAYED} already undid the claim's
- * increment when it parked the row. The `WHERE state` scan is served by
- * `idx_inbound_state_processed_at`. [index-guarded]
+ * earlier same-partition message and never dispatched, so it returns to `queued`
+ * unconditionally and re-keys at its next claim under whatever spec is current
+ * after the restart. No attempt_count adjustment — {@link MARK_DELAYED} already
+ * undid the claim's increment when it parked the row. The `WHERE state` scan is
+ * served by `idx_inbound_state_processed_at`. [index-guarded]
  */
 export const RECOVER_DELAYED = `
   UPDATE inbound_hl7_messages

@@ -62,7 +62,7 @@ describe('parseLogicalChannelKeySpec', () => {
 
   test.each([
     ['MSH', 'no field / no segment-field dash'],
-    ['MSH.4', 'old dot syntax is no longer valid'],
+    ['MSH.4', 'segment and field must be separated by a dash'],
     ['MSH-0', 'zero field index'],
     ['MSH--1', 'negative index'],
     ['MSH-x', 'non-numeric field'],

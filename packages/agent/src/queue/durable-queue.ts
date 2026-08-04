@@ -295,12 +295,7 @@ export class DurableQueue {
     // not re-claimed) until the backoff elapses. See SCHEDULE_RETRY.
     this.scheduleRetryStmt = this.db.prepare(SCHEDULE_RETRY);
 
-    // Logical channels (claim-time partitioning): the worker computes a claimed
-    // row's partition key and either records it (setLogicalChannelKey, then
-    // dispatch) or, if an earlier same-partition message is still in play
-    // (isPartitionBlocked), parks the row `delayed` (markDelayed) until that
-    // message settles (wakePartition). flipDelayedForChannel re-queues parked
-    // rows on a spec change so they re-evaluate under the new spec.
+    // Logical channels (claim-time partitioning) — see the like-named methods below.
     this.setLogicalChannelKeyStmt = this.db.prepare(SET_LOGICAL_CHANNEL_KEY);
     this.isPartitionBlockedStmt = this.db.prepare(IS_PARTITION_BLOCKED);
     this.markDelayedStmt = this.db.prepare(MARK_DELAYED);
@@ -1356,13 +1351,11 @@ export class DurableQueue {
 
   /**
    * Returns every `delayed` row for a channel to `queued`, so parked followers
-   * re-evaluate their partition under the channel's new `logicalChannelKey` spec
-   * at the next claim. Called on a spec change (config reload) in place of the old
-   * whole-backlog recompute — a cheap state flip with no message re-parsing, and
-   * unlike that recompute it never rewrites a stored key (the key is re-derived at
-   * the next claim). Self-correcting like {@link wakePartition}, so not
-   * lease-gated: it runs on every process handling the reload, and only the leader
-   * acts on the re-queued rows.
+   * re-evaluate their partition at the next claim. A cheap state flip with no
+   * message re-parsing and no stored-key rewrite, used as the fallback when
+   * {@link recomputeLogicalChannelKeys} fails partway through a spec change — no
+   * row is left waiting on a wake that now targets a re-keyed partition.
+   * Self-correcting like {@link wakePartition}, so not lease-gated.
    * @param channelName - The channel whose parked rows to re-queue.
    * @returns The number of rows returned to `queued`.
    */
@@ -1386,9 +1379,9 @@ export class DurableQueue {
    *
    * Lease-gated (only the dispatching leader needs the refresh) and chunked
    * (paginated by id, one transaction per batch) so a large backlog doesn't
-   * materialize every `original_message` blob at once — the acute cost of the old
-   * intake-time recompute. Rows claimed between a batch's read and write are
-   * skipped by the `state IN ('queued','delayed')` guard on the update.
+   * materialize every `original_message` blob at once. Rows claimed between a
+   * batch's read and write are skipped by the `state IN ('queued','delayed')`
+   * guard on the update.
    * @param channelName - The channel whose queued/delayed rows to repartition.
    * @param compute - Maps a row's original message bytes to its key under the current spec.
    * @returns The number of rows whose partition was rewritten.

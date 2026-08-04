@@ -15,11 +15,11 @@
  *                  was scheduled for auto-retry (`next_attempt_at` set, see §4.1).
  * - `delayed`    — a worker claimed the row, computed its logical-channel key,
  *                  and found an earlier not-yet-settled message in the same
- *                  partition, so it parked the row instead of dispatching it. It
- *                  carries no dispatch timestamps and re-enters `queued` when the
- *                  blocking message settles (see the wake-on-settle path), on a
- *                  `logicalChannelKey` spec change, or on startup recovery.
- *                  Non-terminal; invisible to `CLAIM_NEXT`.
+ *                  partition, so it parked the row instead of dispatching it.
+ *                  Non-terminal and invisible to `CLAIM_NEXT`; it carries no
+ *                  dispatch timestamps and re-enters `queued` when the blocking
+ *                  message settles, on a `logicalChannelKey` spec change, or on
+ *                  startup recovery.
  * - `claimed`    — a worker has claimed the row off the queue, but the
  *                  `agent:transmit:request` has NOT yet been written to the
  *                  WebSocket (it's still buffered in the in-memory send queue).
@@ -297,17 +297,14 @@ interface InboundRowBase {
   enhancedMode: EnhancedModeColumn;
   attemptCount: number;
   /**
-   * The row's logical channel — the FIFO partition it is processed within.
-   * Written at CLAIM time (not intake) from the channel's *current*
-   * `logicalChannelKey` spec: a worker computes it right after claiming the row
-   * and stores it before dispatching (or when parking the row `delayed`). Empty
-   * (`''`, the default) until the row is first evaluated, and whenever the
-   * channel has no spec — meaning the channel is a single serialized queue. Rows
+   * The row's logical channel — the FIFO partition it is processed within. Rows
    * sharing a key are serialized against each other; distinct keys can run on
-   * different pool workers at once. Computing it at claim time (rather than
-   * persisting an intake-time key) is what keeps the partition correct across
-   * retries, requeues, restarts, and spec changes. See logical-channel.ts and the
-   * worker's post-claim partition check.
+   * different pool workers at once. Written at CLAIM time (not intake) from the
+   * channel's current `logicalChannelKey` spec, which is what keeps the partition
+   * correct across retries, requeues, restarts, and spec changes. Empty (`''`, the
+   * default) until the row is first claimed and whenever the channel has no spec —
+   * meaning one serialized queue for the whole channel. See logical-channel.ts and
+   * the worker's post-claim partition check.
    */
   logicalChannelKey: string;
   /** Snapshot of the channel's guaranteed-delivery setting at intake (drives crash recovery). */
@@ -341,10 +338,8 @@ export interface QueuedRow extends InboundRowBase {
 
 /**
  * `delayed` — parked behind an earlier not-yet-settled message in the same
- * logical channel. A worker claimed it, computed its partition key, found the
- * partition occupied, and set it aside (undoing the claim's attempt increment).
- * It carries no dispatch timestamps and re-enters `queued` when the blocking
- * message settles, on a spec change, or on startup recovery.
+ * logical channel, with the claim's attempt increment undone. It never
+ * dispatched, hence no dispatch timestamps.
  */
 export interface DelayedRow extends InboundRowBase {
   state: typeof MessageState.DELAYED;

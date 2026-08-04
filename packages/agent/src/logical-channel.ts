@@ -8,10 +8,10 @@ import type { Hl7Message, ILogger } from '@medplum/core';
  * in conventional HL7 notation like `MSH-4`, `MSH-9.2`, or `PID-3.1.2` — segment
  * and field separated by `-`, component/subcomponent by `.`.
  *
- * Indices are 1-based to match Medplum's HL7 accessors (`Hl7Segment.getField` /
- * `getComponent`) and the way HL7 names components — e.g. `MSH-9.2` is field 9,
- * component 2. MSH's field-separator/encoding offset is handled inside
- * `getField`, so `MSH-9` addresses the message type as a human would expect.
+ * Indices are 1-based, matching both HL7 convention and Medplum's accessors
+ * (`Hl7Segment.getField` / `getComponent`): `MSH-9.2` is field 9, component 2.
+ * MSH's field-separator/encoding offset is handled inside `getField`, so `MSH-9`
+ * addresses the message type as a human would expect.
  */
 export interface LogicalChannelField {
   /** The token exactly as written (e.g. `MSH-9.2`); used verbatim as the key label. */
@@ -34,15 +34,14 @@ const SEGMENT_RE = /^[A-Z][A-Z0-9]{2}$/;
  * Parses a `logicalChannelKey` spec into validated field paths.
  *
  * The spec is `field1,field2,...` where each field is in conventional HL7 notation
- * `SEGMENT-field[.component[.subcomponent]]` (e.g. `MSH-4,MSH-9.2`). `,` separates
- * fields; HL7 field references never contain a comma, so the split is unambiguous.
- * An empty/whitespace spec means "no partitioning" and yields `[]` (the channel is
- * a single serialized queue).
+ * `SEGMENT-field[.component[.subcomponent]]` (e.g. `MSH-4,MSH-9.2`). HL7 field
+ * references never contain a comma, so the split on `,` is unambiguous. An
+ * empty/whitespace spec means "no partitioning" and yields `[]` (the channel is a
+ * single serialized queue).
  *
  * Validation is all-or-nothing: if ANY field token is malformed the whole spec is
- * rejected (returns `undefined`) so a caller can keep the previously-applied spec
- * rather than silently partitioning on a partial/wrong key. A warning is logged
- * describing the offending token.
+ * rejected (returns `undefined`, after warning) so a caller can keep the
+ * previously-applied spec rather than partition on a partial/wrong key.
  * @param raw - The raw spec string (endpoint URL param or agent setting), or undefined.
  * @param logger - Logger used to warn on an invalid spec.
  * @returns The parsed field paths, `[]` for an empty spec, or `undefined` if the spec is invalid.
@@ -71,9 +70,7 @@ export function parseLogicalChannelKeySpec(
 }
 
 /**
- * Parses a single `SEGMENT-field[.component[.subcomponent]]` token (conventional
- * HL7 notation). Segment and field are separated by `-`; component and
- * subcomponent, if present, by `.`.
+ * Parses a single `SEGMENT-field[.component[.subcomponent]]` token.
  * @param token - The field token to parse.
  * @returns The parsed field path, or undefined if the token is malformed.
  */
@@ -138,16 +135,15 @@ function parsePositiveInt(value: string): number | undefined {
  *
  * The key is `label:value,label:value,...`, one segment per spec field, in spec
  * order — e.g. spec `MSH-4,MSH-9.2` over a message from `HOSP1` of type `A01`
- * yields `MSH-4:HOSP1,MSH-9.2:A01`. The key is only ever compared for string
- * equality (it partitions the queue; it is never parsed back), and each field's
- * value is escaped ({@link escapeKeyPart}) so the `:`/`,` delimiters can't be
- * forged: two messages collide iff every addressed field is identical. (Labels
- * come from the spec and contain only `-`/`.`/alphanumerics — never `:` or `,` —
- * so they need no escaping.) Without escaping, distinct tuples could concatenate
- * to the same key — e.g. spec `MSH-4,MSH-6` with `MSH.4='X,MSH-6:Y', MSH.6='Z'`
- * vs `MSH.4='X', MSH.6='Y,MSH-6:Z'` — silently merging unrelated senders into one
- * partition. A missing segment/field contributes an empty value, so messages
- * lacking the keyed field group together.
+ * yields `MSH-4:HOSP1,MSH-9.2:A01`. It is only ever compared for string equality
+ * (it partitions the queue; it is never parsed back), and each value is escaped
+ * ({@link escapeKeyPart}) so the `:`/`,` delimiters can't be forged: two messages
+ * collide iff every addressed field is identical. Without escaping, distinct
+ * tuples could concatenate to the same key — spec `MSH-4,MSH-6` with
+ * `MSH.4='X,MSH-6:Y', MSH.6='Z'` vs `MSH.4='X', MSH.6='Y,MSH-6:Z'` — silently
+ * merging unrelated senders into one partition. Labels come from the spec and
+ * contain only `-`/`.`/alphanumerics, so they need no escaping. A missing
+ * segment/field contributes an empty value, grouping messages that lack it.
  *
  * An empty spec returns `''` — the single-queue default.
  * @param message - The parsed HL7 message.

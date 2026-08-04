@@ -158,25 +158,23 @@ export const MIGRATIONS: readonly Migration[] = [
     // sub-queues so a bounded worker pool can process distinct partitions
     // concurrently while each partition stays strictly serial. A row's partition is
     // its logical_channel_key, computed at CLAIM time from the channel's
-    // `logicalChannelKey` spec (a set of HL7 field paths); the default '' means
-    // "one queue for the whole channel" -- byte-identical to pre-logical-channel
-    // behavior. See logical-channel.ts and the CLAIM_NEXT / isPartitionBlocked logic.
+    // `logicalChannelKey` spec (a set of HL7 field paths); the default '' means one
+    // serialized queue for the whole channel. See logical-channel.ts and the
+    // CLAIM_NEXT / isPartitionBlocked logic.
     //
     // This migration also introduces the `delayed` state (a row parked behind an
     // earlier not-yet-settled message in the same logical channel). A `delayed` row
     // is still an ACTIVE occupant of its (channel_name, msg_control_id) -- an
     // inbound retransmit while it waits must dedupe against it, not insert a second
     // copy -- so the active-duplicate unique index is recreated to include it.
-    //
-    // ADD COLUMN stays cheap (a plain, non-generated TEXT with a literal DEFAULT
-    // rewrites only the schema text, not existing rows -- same rationale as the v2
-    // columns). Recreating uq_inbound_dup_active is safe on a populated table:
-    // this is the first migration to introduce `delayed`, so zero rows are in it at
-    // apply time and the widened predicate cannot surface a new uniqueness
-    // violation; the DROP + CREATE runs inside this migration's transaction (see
-    // runMigrations), so it's atomic. The other dup index (idx_inbound_dup_lookup,
-    // WHERE state != 'nacked') and the new claim index (keyed on state) already
-    // cover `delayed` without change.
+    // Recreating that index is safe on a populated table: this is the first
+    // migration to introduce `delayed`, so zero rows are in it at apply time and the
+    // widened predicate cannot surface a new uniqueness violation; the DROP + CREATE
+    // runs inside this migration's transaction (see runMigrations), so it's atomic.
+    // The other dup index (idx_inbound_dup_lookup, WHERE state != 'nacked') and the
+    // new claim index (keyed on state) already cover `delayed` without change.
+    // ADD COLUMN stays cheap here for the same reason as the v2 columns: a plain,
+    // non-generated TEXT with a literal DEFAULT rewrites only the schema text.
     version: 3,
     sql: `
       ALTER TABLE inbound_hl7_messages

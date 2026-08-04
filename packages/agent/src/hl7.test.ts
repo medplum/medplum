@@ -3430,7 +3430,7 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
   test('validates before applying, recomputes only on a real change, and keeps the prior spec on invalid input', () => {
     const { channel, recompute, reconfigure, appLog } = makeChannel();
 
-    // First apply of a non-empty spec recomputes any rows keyed under the old spec.
+    // Moving off the default '' spec is a real change, so it recomputes.
     reconfigure('MSH-4');
     expect(recompute).toHaveBeenCalledTimes(1);
     expect(recompute).toHaveBeenLastCalledWith('vc-channel', expect.any(Function));
