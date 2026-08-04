@@ -11,6 +11,7 @@ const config: StorybookConfig = {
     '../src/stories/Introduction.mdx',
     '../src/**/*.mdx',
     '../src/**/*.stories.@(js|jsx|ts|tsx)',
+    '../../react/src/**/*.mdx',
     '../../react/src/**/*.stories.@(js|jsx|ts|tsx)',
     '../../react-scheduling/src/**/*.stories.@(js|jsx|ts|tsx)',
   ],

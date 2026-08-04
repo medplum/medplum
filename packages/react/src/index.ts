@@ -139,6 +139,8 @@ export * from './ResourcePropertyInput/ResourcePropertyInput';
 export * from './ResourcePropertyInput/ResourcePropertyInput.utils';
 export * from './ResourceTable/ResourceTable';
 export * from './ResourceTimeline/ResourceTimeline';
+export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
+export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
 export * from './Scheduler/Scheduler';
 export * from './ScrollToTop/ScrollToTop';
 export * from './SearchControl/SearchControl';
