@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { InternalSchemaElement } from '@medplum/core';
-import { capitalize, getDataType, isResourceType } from '@medplum/core';
+import { capitalize, EMPTY, getDataType, isResourceType } from '@medplum/core';
 import type { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
 import type { GraphQLInputFieldConfig, GraphQLInputFieldConfigMap, GraphQLNullableInputType } from 'graphql';
 import { GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLString } from 'graphql';
@@ -50,8 +50,13 @@ function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string)
 
 function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
   const schema = getDataType(resourceType);
-  for (const [key, elementDefinition] of Object.entries(schema.elements)) {
-    for (const type of elementDefinition.type as ElementDefinitionType[]) {
+  for (const key in schema.elements) {
+    if (!Object.hasOwn(schema.elements, key)) {
+      continue;
+    }
+
+    const elementDefinition = schema.elements[key];
+    for (const type of elementDefinition.type ?? EMPTY) {
       buildInputPropertyField(fields, key, elementDefinition, type, nameSuffix);
     }
   }

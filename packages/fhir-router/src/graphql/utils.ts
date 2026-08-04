@@ -74,7 +74,13 @@ function parseSearchArgsWithReference(
   }
 
   // Reverse the transform of dashes to underscores, back to dashes
-  args = Object.fromEntries(Object.entries(args).map(([key, value]) => [graphQLFieldToFhirParam(key), value]));
+  const original = args;
+  args = Object.create(null);
+  for (const key in original) {
+    if (Object.hasOwn(original, key)) {
+      args[graphQLFieldToFhirParam(key)] = original[key];
+    }
+  }
 
   // Parse the search request
   const searchRequest = parseSearchRequest(resourceType, args);
@@ -217,12 +223,16 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
   };
   const searchParams = getSearchParameters(resourceType);
   if (searchParams) {
-    for (const [code, searchParam] of Object.entries(searchParams)) {
+    for (const code in searchParams) {
+      if (!Object.hasOwn(searchParams, code)) {
+        continue;
+      }
+
       // GraphQL does not support dashes in argument names
       // So convert dashes to underscores
       args[fhirParamToGraphQLField(code)] = {
         type: GraphQLString,
-        description: searchParam.description,
+        description: searchParams[code].description,
       };
     }
   }

@@ -46,7 +46,12 @@ export function applyDefaultValuesToElement(
   elements: Record<string, InternalSchemaElement>,
   key?: string
 ): object {
-  for (const [elementKey, element] of Object.entries(elements)) {
+  for (const elementKey in elements) {
+    if (!Object.hasOwn(elements, elementKey)) {
+      continue;
+    }
+    const element = elements[elementKey];
+
     if (key === undefined || key === elementKey) {
       applyFixedOrPatternValue(existingValue, elementKey, element, elements);
       continue;

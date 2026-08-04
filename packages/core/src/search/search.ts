@@ -166,7 +166,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
   // By convention, the resource type is the last non-empty part of the path
   let resourceType: ResourceType;
   if (pathname.includes('/')) {
-    resourceType = pathname.split('/').filter(Boolean).pop() as ResourceType;
+    resourceType = pathname.split('/').findLast(Boolean) as ResourceType;
   } else {
     resourceType = pathname as ResourceType;
   }
@@ -182,7 +182,12 @@ export function parseSearchRequest<T extends Resource = Resource>(
   // This is an optional set of additional query parameters
   // which should be added to the URL
   if (query) {
-    for (const [key, value] of Object.entries(query)) {
+    for (const key in query) {
+      if (!Object.hasOwn(query, key)) {
+        continue;
+      }
+
+      const value = query[key];
       if (Array.isArray(value)) {
         for (const v of value) {
           queryArray.push([key, v]);

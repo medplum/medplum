@@ -241,7 +241,12 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
           valueInteger: durationMs,
         },
       ];
-      for (const [name, value] of Object.entries(rest)) {
+      for (const name in rest) {
+        if (!Object.hasOwn(rest, name)) {
+          continue;
+        }
+        const value = rest[name];
+
         const typedValue = toTypedValue(value);
         if (typedValue.type === 'undefined') {
           continue;

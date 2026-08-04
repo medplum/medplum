@@ -135,11 +135,13 @@ export class SchemaCrawler {
       this.visitor.onEnterSchema(this.rootSchema);
     }
 
-    const allowedElements = Object.fromEntries(
-      Object.entries(this.elementsContext.elements).filter(([elementKey]) => {
-        return elementKey.startsWith(key);
-      })
-    );
+    const allElements = this.elementsContext.elements;
+    const allowedElements: Record<string, InternalSchemaElement> = Object.create(null);
+    for (const elementKey in allElements) {
+      if (Object.hasOwn(allElements, elementKey) && elementKey.startsWith(key)) {
+        allowedElements[elementKey] = allElements[elementKey];
+      }
+    }
 
     this.crawlElementsImpl(allowedElements, path);
 
@@ -312,15 +314,16 @@ function createElementTree(elements: Record<string, InternalSchemaElement>): Ele
     currentNode.children.push(newNode);
   }
 
-  const elementEntries = Object.entries(elements);
+  const elementKeys = Object.keys(elements);
   /*
    By sorting beforehand, we guarantee that no false root nodes are created.
    e.g. if 'a.b' were to be added to the tree before 'a', 'a.b' would be made a
    root node when it should be a child of 'a'.
   */
-  elementEntries.sort((a, b) => a[0].localeCompare(b[0]));
+  elementKeys.sort((a, b) => a.localeCompare(b));
 
-  for (const [key, element] of elementEntries) {
+  for (const key of elementKeys) {
+    const element = elements[key];
     const newNode: ElementNode = { key, element, children: [] };
 
     let added = false;

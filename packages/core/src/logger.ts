@@ -126,9 +126,12 @@ export class Logger implements ILogger {
       processedData = serializeError(data);
     } else if (data) {
       processedData = { ...data };
-      for (const [key, value] of Object.entries(processedData)) {
-        if (value instanceof Error) {
-          processedData[key] = serializeError(value);
+      for (const key in processedData) {
+        if (Object.hasOwn(processedData, key)) {
+          const value = processedData[key];
+          if (value instanceof Error) {
+            processedData[key] = serializeError(value);
+          }
         }
       }
     }
