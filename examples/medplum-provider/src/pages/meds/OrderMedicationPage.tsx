@@ -120,6 +120,40 @@ function getRoutedMedIdFromMedication(m: Medication): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/**
+ * The single GCN_SEQNO on a Medication, or undefined when it carries none — or
+ * **several**.
+ *
+ * A dose-level formulation has exactly one GCN. A drug-name search hit for a
+ * multi-strength product carries one identifier per available GCN, and nothing
+ * on the resource says which strength the prescriber meant. Since GCN is what
+ * the vendor resolves the dose from when there is no NDC, picking the first of
+ * several would silently prescribe an arbitrary strength — so an ambiguous
+ * Medication yields nothing and the caller falls back to requiring a
+ * formulation.
+ *
+ * @param m - Medication from drug search.
+ * @returns The GCN_SEQNO as a number, or undefined when absent or ambiguous.
+ */
+function getUnambiguousGcnSeqnoFromMedication(m: Medication): number | undefined {
+  const values = new Set<string>();
+  for (const id of m.identifier ?? []) {
+    if (id.system === SCRIPTSURE_GCN_SEQNO_SYSTEM && id.value) {
+      values.add(id.value);
+    }
+  }
+  for (const coding of m.code?.coding ?? []) {
+    if (coding.system === SCRIPTSURE_GCN_SEQNO_SYSTEM && coding.code) {
+      values.add(coding.code);
+    }
+  }
+  if (values.size !== 1) {
+    return undefined;
+  }
+  const n = Number.parseInt([...values][0], 10);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 function normalizeNdcDigits(ndc: string | undefined): string | undefined {
   if (!ndc) {
     return undefined;
@@ -443,10 +477,17 @@ function medicationToOrderDrugInput(
   const ndc = (m.code && getCodeBySystem(m.code, NDC)) ?? getIdentifier(m, NDC);
   const rxNorm = (m.code && getCodeBySystem(m.code, RXNORM)) ?? getIdentifier(m, RXNORM);
   const routedMedId = getRoutedMedIdFromMedication(m);
+  // A drug whose formulation lookup came back empty (OTC / topical products) has
+  // no NDC or RxNorm; it is ordered on routedMedId + GCN, with the name carried
+  // explicitly because there is no dose-level record to derive it from.
+  const gcnSeqno = ndc || rxNorm ? undefined : getUnambiguousGcnSeqnoFromMedication(m);
+  const drugName = m.code?.text?.trim();
   return {
     ...(ndc ? { ndc } : {}),
     ...(rxNorm ? { rxNorm } : {}),
     ...(routedMedId === undefined ? {} : { routedMedId }),
+    ...(gcnSeqno === undefined ? {} : { gcnSeqno }),
+    ...(gcnSeqno !== undefined && drugName ? { drugName } : {}),
     quantity: opts.quantity,
     quantityQualifier: opts.quantityQualifier ?? DEFAULT_QUANTITY_QUALIFIER,
     refill: opts.refill,
@@ -498,10 +539,13 @@ function medicationToCodeableConcept(
   // (not a code.coding). Promote it to a coding so the draft MR carries the
   // FDB clinical-formulation key: the ScriptSure prescription webhook reconciles
   // draft→sent by GCN when the NDC drifts (#9300) or a generic is substituted
-  // (brand/generic share a GCN). See scriptsure-react SCRIPTSURE_GCN_SEQNO_SYSTEM.
-  const gcn = getIdentifier(format, SCRIPTSURE_GCN_SEQNO_SYSTEM);
-  if (gcn && !coding.some((c) => c.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)) {
-    coding.push({ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, code: gcn });
+  // (brand/generic share a GCN). It also makes a draft orderable when the drug
+  // has no formulations at all (`format` falls back to the name-search hit, so
+  // there is no NDC) — the order is then keyed on routedMedId + GCN. Skipped
+  // when several GCNs are present, since none of them is "the" strength.
+  const gcn = getUnambiguousGcnSeqnoFromMedication(format);
+  if (gcn !== undefined && !coding.some((c) => c.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)) {
+    coding.push({ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, code: String(gcn) });
   }
   return {
     coding,

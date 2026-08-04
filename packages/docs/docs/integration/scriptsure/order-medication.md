@@ -98,6 +98,25 @@ Calls `POST /fhir/R4/MedicationRequest/$order-medication`. Creates or updates a 
 | `patientInstruction` | `string` | | Free-text patient instructions |
 | `appId` | `string` | | Vendor application id |
 
+**`MedicationOrderDrugInput` (one per `drugs[]` entry):**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `quantity` | `number` | yes | Quantity to dispense |
+| `ndc` | `string` | | National Drug Code — preferred drug identifier |
+| `rxNorm` | `string` | | RxNorm code |
+| `routedMedId` | `number` | | Vendor routed medication id |
+| `gcnSeqno` | `number` | | Vendor formulation key. Pair with `routedMedId` to order a drug that has no dose-level formulation to resolve an NDC from (OTC / topical / multi-strength generics whose formulation lookup returns nothing) |
+| `drugName` | `string` | | Drug name. Required with `gcnSeqno`, since there is no dose-level record to derive it from |
+| `line1` | `string` | | Dose text for a `gcnSeqno`-keyed line, e.g. `"solution"` |
+| `quantityQualifier` | `string` | | NCI unit code for the quantity (e.g. `C48542` tablet) |
+| `refill` | `number` | | Number of refills |
+| `drugOrder` | `number` | | 1-based position within the order |
+| `sigLine3` | `string` | | Patient directions (sig) |
+| `useSubstitution` | `boolean` | | Whether generic substitution is allowed |
+
+Supply exactly one drug identity per line: `ndc`, `rxNorm`, or `routedMedId` (+ `gcnSeqno` when the drug has no formulations).
+
 **Response fields:**
 
 | Field | Type | Description |

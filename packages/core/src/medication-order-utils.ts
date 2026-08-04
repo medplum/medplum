@@ -85,6 +85,18 @@ export interface MedicationOrderDrugInput {
   readonly ndc?: string;
   readonly rxNorm?: string;
   readonly routedMedId?: number;
+  /**
+   * Vendor formulation key, paired with {@link routedMedId} to order a drug that
+   * has no dose-level product to resolve an NDC from — OTC / topical /
+   * wide-multi-strength generics for which the vendor's dose-format lookup
+   * returns nothing. Supply {@link drugName} and {@link line1} alongside it,
+   * since there is no catalog row to derive them from.
+   */
+  readonly gcnSeqno?: number;
+  /** Drug name, required for a {@link gcnSeqno}-keyed line (no catalog row to name it). */
+  readonly drugName?: string;
+  /** Dose text for a {@link gcnSeqno}-keyed line, e.g. `"solution"`. */
+  readonly line1?: string;
   readonly quantity: number;
   readonly quantityQualifier?: string;
   readonly refill?: number;
@@ -417,6 +429,15 @@ function drugLineToParameter(name: string, drug: MedicationOrderDrugInput): Para
   }
   if (drug.routedMedId !== undefined) {
     part.push(param('routedMedId', 'valueInteger', drug.routedMedId));
+  }
+  if (drug.gcnSeqno !== undefined) {
+    part.push(param('gcnSeqno', 'valueInteger', drug.gcnSeqno));
+  }
+  if (drug.drugName !== undefined) {
+    part.push(param('drugName', 'valueString', drug.drugName));
+  }
+  if (drug.line1 !== undefined) {
+    part.push(param('line1', 'valueString', drug.line1));
   }
   part.push(param('quantity', 'valueDecimal', drug.quantity));
   if (drug.quantityQualifier !== undefined) {
