@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { defineConfig as defineVitestConfig } from 'vitest/config';
 import { medplumAliases } from '../../aliases.mjs';
+import { jsdomExecArgv } from '../../vitest.config';
 
 const vitestConfig = defineVitestConfig({
   resolve: {
@@ -11,7 +12,8 @@ const vitestConfig = defineVitestConfig({
     name: '@medplum/health-gorilla-react',
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test.setup.ts',
+    execArgv: jsdomExecArgv,
+    setupFiles: ['./src/test.setup.ts'],
     pool: 'threads',
   },
 });
