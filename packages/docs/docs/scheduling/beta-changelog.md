@@ -24,7 +24,7 @@ needed to adopt them.
 ### What changed
 
 Previously, [`$find`](/docs/scheduling/appointment-find) and [`$book`](/docs/scheduling/appointment-book)
-only applied the `serviceType` filter to **free** Slots. Every `busy` / `busy-unavailable` Slot was
+only applied the `serviceType` filter to **free** Slots. Every `busy` / `busy-unavailable` / `busy-tentative` Slot was
 subtracted from availability regardless of its `serviceType`, so a busy Slot scoped to one service
 actually blocked the **entire** Schedule.
 
@@ -42,7 +42,7 @@ Thank you to [Nick Catalano](https://github.com/nickcatal) for reporting the iss
 
 ### Who is affected
 
-Users of `$find`/`$book` before Medplum Server v5.1.28 will have had `Slot` resources created with a `serviceType` attribute.
+Users of `$find`/`$book` / `$hold` before Medplum Server v5.1.28 will have had `Slot` resources created with a `serviceType` attribute.
 
 These slots were intended to block their related Schedule availability for all services ("wildcard" service type matching), but before [#9998](https://github.com/medplum/medplum/pull/9998) the slots were being created with `serviceType` set to the type of the linked Appointment resource.
 
@@ -50,13 +50,13 @@ While the bug above existed, that stray `serviceType` was ignored, so those Slot
 
 Once this fix lands, those Slots will block only their single service — leaving the provider bookable for other services at the same time and allowing double-booking. If you used `$find` / `$book` before #9998 shipped, you likely have such Slots and should run the migration below.
 
-You are also affected if you hand-authored `busy` / `busy-unavailable` Slots with a `serviceType` and relied on them blocking every service. If you never set `serviceType` on busy Slots, or you always intended a busy Slot to block only its referenced service, no action is needed.
+You are also affected if you authored `busy` / `busy-unavailable` / `busy-tentative` Slots with a `serviceType` and relied on them blocking every service. If you never set `serviceType` on busy Slots, or you always intended a busy Slot to block only its referenced service, no action is needed.
 
 ### Migration
 
 To preserve the old "block all services" behavior, clear `serviceType` on the affected busy Slots before upgrading. Since blocked time in the past no longer matters, you only need to migrate Slots ending after your upgrade date.
 
-The script below finds every `busy` / `busy-unavailable` Slot with a `serviceType` ending after `TARGET_DATE` and removes the `serviceType` field, so those Slots continue to block all services.
+The script below finds every `busy` / `busy-unavailable` / `busy-tentative` Slot with a `serviceType` ending after `TARGET_DATE` and removes the `serviceType` field, so those Slots continue to block all services.
 
 <MedplumCodeBlock language="ts" selectBlocks="clearBusySlotServiceType">
   {ExampleCode}

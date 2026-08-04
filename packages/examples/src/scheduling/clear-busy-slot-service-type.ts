@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   // `end=gt...` uses Medplum's custom Slot end search parameter.
   const ids: string[] = [];
   for await (const page of medplum.searchResourcePages('Slot', {
-    status: 'busy,busy-unavailable',
+    status: 'busy,busy-unavailable,busy-tentative',
     'service-type:missing': 'false',
     end: `gt${targetDate.toISOString()}`,
     _count: 1000,
