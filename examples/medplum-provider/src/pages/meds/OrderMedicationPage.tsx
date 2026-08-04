@@ -136,6 +136,22 @@ function getRoutedMedIdFromMedication(m: Medication): number | undefined {
  * @returns The GCN_SEQNO as a number, or undefined when absent or ambiguous.
  */
 function getUnambiguousGcnSeqnoFromMedication(m: Medication): number | undefined {
+  const values = getGcnSeqnosFromMedication(m);
+  return values.length === 1 ? values[0] : undefined;
+}
+
+/**
+ * Every GCN_SEQNO on a Medication, deduplicated.
+ *
+ * A name-search hit for a multi-strength product carries one per available
+ * strength. Passing them to the formulation lookup is what lets the prescriber
+ * pick a strength for drugs the vendor has no dose-format rows for — each key
+ * resolves to a named, dispensable product.
+ *
+ * @param m - Medication from drug search.
+ * @returns GCN_SEQNOs as numbers, in the order encountered.
+ */
+function getGcnSeqnosFromMedication(m: Medication): number[] {
   const values = new Set<string>();
   for (const id of m.identifier ?? []) {
     if (id.system === SCRIPTSURE_GCN_SEQNO_SYSTEM && id.value) {
@@ -147,11 +163,7 @@ function getUnambiguousGcnSeqnoFromMedication(m: Medication): number | undefined
       values.add(coding.code);
     }
   }
-  if (values.size !== 1) {
-    return undefined;
-  }
-  const n = Number.parseInt([...values][0], 10);
-  return Number.isFinite(n) ? n : undefined;
+  return [...values].map((v) => Number.parseInt(v, 10)).filter((n) => Number.isFinite(n));
 }
 
 function normalizeNdcDigits(ndc: string | undefined): string | undefined {
@@ -863,7 +875,10 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
     }
     let cancelled = false;
     setLoadingFormats(true);
-    searchMedications({ routedMedId: rid })
+    // The GCNs come along so a drug with no dose formats still yields selectable
+    // strengths (each GCN resolves to a named product) instead of dropping the
+    // prescriber onto the strength-less name-search hit.
+    searchMedications({ routedMedId: rid, gcnSeqnos: getGcnSeqnosFromMedication(termMedication) })
       .then((list) => {
         if (!cancelled) {
           const deduped = dedupeMedications(list);
@@ -1726,7 +1741,7 @@ interface CompoundLineState {
 interface CompoundLineEditorProps {
   index: number;
   line: CompoundLineState;
-  searchMedications: (p: { term?: string; routedMedId?: number }) => Promise<Medication[]>;
+  searchMedications: (p: { term?: string; routedMedId?: number; gcnSeqnos?: number[] }) => Promise<Medication[]>;
   onChange: (line: CompoundLineState) => void;
 }
 
@@ -1764,7 +1779,9 @@ function CompoundLineEditor(props: Readonly<CompoundLineEditorProps>): JSX.Eleme
     }
     setLoading(true);
     try {
-      const list = dedupeMedications(await searchMedications({ routedMedId: rid }));
+      const list = dedupeMedications(
+        await searchMedications({ routedMedId: rid, gcnSeqnos: getGcnSeqnosFromMedication(m) })
+      );
       setFormats(list);
       onChange({ ...line, termMed: m, formatMed: list[0] ?? m });
     } catch (e) {
