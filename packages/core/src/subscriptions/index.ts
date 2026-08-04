@@ -167,7 +167,7 @@ export class SubscriptionManager {
         // Get criteria for event
         const status = bundle?.entry?.[0]?.resource as SubscriptionStatus | undefined;
         if (!status) {
-          console.warn('Received WebSocket message without a SubscriptionStatus resource; ignoring');
+          console.warn('Received WebSocket message without a SubscriptionStatus resource; ignoring', bundle);
           return;
         }
 

@@ -975,6 +975,16 @@ describe('SubscriptionManager', () => {
 
       expect(receivedBundle).toStrictEqual(heartbeatBundle);
       expect(console.warn).toHaveBeenCalledTimes(2);
+      expect(console.warn).toHaveBeenNthCalledWith(
+        1,
+        'Received WebSocket message without a SubscriptionStatus resource; ignoring',
+        'invalid_json'
+      );
+      expect(console.warn).toHaveBeenNthCalledWith(
+        2,
+        'Received WebSocket message without a SubscriptionStatus resource; ignoring',
+        { resourceType: 'Bundle', type: 'history', entry: [] }
+      );
       expect(errorListener).not.toHaveBeenCalled();
       console.warn = originalWarn;
     });
