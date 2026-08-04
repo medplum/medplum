@@ -3,7 +3,14 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { ReadablePromise } from '@medplum/core';
+import {
+  ReadablePromise,
+  SchedulingEncounterCodingURI,
+  SchedulingParametersURI,
+  SchedulingPlanDefinitionURI,
+  ServiceTypeReferenceURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type {
   Appointment,
   CodeableConcept,
@@ -20,17 +27,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter } from '../../utils/encounter';
-import {
-  SchedulingEncounterCodingURI,
-  SchedulingParametersURI,
-  SchedulingPlanDefinitionURI,
-} from '../../utils/scheduling';
-import { toCodeableReferenceLike } from '../../utils/servicetype';
 import { FindPane } from './FindPane';
 
 vi.mock('../../utils/encounter', () => ({ createEncounter: vi.fn() }));
-const ServiceTypeReferenceURI = 'https://medlpum.com/fhir/service-type-reference';
-
 describe('FindPane', () => {
   let medplum: MockClient;
   let healthcareService: WithId<HealthcareService>;
@@ -41,7 +40,7 @@ describe('FindPane', () => {
     id: 'schedule-1',
     actor: [{ reference: 'Practitioner/practitioner-1' }],
     active: true,
-    serviceType: services.flatMap(toCodeableReferenceLike),
+    serviceType: services.flatMap(toServiceTypeCodeableConcepts),
   });
 
   const defaultRange = {
@@ -394,7 +393,7 @@ describe('FindPane', () => {
         id: 'schedule-123',
         actor: [{ reference: 'Practitioner/practitioner-123' }],
         active: true,
-        serviceType: toCodeableReferenceLike(hs),
+        serviceType: toServiceTypeCodeableConcepts(hs),
       } satisfies Schedule;
 
       await act(async () => setup({ schedule }));
@@ -553,7 +552,7 @@ describe('FindPane', () => {
 
   describe('Reference deduplication', () => {
     test('shows a service only once when its multiple type codings produce duplicate references', async () => {
-      // A service with 2 types produces 2 CodeableConcept entries via toCodeableReferenceLike,
+      // A service with 2 types produces 2 CodeableConcept entries via toServiceTypeCodeableConcepts,
       // both carrying a reference to the same HealthcareService.
       const multiTypeService = await medplum.createResource<HealthcareService>({
         resourceType: 'HealthcareService',
@@ -567,7 +566,7 @@ describe('FindPane', () => {
         ],
       });
 
-      // toCodeableReferenceLike produces one concept per type entry, each referencing the same service
+      // toServiceTypeCodeableConcepts produces one concept per type entry, each referencing the same service
       const schedule = createScheduleWithServices([multiTypeService]);
       expect(schedule.serviceType).toHaveLength(2); // confirm two entries in serviceType
 
@@ -588,7 +587,7 @@ describe('FindPane', () => {
 
     test('skips serviceType concepts that have no reference field without crashing', async () => {
       // Build a schedule with one valid concept and one malformed concept (extension with no reference).
-      const validServiceTypes = toCodeableReferenceLike(healthcareService);
+      const validServiceTypes = toServiceTypeCodeableConcepts(healthcareService);
       const malformedConcept = {
         extension: [
           {

@@ -11,6 +11,8 @@ import {
   isReference,
   OperationOutcomeError,
   resolveId,
+  serviceTypeIncludesService,
+  toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
@@ -18,7 +20,6 @@ import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { addMinutes, earliest, latest } from '../../util/date';
-import { isCodeableReferenceLikeTo, toCodeableReferenceLike } from '../../util/servicetype';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
@@ -107,7 +108,7 @@ async function handler(params: {
 
   const effectiveRange = { start: requestedRange.start, end: requestedRange.end };
   schedules.forEach((schedule) => {
-    if (!isCodeableReferenceLikeTo(schedule.serviceType, healthcareService)) {
+    if (!serviceTypeIncludesService(schedule.serviceType, healthcareService)) {
       throw new OperationOutcomeError(
         badRequest('Schedule is not schedulable for requested service type', getPath(schedule))
       );
@@ -136,7 +137,7 @@ async function handler(params: {
   });
 
   const commonParameters = extractCommonParameters([...parameterGroup.values()]);
-  const serviceType = toCodeableReferenceLike(healthcareService);
+  const serviceType = toServiceTypeCodeableConcepts(healthcareService);
 
   const allAvailability = schedules.map((schedule) => {
     const schedulingParameters = parameterGroup.get(schedule);
