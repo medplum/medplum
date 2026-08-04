@@ -145,9 +145,11 @@ export class RepositoryAccessTracker {
     let project: ResourceType[] | undefined;
     for (const resourceType of all) {
       if (globalShardResourceTypes.has(resourceType)) {
-        (global ??= []).push(resourceType);
+        global ??= [];
+        global.push(resourceType);
       } else {
-        (project ??= []).push(resourceType);
+        project ??= [];
+        project.push(resourceType);
       }
     }
 

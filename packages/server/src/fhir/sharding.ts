@@ -84,9 +84,11 @@ export function resolveShardId(
   let projectTypes: ResourceType[] | undefined;
   for (const resourceType of resourceTypes) {
     if (globalShardResourceTypes.has(resourceType)) {
-      (globalTypes ??= []).push(resourceType);
+      globalTypes ??= [];
+      globalTypes.push(resourceType);
     } else {
-      (projectTypes ??= []).push(resourceType);
+      projectTypes ??= [];
+      projectTypes.push(resourceType);
     }
   }
 

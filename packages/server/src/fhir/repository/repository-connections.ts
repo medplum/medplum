@@ -112,7 +112,7 @@ export class RepositoryConnections implements Disposable {
     if (this.sealedToShardId !== undefined) {
       throw shardRoutingError(
         'Cannot use shard since repository is sealed to a different shard',
-        `Requested shard ${shardId}, sealed to shard ${this.sealedToShardId}${source ? `, source: ${source}` : ''}`
+        `Requested shard ${shardId}, sealed to shard ${this.sealedToShardId}${source ? ', source: ' + source : ''}`
       );
     }
 

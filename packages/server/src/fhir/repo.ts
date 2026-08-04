@@ -288,7 +288,7 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
  */
 export class Repository extends FhirRepository implements Disposable {
   private readonly context: RepositoryContext;
-  private _normalizedShardId: string;
+  private readonly _normalizedShardId: string;
   /**
    * Whether this repository created the connection set and is responsible for disposing it. Several
    * repositories can share one set, e.g. `getSystemRepo`, `withOverrideConfig`, and transaction-scoped
@@ -411,7 +411,7 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.connections.peek(this.transaction.shardId)?.connection.isInTransaction()) {
       throw shardRoutingError(
         'Cannot use shard while a transaction is active on a different shard',
-        `Requested ${shardId}, active txn on ${this.transaction.shardId}${source ? `, source: ${source}` : ''}`
+        `Requested ${shardId}, active txn on ${this.transaction.shardId}${source ? ', source: ' + source : ''}`
       );
     }
   }
