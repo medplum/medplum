@@ -270,7 +270,7 @@ Medplum provides templates and playbooks for common medical integrations.
 
 ## Custom built integrations
 
-Medplum provides building blocks for custom integrations. **Any system that exposes an API (REST/FHIR), HL7, or SFTP interface can be connected to Medplum** - you are not limited to a fixed catalog of vendors. Because the integration logic is built with [Bots](/docs/bots) that run on your own project, you own and control it. This makes integrations **portable**: if you switch vendors - for example, moving from one e-signature provider to another - you can re-point the same integration code at the new system.
+Medplum provides building blocks for custom integrations. **Any system that exposes an API (REST/FHIR), HL7, or SFTP interface can be connected to Medplum** - you are not limited to a fixed catalog of vendors. Because the integration logic is built with [Bots](/docs/bots) that run on your own project, you own and control it. This makes custom built integrations both flexible and portable. 
 
 <table>
   <thead>
