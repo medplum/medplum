@@ -79,7 +79,7 @@ export function stopFhircastHeartbeat(): void {
 // keeps the connection alive, and `syncerror` reports a context change the subscriber may have
 // caused, so a subscriber can't opt out of hearing about its own failures.
 // Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-Events.html
-const UNCONDITIONAL_EVENTS = ['heartbeat', 'syncerror'];
+const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
 
 /**
  * Decides what a subscriber should be sent from a message published to its topic.
@@ -115,7 +115,7 @@ function messageForSubscriber(message: string, endpoint: string, subscribedEvent
     return message;
   }
   const normalizedEventName = eventName.toLowerCase();
-  return UNCONDITIONAL_EVENTS.includes(normalizedEventName) || subscribedEvents.has(normalizedEventName)
+  return UNCONDITIONAL_EVENTS.has(normalizedEventName) || subscribedEvents.has(normalizedEventName)
     ? message
     : undefined;
 }

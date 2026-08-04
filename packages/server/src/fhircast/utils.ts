@@ -98,7 +98,7 @@ export function extractEndpoint(endpointUrl: unknown): string | undefined {
   if (typeof endpointUrl !== 'string') {
     return undefined;
   }
-  return endpointUrl.split('/').filter(Boolean).pop();
+  return endpointUrl.split('/').findLast(Boolean);
 }
 
 export function getTopicCurrentContextKey(projectId: string, topic: string): string {
