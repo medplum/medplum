@@ -946,7 +946,7 @@ describe('SubscriptionManager', () => {
       // Parseable, but neither a `pong` nor a notification Bundle
       wsServer.send('invalid_json');
       // A Bundle with no SubscriptionStatus entry
-      wsServer.send({ resourceType: 'Bundle', type: 'history', entry: [] } as Bundle);
+      wsServer.send({ resourceType: 'Bundle', type: 'history', entry: [] });
 
       // The manager should still be alive and processing messages afterwards
       const timestamp = new Date().toISOString();
