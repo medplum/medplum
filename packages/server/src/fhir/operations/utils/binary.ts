@@ -11,9 +11,9 @@ const BINARY_ID_REGEX = /^[a-f0-9-]+$/;
  * @param output - The output set where Binary IDs will be added.
  */
 export function buildBinaryIds(resource: Resource, output: Set<string>): void {
-  const stack: object[] = [resource];
+  const stack: Record<string, any>[] = [resource];
   while (stack.length > 0) {
-    const current = stack.pop();
+    const current = stack.pop() as Record<string, any>; // Stack is guaranteed to contain something
     if (Array.isArray(current)) {
       for (const item of current) {
         if (typeof item === 'object' && item) {
@@ -21,7 +21,12 @@ export function buildBinaryIds(resource: Resource, output: Set<string>): void {
         }
       }
     } else {
-      for (const [key, value] of Object.entries(current as Record<string, unknown>)) {
+      for (const key in current) {
+        if (!Object.hasOwn(current, key)) {
+          continue;
+        }
+
+        const value = current[key];
         const id = extractBinaryReference(key, value);
         if (id) {
           output.add(id);
