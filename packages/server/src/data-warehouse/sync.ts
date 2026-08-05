@@ -369,11 +369,7 @@ function recordSyncMetrics(tables: SyncTableResult[]): void {
     incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'success' } }, successCount);
   }
   for (const [skipReason, count] of Object.entries(skippedByReason) as [SyncTableSkipReason, number][]) {
-    incrementCounter(
-      'medplum.dataWarehouse.sync.tables',
-      { attributes: { result: 'skipped', skipReason } },
-      count
-    );
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'skipped', skipReason } }, count);
   }
   if (errorCount > 0) {
     incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'error' } }, errorCount);
