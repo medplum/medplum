@@ -753,8 +753,9 @@ function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedVa
   if (typeof v.value !== 'object' || !v.value) {
     return [v, undefined];
   }
-  const primitiveValue = v.value.valueOf();
-  if (primitiveValue === v.value) {
+
+  const primitiveValue = v.value.valueOf?.();
+  if (primitiveValue === v.value || primitiveValue === undefined) {
     return [undefined, { type: 'Element', value: v.value }];
   }
 
