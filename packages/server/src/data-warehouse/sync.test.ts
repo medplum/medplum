@@ -409,21 +409,26 @@ describe('syncData metrics', () => {
     const expectedDurationSeconds = synced.reduce((sum, t) => sum + t.syncDurationMs, 0) / 1000;
     const expectedWatermarkSeconds = result.tables.reduce((sum, t) => sum + t.watermarkDurationMs, 0) / 1000;
 
-    expect(incrementCounterSpy).toHaveBeenCalledTimes(4);
+    expect(incrementCounterSpy).toHaveBeenCalledTimes(5);
     expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.rows', undefined, expectedRows);
     expect(incrementCounterSpy).toHaveBeenCalledWith(
       'medplum.dataWarehouse.sync.tables',
-      { attributes: { skipReason: 'conflict' } },
+      { attributes: { result: 'success' } },
       1
     );
     expect(incrementCounterSpy).toHaveBeenCalledWith(
       'medplum.dataWarehouse.sync.tables',
-      { attributes: { skipReason: 'watermark' } },
+      { attributes: { result: 'skipped', skipReason: 'conflict' } },
       1
     );
     expect(incrementCounterSpy).toHaveBeenCalledWith(
       'medplum.dataWarehouse.sync.tables',
-      { attributes: { skipReason: 'missing-table' } },
+      { attributes: { result: 'skipped', skipReason: 'watermark' } },
+      1
+    );
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { result: 'skipped', skipReason: 'missing-table' } },
       1
     );
 
@@ -437,6 +442,61 @@ describe('syncData metrics', () => {
       'medplum.dataWarehouse.sync.watermarkDuration',
       expectedWatermarkSeconds,
       { options: { unit: 's' } }
+    );
+  });
+
+  test('records success result for every table on a fully healthy run', async () => {
+    const destination = createFakeDestination({
+      writeRows: async () => 3,
+    });
+
+    await syncData({
+      database: {},
+      warehouseSources: [patientSource, observationSource],
+      destination,
+    });
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { result: 'success' } },
+      2
+    );
+    expect(incrementCounterSpy).not.toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      expect.objectContaining({ attributes: expect.objectContaining({ skipReason: expect.anything() }) }),
+      expect.anything()
+    );
+  });
+
+  test('records partial progress metrics when a non-conflict write error aborts the run', async () => {
+    // Watermarks are sorted by iceberg table name: observation_history then patient_history.
+    const destination = createFakeDestination({
+      writeRows: async (_connection, context) => {
+        if (context.tableSpec.icebergTable === patientSource.icebergTable) {
+          throw new Error('disk full');
+        }
+        return 5;
+      },
+    });
+
+    await expect(
+      syncData({
+        database: {},
+        warehouseSources: [patientSource, observationSource],
+        destination,
+      })
+    ).rejects.toThrow('disk full');
+
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.rows', undefined, 5);
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { result: 'success' } },
+      1
+    );
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { result: 'error' } },
+      1
     );
   });
 });

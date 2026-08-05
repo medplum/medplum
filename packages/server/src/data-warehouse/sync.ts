@@ -38,8 +38,8 @@ export type SyncTableSkipReason = 'conflict' | 'watermark' | 'missing-table';
 
 export interface SyncTableResult {
   destination: string;
-  /** Set when the table was skipped; omitted on successful sync. */
-  status?: SyncTableSkipReason;
+  /** Set when the table was skipped or failed; omitted on successful sync. */
+  status?: SyncTableSkipReason | 'error';
   rowsInserted: number;
   syncDurationMs: number;
   watermarkDurationMs: number;
@@ -330,16 +330,28 @@ function buildSkippedTableResult(
   };
 }
 
+function buildErrorTableResult(destination: string, watermarkDurationMs: number): SyncTableResult {
+  return {
+    destination,
+    status: 'error',
+    rowsInserted: 0,
+    syncDurationMs: 0,
+    watermarkDurationMs,
+  };
+}
+
 /**
  * Records sync-level OTEL metrics aggregated across all table outcomes.
- * @param tables - Per-table sync results from a completed warehouse sync.
+ * @param tables - Per-table sync results (including partial progress when a hard failure aborts the run).
  */
 function recordSyncMetrics(tables: SyncTableResult[]): void {
   const rowsInserted = tables.map((t) => t.rowsInserted).reduce((a, b) => a + b, 0);
   const syncDurationMs = tables.map((t) => t.syncDurationMs).reduce((a, b) => a + b, 0);
   const watermarkDurationMs = tables.map((t) => t.watermarkDurationMs).reduce((a, b) => a + b, 0);
+  const successCount = tables.filter((t) => !t.status).length;
+  const errorCount = tables.filter((t) => t.status === 'error').length;
   const skippedByReason = tables.reduce<Partial<Record<SyncTableSkipReason, number>>>((acc, table) => {
-    if (table.status) {
+    if (table.status && table.status !== 'error') {
       const status = table.status;
       acc[status] = (acc[status] ?? 0) + 1;
     }
@@ -353,8 +365,18 @@ function recordSyncMetrics(tables: SyncTableResult[]): void {
   recordHistogramValue('medplum.dataWarehouse.sync.watermarkDuration', watermarkDurationMs / 1000, {
     options: { unit: 's' },
   });
+  if (successCount > 0) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'success' } }, successCount);
+  }
   for (const [skipReason, count] of Object.entries(skippedByReason) as [SyncTableSkipReason, number][]) {
-    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { skipReason } }, count);
+    incrementCounter(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { result: 'skipped', skipReason } },
+      count
+    );
+  }
+  if (errorCount > 0) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'error' } }, errorCount);
   }
 }
 
@@ -379,8 +401,9 @@ async function reportSkippedTableProgress(
 async function runWarehouseTableSync(
   options: SyncOptions,
   namespace: string,
-  sourceConnectionString: string
-): Promise<SyncTableResult[]> {
+  sourceConnectionString: string,
+  tables: SyncTableResult[]
+): Promise<void> {
   return withWarehouseConnection(options, async (instance) => {
     // in one session, grabs all high-watermarks for all tables (before Postgres attach)
     const watermarks = await collectWarehouseWatermarks(instance, options, namespace);
@@ -392,8 +415,6 @@ async function runWarehouseTableSync(
       for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
         await writeConnection.run(query);
       }
-
-      const tables: SyncTableResult[] = [];
 
       // update each iceberg table (watermarks includes skip entries, so index tracks all sources)
       for (const [index, watermark] of watermarks.entries()) {
@@ -424,6 +445,7 @@ async function runWarehouseTableSync(
         } catch (err) {
           const message = normalizeErrorString(err);
           if (!message.includes('CommitFailedException') && !message.includes('409')) {
+            tables.push(buildErrorTableResult(destination, watermark.watermarkDurationMs));
             throw err;
           }
 
@@ -448,8 +470,6 @@ async function runWarehouseTableSync(
           );
         }
       }
-
-      return tables;
     } finally {
       closeWarehouseConnection(writeConnection, 'write connection');
     }
@@ -464,7 +484,11 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
   const sourceConnectionString = getSyncSourceConnectionString(options);
   const namespace = options.namespace ?? DEFAULT_NAMESPACE;
 
-  const tables = await runWarehouseTableSync(options, namespace, sourceConnectionString);
-  recordSyncMetrics(tables);
-  return { tables };
+  const tables: SyncTableResult[] = [];
+  try {
+    await runWarehouseTableSync(options, namespace, sourceConnectionString, tables);
+    return { tables };
+  } finally {
+    recordSyncMetrics(tables);
+  }
 }
