@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ModalProps } from '@mantine/core';
-import { Modal } from '@mantine/core';
+import type { ModalProps as MantineModalProps } from '@mantine/core';
+import { Modal as MantineModal } from '@mantine/core';
 import cx from 'clsx';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { Form } from '../Form/Form';
-import classes from './MedplumModal.module.css';
+import classes from './Modal.module.css';
 
 /**
  * Keeps the flex chain intact across the form element, so the footer stays pinned. Inline rather
@@ -19,7 +19,7 @@ const formStyle: CSSProperties = {
 };
 
 /**
- * Props for {@link MedplumModal}.
+ * Props for {@link Modal}.
  * @property children - Modal body, rendered in the scrolling region between the header and the
  * footer.
  * @property actions - Buttons pinned to the bottom edge of the modal above a full-bleed border.
@@ -32,7 +32,7 @@ const formStyle: CSSProperties = {
  * @property bodyHeight - Fixed body height as a CSS length, e.g. `'60vh'`, for modals whose content
  * is a fixed layout rather than a form that should size to its fields. Omit to size to the content.
  */
-export interface MedplumModalProps extends Omit<ModalProps, 'children' | 'onSubmit' | 'scrollAreaComponent'> {
+export interface ModalProps extends Omit<MantineModalProps, 'children' | 'onSubmit' | 'scrollAreaComponent'> {
   readonly children: ReactNode;
   readonly actions?: ReactNode;
   readonly onSubmit?: (formData: Record<string, string>) => Promise<void> | void;
@@ -46,10 +46,10 @@ export interface MedplumModalProps extends Omit<ModalProps, 'children' | 'onSubm
  *
  * All other Mantine `Modal` props pass through. `scrollAreaComponent` does not, because it inserts
  * an element between the content and the body that breaks the flex chain the pinned footer needs.
- * @param props - The MedplumModal React props.
- * @returns The MedplumModal React node.
+ * @param props - The Modal React props.
+ * @returns The Modal React node.
  */
-export function MedplumModal(props: MedplumModalProps): JSX.Element {
+export function Modal(props: ModalProps): JSX.Element {
   const {
     children,
     actions,
@@ -72,7 +72,7 @@ export function MedplumModal(props: MedplumModalProps): JSX.Element {
   );
 
   return (
-    <Modal
+    <MantineModal
       {...modalProps}
       centered={centered}
       padding={padding}
@@ -94,6 +94,6 @@ export function MedplumModal(props: MedplumModalProps): JSX.Element {
       ) : (
         contents
       )}
-    </Modal>
+    </MantineModal>
   );
 }

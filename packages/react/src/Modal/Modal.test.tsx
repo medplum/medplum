@@ -3,14 +3,14 @@
 import { Button, TextInput } from '@mantine/core';
 import { SubmitButton } from '../Form/SubmitButton';
 import { fireEvent, render, screen } from '../test-utils/render';
-import { MedplumModal } from './MedplumModal';
+import { Modal } from './Modal';
 
-describe('MedplumModal', () => {
+describe('Modal', () => {
   test('Renders title, body and actions', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(screen.getByRole('heading', { name: 'Add Bookmark' })).toBeDefined();
     expect(screen.getByText('Body content')).toBeDefined();
@@ -19,18 +19,18 @@ describe('MedplumModal', () => {
 
   test('Renders nothing when closed', () => {
     render(
-      <MedplumModal opened={false} onClose={vi.fn()} title="Add Bookmark">
+      <Modal opened={false} onClose={vi.fn()} title="Add Bookmark">
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(screen.queryByText('Body content')).toBeNull();
   });
 
   test('Renders actions after the body', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     const body = screen.getByText('Body content');
     const action = screen.getByRole('button', { name: 'Save' });
@@ -40,9 +40,9 @@ describe('MedplumModal', () => {
 
   test('Omits the footer without actions', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Lab Results">
+      <Modal opened onClose={vi.fn()} title="Lab Results">
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(document.querySelector('.footer')).toBeNull();
     expect(document.querySelector('.scroll')).not.toBeNull();
@@ -50,9 +50,9 @@ describe('MedplumModal', () => {
 
   test('Applies the layout classes alongside the Mantine classes', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(document.querySelector('.mantine-Modal-content.content')).not.toBeNull();
     expect(document.querySelector('.mantine-Modal-header.header')).not.toBeNull();
@@ -62,9 +62,9 @@ describe('MedplumModal', () => {
 
   test('Merges caller classNames rather than replacing them', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" classNames={{ body: 'caller-body' }}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" classNames={{ body: 'caller-body' }}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     const body = document.querySelector('.mantine-Modal-body') as HTMLElement;
     expect(body.classList.contains('body')).toBe(true);
@@ -73,9 +73,9 @@ describe('MedplumModal', () => {
 
   test('Leaves the styles prop as an escape hatch', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" styles={{ body: { height: '50vh' } }}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" styles={{ body: { height: '50vh' } }}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     const body = document.querySelector('.mantine-Modal-body') as HTMLElement;
     expect(body.style.height).toBe('50vh');
@@ -83,9 +83,9 @@ describe('MedplumModal', () => {
 
   test('Sets the body height custom property', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Edit Task" bodyHeight="60vh">
+      <Modal opened onClose={vi.fn()} title="Edit Task" bodyHeight="60vh">
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     const root = document.querySelector('.mantine-Modal-root') as HTMLElement;
     expect(root.style.getPropertyValue('--medplum-modal-body-height')).toBe('60vh');
@@ -93,9 +93,9 @@ describe('MedplumModal', () => {
 
   test('Omits the body height custom property by default', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Edit Task">
+      <Modal opened onClose={vi.fn()} title="Edit Task">
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     const root = document.querySelector('.mantine-Modal-root') as HTMLElement;
     expect(root.style.getPropertyValue('--medplum-modal-body-height')).toBe('');
@@ -104,7 +104,7 @@ describe('MedplumModal', () => {
   test('Submits body fields from an action button', async () => {
     const onSubmit = vi.fn();
     render(
-      <MedplumModal
+      <Modal
         opened
         onClose={vi.fn()}
         title="Add Bookmark"
@@ -112,7 +112,7 @@ describe('MedplumModal', () => {
         actions={<SubmitButton>OK</SubmitButton>}
       >
         <TextInput name="bookmarkname" defaultValue="My bookmark" />
-      </MedplumModal>
+      </Modal>
     );
 
     // The submit button lives in the footer, so this only passes while the form wraps both slots.
@@ -122,9 +122,9 @@ describe('MedplumModal', () => {
 
   test('Renders no form without onSubmit', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" actions={<Button>Save</Button>}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(document.querySelector('form')).toBeNull();
   });
@@ -132,9 +132,9 @@ describe('MedplumModal', () => {
   test('Closes from the default close button', () => {
     const onClose = vi.fn();
     render(
-      <MedplumModal opened onClose={onClose} title="Add Bookmark">
+      <Modal opened onClose={onClose} title="Add Bookmark">
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalled();
@@ -142,18 +142,18 @@ describe('MedplumModal', () => {
 
   test('Allows overriding the close button props', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} title="Add Bookmark" closeButtonProps={{ 'aria-label': 'Dismiss' }}>
+      <Modal opened onClose={vi.fn()} title="Add Bookmark" closeButtonProps={{ 'aria-label': 'Dismiss' }}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDefined();
   });
 
   test('Renders no header without a title or close button', () => {
     render(
-      <MedplumModal opened onClose={vi.fn()} withCloseButton={false}>
+      <Modal opened onClose={vi.fn()} withCloseButton={false}>
         <div>Body content</div>
-      </MedplumModal>
+      </Modal>
     );
     expect(document.querySelector('.mantine-Modal-header')).toBeNull();
     expect(screen.getByText('Body content')).toBeDefined();

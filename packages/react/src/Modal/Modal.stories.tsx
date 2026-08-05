@@ -6,12 +6,12 @@ import type { Meta } from '@storybook/react';
 import type { JSX, ReactNode } from 'react';
 import { Document } from '../Document/Document';
 import { SubmitButton } from '../Form/SubmitButton';
-import type { MedplumModalProps } from './MedplumModal';
-import { MedplumModal } from './MedplumModal';
+import type { ModalProps } from './Modal';
+import { Modal } from './Modal';
 
 export default {
-  title: 'Medplum/MedplumModal',
-  component: MedplumModal,
+  title: 'Medplum/Modal',
+  component: Modal,
 } as Meta;
 
 /**
@@ -19,13 +19,13 @@ export default {
  * @param props - The modal props, minus the disclosure state the wrapper owns.
  * @returns The story React node.
  */
-function ModalStory(props: Omit<MedplumModalProps, 'opened' | 'onClose'> & { readonly label?: string }): JSX.Element {
+function ModalStory(props: Omit<ModalProps, 'opened' | 'onClose'> & { readonly label?: string }): JSX.Element {
   const { label = 'Open modal', ...modalProps } = props;
   const [opened, { open, close }] = useDisclosure(false);
   return (
     <Document>
       <Button onClick={open}>{label}</Button>
-      <MedplumModal opened={opened} onClose={close} {...modalProps} />
+      <Modal opened={opened} onClose={close} {...modalProps} />
     </Document>
   );
 }

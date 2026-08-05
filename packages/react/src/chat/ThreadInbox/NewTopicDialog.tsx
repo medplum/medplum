@@ -7,7 +7,7 @@ import type { Communication, Patient, Practitioner, Reference } from '@medplum/f
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { MedplumModal } from '../../MedplumModal/MedplumModal';
+import { Modal } from '../../Modal/Modal';
 import { ThreadMessageForm } from './ThreadMessageForm';
 
 /**
@@ -70,7 +70,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   };
 
   return (
-    <MedplumModal
+    <Modal
       opened={opened}
       onClose={onClose}
       title="New Message"
@@ -92,6 +92,6 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
           allowPatientSelection={allowPatientSelection}
         />
       </Stack>
-    </MedplumModal>
+    </Modal>
   );
 };

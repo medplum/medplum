@@ -7,7 +7,7 @@ import type { Communication, Patient, Practitioner, Reference } from '@medplum/f
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { MedplumModal } from '../../MedplumModal/MedplumModal';
+import { Modal } from '../../Modal/Modal';
 import { ThreadMessageForm } from './ThreadMessageForm';
 
 /**
@@ -83,7 +83,7 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
   };
 
   return (
-    <MedplumModal
+    <Modal
       opened={opened}
       onClose={onClose}
       title="Message Settings"
@@ -108,6 +108,6 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
           />
         </Stack>
       )}
-    </MedplumModal>
+    </Modal>
   );
 };
