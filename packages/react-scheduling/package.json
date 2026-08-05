@@ -71,6 +71,7 @@
     "@mantine/hooks": "8.3.18",
     "@medplum/core": "5.1.27",
     "@medplum/fhirtypes": "5.1.27",
+    "@medplum/react": "5.1.27",
     "@tabler/icons-react": "3.46.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.0",
