@@ -306,7 +306,7 @@ In this example:
 
 ## Editing Availability in a React App
 
-Rather than hand-authoring the [`availability` extension](#availability-extension), the [`@medplum/react`](/docs/react) library provides a `ScheduleAvailabilityEditor` component. It edits a Schedule's weekly `availability` override for a given visit service type, or, with the `schedule` prop omitted, the [service-level default](#service-level-availability) hours themselves. It implements the [override behavior](#override-behavior) described above through a single switch, and is used in the [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app.
+Rather than hand-authoring the [`availability` extension](#availability-extension), the [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides a `ScheduleAvailabilityEditor` component. It edits a Schedule's weekly `availability` override for a given visit service type, or, with the `schedule` prop omitted, the [service-level default](#service-level-availability) hours themselves. It implements the [override behavior](#override-behavior) described above through a single switch, and is used in the [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app.
 
 `@medplum/core` exports the framework-agnostic helpers the component is built on, for reading and writing the `availability` override without the UI (for example, in a bot or a custom editor).
 

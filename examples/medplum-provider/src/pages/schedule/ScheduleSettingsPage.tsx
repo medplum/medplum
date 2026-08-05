@@ -30,8 +30,9 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
-import { Document, MedplumLink, OperationOutcomeAlert, ScheduleAvailabilityEditor, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, OperationOutcomeAlert, useMedplum } from '@medplum/react';
 import { useResource, useSearchResources } from '@medplum/react-hooks';
+import { ScheduleAvailabilityEditor } from '@medplum/react-scheduling';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useState } from 'react';

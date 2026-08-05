@@ -1,19 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Title } from '@mantine/core';
+import { Container, Paper, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getSchedulingTimezone, SchedulingParametersURI } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
-import { Document } from '../Document/Document';
 import { ScheduleAvailabilityEditor } from './ScheduleAvailabilityEditor';
 
 export default {
   title: 'Medplum/ScheduleAvailabilityEditor',
   component: ScheduleAvailabilityEditor,
 } as Meta;
+
+/*
+ * Stands in for `Document` from @medplum/react, which this package does not depend on. Mirrors what
+ * that component renders, so the stories frame the editor the way a page in an app would.
+ */
+function StoryShell(props: { readonly children: ReactNode }): JSX.Element {
+  return (
+    <Container>
+      <Paper p="md" shadow="sm" radius="sm" withBorder>
+        {props.children}
+      </Paper>
+    </Container>
+  );
+}
 
 const service: WithId<HealthcareService> = {
   resourceType: 'HealthcareService',
@@ -175,7 +188,7 @@ function EditorStory(props: {
   const forService = props.forService ?? service;
 
   return (
-    <Document>
+    <StoryShell>
       <Title order={3} mb="xs">
         Weekly Availability for {forService.name}
       </Title>
@@ -186,7 +199,7 @@ function EditorStory(props: {
         onCancel={props.onCancel}
         onSave={setSchedule}
       />
-    </Document>
+    </StoryShell>
   );
 }
 
@@ -244,7 +257,7 @@ export const WithCancel = (): JSX.Element => <EditorStory schedule={scheduleWith
 function ServiceDefaultStory(props: { readonly initial: WithId<HealthcareService> }): JSX.Element {
   const [edited, setEdited] = useState(props.initial);
   return (
-    <Document>
+    <StoryShell>
       <Title order={3} mb="md">
         Default Availability for {edited.name}
       </Title>
@@ -253,7 +266,7 @@ function ServiceDefaultStory(props: { readonly initial: WithId<HealthcareService
         timezone={getSchedulingTimezone(undefined, edited)}
         onSave={setEdited}
       />
-    </Document>
+    </StoryShell>
   );
 }
 

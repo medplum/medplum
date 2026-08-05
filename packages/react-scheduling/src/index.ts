@@ -5,3 +5,4 @@ export type * from './types';
 
 // Export all components
 export * from './Calendar/Calendar';
+export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
