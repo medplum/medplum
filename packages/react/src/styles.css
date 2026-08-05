@@ -1,7 +1,8 @@
 /**
- * This stub is here to allow storybook to import "@medplum/react/styles.css"
- * both when using the packaged `@medplum/react` (which bundles all the styles
- * into `dist/esm/index.css`), and when using direct resolution in development
- * mode (in which case each imported component would also include its own
- * relevant CSS).
- * */
+ * This stub is here to allow importing "@medplum/react/styles.css" when using
+ * development servers that pull in this package via source instead of the
+ * bundled CSS file provided in the packaged `dist` folders.
+ *
+ * It is intentionally empty, as each exported component imports the relevant
+ * CSS internally.
+ */

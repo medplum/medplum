@@ -270,7 +270,7 @@ Medplum provides templates and playbooks for common medical integrations.
 
 ## Custom built integrations
 
-Medplum provides building blocks for custom integrations. Some examples are below.
+Medplum provides building blocks for custom integrations. **Any system that exposes an API (REST/FHIR), HL7, or SFTP interface can be connected to Medplum** - you are not limited to a fixed catalog of vendors. Because the integration logic is built with [Bots](/docs/bots) that run on your own project, you own and control it. This makes custom built integrations both flexible and portable. 
 
 <table>
   <thead>
@@ -332,6 +332,21 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td>Bot PDF</td>
       <td>Create PDF for Superbill</td>
       <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Consent and E-signature (Bot Webhooks)</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.docusign.com/">DocuSign</a></td>
+      <td>Bot Webhooks</td>
+      <td>Send documents for signature and store completed agreements</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://sign.dropbox.com/">Dropbox Sign</a></td>
+      <td>Bot Webhooks</td>
+      <td>Send documents for signature and store completed agreements</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
     </tr>
   </tbody>
 </table>

@@ -235,6 +235,9 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/fhir/R4/', fhirRouter);
   apiRouter.use('/fhircast/STU2/', fhircastSTU2Router);
   apiRouter.use('/fhircast/STU3/', fhircastSTU3Router);
+  // Some subscribers (e.g. the OHIF DICOM viewer) hardcode `hub.url` to `/api/hub`.
+  // Alias it to the latest FHIRcast version we support.
+  apiRouter.use('/hub/', fhircastSTU3Router);
   apiRouter.use('/keyvalue/v1/', keyValueRouter);
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
