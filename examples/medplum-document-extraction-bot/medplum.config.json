@@ -1,0 +1,10 @@
+{
+  "bots": [
+    {
+      "name": "ai-textract",
+      "id": "b1aa61d1-82a6-46dd-9e55-8dee04759ed3",
+      "source": "src/ai-textract.ts",
+      "dist": "dist/ai-textract.js"
+    }
+  ]
+}
