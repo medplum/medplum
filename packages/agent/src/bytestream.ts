@@ -79,11 +79,22 @@ function formatByteSequence(bytes: Buffer): string {
 }
 
 /**
- * Parses the repeatable `autoRespond=<pattern>:<response>` params into match rules.
+ * Splits param values into individual entries.
  *
- * The `:` is structural and is consumed after percent-decoding, so a 0x3A byte cannot appear
- * in a pattern or response. In practice these are link-level handshakes built from C0 control
- * bytes (ENQ/ACK/NAK/EOT), well below 0x20.
+ * A param may be repeated, comma-separated, or both, so `a=%05&a=%15,%04` and `a=%05,%15,%04`
+ * are the same three entries. `,` and `:` are structural and are consumed after
+ * percent-decoding, so neither 0x2C nor 0x3A can appear in a byte sequence. In practice these
+ * are link-level handshakes built from C0 control bytes (ENQ/ACK/NAK/EOT), well below 0x20.
+ *
+ * @param rawValues - Every value for the param, already percent-decoded.
+ * @returns The entries, in declaration order.
+ */
+function splitParamEntries(rawValues: readonly string[]): string[] {
+  return rawValues.flatMap((rawValue) => rawValue.split(','));
+}
+
+/**
+ * Parses the `autoRespond=<pattern>:<response>` params into match rules.
  *
  * @param rawValues - Every `autoRespond` value, already percent-decoded.
  * @param logger - Logger used to warn about entries that are dropped.
@@ -92,15 +103,15 @@ function formatByteSequence(bytes: Buffer): string {
 export function parseAutoRespondRules(rawValues: readonly string[], logger: ILogger): ByteSequenceRule[] {
   const rules: ByteSequenceRule[] = [];
 
-  for (const rawValue of rawValues) {
-    const separator = rawValue.indexOf(':');
+  for (const entry of splitParamEntries(rawValues)) {
+    const separator = entry.indexOf(':');
     if (separator === -1) {
-      logger.warn(`Invalid autoRespond ${JSON.stringify(rawValue)}; expected '<pattern>:<response>'. Ignoring.`);
+      logger.warn(`Invalid autoRespond ${JSON.stringify(entry)}; expected '<pattern>:<response>'. Ignoring.`);
       continue;
     }
 
-    const pattern = parseByteSequence(rawValue.slice(0, separator), 'autoRespond pattern', logger);
-    const response = parseByteSequence(rawValue.slice(separator + 1), 'autoRespond response', logger);
+    const pattern = parseByteSequence(entry.slice(0, separator), 'autoRespond pattern', logger);
+    const response = parseByteSequence(entry.slice(separator + 1), 'autoRespond response', logger);
     if (!pattern || !response) {
       continue;
     }
@@ -116,7 +127,7 @@ export function parseAutoRespondRules(rawValues: readonly string[], logger: ILog
 }
 
 /**
- * Parses a repeatable `%XX`-style byte sequence param into raw byte sequences.
+ * Parses a `%XX`-style byte sequence param into raw byte sequences.
  *
  * @param rawValues - Every value for the param, already percent-decoded.
  * @param label - Param name, used in warnings.
@@ -126,8 +137,8 @@ export function parseAutoRespondRules(rawValues: readonly string[], logger: ILog
 export function parseByteSequences(rawValues: readonly string[], label: string, logger: ILogger): Buffer[] {
   const sequences: Buffer[] = [];
 
-  for (const rawValue of rawValues) {
-    const sequence = parseByteSequence(rawValue, label, logger);
+  for (const entry of splitParamEntries(rawValues)) {
+    const sequence = parseByteSequence(entry, label, logger);
     if (sequence && !sequences.some((existing) => existing.equals(sequence))) {
       sequences.push(sequence);
     }

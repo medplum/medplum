@@ -523,6 +523,27 @@ describe('Byte Stream', () => {
       mockServer.stop();
     });
 
+    test('Comma-separated rules all take effect', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&autoRespond=%05:%06,%15:%04');
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([0x05]));
+      await waitFor(() => received.length > 0, 1000, 'first auto-response');
+
+      client.write(Buffer.from([0x15]));
+      await waitFor(() => received.length > 1, 1000, 'second auto-response');
+      expect(Buffer.concat(received)).toEqual(Buffer.from([0x06, 0x04]));
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
     test('Concurrent connections match independently', async () => {
       const bodies: string[] = [];
       const mockServer = startMockAgentServer(bodies);
@@ -647,6 +668,29 @@ describe('parseAutoRespondRules', () => {
     expect(rules.map((rule) => [...rule.response])).toEqual([[0x06], [0x04]]);
   });
 
+  test('One comma-separated param accumulates in order', () => {
+    const log = createMockLogger();
+    const rules = parseAutoRespondRules(['\x05:\x06,\x15:\x04'], log);
+
+    expect(rules.map((rule) => [...rule.pattern])).toEqual([[0x05], [0x15]]);
+    expect(rules.map((rule) => [...rule.response])).toEqual([[0x06], [0x04]]);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Repetition and commas mix', () => {
+    const rules = parseAutoRespondRules(['\x05:\x06,\x15:\x04', '\x04\x05:\x06'], createMockLogger());
+
+    expect(rules.map((rule) => [...rule.pattern])).toEqual([[0x05], [0x15], [0x04, 0x05]]);
+  });
+
+  test('Warns on an empty comma-separated entry', () => {
+    const log = createMockLogger();
+    const rules = parseAutoRespondRules(['\x05:\x06,'], log);
+
+    expect(rules).toHaveLength(1);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('autoRespond'));
+  });
+
   test('Bytes above 0x7f written as their UTF-8 encoding', () => {
     // %C3%A9 percent-decodes to U+00E9, a single byte once mapped back.
     const rules = parseAutoRespondRules(['é:\x06'], createMockLogger());
@@ -692,6 +736,20 @@ describe('parseByteSequences', () => {
 
     expect(sequences).toEqual([Buffer.from([0x05]), Buffer.from([0x15, 0x04])]);
     expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Splits a comma-separated param', () => {
+    const log = createMockLogger();
+    const sequences = parseByteSequences(['\x05,\x15\x04'], 'stripSequence', log);
+
+    expect(sequences).toEqual([Buffer.from([0x05]), Buffer.from([0x15, 0x04])]);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Deduplicates across repetition and commas alike', () => {
+    const sequences = parseByteSequences(['\x05,\x15', '\x05'], 'stripSequence', createMockLogger());
+
+    expect(sequences).toEqual([Buffer.from([0x05]), Buffer.from([0x15])]);
   });
 
   test('Skips and warns on values outside byte range', () => {
