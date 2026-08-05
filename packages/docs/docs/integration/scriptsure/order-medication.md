@@ -125,7 +125,7 @@ Calls `POST /fhir/R4/MedicationRequest/$order-medication`. Creates or updates a 
 | `routedMedId` | `number` | | Vendor routed medication id |
 | `gcnSeqno` | `number` | | Vendor formulation key. Pair with `routedMedId` to order a drug that has no dose-level formulation to resolve an NDC from. Usually resolves to a real NDC anyway — see [Drugs with no formulations](#drugs-with-no-formulations) — so this is a fallback for the rare product with no marketed package |
 | `drugName` | `string` | | Drug name. Required with `gcnSeqno`, since there is no dose-level record to derive it from |
-| `line1` | `string` | | Dose text for a `gcnSeqno`-keyed line, e.g. `"solution"` |
+| `line1` | `string` | | Dose text for a `gcnSeqno`-keyed line, e.g. `"solution"`. Only send it when you hold dose text separate from `drugName`, such as a hand-entered form; a full product label duplicates itself in the rendered description. Omitted by both built-in order paths |
 | `quantityQualifier` | `string` | | NCI unit code for the quantity (e.g. `C48542` tablet) |
 | `refill` | `number` | | Number of refills |
 | `drugOrder` | `number` | | 1-based position within the order |

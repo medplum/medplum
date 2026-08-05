@@ -70,6 +70,12 @@ import {
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
 import { ScriptSurePracticeSwitcher, useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
+import {
+  getDisplayNameFromMedication,
+  getGcnSeqnosFromMedication,
+  getUnambiguousGcnSeqnoFromMedication,
+  getVendorKeyFromMedication,
+} from '../../utils/medication-gcn';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderSetTabPanel } from './OrderSetTabPanel';
 
@@ -110,60 +116,7 @@ export interface OrderMedicationPageProps {
 }
 
 function getRoutedMedIdFromMedication(m: Medication): number | undefined {
-  const v =
-    getIdentifier(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM) ??
-    (m.code && getCodeBySystem(m.code, SCRIPTSURE_ROUTED_MED_ID_SYSTEM));
-  if (!v) {
-    return undefined;
-  }
-  const n = Number.parseInt(v, 10);
-  return Number.isFinite(n) ? n : undefined;
-}
-
-/**
- * The single GCN_SEQNO on a Medication, or undefined when it carries none — or
- * **several**.
- *
- * A dose-level formulation has exactly one GCN. A drug-name search hit for a
- * multi-strength product carries one identifier per available GCN, and nothing
- * on the resource says which strength the prescriber meant. Since GCN is what
- * the vendor resolves the dose from when there is no NDC, picking the first of
- * several would silently prescribe an arbitrary strength — so an ambiguous
- * Medication yields nothing and the caller falls back to requiring a
- * formulation.
- *
- * @param m - Medication from drug search.
- * @returns The GCN_SEQNO as a number, or undefined when absent or ambiguous.
- */
-function getUnambiguousGcnSeqnoFromMedication(m: Medication): number | undefined {
-  const values = getGcnSeqnosFromMedication(m);
-  return values.length === 1 ? values[0] : undefined;
-}
-
-/**
- * Every GCN_SEQNO on a Medication, deduplicated.
- *
- * A name-search hit for a multi-strength product carries one per available
- * strength. Passing them to the formulation lookup is what lets the prescriber
- * pick a strength for drugs the vendor has no dose-format rows for — each key
- * resolves to a named, dispensable product.
- *
- * @param m - Medication from drug search.
- * @returns GCN_SEQNOs as numbers, in the order encountered.
- */
-function getGcnSeqnosFromMedication(m: Medication): number[] {
-  const values = new Set<string>();
-  for (const id of m.identifier ?? []) {
-    if (id.system === SCRIPTSURE_GCN_SEQNO_SYSTEM && id.value) {
-      values.add(id.value);
-    }
-  }
-  for (const coding of m.code?.coding ?? []) {
-    if (coding.system === SCRIPTSURE_GCN_SEQNO_SYSTEM && coding.code) {
-      values.add(coding.code);
-    }
-  }
-  return [...values].map((v) => Number.parseInt(v, 10)).filter((n) => Number.isFinite(n));
+  return getVendorKeyFromMedication(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM);
 }
 
 function normalizeNdcDigits(ndc: string | undefined): string | undefined {
@@ -492,14 +445,18 @@ function medicationToOrderDrugInput(
   // A drug whose formulation lookup came back empty (OTC / topical products) has
   // no NDC or RxNorm; it is ordered on routedMedId + GCN, with the name carried
   // explicitly because there is no dose-level record to derive it from.
-  const gcnSeqno = ndc || rxNorm ? undefined : getUnambiguousGcnSeqnoFromMedication(m);
-  const drugName = m.code?.text?.trim();
+  //
+  // The name is what makes such a line legible to the pharmacy, so a GCN-keyed
+  // line is only emitted when one is available — otherwise this falls back to
+  // routedMedId alone and the vendor requires a resolvable formulation, which
+  // fails with a clearer error than a nameless order would.
+  const drugName = getDisplayNameFromMedication(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM);
+  const gcnSeqno = ndc || rxNorm || !drugName ? undefined : getUnambiguousGcnSeqnoFromMedication(m);
   return {
     ...(ndc ? { ndc } : {}),
     ...(rxNorm ? { rxNorm } : {}),
     ...(routedMedId === undefined ? {} : { routedMedId }),
-    ...(gcnSeqno === undefined ? {} : { gcnSeqno }),
-    ...(gcnSeqno !== undefined && drugName ? { drugName } : {}),
+    ...(gcnSeqno === undefined ? {} : { gcnSeqno, drugName }),
     quantity: opts.quantity,
     quantityQualifier: opts.quantityQualifier ?? DEFAULT_QUANTITY_QUALIFIER,
     refill: opts.refill,
