@@ -18,7 +18,6 @@ const tableSpec = { postgresTable: 'Patient_History', icebergTable: 'patient_his
 const namespace = 'default';
 const connection = {} as never;
 
-
 describe('buildWarehouseSourcePredicate', () => {
   test('returns undefined when destination has no predicate and startDate is omitted', async () => {
     const destination = new LocalParquetWarehouseDestination('/tmp/dw-sync-test');
@@ -408,8 +407,7 @@ describe('syncData metrics', () => {
     const synced = result.tables.filter((t) => !t.status);
     const expectedRows = synced.reduce((sum, t) => sum + t.rowsInserted, 0);
     const expectedDurationSeconds = synced.reduce((sum, t) => sum + t.syncDurationMs, 0) / 1000;
-    const expectedWatermarkSeconds =
-      result.tables.reduce((sum, t) => sum + t.watermarkDurationMs, 0) / 1000;
+    const expectedWatermarkSeconds = result.tables.reduce((sum, t) => sum + t.watermarkDurationMs, 0) / 1000;
 
     expect(incrementCounterSpy).toHaveBeenCalledTimes(4);
     expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.rows', undefined, expectedRows);
@@ -468,7 +466,6 @@ function createFakeDestination(
     getDestinationName: overrides.getDestinationName ?? ((spec: WarehouseSourceTable) => spec.icebergTable),
   };
 }
-
 
 function appendPredicateSql(predicate: Expression): {
   sql: string;
