@@ -108,7 +108,10 @@ function shouldEscapeAngleBracket(text, i) {
     // Escaping it would render the brackets rather than the link.
     return false;
   }
-  return !ALLOWED_HTML_TAGS.has(match[1].toLowerCase());
+  // Matched case sensitively: MDX reads a capitalized tag as a JSX component
+  // rather than as HTML, so a type parameter such as `<S>` still needs escaping
+  // even though `<s>` does not. API Documenter only ever emits lowercase HTML.
+  return !ALLOWED_HTML_TAGS.has(match[1]);
 }
 
 function escapeMdx(fileName, text) {
