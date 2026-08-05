@@ -20,7 +20,58 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { Repository } from '../fhir/repo';
 import { initTestAuth } from '../test.setup';
+import { clampMcpSearchCount } from './server';
+
+type TransportType = 'stream' | 'sse';
+
+interface McpSearchResponse {
+  results: {
+    id: string;
+    title: string;
+    url: string;
+  }[];
+  total?: number;
+}
+
+interface McpFetchResponse {
+  id: string;
+  title: string;
+  text: string;
+  url: string;
+}
+
+async function connectMcpClient(port: number, transportType: TransportType, accessToken: string): Promise<Client> {
+  const baseUrl = `http://localhost:${port}/mcp/${transportType}`;
+  const transportOptions = {
+    requestInit: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  };
+  const transport =
+    transportType === 'stream'
+      ? new StreamableHTTPClientTransport(new URL(baseUrl), transportOptions)
+      : new SSEClientTransport(new URL(baseUrl), transportOptions);
+
+  const client = new Client({
+    name: 'example-client',
+    version: '1.0.0',
+  });
+
+  await client.connect(transport);
+  return client;
+}
+
+function getToolJson<T>(mcpResult: any): T {
+  const text = mcpResult.content?.[0]?.text;
+  if (typeof text !== 'string') {
+    throw new Error('MCP tool result did not include text content');
+  }
+  return JSON.parse(text) as T;
+}
 
 describe('MCP Routes', () => {
   const app = express();
@@ -81,37 +132,35 @@ describe('MCP Routes', () => {
     expect(res).toHaveStatus(400);
   });
 
-  test.each<string>(['stream', 'sse'])('MCP with %s transport', async (transportType: string) => {
-    const TransportClass = transportType === 'stream' ? StreamableHTTPClientTransport : SSEClientTransport;
+  test('MCP search count is bounded', () => {
+    expect(clampMcpSearchCount(undefined)).toBe(20);
+    expect(clampMcpSearchCount(Number.NaN)).toBe(20);
+    expect(clampMcpSearchCount(-1)).toBe(20);
+    expect(clampMcpSearchCount(0)).toBe(0);
+    expect(clampMcpSearchCount(5)).toBe(5);
+    expect(clampMcpSearchCount(500)).toBe(100);
+  });
 
-    const baseUrl = `http://localhost:${port}/mcp/${transportType}`;
-
-    const transport = new TransportClass(new URL(baseUrl), {
-      requestInit: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    });
-
-    const client = new Client({
-      name: 'example-client',
-      version: '1.0.0',
-    });
-
-    await client.connect(transport);
+  test.each<TransportType>(['stream', 'sse'])('MCP with %s transport', async (transportType: TransportType) => {
+    const client = await connectMcpClient(port, transportType, accessToken);
 
     try {
       const tools = await client.listTools();
       expect(tools).toMatchObject({
         tools: [{ name: 'search' }, { name: 'fetch' }, { name: 'fhir-request' }],
       });
-
-      const searchToolResult = await client.callTool({ name: 'search', arguments: { query: 'example' } });
-      expect(searchToolResult).toBeDefined();
-
-      const fetchToolResult = await client.callTool({ name: 'fetch', arguments: { id: 'example-id' } });
-      expect(fetchToolResult).toBeDefined();
+      expect(tools.tools).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'search',
+            annotations: expect.objectContaining({ readOnlyHint: true, destructiveHint: false }),
+          }),
+          expect.objectContaining({
+            name: 'fetch',
+            annotations: expect.objectContaining({ readOnlyHint: true, destructiveHint: false }),
+          }),
+        ])
+      );
 
       // Convenience method to make FHIR requests
       async function fhirRequest<T>(method: string, path: string, body?: any): Promise<T> {
@@ -128,17 +177,126 @@ describe('MCP Routes', () => {
       }
 
       // 1. create
+      const family = `McpTest${transportType}${randomUUID().slice(0, 8)}`;
       const createResult = await fhirRequest<Patient>('POST', 'Patient', {
         resourceType: 'Patient',
-        name: [{ family: 'Doe', given: ['John'] }],
+        name: [{ family, given: ['John'] }],
       });
       expect(createResult.resourceType).toBe('Patient');
 
-      // 2. read
+      // 2. MCP search
+      const searchSpy = vi.spyOn(Repository.prototype, 'search');
+      try {
+        const searchToolResult = await client.callTool({
+          name: 'search',
+          arguments: { query: `Patient?_id=${createResult.id}&_count=500&_total=accurate` },
+        });
+        expect(searchToolResult.isError).not.toBe(true);
+        const searchToolJson = getToolJson<McpSearchResponse>(searchToolResult);
+        expect(searchToolResult.structuredContent).toEqual(searchToolJson);
+        expect(searchToolJson.results).toEqual([
+          expect.objectContaining({
+            id: `Patient/${createResult.id}`,
+            title: `John ${family}`,
+            url: `http://localhost:${port}/fhir/R4/Patient/${createResult.id}`,
+          }),
+        ]);
+        expect(searchToolJson.total).toBe(1);
+        expect(searchSpy).toHaveBeenLastCalledWith(expect.objectContaining({ count: 100 }));
+
+        await client.callTool({
+          name: 'search',
+          arguments: {
+            query: `Patient?_id=${createResult.id}&_include=Patient:organization&_revinclude=Observation:subject`,
+          },
+        });
+        const lastSearchRequest = searchSpy.mock.calls[searchSpy.mock.calls.length - 1][0];
+        expect(lastSearchRequest.count).toBe(20);
+        expect(lastSearchRequest.include).toBeUndefined();
+        expect(lastSearchRequest.revInclude).toBeUndefined();
+      } finally {
+        searchSpy.mockRestore();
+      }
+
+      const invalidSearchResult = await client.callTool({
+        name: 'search',
+        arguments: { query: `Patient/${createResult.id}/Observation` },
+      });
+      expect(invalidSearchResult.isError).toBe(true);
+      expect(getToolJson<OperationOutcome>(invalidSearchResult).resourceType).toBe('OperationOutcome');
+
+      // 3. MCP fetch
+      const fetchToolResult = await client.callTool({
+        name: 'fetch',
+        arguments: { id: `Patient/${createResult.id}` },
+      });
+      expect(fetchToolResult.isError).not.toBe(true);
+      const fetchToolJson = getToolJson<McpFetchResponse>(fetchToolResult);
+      expect(fetchToolResult.structuredContent).toMatchObject(fetchToolJson);
+      expect(fetchToolJson).toMatchObject({
+        id: `Patient/${createResult.id}`,
+        url: `http://localhost:${port}/fhir/R4/Patient/${createResult.id}`,
+      });
+      expect((JSON.parse(fetchToolJson.text) as Patient).id).toBe(createResult.id);
+
+      const bigPatient = await fhirRequest<Patient>('POST', 'Patient', {
+        resourceType: 'Patient',
+        name: [{ family: 'Y'.repeat(300) }],
+        extension: [{ url: 'https://example.com/large', valueString: 'x'.repeat(60_000) }],
+      });
+      const bigFetchResult = await client.callTool({
+        name: 'fetch',
+        arguments: { id: `Patient/${bigPatient.id}` },
+      });
+      const bigFetchJson = getToolJson<McpFetchResponse>(bigFetchResult);
+      expect(bigFetchResult.isError).not.toBe(true);
+      expect(bigFetchJson.text.length).toBeLessThan(51_000);
+      expect(bigFetchJson.text).toContain('[truncated');
+      expect(bigFetchJson.title.length).toBeLessThanOrEqual(200);
+      await fhirRequest('DELETE', `Patient/${bigPatient.id}`);
+
+      for (const id of ['example-id', `Patient/${createResult.id}/_history/1`, `Binary/${randomUUID()}`]) {
+        const invalidFetchResult = await client.callTool({ name: 'fetch', arguments: { id } });
+        expect(invalidFetchResult.isError).toBe(true);
+        expect(getToolJson<OperationOutcome>(invalidFetchResult).resourceType).toBe('OperationOutcome');
+      }
+
+      // 4. MCP search and fetch respect access policies
+      const limitedAccessToken = await initTestAuth({
+        accessPolicy: {
+          resource: [{ resourceType: 'Observation', interaction: ['read', 'search'] }],
+        },
+      });
+      const limitedClient = await connectMcpClient(port, transportType, limitedAccessToken);
+      try {
+        const observationSearchResult = await limitedClient.callTool({
+          name: 'search',
+          arguments: { query: 'Observation?_count=1' },
+        });
+        expect(observationSearchResult.isError).not.toBe(true);
+
+        const patientSearchResult = await limitedClient.callTool({
+          name: 'search',
+          arguments: { query: `Patient?_id=${createResult.id}` },
+        });
+        expect(patientSearchResult.isError).toBe(true);
+        expect(getToolJson<OperationOutcome>(patientSearchResult).resourceType).toBe('OperationOutcome');
+
+        const patientFetchResult = await limitedClient.callTool({
+          name: 'fetch',
+          arguments: { id: `Patient/${createResult.id}` },
+        });
+        expect(patientFetchResult.isError).toBe(true);
+        expect(getToolJson<OperationOutcome>(patientFetchResult).resourceType).toBe('OperationOutcome');
+      } finally {
+        await limitedClient.close();
+      }
+
+      // 5. read
       const readResult = await fhirRequest<Patient>('GET', `Patient/${createResult.id}`);
       expect(readResult.id).toBe(createResult.id);
 
-      // 3. update
+      // 6. update
       const updateResult = await fhirRequest<Patient>('PUT', `Patient/${createResult.id}`, {
         ...createResult,
         address: [{ line: ['123 Main St'], city: 'Springfield', state: 'IL', postalCode: '62701' }],
@@ -146,7 +304,7 @@ describe('MCP Routes', () => {
       expect(updateResult.address).toBeDefined();
       expect(updateResult.address?.[0].line).toEqual(['123 Main St']);
 
-      // 4. patch
+      // 7. patch
       const patchedResult = await fhirRequest<Patient>('PATCH', `Patient/${updateResult.id}`, [
         { op: 'test', path: '/meta/versionId', value: updateResult.meta?.versionId },
         { op: 'add', path: '/telecom', value: [{ system: 'phone', value: '555-1234' }] },
@@ -154,16 +312,16 @@ describe('MCP Routes', () => {
       expect(patchedResult.telecom).toBeDefined();
       expect(patchedResult.telecom?.[0].value).toBe('555-1234');
 
-      // 5. search
+      // 8. search
       const searchResult = await fhirRequest<Bundle<Patient>>('GET', 'Patient');
       expect(searchResult.resourceType);
       expect(searchResult.entry?.some((e) => e.resource?.id === createResult.id)).toBeTruthy();
 
-      // 6. delete
+      // 9. delete
       const deleteResult = await fhirRequest<OperationOutcome>('DELETE', `Patient/${createResult.id}`);
       expect(deleteResult.id).toBe('ok');
 
-      // 7. unknown method
+      // 10. unknown method
       const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
       expect(unknownMethodResult.issue?.[0].severity).toBe('error');
 

@@ -26,6 +26,46 @@ _Note: LLMs can sometimes cache sessions. If you experience issues, try disconne
 
 The Medplum MCP integration exposes several powerful tools for interacting with FHIR data. Here are the tools available in your MCP server:
 
+#### `search`
+
+- **Title:** FHIR Search
+- **Description:** Performs a read-only FHIR search through the authenticated repository. Pass a standard FHIR search string such as `Patient?name=Smith&_count=10`. Results contain only `id`, `title`, and `url`; `_count` defaults to 20 and is capped at 100. Use `_offset` for pagination and `_total=accurate` when the total number of matches is needed. `_include` and `_revinclude` are ignored; retrieve related resources explicitly with `fetch`.
+- **Annotations:** Read-only and idempotent.
+- **Schema:**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "FHIR search string, for example 'Patient?name=Smith&_count=10'."
+    }
+  },
+  "required": ["query"]
+}
+```
+
+#### `fetch`
+
+- **Title:** FHIR Read
+- **Description:** Reads one FHIR resource through the authenticated repository using a reference returned by `search`, such as `Patient/123`. The resource JSON is returned in `text`. Very large resources are truncated, and `Binary` resources are rejected to avoid adding base64 payloads to an LLM context.
+- **Annotations:** Read-only and idempotent.
+- **Schema:**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "FHIR resource reference returned by search, for example 'Patient/123'."
+    }
+  },
+  "required": ["id"]
+}
+```
+
 #### `fhir-request`
 
 - **Title:** Perform a FHIR API Request
@@ -42,16 +82,16 @@ The Medplum MCP integration exposes several powerful tools for interacting with 
       "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"],
       "description": "The HTTP method for the request."
     },
-    "url": {
+    "path": {
       "type": "string",
-      "description": "The full FHIR API URL path (e.g., '/fhir/Patient')."
+      "description": "The path relative to the FHIR R4 base URL (e.g., 'Patient')."
     },
     "body": {
       "type": "object",
       "description": "The JSON body of the FHIR resource to be created or updated."
     }
   },
-  "required": ["method", "url"]
+  "required": ["method", "path"]
 }
 ```
 
@@ -61,14 +101,14 @@ Here are three examples demonstrating the core capabilities of the Medplum MCP i
 
 **Example 1: Finding High Blood Pressure Patients (Using search)**
 
-- **Prompt:** "What are the names of all patients who have a blood pressure observation with a systolic value greater than 140 in the last year?"
-- **Tool Call:** The AI will use the search tool with the resourceType set to "Patient" and searchParams filtering for patients linked to specific observations.
-- **Outcome:** The Medplum server responds with a list of patient names and IDs that match the criteria, which the AI can then summarize for the user.
+- **Prompt:** "Which blood pressure observations recorded a systolic value greater than 140 in the last year?"
+- **Tool Call:** The AI uses `search` with a FHIR search string for `Observation`, including the appropriate code, value, and date parameters.
+- **Outcome:** The Medplum server returns a bounded list of matching resource references and display titles. The AI can use `fetch` for the individual observations it needs to inspect.
 
 **Example 2: Scheduling a New Appointment (Using fhir-request)**
 
 - **Prompt:** "Create a new appointment for patient 'Jane Doe' with Dr. Smith for a routine check-up next Tuesday at 10 AM."
-- **Tool Call:** The AI will use the fhir-request tool with the method set to "POST", the url set to /fhir/Appointment, and a body containing the details of the new appointment.
+- **Tool Call:** The AI will use the fhir-request tool with the method set to "POST", the path set to `Appointment`, and a body containing the details of the new appointment.
 - **Outcome:** The Medplum server creates the appointment and returns a success message, which the AI can confirm with the user.
 
 **Example 3: Fetching Specific Lab Results (Using fetch)**
