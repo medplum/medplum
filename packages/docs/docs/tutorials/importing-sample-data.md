@@ -39,3 +39,9 @@ Log into Medplum and navigate to the [batch create](https://app.medplum.com/batc
 ![Batch create tool](/img/tutorials/batch-create.png)
 
 The batch upload tool is a lightweight wrapper around the [batch/transaction api](https://www.hl7.org/fhir/http.html#transaction) and here is the documentation on how to [upload a batch using the SDK](/docs/sdk/core.medplumclient.executebatch).
+
+## Generating More Sample Data with Synthea
+
+The two patients above are handy for a quick start, but when you need a larger, more varied population, [Synthea](https://github.com/synthetichealth/synthea) is a great source of synthetic FHIR data. Synthea generates realistic, statistically-modeled patient histories that you can load into Medplum the same way you loaded the files above.
+
+You can either download pre-generated [Synthea sample bundles](https://github.com/synthetichealth/synthea-sample-data/tree/master/downloads), or run Synthea yourself to generate a custom-sized population. For a step-by-step walkthrough of generating bundles and importing them with the [batch create](https://app.medplum.com/batch) tool, see the [Getting Started with Synthetic FHIR Data](/blog/synthea) guide.
