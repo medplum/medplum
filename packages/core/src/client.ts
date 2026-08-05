@@ -2986,8 +2986,26 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
-  executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl, bundle, undefined, options);
+  async executeBatch(bundle: Bundle, options?: MedplumRequestOptions): Promise<Bundle> {
+    const result = await this.post(this.fhirBaseUrl, bundle, undefined, options);
+    // Only invalidate for mutations (POST/PUT/PATCH/DELETE); reads should not evict the cache.
+    // Entry URLs are relative to the FHIR base, so the first path segment is the resource type.
+    // Reading it from the request rather than the response also covers DELETE entries, which
+    // carry no resource body.
+    const resourceTypes = new Set<ResourceType>();
+    for (const entry of bundle.entry ?? []) {
+      const method = entry.request?.method;
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+        const resourceType = entry.request?.url.split(/[/?]/).filter(Boolean)[0];
+        if (resourceType) {
+          resourceTypes.add(resourceType as ResourceType);
+        }
+      }
+    }
+    for (const resourceType of resourceTypes) {
+      this.invalidateSearches(resourceType);
+    }
+    return result;
   }
 
   /**
