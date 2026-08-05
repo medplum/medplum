@@ -22,9 +22,7 @@ import { SCRIPTSURE_GCN_SEQNO_SYSTEM } from '@medplum/scriptsure-react';
  */
 export function getGcnSeqnosFromMedication(m: Medication): number[] {
   const raw: (string | undefined)[] = [
-    ...(m.identifier ?? [])
-      .filter((id) => id.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)
-      .map((id) => id.value),
+    ...(m.identifier ?? []).filter((id) => id.system === SCRIPTSURE_GCN_SEQNO_SYSTEM).map((id) => id.value),
     ...(m.code?.coding ?? [])
       .filter((coding) => coding.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)
       .map((coding) => coding.code),
