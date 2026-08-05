@@ -3799,6 +3799,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
     // Default of 2 matches old behavior with the new semantics
     const maxRetries = options?.maxRetries ?? this.maxRetries;
+    const idempotent = isIdempotentMethod(options.method);
 
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
@@ -3816,7 +3817,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
         // Handle non-500 response and max retries exceeded
         // We return immediately for non-500 or 500 that has exceeded max retries
-        if (attemptNum >= maxRetries || !isRetryable(response)) {
+        if (attemptNum >= maxRetries || !isRetryable(response, idempotent)) {
           return response;
         }
 
@@ -3833,8 +3834,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.dispatchEvent({ type: 'offline' });
         }
 
-        // If we got an abort error or exceeded retries, then throw immediately
-        if ((err as Error).name === 'AbortError' || attemptNum === maxRetries) {
+        // If we got an abort error, the request is not safe to retry, or we exceeded retries,
+        // then throw immediately
+        if ((err as Error).name === 'AbortError' || !idempotent || attemptNum === maxRetries) {
           throw err;
         }
       }
@@ -4963,6 +4965,14 @@ export function normalizeCreatePdfOptions(
   };
 }
 
-function isRetryable(response: Response): boolean {
-  return response.status === 429 || response.status >= 500;
+// POST and PATCH are not idempotent: after a timeout or 5xx the write may already have been
+// applied, so retrying risks duplicating it.
+function isIdempotentMethod(method: string | undefined): boolean {
+  const normalized = method?.toUpperCase();
+  return normalized !== 'POST' && normalized !== 'PATCH';
+}
+
+function isRetryable(response: Response, idempotent: boolean): boolean {
+  // 429 is always safe to retry: the request was rejected before being processed.
+  return response.status === 429 || (response.status >= 500 && idempotent);
 }
