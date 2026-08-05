@@ -1,21 +1,59 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, Resource } from '@medplum/fhirtypes';
 import {
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
+  formatStatusLabel,
   getBirthSex,
   getEthnicity,
   getGenderIdentity,
   getGeneralPractitioner,
   getPreferredLanguage,
   getRace,
+  isEnteredInError,
 } from './PatientSummary.utils';
 
 describe('Patient Utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('formatStatusLabel', () => {
+    it('capitalizes and removes hyphens', () => {
+      expect(formatStatusLabel('active')).toBe('Active');
+      expect(formatStatusLabel('on-hold')).toBe('On Hold');
+      expect(formatStatusLabel('not-done')).toBe('Not Done');
+      expect(formatStatusLabel('entered-in-error')).toBe('Entered In Error');
+    });
+  });
+
+  describe('isEnteredInError', () => {
+    it('detects entered-in-error via status', () => {
+      expect(isEnteredInError({ resourceType: 'Immunization', status: 'entered-in-error' } as Resource)).toBe(true);
+      expect(isEnteredInError({ resourceType: 'Immunization', status: 'completed' } as Resource)).toBe(false);
+    });
+
+    it('detects entered-in-error via lifecycleStatus (Goal)', () => {
+      expect(isEnteredInError({ resourceType: 'Goal', lifecycleStatus: 'entered-in-error' } as Resource)).toBe(true);
+      expect(isEnteredInError({ resourceType: 'Goal', lifecycleStatus: 'active' } as Resource)).toBe(false);
+    });
+
+    it('detects entered-in-error via verificationStatus (Condition/Allergy)', () => {
+      expect(
+        isEnteredInError({
+          resourceType: 'Condition',
+          verificationStatus: { coding: [{ code: 'entered-in-error' }] },
+        } as Resource)
+      ).toBe(true);
+      expect(
+        isEnteredInError({
+          resourceType: 'Condition',
+          verificationStatus: { coding: [{ code: 'confirmed' }] },
+        } as Resource)
+      ).toBe(false);
+    });
   });
 
   describe('getGenderIdentity', () => {
