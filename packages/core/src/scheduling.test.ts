@@ -256,6 +256,34 @@ describe('schedule availability', () => {
     expect(resolveAvailability(service, updated)).toHaveLength(1);
   });
 
+  // Both shapes below would serialize to an extension with neither a value nor sub-extensions of its
+  // own, which fails FHIR constraint ext-1 and is rejected on write. Refused where the extension is
+  // built, so the caller hears about it in its own terms rather than as a constraint failure from the
+  // server, and so the Schedule it passed in is never left holding something unwritable.
+  test('refuses availability with no entries', () => {
+    const schedule = scheduleWith(availableTime('mon', '09:00:00', '17:00:00'));
+
+    expect(() => setScheduleAvailability(schedule, service, [])).toThrow(/at least one availableTime/);
+    // Clearing is the way to hand the calendar back to the service default, and it still works.
+    expect(hasScheduleAvailability(clearScheduleAvailability(schedule, service), service)).toBe(false);
+  });
+
+  test('refuses an entry that sets neither allDay nor both times', () => {
+    const schedule = scheduleWith(availableTime('mon', '09:00:00', '17:00:00'));
+
+    expect(() => setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'] }])).toThrow(/must set allDay/);
+    expect(() =>
+      setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'], availableStartTime: '09:00:00' }])
+    ).toThrow(/must set allDay/);
+    expect(() =>
+      setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'], availableEndTime: '17:00:00' }])
+    ).toThrow(/must set allDay/);
+
+    expect(resolveAvailability(service, schedule)).toEqual([
+      { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+    ]);
+  });
+
   test('leaves sibling parameters alone when clearing availability', () => {
     const cleared = clearScheduleAvailability(scheduleWith(availableTime('mon', '09:00:00', '17:00:00')), service);
 

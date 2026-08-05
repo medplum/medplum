@@ -9,6 +9,7 @@ import type {
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { badRequest, OperationOutcomeError } from './outcomes';
 import type { WithId } from './utils';
 import {
   createReference,
@@ -169,8 +170,9 @@ function getScheduleAvailability(
  * Three states are worth telling apart. A Schedule that sets no availability inherits
  * `HealthcareService.availableTime`. One that sets an empty availability means explicitly no hours,
  * which is why that is returned rather than falling through, and also why it cannot be stored: an
- * extension with neither a value nor sub-extensions fails FHIR constraint `ext-1`. `undefined` means
- * nothing is configured at either level, which scheduling reads as unconstrained rather than unavailable.
+ * extension with neither a value nor sub-extensions fails FHIR constraint `ext-1`, so
+ * `setScheduleAvailability` refuses to write one. `undefined` means nothing is configured at either
+ * level, which scheduling reads as unconstrained rather than unavailable.
  *
  * Omitting the Schedule returns `service.availableTime` and nothing more, so this is not the way to read
  * a service default; the field is. The Schedule is optional so that one call covers a caller that may or
@@ -201,29 +203,52 @@ export function hasScheduleAvailability(schedule: Schedule, service: WithId<Heal
   return getScheduleParameters(schedule, service, 'availability').length > 0;
 }
 
+// One `availability.availableTime` sub-sub-extension. `HealthcareServiceAvailableTime` allows an entry
+// with neither `allDay` nor a pair of times, which has no representation here: the sub-extensions would
+// carry no value and no children of their own, failing ext-1. Nor is dropping them an option, since the
+// scheduling operations read an availableTime with no times at all as no entry, so the hours would go
+// missing on read rather than fail on write.
+function buildAvailableTimeExtension(entry: HealthcareServiceAvailableTime): Extension {
+  const days: Extension[] = (entry.daysOfWeek ?? []).map((day) => ({ url: 'daysOfWeek', valueCode: day }));
+
+  if (entry.allDay) {
+    return { url: 'availableTime', extension: [...days, { url: 'allDay', valueBoolean: true }] };
+  }
+
+  if (!entry.availableStartTime || !entry.availableEndTime) {
+    throw new OperationOutcomeError(
+      badRequest('availableTime must set allDay, or both availableStartTime and availableEndTime')
+    );
+  }
+
+  return {
+    url: 'availableTime',
+    extension: [
+      ...days,
+      { url: 'availableStartTime', valueTime: entry.availableStartTime },
+      { url: 'availableEndTime', valueTime: entry.availableEndTime },
+    ],
+  };
+}
+
 /**
  * Builds the SchedulingParameters availability sub-extension.
- * @param availableTime - Availability to serialize
+ * @param availableTime - Availability to serialize. Must hold at least one entry, each of which sets
+ * either `allDay` or both times.
  * @returns An availability extension containing availableTime entries
  */
 function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTime[]): Extension {
-  return {
-    url: 'availability',
-    extension: availableTime.map((entry) => {
-      const days: Extension[] = (entry.daysOfWeek ?? []).map((day) => ({ url: 'daysOfWeek', valueCode: day }));
-      if (entry.allDay) {
-        return { url: 'availableTime', extension: [...days, { url: 'allDay', valueBoolean: true }] };
-      }
-      return {
-        url: 'availableTime',
-        extension: [
-          ...days,
-          { url: 'availableStartTime', valueTime: entry.availableStartTime },
-          { url: 'availableEndTime', valueTime: entry.availableEndTime },
-        ],
-      };
-    }),
-  };
+  // No entries would serialize to `{ url: 'availability', extension: [] }`, an extension with neither a
+  // value nor sub-extensions, which fails ext-1. Refused rather than treated as no override, because
+  // "explicitly no hours" and "follow the service default" are the two states `resolveAvailability`
+  // exists to tell apart, and storing one as the other means the opposite of what the caller asked for.
+  if (!availableTime.length) {
+    throw new OperationOutcomeError(
+      badRequest('availability must have at least one availableTime; to follow the service default, clear it instead')
+    );
+  }
+
+  return { url: 'availability', extension: availableTime.map(buildAvailableTimeExtension) };
 }
 
 /**
@@ -300,8 +325,11 @@ export function clearScheduleParameter(schedule: Schedule, service: WithId<Healt
  * service default is a plain write to that field, and the parameter stores exactly the same shape.
  * @param schedule - Schedule to update
  * @param service - HealthcareService referenced by the parameters
- * @param availableTime - The full set of windows the calendar should be available in
+ * @param availableTime - The full set of windows the calendar should be available in. At least one entry, each
+ * setting either `allDay` or both times, since anything else has no valid extension form.
  * @returns A cloned Schedule holding those hours for the service
+ * @throws {@link OperationOutcomeError} If `availableTime` is empty, or an entry sets neither `allDay` nor both
+ * times. To have the calendar follow the service default, call `clearScheduleAvailability` instead.
  */
 export function setScheduleAvailability(
   schedule: Schedule,
