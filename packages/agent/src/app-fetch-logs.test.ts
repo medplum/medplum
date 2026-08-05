@@ -335,6 +335,121 @@ describe('Fetch Logs', () => {
     expect(state.logsResponse.logs).toBeDefined();
     expect(Array.isArray(state.logsResponse.logs)).toBe(true);
     expect(state.logsResponse.logs.length).toStrictEqual(10);
+    // 15 logs exist but only 10 were requested, so an older page remains.
+    expect(state.logsResponse.hasMore).toBe(true);
+    expect(typeof state.logsResponse.nextBefore).toBe('string');
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+  });
+
+  test('should page backward through older logs using the before cursor', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      responses: [] as AgentLogsResponse[],
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:logs:response':
+            state.responses.push(command);
+            break;
+
+          default:
+            // Ignore other message types
+            break;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const [winstonLogger, cleanupLogFile] = createTestWinstonLogger();
+    cleanupFns.push(cleanupLogFile);
+    generateTestLogs(winstonLogger, 15);
+
+    const app = new App(medplum, agent.id, LogLevel.INFO, {
+      mainLogger: winstonLogger,
+    });
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Page 1: fetch the newest 10 of 15 logs.
+    state.mySocket.send(Buffer.from(JSON.stringify({ type: 'agent:logs:request', limit: 10, callback: randomUUID() })));
+
+    let shouldThrow = false;
+    const timeout1 = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+    while (state.responses.length < 1) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for first logs response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout1);
+
+    const page1 = state.responses[0];
+    expect(page1.statusCode).toBe(200);
+    expect(page1.logs.length).toStrictEqual(10);
+    expect(page1.hasMore).toBe(true);
+    expect(typeof page1.nextBefore).toBe('string');
+
+    // Page 2: use the cursor to fetch the remaining older logs.
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:logs:request',
+          limit: 10,
+          before: page1.nextBefore,
+          callback: randomUUID(),
+        })
+      )
+    );
+
+    shouldThrow = false;
+    const timeout2 = setTimeout(() => {
+      shouldThrow = true;
+    }, 2500);
+    while (state.responses.length < 2) {
+      if (shouldThrow) {
+        throw new Error('Timeout waiting for second logs response');
+      }
+      await sleep(100);
+    }
+    clearTimeout(timeout2);
+
+    const page2 = state.responses[1];
+    expect(page2.statusCode).toBe(200);
+    expect(Array.isArray(page2.logs)).toBe(true);
+    // At most 5 logs are older than the page-1 cursor, so no further page remains.
+    expect(page2.logs.length).toBeGreaterThan(0);
+    expect(page2.logs.length).toBeLessThanOrEqual(10);
+    expect(page2.hasMore).toBe(false);
 
     await app.stop();
     await new Promise<void>((resolve) => {

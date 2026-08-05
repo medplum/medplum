@@ -5,9 +5,12 @@ import { ContentType, getDisplayString, MEDPLUM_CLI_CLIENT_ID, normalizeErrorStr
 import { exec } from 'node:child_process';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
+import { promisify } from 'node:util';
 import { createMedplumClient } from './util/client';
 import type { Profile } from './utils';
 import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, saveProfile } from './utils';
+
+const execAsync = promisify(exec);
 
 const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
@@ -116,19 +119,7 @@ async function openBrowser(url: string): Promise<void> {
     default:
       throw new Error('Unsupported platform: ' + os);
   }
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error, _, stderr) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      if (stderr) {
-        reject(new Error('Could not open browser: ' + stderr));
-        return;
-      }
-      resolve();
-    });
-  });
+  await execAsync(cmd);
 }
 
 /**

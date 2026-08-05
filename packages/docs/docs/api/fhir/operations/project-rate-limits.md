@@ -115,7 +115,7 @@ curl -G 'https://api.medplum.com/fhir/R4/Project/{projectId}/$rate-limits' \
 
 When no `membershipId` is specified, the server returns memberships that have had recent FHIR activity (up to 1,000 active consumers). Members with no consumption in the current window may be omitted. When `membershipId` is specified, only those memberships are included (useful for bots or service accounts). Quota fields are omitted when a counter has not been used in the current window.
 
-The `limit` values reflect project-level settings (`userFhirQuota`, `totalFhirQuota`, and server defaults). Per-membership limits may differ when a `UserConfiguration` overrides `fhirQuota`; see [user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits).
+Membership `limit` values use each membership's effective quota: a `UserConfiguration` `fhirQuota` override when present, otherwise the project `userFhirQuota` (or the server default). The project `limit` uses `totalFhirQuota` when set, otherwise the project default user quota × 10. See [user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits).
 
 :::note[Independent reset windows]
 FHIR quota counters are stored in Redis with a **separate 60-second window for each key**: one for the project total and one per membership. Each window starts on that key's **first** consumption in the period; later requests add points but do not extend the window.

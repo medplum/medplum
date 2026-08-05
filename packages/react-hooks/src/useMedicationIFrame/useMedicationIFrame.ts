@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Identifier } from '@medplum/fhirtypes';
+import { resolveId } from '@medplum/core';
+import type { Identifier, Organization, Reference } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface MedicationIFrameOptions {
   readonly patientId?: string;
+  /** Selected practice location for multi-practice deployments. */
+  readonly organization?: Reference<Organization>;
   readonly onPatientSyncSuccess?: () => void;
   readonly onIframeSuccess?: (url: string) => void;
   readonly onError?: (err: unknown) => void;
@@ -32,7 +35,8 @@ export function useMedicationIFrame(
   options: MedicationIFrameOptions
 ): string | undefined {
   const medplum = useMedplum();
-  const { patientId, onPatientSyncSuccess, onIframeSuccess, onError } = options;
+  const { patientId, organization, onPatientSyncSuccess, onIframeSuccess, onError } = options;
+  const organizationId = resolveId(organization);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
   const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);
@@ -51,13 +55,13 @@ export function useMedicationIFrame(
     const run = async (): Promise<void> => {
       try {
         if (patientId) {
-          await medplum.executeBot(syncBotIdentifier, { patientId });
+          await medplum.executeBot(syncBotIdentifier, { patientId, organizationId });
           if (cancelled) {
             return;
           }
           onPatientSyncSuccessRef.current?.();
         }
-        const result = await medplum.executeBot(iframeBotIdentifier, { patientId });
+        const result = await medplum.executeBot(iframeBotIdentifier, { patientId, organizationId });
         if (cancelled) {
           return;
         }
@@ -79,7 +83,7 @@ export function useMedicationIFrame(
     return (): void => {
       cancelled = true;
     };
-  }, [medplum, syncBotIdentifier, iframeBotIdentifier, patientId]);
+  }, [medplum, syncBotIdentifier, iframeBotIdentifier, patientId, organizationId]);
 
   return iframeUrl;
 }

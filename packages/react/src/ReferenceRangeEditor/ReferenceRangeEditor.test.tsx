@@ -5,7 +5,6 @@ import type { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { StrictMode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { ReferenceRangeEditorProps } from './ReferenceRangeEditor';
@@ -17,11 +16,9 @@ async function setup(args: ReferenceRangeEditorProps): Promise<void> {
   await act(async () => {
     render(
       <StrictMode>
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <ReferenceRangeEditor {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ReferenceRangeEditor {...args} />
+        </MedplumProvider>
       </StrictMode>
     );
   });

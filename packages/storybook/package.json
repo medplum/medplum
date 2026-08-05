@@ -1,0 +1,79 @@
+{
+  "name": "@medplum/storybook",
+  "private": true,
+  "version": "5.1.28",
+  "description": "Medplum Storybook",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative",
+    "ui",
+    "input",
+    "react",
+    "react-component"
+  ],
+  "homepage": "https://storybook.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/storybook"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": [
+    "*.css"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "npm run clean && tsc && storybook build",
+    "chromatic": "chromatic --exit-zero-on-changes --build-script-name=build --exit-once-uploaded",
+    "clean": "rimraf storybook-static",
+    "dev": "storybook dev -p 6006",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@mantine/core": "8.3.18",
+    "@mantine/spotlight": "8.3.18",
+    "@medplum/core": "5.1.28",
+    "@medplum/definitions": "5.1.28",
+    "@medplum/fhirtypes": "5.1.28",
+    "@medplum/mock": "5.1.28",
+    "@medplum/react": "5.1.28",
+    "@medplum/react-hooks": "5.1.28",
+    "@storybook/addon-docs": "10.5.5",
+    "@storybook/addon-links": "10.5.5",
+    "@storybook/builder-vite": "10.5.5",
+    "@storybook/react": "10.5.5",
+    "@storybook/react-vite": "10.5.5",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vueless/storybook-dark-mode": "10.0.8",
+    "chromatic": "18.1.0",
+    "postcss": "8.5.25",
+    "postcss-preset-mantine": "1.18.0",
+    "postcss-simple-vars": "7.0.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-router": "7.18.2",
+    "sinon": "22.1.0",
+    "storybook": "10.5.5",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}

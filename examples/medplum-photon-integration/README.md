@@ -71,7 +71,7 @@ Once your Neutron project is created, you will need to set up credentials for th
 
 #### Photon Auth Token
 
-This app reads and writes from Neutron's API, which requires the auth token from your Nuetron project. Authentication is handled by bots, but the necessary secrets must be set up in your Medplum project.
+This app reads and writes from Neutron's API, which requires the auth token from your Neutron project. Authentication is handled by bots, but the necessary secrets must be set up in your Medplum project.
 
 These credentials can be accessed in your [Neutron project](https://app.neutron.health) by navigating to your project settings and clicking on the Developers Tab. Copy the Client ID and Client Secret from the Machine to Machine Application section. If this section does not appear in your settings, you will need to reach out to Photon Support at `support@photon.health` to ensure that it is properly set up.
 

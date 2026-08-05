@@ -183,14 +183,17 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     });
     await subscribed;
 
+    // Update the agent status in Redis before acknowledging the connection.
+    // The status update is a non-atomic read-modify-write (read last info, write new status),
+    // so it must complete before the agent can send an "agent:heartbeat:response" --
+    // otherwise a stale read here could clobber the version reported by the heartbeat.
+    await updateAgentStatus(AgentConnectionState.CONNECTED);
+
     // Subscribe to heartbeat events
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
     // Send connected message
     sendMessage({ type: 'agent:connect:response' });
-
-    // Update the agent status in Redis
-    await updateAgentStatus(AgentConnectionState.CONNECTED);
   }
 
   /**

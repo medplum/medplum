@@ -225,8 +225,8 @@ export function SendFaxModal({
         message: '',
       });
 
-      onFaxSent?.(communication);
       handleClose();
+      onFaxSent?.(communication);
     } catch (error) {
       notifications.show({
         color: 'red',

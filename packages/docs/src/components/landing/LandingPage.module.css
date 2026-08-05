@@ -48,22 +48,17 @@
 }
 
 .heroTitle {
-  font-size: 3.5em;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-hero-size);
+  font-weight: var(--landing-hero-weight);
+  line-height: var(--landing-hero-leading);
+  letter-spacing: var(--landing-hero-tracking);
   text-wrap-style: balance;
   color: var(--oc-gray-8);
 }
 
 [data-theme='dark'] .heroTitle {
   color: var(--oc-gray-0);
-}
-
-@media screen and (max-width: 996px) {
-  .heroTitle {
-    font-size: 2rem;
-  }
 }
 
 .heroText {
@@ -205,10 +200,11 @@
 /* CTA inner uses .landingContent for width; only CTA-specific descendant styles below */
 
 .ctaBannerInner h2 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+  font-family: var(--landing-font-display);
+  font-size: var(--landing-section-size);
+  font-weight: var(--landing-section-weight);
+  line-height: var(--landing-section-leading);
+  letter-spacing: var(--landing-section-tracking);
   text-wrap-style: balance;
   color: var(--oc-gray-8);
   margin-bottom: 1rem;

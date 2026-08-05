@@ -42,6 +42,7 @@ export function RegisterPage(): JSX.Element | null {
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}
       login={searchParams.get('login') || undefined}
+      onSignIn={() => navigate('/signin')?.catch(console.error)}
     >
       <Logo size={32} />
       <Title order={3} py="lg">

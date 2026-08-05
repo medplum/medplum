@@ -27,7 +27,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { createHash, randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
@@ -35,6 +35,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
+import { safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -322,6 +323,17 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  let client: ClientApplication | undefined;
+  if (login.client) {
+    const clientId = resolveId(login.client) ?? '';
+    try {
+      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    } catch {
+      sendTokenError(res, 'invalid_request', 'Invalid client');
+      return;
+    }
+  }
+
   const authHeader = req.headers.authorization;
   if (authHeader) {
     if (!authHeader.startsWith('Basic ')) {
@@ -339,15 +351,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
       sendTokenError(res, 'invalid_grant', 'Incorrect client secret');
       return;
     }
-  }
-
-  let client: ClientApplication | undefined;
-  if (login.client) {
-    const clientId = resolveId(login.client) ?? '';
-    try {
-      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-    } catch {
-      sendTokenError(res, 'invalid_request', 'Invalid client');
+    if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
       return;
     }
   }
@@ -761,7 +765,7 @@ async function parseClientAssertion(
     return { error: 'Client must have a JWK Set URL' };
   }
 
-  const JWKS = createRemoteJWKSet(new URL(client.jwksUri));
+  const JWKS = createRemoteJWKSet(new URL(client.jwksUri), { [customFetch]: safeFetch });
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: clientId,

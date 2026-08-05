@@ -35,11 +35,12 @@ export class ClientStorage implements IClientStorage {
   clear(): void {
     // We only care about checking the keys for localStorage when a prefix is present
     if (this.storage === globalThis.localStorage && this.prefix) {
-      Object.keys(this.storage)
-        .filter((key) => key.startsWith(this.prefix))
-        .forEach((key) => {
+      for (let i = this.storage.length - 1; i >= 0; i--) {
+        const key = this.storage.key(i);
+        if (key?.startsWith(this.prefix)) {
           this.storage.removeItem(key);
-        });
+        }
+      }
     } else {
       // If not localStorage, then just clear out the whole storage
       this.storage.clear();

@@ -1,171 +1,47 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Divider, Group, Paper, Stack, Text } from '@mantine/core';
-import { formatDate, formatHumanName } from '@medplum/core';
-import type { DiagnosticReport, Reference } from '@medplum/fhirtypes';
-import { ObservationTable, useResource } from '@medplum/react';
+import { Badge, Divider, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import { formatDate } from '@medplum/core';
+import type { DiagnosticReport } from '@medplum/fhirtypes';
+import { CodeableConceptDisplay } from '@medplum/react';
 import type { JSX } from 'react';
+import { LabReportContent } from './LabReportContent';
 
 interface LabResultDetailsProps {
-  result: DiagnosticReport | Reference<DiagnosticReport>;
-  onResultChange?: (result: DiagnosticReport) => void;
+  result: DiagnosticReport;
 }
 
-export function LabResultDetails({ result, onResultChange: _onResultChange }: LabResultDetailsProps): JSX.Element {
-  const diagnosticReport = useResource(result);
-  const patient = useResource(diagnosticReport?.subject);
-  const performer = useResource(diagnosticReport?.performer?.[0]);
+export function LabResultDetails(props: LabResultDetailsProps): JSX.Element {
+  const { result } = props;
 
   return (
-    <Paper h="100%" p="md" style={{ overflow: 'auto' }}>
-      <Stack gap="md">
-        <Stack gap="xs">
-          <Text size="xl" fw={700}>
-            {diagnosticReport?.code?.text || diagnosticReport?.code?.coding?.[0]?.display || 'Lab Result'}
-          </Text>
-          <Badge size="lg" color={getStatusColor(diagnosticReport?.status)} variant="light">
-            {getStatusDisplayText(diagnosticReport?.status)}
-          </Badge>
+    <ScrollArea h="100%">
+      <Paper h="100%">
+        <Stack gap="0">
+          <Stack gap="md" p="md">
+            <Stack gap="0">
+              <Text size="xl" fw={800}>
+                <CodeableConceptDisplay value={result.code} />
+              </Text>
+              <Text size="sm" c="gray.7">
+                Issued {formatDate(result.issued)}
+                {result.effectiveDateTime && ` • Collected ${formatDate(result.effectiveDateTime)}`}
+              </Text>
+            </Stack>
+            <Divider />
+            <Group justify="flex-end" align="center">
+              <Badge size="lg" color={getStatusColor(result.status)} variant="light">
+                {getStatusDisplayText(result.status)}
+              </Badge>
+            </Group>
+          </Stack>
+
+          <Stack gap="xs" p="md">
+            <LabReportContent report={result} />
+          </Stack>
         </Stack>
-
-        <Divider />
-
-        <Stack gap="sm">
-          <Text fw={600} size="sm" c="dimmed">
-            RESULT DETAILS
-          </Text>
-
-          <Group>
-            <Text fw={500} size="sm">
-              Issued Date:
-            </Text>
-            <Text size="sm">{formatDate(diagnosticReport?.issued)}</Text>
-          </Group>
-
-          {diagnosticReport?.effectiveDateTime && (
-            <Group>
-              <Text fw={500} size="sm">
-                Effective Date:
-              </Text>
-              <Text size="sm">{formatDate(diagnosticReport?.effectiveDateTime)}</Text>
-            </Group>
-          )}
-
-          {diagnosticReport?.code?.coding && (
-            <Group align="flex-start">
-              <Text fw={500} size="sm">
-                Test Code:
-              </Text>
-              <Stack gap="xs">
-                {diagnosticReport?.code?.coding?.map((coding, index) => (
-                  <Group key={index} gap="xs">
-                    <Badge size="sm" variant="outline">
-                      {coding.code}
-                    </Badge>
-                    <Text size="sm">{coding.display}</Text>
-                  </Group>
-                ))}
-              </Stack>
-            </Group>
-          )}
-
-          {performer?.resourceType === 'Practitioner' && (
-            <Group>
-              <Text fw={500} size="sm">
-                Performed by:
-              </Text>
-              <Text size="sm">{formatHumanName(performer.name?.[0])}</Text>
-            </Group>
-          )}
-
-          {patient?.resourceType === 'Patient' && (
-            <Group>
-              <Text fw={500} size="sm">
-                Patient:
-              </Text>
-              <Text size="sm">{formatHumanName(patient.name?.[0])}</Text>
-            </Group>
-          )}
-
-          {diagnosticReport?.category && (
-            <Group align="flex-start">
-              <Text fw={500} size="sm">
-                Category:
-              </Text>
-              <Stack gap="xs">
-                {diagnosticReport?.category?.map((category, index) => (
-                  <Text key={index} size="sm">
-                    {category.text || category.coding?.[0]?.display}
-                  </Text>
-                ))}
-              </Stack>
-            </Group>
-          )}
-        </Stack>
-
-        {diagnosticReport?.conclusion && (
-          <>
-            <Divider />
-            <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">
-                CONCLUSION
-              </Text>
-              <Text size="sm">{diagnosticReport?.conclusion}</Text>
-            </Stack>
-          </>
-        )}
-
-        {diagnosticReport?.conclusionCode && (
-          <>
-            <Divider />
-            <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">
-                CONCLUSION CODES
-              </Text>
-              {diagnosticReport?.conclusionCode?.map((code, index) => (
-                <Group key={index} align="flex-start">
-                  <Text fw={500} size="sm">
-                    Code {index + 1}:
-                  </Text>
-                  <Text size="sm">{code.text || code.coding?.[0]?.display}</Text>
-                </Group>
-              ))}
-            </Stack>
-          </>
-        )}
-
-        {diagnosticReport?.presentedForm && (
-          <>
-            <Divider />
-            <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">
-                ATTACHMENTS
-              </Text>
-              {diagnosticReport?.presentedForm?.map((form, index) => (
-                <Group key={index} align="flex-start">
-                  <Text fw={500} size="sm">
-                    Attachment {index + 1}:
-                  </Text>
-                  <Text size="sm">{form.title || form.contentType || 'Attachment'}</Text>
-                </Group>
-              ))}
-            </Stack>
-          </>
-        )}
-
-        {diagnosticReport?.result && diagnosticReport?.result?.length > 0 && (
-          <>
-            <Divider />
-            <Stack gap="sm">
-              <Text fw={600} size="sm" c="dimmed">
-                TEST RESULTS
-              </Text>
-              <ObservationTable value={diagnosticReport?.result} hideObservationNotes={false} />
-            </Stack>
-          </>
-        )}
-      </Stack>
-    </Paper>
+      </Paper>
+    </ScrollArea>
   );
 }
 

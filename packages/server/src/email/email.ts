@@ -11,7 +11,7 @@ import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { getFromAddress, getProjectSmtpConfig } from './utils';
+import { applyFromDisplayName, getFromAddress, getProjectAppName, getProjectSmtpConfig } from './utils';
 
 /**
  * Sends an email using the AWS SES service.
@@ -26,7 +26,9 @@ export async function sendEmail(repo: Repository, options: Mail.Options, project
   const projectSmtp = project ? getProjectSmtpConfig(project) : undefined;
   const fromAddress = getFromAddress(options, projectSmtp);
 
-  options.from = fromAddress;
+  // The envelope sender stays a bare address; only the visible From header
+  // carries the project's app name.
+  options.from = applyFromDisplayName(fromAddress, projectSmtp ? getProjectAppName(project) : undefined);
   options.sender = fromAddress;
 
   // Process attachments
@@ -45,6 +47,8 @@ export async function sendEmail(repo: Repository, options: Mail.Options, project
     await sendEmailViaSmtp(config.smtp, options);
   } else if (config.emailProvider === 'awsses') {
     await sendEmailViaSes(options);
+  } else {
+    globalLogger.warn('Email not configured — skipping send', { to: options.to, subject: options.subject });
   }
 }
 

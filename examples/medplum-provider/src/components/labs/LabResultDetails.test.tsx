@@ -1,25 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { DiagnosticReport, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { DiagnosticReport, DocumentReference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { LabResultDetails } from './LabResultDetails';
-
-const mockPatient: Patient = {
-  resourceType: 'Patient',
-  id: 'patient-123',
-  name: [{ given: ['John'], family: 'Doe' }],
-};
-
-const mockPractitioner: Practitioner = {
-  resourceType: 'Practitioner',
-  id: 'practitioner-123',
-  name: [{ given: ['Dr. Jane'], family: 'Smith' }],
-};
 
 function createMockDiagnosticReport(overrides?: Partial<DiagnosticReport>): DiagnosticReport {
   return {
@@ -51,7 +39,7 @@ describe('LabResultDetails', () => {
     medplum = new MockClient();
   });
 
-  function setup(result: DiagnosticReport | Reference<DiagnosticReport>): ReturnType<typeof render> {
+  function setup(result: DiagnosticReport): ReturnType<typeof render> {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -63,46 +51,27 @@ describe('LabResultDetails', () => {
     );
   }
 
-  test('Renders with DiagnosticReport object', async () => {
+  test('Renders with DiagnosticReport object', () => {
     const diagnosticReport = createMockDiagnosticReport();
-    await medplum.createResource(mockPatient);
-    await medplum.createResource(mockPractitioner);
 
     setup(diagnosticReport);
 
-    await waitFor(() => {
-      expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-    });
+    expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
     expect(screen.getByText('Final')).toBeInTheDocument();
   });
 
-  test('Renders with DiagnosticReport reference', async () => {
-    const diagnosticReport = createMockDiagnosticReport();
-    await medplum.createResource(diagnosticReport);
-    await medplum.createResource(mockPatient);
-    await medplum.createResource(mockPractitioner);
-
-    const reference: Reference<DiagnosticReport> = {
-      reference: `DiagnosticReport/${diagnosticReport.id}`,
-    };
-
-    setup(reference);
-
-    await waitFor(() => {
-      expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-    });
-  });
-
-  test('Displays default title when code text and display are missing', () => {
+  test('Renders an empty title when code text and display are missing', () => {
     const diagnosticReport = createMockDiagnosticReport({
       code: {
         coding: [],
       },
     });
 
-    setup(diagnosticReport);
+    const { container } = setup(diagnosticReport);
 
-    expect(screen.getByText('Lab Result')).toBeInTheDocument();
+    const title = container.querySelector('.mantine-Text-root');
+    expect(title).toBeInTheDocument();
+    expect(title).toBeEmptyDOMElement();
   });
 
   test('Displays code display when code text is missing', () => {
@@ -120,9 +89,30 @@ describe('LabResultDetails', () => {
 
     setup(diagnosticReport);
 
-    const titles = screen.getAllByText('Complete Blood Count');
-    expect(titles.length).toBeGreaterThan(0);
-    expect(titles[0]).toBeInTheDocument();
+    expect(screen.getByText('Complete Blood Count')).toBeInTheDocument();
+  });
+
+  test('Displays all code displays in title when there are multiple codes', () => {
+    const diagnosticReport = createMockDiagnosticReport({
+      code: {
+        coding: [
+          {
+            system: 'http://loinc.org',
+            code: '24323-8',
+            display: 'Complete Blood Count',
+          },
+          {
+            system: 'http://loinc.org',
+            code: '24325-3',
+            display: 'CBC with Differential',
+          },
+        ],
+      },
+    });
+
+    setup(diagnosticReport);
+
+    expect(screen.getByText('Complete Blood Count, CBC with Differential')).toBeInTheDocument();
   });
 
   test('Displays status badge with correct color for final status', () => {
@@ -142,147 +132,35 @@ describe('LabResultDetails', () => {
     expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
-  test('Displays issued date', () => {
+  test('Displays issued date in the header', () => {
     const diagnosticReport = createMockDiagnosticReport({ issued: '2024-01-15T10:00:00Z' });
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('Issued Date:')).toBeInTheDocument();
+    expect(screen.getByText(/Issued/)).toBeInTheDocument();
   });
 
-  test('Displays effective date when present', () => {
+  test('Displays collection date in the header when present', () => {
     const diagnosticReport = createMockDiagnosticReport({
       effectiveDateTime: '2024-01-16T10:00:00Z',
     });
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('Effective Date:')).toBeInTheDocument();
+    expect(screen.getByText(/Collected/)).toBeInTheDocument();
   });
 
-  test('Does not display effective date when absent', () => {
+  test('Does not display collection date in the header when absent', () => {
     const diagnosticReport = createMockDiagnosticReport({
       effectiveDateTime: undefined,
     });
 
     setup(diagnosticReport);
 
-    expect(screen.queryByText('Effective Date:')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Collected/)).not.toBeInTheDocument();
   });
 
-  test('Displays all result detail sections when present', async () => {
-    const patient = await medplum.createResource(mockPatient);
-    const practitioner = await medplum.createResource(mockPractitioner);
-    const diagnosticReport = createMockDiagnosticReport({
-      code: {
-        coding: [
-          {
-            system: 'http://loinc.org',
-            code: '24323-8',
-            display: 'Complete Blood Count',
-          },
-          {
-            system: 'http://loinc.org',
-            code: '24325-3',
-            display: 'CBC with Differential',
-          },
-        ],
-      },
-      subject: { reference: `Patient/${patient.id}` },
-      performer: [{ reference: `Practitioner/${practitioner.id}` }],
-      category: [
-        {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/v2-0074',
-              code: 'LAB',
-              display: 'Laboratory',
-            },
-          ],
-          text: 'Laboratory',
-        },
-        {
-          text: 'Hematology',
-        },
-      ],
-      conclusion: 'All values within normal limits',
-    });
-
-    setup(diagnosticReport);
-
-    await waitFor(() => {
-      expect(screen.getByText('Performed by:')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Test Code:')).toBeInTheDocument();
-    expect(screen.getByText('24323-8')).toBeInTheDocument();
-    expect(screen.getAllByText('Complete Blood Count').length).toBeGreaterThan(0);
-    expect(screen.getByText('24325-3')).toBeInTheDocument();
-    expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Jane Smith')).toBeInTheDocument();
-    expect(screen.getByText('Patient:')).toBeInTheDocument();
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('Category:')).toBeInTheDocument();
-    expect(screen.getByText('Laboratory')).toBeInTheDocument();
-    expect(screen.getByText('Hematology')).toBeInTheDocument();
-    expect(screen.getByText('CONCLUSION')).toBeInTheDocument();
-    expect(screen.getByText('All values within normal limits')).toBeInTheDocument();
-  });
-
-  test('Does not display conclusion section when absent', () => {
-    const diagnosticReport = createMockDiagnosticReport({
-      conclusion: undefined,
-    });
-
-    setup(diagnosticReport);
-
-    expect(screen.queryByText('CONCLUSION')).not.toBeInTheDocument();
-  });
-
-  test('Displays conclusion codes when present', () => {
-    const diagnosticReport = createMockDiagnosticReport({
-      conclusionCode: [
-        {
-          coding: [
-            {
-              system: 'http://snomed.info/sct',
-              code: '123456789',
-              display: 'Normal',
-            },
-          ],
-          text: 'Normal',
-        },
-      ],
-    });
-
-    setup(diagnosticReport);
-
-    expect(screen.getByText('CONCLUSION CODES')).toBeInTheDocument();
-    expect(screen.getByText('Code 1:')).toBeInTheDocument();
-    expect(screen.getByText('Normal')).toBeInTheDocument();
-  });
-
-  test('Displays multiple conclusion codes', () => {
-    const diagnosticReport = createMockDiagnosticReport({
-      conclusionCode: [
-        {
-          text: 'Normal',
-        },
-        {
-          text: 'Abnormal',
-        },
-      ],
-    });
-
-    setup(diagnosticReport);
-
-    expect(screen.getByText('Code 1:')).toBeInTheDocument();
-    expect(screen.getByText('Code 2:')).toBeInTheDocument();
-    expect(screen.getByText('Normal')).toBeInTheDocument();
-    expect(screen.getByText('Abnormal')).toBeInTheDocument();
-  });
-
-  test('Displays attachments when present', () => {
+  test('Displays lab document section when attachments are present', async () => {
     const diagnosticReport = createMockDiagnosticReport({
       presentedForm: [
         {
@@ -294,101 +172,99 @@ describe('LabResultDetails', () => {
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('ATTACHMENTS')).toBeInTheDocument();
-    expect(screen.getByText('Attachment 1:')).toBeInTheDocument();
-    expect(screen.getByText('Lab Report PDF')).toBeInTheDocument();
+    expect(await screen.findByText('Lab Document')).toBeInTheDocument();
   });
 
-  test('Displays attachment with contentType when title is missing', () => {
+  test('Resolves presentedForm entries that reference a DocumentReference', async () => {
+    const docRef = await medplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [
+        {
+          attachment: {
+            contentType: 'application/pdf',
+            url: 'https://example.com/lab-report.pdf',
+            title: 'lab-report.pdf',
+          },
+        },
+        {
+          attachment: {
+            contentType: 'text/plain',
+            url: 'https://example.com/extracted.txt',
+            title: 'Extracted Text (Textract)',
+          },
+        },
+      ],
+    });
+
     const diagnosticReport = createMockDiagnosticReport({
       presentedForm: [
         {
           contentType: 'application/pdf',
+          url: `DocumentReference/${docRef.id}`,
+          title: 'Frodo Baggins HGDX LabCorp Result',
         },
       ],
     });
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('application/pdf')).toBeInTheDocument();
+    expect(await screen.findByText('Lab Document')).toBeInTheDocument();
+
+    // The resolved PDF content is rendered with the presentedForm title, not the raw DocumentReference URL
+    const downloadLink = screen.getByText('Frodo Baggins HGDX LabCorp Result');
+    expect(downloadLink).toHaveAttribute('href', 'https://example.com/lab-report.pdf');
+
+    // Only the content matching the declared contentType is rendered, not the extracted-text rendition
+    expect(screen.getAllByTestId('attachment-display')).toHaveLength(1);
+    expect(screen.queryByText('Extracted Text (Textract)')).not.toBeInTheDocument();
   });
 
-  test('Displays attachment with default text when title and contentType are missing', () => {
+  test('Does not display lab document section when attachments are absent', () => {
     const diagnosticReport = createMockDiagnosticReport({
-      presentedForm: [{}],
+      presentedForm: undefined,
     });
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('Attachment')).toBeInTheDocument();
+    expect(screen.queryByText('Lab Document')).not.toBeInTheDocument();
   });
 
-  test('Displays multiple attachments', () => {
+  test('Displays diagnostic report display when results are present', async () => {
     const diagnosticReport = createMockDiagnosticReport({
-      presentedForm: [
-        {
-          title: 'Report 1',
-        },
-        {
-          title: 'Report 2',
-        },
-      ],
+      result: [{ reference: 'Observation/obs-123' }],
     });
 
     setup(diagnosticReport);
 
-    expect(screen.getByText('Attachment 1:')).toBeInTheDocument();
-    expect(screen.getByText('Attachment 2:')).toBeInTheDocument();
-    expect(screen.getByText('Report 1')).toBeInTheDocument();
-    expect(screen.getByText('Report 2')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
+    });
   });
 
-  test('Does not display test results section when result array is empty', () => {
+  test('Does not display diagnostic report display when result array is empty', () => {
     const diagnosticReport = createMockDiagnosticReport({
       result: [],
     });
 
     setup(diagnosticReport);
 
-    expect(screen.queryByText('TEST RESULTS')).not.toBeInTheDocument();
+    expect(screen.queryByText('Diagnostic Report')).not.toBeInTheDocument();
   });
 
-  test('Does not display test results section when result is undefined', () => {
+  test('Does not display diagnostic report display when result is undefined', () => {
     const diagnosticReport = createMockDiagnosticReport({
       result: undefined,
     });
 
     setup(diagnosticReport);
 
-    expect(screen.queryByText('TEST RESULTS')).not.toBeInTheDocument();
-  });
-
-  test('Handles undefined diagnostic report gracefully', async () => {
-    const reference: Reference<DiagnosticReport> = {
-      reference: 'DiagnosticReport/non-existent-id',
-    };
-
-    setup(reference);
-
-    await waitFor(() => {
-      expect(screen.getByText('Lab Result')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Unknown')).toBeInTheDocument();
+    expect(screen.queryByText('Diagnostic Report')).not.toBeInTheDocument();
   });
 
   test('Renders all sections together', async () => {
-    const patient = await medplum.createResource(mockPatient);
-    const practitioner = await medplum.createResource(mockPractitioner);
     const diagnosticReport = createMockDiagnosticReport({
-      subject: { reference: `Patient/${patient.id}` },
-      performer: [{ reference: `Practitioner/${practitioner.id}` }],
       effectiveDateTime: '2024-01-16T10:00:00Z',
-      conclusion: 'All values normal',
-      conclusionCode: [
-        {
-          text: 'Normal',
-        },
-      ],
       presentedForm: [
         {
           title: 'Report PDF',
@@ -402,12 +278,11 @@ describe('LabResultDetails', () => {
     await waitFor(() => {
       expect(screen.getByText('CBC with Differential')).toBeInTheDocument();
     });
-    expect(screen.getByText('Effective Date:')).toBeInTheDocument();
-    expect(screen.getByText('Patient:')).toBeInTheDocument();
-    expect(screen.getByText('Performed by:')).toBeInTheDocument();
-    expect(screen.getByText('CONCLUSION')).toBeInTheDocument();
-    expect(screen.getByText('CONCLUSION CODES')).toBeInTheDocument();
-    expect(screen.getByText('ATTACHMENTS')).toBeInTheDocument();
-    expect(screen.getByText('TEST RESULTS')).toBeInTheDocument();
+    // DiagnosticReportDisplay renders its own "Issued"/"Collected" labels, so match loosely
+    expect(screen.getAllByText(/Issued/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Collected/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Final')).toBeInTheDocument();
+    expect(await screen.findByText('Lab Document')).toBeInTheDocument();
+    expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
   });
 });

@@ -5,7 +5,6 @@ import type { GoogleCredentialResponse } from '@medplum/core';
 import { allOk, badRequest, locationUtils, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
-import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { SignInFormProps } from './SignInForm';
@@ -247,13 +246,11 @@ async function setup(args?: SignInFormProps): Promise<void> {
 
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <SignInForm {...props}>
-            <Title>Sign in to Medplum</Title>
-          </SignInForm>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <SignInForm {...props}>
+          <Title>Sign in to Medplum</Title>
+        </SignInForm>
+      </MedplumProvider>
     );
   });
 }
@@ -293,7 +290,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -325,7 +322,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -353,7 +350,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -385,7 +382,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -425,7 +422,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -467,7 +464,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -506,7 +503,9 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), { target: { value: 'newproject' } });
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
+        target: { value: 'newproject' },
+      });
     });
 
     await act(async () => {
@@ -540,7 +539,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -569,7 +568,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'admin' },
       });
     });
@@ -807,7 +806,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'mfa-required' },
       });
     });
@@ -844,7 +843,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Continue'));
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'mfa-email' },
       });
     });
@@ -871,7 +870,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Continue'));
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'mfa-both' },
       });
     });
@@ -912,7 +911,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'mfa-enroll' },
       });
     });
@@ -949,7 +948,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Continue'));
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'mfa-enroll-choice' },
       });
     });
@@ -985,7 +984,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Continue'));
     });
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false, selector: 'input' }), {
         target: { value: 'mfa-enroll-choice' },
       });
     });

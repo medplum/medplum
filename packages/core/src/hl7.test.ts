@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { formatHl7DateTime, Hl7Context, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime } from './hl7';
+import { formatHl7DateTime, Hl7Context, Hl7Field, Hl7Message, Hl7Segment, isAckCode, parseHl7DateTime } from './hl7';
 
 describe('HL7', () => {
   test('Unsupported encoding', () => {
@@ -115,6 +115,42 @@ describe('HL7', () => {
     expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe('AE');
     expect(ackMsg.getSegment('MSA')?.getField(3)?.toString()).toBe('Application Error');
     expect(ackMsg.getSegment('ERR')?.getField(1)?.toString()).toBe('^^^207&Application Error&HL70357');
+  });
+
+  test.each(['AA', 'AE', 'AR', 'CA', 'CE', 'CR'] as const)('getAckType -- %s', (ackCode) => {
+    const text = `MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\rMSA|${ackCode}|9B38584D|`;
+    expect(Hl7Message.parse(text).getAckType()).toBe(ackCode);
+  });
+
+  test('getAckType -- lower-cased MSA-1 is normalized', () => {
+    const text = 'MSH|^~\\&|A|B|C|D|20160915003015||ACK|9B38584D|P|2.6.1|\rMSA|aa|9B38584D|';
+    expect(Hl7Message.parse(text).getAckType()).toBe('AA');
+  });
+
+  test('getAckType -- returns undefined for an unrecognized MSA-1', () => {
+    const text = 'MSH|^~\\&|A|B|C|D|20160915003015||ACK|9B38584D|P|2.6.1|\rMSA|ZZ|9B38584D|';
+    expect(Hl7Message.parse(text).getAckType()).toBeUndefined();
+  });
+
+  test('getAckType -- returns undefined when there is no MSA segment', () => {
+    const text = 'MSH|^~\\&|A|B|C|D|20160915003015||ADT^A01|9B38584D|P|2.6.1|';
+    expect(Hl7Message.parse(text).getAckType()).toBeUndefined();
+  });
+
+  test('getAckType -- returns undefined when MSA-1 is empty', () => {
+    const text = 'MSH|^~\\&|A|B|C|D|20160915003015||ACK|9B38584D|P|2.6.1|\rMSA||9B38584D|';
+    expect(Hl7Message.parse(text).getAckType()).toBeUndefined();
+  });
+
+  test('isAckCode', () => {
+    for (const code of ['AA', 'AE', 'AR', 'CA', 'CE', 'CR']) {
+      expect(isAckCode(code)).toBe(true);
+    }
+    expect(isAckCode('ZZ')).toBe(false);
+    expect(isAckCode('aa')).toBe(false); // case-sensitive; callers upper-case first
+    expect(isAckCode('')).toBe(false);
+    expect(isAckCode(undefined)).toBe(false);
+    expect(isAckCode('hasOwnProperty')).toBe(false); // not fooled by Object.prototype keys
   });
 
   test('ADT', () => {

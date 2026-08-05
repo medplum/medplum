@@ -1,0 +1,100 @@
+{
+  "name": "@medplum/react-scheduling",
+  "version": "5.1.28",
+  "description": "Medplum Scheduling React Components",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative",
+    "ui",
+    "input",
+    "react",
+    "react-component",
+    "scheduling"
+  ],
+  "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/react-scheduling"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": [
+    "*.css"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    },
+    "./styles.css": "./dist/esm/index.css"
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
+  "scripts": {
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@fullcalendar/react": "7.0.2",
+    "@mantine/core": "8.3.18",
+    "@mantine/hooks": "8.3.18",
+    "@medplum/core": "5.1.28",
+    "@medplum/fhirtypes": "5.1.28",
+    "@tabler/icons-react": "3.46.0",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "clsx": "2.1.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sinon": "22.1.0",
+    "temporal-polyfill": "1.0.2",
+    "typescript": "6.0.3"
+  },
+  "peerDependencies": {
+    "@mantine/core": "^8.0.0",
+    "@mantine/hooks": "^8.0.0",
+    "@medplum/core": "5.1.28",
+    "@medplum/fhirtypes": "5.1.28",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}

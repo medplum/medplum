@@ -6,7 +6,6 @@ import type { Organization } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import type { Mock } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { PharmacyDialog } from './PharmacyDialog';
@@ -16,11 +15,7 @@ const medplum = new MockClient();
 describe('PharmacyDialog', () => {
   async function setup(children: ReactNode): Promise<void> {
     await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
+      render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
     });
   }
 
@@ -540,6 +535,82 @@ describe('PharmacyDialog', () => {
 
     await waitFor(() => {
       expect(onSubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  test('Renders renderBeforeSearchButton content', async () => {
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
+
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+        renderBeforeSearchButton={<div>Extra filter slot</div>}
+      />
+    );
+
+    expect(screen.getByText('Extra filter slot')).toBeInTheDocument();
+  });
+
+  test('Merges getExtraSearchParams into search request', async () => {
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
+
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+        getExtraSearchParams={() => ({ specialties: ['Retail', 'MailOrder'] })}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Zip Code'), { target: { value: '19720' } });
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSearch).toHaveBeenCalledWith({
+        zip: '19720',
+        specialties: ['Retail', 'MailOrder'],
+      });
+    });
+  });
+
+  test('Allows search with only getExtraSearchParams', async () => {
+    const onSubmit = vi.fn();
+    const onClose = vi.fn();
+
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+        getExtraSearchParams={() => ({ specialties: ['Retail'] })}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    await waitFor(() => {
+      expect(mockOnSearch).toHaveBeenCalledWith({
+        specialties: ['Retail'],
+      });
     });
   });
 });

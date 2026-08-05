@@ -4,9 +4,6 @@ sidebar_position: 3
 
 # Sync a Patient
 
-:::caution[Beta]
-The ScriptSure integration is in beta. Features and APIs may change.
-:::
 
 **Bot:** `scriptsure-patient-sync-bot`
 

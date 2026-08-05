@@ -23,7 +23,7 @@ export interface DoseSpotIFrameOptions extends MedicationIFrameOptions {
  * React hook that syncs a patient to DoseSpot and returns the iframe URL.
  *
  * Runs optional self-enrollment, then the patient-sync bot (when `patientId`
- * is set), then the iframe bot — aligned with {@link useMedicationIFrame}
+ * is set), then the iframe bot — aligned with {@link @medplum/react-hooks#useMedicationIFrame}
  * behavior plus DoseSpot-specific enrollment.
  *
  * @param options - Configuration and callback options.

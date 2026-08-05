@@ -5,7 +5,7 @@ import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config/loader';
+import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
@@ -13,7 +13,6 @@ import {
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
-  normalizeUserInfoUrl,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -744,39 +743,5 @@ describe('OAuth utils', () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toStrictEqual('medplum-cli');
-  });
-
-  describe('normalizeUserInfoUrl', () => {
-    test.each([
-      ['http://example.com/oauth2/userinfo', true],
-      [' http://example.com/oauth2/userinfo ', true],
-      ['https://example.com/oauth2/userinfo', false],
-      [' https://example.com/oauth2/userinfo ', false],
-      ['file://example.com/oauth2/userinfo', true],
-      [' file://example.com/oauth2/userinfo ', true],
-    ])('with URL [%s]', (userInfoUrl, expectError) => {
-      try {
-        normalizeUserInfoUrl(userInfoUrl);
-        if (expectError) {
-          expect.fail('Expected error');
-        }
-      } catch (err) {
-        if (!expectError) {
-          throw err;
-        }
-      }
-    });
-
-    test('allows insecure user info URLs when configured', () => {
-      const savedConfig = getConfig().allowInsecureExternalAuthUrl;
-      getConfig().allowInsecureExternalAuthUrl = true;
-      try {
-        expect(normalizeUserInfoUrl('http://localhost:8080/oauth2/userinfo')).toBe(
-          'http://localhost:8080/oauth2/userinfo'
-        );
-      } finally {
-        getConfig().allowInsecureExternalAuthUrl = savedConfig;
-      }
-    });
   });
 });

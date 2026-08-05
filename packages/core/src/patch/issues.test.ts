@@ -236,8 +236,7 @@ test('issues/44', () => {
 test('issues/76', () => {
   expect(({} as any).polluted).toBeUndefined();
   const value = {};
-  applyPatch(value, [{ op: 'add', path: '/__proto__/polluted', value: 'Hello!' }]);
-  expect(({} as any).polluted).toBeUndefined();
+  expect(() => applyPatch(value, [{ op: 'add', path: '/__proto__/polluted', value: 'Hello!' }])).toThrow();
 });
 
 test('issues/78', () => {
@@ -257,4 +256,9 @@ test('issues/97', () => {
   expect(patch_results.every((result) => result === null)).toBeTruthy();
   expect(user).toStrictEqual({ firstName: 'Chris', commits: ['5d565c8'] });
   expect(commits).toHaveLength(0);
+});
+
+test('Prototype poisoning', () => {
+  const value = {};
+  expect(() => applyPatch(value, [{ op: 'add', path: '/toString/call', value: 'x' }])).toThrow();
 });

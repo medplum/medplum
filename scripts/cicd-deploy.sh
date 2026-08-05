@@ -38,6 +38,7 @@ DEPLOY_APP=false
 DEPLOY_DOCS=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
+DEPLOY_STORYBOOK=false
 
 #
 # Inspect files changed
@@ -102,8 +103,19 @@ if [[ "$FILES_CHANGED" =~ packages/server ]]; then
   DEPLOY_SERVER=true
 fi
 
-if [[ "$FILES_CHANGED" =~ packages/react ]]; then
+if [[ "$FILES_CHANGED" =~ packages/storybook ]]; then
+  DEPLOY_STORYBOOK=true
+fi
+
+# Tricky: `packages/react-scheduling` should not affect `app`, so
+# we need to be careful not to use a matching prefix here.
+if [[ "$FILES_CHANGED" =~ packages/react/ ]]; then
   DEPLOY_APP=true
+  DEPLOY_STORYBOOK=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/react-scheduling ]]; then
+  DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FORCE" = true ]]; then
@@ -111,6 +123,7 @@ if [[ "$FORCE" = true ]]; then
   DEPLOY_DOCS=true
   DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
+  DEPLOY_STORYBOOK=true
 fi
 
 #
@@ -127,7 +140,7 @@ read -r -d '' PAYLOAD <<- EOM
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy server: ${DEPLOY_SERVER}"
+        "text": "Deploying ${ESCAPED_COMMIT_MESSAGE}\\n\\n* Deploy app: ${DEPLOY_APP}\\n\\n* Deploy docs: ${DEPLOY_DOCS}\\n\\n* Deploy graphiql: ${DEPLOY_GRAPHIQL}\\n\\n* Deploy server: ${DEPLOY_SERVER}\\n\\n* Deploy storybook: ${DEPLOY_STORYBOOK}"
       }
     }
   ]
@@ -159,11 +172,6 @@ if [[ "$DEPLOY_APP" = true ]]; then
   source ./scripts/deploy-app.sh
 fi
 
-if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
-  echo "Deploy GraphiQL"
-  source ./scripts/deploy-graphiql.sh
-fi
-
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
@@ -171,8 +179,21 @@ if [[ "$DEPLOY_SERVER" = true ]]; then
   source ./scripts/deploy-server.sh
 fi
 
+if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
+  echo "Deploy GraphiQL"
+  npm run build -- --force --filter=@medplum/graphiql
+  source ./scripts/deploy-graphiql.sh
+fi
+
+if [[ "$DEPLOY_STORYBOOK" = true ]]; then
+  echo "Deploy storybook"
+  npm run build:all -- --filter=@medplum/storybook
+  source ./scripts/deploy-storybook.sh
+fi
+
 # Deploy docs last since it is the slowest
 if [[ "$DEPLOY_DOCS" = true ]]; then
   echo "Deploy docs"
+  npm run build:docs
   source ./scripts/deploy-docs.sh
 fi

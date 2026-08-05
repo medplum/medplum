@@ -92,6 +92,7 @@ class BotResponseStream {
   constructor(responseStream) {
     this.wrappedStream = responseStream;
     this.streamStarted = false;
+    this.streamEnded = false;
   }
   startStreaming(statusCode, headers) {
     if (this.streamStarted) {
@@ -113,6 +114,10 @@ class BotResponseStream {
     }
   }
   end(chunk) {
+    if (this.streamEnded) {
+      return;
+    }
+    this.streamEnded = true;
     if (chunk !== undefined) {
       this.wrappedStream.write(chunk);
     }

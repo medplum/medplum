@@ -2,15 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Observation, Reference } from '@medplum/fhirtypes';
-import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
+import { HomerDiagnosticReport, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import {
   HealthGorillaDiagnosticReport,
   HealthGorillaObservation1,
   HealthGorillaObservation2,
   HealthGorillaObservationGroup1,
   HealthGorillaObservationGroup2,
+  HealthGorillaQuestDiagnosticReport,
+  HealthGorillaQuestLabLenexa,
+  HealthGorillaQuestLabSacramento,
+  HealthGorillaQuestObservation1,
+  HealthGorillaQuestObservation2,
+  HealthGorillaQuestObservation3,
+  HealthGorillaQuestObservationGroup1,
+  HealthGorillaQuestObservationGroup2,
+  HealthGorillaQuestObservationGroup3,
+  HealthGorillaQuestParentLab,
+  HealthGorillaQuestServiceRequest,
 } from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
 import { act, render, screen } from '../test-utils/render';
@@ -78,23 +88,38 @@ const syntheaReport: DiagnosticReport = {
 const medplum = new MockClient();
 
 describe('DiagnosticReportDisplay', () => {
+  let exampleReport: DiagnosticReport;
+
   function setup(args: DiagnosticReportDisplayProps): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <DiagnosticReportDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <DiagnosticReportDisplay {...args} />
+      </MedplumProvider>
     );
   }
 
   beforeAll(async () => {
     const obs = await medplum.createResource(CreatinineObservation);
-    const report = {
+    exampleReport = await medplum.createResource<DiagnosticReport>({
       ...ExampleReport,
+      id: undefined,
       result: [createReference(obs)],
-    };
-    await medplum.updateResource(report);
+    });
+
+    for (const resource of [
+      HealthGorillaQuestParentLab,
+      HealthGorillaQuestLabLenexa,
+      HealthGorillaQuestLabSacramento,
+      HealthGorillaQuestObservation1,
+      HealthGorillaQuestObservation2,
+      HealthGorillaQuestObservation3,
+      HealthGorillaQuestObservationGroup1,
+      HealthGorillaQuestObservationGroup2,
+      HealthGorillaQuestObservationGroup3,
+      HealthGorillaQuestServiceRequest,
+    ]) {
+      await medplum.createResource(resource);
+    }
   });
 
   test('Renders by value', async () => {
@@ -157,16 +182,91 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders performer', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
 
     expect(screen.getByText('Test Organization')).not.toBeNull();
-    expect(screen.getByText('Alice Smith')).not.toBeNull();
+    // The observation performer is resolved to the actual resource name ("Alice Smith"),
+    // rather than the raw reference display ("Dr. Alice Smith")
+    expect(screen.getAllByText('Alice Smith')).toHaveLength(2);
+  });
+
+  test('Renders performer organization address', async () => {
+    await act(async () => {
+      setup({ value: exampleReport });
+    });
+
+    // See packages/mock/src/mocks/alice.ts for the TestOrganization address
+    expect(screen.getByText('123 Test Street, Springfield, CA, 90210')).not.toBeNull();
+  });
+
+  test('Renders performing labs', async () => {
+    await act(async () => {
+      setup({ value: HealthGorillaQuestDiagnosticReport });
+    });
+
+    expect(screen.getByText('Performing Labs')).toBeInTheDocument();
+
+    // Two observations were performed by the Lenexa lab: it appears in two
+    // observation table rows, but only once in the performing labs footer
+    expect(screen.getAllByText('Quest Diagnostics-Lenexa')).toHaveLength(3);
+    expect(screen.getByText('10101 Renner Blvd, Lenexa, KS, 66219-9752')).toBeInTheDocument();
+    expect(screen.getByText('William Becker D.O., MPH')).toBeInTheDocument();
+
+    // One observation table row and one performing labs footer row
+    expect(screen.getAllByText('Quest Diagnostics-Sacramento - Northgate')).toHaveLength(2);
+    expect(screen.getByText('3714 Northgate Blvd, Sacramento, CA, 95834-1617')).toBeInTheDocument();
+    expect(screen.getByText('M. Rose Akin, M.D., FCAP')).toBeInTheDocument();
+
+    // The parent lab has no address or contact, so it is not in the footer:
+    // it only appears in the report header and the observation group rows
+    expect(screen.getAllByText('HGDX Quest')).toHaveLength(4);
+  });
+
+  test('Renders ordering requester', async () => {
+    await act(async () => {
+      setup({ value: HealthGorillaQuestDiagnosticReport });
+    });
+
+    expect(screen.getByText('Ordering')).toBeInTheDocument();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('Renders performing labs from server references', async () => {
+    const obs = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Glucose' },
+      performer: [createReference(TestOrganization)],
+    });
+    const report = await medplum.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { text: 'Glucose Panel' },
+      result: [createReference(obs)],
+    });
+
+    await act(async () => {
+      setup({ value: report });
+    });
+
+    expect(screen.getByText('Performing Labs')).toBeInTheDocument();
+    // Once in the observation table performer column, once in the performing labs footer
+    expect(screen.getAllByText('Test Organization')).toHaveLength(2);
+    expect(screen.getByText('123 Test Street, Springfield, CA, 90210')).toBeInTheDocument();
+  });
+
+  test('Hides performing labs when there are none', async () => {
+    await act(async () => {
+      setup({ value: HomerDiagnosticReport });
+    });
+
+    expect(screen.queryByText('Performing Labs')).toBeNull();
   });
 
   test('Renders observation category', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('Day 2')).toBeDefined();
@@ -174,14 +274,14 @@ describe('DiagnosticReportDisplay', () => {
 
   test('Renders observation note', async () => {
     await act(async () => {
-      setup({ value: ExampleReport });
+      setup({ value: exampleReport });
     });
     expect(screen.getByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).not.toBeNull();
   });
 
   test('Hide observation note', async () => {
     await act(async () => {
-      setup({ value: ExampleReport, hideObservationNotes: true });
+      setup({ value: exampleReport, hideObservationNotes: true });
     });
     expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });

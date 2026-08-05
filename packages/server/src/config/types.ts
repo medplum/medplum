@@ -122,11 +122,29 @@ export interface MedplumServerConfig {
   /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
   idleInTransactionLogThresholdMs?: number;
 
+  /**
+   * Flag to enable/disable the background worker dispatch service. (default 'true' for enabled)
+   * Dispatch is the entry point for most background jobs including subscriptions and auto-download.
+   */
+  dispatchEnabled?: boolean;
+
+  /** Flag to enable/disable FHIR subscriptions. (default 'true' for enabled) */
+  subscriptionsEnabled?: boolean;
+
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
+
+  /**
+   * Flag to enable server-scoped rest-hook subscriptions (default: false).
+   * When enabled, the subscription worker evaluates not only the subscriptions within a
+   * resource's own project, but also subscriptions that are not scoped to any project
+   * (i.e. stored in the system project). This allows a single set of subscriptions to
+   * apply across every project on the server.
+   */
+  serverScopedSubscriptionsEnabled?: boolean;
 
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];
@@ -210,11 +228,19 @@ export interface MedplumServerConfig {
    */
   requireVerifiedEmailForProjectCreation?: boolean;
 
-  /** Optional flag to allow rest-hook Subscriptions to send requests to insecure HTTP URLs. */
-  allowInsecureRestHookUrl?: boolean;
+  /**
+   * Optional flag to allow outbound fetch requests to private/local networks.
+   * Intended only for on-premises deployments that connect to trusted local services.
+   * Do not enable in hosted or cloud-managed environments.
+   */
+  allowUnsafeOutbound?: boolean;
 
-  /** Optional flag to allow external auth providers to use insecure HTTP or local URLs. */
-  allowInsecureExternalAuthUrl?: boolean;
+  /**
+   * Optional list of enabled search parameters by SearchParameter.id.  Default is all search parameters enabled.
+   * Note that Medplum resource type search params are always enabled regardless of this setting,
+   * as they are necesary for system functionality.
+   */
+  enabledSearchParameters?: string[];
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -267,6 +293,9 @@ export interface MedplumDatabaseConfig {
    */
   disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
+  minConnections?: number;
+  idleTimeoutMs?: number;
+  connectionTimeoutMs?: number;
   disableConnectionConfiguration?: boolean;
 }
 
@@ -295,6 +324,13 @@ export interface MedplumBullmqConfig {
    */
   concurrency?: number;
   /**
+   * Maximum number of jobs processed simultaneously across all workers for a queue (cluster-wide).
+   * Unlike `concurrency` (which is per-worker), this limit is enforced globally via Redis.
+   * When omitted, any previously-set global concurrency limit is removed.
+   * @see {@link https://docs.bullmq.io/guide/queues/global-concurrency}
+   */
+  globalConcurrency?: number;
+  /**
    * Duration of the job lock in milliseconds while a worker is processing.
    * @see {@link https://docs.bullmq.io/guide/workers/stalled-jobs}
    */
@@ -322,7 +358,8 @@ export type WorkerName =
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
-  | 'data-warehouse-sync';
+  | 'data-warehouse-sync'
+  | 'dicom';
 
 export interface MedplumWorkersConfig {
   /**

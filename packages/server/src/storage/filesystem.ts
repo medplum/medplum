@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, readFileSync } from 'node:fs';
-import { access, copyFile, mkdir } from 'node:fs/promises';
+import { access, copyFile, mkdir, rm } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream';
@@ -78,6 +78,11 @@ export class FileSystemStorage extends BaseBinaryStorage {
     const destinationPath = this.getPath(destinationKey);
     await this.ensureDirForFileExists(destinationPath);
     await copyFile(sourcePath, destinationPath);
+  }
+
+  async deleteFile(key: string): Promise<void> {
+    // force: true makes delete idempotent: it does not throw if the file is absent.
+    await rm(this.getPath(key), { force: true });
   }
 
   async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {

@@ -34,7 +34,7 @@ export const EncounterModal = (): JSX.Element => {
   });
 
   const handleCreateEncounter = async (): Promise<void> => {
-    if (!patient || !encounterClass || !start || !end || !status || !planDefinitionData || !practitioner) {
+    if (!patient || !encounterClass || !start || !end || !status || !practitioner) {
       showNotification({
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
@@ -157,9 +157,9 @@ export const EncounterModal = (): JSX.Element => {
 
                 <ResourceInput
                   name="plandefinition"
+                  label="Care template"
                   resourceType="PlanDefinition"
                   onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
-                  required={true}
                 />
 
                 <PlanDefinitionSummary planDefinition={planDefinitionData} />

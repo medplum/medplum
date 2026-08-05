@@ -57,6 +57,12 @@ export class GoogleCloudStorage extends BaseBinaryStorage {
     return file.createReadStream();
   }
 
+  async deleteFile(key: string): Promise<void> {
+    // ignoreNotFound makes delete idempotent: it resolves successfully if the file is absent.
+    const file = this.bucket.file(key);
+    await file.delete({ ignoreNotFound: true });
+  }
+
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
     const sourceFile = this.bucket.file(sourceKey);
     const destinationFile = this.bucket.file(destinationKey);

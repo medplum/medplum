@@ -23,12 +23,13 @@ import type {
   Reference,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum, useResource } from '@medplum/react';
+import { AttachmentDisplay, useMedplum, useResource } from '@medplum/react';
 import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import { showErrorNotification } from '../../utils/notifications';
+import { LabReportContent } from './LabReportContent';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;
@@ -355,50 +356,48 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
       <Paper h="100%">
         <Stack gap="0">
           <Stack gap="md" p="md">
-            <Stack gap="md">
-              <Stack gap="0">
-                <Text size="xl" fw={800}>
-                  {(() => {
-                    // If there are multiple codes (2 or more), show them separated by commas
-                    if (order.code?.coding && order.code.coding.length >= 2) {
-                      return order.code.coding.map((coding) => coding.display).join(', ');
-                    }
+            <Stack gap="0">
+              <Text size="xl" fw={800}>
+                {(() => {
+                  // If there are multiple codes (2 or more), show them separated by commas
+                  if (order.code?.coding && order.code.coding.length >= 2) {
+                    return order.code.coding.map((coding) => coding.display).join(', ');
+                  }
 
-                    // If there's a text field and only one code, use the text field
-                    if (order.code?.text) {
-                      return order.code.text;
-                    }
+                  // If there's a text field and only one code, use the text field
+                  if (order.code?.text) {
+                    return order.code.text;
+                  }
 
-                    // Otherwise, show the first code or fallback
-                    return order.code?.coding?.[0]?.display || 'Lab Order';
-                  })()}
-                </Text>
-                <Text size="sm" c="gray.7">
-                  {order.status === 'completed' && order.meta?.lastUpdated
-                    ? `Completed ${formatDate(order.meta.lastUpdated)} • Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
-                    : `Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`}
-                </Text>
-              </Stack>
-              <Divider />
-              <Group justify="space-between" align="center">
-                <Tabs
-                  value={activeDetailTab}
-                  onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
-                  variant="unstyled"
-                  className="pill-tabs"
-                >
-                  <Tabs.List>
-                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
-                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                    </Tabs.Tab>
-                    <Tabs.Tab value="order">Order Details</Tabs.Tab>
-                  </Tabs.List>
-                </Tabs>
-                <Badge size="lg" color={getStatusColor(order.status)} variant="light">
-                  {getStatusDisplayText(order.status)}
-                </Badge>
-              </Group>
+                  // Otherwise, show the first code or fallback
+                  return order.code?.coding?.[0]?.display || 'Lab Order';
+                })()}
+              </Text>
+              <Text size="sm" c="gray.7">
+                {order.status === 'completed' && order.meta?.lastUpdated
+                  ? `Completed ${formatDate(order.meta.lastUpdated)} • Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`
+                  : `Ordered ${formatDate(order.authoredOn || order.meta?.lastUpdated)}`}
+              </Text>
             </Stack>
+            <Divider />
+            <Group justify="space-between" align="center">
+              <Tabs
+                value={activeDetailTab}
+                onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+                variant="unstyled"
+                className="pill-tabs"
+              >
+                <Tabs.List>
+                  <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
+                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                  </Tabs.Tab>
+                  <Tabs.Tab value="order">Order Details</Tabs.Tab>
+                </Tabs.List>
+              </Tabs>
+              <Badge size="lg" color={getStatusColor(order.status)} variant="light">
+                {getStatusDisplayText(order.status)}
+              </Badge>
+            </Group>
           </Stack>
 
           <Stack gap="xs" p="md">
@@ -802,52 +801,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             )}
 
             {/* Report Tab Content - for completed items */}
-            {activeDetailTab === 'report' && primaryReport && (
-              <Stack gap="sm" mb="xl">
-                {/* Results PDF */}
-                {primaryReport?.presentedForm && primaryReport.presentedForm.length > 0 && (
-                  <>
-                    <Stack gap="lg" mb="xl">
-                      <Text fw={800} size="md" pb="0">
-                        Lab Document
-                      </Text>
-                      <Stack gap="md">
-                        {primaryReport.presentedForm.map((form, index) => (
-                          <Stack key={index} gap="xs">
-                            <div
-                              style={{
-                                height: '600px',
-                                borderRadius: '4px',
-                                overflow: 'hidden',
-                                border: '1px solid #3C3C3C',
-                              }}
-                            >
-                              <style>
-                                {`
-                              div[data-testid="attachment-iframe"] {
-                                height: 600px !important;
-                              }
-                              div[data-testid="attachment-iframe"] iframe {
-                                height: 600px !important;
-                              }
-                            `}
-                              </style>
-                              <AttachmentDisplay value={form} />
-                            </div>
-                          </Stack>
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </>
-                )}
-
-                {primaryReport.result && primaryReport.result.length > 0 && (
-                  <Stack pt="md">
-                    <DiagnosticReportDisplay value={primaryReport} />
-                  </Stack>
-                )}
-              </Stack>
-            )}
+            {activeDetailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
           </Stack>
         </Stack>
       </Paper>

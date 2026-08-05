@@ -4,6 +4,7 @@ import type { FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
+  createFhircastMessagePayload,
   createReference,
   generateId,
   getReferenceString,
@@ -99,7 +100,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj) => {
@@ -108,6 +109,72 @@ describe('FHIRcast WebSocket', () => {
             expect(obj.event['hub.event']).toBe('Patient-open');
           })
           .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
+
+    // `DiagnosticReport-select` and `syncerror` establish no context of their own, so the hub only relays them
+    test('Send `DiagnosticReport-select` and `syncerror` to subscriber', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['DiagnosticReport-select', 'syncerror'],
+            })
+          );
+
+        const pathname = new URL(res1.body['hub.channel.endpoint']).pathname;
+
+        const publishEvent = async (payload: FhircastMessagePayload): Promise<void> => {
+          const res = await request(server)
+            .post(`/fhircast/STU3/${topic}`)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send(payload);
+          expect(res).toHaveStatus(202);
+        };
+
+        await request(server)
+          .ws(pathname)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .exec(async () => {
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'DiagnosticReport-select', [
+                { key: 'report', reference: { reference: `DiagnosticReport/${generateId()}` } },
+                { key: 'select', reference: { reference: `Observation/${generateId()}` } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-select'>) => {
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('DiagnosticReport-select');
+            expect(obj.event.context).toHaveLength(2);
+          })
+          .sendJson({ id: generateId(), status: 200 })
+          .exec(async () => {
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'syncerror', [
+                { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload<'syncerror'>) => {
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('syncerror');
+            expect(obj.event.context[0].key).toBe('operationoutcome');
+          })
+          .sendJson({ id: generateId(), status: 200 })
           .close()
           .expectClosed();
       }));
@@ -242,7 +309,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
 
             // Update report 2 -- add observation
@@ -303,7 +370,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -358,7 +425,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -413,7 +480,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -430,7 +497,7 @@ describe('FHIRcast WebSocket', () => {
               .get(`/fhircast/STU3/${topic}`)
               .set('Authorization', 'Bearer ' + accessToken);
 
-            expect(res2.status).toEqual(200);
+            expect(res2).toHaveStatus(200);
           })
           // TODO: Check context
           .exec(async () => {
@@ -475,7 +542,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-update'>) => {
@@ -530,7 +597,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.body).toBeDefined();
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
@@ -587,7 +654,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res2.status).toBe(400);
+            expect(res2).toHaveStatus(400);
             expect(res2.body).toMatchObject(
               badRequest('Cannot delete a resource that is part of the original open context')
             );
@@ -634,7 +701,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               } satisfies FhircastMessagePayload<'DiagnosticReport-update'>);
-            expect(res3.status).toBe(400);
+            expect(res3).toHaveStatus(400);
             expect(res3.body).toMatchObject(badRequest('Cannot delete resource not currently in the content bundle'));
             expect(res2.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
           })
@@ -662,7 +729,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-open'>) => {
@@ -697,7 +764,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
 
             // Close report 1 -- make sure empty context
@@ -735,7 +802,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(202);
+            expect(res2).toHaveStatus(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-open'>) => {
@@ -751,7 +818,7 @@ describe('FHIRcast WebSocket', () => {
               .get(`/fhircast/STU3/${topic}`)
               .set('Authorization', 'Bearer ' + accessToken);
 
-            expect(res2.status).toEqual(200);
+            expect(res2).toHaveStatus(200);
             expect(res2.body).toMatchObject({ context: [], 'context.type': '' });
           })
           .close()

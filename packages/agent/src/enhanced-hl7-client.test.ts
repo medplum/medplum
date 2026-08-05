@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
 import { Hl7Message, TypedEventTarget } from '@medplum/core';
-import { Hl7Server, ReturnAckCategory } from '@medplum/hl7';
-import { createMockLogger, createTestEnhancedHl7Client, getFreePort } from './test-utils';
+import { getFreePort, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
+import { createMockLogger, createTestEnhancedHl7Client } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 describe('EnhancedHl7Client', () => {

@@ -106,7 +106,16 @@ export class Pointer {
       parent = value;
       key = this.tokens[i];
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-        continue;
+        throw new Error('Invalid path: ' + this.toString());
+      }
+      if (
+        parent !== null &&
+        parent !== undefined &&
+        (typeof parent === 'object' || typeof parent === 'function') &&
+        !Object.hasOwn(parent, key) &&
+        key in parent
+      ) {
+        throw new Error('Invalid inherited key: ' + key);
       }
       value = parent?.[key];
     }

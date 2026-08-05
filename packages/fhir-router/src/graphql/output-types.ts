@@ -22,6 +22,7 @@ import type {
   GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
+  GraphQLNullableOutputType,
   GraphQLOutputType,
   GraphQLResolveInfo,
 } from 'graphql';
@@ -283,10 +284,9 @@ function getOutputPropertyType(
   typeName: string,
   path: string
 ): GraphQLOutputType {
-  let graphqlType = getGraphQLOutputType(typeName);
-  if (elementDefinition.max > 1) {
-    graphqlType = new GraphQLList(new GraphQLNonNull(graphqlType));
-  }
+  const baseType = getGraphQLOutputType(typeName) as GraphQLNullableOutputType;
+  let graphqlType: GraphQLOutputType =
+    elementDefinition.max > 1 ? new GraphQLList(new GraphQLNonNull(baseType)) : baseType;
   if (elementDefinition.min !== 0 && !path.endsWith('[x]')) {
     graphqlType = new GraphQLNonNull(graphqlType);
   }

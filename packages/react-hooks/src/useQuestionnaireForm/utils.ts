@@ -8,6 +8,7 @@ import {
   append,
   capitalize,
   deepClone,
+  deepEquals,
   evalFhirPathTyped,
   getExtension,
   getReferenceString,
@@ -62,6 +63,7 @@ export const QUESTIONNAIRE_CALCULATED_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/
 export const QUESTIONNAIRE_SIGNATURE_REQUIRED_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`;
 export const QUESTIONNAIRE_SIGNATURE_RESPONSE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`;
 export const QUESTIONNAIRE_HIDDEN_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-hidden`;
+export const QUESTIONNAIRE_OPTION_EXCLUSIVE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-optionExclusive`;
 
 /**
  * Returns true if the item is a choice question.
@@ -350,6 +352,55 @@ export function getNewMultiSelectValues(
   return result;
 }
 
+/**
+ * Applies the `questionnaire-optionExclusive` rule to an answer change.
+ *
+ * Given the previous and newly requested answers for an item, enforces that selecting an answer
+ * option marked exclusive clears every other answer, and selecting any other option clears a
+ * previously selected exclusive answer. Returns the new answers unchanged if the item has no
+ * exclusive options or the change only removed answers.
+ *
+ * See: https://hl7.org/fhir/extensions/StructureDefinition-questionnaire-optionExclusive.html
+ *
+ * @param item - The questionnaire item being answered.
+ * @param previousAnswers - The item's answers before the change.
+ * @param newAnswers - The answers requested by the change.
+ * @returns The reconciled answers.
+ */
+export function applyOptionExclusive(
+  item: QuestionnaireItem,
+  previousAnswers: QuestionnaireResponseItemAnswer[] | undefined,
+  newAnswers: QuestionnaireResponseItemAnswer[]
+): QuestionnaireResponseItemAnswer[] {
+  const exclusiveValues: TypedValue[] = [];
+  for (const option of item.answerOption ?? EMPTY) {
+    if (getExtension(option, QUESTIONNAIRE_OPTION_EXCLUSIVE_URL)?.valueBoolean === true) {
+      const optionValue = getItemAnswerOptionValue(option);
+      if (optionValue?.value !== undefined) {
+        exclusiveValues.push(optionValue);
+      }
+    }
+  }
+  if (exclusiveValues.length === 0) {
+    return newAnswers;
+  }
+
+  const isExclusive = (answer: QuestionnaireResponseItemAnswer): boolean => {
+    const answerValue = getResponseItemAnswerValue(answer);
+    return !!answerValue && exclusiveValues.some((exclusiveValue) => deepEquals(exclusiveValue, answerValue));
+  };
+
+  const added = newAnswers.filter((answer) => !previousAnswers?.some((prev) => deepEquals(prev, answer)));
+  const addedExclusive = added.find(isExclusive);
+  if (addedExclusive) {
+    return [addedExclusive];
+  }
+  if (added.some((answer) => !isExclusive(answer))) {
+    return newAnswers.filter((answer) => !isExclusive(answer));
+  }
+  return newAnswers;
+}
+
 function getByLinkId(
   responseItems: QuestionnaireResponseItem[] | undefined,
   linkId: string
@@ -611,6 +662,5 @@ export function getItemEnableWhenValueAnswer(enableWhen: QuestionnaireItemEnable
 
 export function getResponseItemAnswerValue(answer: QuestionnaireResponseItemAnswer): TypedValue | undefined {
   return getTypedPropertyValueWithoutSchema({ type: 'QuestionnaireResponseItemAnswer', value: answer }, 'value') as
-    | TypedValue
-    | undefined;
+    TypedValue | undefined;
 }

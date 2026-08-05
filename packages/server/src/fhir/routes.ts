@@ -30,7 +30,7 @@ import { appointmentCancelHandler } from './operations/cancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
-import { claimSubmitGetHandler, claimSubmitPostHandler } from './operations/claimsubmit';
+import { claimSubmitPostByIdHandler, claimSubmitPostHandler } from './operations/claimsubmit';
 import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
@@ -38,6 +38,10 @@ import { codeSystemValidateCodeHandler } from './operations/codesystemvalidateco
 import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { appointmentConfirmHandler } from './operations/confirm';
+import {
+  coverageEligibilitySubmitPostByIdHandler,
+  coverageEligibilitySubmitPostHandler,
+} from './operations/coverageeligibilityrequestsubmit';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
 import { getColumnStatisticsHandler } from './operations/db-column-statistics';
@@ -333,10 +337,13 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Claim/$export', claimExportPostHandler);
   router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
-  // Claim $submit operation (dispatches to the custom operation configured via CLAIM_SUBMIT_OPERATION).
-  // POST passes the Claim via the 'resource' input parameter; GET reads the Claim from the URL.
+  // Claim $submit operation (dispatches to the configured claim or prior auth custom operation).
   router.add('POST', '/Claim/$submit', claimSubmitPostHandler);
-  router.add('GET', '/Claim/:id/$submit', claimSubmitGetHandler);
+  router.add('POST', '/Claim/:id/$submit', claimSubmitPostByIdHandler);
+
+  // CoverageEligibilityRequest $submit operation (dispatches to the configured eligibility custom operation).
+  router.add('POST', '/CoverageEligibilityRequest/$submit', coverageEligibilitySubmitPostHandler);
+  router.add('POST', '/CoverageEligibilityRequest/:id/$submit', coverageEligibilitySubmitPostByIdHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);

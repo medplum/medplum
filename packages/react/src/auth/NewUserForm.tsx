@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Box, Checkbox, Divider, Flex, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import { Anchor, Box, Checkbox, Divider, Flex, Stack, Text, TextInput } from '@mantine/core';
 import type { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
@@ -12,6 +12,7 @@ import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import { PasswordInput } from '../PasswordInput/PasswordInput';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
@@ -21,6 +22,7 @@ export interface NewUserFormProps {
   readonly googleClientId?: string;
   readonly recaptchaSiteKey?: string;
   readonly children?: ReactNode;
+  readonly onSignIn?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
@@ -137,6 +139,23 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           pb="xs"
         />
         <SubmitButton fullWidth>Register Account</SubmitButton>
+        {props.onSignIn && (
+          <Text
+            size="sm"
+            mt="lg"
+            c="dimmed"
+            ta="center"
+            data-dashlane-ignore="true"
+            data-lp-ignore="true"
+            data-no-autofill="true"
+            data-form-type="navigation"
+          >
+            Already have an account?{' '}
+            <Anchor component="button" type="button" onClick={props.onSignIn}>
+              Sign In
+            </Anchor>
+          </Text>
+        )}
         <Text c="dimmed" size="xs" pt="lg" ta="center">
           By clicking "Register Account" you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>

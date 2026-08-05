@@ -8,7 +8,7 @@ if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
   exit 1
 fi
 
-GITHUB_SHA="${GITHUB_SHA:-$(git rev-parse --short HEAD)}"
+GITHUB_SHA="${GITHUB_SHA:-$(git rev-parse HEAD)}"
 if [[ -z "${GITHUB_SHA}" ]]; then
   echo "GITHUB_SHA is missing"
   exit 1
@@ -79,4 +79,22 @@ fi
 if [[ "$IS_RELEASE" == "true" ]]; then
   SERVER_TAGS="$SERVER_TAGS --tag $SERVER_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $SERVER_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
 fi
-docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS --progress=plain --push .
+
+METADATA_FILE=$(mktemp)
+docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS --progress=plain --push --metadata-file "$METADATA_FILE" .
+
+SERVER_DOCKER_IMAGE_DIGEST=$(jq -r '."containerimage.digest"' "$METADATA_FILE")
+rm -f "$METADATA_FILE"
+if [[ -z "${SERVER_DOCKER_IMAGE_DIGEST}" || "${SERVER_DOCKER_IMAGE_DIGEST}" == "null" ]]; then
+  echo "Failed to determine pushed Docker image digest"
+  exit 1
+fi
+
+export SERVER_DOCKER_IMAGE_DIGEST
+export SERVER_DOCKER_IMAGE="${SERVER_DOCKERHUB_REPOSITORY}@${SERVER_DOCKER_IMAGE_DIGEST}"
+
+# Persist values for subsequent GitHub Actions steps in the same job.
+if [[ -n "${GITHUB_ENV}" ]]; then
+  echo "SERVER_DOCKER_IMAGE_DIGEST=${SERVER_DOCKER_IMAGE_DIGEST}" >> "${GITHUB_ENV}"
+  echo "SERVER_DOCKER_IMAGE=${SERVER_DOCKER_IMAGE}" >> "${GITHUB_ENV}"
+fi

@@ -3,10 +3,11 @@
 import type { WithId } from '@medplum/core';
 import { allOk, arrayify, badRequest, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinitionParameter, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { OperationDefinitionParameter, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
-import { getActiveRateLimitKey, getFhirQuotaConfig } from '../fhirquota';
+import { getActiveRateLimitKey, getProjectFhirQuota, getUserFhirQuota } from '../fhirquota';
+import type { SystemRepository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -125,11 +126,16 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   }
 
   const consumedValues = results[0][1] as (string | null)[];
-  const { userLimit, projectLimit } = getFhirQuotaConfig(ctx.authState);
+  const userConfigsByRef = await loadMembershipUserConfigurations(ctx.repo.getSystemRepo(), memberships);
+  const projectLimit = getProjectFhirQuota(project);
 
   const membershipResults = memberships.map((membership, i) => {
     const consumed = consumedValues[i];
     const pttl = results[i + 1][1] as number;
+    const userConfig = membership.userConfiguration?.reference
+      ? userConfigsByRef.get(membership.userConfiguration.reference)
+      : undefined;
+    const userLimit = getUserFhirQuota(project, userConfig);
     return {
       membershipId: membership.id,
       profile: membership.profile,
@@ -147,6 +153,35 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
       membership: membershipResults,
     }),
   ];
+}
+
+async function loadMembershipUserConfigurations(
+  systemRepo: SystemRepository,
+  memberships: WithId<ProjectMembership>[]
+): Promise<Map<string, UserConfiguration>> {
+  const configByRef = new Map<string, Reference<UserConfiguration>>();
+  for (const membership of memberships) {
+    const ref = membership.userConfiguration;
+    if (ref?.reference) {
+      configByRef.set(ref.reference, ref);
+    }
+  }
+
+  const result = new Map<string, UserConfiguration>();
+  if (configByRef.size === 0) {
+    return result;
+  }
+
+  const configRefs = Array.from(configByRef.values());
+  const reads = await systemRepo.readReferences<UserConfiguration>(configRefs);
+  for (let i = 0; i < configRefs.length; i++) {
+    const ref = configRefs[i].reference;
+    const resource = reads[i];
+    if (ref && !(resource instanceof Error)) {
+      result.set(ref, resource);
+    }
+  }
+  return result;
 }
 
 function buildQuotaStatus(consumed: string | null, pttl: number, limit: number): Record<string, number> | undefined {
