@@ -12,6 +12,7 @@ import {
   formatMinutesOfDay,
   fromWeeklyAvailability,
   hasAnyAvailableDay,
+  isTimeQuery,
   MINUTES_PER_DAY,
   nearestOption,
   nextDayOfWeek,
@@ -149,12 +150,27 @@ describe('ScheduleAvailabilityEditor utils', () => {
     expect(weekly.sat.available).toBe(false);
   });
 
-  test('toWeeklyAvailability reads a window ending at its start time as a full day', () => {
+  test('toWeeklyAvailability reads a window ending at its start time as 24 hours from that start', () => {
+    // Scheduling reads an end at or before the start as running into the next
+    // day, so 9 AM to 9 AM is Monday morning through Tuesday morning, not a
+    // Monday that starts at midnight.
     const weekly = toWeeklyAvailability([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '09:00:00' },
     ]);
 
+    expect(weekly.mon).toEqual({ available: true, ranges: [{ start: 540, end: MINUTES_PER_DAY }] });
+    expect(weekly.tue).toEqual({ available: true, ranges: [{ start: 0, end: 540 }] });
+  });
+
+  test('toWeeklyAvailability reads midnight to midnight as the one full day it is', () => {
+    // The one start for which 24 hours falls inside a single day, and how
+    // around-the-clock availability is written without the allDay flag.
+    const weekly = toWeeklyAvailability([
+      { daysOfWeek: ['mon'], availableStartTime: '00:00:00', availableEndTime: '00:00:00' },
+    ]);
+
     expect(weekly.mon).toEqual({ available: true, ranges: [{ start: 0, end: MINUTES_PER_DAY }] });
+    expect(weekly.tue.available).toBe(false);
   });
 
   test('toWeeklyAvailability sorts and merges blocks the editor cannot show side by side', () => {
@@ -293,6 +309,26 @@ describe('ScheduleAvailabilityEditor utils', () => {
     expect(filterTimeOptions(options, '930', 540).map(formatMinutesOfDay)).toEqual(['9:30 AM', '9:30 PM']);
     expect(filterTimeOptions(options, '9:30 pm', 540).map(formatMinutesOfDay)).toEqual(['9:30 PM']);
     expect(filterTimeOptions(options, '930a', 540).map(formatMinutesOfDay)).toEqual(['9:30 AM']);
+  });
+
+  test('filterTimeOptions reads a leading zero as padding, not as an hour', () => {
+    const options = timeOptions(0, MINUTES_PER_DAY);
+
+    // There is no hour 0 on a 12 hour clock, so a leading zero can only be
+    // padding: "0930" is 9:30, the way a clock face writes it.
+    expect(filterTimeOptions(options, '0930', 540).map(formatMinutesOfDay)).toEqual(['9:30 AM', '9:30 PM']);
+    expect(filterTimeOptions(options, '09', 540)[0]).toBe(540);
+    expect(typedTimes('0930').map(formatMinutesOfDay)).toEqual(['9:30 AM', '9:30 PM']);
+  });
+
+  test('isTimeQuery tells a query that narrows the list from one that does not', () => {
+    // Narrowing to nothing is still narrowing; naming no time at all is not.
+    expect(isTimeQuery('9')).toBe(true);
+    expect(isTimeQuery('0930')).toBe(true);
+    expect(isTimeQuery('99')).toBe(true);
+    expect(isTimeQuery('')).toBe(false);
+    expect(isTimeQuery('noon')).toBe(false);
+    expect(isTimeQuery('0')).toBe(false);
   });
 
   test('filterTimeOptions reads a leading 1 as both an hour and a prefix', () => {
@@ -667,6 +703,30 @@ describe('ScheduleAvailabilityEditor component', () => {
     // Typed something no time can match.
     await typeTimeAndLeave('schedule-availability-end-mon-0', '99');
     expect(screen.getByTestId('schedule-availability-end-mon-0')).toHaveValue('5:00 PM');
+  });
+
+  test('leaves the time alone when what was typed names no time at all', async () => {
+    setup(scheduleWith(availableTime('mon', '09:00:00', '17:00:00')));
+
+    // These narrow the list to nothing rather than to no time in particular, so
+    // there is no highlighted time to take. Taking the top of an unnarrowed list
+    // would move the row to the earliest hour still free that day.
+    for (const query of ['noon', 'abc', '0', 'a']) {
+      await typeTimeAndLeave('schedule-availability-end-mon-0', query);
+      expect(screen.getByTestId('schedule-availability-end-mon-0')).toHaveValue('5:00 PM');
+    }
+  });
+
+  test('takes a time typed with a leading zero when the field is tabbed out of', async () => {
+    const { onSave } = setup(scheduleWith(availableTime('mon', '09:00:00', '17:00:00')));
+
+    await typeTimeAndLeave('schedule-availability-end-mon-0', '0630p');
+    expect(screen.getByTestId('schedule-availability-end-mon-0')).toHaveValue('6:30 PM');
+
+    await save();
+    expect(resolveAvailability(onSave.mock.calls[0][0], service)).toEqual([
+      { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '18:30:00' },
+    ]);
   });
 
   test('a typed time outside the bounds of its row is not taken', async () => {

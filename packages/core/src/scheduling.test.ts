@@ -220,6 +220,26 @@ describe('availability overrides', () => {
     expect(resolveAvailability(updated, service)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
   });
 
+  test('matches a service reference that carries a version suffix', () => {
+    // Scheduling matches the `service` reference on resourceType and id, so a versioned reference names the
+    // same service. Missing it here would append a second SchedulingParameters extension for that service,
+    // which the scheduling operations reject.
+    const schedule = scheduleWith(availableTime('mon', '09:00:00', '17:00:00'));
+    schedulingParameters(schedule)[0].extension = schedulingParameters(schedule)[0].extension?.map((subextension) =>
+      subextension.url === 'service'
+        ? { url: 'service', valueReference: { reference: 'HealthcareService/service-1/_history/2' } }
+        : subextension
+    );
+
+    expect(hasAvailabilityOverride(schedule, service)).toBe(true);
+
+    const updated = setAvailabilityOverride(schedule, service, [{ daysOfWeek: ['tue'], allDay: true }]);
+    expect(schedulingParameters(updated, 'service-1/_history/2')).toHaveLength(1);
+    expect(schedule.extension).toHaveLength(1);
+    expect(updated.extension).toHaveLength(1);
+    expect(resolveAvailability(updated, service)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
+  });
+
   test('creates service-specific SchedulingParameters when missing', () => {
     const schedule: Schedule = {
       resourceType: 'Schedule',

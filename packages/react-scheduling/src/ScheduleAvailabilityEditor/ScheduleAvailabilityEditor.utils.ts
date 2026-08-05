@@ -160,13 +160,15 @@ export function toWeeklyAvailability(availableTime: HealthcareServiceAvailableTi
     for (const day of days) {
       if (end > start) {
         collected[day].push({ start, end });
-      } else if (end === start) {
-        // Scheduling reads a window ending at its start time as a full 24 hours.
-        collected[day].push({ start: 0, end: MINUTES_PER_DAY });
       } else {
+        // Scheduling reads an end at or before the start as running into the
+        // following day, so an end equal to the start is a full 24 hours from
+        // the start rather than a day that begins at midnight. Only 00:00 to
+        // 00:00 falls entirely within the one day.
+        const wrapEnd = end === start ? start : end;
         collected[day].push({ start, end: MINUTES_PER_DAY });
-        if (end > 0) {
-          collected[nextDayOfWeek(day)].push({ start: 0, end });
+        if (wrapEnd > 0) {
+          collected[nextDayOfWeek(day)].push({ start: 0, end: wrapEnd });
         }
       }
     }
@@ -335,8 +337,10 @@ function parseTimeQuery(query: string): TimeQuery[] {
         hour >= 1 &&
         hour <= 12 &&
         minutes.length <= 2 &&
-        // A leading "0" or "1" is the start of a one digit hour, not a two digit one.
-        (hourDigits === 1 || hour >= 10)
+        // A leading "1" is the start of a one digit hour as readily as a two
+        // digit one, so "12" is both. A leading "0" can only be padding, since
+        // there is no hour 0 on a 12 hour clock, so "0930" is 9:30.
+        (hourDigits === 1 || hour >= 10 || digits.startsWith('0'))
       );
     })
     .map((hourDigits) => {
@@ -344,6 +348,19 @@ function parseTimeQuery(query: string): TimeQuery[] {
       return { hour: Number(digits.slice(0, hourDigits)), minutes, meridiem, rank: rankMinutes(minutes) };
     })
     .sort((a, b) => a.rank - b.rank);
+}
+
+/**
+ * Returns whether what has been typed names a time at all.
+ *
+ * Text that names none, such as `noon` or a bare `0`, leaves the list unnarrowed, which is not the same as the
+ * list having nothing to offer. Callers that act on a query when the field is left need to tell the two apart,
+ * or they would take the first time on an unnarrowed list as though it had been asked for.
+ * @param query - What has been typed, e.g. `930p`
+ * @returns True when the query narrows the times on offer
+ */
+export function isTimeQuery(query: string): boolean {
+  return parseTimeQuery(query).length > 0;
 }
 
 function matchesTimeQuery(minutes: number, query: TimeQuery): boolean {

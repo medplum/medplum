@@ -92,6 +92,7 @@ function DayRow(props: DayRowProps): JSX.Element {
   // Mantine greys out a Switch it has disabled, which reads as "off" rather than
   // "not editable", so a day that is available keeps its colour.
   const switchStyles = readOnly && available ? AVAILABLE_READ_ONLY_SWITCH_STYLES : undefined;
+  const canAdd = canAddRange(ranges);
 
   return (
     <>
@@ -117,7 +118,6 @@ function DayRow(props: DayRowProps): JSX.Element {
       {available ? (
         ranges.map((range, index) => {
           const last = index === ranges.length - 1;
-          const canAdd = canAddRange(ranges);
           return (
             // Blocks are kept sorted and non-overlapping, so a row's position
             // in the day is a stable enough identity for it.
@@ -251,8 +251,10 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
   // service-level default, so the editor opens showing the hours currently in
   // effect rather than a blank week.
   const [overriding, setOverriding] = useState(() => (schedule ? hasAvailabilityOverride(schedule, service) : true));
+  // `resolveAvailability` falls back to the service default on its own, and
+  // reads the service alone when there is no Schedule, so it covers both modes.
   const [weekly, setWeekly] = useState<WeeklyAvailability>(() =>
-    toWeeklyAvailability(schedule ? resolveAvailability(schedule, service) : service.availableTime)
+    toWeeklyAvailability(resolveAvailability(schedule, service))
   );
   const [saving, setSaving] = useState(false);
   // The flash on an auto-moved end time is only visible, so the same change is

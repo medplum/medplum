@@ -68,11 +68,24 @@ export function hasSchedulingParameters(resource: Schedule | HealthcareService):
   return !!getExtension(resource, SchedulingParametersURI);
 }
 
+// Scheduling matches a `service` reference on resourceType and id, so a stored reference carrying a version
+// suffix still names the service. Match the same way: a reference the server honours but this module missed
+// would read as belonging to another service, and `setAvailabilityOverride` would then add a second
+// SchedulingParameters extension for it, which the scheduling operations reject outright.
+function isServiceReference(reference: Reference | undefined, serviceReference: string): boolean {
+  if (!reference?.reference) {
+    return false;
+  }
+  const [resourceType, id] = reference.reference.split('/');
+  return `${resourceType}/${id}` === serviceReference;
+}
+
 function matchesServiceSchedulingParameters(extension: Extension, serviceReference: string): boolean {
   return (
     extension.url === SchedulingParametersURI &&
     (extension.extension?.some(
-      (subextension) => subextension.url === 'service' && subextension.valueReference?.reference === serviceReference
+      (subextension) =>
+        subextension.url === 'service' && isServiceReference(subextension.valueReference, serviceReference)
     ) ??
       false)
   );

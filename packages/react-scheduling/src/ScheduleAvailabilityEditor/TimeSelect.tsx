@@ -7,6 +7,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import {
   filterTimeOptions,
   formatMinutesOfDay,
+  isTimeQuery,
   nearestOption,
   timeOptions,
   typedTimes,
@@ -131,8 +132,11 @@ export const TimeSelect = forwardRef<TimeSelectHandle, TimeSelectProps>(function
   // Tabbing to the next field is a common way to finish with this one, so a
   // typed time is taken rather than dropped. What gets taken is whatever the
   // list has highlighted, which is the same time Enter would have submitted.
+  // Only a query that names a time counts: one that names none leaves the list
+  // unnarrowed, and taking the top of it would silently move the value to the
+  // earliest time of the day.
   function handleBlur(): void {
-    if (!submitting.current && typing && query) {
+    if (!submitting.current && typing && isTimeQuery(query)) {
       const highlighted = options[combobox.getSelectedOptionIndex()] ?? options[0];
       if (highlighted !== undefined) {
         onChange(highlighted);
@@ -144,7 +148,7 @@ export const TimeSelect = forwardRef<TimeSelectHandle, TimeSelectProps>(function
   }
 
   return (
-    // A full day holds 289 options, and a week of them adds up, so closed
+    // A full day holds 97 options, and a week of them adds up, so closed
     // dropdowns are unmounted rather than left hidden in the DOM.
     <Combobox store={combobox} keepMounted={false} onOptionSubmit={(selected) => handleSubmit(Number(selected))}>
       <Combobox.Target>
