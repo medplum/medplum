@@ -23,17 +23,21 @@ jobs:
       considered: ${{ steps.list.outputs.considered }}
       skipped-count: ${{ steps.list.outputs.skipped-count }}
     steps:
-      # Sparse-checkout of the base ref only, just to read the vouched list.
-      # Path matches the vouch action's own `vouched-file` default, which the
-      # check jobs rely on, so the two can't disagree about who's vouched.
+      # Sparse-checkout of the base ref only, so `vouch check` below has a
+      # vouched list to read. Path matches the vouch action's own
+      # `vouched-file` default, which the check jobs rely on.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/VOUCHED.td
 
+      # Puts the `vouch` CLI on PATH (installing Nushell if needed), so the
+      # prefilter can ask the tool who's vouched instead of parsing
+      # VOUCHED.td here and drifting from how the check jobs read it.
+      - uses: mitchellh/vouch/action/setup-vouch@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
+
       # Most of the open-PR backlog belongs to maintainers and other vouched
       # contributors, whose PRs the check can only ever leave alone. Dropping
-      # them here roughly halves the matrix. Denounced entries (leading "-")
-      # are deliberately *not* dropped: those are the ones that do get closed.
+      # them here roughly halves the matrix.
       - name: List target PRs
         id: list
         env:
@@ -53,23 +57,32 @@ jobs:
               | jq -s -c '.')
             SKIPPED="[]"
           else
-            # Same normalization the vouch tool applies to this file: strip
-            # comments and any platform prefix (github:user), lowercase, and
-            # ignore denounced entries.
-            VOUCHED=$(awk '!/^[[:space:]]*#/ && NF && $1 !~ /^-/ {
-                sub(/^[A-Za-z0-9_-]+:/, "", $1); print tolower($1)
-              }' .github/VOUCHED.td | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
-            echo "Vouched authors: $VOUCHED"
+            # `vouch check` resolves .github/VOUCHED.td from the repo root on
+            # its own, the same default the check jobs use. Assert it landed
+            # rather than quietly prefiltering nothing if checkout missed it.
+            test -f .github/VOUCHED.td
 
-            # "app/" is how the gh CLI renders bot logins.
-            PARTITION=$(gh pr list --repo "$REPO" --state open --limit 1000 --json number,author \
-              | jq -c --argjson vouched "$VOUCHED" '
-                ($vouched | INDEX(.)) as $set
-                | [.[] | {number, login: (.author.login | ascii_downcase | sub("^app/"; ""))}]
-                | {
-                    numbers: (map(select($set[.login] == null) | .number) | sort),
-                    skipped: (map(select($set[.login] != null) | .number) | sort)
-                  }')
+            CANDIDATES=$(gh pr list --repo "$REPO" --state open --limit 1000 --json number,author)
+
+            # One `vouch check` per distinct author, not per PR. It exits 0
+            # for vouched, 1 for denounced and 2 for unknown -- only the
+            # first is safe to skip, since denounced PRs are precisely the
+            # ones that get closed. Its own output is the audit trail for
+            # what this filter decided.
+            VOUCHED="[]"
+            for LOGIN in $(jq -r '[.[].author.login] | unique | .[]' <<<"$CANDIDATES"); do
+              if vouch check "$LOGIN"; then
+                VOUCHED=$(jq -c --arg login "$LOGIN" '. + [$login]' <<<"$VOUCHED")
+              fi
+            done
+
+            PARTITION=$(jq -c --argjson vouched "$VOUCHED" '
+              ($vouched | INDEX(.)) as $set
+              | [.[] | {number, login: .author.login}]
+              | {
+                  numbers: (map(select($set[.login] == null) | .number) | sort),
+                  skipped: (map(select($set[.login] != null) | .number) | sort)
+                }' <<<"$CANDIDATES")
             NUMBERS=$(jq -c '.numbers' <<<"$PARTITION")
             SKIPPED=$(jq -c '.skipped' <<<"$PARTITION")
           fi
