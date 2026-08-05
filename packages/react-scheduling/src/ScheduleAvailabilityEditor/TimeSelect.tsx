@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Combobox, Group, InputBase, useCombobox } from '@mantine/core';
+import { Combobox, Group, InputBase, Text, useCombobox } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -195,7 +195,10 @@ export const TimeSelect = forwardRef<TimeSelectHandle, TimeSelectProps>(function
                 ref={option === scrollTo ? activeOptionRef : undefined}
               >
                 <Group justify="space-between" gap="xs" wrap="nowrap">
-                  <span>{formatMinutesOfDay(option)}</span>
+                  {/* `inherit` keeps the option at the size Combobox sets rather than Text's own. */}
+                  <Text span inherit>
+                    {formatMinutesOfDay(option)}
+                  </Text>
                   {option === value && <IconCheck size={14} stroke={1.8} />}
                 </Group>
               </Combobox.Option>

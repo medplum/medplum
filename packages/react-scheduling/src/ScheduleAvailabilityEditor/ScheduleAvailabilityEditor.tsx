@@ -209,7 +209,8 @@ interface CommonProps {
  * Props for editing the availability override a Schedule holds for one service.
  * @param schedule - The Schedule holding the availability override. Must have exactly one actor, as scheduling requires.
  * @param onSave - Called with the updated Schedule when the user saves. The caller performs the write, and may return a
- * Promise to keep the save button in its pending state until the write settles.
+ * Promise to keep the save button in its pending state until the write settles. A rejection only ends that state, so
+ * telling the user the write failed is the caller's to do.
  */
 export interface ScheduleOverrideEditorProps extends CommonProps {
   readonly schedule: Schedule;
@@ -220,7 +221,8 @@ export interface ScheduleOverrideEditorProps extends CommonProps {
  * Props for editing a service's own default hours, in place of any one calendar's override.
  * @param schedule - Omitted, which is what selects this mode.
  * @param onSave - Called with the updated HealthcareService when the user saves. The caller performs the write, and may
- * return a Promise to keep the save button in its pending state until the write settles.
+ * return a Promise to keep the save button in its pending state until the write settles. A rejection only ends that
+ * state, so telling the user the write failed is the caller's to do.
  */
 export interface ServiceDefaultEditorProps extends CommonProps {
   readonly schedule?: undefined;
@@ -259,20 +261,23 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
   );
   const [saving, setSaving] = useState(false);
   // The flash on an auto-moved end time is only visible, so the same change is
-  // also announced.
-  const [announcement, setAnnouncement] = useState('');
+  // also announced. Carried with a counter because the same message twice over
+  // is the same string, which React renders as no change at all: the live region
+  // never mutates and nothing is read out. Keying the text on the counter
+  // replaces the text node instead, which the region does announce.
+  const [announcement, setAnnouncement] = useState({ message: '', id: 0 });
   const reasonId = useId();
 
   const serviceName = service.name ?? 'this visit service type';
 
   // Neither mode can express a week with no hours in it, and each fails in its
-  // own direction. An override with zero available days serializes to
-  // `{ url: 'availability', extension: [] }`, which fails FHIR constraint ext-1
-  // on write. A service with zero available days has no `availableTime` at all,
-  // which scheduling reads as unrestricted rather than unavailable, so that
-  // save would quietly do the opposite of what the emptied form shows. Both
-  // need at least one available day; a week that really is around the clock is
-  // entered as one, day by day.
+  // own direction. An override with zero available days has no valid extension
+  // form, so `setScheduleAvailability` refuses it rather than write something
+  // that fails FHIR constraint ext-1. A service with zero available days has no
+  // `availableTime` at all, which scheduling reads as unrestricted rather than
+  // unavailable, so that save would quietly do the opposite of what the emptied
+  // form shows. Both need at least one available day; a week that really is
+  // around the clock is entered as one, day by day.
   const emptyWeek = (editingDefault || overriding) && !hasAnyAvailableDay(weekly);
   const emptyWeekReason = editingDefault
     ? `Default availability must include at least one available day. Clearing every day would leave ${serviceName} ` +
@@ -303,6 +308,11 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
       } else {
         await props.onSave({ ...service, availableTime: fromWeeklyAvailability(weekly) });
       }
+    } catch (err) {
+      // The caller owns the write, and so owns telling the user it failed. All
+      // this has to do is leave the pending state without a rejection escaping
+      // an event handler that has nowhere to hand it.
+      console.error(err);
     } finally {
       setSaving(false);
     }
@@ -369,12 +379,12 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
               value={weekly[day]}
               readOnly={!overriding}
               onChange={(value) => setWeekly((prev) => ({ ...prev, [day]: value }))}
-              onAnnounce={setAnnouncement}
+              onAnnounce={(message) => setAnnouncement((previous) => ({ message, id: previous.id + 1 }))}
             />
           ))}
         </Box>
         <VisuallyHidden role="status" aria-live="polite" data-testid="schedule-availability-announcement">
-          {announcement}
+          <Fragment key={announcement.id}>{announcement.message}</Fragment>
         </VisuallyHidden>
         <Stack gap="sm" mt="xl">
           {!editingDefault && (

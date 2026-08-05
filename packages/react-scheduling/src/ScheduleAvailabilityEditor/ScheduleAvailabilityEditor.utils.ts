@@ -34,7 +34,7 @@ export const DAY_LABELS: Record<DayOfWeek, string> = {
 export const DAY_DISPLAY_ORDER: readonly DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 /**
- * A block of hours, as minutes from midnight. `end` is exclusive and may be
+ * A block of time, as minutes from midnight. `end` is exclusive and may be
  * `MINUTES_PER_DAY`, meaning the block runs to the end of the day.
  */
 export interface MinuteRange {
@@ -164,11 +164,11 @@ export function toWeeklyAvailability(availableTime: HealthcareServiceAvailableTi
         // Scheduling reads an end at or before the start as running into the
         // following day, so an end equal to the start is a full 24 hours from
         // the start rather than a day that begins at midnight. Only 00:00 to
-        // 00:00 falls entirely within the one day.
-        const wrapEnd = end === start ? start : end;
+        // 00:00 falls entirely within the one day, which is the case the
+        // following check leaves without a second half.
         collected[day].push({ start, end: MINUTES_PER_DAY });
-        if (wrapEnd > 0) {
-          collected[nextDayOfWeek(day)].push({ start: 0, end: wrapEnd });
+        if (end > 0) {
+          collected[nextDayOfWeek(day)].push({ start: 0, end });
         }
       }
     }
