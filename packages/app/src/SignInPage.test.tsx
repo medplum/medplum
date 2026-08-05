@@ -92,6 +92,20 @@ describe('SignInPage', () => {
     });
   });
 
+  test('Register link hidden on project=new re-auth screen', async () => {
+    getConfig().registerEnabled = true;
+    setup('/signin?project=new', new MockClient({ profile: DrAliceSmith }));
+
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
+  });
+
+  test('Register link hidden on plain /signin when logged in', async () => {
+    getConfig().registerEnabled = true;
+    setup('/signin', new MockClient({ profile: DrAliceSmith }));
+
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
+  });
+
   test('Register disabled', async () => {
     getConfig().registerEnabled = false;
     setup();
