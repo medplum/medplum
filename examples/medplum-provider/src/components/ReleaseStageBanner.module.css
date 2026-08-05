@@ -9,6 +9,15 @@
   font-weight: 600;
 }
 
+/* Alpha keeps the more eye-catching violet; blue above is the beta and default hue. */
+.banner.alpha {
+  background-color: light-dark(var(--mantine-color-violet-1), var(--mantine-color-violet-9));
+}
+
+.pill.alpha {
+  background-color: light-dark(var(--mantine-color-violet-4), var(--mantine-color-violet-2));
+}
+
 .content {
   flex-grow: 1;
 }

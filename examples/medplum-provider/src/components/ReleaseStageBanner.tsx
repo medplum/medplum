@@ -21,9 +21,9 @@ interface ReleaseStageBannerProps extends BoxProps {
 export function ReleaseStageBanner(props: ReleaseStageBannerProps): JSX.Element {
   const { stage, children, className, ...boxProps } = props;
   return (
-    <Box p="sm" {...boxProps} className={cx(classes.banner, className)}>
+    <Box p="sm" {...boxProps} className={cx(classes.banner, classes[stage], className)}>
       <Group gap="md">
-        <Pill className={classes.pill}>{STAGE_LABELS[stage]}</Pill>
+        <Pill className={cx(classes.pill, classes[stage])}>{STAGE_LABELS[stage]}</Pill>
         <span className={classes.content}>{children}</span>
         <Button variant="transparent" component={DocsLink} path="compliance/alpha-beta">
           <IconExternalLink size={20} />
