@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Divider, Stack, Text, TextInput } from '@mantine/core';
+import { Stack, Text, TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -9,8 +9,8 @@ import { ResourceInput } from '../../ResourceInput/ResourceInput';
 
 /**
  * Props for the ThreadMessageForm component — the shared Patient + Practitioner + Topic fields
- * (plus the trailing divider before the action button) used by the New Message and Message
- * Settings dialogs.
+ * used by the New Message and Message Settings dialogs. The form owns the spacing between its
+ * own sections, so call sites drop it in without a wrapping layout element.
  * The patient and practitioner inputs are uncontrolled: the `default*` props seed them on
  * mount only, and later edits are reported through the `on*Change` callbacks. Mount the form
  * only once the defaults are known (both dialogs mount it after the thread is resolved).
@@ -36,7 +36,7 @@ export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element =>
   const { defaultPractitioners, onPractitionersChange, topic, onTopicChange, defaultPatient, onPatientChange } = props;
   const allowPatientSelection = props.allowPatientSelection ?? false;
   return (
-    <>
+    <Stack gap="lg">
       <Stack gap={0}>
         <Text fw={500}>Patient</Text>
 
@@ -74,8 +74,6 @@ export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element =>
 
         <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => onTopicChange(e.target.value)} />
       </Stack>
-
-      <Divider pt="xs" />
-    </>
+    </Stack>
   );
 };
