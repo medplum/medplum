@@ -125,6 +125,11 @@ export const NoActions = (): JSX.Element => (
 
 export const FlushBody = (): JSX.Element => (
   <ModalStory title="Prescription" size="xl" padding={0}>
-    <iframe title="Prescription" srcDoc="<p>Embedded content, flush to the modal edges.</p>" width="100%" height={400} />
+    <iframe
+      title="Prescription"
+      srcDoc="<p>Embedded content, flush to the modal edges.</p>"
+      width="100%"
+      height={400}
+    />
   </ModalStory>
 );
