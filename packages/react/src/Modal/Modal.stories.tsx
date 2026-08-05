@@ -78,7 +78,7 @@ export const ButtonRow = (): JSX.Element => (
       </Group>
     }
   >
-    <Text>A single Group as the actions gives a right-aligned row instead of stretched buttons.</Text>
+    <Text>Wrapping the actions in a Group lays them out in a row; justify=&quot;flex-end&quot; right-aligns it.</Text>
   </ModalStory>
 );
 

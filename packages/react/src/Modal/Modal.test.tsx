@@ -54,6 +54,9 @@ describe('Modal', () => {
         <div>Body content</div>
       </Modal>
     );
+    // The slot rules are scoped under the root class, so losing it silently hands every slot
+    // back to Mantine's defaults - a failure no jsdom assertion on the slots themselves catches.
+    expect(document.querySelector('.mantine-Modal-root.modal')).not.toBeNull();
     expect(document.querySelector('.mantine-Modal-content.content')).not.toBeNull();
     expect(document.querySelector('.mantine-Modal-header.header')).not.toBeNull();
     expect(document.querySelector('.mantine-Modal-title.title')).not.toBeNull();

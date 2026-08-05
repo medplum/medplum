@@ -23,9 +23,9 @@ const formStyle: CSSProperties = {
  * @property children - Modal body, rendered in the scrolling region between the header and the
  * footer.
  * @property actions - Buttons pinned to the bottom edge of the modal above a full-bleed border.
- * They stretch to the full width with the primary action first; pass a single `Group` for a
- * right-aligned row instead. Omit for modals that only display content - the footer and its border
- * are then not rendered.
+ * They stretch to the full width with the primary action first; wrap them in a
+ * `Group justify="flex-end"` for a right-aligned row instead. Omit for modals that only display
+ * content - the footer and its border are then not rendered.
  * @property onSubmit - Wraps the body and the footer in a {@link Form}, so a `SubmitButton` in
  * `actions` submits the named inputs in `children`. A `SubmitButton` without this has no form to
  * submit and does nothing.
@@ -80,6 +80,9 @@ export function Modal(props: ModalProps): JSX.Element {
       closeButtonProps={{ 'aria-label': 'Close', radius: 'xl', ...closeButtonProps }}
       classNames={{
         ...classNames,
+        // The slot rules are scoped under `.modal` in the CSS module, so the root class has to
+        // land for any of them to apply.
+        root: cx(classes.modal, classNames?.root),
         content: cx(classes.content, classNames?.content),
         header: cx(classes.header, classNames?.header),
         title: cx(classes.title, classNames?.title),

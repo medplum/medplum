@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Stack } from '@mantine/core';
+import { Button } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { isReference, normalizeErrorString } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
@@ -98,15 +98,13 @@ export const EditThreadDialog = (props: EditThreadDialogProps): JSX.Element => {
       }
     >
       {thread && (
-        <Stack gap="lg">
-          <ThreadMessageForm
-            defaultPractitioners={initialPractitioners}
-            onPractitionersChange={setPractitioners}
-            topic={topic}
-            onTopicChange={setTopic}
-            defaultPatient={patientRef}
-          />
-        </Stack>
+        <ThreadMessageForm
+          defaultPractitioners={initialPractitioners}
+          onPractitionersChange={setPractitioners}
+          topic={topic}
+          onTopicChange={setTopic}
+          defaultPatient={patientRef}
+        />
       )}
     </Modal>
   );
