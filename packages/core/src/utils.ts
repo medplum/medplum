@@ -530,23 +530,32 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
 }
 
 /**
+ * Anything that can carry FHIR extensions: resources such as `Patient`, data types such as
+ * `CodeableConcept`, and extensions themselves. Structural, so any of those is accepted, while a
+ * type that cannot hold extensions, `Binary` being the notable example, is rejected.
+ */
+export interface Extensible {
+  extension?: Extension[];
+}
+
+/**
  * Returns every extension reachable by the given extension URLs.
  *
  * Like `getExtension`, but does not stop at the first match: extensions that repeat under one URL are
  * all returned, at every level. Use it for extensions defined with a cardinality above one, where
  * `getExtension` would silently read only the first.
- * @param resource - The base resource, data type, or extension. Anything that may hold an `extension` array.
- * @param urls - Array of extension URLs. Each entry represents descending a level in a nested extension.
+ * @param extensible - The base resource, data type, or extension. Anything that may hold an `extension` array.
+ * @param urlOrUrls - One extension URL, or an array of them where each entry represents descending a level in a nested extension.
  * @returns Every matching extension, in document order. Empty if none match or no URL is given.
  */
-export function getExtensions(resource: any, ...urls: string[]): Extension[] {
-  const [url, ...rest] = urls;
+export function getExtensions(extensible: Extensible | undefined, urlOrUrls: string | string[]): Extension[] {
+  const [url, ...rest] = arrayify(urlOrUrls);
   if (!url) {
     return [];
   }
 
-  const matches = (resource?.extension as Extension[] | undefined)?.filter((e) => e.url === url) ?? [];
-  return rest.length > 0 ? matches.flatMap((match) => getExtensions(match, ...rest)) : matches;
+  const matches = extensible?.extension?.filter((e) => e.url === url) ?? [];
+  return rest.length > 0 ? matches.flatMap((match) => getExtensions(match, rest)) : matches;
 }
 
 /**

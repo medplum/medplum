@@ -128,17 +128,8 @@ export function getScheduleParameters(
   return getScheduleParameterExtensions(schedule, service).flatMap((parameters) => getExtensions(parameters, url));
 }
 
-// The service-level twin of `getScheduleParameters`. A HealthcareService carries a single
-// SchedulingParameters extension, about itself, so there is no service reference to match on.
-// Export this, alongside a `setServiceParameter`, once something edits service-level defaults such as
-// `duration`; today only `getSchedulingTimezone` reads them.
-function getServiceParameters(service: WithId<HealthcareService>, url: string): Extension[] {
-  return getExtensions(getExtension(service, SchedulingParametersURI), url);
-}
-
 // Convert a single `SchedulingParameters.availability.availableTime`
-// sub-sub-extension into a HealthcareServiceAvailableTime. Note that
-// `daysOfWeek` repeats once per day value rather than holding an array.
+// sub-sub-extension into a HealthcareServiceAvailableTime.
 function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTime {
   const daysOfWeek = getExtensions(availableTime, 'daysOfWeek')
     .map((subextension) => subextension.valueCode)
@@ -355,7 +346,8 @@ export function getSchedulingTimezone(
     return scheduleTimezone;
   }
 
-  const serviceTimezone = getServiceParameters(service, 'timezone')
+  // A HealthcareService's parameters are about itself, so there is no service reference to match on.
+  const serviceTimezone = getExtensions(service, [SchedulingParametersURI, 'timezone'])
     .map((subextension) => subextension.valueCode)
     .find(isDefined);
   if (serviceTimezone) {
