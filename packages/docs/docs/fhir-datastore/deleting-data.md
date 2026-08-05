@@ -20,6 +20,8 @@ DELETE [base]/[resourceType]/[id]
 
 For example, suppose a [`Patient`](/docs/api/fhir/resources/patient) resource with ID 123 is created (via an HTTP `POST /Patient`) and subsequently deleted (via an HTTP `DELETE Patient/123`). This will cause a second version of the `Patient/123` resource to be created with version `Patient/123/\_history/2` that is marked as deleted.
 
+Internally, Medplum stores a minimal tombstone in the `_History` table for delete versions. The tombstone includes `resourceType`, `id`, and `meta` fields such as `versionId`, `lastUpdated`, `author`, `project`, and `meta.deleted: true`. This tombstone is used for auditing and data warehouse sync. It is **not** returned as the `resource` body when reading history; delete history entries still return HTTP 410 with an `OperationOutcome` as required by the FHIR specification.
+
 This patient will no longer appear in search results, and attempts to read the resource (using an HTTP `GET Patient/123`) will fail with an "HTTP 410 Gone" response.
 
 However, the original content of the resource is not destroyed. It can still be found using two FHIR operations:
@@ -61,11 +63,11 @@ If you expunge a [`Project`](/docs/api/fhir/medplum/project), it will be _perman
 
 ### Restoring Data
 
-Sometimes you may want to restore data that has been accidentally. The following script looks at the history of a resource and restores it if it is currently deleted.
+Sometimes you may want to restore data that has been accidentally deleted. The following script looks at the history of a resource and restores it if it is currently deleted.
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
-import { Resource, Patient } from '@medplum/fhirtypes';
+import type { Resource } from '@medplum/fhirtypes';
 
 async function restoreDeletedResource(
   medplum: MedplumClient,
@@ -80,9 +82,6 @@ async function restoreDeletedResource(
       console.log(`No history found for ${resourceType}/${resourceId}`);
       return undefined;
     }
-
-    // Debug logging for all history entries
-    console.log('History entries:', JSON.stringify(history.entry, null, 2));
 
     // Check if the resource was deleted (410 status with deleted OperationOutcome)
     const isDeleted = history.entry.some(
@@ -102,16 +101,11 @@ async function restoreDeletedResource(
       }
 
       // Create a new version of the resource
+      const restoredMeta = { ...latestVersion.meta };
+      delete restoredMeta.deleted;
       const restoredResource = {
         ...latestVersion,
-        meta: {
-          ...latestVersion.meta,
-          tag:
-            latestVersion.meta?.tag?.filter(
-              (tag) => !(tag.system === 'http://terminology.hl7.org/CodeSystem/v3-ActReason' && tag.code === 'DELETED')
-            ) || [],
-        },
-        active: true,
+        meta: restoredMeta,
       };
 
       // Update the resource

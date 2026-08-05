@@ -15,6 +15,7 @@ import {
   MARK_SENT,
   RECOVER_CLAIMED,
   RECOVER_INFLIGHT,
+  RECOVER_INFLIGHT_GUARANTEED,
   RETENTION_PHASE1_DELETE,
   RETENTION_PHASE2_DELETE,
   RETENTION_PHASE3_DELETE,
@@ -33,7 +34,8 @@ import {
 const CASES: { name: string; sql: string; params: unknown[]; index: string }[] = [
   // Hot path
   { name: 'findSeenByControlId', sql: FIND_SEEN_BY_CONTROL_ID, params: ['ch', 'mc'], index: 'idx_inbound_dup_lookup' },
-  { name: 'claimNext', sql: CLAIM_NEXT, params: [0, 'ch'], index: 'idx_inbound_channel_state_id' },
+  // claimNext binds `now` twice: processing_started_at + the next_attempt_at backoff predicate.
+  { name: 'claimNext', sql: CLAIM_NEXT, params: [0, 'ch', 0], index: 'idx_inbound_channel_state_id' },
   { name: 'markSent', sql: MARK_SENT, params: [0, 'cb'], index: 'uq_inbound_callback' },
   { name: 'findByCallback', sql: FIND_BY_CALLBACK, params: ['cb'], index: 'uq_inbound_callback' },
   // Startup / recovery
@@ -44,6 +46,12 @@ const CASES: { name: string; sql: string; params: unknown[]; index: string }[] =
     index: 'idx_inbound_channel_state_id',
   },
   { name: 'recoverInflight', sql: RECOVER_INFLIGHT, params: [0], index: 'idx_inbound_state_processed_at' },
+  {
+    name: 'recoverInflightGuaranteed',
+    sql: RECOVER_INFLIGHT_GUARANTEED,
+    params: [],
+    index: 'idx_inbound_state_processed_at',
+  },
   { name: 'recoverClaimed', sql: RECOVER_CLAIMED, params: [], index: 'idx_inbound_state_processed_at' },
   // Retention sweep
   { name: 'retentionPhase1', sql: RETENTION_PHASE1_DELETE, params: [0], index: 'idx_inbound_state_processed_at' },

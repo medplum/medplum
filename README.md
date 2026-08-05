@@ -52,7 +52,7 @@ to our documentation, you can help others who might have a similar use case!
 Our documentation is hosted on [medplum.com/docs](https://www.medplum.com/docs), but it is built from [Markdown](https://www.markdownguide.org/)
 files in our [`docs` package](https://github.com/medplum/medplum/tree/main/packages/docs/docs).
 
-For relatively small changes, you can edit files directly from your web browser on [Github.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
+For relatively small changes, you can edit files directly from your web browser on [GitHub.dev](https://github.dev/medplum/medplum/blob/main/packages/docs/docs/home.md)
 without needing to clone the repository.
 
 #### Fixing a bug or implementing a new feature

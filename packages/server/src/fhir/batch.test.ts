@@ -6,6 +6,7 @@ import type {
   Bundle,
   BundleEntryResponse,
   CareTeam,
+  Coverage,
   Observation,
   OperationOutcome,
   OperationOutcomeIssue,
@@ -17,17 +18,45 @@ import type {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
+import { DelayedError } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import type { PoolClient } from 'pg';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
-import type { BatchJobData } from '../workers/batch';
+import type { ReentrantBatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
+import { queueRegistry } from '../workers/utils';
+import { PostgresError } from './sql';
+
+/**
+ * Builds a minimal mock BullMQ Job for driving execBatchJob in tests. Provides an in-memory
+ * `updateData` so the re-entrant worker can persist its progress marker, and `queueName`/`token`
+ * so graceful-shutdown/delay code paths can be exercised.
+ * @param data - The batch job data.
+ * @param overrides - Optional overrides applied on top of the defaults.
+ * @returns A mock Job usable with execBatchJob.
+ */
+function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, unknown>): Job<ReentrantBatchJobData> {
+  const job: any = {
+    id: '1',
+    data,
+    queueName: 'BatchQueue',
+    token: 'test-token',
+    async updateData(newData: ReentrantBatchJobData) {
+      job.data = newData;
+    },
+    async moveToDelayed() {},
+    ...overrides,
+  };
+  return job as Job<ReentrantBatchJobData>;
+}
 
 describe('Batch and Transaction processing', () => {
   const app = express();
@@ -35,8 +64,21 @@ describe('Batch and Transaction processing', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
+    // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
+    // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
+    config.asyncDelayScaling = 0;
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
+    accessToken = await initTestAuth({
+      project: {
+        features: ['transaction-bundles', 'async-batch'],
+        // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
+        // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
+        // flag the project defaults to the legacy single-shot path.
+        systemSetting: [{ name: 'reentrantAsyncBatch', valueBoolean: true }],
+      },
+      membership: { admin: true },
+    });
   });
 
   afterEach(() => {
@@ -57,7 +99,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
-    expect(res1.status).toStrictEqual(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toStrictEqual('Practitioner');
     const practitioner = res1.body as WithId<Practitioner>;
 
@@ -66,7 +108,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toStrictEqual(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toStrictEqual('Patient');
     const toDelete = res2.body as WithId<Patient>;
 
@@ -130,7 +172,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(batch);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const results = res.body as Bundle;
@@ -169,6 +211,56 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.[5]?.resource).toBeUndefined();
   });
 
+  test('FHIRPath Patch in batch', async () => {
+    const created = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'PATCH', url: 'Patient/' + patient.id },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'unknown' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    const results = res.body as Bundle;
+    expect(results.entry?.[0]?.response?.status).toStrictEqual('200');
+    expect(results.entry?.[0]?.resource).toMatchObject<Patient>({ resourceType: 'Patient', gender: 'unknown' });
+
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+    expect(reread.body).toMatchObject<Patient>({ resourceType: 'Patient', gender: 'unknown' });
+  });
+
   test('Transaction success', async () => {
     const id1 = randomUUID();
     const id2 = randomUUID();
@@ -179,7 +271,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
-    expect(res1.status).toStrictEqual(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toStrictEqual('Practitioner');
     const practitioner = res1.body as WithId<Practitioner>;
 
@@ -188,7 +280,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toStrictEqual(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toStrictEqual('Patient');
     const toDelete = res2.body as WithId<Patient>;
 
@@ -200,7 +292,7 @@ describe('Batch and Transaction processing', () => {
         resourceType: 'RelatedPerson',
         patient: { reference: getReferenceString(toDelete) },
       });
-    expect(res3.status).toStrictEqual(201);
+    expect(res3).toHaveStatus(201);
     expect(res3.body.resourceType).toStrictEqual('RelatedPerson');
     const relatedPerson = res3.body as WithId<RelatedPerson>;
 
@@ -272,7 +364,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const results = res.body as Bundle;
@@ -336,7 +428,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
-    expect(res1.status).toStrictEqual(201);
+    expect(res1).toHaveStatus(201);
     expect(res1.body.resourceType).toStrictEqual('Practitioner');
     const practitioner = res1.body as WithId<Practitioner>;
 
@@ -345,7 +437,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    expect(res2.status).toStrictEqual(201);
+    expect(res2).toHaveStatus(201);
     expect(res2.body.resourceType).toStrictEqual('Patient');
     const toDelete = res2.body as WithId<Patient>;
 
@@ -410,7 +502,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.resourceType).toStrictEqual('OperationOutcome');
 
     const res3 = await request(app)
@@ -420,7 +512,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Patient' });
     // Although DELETE was processed before the failed POST in the transaction,
     // rollback means the resource should still exist after the transaction fails
-    expect(res3.status).toStrictEqual(200);
+    expect(res3).toHaveStatus(200);
     expect(res3.body).toMatchObject<Patient>({
       resourceType: 'Patient',
       id: toDelete.id,
@@ -433,7 +525,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Conditional create in transaction', async () => {
@@ -450,7 +542,7 @@ describe('Batch and Transaction processing', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
-    expect(createdPractitioner.status).toStrictEqual(201);
+    expect(createdPractitioner).toHaveStatus(201);
     const practitionerReference = {
       reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
     };
@@ -553,7 +645,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
 
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const ccreateResult = res.body.entry[0].response as BundleEntryResponse;
     expect(ccreateResult.status).toStrictEqual('201');
   });
@@ -566,7 +658,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', identifier: [{ value: patientIdentifier }] });
-    expect(createdPatient.status).toStrictEqual(201);
+    expect(createdPatient).toHaveStatus(201);
     const patient = createdPatient.body;
 
     const tx: Bundle = {
@@ -590,7 +682,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
 
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const updateResult = res.body.entry[0].response as BundleEntryResponse;
     expect(updateResult.status).toStrictEqual('200');
   });
@@ -602,7 +694,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ family: 'Doe', given: ['Jane'] }] });
-    expect(patient1Res.status).toStrictEqual(201);
+    expect(patient1Res).toHaveStatus(201);
     const patient1 = patient1Res.body as WithId<Patient>;
 
     const patient2Res = await request(app)
@@ -610,7 +702,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ family: 'Johnson', given: ['Bob'] }], active: true });
-    expect(patient2Res.status).toStrictEqual(201);
+    expect(patient2Res).toHaveStatus(201);
     const patient2 = patient2Res.body as WithId<Patient>;
 
     // Read the current version of resources to get versionIds
@@ -662,7 +754,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transactionBundle);
 
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const resultBundle = res.body as Bundle;
     expect(resultBundle.entry).toHaveLength(2);
 
@@ -694,7 +786,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient', name: [{ family: 'Doe', given: ['Jane'] }] });
-    expect(patientRes.status).toStrictEqual(201);
+    expect(patientRes).toHaveStatus(201);
     const patient = patientRes.body as WithId<Patient>;
 
     // Read the current version
@@ -738,7 +830,185 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transactionBundle);
 
-    expect(res.status).toStrictEqual(412);
+    expect(res).toHaveStatus(412);
+  });
+
+  test('Batch FHIRPath PATCH with stale ifMatch fails and does not modify resource', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    // Change the version so the captured versionId is stale
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('412');
+
+    // The stale precondition must have prevented the patch from being applied
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+    expect((reread.body as Patient).gender).toBeUndefined();
+  });
+
+  test('Batch FHIRPath PATCH with current ifMatch succeeds and persists', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('200');
+
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect((reread.body as Patient).gender).toStrictEqual('female');
+  });
+
+  test('Transaction PATCH with stale ifMatch rolls back the whole transaction', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    // Bump the version so the captured versionId is stale
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const orgIdentifier = randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          // A create that must be rolled back when the later PATCH fails its precondition
+          request: { method: 'POST', url: 'Organization' },
+          resource: { resourceType: 'Organization', identifier: [{ value: orgIdentifier }] },
+        },
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res).toHaveStatus(412);
+
+    // The Organization created in the first entry must have been rolled back
+    const search = await request(app)
+      .get(`/fhir/R4/Organization?identifier=${orgIdentifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(search).toHaveStatus(200);
+    expect((search.body as Bundle).entry?.length ?? 0).toStrictEqual(0);
   });
 
   test('Conditional update (create-as-update) in transaction', async () => {
@@ -755,7 +1025,7 @@ describe('Batch and Transaction processing', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
-    expect(createdPractitioner.status).toStrictEqual(201);
+    expect(createdPractitioner).toHaveStatus(201);
     const practitionerReference = {
       reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
     };
@@ -765,7 +1035,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Patient' });
-    expect(createdPatient.status).toStrictEqual(201);
+    expect(createdPatient).toHaveStatus(201);
     const patient = createdPatient.body;
     const patientReference = createReference(patient);
     const careTeamCondition = 'CareTeam?subject=' + patientReference.reference;
@@ -871,7 +1141,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(tx);
 
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const ccreateResult = res.body.entry[0].response as BundleEntryResponse;
     expect(ccreateResult.status).toStrictEqual('201');
 
@@ -919,7 +1189,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
   });
 
@@ -967,7 +1237,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.resourceType).toStrictEqual('OperationOutcome');
 
     const res2 = await request(app)
@@ -975,7 +1245,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body.entry).toBeUndefined();
   });
 
@@ -991,7 +1261,7 @@ describe('Batch and Transaction processing', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
-    expect(createdPractitioner.status).toStrictEqual(201);
+    expect(createdPractitioner).toHaveStatus(201);
     const practitionerReference = {
       reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
     };
@@ -1018,7 +1288,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const patient = (res.body as Bundle).entry?.[0]?.resource as WithId<Patient>;
@@ -1048,7 +1318,7 @@ describe('Batch and Transaction processing', () => {
           },
         ],
       });
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle;
     expect(bundle.entry).toHaveLength(1);
     expect(bundle.entry?.[0]?.response?.status).toStrictEqual('400');
@@ -1128,7 +1398,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(bundle);
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const result = res.body as Bundle;
     expect(result.entry).toHaveLength(3);
     expect(result.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
@@ -1138,7 +1408,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(bundle);
-    expect(res.status).toStrictEqual(200);
+    expect(res).toHaveStatus(200);
     const result2 = res2.body as Bundle;
     expect(result2.entry).toHaveLength(3);
     expect(result2.entry?.map((e) => e.response?.status)).toStrictEqual(['200', '200', '200']);
@@ -1170,19 +1440,19 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Prefer', 'respond-async')
       .send(bundle);
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({
-        bundle,
-      })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     await expect(execBatchJob(job)).resolves.toBe(undefined);
@@ -1199,7 +1469,7 @@ describe('Batch and Transaction processing', () => {
       .get(`/fhir/R4/${resultsReference}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Partial<Bundle>>({
       resourceType: 'Bundle',
       type: 'batch-response',
@@ -1221,19 +1491,19 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Prefer', 'respond-async')
       .send(bundle);
-    expect(res.status).toStrictEqual(202);
+    expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({
-        bundle,
-      })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     await expect(execBatchJob(job)).resolves.toBe(undefined);
@@ -1259,6 +1529,143 @@ describe('Batch and Transaction processing', () => {
     });
 
     expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Async batch resumes after graceful shutdown', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [1, 2, 3, 4].map(() => ({
+        request: { method: 'POST', url: 'Patient' },
+        resource: { resourceType: 'Patient' },
+      })),
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res).toHaveStatus(202);
+    const outcome = res.body as OperationOutcome;
+
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    queue.add.mockClear();
+
+    // Simulate the queue closing after the first two entries are processed. isClosing is checked
+    // at the top of each loop iteration, so returning false twice lets two entries process before
+    // the job detects shutdown and delays itself.
+    let checks = 0;
+    const closeAfterChecks = 2;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= closeAfterChecks);
+
+    // The delayed job re-throws DelayedError so BullMQ can re-queue it.
+    await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+    isClosingSpy.mockRestore();
+
+    // Progress was checkpointed into the job data so a future worker can resume.
+    expect(job.data.position).toStrictEqual(closeAfterChecks);
+
+    // The AsyncJob must still be in progress (not failed/completed) after being delayed.
+    // The status endpoint returns 202 while a job is not in a final state.
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const inProgress = await request(app)
+      .get(new URL(jobUrl).pathname)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send();
+    expect(inProgress).toHaveStatus(202);
+
+    // Resume on a fresh worker: it rehydrates from durable state and finishes the batch.
+    const resumeJob = mockBatchJob(job.data);
+    await expect(execBatchJob(resumeJob)).resolves.toBe(undefined);
+
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    expect(resultsReference).toMatch(/^Binary\//);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2).toHaveStatus(200);
+    const results = res2.body as Bundle;
+    expect(results.type).toStrictEqual('batch-response');
+    // All four entries are present exactly once, across the pre- and post-resume runs.
+    expect(results.entry).toHaveLength(4);
+    expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201', '201']);
+  });
+
+  test('Async batch makes partial results available when cancelled', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [1, 2, 3, 4].map(() => ({
+        request: { method: 'POST', url: 'Patient' },
+        resource: { resourceType: 'Patient' },
+      })),
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res).toHaveStatus(202);
+    const outcome = res.body as OperationOutcome;
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJobId = new URL(jobUrl).pathname.split('/').at(-2) as string;
+
+    const job = mockBatchJob(queue.add.mock.calls[0][1] as ReentrantBatchJobData);
+    queue.add.mockClear();
+
+    // Process two entries, then delay (simulating a shutdown) to leave durable partial state.
+    let checks = 0;
+    const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 2);
+    await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+    isClosingSpy.mockRestore();
+    const processedBeforeCancel = job.data.position as number;
+    expect(processedBeforeCancel).toBeGreaterThan(0);
+
+    // Cancel the AsyncJob out of band.
+    const cancelRes = await request(app)
+      .post(`/fhir/R4/AsyncJob/${asyncJobId}/$cancel`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(cancelRes).toHaveStatus(200);
+
+    // Resuming a cancelled job must not process further entries; it publishes partial results.
+    const resumeJob = mockBatchJob(job.data);
+    await expect(execBatchJob(resumeJob)).resolves.toBe(undefined);
+
+    const cancelled = await request(app)
+      .get(new URL(jobUrl).pathname)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send();
+    expect(cancelled).toHaveStatus(200);
+    expect(cancelled.body.status).toStrictEqual('cancelled');
+    const partialRef = cancelled.body.output?.parameter?.find((p: any) => p.name === 'partialResults')?.valueReference
+      ?.reference;
+    expect(partialRef).toMatch(/^Binary\//);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/${partialRef}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2).toHaveStatus(200);
+    const partial = res2.body as Bundle;
+    expect(partial.type).toStrictEqual('batch-response');
+    // Only the entries processed before cancellation have results; the rest are absent.
+    expect(partial.entry?.filter(Boolean)).toHaveLength(processedBeforeCancel);
   });
 
   test('Transaction bundle account propagation', async () => {
@@ -1301,7 +1708,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send(transaction);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const response = res.body as Bundle;
@@ -1351,7 +1758,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('X-Medplum', 'extended')
       .send(batch);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const response = res.body as Bundle;
@@ -1405,7 +1812,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const results = res.body as Bundle;
@@ -1418,7 +1825,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
 
-    expect(query.status).toBe(200);
+    expect(query).toHaveStatus(200);
     expect(query.body.entry).toHaveLength(1);
   });
 
@@ -1461,7 +1868,7 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(batch);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const results = res.body as Bundle;
@@ -1480,9 +1887,12 @@ describe('Batch and Transaction processing', () => {
       withAccessToken: true,
       withClient: true,
       project: {
+        features: ['async-batch'],
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
+          // Opt in to re-entrant async batch processing (see workers/batch.ts).
+          { name: 'reentrantAsyncBatch', valueBoolean: true },
         ],
       },
     });
@@ -1517,17 +1927,19 @@ describe('Batch and Transaction processing', () => {
       .set('X-Medplum', 'extended')
       .set('Prefer', 'respond-async')
       .send(batch);
-    expect(res.status).toBe(202);
+    expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
     expect(outcome.issue[0].diagnostics).toMatch('http://');
 
-    // Manually push through BullMQ job
+    // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
       'BatchJobData',
-      expect.objectContaining<Partial<BatchJobData>>({ bundle: batch })
+      expect.objectContaining<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.anything() })
     );
+    const enqueued = queue.add.mock.calls[0][1] as ReentrantBatchJobData & { bundle?: unknown };
+    expect(enqueued.bundle).toBeUndefined();
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
     let count = 0;
@@ -1545,7 +1957,7 @@ describe('Batch and Transaction processing', () => {
 
       return {
         remainingPoints: 200 - count * 100, // Allow every third call
-        msBeforeNext: 20, // Wait for one fake timers tick before next retry
+        msBeforeNext: 20,
         consumedPoints: 100,
         isFirstInDuration: false,
       } as RateLimiterRes;
@@ -1559,10 +1971,9 @@ describe('Batch and Transaction processing', () => {
       () => execBatchJob(job)
     );
 
-    // Must wait here, but `RateLimiterRedis` uses TTL time from Redis `PTTL` command
-
     await expect(jobResult).resolves.toBe(undefined);
-    // Rate limits should not actually be consumed
+    // In async context the rate limiter is bypassed entirely (the worker self-throttles via
+    // Repository.recordFhirQuota instead), so RateLimiterRedis.consume must never be called.
     expect(consumeMock).toHaveBeenCalledTimes(0);
 
     const jobUrl = outcome.issue[0].diagnostics as string;
@@ -1579,7 +1990,7 @@ describe('Batch and Transaction processing', () => {
       .get(`/fhir/R4/${resultsReference}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res2.status).toStrictEqual(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.body).toMatchObject<Partial<Bundle>>({ resourceType: 'Bundle', type: 'batch-response' });
 
     const results = res2.body as Bundle;
@@ -1588,5 +1999,135 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
       201, 201, 201, 201,
     ]);
+  });
+});
+
+describe('Transaction bundle SERIALIZABLE retry', () => {
+  const app = express();
+  let accessToken: string;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    ({ accessToken } = await createTestProject({
+      project: { features: ['transaction-bundles'] },
+      withAccessToken: true,
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('does not silently drop writes on serialization failure', async () => {
+    // Mock a one-time serialization failure on the batch's SERIALIZABLE transaction.
+    // We wrap the writer pool so that the FIRST COMMIT on a connection that opened a SERIALIZABLE
+    // transaction throws 40001 (leaving the real transaction open so withTransaction's rollback
+    // path discards the attempt's writes, exactly as a real 40001 at COMMIT would).
+    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const originalConnect = writerPool.connect.bind(writerPool);
+
+    let serializableBegins = 0;
+    let commitFailuresInjected = 0;
+
+    vi.spyOn(writerPool, 'connect').mockImplementation(async (...args: any[]) => {
+      const client = (await (originalConnect as any)(...args)) as PoolClient;
+      const originalQuery = client.query.bind(client);
+      let clientOpenedSerializableTx = false;
+
+      vi.spyOn(client, 'query').mockImplementation((text, values, callback) => {
+        if (typeof text === 'string') {
+          if (text.startsWith('BEGIN ISOLATION LEVEL SERIALIZABLE')) {
+            clientOpenedSerializableTx = true;
+            serializableBegins++;
+          } else if (text === 'COMMIT' && clientOpenedSerializableTx && commitFailuresInjected === 0) {
+            commitFailuresInjected++;
+            // Surface the serialization failure to the retry loop WITHOUT actually committing.
+            // The real transaction stays open; withTransaction's catch will ROLLBACK it.
+            return Promise.reject(
+              Object.assign(new Error('could not serialize access due to read/write dependencies among transactions'), {
+                code: PostgresError.SerializationFailure,
+              })
+            );
+          }
+        }
+        return (originalQuery as any)(text, values, callback);
+      });
+
+      return client;
+    });
+
+    const identifier = randomUUID();
+    const patientUrn = 'urn:uuid:' + randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          // Conditional update requires SERIALIZABLE transaction
+          fullUrl: patientUrn,
+          request: { method: 'PUT', url: `Patient?identifier=http://example.com/mrn|${identifier}` },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ system: 'http://example.com/mrn', value: identifier }],
+          } satisfies Patient,
+        },
+        {
+          request: { method: 'POST', url: 'Coverage' },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            beneficiary: { reference: patientUrn },
+            payor: [{ display: 'Test Payor A' }],
+          } satisfies Coverage,
+        },
+        {
+          request: { method: 'POST', url: 'Coverage' },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            beneficiary: { reference: patientUrn },
+            payor: [{ display: 'Test Payor B' }],
+          } satisfies Coverage,
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post('/fhir/R4/')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+
+    // The failure was injected exactly once, and the transaction was retried (second BEGIN)
+    expect(serializableBegins).toBe(2);
+    expect(commitFailuresInjected).toBe(1);
+
+    // The server reports success to the client...
+    expect(res).toHaveStatus(200);
+    const responseBundle = res.body as Bundle;
+    expect(responseBundle.type).toBe('transaction-response');
+    expect(responseBundle.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201', '201']);
+
+    const createdPatientRef = responseBundle.entry?.[0]?.response?.location as string;
+    expect(createdPatientRef).toBeDefined();
+
+    // ...so those resources MUST actually exist. Otherwise, the transaction retry committed
+    // an empty transaction and these reads come back empty — silent data loss
+    const patientSearch = await request(app)
+      .get(`/fhir/R4/Patient?identifier=http://example.com/mrn|${identifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(patientSearch).toHaveStatus(200);
+    expect((patientSearch.body as Bundle).entry).toHaveLength(1);
+
+    const coverageSearch = await request(app)
+      .get(`/fhir/R4/Coverage?beneficiary=${createdPatientRef}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(coverageSearch).toHaveStatus(200);
+    expect((coverageSearch.body as Bundle).entry).toHaveLength(2);
   });
 });

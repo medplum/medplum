@@ -3,7 +3,6 @@
 import { createReference } from '@medplum/core';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { EncounterTimelineProps } from './EncounterTimeline';
 import { EncounterTimeline } from './EncounterTimeline';
@@ -14,11 +13,9 @@ describe('EncounterTimeline', () => {
   async function setup(args: EncounterTimelineProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <EncounterTimeline {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <EncounterTimeline {...args} />
+        </MedplumProvider>
       );
     });
   }

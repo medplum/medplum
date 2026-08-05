@@ -41,16 +41,16 @@ This plan replaces the in-memory inbound path with a durable, SQLite-backed FIFO
 
 ### 1.3 Decisions confirmed before drafting
 
-| Decision | Choice |
-|---|---|
-| Durability scope | **Inbound only** (channel → server). Outbound stays in-memory. |
-| Enhanced-mode ACK | **Defer CA until DB commit** — keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and have the agent send the ACK via `sendCommitAck()` / `sendCommitNack()`. |
-| Crash recovery | **Requeue `queued` and `claimed` (unsent) rows; promote `inflight` (sent, ambiguous) rows to `failed`** for manual review. |
-| Duplicate control ID | **Configurable per channel** (`duplicateBehavior=reject\|idempotent`), defaulting to `idempotent`. |
-| Serial processing scope | **Per channel.** Different channels proceed in parallel; within a channel, one message in-flight. |
-| DB file location | **Single shared DB next to logs**, one file for the whole agent. |
-| Retention | **Time + size cap**, both knobs configurable; `rejected`/`failed`/`undelivered` rows kept longer. |
-| Outbound ACK correlation | **Persist on inbound row** so a crash between Bot/server response and source ACK can complete the ACK on recovery. |
+| Decision                 | Choice                                                                                                                                                                            |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Durability scope         | **Inbound only** (channel → server). Outbound stays in-memory.                                                                                                                    |
+| Enhanced-mode ACK        | **Defer CA until DB commit** — keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and have the agent send the ACK via `sendCommitAck()` / `sendCommitNack()`. |
+| Crash recovery           | **Requeue `queued` and `claimed` (unsent) rows; promote `inflight` (sent, ambiguous) rows to `failed`** for manual review.                                                        |
+| Duplicate control ID     | **Configurable per channel** (`duplicateBehavior=reject\|idempotent`), defaulting to `idempotent`.                                                                                |
+| Serial processing scope  | **Per channel.** Different channels proceed in parallel; within a channel, one message in-flight.                                                                                 |
+| DB file location         | **Single shared DB next to logs**, one file for the whole agent.                                                                                                                  |
+| Retention                | **Time + size cap**, both knobs configurable; `rejected`/`failed`/`undelivered` rows kept longer.                                                                                 |
+| Outbound ACK correlation | **Persist on inbound row** so a crash between Bot/server response and source ACK can complete the ACK on recovery.                                                                |
 
 ---
 
@@ -85,14 +85,14 @@ This plan replaces the in-memory inbound path with a durable, SQLite-backed FIFO
 
 Key components introduced:
 
-| New module | Responsibility |
-|---|---|
-| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`; the lease primitives (`tryAcquireLease`, `heartbeatLease`, `releaseLease`, `setLeaseHolder`, `isLeaseHeldByPeer`) and dispatch gate (`assertNotDemoted`); **and** the dispatch-lease loop itself — `startDispatchLease`/`stopDispatchLease`/`isLeader` (single-dispatcher leader election over the `_lease` row, formerly a separate `DispatchLeaseManager`). The lease gates *dispatch only* (claim + recovery), not intake/maintenance/diagnostics, which is what makes zero-downtime upgrades safe — see §9.2. |
-| `src/queue/schema.ts` | DDL + migration runner (versioned). |
-| `src/queue/worker.ts` | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. Self-terminates on `QueueLeaseError` when a peer takes the dispatch lease (§9.2). |
-| `src/queue/types.ts` | `MessageState`, `InboundRow`, lifecycle event types, `QueueError` / `QueueLeaseError`. |
-| `src/queue/retention.ts` | Background sweeper for time + size purge. |
-| `packages/agent/src/hl7.ts` | Agent-side commit ACKs: keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and send CA/AA/CE/CR/AE/AR via `AgentHl7ChannelConnection.sendCommitAck()` / `sendCommitNack(code, reason)` after the DB write (see §6). |
+| New module                   | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/queue/durable-queue.ts` | Owns the `node:sqlite` Database handle. Exposes typed CRUD: `enqueue`, `claimNext`, `markSent`, `markProcessed`, `markRejected`, `markFailed`, `setAckOutcome`, `recoverOnStartup`, `purge`; the lease primitives (`tryAcquireLease`, `heartbeatLease`, `releaseLease`, `setLeaseHolder`, `isLeaseHeldByPeer`) and dispatch gate (`assertNotDemoted`); **and** the dispatch-lease loop itself — `startDispatchLease`/`stopDispatchLease`/`isLeader` (single-dispatcher leader election over the `_lease` row, formerly a separate `DispatchLeaseManager`). The lease gates _dispatch only_ (claim + recovery), not intake/maintenance/diagnostics, which is what makes zero-downtime upgrades safe — see §9.2. |
+| `src/queue/schema.ts`        | DDL + migration runner (versioned).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `src/queue/worker.ts`        | `ChannelQueueWorker` — one per channel, serial dequeue loop. Wires WS responses back to the row. Self-terminates on `QueueLeaseError` when a peer takes the dispatch lease (§9.2).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `src/queue/types.ts`         | `MessageState`, `InboundRow`, lifecycle event types, `QueueError` / `QueueLeaseError`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `src/queue/retention.ts`     | Background sweeper for time + size purge.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `packages/agent/src/hl7.ts`  | Agent-side commit ACKs: keep `enhancedMode` off the `Hl7Connection` (suppressing its auto-ACK) and send CA/AA/CE/CR/AE/AR via `AgentHl7ChannelConnection.sendCommitAck()` / `sendCommitNack(code, reason)` after the DB write (see §6).                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -135,7 +135,9 @@ CREATE TABLE IF NOT EXISTS inbound_hl7_messages (
   server_status_code INTEGER,                      -- statusCode from agent:transmit:response
   ack_outcome        TEXT    NOT NULL DEFAULT 'pending', -- source leg, independent of state; see §4
   last_error         TEXT,                         -- human-readable failure detail
-  error_code         TEXT,                         -- machine-readable QueueErrorCode (Bot/server-leg failure or intake-reject reason)
+  error_code         TEXT,                         -- machine-readable QueueErrorCode (Bot/server-leg failure or intake-reject reason); the retry policy gates on this, never on last_error (§4.1)
+  next_attempt_at    INTEGER,                      -- earliest ms a retry-scheduled 'queued' row may be re-claimed; NULL unless an auto-retry backoff is pending (§4.1)
+  guaranteed_delivery INTEGER NOT NULL DEFAULT 0,  -- snapshot of the channel's guaranteedDelivery at intake; drives recoverOnStartup's requeue-vs-fail of an interrupted row (§4.1, §10)
   seq_no             INTEGER,                      -- MSH.13 assigned by agent (if assignSeqNo)
   received_at        INTEGER NOT NULL,             -- ms epoch (handleMessage entry); also the commit timestamp (CA fires synchronously after the durable write)
   processing_started_at INTEGER,                   -- when the worker claimed the row (entered 'claimed')
@@ -228,8 +230,9 @@ the stored ACK (§8) and flips the row to `delivered`.
                       │ INSERT (channel.handleMessage, before CA)
                       ▼
                 ┌───────────┐
-   recovery ───►│  queued   │◄──── (startup: requeue prior queued AND claimed-but-unsent)
-                └─────┬─────┘
+   recovery ───►│  queued   │◄──── startup: requeue prior queued, claimed-but-unsent,
+                └─────┬─────┘       AND guaranteed-delivery inflight rows (§10);
+                      │             also where a scheduled auto-retry lands (§4.1)
                       │ worker: claim
                       ▼
                 ┌───────────┐
@@ -244,9 +247,10 @@ the stored ACK (§8) and flips the row to `delivered`.
    (permanent)       │                          │
         ▼            │                          ▼
    ┌──────────┐      │                   ┌────────────┐
-   │ rejected │      │                   │   failed   │ (transient/ambiguous;
-   └──────────┘      │                   └────────────┘  interrupted inflight rows
-                     ▼                                    land here on startup — §10)
+   │ rejected │      │                   │   failed   │ (transient/ambiguous. Auto-retry
+   └──────────┘      │                   └────────────┘  (§4.1) returns retryable failures to
+                     ▼                                    `queued` w/ backoff instead; interrupted
+                                                          inflight rows land here on startup — §10)
    ┌─────────┐  server 2xx → state=processed; ack leg recorded separately:
    │processed│      ack_outcome = delivered (ACK sent) | undelivered (source gone)
    └────┬────┘                                    │
@@ -259,24 +263,24 @@ the stored ACK (§8) and flips the row to `delivered`.
 
 **Bot/server-leg states** (`state`), exhaustively:
 
-| State | Set when | Set by | Terminal? |
-|---|---|---|---|
-| `queued` | row inserted, before WS send | `DurableQueue.enqueue` | no |
-| `claimed` | worker claimed the row off the queue, but the `agent:transmit:request` is not yet on the wire (still buffered in the in-memory WS queue) | `DurableQueue.claimNext` | no |
-| `inflight` | the request was written to the socket (`sent_at` stamped); awaiting the Bot/server response | `DurableQueue.markSent` (from `App.sendToWebSocket`) | no |
-| `processed` | the Bot/server returned 2xx (accepted it). Says nothing about the source ACK — see `ack_outcome` | `ChannelQueueWorker.markProcessed` | yes |
-| `rejected` | the Bot/server returned a permanent 4xx (other than 429) — the message itself was rejected; retrying can never help | `ChannelQueueWorker.markRejected` | yes (never retried) |
-| `failed` | transient/ambiguous Bot/server-leg failure: 5xx, 429, response timeout, dispatch error, or a row found `inflight` on startup (interrupted) | `ChannelQueueWorker.markFailed` + `DurableQueue.recoverOnStartup` | yes (retry/review candidate) |
-| `nacked` | the row was rejected at intake (DB error, duplicate-reject, malformed) before it ever queued — audit only | `DurableQueue.enqueueRejected` | yes |
+| State       | Set when                                                                                                                                                                                                                                                                                                   | Set by                                                            | Terminal?                    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------- |
+| `queued`    | row inserted, before WS send; OR a retryable failure was scheduled for auto-retry (`next_attempt_at` set — §4.1)                                                                                                                                                                                           | `DurableQueue.enqueue`, `DurableQueue.scheduleRetry`              | no                           |
+| `claimed`   | worker claimed the row off the queue, but the `agent:transmit:request` is not yet on the wire (still buffered in the in-memory WS queue)                                                                                                                                                                   | `DurableQueue.claimNext`                                          | no                           |
+| `inflight`  | the request was written to the socket (`sent_at` stamped); awaiting the Bot/server response                                                                                                                                                                                                                | `DurableQueue.markSent` (from `App.sendToWebSocket`)              | no                           |
+| `processed` | the Bot/server returned 2xx (accepted it). Says nothing about the source ACK — see `ack_outcome`                                                                                                                                                                                                           | `ChannelQueueWorker.markProcessed`                                | yes                          |
+| `rejected`  | the Bot/server returned a permanent 4xx (other than 429) — the message itself was rejected; retrying can never help                                                                                                                                                                                        | `ChannelQueueWorker.markRejected`                                 | yes (never retried)          |
+| `failed`    | transient/ambiguous Bot/server-leg failure: 5xx, 429, response timeout, dispatch error, or a row found `inflight` on startup (interrupted). Guaranteed mode (the default) retries all of these; normal mode retries only the transient codes and leaves the ambiguous ones here for operator review — §4.1 | `ChannelQueueWorker.markFailed` + `DurableQueue.recoverOnStartup` | yes (retry/review candidate) |
+| `nacked`    | the row was rejected at intake (DB error, duplicate-reject, malformed) before it ever queued — audit only                                                                                                                                                                                                  | `DurableQueue.enqueueRejected`                                    | yes                          |
 
 **Source-leg outcomes** (`ack_outcome`), exhaustively:
 
-| Outcome | Meaning | Set by |
-|---|---|---|
-| `pending` | owed but not yet resolved (the default while queued/claimed/inflight; also left on interrupted `failed` rows where the leg is genuinely unknown) | default / `recoverOnStartup` |
-| `delivered` | the source received the app-level ACK (incl. policy-suppressed no-op sends); also set when a retransmit replays a previously-undelivered ACK | `markProcessed(…, DELIVERED)` / `setAckOutcome` |
-| `undelivered` | the Bot accepted the message but the ACK couldn't reach the source (connection closed) — the actionable signal | `markProcessed(…, UNDELIVERED)` |
-| `not_owed` | no app-level ACK will be delivered: intake-`nacked`, or the Bot/server leg ended `rejected`/`failed` | `enqueueRejected` / `markRejected` / `markFailed` |
+| Outcome       | Meaning                                                                                                                                          | Set by                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| `pending`     | owed but not yet resolved (the default while queued/claimed/inflight; also left on interrupted `failed` rows where the leg is genuinely unknown) | default / `recoverOnStartup`                      |
+| `delivered`   | the source received the app-level ACK (incl. policy-suppressed no-op sends); also set when a retransmit replays a previously-undelivered ACK     | `markProcessed(…, DELIVERED)` / `setAckOutcome`   |
+| `undelivered` | the Bot accepted the message but the ACK couldn't reach the source (connection closed) — the actionable signal                                   | `markProcessed(…, UNDELIVERED)`                   |
+| `not_owed`    | no app-level ACK will be delivered: intake-`nacked`, or the Bot/server leg ended `rejected`/`failed`                                             | `enqueueRejected` / `markRejected` / `markFailed` |
 
 `nacked` is distinct from the Bot/server-leg failures: `rejected`/`failed` rows were
 committed (we ACKed CA, then later failed downstream), whereas `nacked` rows were
@@ -286,29 +290,56 @@ since the durable write that triggers CA happens synchronously at intake and wou
 always equal `received_at`. `nacked` rows carry `ack_outcome='not_owed'` with a
 non-AA code and exist for forensics only.
 
-The split is also what keeps the (future) Path-2 retry layer safe: it re-dispatches
+The split is also what keeps the auto-retry layer (§4.1) safe: it re-dispatches
 `failed` rows only, never `rejected` (can't help) and never `processed` +
 `undelivered` (the Bot/server already has it — re-dispatching would double-process
 upstream and loop against the dead source). If the worker crashes between the
 Bot/server response and sending the app-level ACK, the row is `inflight` on
 restart and goes to `failed` (`interrupted`); it preserves `server_response_body`
 and `server_status_code` so an operator can manually replay the ACK if needed.
-(A row that crashed *before* the request reached the socket is `claimed`, not
+(A row that crashed _before_ the request reached the socket is `claimed`, not
 `inflight`, and recovery requeues it instead — it provably never reached the Bot/server.)
 
-> **Note for the Path-2 retry layer (not yet built):** `failed` is not uniform —
-> it spans *transient* codes (`server-error`/5xx, `server-rate-limited`/429) and
-> *ambiguous* codes (`response-timeout`, `interrupted`, `worker-stopped`,
-> `dispatch-failed`). Only the **transient** codes are safe to auto-redispatch:
-> for them the request provably did not produce a result, so retrying can't
-> double-process. The **ambiguous** codes mean the Bot/server *may* have processed the
-> message and the result/response was lost — auto-redispatching risks duplicate
-> upstream processing. So a retry policy must gate on the error code, not on the
-> `failed` state alone: auto-retry transient codes; leave ambiguous ones for
-> operator review (or unblock them with server-side callback-keyed dedupe — see
-> the risk table in §16 — which would make redispatch idempotent and therefore
-> safe for the ambiguous codes too). The `QueueErrorCode` enum already records the
-> transient-vs-ambiguous classification for exactly this purpose.
+> **The retry layer keys off `error_code`, never the `failed` state alone:** `failed`
+> is not uniform — it spans _transient_ codes (`server-error`/5xx, `server-rate-limited`/429)
+> and _ambiguous_ codes (`response-timeout`, `interrupted`, `worker-stopped`,
+> `dispatch-failed`). Only the **transient** codes are safe to auto-redispatch in
+> normal mode: for them the request provably did not produce a result, so retrying
+> can't double-process. The **ambiguous** codes mean the Bot/server _may_ have
+> processed the message and the result/response was lost — re-dispatching risks
+> duplicate upstream processing, so normal mode leaves them for operator review.
+> Guaranteed-delivery mode (the default) deliberately retries the ambiguous codes
+> too, accepting that duplication risk to keep trying until upstream answers
+> definitively. The `QueueErrorCode` enum records the transient-vs-ambiguous
+> classification for exactly this gate. See §4.1 for the full policy.
+
+### 4.1 Auto-retry and guaranteed delivery
+
+Every post-commit failure is classified at the failure site with a `QueueErrorCode` (stored in `error_code` — never derived by parsing `last_error`). The retry policy keys off this code, **not** the `failed` state, because `failed` holds both transient and ambiguous codes.
+
+> **The default is guaranteed-delivery mode** (the right column below). This is a deliberate, historical choice: the Medplum server's agent WebSocket transmit handler (`packages/server/src/ws/agent.ts`) collapses **every** Bot-execution failure to HTTP `400` and does not disambiguate a permanent rejection from a transient/ephemeral one. With no reliable transient-vs-permanent signal from the server, the only safe default is to assume any error might be ephemeral and keep retrying — otherwise a genuinely retryable failure would be silently dropped, defeating the durable queue. The cost is possible duplicate delivery. Operators who cannot tolerate duplicates should try `normal` mode (`retryMode=normal`, the left column) or **dedupe in their Bot** — e.g. record processed message control IDs (MSH-10) on a FHIR resource such as `MessageHeader` and skip a control ID that has already been handled. Once the server differentiates status codes (5xx/429 for transient, 4xx for permanent — the agent already classifies these, see `classifyStatusCode`), normal mode becomes a safe default again.
+
+| Code                  | Class             | Normal mode           | Guaranteed mode       | Meaning                                                                        |
+| --------------------- | ----------------- | --------------------- | --------------------- | ------------------------------------------------------------------------------ |
+| `server-error`        | transient         | retry                 | retry                 | server returned 5xx                                                            |
+| `server-rate-limited` | transient         | retry                 | retry                 | server returned 429                                                            |
+| `response-timeout`    | ambiguous         | terminal → `failed`   | retry                 | timed out waiting for the server response; delivery unknown                    |
+| `interrupted`         | ambiguous         | terminal → `failed`   | requeued at startup   | row found `inflight` at startup (claimed-but-unsent rows always requeue — §10) |
+| `worker-stopped`      | ambiguous         | terminal → `failed`   | retry                 | in-flight dispatch cancelled by worker shutdown                                |
+| `dispatch-failed`     | ambiguous         | terminal → `failed`   | retry                 | dispatch failed for an unclassified reason                                     |
+| `server-rejected`     | permanent         | terminal → `rejected` | retry                 | server returned non-429 4xx with no definitive HL7 ACK                         |
+| `upstream-error`      | (guaranteed only) | n/a                   | retry                 | upstream answered MSA-1 of AE/CE (application/commit error)                    |
+| `upstream-rejected`   | permanent         | n/a                   | terminal → `rejected` | upstream answered MSA-1 of AR/CR — definitive reject                           |
+
+A failed _source ACK_ (the Bot accepted the message but we couldn't return the ACK) is deliberately absent from this table: it is **not** a Bot-leg failure and never enters the retry path. It is recorded on the `ack_outcome` axis as `processed` + `undelivered` and recovers via a source retransmit (§8) — re-dispatching would double-process.
+
+**Normal mode** (`retryMode=normal`, opt-out): only the **transient** codes in `RETRYABLE_ERROR_CODES` retry — a retry can never cause duplicate delivery, because the server provably never accepted the message. The ambiguous codes stay in `failed` for operator review (never silently re-dispatched), and permanent codes land in `rejected`. Note that with today's 400-only server (above), normal mode treats nearly every Bot failure as a permanent `rejected` and its transient auto-retry is effectively dormant — which is exactly why it is _not_ the default. This mode becomes the safe default once the server differentiates status codes.
+
+**Guaranteed-delivery mode** (`retryMode=guaranteed`, **on by default** — see the note above): the channel keeps dispatching until upstream gives a definitive HL7 answer for the message — MSA-1 of AA/CA (→ `processed`) or AR/CR (→ `rejected`) — explicitly accepting duplicate-delivery risk on the way, **including for the ambiguous codes**. The worker reads MSA-1 from the server response body (`Hl7Message.getAckType()`); AE/CE and all transport/HTTP failures retry. The channel's setting is snapshotted onto each row at intake (`guaranteed_delivery` column) so `recoverOnStartup` — which runs before channel policies are resolved — requeues interrupted guaranteed `inflight` rows instead of failing them: the guarantee survives restarts (a claimed-but-unsent row requeues regardless of the setting, since it provably never reached the server — §10). Because `retryMode` is a single enum, the "guaranteed but retry disabled" combination is unrepresentable — no forcing/warning is needed for it. Guaranteed mode implies `maxAttempts = 0` (unlimited); an explicitly configured nonzero `autoRetryMaxAttempts` conflicts — we warn and respect the cap, at which point delivery is no longer strictly guaranteed.
+
+On a retry decision, `ChannelQueueWorker.handleFailure` calls `DurableQueue.scheduleRetry`: the row (currently `claimed` or `inflight`) returns to `queued` with `next_attempt_at = now + min(maxDelayMs, baseDelayMs * multiplier^(attempt-1))` and `sent_at` cleared. Otherwise the row lands on its terminal state by classification — `rejected` for permanent codes, `failed` for everything else — with `error_code` recorded either way.
+
+Retries are **head-of-line blocking**: `claimNext` still selects the lowest-id `queued` row but returns nothing while that head row's `next_attempt_at` is in the future, so younger rows cannot skip ahead — preserving the per-channel FIFO guarantee (§1.1). A poison message blocks its channel only until `maxAttempts` exhausts (indefinitely in guaranteed mode — that is the contract). `attempt_count` keeps its meaning ("times the message could have reached the server"); `scheduleRetry` does not touch it because `claimNext` already counted the attempt (unlike `requeue` of a provably-unsent `claimed` row, which decrements it).
 
 ---
 
@@ -411,7 +442,7 @@ Non-durable channels are unchanged: when `durableQueue` is off, the connection k
 In `enhancedMode=aaMode`, the sender expects an **AA** as the immediate ACK; there is no separate app-level AA that follows. With the agent owning the commit ACK:
 
 - On successful commit, send AA.
-- On a *storage* failure, send AE (Application Error) — the retryable code. The failure is transient (disk full, DB locked), so we want the sender to retransmit; because we never committed, the resend is accepted fresh. On a terminal *rejection* (duplicate), send AR — a hard reject the sender must not retry.
+- On a _storage_ failure, send AE (Application Error) — the retryable code. The failure is transient (disk full, DB locked), so we want the sender to retransmit; because we never committed, the resend is accepted fresh. On a terminal _rejection_ (duplicate), send AR — a hard reject the sender must not retry.
 
 We document this behavior change clearly in the channel URL `enhanced=aa` docs.
 
@@ -421,20 +452,32 @@ We document this behavior change clearly in the channel URL `enhanced=aa` docs.
 
 Existing `Agent.setting[]` array continues to be the project-settings carrier. New entries:
 
-| Setting name | Type | Default | Meaning |
-|---|---|---|---|
-| `durableQueue` | `valueBoolean` | `true` (after rollout) / `false` (initial release, behind flag) | Master switch. When `false`, agent behaves exactly as today (in-memory queues, immediate CA). When `true`, all HL7 channels route through SQLite. |
-| `queueDbPath` | `valueString` | `<logDir>/medplum-agent-queue.sqlite` | Absolute path override for the DB file. |
-| `queueRetentionDays` | `valueInteger` | `7` | Delete fully-done `processed` rows (ACK delivered/not-owed) older than this. |
-| `queueRetentionMaxMb` | `valueInteger` | `512` | Soft cap on DB size. When exceeded, sweeper deletes oldest fully-done `processed` first, then oldest floor-protected rows — `rejected`/`failed`/`nacked` and `processed`+`undelivered` (with safeguard: minimum errored-floor retention regardless of size cap). |
-| `queueErroredRetentionDays` | `valueInteger` | `90` | Floor for `rejected`/`failed`/`nacked` and `processed`+`undelivered` retention. |
-| `queueSweepIntervalSecs` | `valueInteger` | `3600` | How often the retention sweeper runs. |
+| Setting name                        | Type           | Default                                                         | Meaning                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------- | -------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `durableQueue`                      | `valueBoolean` | `true` (after rollout) / `false` (initial release, behind flag) | Master switch. When `false`, agent behaves exactly as today (in-memory queues, immediate CA). When `true`, all HL7 channels route through SQLite.                                                                                                                                                                                            |
+| `queueDbPath`                       | `valueString`  | `<logDir>/medplum-agent-queue.sqlite`                           | Absolute path override for the DB file.                                                                                                                                                                                                                                                                                                      |
+| `queueRetentionDays`                | `valueInteger` | `7`                                                             | Delete fully-done `processed` rows (ACK delivered/not-owed) older than this.                                                                                                                                                                                                                                                                 |
+| `queueRetentionMaxMb`               | `valueInteger` | `512`                                                           | Soft cap on DB size. When exceeded, sweeper deletes oldest fully-done `processed` first, then oldest floor-protected rows — `rejected`/`failed`/`nacked` and `processed`+`undelivered` (with safeguard: minimum errored-floor retention regardless of size cap).                                                                             |
+| `queueErroredRetentionDays`         | `valueInteger` | `90`                                                            | Floor for `rejected`/`failed`/`nacked` and `processed`+`undelivered` retention.                                                                                                                                                                                                                                                              |
+| `queueSweepIntervalSecs`            | `valueInteger` | `3600`                                                          | How often the retention sweeper runs.                                                                                                                                                                                                                                                                                                        |
+| `channelRetryMode`                  | `valueString`  | `guaranteed`                                                    | Agent-wide default retry mode (§4.1): `none` (no auto-retry), `normal` (retry transient failures, bounded), or `guaranteed` (retry every failure until upstream answers, unlimited). `guaranteed` by default while the server returns 400 for every failure (see §4.1); set `normal` to dedupe in your Bot, or `none` to disable auto-retry. |
+| `channelAutoRetryBaseDelayMs`       | `valueInteger` | `1000`                                                          | Delay before the first retry.                                                                                                                                                                                                                                                                                                                |
+| `channelAutoRetryMaxDelayMs`        | `valueInteger` | `60000`                                                         | Cap on the computed backoff delay.                                                                                                                                                                                                                                                                                                           |
+| `channelAutoRetryMaxAttempts`       | `valueInteger` | `0` when `guaranteed` (the default); `10` when `normal`         | Total dispatch attempts before a retryable failure becomes terminal; `0` = retry indefinitely.                                                                                                                                                                                                                                               |
+| `channelAutoRetryBackoffMultiplier` | `valueDecimal` | `2`                                                             | Exponential base; `1` = fixed-interval retry.                                                                                                                                                                                                                                                                                                |
 
 Per-channel URL query parameters (parsed in `configureHl7ServerAndConnections`, like existing `enhanced`, `encoding`, etc.):
 
-| Param | Values | Default | Meaning |
-|---|---|---|---|
-| `duplicateBehavior` | `reject` \| `idempotent` | `idempotent` | What to do when a row with the same `(channel, MSH.10)` is still in `queued`, `claimed`, or `inflight`. `reject` sends `CR` (enhanced) / `AR` (aaMode) and inserts a `nacked` row; `idempotent` returns the prior stored ACK (or a synthetic AA) and does not re-insert. |
+| Param                        | Values                             | Default                              | Meaning                                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ---------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `duplicateBehavior`          | `reject` \| `idempotent`           | `idempotent`                         | What to do when a row with the same `(channel, MSH.10)` is still in `queued`, `claimed`, or `inflight`. `reject` sends `CR` (enhanced) / `AR` (aaMode) and inserts a `nacked` row; `idempotent` returns the prior stored ACK (or a synthetic AA) and does not re-insert.                   |
+| `retryMode`                  | `none` \| `normal` \| `guaranteed` | agent setting (default `guaranteed`) | Per-channel override of `channelRetryMode` (§4.1). Requires the durable queue; configuring it explicitly with the queue off logs a warning and has no effect. `guaranteed` implies unlimited attempts — an explicit nonzero `autoRetryMaxAttempts` wins over that (warn, respect the cap). |
+| `autoRetryBaseDelayMs`       | number ≥ 1                         | agent setting                        | Per-channel override of `channelAutoRetryBaseDelayMs`.                                                                                                                                                                                                                                     |
+| `autoRetryMaxDelayMs`        | number ≥ 1                         | agent setting                        | Per-channel override of `channelAutoRetryMaxDelayMs`.                                                                                                                                                                                                                                      |
+| `autoRetryMaxAttempts`       | number ≥ 0                         | agent setting                        | Per-channel override of `channelAutoRetryMaxAttempts`; `0` = retry indefinitely.                                                                                                                                                                                                           |
+| `autoRetryBackoffMultiplier` | number ≥ 1                         | agent setting                        | Per-channel override of `channelAutoRetryBackoffMultiplier`.                                                                                                                                                                                                                               |
+
+Auto-retry resolution is per-field: endpoint URL param → agent `channelRetryMode` / `channelAutoRetry*` setting → built-in default (see `resolveRetryPolicy` in `hl7.ts`). Invalid values warn and fall through to the next layer.
 
 `Agent.setting` is the established pattern (see memory `[[feedback_project_settings_pattern]]`).
 
@@ -470,13 +513,13 @@ The runtime path replacing today's `AgentHl7ChannelConnection.handleMessage` (`h
 
 Failure handling matrix:
 
-| Failure point | Source sees | Row state |
-|---|---|---|
-| Body parse fails before INSERT (no MSH.10) | `CR`/`AR` (sendCommitNack with 'malformed') in enhanced mode; nothing in standard mode (current behavior) | `nacked` (with `msg_control_id=NULL`, `last_error='unparseable'`) — best effort |
-| INSERT fails (disk full, permission, corrupted DB) | `CE`/`AE` (sendCommitNack with 'storage error') — retryable, so the peer can retransmit | best-effort `nacked` write to a separate journal log file (DB is presumed unwritable) |
-| Duplicate (reject mode) | `CR`/`AR` (sendCommitNack with 'duplicate') — terminal | `nacked` |
-| Duplicate (idempotent mode) | prior stored ACK (or synthetic AA) | none (no new row) |
-| INSERT succeeds | `CA`/`AA` (sendCommitAck) | `queued` |
+| Failure point                                      | Source sees                                                                                               | Row state                                                                             |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Body parse fails before INSERT (no MSH.10)         | `CR`/`AR` (sendCommitNack with 'malformed') in enhanced mode; nothing in standard mode (current behavior) | `nacked` (with `msg_control_id=NULL`, `last_error='unparseable'`) — best effort       |
+| INSERT fails (disk full, permission, corrupted DB) | `CE`/`AE` (sendCommitNack with 'storage error') — retryable, so the peer can retransmit                   | best-effort `nacked` write to a separate journal log file (DB is presumed unwritable) |
+| Duplicate (reject mode)                            | `CR`/`AR` (sendCommitNack with 'duplicate') — terminal                                                    | `nacked`                                                                              |
+| Duplicate (idempotent mode)                        | prior stored ACK (or synthetic AA)                                                                        | none (no new row)                                                                     |
+| INSERT succeeds                                    | `CA`/`AA` (sendCommitAck)                                                                                 | `queued`                                                                              |
 
 ---
 
@@ -552,7 +595,7 @@ Notes:
 
 - **One worker per channel**, owned by `AgentHl7Channel`. Started in `start()`, stopped in `stop()`. Channel close drains its worker before closing the TCP server.
 - **Cross-process correlation by `callback_id`**, not by message control ID — the server echoes whatever `callback` we send. We mint a UUID-based callback per row, indexed.
-- **WS dispatch is queued** (not synchronous) — `addToWebSocketQueue` still drives the existing `webSocketQueue` for actual transport. The durable queue is the *source of truth*; the in-memory WS queue is just a fan-out buffer that gets re-filled from SQLite on restart for `queued` rows.
+- **WS dispatch is queued** (not synchronous) — `addToWebSocketQueue` still drives the existing `webSocketQueue` for actual transport. The durable queue is the _source of truth_; the in-memory WS queue is just a fan-out buffer that gets re-filled from SQLite on restart for `queued` rows.
 - **On WS disconnect** while a row is in flight, the worker checks whether its `agent:transmit:request` is still sitting unsent in the in-memory WS queue. If it is, the row is still `claimed`, the Bot/server provably never saw it — the request is removed and the row is returned to `queued` (`DurableQueue.requeue`, which also un-counts the attempt), so it retries on reconnect with zero duplicate-delivery risk. If the request already went out on the wire (the row is `inflight`), delivery is ambiguous (the Bot/server may have processed it and the response was lost) and the row is left to the response timeout → `failed` — same conservative stance as `recoverOnStartup`. The `claimed`/`inflight` split mirrors this same unsent-vs-sent distinction durably on disk.
 - **Backpressure**: while the WS is disconnected (`app.isLive() === false`), the worker loop idles without claiming rows — no dispatch is started, no response timer runs. Rows accumulate in `queued` — that's exactly the point. On `agent:connect:response` the app notifies every channel worker so draining starts immediately.
 - **Leader-gated**: the worker only runs while this process holds the dispatch lease, and it self-terminates (without settling its in-flight row) the moment a peer takes the lease. The mechanics — `getDispatchQueue()` at start, `QueueLeaseError` on every dispatch-class op, and the heartbeat-driven in-flight watchdog — are detailed in §9.2.
@@ -608,13 +651,13 @@ it survives the overlap cleanly:
 
 **Two levels of enforcement, optimistic + authoritative:**
 
-1. *Optimistic (cheap, in-memory):* `App.getDispatchQueue()` returns the queue
+1. _Optimistic (cheap, in-memory):_ `App.getDispatchQueue()` returns the queue
    handle only while `isQueueLeader()`, else `undefined`. `getDurableQueue()` is
    the ungated handle for intake/maintenance/diagnostics. `AgentHl7Channel`
    starts a worker only when `getDispatchQueue()` is non-null;
    `onBecameQueueLeader` calls back in to start workers the moment the lease is
    acquired (whether at startup or on a later takeover).
-2. *Authoritative (data layer):* `startDispatchLease()` binds this process's holder
+2. _Authoritative (data layer):_ `startDispatchLease()` binds this process's holder
    ID into the queue (the same field `setLeaseHolder()` sets), and every dispatch-class mutation
    (`claimNext`, `recordServerResponse`, `markProcessed`, `markRejected`,
    `markFailed`, `requeue`) first calls `assertNotDemoted()`, which throws
@@ -625,7 +668,7 @@ it survives the overlap cleanly:
 
 **There is no `onLostLeadership` callback.** Loss is not pushed down a chain of
 callbacks; it surfaces as a `QueueLeaseError` at the point of mutation and the
-worker tears *itself* down:
+worker tears _itself_ down:
 
 - An **idle** worker sees it on its next `claimNext` poll.
 - A worker **wedged awaiting a Bot/server response** can't poll, so an in-flight
@@ -658,7 +701,7 @@ stopped worker (`isRunning() === false`) and starts a fresh one.
             └─ catches QueueLeaseError → stop loop, leave row for new leader
 ```
 
-On graceful shutdown `App.stop()` releases the lease *before* closing the DB so a
+On graceful shutdown `App.stop()` releases the lease _before_ closing the DB so a
 waiting peer takes over immediately instead of waiting out the TTL.
 
 ---
@@ -668,40 +711,60 @@ waiting peer takes over immediately instead of waiting out the TTL.
 `DurableQueue.recoverOnStartup()` runs from `App.onBecameQueueLeader` — i.e. the
 instant this process acquires the dispatch lease (§9.2), before its channel
 workers start claiming. Gating it on leadership is what makes it safe: it is the
-authoritative single-writer reconciliation of rows the *previous* dispatcher left
+authoritative single-writer reconciliation of rows the _previous_ dispatcher left
 mid-flight, so it must run only when no peer can still be dispatching. For a
 normally-started agent that is startup; for a process that takes over after an
 upgrade or a peer's death, it is the moment of takeover (and it fires again on any
 later re-acquisition — `recoverOnStartup` is idempotent). It also reconciles the
-in-flight row a *demoted* worker on this same process deliberately left behind
+in-flight row a _demoted_ worker on this same process deliberately left behind
 when it stepped down (§9.2). The reconciliation:
 
+An `inflight` row is ambiguous (the request reached the wire but we never saw the
+response), so its disposition depends on the channel's guaranteed-delivery setting,
+snapshotted onto the row at intake (`guaranteed_delivery` — §4.1): a **normal** channel
+parks it in `failed` for operator review; a **guaranteed** channel returns it to `queued`
+to keep trying (duplication risk accepted). A `claimed` row provably never left the
+process, so it always requeues regardless of the setting.
+
 ```sql
--- 1. Any `inflight` row is ambiguous — the request reached the wire but we never
---    saw the response, so we don't know if the Bot/server processed it or whether the
---    source ACK was owed/sent. It lands in `failed` (interrupted), the retry/review
---    bucket, with ack_outcome left `pending` (genuinely unknown).
+-- 1. `inflight` on a NORMAL channel is ambiguous and review-only → `failed`
+--    (interrupted), with ack_outcome left `pending` (genuinely unknown).
 UPDATE inbound_hl7_messages
    SET state = 'failed',
        errored_at = $now,
        last_error = COALESCE(last_error, 'interrupted: process restart while inflight'),
        error_code = COALESCE(error_code, 'interrupted')
- WHERE state = 'inflight';
+ WHERE state = 'inflight' AND guaranteed_delivery = 0;
 
--- 2. Any `claimed` row provably never left the process (sent_at is NULL — the
+-- 2. `inflight` on a GUARANTEED channel → back to `queued` (keep trying until
+--    upstream answers definitively). sent_at / next_attempt_at cleared so it is
+--    immediately claimable; the guarantee survives the restart (§4.1).
+UPDATE inbound_hl7_messages
+   SET state = 'queued',
+       processing_started_at = NULL,
+       sent_at = NULL,
+       next_attempt_at = NULL,
+       last_error = 'interrupted: process restart while inflight',
+       error_code = 'interrupted'
+ WHERE state = 'inflight' AND guaranteed_delivery = 1;
+
+-- 3. Any `claimed` row provably never left the process (sent_at is NULL — the
 --    request never hit the socket), so there is no duplicate-delivery risk: return
 --    it to `queued` and un-count the claim's attempt. The worker re-dispatches it.
+--    Always safe, independent of guaranteed_delivery.
 UPDATE inbound_hl7_messages
    SET state = 'queued',
        processing_started_at = NULL,
        attempt_count = MAX(0, attempt_count - 1)
  WHERE state = 'claimed';
 
--- 3. `queued` rows resume automatically — the worker will pick them up.
+-- 4. `queued` rows resume automatically — the worker will pick them up.
 -- (No DDL change; just here for clarity.)
 ```
 
-Recovery emits a single info log: `Recovered N queued rows; M rows promoted to failed (interrupted)`.
+`recoverOnStartup` returns `{ failed, requeued }` (requeued counts both the always-safe
+`claimed` rows and the guaranteed `inflight` rows). Recovery emits a single info log on
+acquiring the lease: `promoted M interrupted row(s) to failed, requeued N guaranteed-delivery row(s)`.
 
 Operator playbook for `failed`/`rejected` rows (documented in `packages/agent/README.md`):
 
@@ -784,6 +847,7 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 ## 13. Code Changes (file-by-file)
 
 **New:**
+
 - `packages/agent/src/queue/types.ts` — `MessageState`, `InboundRow`, `QueueError`, `QueueLeaseError`, etc.
 - `packages/agent/src/queue/schema.ts` — DDL + `MIGRATIONS` (incl. the `_lease` table).
 - `packages/agent/src/queue/durable-queue.ts` — `DurableQueue` class (opens DB, prepared statements, all CRUD, lease primitives, the `assertNotDemoted` dispatch gate, and the in-class dispatch-lease loop `startDispatchLease`/`stopDispatchLease`/`isLeader`; §9.2).
@@ -795,12 +859,13 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - `packages/agent/src/queue/retention.test.ts` — retention/purge tests.
 
 **Modified:**
+
 - `packages/agent/src/app.ts` —
   - On construction, open `DurableQueue` if `durableQueue` setting is on.
   - Call `durableQueue.startDispatchLease(...)`; `onBecameQueueLeader` runs `recoverOnStartup` and brings up channel workers (§9.2). `isQueueLeader()` reads `durableQueue.isLeader()`.
   - Expose `getDurableQueue()` (ungated handle, for intake/maintenance/diagnostics) vs `getDispatchQueue()` (leader-gated, for the worker-start path).
   - In WS message handler, route `agent:transmit:response` through the worker first (§9.1).
-  - On `stop()`, drain workers, release the lease *before* closing the DB, close retention sweeper.
+  - On `stop()`, drain workers, release the lease _before_ closing the DB, close retention sweeper.
   - In `reloadConfig`, propagate `queueDbPath`, retention settings, etc.
 - `packages/agent/src/hl7.ts` —
   - `AgentHl7Channel.start()` instantiates a `ChannelQueueWorker`; `stop()` drains it. `maybeStartWorker()` is leader-gated on `getDispatchQueue()` and reaps a worker that stepped down (`!isRunning()`) so a later re-acquisition starts a fresh one.
@@ -813,6 +878,7 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - `packages/agent/esbuild.mjs` — mark `node:sqlite` as external (it is by default for `node:` prefix).
 
 **Docs:**
+
 - `packages/agent/README.md` — section "Durable queue" with operator runbook (recovery, replay, DB inspection).
 
 ---
@@ -822,6 +888,7 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 ### 14.1 Unit tests
 
 `durable-queue.test.ts`:
+
 - enqueue + read back, with binary body roundtrip.
 - duplicate insert in `reject` mode throws `SqliteError` with `SQLITE_CONSTRAINT_UNIQUE`.
 - duplicate insert in `idempotent` mode returns prior row.
@@ -832,6 +899,7 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - Schema migration: open against an empty file (v0) → ends at v1. Re-open is a no-op.
 
 `worker.test.ts`:
+
 - Single-channel happy path: enqueue 5 → worker processes in order → all `processed` + `delivered`.
 - Bot/server returns permanent 4xx → row goes to `rejected` (ack `not_owed`); 5xx/429 → `failed`; worker proceeds to next.
 - WS not live → worker idles without claiming; rows stay `queued` and drain on reconnect.
@@ -842,22 +910,26 @@ Reuses existing `ILogger` (`channelLog` for per-message, `log` for queue/sweeper
 - Peer steals the lease while a dispatch is **wedged** awaiting a response → the heartbeat-driven in-flight watchdog cancels it well before the response timeout, and the worker leaves the row unsettled (`claimed`/`inflight`) for the new leader (§9.2).
 
 `durable-queue-lease.test.ts`:
+
 - `startDispatchLease` acquires the lease and fires `onBecameLeader`; a second queue (same DB file) waits as follower until the first releases / its lease lapses, then takes over. `startDispatchLease` is idempotent (a second call doesn't restart the loop).
 - Heartbeat extends the lease beyond its initial TTL; `stopDispatchLease()` releases immediately so a peer can acquire without waiting out the TTL; `stopDispatchLease()` on a non-leader is idempotent.
 - Losing the lease mid-run drops to follower and reacquires once the peer's lease lapses (there is no lost-leadership callback — loss is enforced at the data layer via `QueueLeaseError`).
 
 `retention.test.ts`:
+
 - Time-based deletion of fully-done `processed` rows; spares `failed` AND `processed`+`undelivered`.
 - Size-based cap forces deletion past time window, but respects the errored floor for `rejected`/`failed`/`nacked` and `processed`+`undelivered`.
 - Sweep is no-op when below thresholds.
 
 `hl7-connection.test.ts` (agent-side commit ACK):
+
 - Durable mode (connection enhancedMode unset): library auto-CA suppressed; `sendCommitAck` sends CA; `sendCommitNack` sends CR.
 - aaMode: `sendCommitAck` sends AA, `sendCommitNack` sends AR.
 
 ### 14.2 Integration tests
 
 Extend `packages/agent/src/hl7.test.ts`:
+
 - Spin up an in-process HL7 client + agent + mock Medplum WS server.
 - Send 10 messages with `enhanced=true&durableQueue=true`: assert CA arrives after row commits (insert SQLite trigger or pre-INSERT hook into a test queue to assert ordering).
 - Simulate DB write failure (point at a read-only path, or mock the prepared statement to throw): assert source receives CR, no row in DB.
@@ -884,6 +956,7 @@ Extend `packages/agent/src/hl7.test.ts`:
 5. **Phase 4 — Deprecate non-durable inbound path.** Two minor versions after Phase 3, remove the in-memory inbound path entirely.
 
 Backward compatibility:
+
 - Older Medplum servers do not need any change. Callbacks and message shapes are unchanged.
 - Older agents talking to a newer server: unaffected. The durable queue is purely agent-internal.
 
@@ -891,15 +964,15 @@ Backward compatibility:
 
 ## 16. Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| `node:sqlite` instability on Node 22 (experimental flag) | Detect at startup; surface clear error if module is unavailable. Internal canary on Node 24 (stable) first. Document version requirement. |
-| Synchronous SQLite on main thread → tail latency under load | Bench enqueue p99 in soak test. If unacceptable, move queue to a Worker Thread with a `MessagePort` interface (designed-in by keeping `DurableQueue` behind a narrow interface). |
-| Disk fills with `rejected`/`failed`/`undelivered` rows | Hard floor on errored retention + alert log when DB > 80% of `queueRetentionMaxMb`. |
-| Source retries (same MSH.10) after legitimate prior success | `duplicateBehavior=idempotent` (default) replays prior ACK; no double-forwarding. Also recovers a `processed`+`undelivered` row — the replay lands the missed ACK and flips it to `delivered`. |
-| Ambiguous delivery (request sent, connection dropped before response) | Not retried automatically — row goes to `failed` for operator review, same stance as `recoverOnStartup`. Only provably-unsent requests are requeued on disconnect. Future: callback-keyed dedupe in server would allow safe auto-retry. |
-| DB corruption | WAL + `PRAGMA synchronous=NORMAL` is durable across our crash. For HW power-loss, operators can set `synchronous=FULL` via the `queueSqliteSyncMode` setting (added if requested) at a throughput cost. |
-| Loss of `rejected`/`failed` rows surfaced to nobody | Stats endpoint reports `countsByState`; documented in operator runbook. Future: emit an `agent:error` WS message when a row first transitions to `rejected`/`failed`. |
+| Risk                                                                  | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `node:sqlite` instability on Node 22 (experimental flag)              | Detect at startup; surface clear error if module is unavailable. Internal canary on Node 24 (stable) first. Document version requirement.                                                                                                                                                                                                                                                                                   |
+| Synchronous SQLite on main thread → tail latency under load           | Bench enqueue p99 in soak test. If unacceptable, move queue to a Worker Thread with a `MessagePort` interface (designed-in by keeping `DurableQueue` behind a narrow interface).                                                                                                                                                                                                                                            |
+| Disk fills with `rejected`/`failed`/`undelivered` rows                | Hard floor on errored retention + alert log when DB > 80% of `queueRetentionMaxMb`.                                                                                                                                                                                                                                                                                                                                         |
+| Source retries (same MSH.10) after legitimate prior success           | `duplicateBehavior=idempotent` (default) replays prior ACK; no double-forwarding. Also recovers a `processed`+`undelivered` row — the replay lands the missed ACK and flips it to `delivered`.                                                                                                                                                                                                                              |
+| Ambiguous delivery (request sent, connection dropped before response) | In **normal** mode, not retried automatically — the row goes to `failed` for operator review (same stance as `recoverOnStartup`); only provably-unsent requests are requeued on disconnect. In **guaranteed-delivery** mode (the default — §4.1), it IS retried, accepting the duplicate-delivery risk until upstream answers definitively. Server-side callback-keyed dedupe would let normal mode retry these safely too. |
+| DB corruption                                                         | WAL + `PRAGMA synchronous=NORMAL` is durable across our crash. For HW power-loss, operators can set `synchronous=FULL` via the `queueSqliteSyncMode` setting (added if requested) at a throughput cost.                                                                                                                                                                                                                     |
+| Loss of `rejected`/`failed` rows surfaced to nobody                   | Stats endpoint reports `countsByState`; documented in operator runbook. Future: emit an `agent:error` WS message when a row first transitions to `rejected`/`failed`.                                                                                                                                                                                                                                                       |
 
 ---
 
@@ -916,6 +989,6 @@ Backward compatibility:
 
 ## 18. Open questions for review
 
-- ~~Should `nacked` and `errored` be unified into one terminal `failed` state?~~ **Resolved (opposite direction):** the single `errored` bucket was *split* — the Bot/server leg (`state`: `processed`/`rejected`/`failed`) and the source leg (`ack_outcome`: `delivered`/`undelivered`/`not_owed`) are now tracked on independent axes, so "Bot/server accepted but ACK undelivered" is its own queryable cell and the retry layer can key cleanly off `failed`. `nacked` stays distinct (intake reject, excluded from dedupe).
+- ~~Should `nacked` and `errored` be unified into one terminal `failed` state?~~ **Resolved (opposite direction):** the single `errored` bucket was _split_ — the Bot/server leg (`state`: `processed`/`rejected`/`failed`) and the source leg (`ack_outcome`: `delivered`/`undelivered`/`not_owed`) are now tracked on independent axes, so "Bot/server accepted but ACK undelivered" is its own queryable cell and the retry layer can key cleanly off `failed`. `nacked` stays distinct (intake reject, excluded from dedupe).
 - Do we want a per-channel `queueDepthLimit` that, when exceeded, refuses new messages with `CR` so we apply backpressure instead of unbounded queueing?
 - Worth surfacing `oldestQueuedAgeMs` as a heartbeat alarm condition? (Likely yes — silent backlog is the worst failure mode.)

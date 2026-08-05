@@ -108,5 +108,12 @@ const fhirPathParserBuilder = initFhirPathParserBuilder();
 export function parseFilterParameter(input: string): FhirFilterExpression {
   const parser = fhirPathParserBuilder.construct(tokenize(input));
   parser.removeComments();
-  return new FilterParameterParser(parser).parse();
+  const result = new FilterParameterParser(parser).parse();
+  const extra = parser.peek();
+  if (extra) {
+    // Anything left over means the expression was not fully understood. Returning the part that
+    // parsed would silently search for something other than what was asked for.
+    throw new OperationOutcomeError(badRequest('Unexpected token in _filter expression: ' + extra.value));
+  }
+  return result;
 }

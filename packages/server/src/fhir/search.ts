@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { FhirFilterExpression, Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -8,7 +8,6 @@ import {
   DEFAULT_SEARCH_COUNT,
   deriveIdentifierSearchParameter,
   EMPTY,
-  evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
   FhirFilterNegation,
@@ -16,41 +15,32 @@ import {
   forbidden,
   formatSearchQuery,
   getDataType,
-  getReferenceString,
   getSearchParameter,
   invalidSearchOperator,
-  isResource,
   isUUID,
   OperationOutcomeError,
   Operator,
   parseFhirPath,
   parseFilterParameter,
   parseParameter,
-  PropertyType,
   SearchParameterType,
   serverError,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
-  toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type {
-  Bundle,
-  BundleEntry,
-  BundleLink,
-  Reference,
-  Resource,
-  ResourceType,
-  SearchParameter,
-} from '@medplum/fhirtypes';
+import type { IncludeOptions } from '@medplum/fhir-router';
+import { getExtraEntries } from '@medplum/fhir-router';
+import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
-import { DatabaseMode } from '../database';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
+import { repoAccess } from './repository/access-tracker';
+import { parseHistoryContent } from './repository/row-builder';
 import { getFullUrl } from './response';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, SearchStrategies } from './searchparameter';
@@ -84,8 +74,6 @@ const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
  */
 export const minCursorBasedSearchPageSize = 20;
 
-const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
-
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
   offset: number;
@@ -96,6 +84,8 @@ interface Cursor {
   nextInstant: string;
   excludedIds?: string[];
 }
+
+type TrackedResourceTypes = Set<ResourceType>;
 
 /** Linking direction for chained search. */
 export const Direction = {
@@ -130,8 +120,9 @@ export async function searchImpl<T extends Resource>(
   let rowCount = undefined;
   let nextResource: T | undefined;
   if (searchRequest.count > 0) {
-    const builder = getSelectQueryForSearch(repo, searchRequest, options);
-    ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
+    const trackedResourceTypes = new Set<ResourceType>();
+    const builder = getSelectQueryForSearch(repo, searchRequest, { ...options, trackedResourceTypes });
+    ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder, trackedResourceTypes));
   }
 
   let total = undefined;
@@ -160,10 +151,12 @@ export async function searchByReferenceImpl<T extends Resource>(
   // Hold on to references to parts of the SelectQuery that need to be modified per reference value
   const referenceConditions: Condition[] = [];
   const referenceColumns: Column[] = [];
+  const trackedResourceTypes = new Set<ResourceType>();
 
   const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
     addColumns: true,
     limitModifier: 0,
+    trackedResourceTypes,
     resourceTypeQueryCallback: (resourceType, builder) => {
       const param = getSearchParameter(resourceType, referenceField);
       if (param?.type !== 'reference') {
@@ -203,7 +196,10 @@ export async function searchByReferenceImpl<T extends Resource>(
   const rows: {
     content: string;
     ref: string;
-  }[] = await unionAllBuilder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  }[] = await repo.executeSql(
+    unionAllBuilder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.searchByReference' })
+  );
 
   const results: Record<string, WithId<T>[]> = Object.create(null);
   for (const ref of referenceValues) {
@@ -315,12 +311,14 @@ export function getSelectQueryForSearch<T extends Resource>(
  * @param repo - The repository.
  * @param searchRequest - The search request.
  * @param builder - The `SelectQuery` builder that is ready to execute.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequestWithCountAndOffset<T>,
-  builder: SelectQuery
+  builder: SelectQuery,
+  trackedResourceTypes: TrackedResourceTypes
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
   const config = getConfig();
   const originalLimit = builder.limit_;
@@ -329,51 +327,58 @@ async function getSearchEntries<T extends Resource>(
     builder.limit(config.fhirSearchMinLimit);
   }
 
-  const client = repo.getDatabaseClient(DatabaseMode.READER);
-  let rows: any[];
+  let rows: { id: string; content: string; lastUpdated?: Date }[];
   try {
     if (config.fhirSearchDiscourageSeqScan) {
       // Despite the name, this doesn't truly remove the possibility of a sequential scan,
       // just massively inflates the cost of a sequential scan to the planner.
-      await client.query('SET enable_seqscan = off');
+      await repo.executeRawSql(
+        'SET enable_seqscan = off',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.setSeqScan' })
+      );
     }
-    rows = await builder.execute(client);
+    rows = await repo.sqlRead<(typeof rows)[number]>(builder, trackedResourceTypes, {
+      source: 'search.getSearchEntries',
+    });
   } finally {
     if (config.fhirSearchDiscourageSeqScan) {
-      await client.query('RESET enable_seqscan');
+      await repo.executeRawSql(
+        'RESET enable_seqscan',
+        undefined,
+        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.resetSeqScan' })
+      );
     }
   }
 
   const rowCount = Math.min(rows.length, originalLimit);
-  const resources = [];
+  const resources: WithId<T>[] = [];
   for (let i = 0; i < rowCount; i++) {
     const row = rows[i];
-    if (row.content) {
-      resources.push(JSON.parse(row.content));
+    const parsed = parseHistoryContent(row.content);
+    if (!parsed.meta?.deleted) {
+      resources.push(parsed as WithId<T>);
     } else {
-      // Handle missing content
-      // In the original implementation of deleted resources, the content was not stored in the database.
+      // Handle missing or tombstone content for soft-deleted resources.
       resources.push({
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      });
+      } as WithId<T>);
     }
   }
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
   }
-  const entries = resources.map(
-    (resource): BundleEntry<WithId<T>> => ({
-      fullUrl: getFullUrl(resource.resourceType, resource.id),
-      search: { mode: 'match' },
-      resource,
-    })
-  );
+  const entries = resources.map((resource): BundleEntry<WithId<T>> => ({
+    fullUrl: getFullUrl(resource.resourceType, resource.id),
+    search: { mode: 'match' },
+    resource,
+  }));
 
   if (searchRequest.include || searchRequest.revInclude) {
-    await getExtraEntries(repo, searchRequest, resources, entries);
+    await getExtraEntries(repo, searchRequest, resources, entries, getIncludeOptions(repo));
   }
 
   for (const entry of entries) {
@@ -397,6 +402,8 @@ interface GetBaseSelectQueryOptions {
   resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
   /** The maximum resource version to include in the search. If zero is specified, only resources with a NULL version are included. */
   maxResourceVersion?: number;
+  /** Resource types involved in the logical search query. */
+  trackedResourceTypes?: TrackedResourceTypes;
 }
 function getBaseSelectQuery(
   repo: Repository,
@@ -426,6 +433,7 @@ function getBaseSelectQueryForResourceType(
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
+  opts?.trackedResourceTypes?.add(resourceType);
   const builder = new SelectQuery(resourceType);
   const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
@@ -442,7 +450,7 @@ function getBaseSelectQueryForResourceType(
     repo.addDeletedFilter(builder);
   }
   repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
-  addSearchFilters(repo, builder, resourceType, searchRequest);
+  addSearchFilters(repo, builder, resourceType, searchRequest, opts?.trackedResourceTypes);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
   }
@@ -477,156 +485,31 @@ function removeResourceFields(resource: Resource, repo: Repository, searchReques
 }
 
 /**
- * Gets the extra search entries for the _include and _revinclude parameters.
+ * Builds the server-specific behavior for the shared `_include` / `_revinclude` implementation.
+ *
+ * The include logic itself lives in `@medplum/fhir-router` so that it is shared with
+ * `MemoryRepository`. Only two things are server-specific: how a `fullUrl` is built, and how
+ * the sub-searches are executed.
  * @param repo - The FHIR repository.
- * @param searchRequest - The original search request.
- * @param resources - The resources returned by the original search.
- * @param entries - The output bundle entries.
+ * @returns The include options for this repository.
  */
-async function getExtraEntries<T extends Resource>(
-  repo: Repository,
-  searchRequest: SearchRequest<T>,
-  resources: T[],
-  entries: BundleEntry[]
-): Promise<void> {
-  let base: Resource[] = resources;
-  let iterateOnly = false;
-  const seen = new Set<string>(resources.map((r) => `${r.resourceType}/${r.id}`));
-  let depth = 0;
-
-  while (base.length > 0) {
-    // Circuit breaker / load limit
-    if (depth >= 5 || entries.length > maxSearchResults) {
-      throw new Error(`Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`);
-    }
-
-    const includes = flatMapFilter(searchRequest.include, (p) =>
-      !iterateOnly || p.modifier === Operator.ITERATE ? getSearchIncludeEntries(repo, p, base) : undefined
-    );
-    const revincludes = flatMapFilter(searchRequest.revInclude, (p) =>
-      !iterateOnly || p.modifier === Operator.ITERATE ? getSearchRevIncludeEntries(repo, p, base) : undefined
-    );
-
-    const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
-    base = [];
-    for (const entry of includedResources) {
-      const resource = entry.resource as Resource;
-      base.push(resource);
-
-      const ref = `${resource.resourceType}/${resource.id}`;
-      if (!seen.has(ref)) {
-        entries.push(entry);
-      }
-      seen.add(ref);
-    }
-
-    iterateOnly = true; // Only consider :iterate params on iterations after the first
-    depth++;
-  }
-}
-
-/**
- * Returns bundle entries for the resources that are included in the search result.
- *
- * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
- * @param repo - The repository.
- * @param include - The include parameter.
- * @param resources - The base search result resources.
- * @returns The bundle entries for the included resources.
- */
-async function getSearchIncludeEntries(
-  repo: Repository,
-  include: IncludeTarget,
-  resources: Resource[]
-): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code } = include;
-  const searchParam = getSearchParameter(resourceType, code);
-  if (!searchParam) {
-    throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
-  }
-
-  const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
-  const references: Reference[] = [];
-  const canonicalReferences: string[] = [];
-  for (const result of fhirPathResult) {
-    if (result.type === PropertyType.Reference) {
-      references.push(result.value);
-    } else if (canonicalReferenceTypes.includes(result.type)) {
-      canonicalReferences.push(result.value);
-    }
-  }
-
-  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
-  if (searchParam.target && canonicalReferences.length > 0) {
-    const canonicalSearches = searchParam.target.map((resourceType) => {
-      const searchRequest = {
-        resourceType: resourceType,
-        filters: [
-          {
-            code: 'url',
-            operator: Operator.EQUALS,
-            value: canonicalReferences.join(','),
-          },
-        ],
-        count: DEFAULT_MAX_SEARCH_COUNT,
-        offset: 0,
-      };
-      const query = getSelectQueryForSearch(repo, searchRequest);
-      return getSearchEntries(repo, searchRequest, query);
-    });
-
-    const searchResults = await Promise.all(canonicalSearches);
-    for (const result of searchResults) {
-      for (const entry of result.entry) {
-        includedResources.push(entry.resource as WithId<Resource>);
-      }
-    }
-  }
-
-  return includedResources.map((resource) => ({
-    fullUrl: getFullUrl(resource.resourceType, resource.id),
-    search: { mode: 'include' },
-    resource,
-  }));
-}
-
-/**
- * Returns bundle entries for the resources that are reverse included in the search result.
- *
- * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
- * @param repo - The repository.
- * @param revInclude - The revInclude parameter.
- * @param resources - The base search result resources.
- * @returns The bundle entries for the reverse included resources.
- */
-async function getSearchRevIncludeEntries(
-  repo: Repository,
-  revInclude: IncludeTarget,
-  resources: Resource[]
-): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code } = revInclude;
-  const searchParam = getSearchParameter(resourceType, code);
-  if (!searchParam) {
-    throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
-  }
-
-  const references =
-    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL
-      ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
-      : resources.map(getReferenceString);
-  const searchRequest = {
-    resourceType: resourceType as ResourceType,
-    filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],
-    count: DEFAULT_MAX_SEARCH_COUNT,
-    offset: 0,
+function getIncludeOptions(repo: Repository): IncludeOptions {
+  return {
+    fullUrl: getFullUrl,
+    // Run sub-searches through the query pipeline directly rather than re-entering
+    // `Repository.search()`, which would additionally build bundle links for every sub-search.
+    executeSearch: async (searchRequest: SearchRequest): Promise<WithId<Resource>[]> => {
+      const trackedResourceTypes = new Set<ResourceType>();
+      const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
+      const result = await getSearchEntries(
+        repo,
+        searchRequest as SearchRequestWithCountAndOffset,
+        query,
+        trackedResourceTypes
+      );
+      return result.entry.map((entry) => entry.resource as WithId<Resource>);
+    },
   };
-
-  const query = getSelectQueryForSearch(repo, searchRequest);
-  const entries = (await getSearchEntries(repo, searchRequest, query)).entry;
-  for (const entry of entries) {
-    entry.search = { mode: 'include' };
-  }
-  return entries;
 }
 
 /**
@@ -887,7 +770,8 @@ export async function getCount(
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
+  const trackedResourceTypes = new Set<ResourceType>();
+  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false, trackedResourceTypes });
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
@@ -895,8 +779,11 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
     builder.raw('COUNT(*)::int AS "count"');
   }
 
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  return rows[0].count as number;
+  const rows = await repo.executeSql<{ count: number }>(
+    builder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.getAccurateCount' })
+  );
+  return rows[0].count;
 }
 
 /**
@@ -908,12 +795,16 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * @returns The total number of matching results.
  */
 async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest);
+  const trackedResourceTypes = new Set<ResourceType>();
+  const builder = getBaseSelectQuery(repo, searchRequest, { trackedResourceTypes });
   builder.explain = true;
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const rows = await repo.executeSql<{ 'QUERY PLAN': string }>(
+    builder,
+    repoAccess.sqlRead(trackedResourceTypes, { source: 'search.getEstimateCount' })
+  );
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
@@ -950,14 +841,16 @@ export function clampEstimateCount(searchRequest: SearchRequest, estimateCount: 
  * @param selectQuery - The select query builder.
  * @param resourceType - The type of resources requested.
  * @param searchRequest - The search request.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  */
 function addSearchFilters(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequest,
+  trackedResourceTypes?: TrackedResourceTypes
 ): void {
-  const expr = buildSearchExpression(repo, selectQuery, resourceType, searchRequest);
+  const expr = buildSearchExpression(repo, selectQuery, resourceType, searchRequest, trackedResourceTypes);
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
@@ -971,11 +864,19 @@ export function buildSearchExpression(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequest,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    const expr = buildSearchFilterExpression(
+      repo,
+      selectQuery,
+      resourceType,
+      resourceType,
+      filter,
+      trackedResourceTypes
+    );
     expressions.push(expr);
   }
   if (expressions.length === 0) {
@@ -994,6 +895,7 @@ export function buildSearchExpression(
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
  * @param filter - The search filter.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
@@ -1001,7 +903,8 @@ function buildSearchFilterExpression(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filter: Filter
+  filter: Filter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   if (typeof filter.value !== 'string') {
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
@@ -1013,10 +916,17 @@ function buildSearchFilterExpression(
 
   if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
-    return buildChainedSearch(repo, selectQuery, resourceType, chain);
+    return buildChainedSearch(repo, selectQuery, resourceType, chain, trackedResourceTypes);
   }
 
-  const specialParamExpression = trySpecialSearchParameter(repo, selectQuery, resourceType, table, filter);
+  const specialParamExpression = trySpecialSearchParameter(
+    repo,
+    selectQuery,
+    resourceType,
+    table,
+    filter,
+    trackedResourceTypes
+  );
   if (specialParamExpression) {
     return specialParamExpression;
   }
@@ -1125,6 +1035,7 @@ function buildNormalSearchFilterExpression(
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
  * @param filter - The search filter.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
@@ -1132,7 +1043,8 @@ function trySpecialSearchParameter(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filter: Filter
+  filter: Filter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression | undefined {
   switch (filter.code) {
     case '_id':
@@ -1209,7 +1121,7 @@ function trySpecialSearchParameter(
     }
     case '_filter': {
       const filterExpr = parseFilterParameter(filter.value);
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr);
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr, trackedResourceTypes);
     }
 
     default:
@@ -1222,14 +1134,38 @@ function buildFilterParameterExpression(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filterExpression: FhirFilterExpression
+  filterExpression: FhirFilterExpression,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   if (filterExpression instanceof FhirFilterNegation) {
-    return new Negation(buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpression.child));
+    return new Negation(
+      buildFilterParameterExpression(
+        repo,
+        selectQuery,
+        resourceType,
+        table,
+        filterExpression.child,
+        trackedResourceTypes
+      )
+    );
   } else if (filterExpression instanceof FhirFilterConnective) {
-    return buildFilterParameterConnective(repo, selectQuery, resourceType, table, filterExpression);
+    return buildFilterParameterConnective(
+      repo,
+      selectQuery,
+      resourceType,
+      table,
+      filterExpression,
+      trackedResourceTypes
+    );
   } else if (filterExpression instanceof FhirFilterComparison) {
-    return buildFilterParameterComparison(repo, selectQuery, resourceType, table, filterExpression);
+    return buildFilterParameterComparison(
+      repo,
+      selectQuery,
+      resourceType,
+      table,
+      filterExpression,
+      trackedResourceTypes
+    );
   } else {
     throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
   }
@@ -1240,11 +1176,19 @@ function buildFilterParameterConnective(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filterConnective: FhirFilterConnective
+  filterConnective: FhirFilterConnective,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   const expressions = [
-    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left),
-    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.right),
+    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left, trackedResourceTypes),
+    buildFilterParameterExpression(
+      repo,
+      selectQuery,
+      resourceType,
+      table,
+      filterConnective.right,
+      trackedResourceTypes
+    ),
   ];
   return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
 }
@@ -1254,13 +1198,17 @@ function buildFilterParameterComparison(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
-  filterComparison: FhirFilterComparison
+  filterComparison: FhirFilterComparison,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
-  return buildSearchFilterExpression(repo, selectQuery, resourceType, table, {
-    code: filterComparison.path,
-    operator: filterComparison.operator,
-    value: filterComparison.value,
-  });
+  return buildSearchFilterExpression(
+    repo,
+    selectQuery,
+    resourceType,
+    table,
+    { code: filterComparison.path, operator: filterComparison.operator, value: filterComparison.value },
+    trackedResourceTypes
+  );
 }
 
 /**
@@ -1670,10 +1618,16 @@ function buildChainedSearch(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
-  param: ChainedSearchParameter
+  param: ChainedSearchParameter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
+  }
+
+  for (const link of param.chain) {
+    trackedResourceTypes?.add(link.originType as ResourceType);
+    trackedResourceTypes?.add(link.targetType as ResourceType);
   }
 
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
@@ -1682,14 +1636,17 @@ function buildChainedSearch(
   if (param.chain.length === 1 && param.filter?.code === '_id' && param.chain[0].direction === Direction.FORWARD) {
     const { targetType, code } = param.chain[0];
     const targetId = param.filter.value;
-    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
-      code,
-      operator: param.filter.operator,
-      value: `${targetType}/${targetId}`,
-    });
+    return buildSearchFilterExpression(
+      repo,
+      selectQuery,
+      resourceType as ResourceType,
+      resourceType,
+      { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
+      trackedResourceTypes
+    );
   }
 
-  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param);
+  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);
 }
 
 /**
@@ -1700,12 +1657,14 @@ function buildChainedSearch(
  * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param param - The chained search parameter.
+ * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
   selectQuery: SelectQuery,
-  param: ChainedSearchParameter
+  param: ChainedSearchParameter,
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
   let link = param.chain[0];
   validateSearchResourceType(repo, link.targetType as ResourceType);
@@ -1713,7 +1672,11 @@ function buildChainedSearchUsingReferenceTable(
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
   let innerQuery: SelectQuery;
-  if (link.implementation.type === SearchParameterType.CANONICAL) {
+  if (link.code === '_compartment') {
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      getCompartmentJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+    );
+  } else if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
       getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
     );
@@ -1728,7 +1691,13 @@ function buildChainedSearchUsingReferenceTable(
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
     validateSearchResourceType(repo, link.targetType as ResourceType);
-    if (link.implementation.type === SearchParameterType.CANONICAL) {
+    if (link.code === '_compartment') {
+      // Compartment search is joined directly to the target table as a special case
+      const nextTable = innerQuery.getNextJoinAlias();
+      const join = getCompartmentJoinCondition(currentTable, link, nextTable);
+      innerQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
+      currentTable = nextTable;
+    } else if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
       const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
@@ -1740,7 +1709,14 @@ function buildChainedSearchUsingReferenceTable(
   innerQuery
     .where(new Column(currentTable, 'id'), '!=', null)
     .whereExpr(
-      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, param.filter)
+      buildSearchFilterExpression(
+        repo,
+        innerQuery,
+        link.targetType as ResourceType,
+        currentTable,
+        param.filter,
+        trackedResourceTypes
+      )
     );
   return new SqlFunction('EXISTS', [innerQuery]);
 }
@@ -1757,6 +1733,19 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
   const join = getCanonicalJoinCondition(currentTable, link, nextTable);
   selectQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
   return nextTable;
+}
+
+/**
+ * Constructs the condition to join on the `_compartment` search parameter.
+ * @param currentTable - The "current" resource table (the outer query table for the first link).
+ * @param link - The current link of the chained search.
+ * @param nextTable - The resource table joined for this link.
+ * @returns The join expression.
+ */
+function getCompartmentJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+  const holder = link.direction === Direction.FORWARD ? currentTable : nextTable;
+  const otherEnd = link.direction === Direction.FORWARD ? nextTable : currentTable;
+  return new Condition(new Column(otherEnd, 'id'), 'IN_SUBQUERY', new Column(holder, link.implementation.columnName));
 }
 
 /**
@@ -1820,7 +1809,8 @@ function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
-  if (link.implementation.type === SearchParameterType.CANONICAL) {
+  if (link.implementation.type === SearchParameterType.CANONICAL || link.code === '_compartment') {
+    // Compartment and canonical links join the far resource table directly
     return link.targetType;
   } else if (link.direction === Direction.FORWARD) {
     return `${link.originType}_References`;
@@ -1947,8 +1937,4 @@ function splitChainedSearch(chain: string): string[] {
     }
   }
   return params;
-}
-
-function getCanonicalUrl(resource: Resource): string | undefined {
-  return (resource as Resource & { url?: string }).url;
 }

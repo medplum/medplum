@@ -66,7 +66,7 @@ describe('Agent/$stats', () => {
 
     const responses = await Promise.all(promises);
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
-      expect(responses[i].status).toBe(201);
+      expect(responses[i]).toHaveStatus(201);
       agents[i] = responses[i].body;
     }
 
@@ -95,7 +95,7 @@ describe('Agent/$stats', () => {
       .get('/fhir/R4/Agent/$stats')
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle<Parameters>;
 
     for (const agent of agents) {
@@ -120,7 +120,7 @@ describe('Agent/$stats', () => {
       .get(`/fhir/R4/Agent/${agents[0].id}/$stats`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const params = res.body as Parameters;
 
     expect(params).toMatchObject<Parameters>({

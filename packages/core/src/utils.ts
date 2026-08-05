@@ -49,11 +49,7 @@ export interface SleepOptions {
  * See: https://github.com/microsoft/TypeScript/issues/32951
  */
 export type QueryTypes =
-  | URLSearchParams
-  | string[][]
-  | Record<string, string | number | boolean | undefined>
-  | string
-  | undefined;
+  URLSearchParams | string[][] | Record<string, string | number | boolean | undefined> | string | undefined;
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
@@ -1584,6 +1580,26 @@ export function escapeHtml(unsafe: string): string {
  */
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
+}
+
+/**
+ * Checks that a value has type `never`. Useful for ensuring exhaustive
+ * matches.
+ *
+ * @example
+ * ```typescript
+ *   type MyUnion = 'a' | 'b' | 'c'
+ *   function f(arg: MyUnion) {
+ *     if (arg === 'a') { return 1; }
+ *     if (arg === 'b') { return 2; }
+ *     assertNever(arg); // Type error: 'c' is unhandled
+ *   }
+ * ```
+ *
+ * @param value - The value that should never be present
+ */
+export function assertNever(value: never): never {
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }
 
 /** Constant empty array. */

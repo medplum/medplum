@@ -24,17 +24,17 @@ describe('Method', () => {
 
   test('Missing email parameter', async () => {
     const res = await request(app).post('/auth/method').type('json').send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Empty email parameter', async () => {
     const res = await request(app).post('/auth/method').type('json').send({ email: '' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Invalid email parameter', async () => {
     const res = await request(app).post('/auth/method').type('json').send({ email: 'xyz' });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Domain config', async () => {
@@ -58,14 +58,14 @@ describe('Method', () => {
       .post('/auth/method')
       .type('json')
       .send({ email: 'alice@' + domain });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     // Domain config not found
     const res2 = await request(app)
       .post('/auth/method')
       .type('json')
       .send({ email: 'alice@' + randomUUID() + '.com' });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 
   test('Domain config case sensitivity', async () => {
@@ -89,7 +89,7 @@ describe('Method', () => {
       .post('/auth/method')
       .type('json')
       .send({ email: 'alice@' + domain.toUpperCase() });
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
   });
 
   test('Domain config authorize url without protocol', async () => {
@@ -113,13 +113,13 @@ describe('Method', () => {
       .post('/auth/method')
       .type('json')
       .send({ email: 'alice@' + domain });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
 
     // Domain config not found
     const res2 = await request(app)
       .post('/auth/method')
       .type('json')
       .send({ email: 'alice@' + randomUUID() + '.com' });
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
   });
 });

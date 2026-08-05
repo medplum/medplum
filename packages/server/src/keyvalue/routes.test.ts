@@ -40,23 +40,23 @@ describe('Key Value Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('text/plain')
       .send(value);
-    expect(res1.status).toBe(204);
+    expect(res1).toHaveStatus(204);
 
     const res2 = await request(app)
       .get(`/keyvalue/v1/${key}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     expect(res2.text).toBe(value);
 
     const res3 = await request(app)
       .delete(`/keyvalue/v1/${key}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(204);
+    expect(res3).toHaveStatus(204);
 
     const res4 = await request(app)
       .get(`/keyvalue/v1/${key}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(404);
+    expect(res4).toHaveStatus(404);
   });
 
   test('Key too long', async () => {
@@ -67,29 +67,29 @@ describe('Key Value Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('text/plain')
       .send('value');
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
 
     const res2 = await request(app)
       .get(`/keyvalue/v1/${key}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
 
     const res3 = await request(app)
       .delete(`/keyvalue/v1/${key}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(400);
+    expect(res3).toHaveStatus(400);
   });
 
   test('Invalid key', async () => {
     const res1 = await request(app)
       .get('/keyvalue/v1/key+with+spaces')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
 
     const res2 = await request(app)
       .get('/keyvalue/v1/key:with:colons')
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
   });
 
   test('Invalid body', async () => {
@@ -98,7 +98,7 @@ describe('Key Value Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({ foo: 'bar' });
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
   });
 
   test('Body too long', async () => {
@@ -107,7 +107,7 @@ describe('Key Value Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('text/plain')
       .send('a'.repeat(10000));
-    expect(res1.status).toBe(400);
+    expect(res1).toHaveStatus(400);
   });
 
   test('Max items', async () => {
@@ -119,9 +119,9 @@ describe('Key Value Routes', () => {
         .send(`my-value-${i}`);
 
       if (i < MAX_ITEMS) {
-        expect(res1.status).toBe(204);
+        expect(res1).toHaveStatus(204);
       } else {
-        expect(res1.status).toBe(400);
+        expect(res1).toHaveStatus(400);
       }
     }
   });

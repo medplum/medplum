@@ -1,10 +1,89 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import ipaddr from 'ipaddr.js';
+import dns from 'node:dns';
+import type { Dispatcher } from 'undici';
+import { Agent, buildConnector } from 'undici';
+import { getConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 
 export interface OutboundUrlValidationOptions {
   readonly allowHttp?: boolean;
   readonly allowUnsafeHostname?: boolean;
+}
+
+const connector = buildConnector({});
+
+// The DOM RequestInit type used by built-in fetch does not include Undici's
+// dispatcher option, even though Node's fetch accepts it.
+type FetchInitWithDispatcher = RequestInit & { dispatcher?: Dispatcher };
+
+export function createSafeConnect(connect: buildConnector.connector = connector): buildConnector.connector {
+  return (options, callback) => {
+    if (options.protocol !== 'https:') {
+      callback(new Error('Outbound request blocked: HTTPS is required'), null);
+      return;
+    }
+
+    if (isUnsafeHostname(options.hostname)) {
+      callback(new Error(`Outbound request to unsafe hostname ${options.hostname} is blocked`), null);
+      return;
+    }
+
+    dns.lookup(options.hostname, { all: true }, (err, addresses) => {
+      if (err) {
+        callback(err, null);
+        return;
+      }
+
+      if (addresses.some(({ address }) => isUnsafeIpAddress(address))) {
+        callback(new Error(`Outbound request to unsafe address ${options.hostname} is blocked`), null);
+        return;
+      }
+
+      const [{ address }] = addresses;
+      connect({ ...options, hostname: address, servername: options.hostname }, callback);
+    });
+  };
+}
+
+export const safeAgent = new Agent({
+  connect: createSafeConnect(),
+});
+
+/**
+ * Performs an outbound fetch with SSRF-safe connection handling unless unsafe outbound requests are explicitly allowed.
+ * @param input - Fetch input.
+ * @param init - Fetch options.
+ * @returns Fetch response.
+ */
+export function safeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  if (getConfig().allowUnsafeOutbound) {
+    return fetch(input, init);
+  }
+  return fetch(input, { ...init, dispatcher: safeAgent } as FetchInitWithDispatcher);
+}
+
+/**
+ * Performs static outbound URL checks before enqueueing async jobs.
+ * This prevents known-bad jobs from consuming retry attempts while leaving DNS and redirect safety to safeAgent.
+ * @param value - URL string.
+ * @param config - Server configuration.
+ * @returns True if the URL should be queued for outbound fetch.
+ */
+export function isAllowedOutboundUrlForQueue(
+  value: string,
+  config: Pick<MedplumServerConfig, 'allowUnsafeOutbound'>
+): boolean {
+  try {
+    validateOutboundUrl(value, {
+      allowHttp: config.allowUnsafeOutbound,
+      allowUnsafeHostname: config.allowUnsafeOutbound,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

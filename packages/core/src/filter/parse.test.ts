@@ -29,6 +29,23 @@ describe('_filter Parameter parser', () => {
       "_has:Observation:patient:_id ne ''",
       { path: '_has:Observation:patient:_id', operator: Operator.NOT_EQUALS, value: '' },
     ],
+    [
+      // A UUID whose first group is all digits looks like the start of a date literal.
+      // It must be kept whole rather than truncated at the first letter.
+      'UUID with all digits before the first hyphen',
+      '_id eq 12345678-1234-4123-8123-123456789abc',
+      { path: '_id', operator: Operator.EXACT, value: '12345678-1234-4123-8123-123456789abc' },
+    ],
+    [
+      'Date literal',
+      'birthdate ge 2014-10-10',
+      { path: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: '2014-10-10' },
+    ],
+    [
+      'DateTime literal',
+      '_lastUpdated gt 2014-10-10T12:30:45.123Z',
+      { path: '_lastUpdated', operator: Operator.GREATER_THAN, value: '2014-10-10T12:30:45.123Z' },
+    ],
   ])('%s', (_, filter, expected) => {
     const result = parseFilterParameter(filter);
     assert(result instanceof FhirFilterComparison);
@@ -86,6 +103,110 @@ describe('_filter Parameter parser', () => {
     expect(right.path).toBe('birthdate');
     expect(right.operator).toBe(Operator.GREATER_THAN_OR_EQUALS);
     expect(right.value).toBe('2014-10-10');
+  });
+
+  // UUIDs are the values most likely to be mis-tokenized: they start with digits and contain
+  // hyphens, so they can look like the start of a date literal, and they are usually the last thing
+  // before a closing parenthesis. Both mistakes used to end the value token early, and the parser
+  // then silently discarded whatever was left -- returning a filter that searched for the wrong
+  // thing instead of reporting an error. NUMERIC_UUID has all digits before its first hyphen
+  // (about 2.3% of random UUIDs), HEX_UUID does not; they take different paths through the tokenizer.
+  const NUMERIC_UUID = '12345678-1234-4123-8123-123456789abc';
+  const HEX_UUID = '6783655a-6431-4baa-9243-914efcd984da';
+
+  describe.each([
+    ['numeric', NUMERIC_UUID],
+    ['hex', HEX_UUID],
+  ])('Nested expressions with a %s UUID', (_, uuid) => {
+    test.each<[string, string, object]>([
+      ['parentheses', `(_id eq ${uuid})`, { path: '_id', operator: Operator.EXACT, value: uuid }],
+      ['negation', `not (_id eq ${uuid})`, { child: { path: '_id', operator: Operator.EXACT, value: uuid } }],
+      [
+        'or connective',
+        `_project eq ${uuid} or _project pr false`,
+        {
+          keyword: 'or',
+          left: { path: '_project', operator: Operator.EXACT, value: uuid },
+          right: { path: '_project', operator: Operator.PRESENT, value: 'false' },
+        },
+      ],
+      [
+        'two parenthesized comparisons',
+        `(_id eq ${uuid}) or (status eq active)`,
+        {
+          keyword: 'or',
+          left: { path: '_id', operator: Operator.EXACT, value: uuid },
+          right: { path: 'status', operator: Operator.EXACT, value: 'active' },
+        },
+      ],
+      [
+        'nested connective on the right',
+        `status eq active or (_id eq ${uuid} and birthdate ge 2014-10-10)`,
+        {
+          keyword: 'or',
+          left: { path: 'status', operator: Operator.EXACT, value: 'active' },
+          right: {
+            keyword: 'and',
+            left: { path: '_id', operator: Operator.EXACT, value: uuid },
+            right: { path: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: '2014-10-10' },
+          },
+        },
+      ],
+      [
+        'nested connective on the left',
+        `(_id eq ${uuid} or _id eq ${HEX_UUID}) and status eq active`,
+        {
+          keyword: 'and',
+          left: {
+            keyword: 'or',
+            left: { path: '_id', operator: Operator.EXACT, value: uuid },
+            right: { path: '_id', operator: Operator.EXACT, value: HEX_UUID },
+          },
+          right: { path: 'status', operator: Operator.EXACT, value: 'active' },
+        },
+      ],
+      [
+        'negated nested connectives',
+        `not ((_id eq ${uuid}) or (subject eq Patient/${uuid}))`,
+        {
+          child: {
+            keyword: 'or',
+            left: { path: '_id', operator: Operator.EXACT, value: uuid },
+            right: { path: 'subject', operator: Operator.EXACT, value: `Patient/${uuid}` },
+          },
+        },
+      ],
+      [
+        'reference value',
+        `(subject eq Patient/${uuid} and status eq final)`,
+        {
+          keyword: 'and',
+          left: { path: 'subject', operator: Operator.EXACT, value: `Patient/${uuid}` },
+          right: { path: 'status', operator: Operator.EXACT, value: 'final' },
+        },
+      ],
+      [
+        'alongside a dateTime literal',
+        `(_lastUpdated gt 2014-10-10T12:30:45.123Z and _id eq ${uuid})`,
+        {
+          keyword: 'and',
+          left: { path: '_lastUpdated', operator: Operator.GREATER_THAN, value: '2014-10-10T12:30:45.123Z' },
+          right: { path: '_id', operator: Operator.EXACT, value: uuid },
+        },
+      ],
+    ])('%s', (_name, filter, expected) => {
+      expect(parseFilterParameter(filter)).toMatchObject(expected);
+    });
+  });
+
+  test.each([
+    ['trailing token', `_id eq ${'12345678-1234-4123-8123-123456789abc'} extra`],
+    ['unclosed parenthesis', `(_id eq ${'12345678-1234-4123-8123-123456789abc'}`],
+    ['dangling connective', `_id eq ${'12345678-1234-4123-8123-123456789abc'} or`],
+  ])('Rejects an expression it cannot fully parse: %s', (_name, filter) => {
+    // Whatever the parser cannot account for must be an error. Returning the part that did parse
+    // would silently drop conditions from the search.
+    expect(() => parseFilterParameter(filter)).toThrow();
   });
 
   test('Top level parentheses', () => {

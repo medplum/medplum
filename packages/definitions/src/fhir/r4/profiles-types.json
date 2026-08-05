@@ -22029,6 +22029,22 @@
           "type" : [{
             "code" : "Reference"
           }]
+        },
+        {
+          "id" : "Meta.deleted",
+          "path" : "Meta.deleted",
+          "short" : "True when this version represents a logical delete tombstone.",
+          "definition" : "True when this version represents a logical delete tombstone.",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Meta.deleted",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "boolean"
+          }]
         }]
       },
       "differential" : {

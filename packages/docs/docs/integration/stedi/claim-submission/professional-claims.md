@@ -535,25 +535,27 @@ flowchart TD
 
     PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div>"]
 
-    Responses["<div style='text-align: center;'><strong>ClaimResponse</strong> (277CA / 835)</div><em>created later by the claim-response flow</em>"]
+    Reports["<div style='text-align: center;'><strong>DocumentReference</strong> (277CA / 835 reports)</div><em>stored later by the claim-response flow</em>"]
 
     ClaimResponse -->|request| Claim
     ClaimResponse -->|patient| Patient
     ClaimResponse -->|insurer| PayerOrg
-    Responses -.->|request| Claim
+    ClaimResponse -.->|"best-effort report link"| Reports
 
     classDef claim fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
     classDef response fill:#90CAF9,stroke:#333,stroke-width:2px
+    classDef document fill:#A5D6A7,stroke:#333,stroke-width:2px
     classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
     classDef patient fill:#D4BCF2,stroke:#333,stroke-width:2px
 
     class Claim claim
-    class ClaimResponse,Responses response
+    class ClaimResponse response
+    class Reports document
     class PayerOrg organization
     class Patient patient
 ```
 
-The submission `ClaimResponse` (solid) is created immediately by the bot. Acknowledgment (277CA) and remittance (835) responses (dashed) are created **later** by the [claim-response flow](/docs/integration/stedi/claim-submission/claim-responses) and also reference the same `Claim` via `request`.
+The submission `ClaimResponse` (solid) is created immediately by the bot. Acknowledgment (277CA) and remittance (835) responses (dashed) are stored **later** by the [claim-response flow](/docs/integration/stedi/claim-submission/claim-responses) as `DocumentReference` resources, and are best-effort linked back to this `ClaimResponse`.
 
 | `ClaimResponse` field | Value |
 |-----------------------|-------|
@@ -628,7 +630,7 @@ See Stedi's [test claims workflow](https://www.stedi.com/docs/healthcare/test-cl
 ## Limitations and roadmap
 
 - Professional (837P) claims only — no institutional (837I) or dental submission yet
-- No built-in claim status polling or 835 ingestion in Medplum (use Stedi webhooks or APIs)
+- Inbound 277CA/835 responses are ingested and stored verbatim as `DocumentReference` (via webhook or poller) — see [Claim Responses (277 / 835)](/docs/integration/stedi/claim-submission/claim-responses) — but are not mapped into `ClaimResponse`/`PaymentReconciliation`
 - Claim attachments (275) are not submitted by this bot
 
 For eligibility checks on the same Stedi account, see [Insurance and Benefits Eligibility Checks](/docs/integration/stedi/insurance-eligibility/eligibility-checks).

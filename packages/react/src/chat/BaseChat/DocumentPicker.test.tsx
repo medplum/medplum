@@ -5,7 +5,6 @@ import type { DocumentReference } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import type { DocumentPickerProps } from './DocumentPicker';
 import { DocumentPicker } from './DocumentPicker';
@@ -25,9 +24,7 @@ describe('DocumentPicker', () => {
   async function setup(props: DocumentPickerProps): Promise<void> {
     await act(async () =>
       render(<DocumentPicker {...props} />, ({ children }: { children: ReactNode }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
       ))
     );
   }

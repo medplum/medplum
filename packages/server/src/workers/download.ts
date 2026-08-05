@@ -22,9 +22,9 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
-import { validateOutboundUrl } from '../util/url';
+import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -49,21 +49,17 @@ const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
-  const queue = new Queue<DownloadJobData>(queueName, {
-    ...defaultOptions,
-  });
+  const queueOptions = defaultQueueOptions(config);
+  const queue = new Queue<DownloadJobData>(queueName, queueOptions);
 
   let worker: Worker<DownloadJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerBullmq = getWorkerBullmqConfig(config, 'download');
     worker = new Worker<DownloadJobData>(
       queueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
-      {
-        ...defaultOptions,
-        ...workerBullmq,
-      }
+      trackJobMetrics('download', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job))
+      ),
+      getWorkerBullmqConfig(config, 'download', queueOptions)
     );
     worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
     worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
@@ -162,9 +158,7 @@ function isExternalUrl(url: string | undefined): url is string {
   ) {
     return false;
   }
-  try {
-    validateOutboundUrl(url);
-  } catch {
+  if (!isAllowedOutboundUrlForQueue(url, getConfig())) {
     return false;
   }
   return true;
@@ -245,7 +239,6 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   if (!isUrlAllowedByProject(project, url)) {
     return;
   }
-  validateOutboundUrl(url);
 
   const headers: HeadersInit = {};
   const traceId = job.data.traceId;
@@ -260,7 +253,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
   try {
     log.info('Requesting content at: ' + url);
-    const response = await fetch(url, {
+    const response = await safeFetch(url, {
       headers,
     });
 

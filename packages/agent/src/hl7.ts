@@ -11,8 +11,15 @@ import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
-import { AckOutcome, DuplicateBehavior, QueueErrorCode } from './queue/types';
-import { ChannelQueueWorker } from './queue/worker';
+import { AckOutcome, DuplicateBehavior, QueueErrorCode, SETTLED_MESSAGE_STATES } from './queue/types';
+import type { AgentRetryDefaults, RetryMode, RetryPolicy } from './queue/worker';
+import {
+  ChannelQueueWorker,
+  DEFAULT_NORMAL_MODE_MAX_ATTEMPTS,
+  DEFAULT_RETRY_MODE,
+  DEFAULT_RETRY_POLICY,
+  isRetryMode,
+} from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 
 /**
@@ -58,6 +65,7 @@ export class AgentHl7Channel extends BaseChannel {
   private assignSeqNo: boolean = false;
   private lastSeqNo = -1;
   private duplicateBehavior: DuplicateBehavior = DuplicateBehavior.IDEMPOTENT;
+  private retryPolicy: RetryPolicy = DEFAULT_RETRY_POLICY;
   // The channel's own copy of the enhanced mode, parsed from the endpoint URL.
   // In durable mode this is intentionally NOT pushed onto the Hl7Connection (so
   // the connection's synchronous auto-ACK stays off and the agent can defer the
@@ -146,6 +154,7 @@ export class AgentHl7Channel extends BaseChannel {
       app: this.app,
       queue,
       log: this.log,
+      retryPolicy: this.retryPolicy,
       sendAck: (response) => this.sendToRemote(response),
     });
     this.worker.start();
@@ -247,6 +256,14 @@ export class AgentHl7Channel extends BaseChannel {
       this.configureHl7ServerAndConnections();
     } else {
       this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+      // The rest of configureHl7ServerAndConnections' inputs are endpoint URL
+      // params, unchanged when the address string itself hasn't changed — but
+      // the retry policy ALSO depends on agent-wide channelRetryMode /
+      // channelAutoRetry* settings, which can change on their own (an operator
+      // pushes a new Agent.setting with no endpoint edit at all). Refresh it
+      // unconditionally so that reaches the running worker instead of waiting
+      // for an unrelated address change or a process restart.
+      this.refreshRetryPolicy();
     }
   }
 
@@ -296,6 +313,9 @@ export class AgentHl7Channel extends BaseChannel {
     // The legacy (non-durable) path keeps the passthrough, so the connection
     // auto-ACKs exactly as before.
     const queueOn = this.app.getDurableQueue() !== undefined;
+
+    this.refreshRetryPolicy();
+
     const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
 
     this.server.setEncoding(encoding);
@@ -308,8 +328,44 @@ export class AgentHl7Channel extends BaseChannel {
     }
   }
 
+  /**
+   * Resolves and pushes the channel's Path-2 (queue → Bot) auto-retry policy:
+   * endpoint URL params override agent-wide `channelRetryMode` /
+   * `channelAutoRetry*` settings, field by field (see `resolveRetryPolicy`). The
+   * worker outlives config reloads, so the new policy is pushed at it directly
+   * rather than the worker re-reading it.
+   *
+   * Split out from {@link configureHl7ServerAndConnections} — and called
+   * unconditionally by both it and {@link reloadConfig}'s no-address-change
+   * branch — because, unlike that method's other inputs (endpoint URL params,
+   * which only change when the address string itself changes), this ALSO reads
+   * agent-wide settings that can change on their own with no endpoint edit at
+   * all. Gating it behind an address change would mean an operator's
+   * settings-only update never reaches a running channel until an unrelated
+   * address edit or a process restart.
+   */
+  private refreshRetryPolicy(): void {
+    const address = new URL(this.getEndpoint().address);
+    const queueOn = this.app.getDurableQueue() !== undefined;
+    const retrySettings = this.app.getChannelRetrySettings();
+    this.retryPolicy = resolveRetryPolicy(retrySettings, address.searchParams, this.log);
+    // retryMode defaults to on (guaranteed), so the queue-off warning would
+    // otherwise fire for every legacy channel — only warn when a retry mode was
+    // explicitly asked for.
+    const retryExplicitlyConfigured = address.searchParams.has('retryMode') || retrySettings.mode !== undefined;
+    if (this.retryPolicy.enabled && !queueOn && retryExplicitlyConfigured) {
+      this.log.warn('retryMode is configured but the durable queue is off; auto-retry has no effect without it');
+    }
+    this.worker?.setRetryPolicy(this.retryPolicy);
+  }
+
   getDuplicateBehavior(): DuplicateBehavior {
     return this.duplicateBehavior;
+  }
+
+  /** @returns The channel's resolved Path-2 auto-retry policy. */
+  getRetryPolicy(): RetryPolicy {
+    return this.retryPolicy;
   }
 
   /**
@@ -505,6 +561,10 @@ export class AgentHl7ChannelConnection {
           callbackId,
           seqNo,
           receivedAt,
+          // Snapshot the channel's guaranteed-delivery setting so recoverOnStartup
+          // (which runs before channel policies resolve) requeues vs. fails this
+          // row correctly if the agent restarts mid-dispatch.
+          guaranteedDelivery: this.channel.getRetryPolicy().guaranteedDelivery,
         },
         assigning
           ? {
@@ -635,7 +695,20 @@ export class AgentHl7ChannelConnection {
     // recognizes a genuine retransmit despite the differing finalized bytes.
     if (behavior === DuplicateBehavior.IDEMPOTENT && existing.originalMessage.equals(audit.originalMessage)) {
       // Exact retransmit: replay the ACK the sender missed, then balance stats.
-      if (existing.serverResponseBody && existing.serverResponseBody.length > 0 && this.replayServerAck(existing)) {
+      //
+      // The SETTLED_MESSAGE_STATES check guards against replaying a STALE
+      // response: a `queued`/`claimed`/`inflight` row's `serverResponseBody` can
+      // still be superseded by a future attempt (auto-retry keeps it in flight
+      // rather than terminal), so it isn't yet the row's final answer. In
+      // practice `scheduleRetry` already clears the response columns when a row
+      // returns to `queued` for another try, so this is defense-in-depth rather
+      // than the only thing preventing a stale replay.
+      if (
+        existing.serverResponseBody &&
+        existing.serverResponseBody.length > 0 &&
+        SETTLED_MESSAGE_STATES.has(existing.state) &&
+        this.replayServerAck(existing)
+      ) {
         // If the original delivery failed (processed + undelivered), this
         // retransmit is what finally lands the ACK — close the source leg so the
         // row no longer reads as awaiting delivery.
@@ -781,7 +854,7 @@ export class AgentHl7ChannelConnection {
   private handleEnhancedAckSent(event: Hl7EnhancedAckSentEvent): void {
     const hl7Message = event.message;
     const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
-    const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+    const ackCode = hl7Message.getAckType();
 
     this.channel.channelLog.info(
       `[Sent ${describeAckCode(ackCode)} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
@@ -802,7 +875,7 @@ export class AgentHl7ChannelConnection {
  * @param code - The MSA.1 acknowledgment code (already upper-cased), if present.
  * @returns A descriptive label, falling back to `ACK (<code>)` for anything unrecognized.
  */
-export function describeAckCode(code: string | undefined): string {
+export function describeAckCode(code: AckCode | undefined): string {
   switch (code) {
     case 'CA':
       return 'Commit ACK (CA)';
@@ -816,6 +889,7 @@ export function describeAckCode(code: string | undefined): string {
       return 'App Error (AE)';
     case 'AR':
       return 'App Reject (AR)';
+    case undefined:
     default:
       return `ACK (${code ?? 'unknown'})`;
   }
@@ -913,6 +987,123 @@ export function parseDuplicateBehavior(rawValue: string | undefined, logger: ILo
   }
   logger.warn(`Invalid duplicateBehavior value '${rawValue}'; expected 'reject' or 'idempotent'. Using idempotent.`);
   return DuplicateBehavior.IDEMPOTENT;
+}
+
+/**
+ * Resolves the effective Path-2 (queue → Bot) auto-retry policy for a channel.
+ *
+ * Per-field precedence: endpoint URL query param (`retryMode`,
+ * `autoRetryBaseDelayMs`, `autoRetryMaxDelayMs`, `autoRetryMaxAttempts`,
+ * `autoRetryBackoffMultiplier`) → agent-wide `channelRetryMode` / `channelAutoRetry*`
+ * setting → {@link DEFAULT_RETRY_POLICY}. Invalid values warn and fall through to
+ * the next layer, mirroring the other channel URL params.
+ *
+ * The retry mode ({@link RetryMode}) is the single behavior knob: `none` (no
+ * retry), `normal` (retry transient failures, bounded), or `guaranteed` (retry
+ * everything until upstream answers, unlimited). The built-in default is
+ * `guaranteed` (see DEFAULT_RETRY_POLICY for why); `normal` drops maxAttempts to
+ * {@link DEFAULT_NORMAL_MODE_MAX_ATTEMPTS} rather than the guaranteed default's 0.
+ * Because mode is a single enum, the old "guaranteed but retry disabled" conflict
+ * is unrepresentable — no forcing/warning is needed for it.
+ *
+ * This resolves only *how aggressively* to retry; *which* failures are eligible
+ * is decided in the worker by classification (transient vs ambiguous — see
+ * RetryPolicy / handleFailure in worker.ts). In particular, normal mode never
+ * retries the ambiguous codes; only `guaranteed` opts into that (accepting
+ * duplicate-delivery risk).
+ *
+ * Cross-field rule:
+ * - `guaranteed` implies unlimited attempts (`maxAttempts = 0`). An explicitly
+ *   configured nonzero `autoRetryMaxAttempts` conflicts: we warn and respect the
+ *   explicit cap — delivery is then no longer guaranteed.
+ * @param agentDefaults - Agent-wide settings (undefined fields = not configured).
+ * @param params - The endpoint URL's query params.
+ * @param logger - Logger used to emit warnings on invalid values.
+ * @returns The resolved policy.
+ */
+export function resolveRetryPolicy(
+  agentDefaults: AgentRetryDefaults,
+  params: URLSearchParams,
+  logger: ILogger
+): RetryPolicy {
+  const mode = parseRetryModeParam(params.get('retryMode'), logger) ?? agentDefaults.mode ?? DEFAULT_RETRY_MODE;
+  const enabled = mode !== 'none';
+  const guaranteedDelivery = mode === 'guaranteed';
+
+  // "Explicit" = configured via param or agent setting, as opposed to the
+  // built-in default — only an explicit cap conflicts with guaranteed mode.
+  const explicitMaxAttempts =
+    parseRetryNumberParam(params.get('autoRetryMaxAttempts'), 'autoRetryMaxAttempts', 0, logger) ??
+    agentDefaults.maxAttempts;
+  // guaranteed → unlimited (0); normal mode falls back to the normal-mode cap,
+  // NOT DEFAULT_RETRY_POLICY.maxAttempts (which is 0 for the guaranteed default).
+  let maxAttempts = explicitMaxAttempts ?? (guaranteedDelivery ? 0 : DEFAULT_NORMAL_MODE_MAX_ATTEMPTS);
+  if (guaranteedDelivery && explicitMaxAttempts !== undefined && explicitMaxAttempts > 0) {
+    logger.warn(
+      `retryMode=guaranteed retries indefinitely, but autoRetryMaxAttempts=${explicitMaxAttempts} was explicitly configured; respecting autoRetryMaxAttempts — delivery is no longer guaranteed once attempts are exhausted.`
+    );
+    maxAttempts = explicitMaxAttempts;
+  }
+
+  const policy: RetryPolicy = {
+    enabled,
+    guaranteedDelivery,
+    baseDelayMs:
+      parseRetryNumberParam(params.get('autoRetryBaseDelayMs'), 'autoRetryBaseDelayMs', 1, logger) ??
+      agentDefaults.baseDelayMs ??
+      DEFAULT_RETRY_POLICY.baseDelayMs,
+    maxDelayMs:
+      parseRetryNumberParam(params.get('autoRetryMaxDelayMs'), 'autoRetryMaxDelayMs', 1, logger) ??
+      agentDefaults.maxDelayMs ??
+      DEFAULT_RETRY_POLICY.maxDelayMs,
+    maxAttempts,
+    backoffMultiplier:
+      parseRetryNumberParam(params.get('autoRetryBackoffMultiplier'), 'autoRetryBackoffMultiplier', 1, logger) ??
+      agentDefaults.backoffMultiplier ??
+      DEFAULT_RETRY_POLICY.backoffMultiplier,
+  };
+  // The URL params are validated above, but agent-level settings arrive unchecked —
+  // clamp so misconfigured settings degrade to sane values instead of, e.g., a
+  // negative delay scheduling retries in the past.
+  policy.baseDelayMs = Math.max(1, policy.baseDelayMs);
+  policy.maxAttempts = Math.max(0, Math.floor(policy.maxAttempts));
+  policy.backoffMultiplier = Math.max(1, policy.backoffMultiplier);
+  if (policy.maxDelayMs < policy.baseDelayMs) {
+    logger.warn(
+      `autoRetryMaxDelayMs (${policy.maxDelayMs}) is less than autoRetryBaseDelayMs (${policy.baseDelayMs}); using autoRetryBaseDelayMs as the cap.`
+    );
+    policy.maxDelayMs = policy.baseDelayMs;
+  }
+  return policy;
+}
+
+function parseRetryModeParam(rawValue: string | null, logger: ILogger): RetryMode | undefined {
+  if (rawValue === null) {
+    return undefined;
+  }
+  const normalized = rawValue.toLowerCase();
+  if (isRetryMode(normalized)) {
+    return normalized;
+  }
+  logger.warn(`Invalid retryMode value '${rawValue}'; expected 'none', 'normal', or 'guaranteed'. Ignoring.`);
+  return undefined;
+}
+
+function parseRetryNumberParam(
+  rawValue: string | null,
+  name: string,
+  min: number,
+  logger: ILogger
+): number | undefined {
+  if (rawValue === null) {
+    return undefined;
+  }
+  const value = Number(rawValue);
+  if (!Number.isFinite(value) || value < min) {
+    logger.warn(`Invalid ${name} value '${rawValue}'; expected a number >= ${min}. Ignoring.`);
+    return undefined;
+  }
+  return value;
 }
 
 /**

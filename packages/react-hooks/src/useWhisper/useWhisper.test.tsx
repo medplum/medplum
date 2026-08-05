@@ -145,7 +145,7 @@ describe('useWhisper', () => {
   test('records transcript end-to-end', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -175,7 +175,7 @@ describe('useWhisper', () => {
   test('handles speech_started and speech_stopped messages', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -204,11 +204,84 @@ describe('useWhisper', () => {
     expect(result.current.isListening).toBe(true);
   });
 
+  test('mute toggles the audio track and resets on stop', async () => {
+    const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
+
+    const track = { enabled: true, stop: vi.fn() };
+    const stream = {
+      getTracks: () => [track],
+      getAudioTracks: () => [track],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+    });
+
+    mockAudioContext();
+
+    const { result } = renderHook(() => useWhisper({}), { wrapper });
+
+    await startListening(result, wsServer);
+
+    // Starts unmuted with a live track
+    expect(result.current.muted).toBe(false);
+    expect(track.enabled).toBe(true);
+
+    // Muting disables the mic track but keeps capturing
+    act(() => result.current.setMuted(true));
+    expect(result.current.muted).toBe(true);
+    expect(track.enabled).toBe(false);
+    expect(result.current.isListening).toBe(true);
+
+    // Unmuting re-enables the track
+    act(() => result.current.setMuted(false));
+    expect(result.current.muted).toBe(false);
+    expect(track.enabled).toBe(true);
+
+    // Stop resets mute so the next capture session starts unmuted
+    act(() => result.current.setMuted(true));
+    expect(result.current.muted).toBe(true);
+    act(() => result.current.stop());
+    expect(result.current.muted).toBe(false);
+  });
+
+  test('mute set while idle applies to the freshly acquired stream', async () => {
+    const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
+
+    // Fresh tracks come from getUserMedia enabled, like a real MediaStreamTrack.
+    const track = { enabled: true, stop: vi.fn() };
+    const stream = {
+      getTracks: () => [track],
+      getAudioTracks: () => [track],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
+    });
+
+    mockAudioContext();
+
+    const { result } = renderHook(() => useWhisper({}), { wrapper });
+
+    // Mute before any capture: there is no stream yet, only state.
+    act(() => result.current.setMuted(true));
+    expect(result.current.muted).toBe(true);
+
+    // Starting must not leave the mic hot while the hook still reports muted.
+    await startListening(result, wsServer);
+    expect(result.current.muted).toBe(true);
+    expect(track.enabled).toBe(false);
+
+    // Unmuting re-enables the new stream's track.
+    act(() => result.current.setMuted(false));
+    expect(track.enabled).toBe(true);
+  });
+
   test('handles ai-realtime:error message from server', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -234,7 +307,7 @@ describe('useWhisper', () => {
   test('reuses the warm connection across stop/start', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -260,7 +333,7 @@ describe('useWhisper', () => {
   test('stop keeps the socket open; unmount closes it', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -283,7 +356,7 @@ describe('useWhisper', () => {
   test('closes the warm socket after the idle timeout', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -308,7 +381,7 @@ describe('useWhisper', () => {
   test('start() within the idle window cancels the pending close', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
@@ -337,7 +410,7 @@ describe('useWhisper', () => {
   test('a background drop while idle does not get stuck in a connecting state', async () => {
     const wsServer = new WS('wss://example.com/ws/ai-realtime', { jsonProtocol: true });
 
-    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    const stream = { getTracks: () => [{ stop: vi.fn() }], getAudioTracks: () => [] } as unknown as MediaStream;
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },

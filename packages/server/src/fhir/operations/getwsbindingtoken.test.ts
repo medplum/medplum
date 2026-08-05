@@ -40,7 +40,7 @@ describe('Get WebSocket binding token', () => {
           },
         } satisfies Subscription);
       const createdSub = res1.body as Subscription;
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(createdSub).toBeDefined();
       expect(createdSub.id).toBeDefined();
 
@@ -48,7 +48,7 @@ describe('Get WebSocket binding token', () => {
       const res2 = await request(app)
         .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res2.status).toBe(200);
+      expect(res2).toHaveStatus(200);
       expect(res2.body).toBeDefined();
 
       const params = res2.body as Parameters;
@@ -100,7 +100,7 @@ describe('Get WebSocket binding token', () => {
           },
         } satisfies Subscription);
       const createdSub = res1.body as Subscription;
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       expect(createdSub).toBeDefined();
       expect(createdSub.id).toBeDefined();
 
@@ -140,7 +140,7 @@ describe('Get WebSocket binding token', () => {
         },
       } satisfies Subscription);
     const createdSub = res1.body as Subscription;
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     expect(createdSub).toBeDefined();
     expect(createdSub.id).toBeDefined();
 
@@ -174,7 +174,7 @@ describe('Get WebSocket binding token', () => {
         },
       } satisfies Subscription);
     const createdSub = res1.body as Subscription;
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     expect(createdSub).toBeDefined();
     expect(createdSub.id).toBeDefined();
 
@@ -208,14 +208,14 @@ describe('Get WebSocket binding token', () => {
             endpoint: 'https://example.com/hook',
           },
         } satisfies Subscription);
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       const createdSub = res1.body as Subscription;
 
       const res2 = await request(app)
         .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      expect(res2.status).toBe(400);
+      expect(res2).toHaveStatus(400);
       expect(res2.body).toMatchObject<OperationOutcome>({
         resourceType: 'OperationOutcome',
         issue: [
@@ -244,14 +244,14 @@ describe('Get WebSocket binding token', () => {
             type: 'websocket',
           },
         } satisfies Subscription);
-      expect(res1.status).toBe(201);
+      expect(res1).toHaveStatus(201);
       const createdSub = res1.body as Subscription;
 
       const res2 = await request(app)
         .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      expect(res2.status).toBe(400);
+      expect(res2).toHaveStatus(400);
       expect(res2.body).toMatchObject<OperationOutcome>({
         resourceType: 'OperationOutcome',
         issue: [
@@ -285,7 +285,7 @@ describe('Get WebSocket binding token', () => {
       .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
       .set('Authorization', 'Bearer ' + projectAccessToken);
 
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'Invalid empty Subscription criteria' } }],

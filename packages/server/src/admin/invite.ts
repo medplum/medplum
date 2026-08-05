@@ -31,6 +31,7 @@ import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
@@ -55,6 +56,12 @@ export const inviteValidator = makeValidationMiddleware([
     .optional()
     .matches(/^Patient\/[^/]+$/)
     .withMessage('Patient must be a reference to a Patient resource'),
+  body('password')
+    .optional()
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    .isByteLength({ max: MAX_PASSWORD_LENGTH })
+    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
@@ -141,7 +148,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
         return txRepo.conditionalCreate(userResource, searchRequest);
       },
-      { serializable: true }
+      {
+        resourceTypes: ['ProjectMembership', 'User'],
+        source: 'inviteUser.upsertUser',
+        serializable: true,
+      }
     );
     user = result;
     existingUser = !isCreated(outcome);
@@ -425,6 +436,16 @@ async function upsertProjectMembership(
     }
   }
 
+  // Apply default membership policy for Practitioner invites, based on whether the member is
+  // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
+  if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
+    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    if (defaultPolicy) {
+      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+    }
+  }
+
   if (request.forceNewMembership) {
     return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
@@ -459,7 +480,11 @@ async function upsertProjectMembership(
         return createProjectMembership(txRepo, user, project, profile, partialMembership);
       }
     },
-    { serializable: true }
+    {
+      resourceTypes: ['ProjectMembership', profile.resourceType],
+      source: 'upsertProjectMembership',
+      serializable: true,
+    }
   );
 
   return membership;

@@ -76,6 +76,7 @@ describe('AgentHl7ChannelConnection commit ACK', () => {
       addToWebSocketQueue: vi.fn(),
       agentId: 'test-agent',
       getDurableQueue: vi.fn().mockReturnValue(undefined),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;
@@ -247,6 +248,7 @@ describe('AgentHl7Channel enhanced mode wiring', () => {
       addToWebSocketQueue: vi.fn(),
       agentId: 'test-agent',
       getDurableQueue: vi.fn().mockReturnValue(durableQueueOn ? {} : undefined),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
     } as unknown as App;
 
     const definition = { name: 'test-channel' } as AgentChannel;

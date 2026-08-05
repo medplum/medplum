@@ -3,7 +3,6 @@
 import { createReference } from '@medplum/core';
 import { HomerServiceRequest, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { ServiceRequestTimelineProps } from './ServiceRequestTimeline';
 import { ServiceRequestTimeline } from './ServiceRequestTimeline';
@@ -14,11 +13,9 @@ describe('ServiceRequestTimeline', () => {
   async function setup(args: ServiceRequestTimelineProps): Promise<void> {
     await act(async () => {
       render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum} navigate={vi.fn()}>
-            <ServiceRequestTimeline {...args} />
-          </MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum} navigate={vi.fn()}>
+          <ServiceRequestTimeline {...args} />
+        </MedplumProvider>
       );
     });
   }

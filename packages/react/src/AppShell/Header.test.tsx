@@ -4,7 +4,6 @@ import { AppShell as MantineAppShell } from '@mantine/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
@@ -13,16 +12,14 @@ const medplum = new MockClient();
 const navigateMock = vi.fn();
 const closeMock = vi.fn();
 
-async function setup(initialUrl = '/'): Promise<void> {
+async function setup(): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
-        <MedplumProvider medplum={medplum} navigate={navigateMock}>
-          <MantineAppShell>
-            <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
-          </MantineAppShell>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum} navigate={navigateMock}>
+        <MantineAppShell>
+          <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
+        </MantineAppShell>
+      </MedplumProvider>
     );
   });
 }
@@ -44,6 +41,31 @@ describe('Header', () => {
   test('Renders', async () => {
     await setup();
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('Renders active project name', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: {
+          reference: 'Practitioner/124',
+          display: 'Alice Smith',
+        },
+        project: {
+          reference: 'Project/456',
+          display: 'My Project',
+        },
+      })
+    );
+
+    await setup();
+
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+
+    window.localStorage.removeItem('activeLogin');
   });
 
   test('Open and close the user menu', async () => {
@@ -119,7 +141,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Alice Smith'));
     });
 
-    expect(await screen.findByText('My Project')).toBeInTheDocument();
+    expect((await screen.findAllByText('My Project')).length).toBeGreaterThan(0);
     expect(await screen.findByText('My Other Project')).toBeInTheDocument();
 
     // Click on other project to switch

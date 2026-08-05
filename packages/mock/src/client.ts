@@ -117,6 +117,13 @@ export type MockFetchOverrideOptions = {
   repo: MemoryRepository;
 };
 
+interface MockClientTestMethods {
+  withSeeding: <T>(fn: () => T | Promise<T>) => Promise<T>;
+  setProfile: (profile: ProfileResource | undefined) => void;
+  setAgentAvailable: (value: boolean) => void;
+  setSubscriptionManager: (subManager: MockSubscriptionManager) => void;
+}
+
 export class MockClient extends MedplumClient {
   readonly router: FhirRouter;
   readonly repo: MemoryRepository;
@@ -135,13 +142,11 @@ export class MockClient extends MedplumClient {
     let client: MockFetchClient;
 
     if (clientOptions?.mockFetchOverride) {
-      if (
-        !(
-          clientOptions.mockFetchOverride?.router &&
-          clientOptions.mockFetchOverride?.repo &&
-          clientOptions.mockFetchOverride?.client
-        )
-      ) {
+      if (!(
+        clientOptions.mockFetchOverride?.router &&
+        clientOptions.mockFetchOverride?.repo &&
+        clientOptions.mockFetchOverride?.client
+      )) {
         throw new Error('mockFetchOverride must specify all fields: client, repo, router');
       }
       router = clientOptions.mockFetchOverride.router;
@@ -178,13 +183,45 @@ export class MockClient extends MedplumClient {
     this.debug = !!clientOptions?.debug;
   }
 
+  // A container for functions that mutate this mock client's state; we keep these
+  // methods in this extra namespace to make clear that these are not part of the
+  // normal MedplumClient API.
+  get mock(): MockClientTestMethods {
+    return {
+      withSeeding: <T>(fn: () => T | Promise<T>): Promise<T> => {
+        return this.repo.withSeeding(fn);
+      },
+      setProfile: (profile: ProfileResource | undefined): void => {
+        this.profile = profile;
+        this.dispatchEvent({ type: 'change' });
+      },
+      setAgentAvailable: (value: boolean): void => {
+        this.agentAvailable = value;
+      },
+      setSubscriptionManager: (subManager: MockSubscriptionManager): void => {
+        if (this.subManager) {
+          this.subManager.closeWebSocket();
+        }
+        this.subManager = subManager;
+      },
+    };
+  }
+
   clear(): void {
     super.clear();
     this.activeLoginOverride = undefined;
   }
 
+  /**
+   * Run a function in "seeding" mode, allowing it to set metadata like
+   * `versionId` that normally would be dropped.
+   *
+   * @deprecated - Use `.mock.withSeeding()` instead
+   * @param fn - The callback to run in "seeding" mode
+   * @returns The return value from `fn`
+   */
   withSeeding<T>(fn: () => T | Promise<T>): Promise<T> {
-    return this.repo.withSeeding(fn);
+    return this.mock.withSeeding(fn);
   }
 
   getProfile(): ProfileResource | undefined {
@@ -219,9 +256,13 @@ export class MockClient extends MedplumClient {
     this.activeLoginOverride = activeLoginOverride;
   }
 
+  /**
+   * Overrides the active profile.
+   * @deprecated - Use `.mock.setProfile()` instead
+   * @param profile - The profile to set as active for this client
+   */
   setProfile(profile: ProfileResource | undefined): void {
-    this.profile = profile;
-    this.dispatchEvent({ type: 'change' });
+    this.mock.setProfile(profile);
   }
 
   getActiveLogin(): LoginState | undefined {
@@ -358,8 +399,14 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
     return undefined;
   }
 
+  /**
+   * Updates internal test state used by `pushToAgent` mocking.
+   *
+   * @deprecated - Use `.mock.setAgentAvailable()` instead
+   * @param value - boolean
+   */
   setAgentAvailable(value: boolean): void {
-    this.agentAvailable = value;
+    this.mock.setAgentAvailable(value);
   }
 
   getSubscriptionManager(): MockSubscriptionManager {
@@ -371,11 +418,14 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
     return this.subManager;
   }
 
+  /**
+   * Sets a MockSubscriptionManager that this MockClient should use.
+   *
+   * @deprecated - Use `.mock.setSubscriptionManager()` instead
+   * @param subManager - A MockSubscriptionManager to attach to this MockClient
+   */
   setSubscriptionManager(subManager: MockSubscriptionManager): void {
-    if (this.subManager) {
-      this.subManager.closeWebSocket();
-    }
-    this.subManager = subManager;
+    this.mock.setSubscriptionManager(subManager);
   }
 
   subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {

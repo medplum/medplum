@@ -52,6 +52,12 @@ finnbergquist:
   url: https://github.com/finnbergquist
   image_url: https://github.com/finnbergquist.png
 
+petch:
+  name: Petch Jirapinyo
+  title: Co-Founder and CEO, Everself
+  url: https://everself.com/
+  image_url: /img/people/petch.jpg
+
 ThatOneBro:
   name: Derrick Farris
   title: Founding Engineer, Medplum
@@ -129,4 +135,10 @@ sainejob:
   title: AnyBio
   url: https://github.com/sainejob
   image_url: https://github.com/sainejob.png
+
+mandi:
+  name: Mandi Bateman
+  title: CEO, Profile Health
+  url: https://www.linkedin.com/in/mandibateman/
+  image_url: /img/avatars/mandi-bateman.jpg
 

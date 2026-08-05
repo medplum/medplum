@@ -78,7 +78,7 @@ describe('$rebuild-base-definitions', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'resourceType', valueCode: 'SearchParameter' }],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const updatedParam = await repo.searchOne({
       resourceType: 'SearchParameter',
@@ -104,7 +104,7 @@ describe('$rebuild-base-definitions', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'resourceType', valueCode: 'StructureDefinition' }],
       } satisfies Parameters);
-    expect(res.status).toBe(403);
+    expect(res).toHaveStatus(403);
     expect(vi.mocked(defs).readJsonAsync).toHaveBeenCalledTimes(0);
   });
 });

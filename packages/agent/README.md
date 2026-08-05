@@ -4,7 +4,7 @@ On-prem agent for device connectivity.
 
 ## Building
 
-Published releases are built using Github Actions. See the [build-agent workflow](../../.github/workflows/build-agent.yml) for details.
+Published releases are built using GitHub Actions. See the [build-agent workflow](../../.github/workflows/build-agent.yml) for details.
 
 The following tools are used to build the agent:
 

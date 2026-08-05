@@ -19,7 +19,13 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { addVerboseQueueLogging, defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  defaultQueueOptions,
+  getWorkerBullmqConfig,
+  queueRegistry,
+  trackJobMetrics,
+} from './utils';
 
 export interface LambdaCleanerOptions {
   readonly nameRegex: string;
@@ -49,19 +55,20 @@ export interface LambdaCleanerSummary extends DeleteOldLambdaVersionStats {
 export const LambdaCleanerQueueName = 'LambdaCleanerQueue';
 
 export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
-  const defaultOptions = defaultQueueOptions(config);
+  const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<LambdaCleanerJobData>(LambdaCleanerQueueName, {
-    ...defaultOptions,
-    defaultJobOptions: { ...defaultOptions.defaultJobOptions, attempts: 1 },
+    ...queueOptions,
+    defaultJobOptions: { ...queueOptions.defaultJobOptions, attempts: 1 },
   });
 
   let worker: Worker<LambdaCleanerJobData> | undefined;
   if (options?.workerEnabled !== false) {
-    const workerConfig = getWorkerBullmqConfig(config, 'lambda-cleaner');
     worker = new Worker<LambdaCleanerJobData>(
       LambdaCleanerQueueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job)),
-      { ...defaultOptions, concurrency: 1, ...workerConfig }
+      trackJobMetrics('lambda-cleaner', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => lambdaCleanerJobProcessor(job))
+      ),
+      getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })
     );
     addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({
       asyncJob: `AsyncJob/${job.data.asyncJob.id}`,

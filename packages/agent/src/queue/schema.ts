@@ -46,9 +46,10 @@ export const MIGRATIONS: readonly Migration[] = [
         -- stamped, awaiting response) → processed/rejected/failed, plus the
         -- intake-reject 'nacked'. The claimed/inflight split is what lets crash
         -- recovery tell a provably-unsent row (safe to requeue) from an ambiguous
-        -- in-flight one (must fail for review). The source-leg ACK-delivery outcome
-        -- is tracked independently in ack_outcome
-        -- (pending/delivered/undelivered/not_owed) so the two legs never conflate.
+        -- in-flight one (must fail or, under guaranteed delivery, requeue). A
+        -- retryable failure returns to 'queued' with next_attempt_at set (see
+        -- §4.1). The source-leg ACK-delivery outcome is tracked independently in
+        -- ack_outcome (pending/delivered/undelivered/not_owed) so the legs never conflate.
         state                 TEXT    NOT NULL,
         attempt_count         INTEGER NOT NULL DEFAULT 0,
         callback_id           TEXT    NOT NULL,
@@ -56,6 +57,8 @@ export const MIGRATIONS: readonly Migration[] = [
         server_status_code    INTEGER,
         ack_outcome           TEXT    NOT NULL DEFAULT 'pending',
         last_error            TEXT,
+        -- error_code is the machine-readable failure classification (QueueErrorCode);
+        -- the retry policy gates on it, never on the free-form last_error string.
         error_code            TEXT,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
@@ -122,6 +125,32 @@ export const MIGRATIONS: readonly Migration[] = [
         channel_name TEXT    PRIMARY KEY,
         last_seq_no  INTEGER NOT NULL
       ) STRICT;
+    `,
+  },
+  {
+    // Auto-retry support for the Bot leg. Adds two columns to the existing
+    // inbound_hl7_messages table. SQLite ALTER TABLE ... ADD COLUMN is cheap
+    // even on a populated DB *for these two columns*: it only rewrites the
+    // schema text and leaves existing rows untouched. That's NOT universally
+    // true -- adding a column with a CHECK constraint, or a generated column
+    // with NOT NULL, forces a full-table read/rewrite proportional to row count.
+    // Neither column here does that (next_attempt_at is nullable; the
+    // guaranteed_delivery NOT NULL sits on a plain, non-generated column with a
+    // DEFAULT), so both stay cheap. See
+    // https://www.sqlite.org/lang_altertable.html#altertableaddcolumn.
+    version: 2,
+    sql: `
+      -- next_attempt_at is the earliest time (ms) a retry-scheduled 'queued' row
+      -- may be re-claimed; NULL unless an auto-retry backoff is pending. A
+      -- retryable failure returns the row to 'queued' with this stamped (see §4.1).
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN next_attempt_at INTEGER;
+
+      -- guaranteed_delivery snapshots the channel's guaranteedDelivery setting at
+      -- intake, so recoverOnStartup (which runs before channel policies resolve)
+      -- knows whether to requeue (1) or fail (0) an interrupted inflight row.
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN guaranteed_delivery INTEGER NOT NULL DEFAULT 0;
     `,
   },
 ];

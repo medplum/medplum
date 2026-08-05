@@ -106,4 +106,9 @@ export interface Meta {
    * The list of compartments containing this resource
    */
   compartment?: Reference[];
+
+  /**
+   * True when this version represents a logical delete tombstone.
+   */
+  deleted?: boolean;
 }
