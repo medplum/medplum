@@ -215,6 +215,9 @@ function endsWith(window: readonly number[], pattern: Buffer): boolean {
   return true;
 }
 
+/** Shared empty result, so a non-matching byte costs no allocation. */
+const NO_RESPONSES: readonly Buffer[] = Object.freeze([]);
+
 /**
  * Sliding-window matcher for {@link ByteSequenceRule} patterns over a single byte stream.
  *
@@ -238,9 +241,9 @@ export class ByteSequenceMatcher {
    * @param byte - The byte to match against.
    * @returns Responses for every rule whose pattern completes at `byte`, in rule order.
    */
-  match(byte: number): Buffer[] {
+  match(byte: number): readonly Buffer[] {
     if (this.windowSize === 0) {
-      return [];
+      return NO_RESPONSES;
     }
 
     this.window.push(byte);
@@ -248,13 +251,16 @@ export class ByteSequenceMatcher {
       this.window.shift();
     }
 
-    const responses: Buffer[] = [];
+    // Allocated only once a pattern actually completes; this runs on every byte of every
+    // stream, and the overwhelmingly common answer is "nothing matched".
+    let responses: Buffer[] | undefined;
     for (const { pattern, response } of this.rules) {
       if (endsWith(this.window, pattern)) {
+        responses ??= [];
         responses.push(response);
       }
     }
-    return responses;
+    return responses ?? NO_RESPONSES;
   }
 
   /** Discards partial progress, e.g. when message framing restarts at a start char. */
@@ -289,7 +295,9 @@ export function filterMessageBytes(
     return buffer;
   }
 
-  const longestFirst = [...sequences].sort((a, b) => b.length - a.length);
+  // Ordering only decides which of several matches at one offset wins, so a lone sequence is
+  // used as-is rather than copied and sorted once per message.
+  const longestFirst = sequences.length > 1 ? [...sequences].sort((a, b) => b.length - a.length) : sequences;
   const filtered = Buffer.allocUnsafe(buffer.length);
   let written = 0;
   let i = 0;
@@ -297,8 +305,20 @@ export function filterMessageBytes(
   while (i < buffer.length) {
     let matchedLength = 0;
     for (const sequence of longestFirst) {
-      // A short tail makes subarray shorter than the sequence, so equals() correctly fails.
-      if (buffer.subarray(i, i + sequence.length).equals(sequence)) {
+      // Compared byte by byte rather than with subarray().equals(): a view is still a Buffer
+      // allocation, and one per sequence per byte of the body costs an order of magnitude in
+      // GC. The first-byte test rejects nearly every offset before the inner loop.
+      if (buffer[i] !== sequence[0] || i + sequence.length > buffer.length) {
+        continue;
+      }
+      let matched = true;
+      for (let k = 1; k < sequence.length; k++) {
+        if (buffer[i + k] !== sequence[k]) {
+          matched = false;
+          break;
+        }
+      }
+      if (matched) {
         matchedLength = sequence.length;
         break;
       }
