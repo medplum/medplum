@@ -977,8 +977,8 @@ describe('filterMessageBytes', () => {
   });
 
   test('a keepControlChars byte above the C0 range exempts nothing', () => {
-    // 0x41 is outside the sweep, so it can only be a no-op. It must not exempt 0x01 the way a
-    // 32-bit shift would if the exemption were tracked as a bitmask without a range check.
+    // 0x41 is outside the sweep, so it can only be a no-op. The exemption is a 32-bit mask and
+    // `1 << 0x41` wraps to `1 << 1`, so building it without a range check would spare SOH here.
     const filtered = filterMessageBytes(Buffer.from([0x01, 0x41, 0x42]), [], true, [0x41]);
 
     expect(filtered).toEqual(Buffer.from([0x41, 0x42]));
