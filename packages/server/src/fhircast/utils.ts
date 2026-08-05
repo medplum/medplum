@@ -20,7 +20,11 @@ const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {
  */
 export const FHIRCAST_LEASE_SECONDS = 3600;
 
-export type FhircastVersion = 'STU2' | 'STU3';
+export const FhircastVersion = {
+  STU2: 'STU2',
+  STU3: 'STU3',
+} as const;
+export type FhircastVersion = (typeof FhircastVersion)[keyof typeof FhircastVersion];
 
 /**
  * What the Hub remembers about a single subscriber, keyed by the endpoint it was issued.
@@ -40,13 +44,28 @@ export function getEndpointSubscriptionKey(endpoint: string): string {
 }
 
 /**
- * Names the subscriber a Hub message is meant for, when it is not meant for the whole topic.
+ * What is published to a topic's Redis pub/sub channel.
  *
- * Everything a topic publishes goes to one channel, so a message aimed at a single subscriber
- * carries its endpoint and is dropped by every other socket. The Hub strips this key before
- * forwarding, keeping the endpoint off the wire of the subscribers it is not addressed to.
+ * Every subscriber on a topic reads the one channel, so a message meant for a single subscriber
+ * names it in `target` and is dropped by the rest. Only `payload` reaches the wire, so the
+ * addressing never discloses one subscriber's endpoint to another.
  */
-export const TARGET_ENDPOINT_KEY = '_targetEndpoint';
+export type FhircastChannelMessage = {
+  /** The message to deliver to the subscriber, verbatim. */
+  payload: Record<string, any>;
+  /** The endpoint of the sole subscriber this message is for; absent to reach the whole topic. */
+  target?: string;
+};
+
+/**
+ * Serializes a message for a topic's Redis pub/sub channel.
+ * @param payload - The message to deliver to subscribers.
+ * @param target - The endpoint of the one subscriber to deliver it to, if it is not for the topic.
+ * @returns The serialized channel message.
+ */
+export function serializeFhircastChannelMessage(payload: Record<string, any>, target?: string): string {
+  return JSON.stringify({ payload, target } satisfies FhircastChannelMessage);
+}
 
 export async function setEndpointSubscription(endpoint: string, subscription: FhircastSubscription): Promise<void> {
   await getCacheRedis().set(

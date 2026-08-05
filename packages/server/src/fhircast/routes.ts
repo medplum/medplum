@@ -32,20 +32,20 @@ import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import type { FhircastVersion } from './utils';
 import {
   cleanupContextForResource,
   deleteEndpointSubscription,
   extractAnchorResourceType,
   extractEndpoint,
+  FhircastVersion,
   getCurrentContext,
   getEndpointSubscription,
   getTopicContextStorageKey,
   getTopicCurrentContextKey,
   parseFhircastEvents,
+  serializeFhircastChannelMessage,
   setEndpointSubscription,
   setTopicCurrentContext,
-  TARGET_ENDPOINT_KEY,
 } from './utils';
 
 export type EventCategory = 'open' | 'close' | 'update' | 'select' | 'other';
@@ -210,7 +210,7 @@ protectedCommonRoutes.post(
  * @returns The FHIRcast version this request was made against.
  */
 function getFhircastVersion(req: Request): FhircastVersion {
-  return req.baseUrl.includes('/STU2') ? 'STU2' : 'STU3';
+  return req.baseUrl.includes(FhircastVersion.STU2) ? FhircastVersion.STU2 : FhircastVersion.STU3;
 }
 
 async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
@@ -279,15 +279,17 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
 
   publish(
     `${ctx.project.id}:${topic}`,
-    JSON.stringify({
-      'hub.mode': 'denied',
-      'hub.topic': topic,
-      'hub.events': req.body['hub.events'],
-      'hub.reason': 'Subscriber unsubscribed from topic',
+    serializeFhircastChannelMessage(
+      {
+        'hub.mode': 'denied',
+        'hub.topic': topic,
+        'hub.events': req.body['hub.events'],
+        'hub.reason': 'Subscriber unsubscribed from topic',
+      },
       // Deny only the unsubscribing socket when we know which one it is. A request without a usable
       // endpoint can only be honored by denying every subscriber on the topic.
-      ...(endpoint && ownsSubscription ? { [TARGET_ENDPOINT_KEY]: endpoint } : undefined),
-    })
+      endpoint && ownsSubscription ? endpoint : undefined
+    )
   ).catch((err: Error) => {
     getLogger().error(
       `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
@@ -540,7 +542,7 @@ async function finalizeContextChangeRequest(
   projectId: string,
   payload: FhircastMessagePayload
 ): Promise<void> {
-  await publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
+  await publish(`${projectId}:${payload.event['hub.topic']}`, serializeFhircastChannelMessage(payload));
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
   res.status(202).json({ success: true, event: payload });

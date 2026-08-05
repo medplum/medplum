@@ -1317,5 +1317,51 @@ describe('FHIRcast WebSocket', () => {
           errorSpy.mockRestore();
         }
       }));
+
+    test('Logs and drops a topic message that is not a channel message', () =>
+      withTestContext(async () => {
+        const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: vi.fn().mockResolvedValue(
+            JSON.stringify({
+              projectId: 'project-id',
+              topic: 'my-topic',
+              events: ['Patient-open'],
+              version: 'STU3',
+            })
+          ),
+        } as any);
+        const redisHandlers: Record<string, (...args: any[]) => any> = {};
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: vi.fn().mockResolvedValue(undefined),
+          on: vi.fn((event: string, cb: (...args: any[]) => any) => {
+            redisHandlers[event] = cb;
+          }),
+          disconnect: vi.fn(),
+        } as any);
+        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+        const socket = { on: vi.fn(), send: vi.fn(), close: vi.fn() } as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await handleFhircastConnection(socket, req);
+          // Ignore the connection verification the socket was just sent
+          vi.mocked(socket.send).mockClear();
+
+          // Nothing reaches a subscriber unless it arrives wrapped in a payload
+          redisHandlers.message('project-id:my-topic', '{ not valid json');
+          redisHandlers.message('project-id:my-topic', JSON.stringify({ target: 'some-endpoint' }));
+
+          expect(socket.send).not.toHaveBeenCalled();
+          expect(errorSpy).toHaveBeenCalledWith(
+            '[FHIRcast]: Discarding a message published to a topic without a payload'
+          );
+          expect(errorSpy).toHaveBeenCalledTimes(2);
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          errorSpy.mockRestore();
+        }
+      }));
   });
 });

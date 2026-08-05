@@ -5,7 +5,13 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
-import { FHIRCAST_LEASE_SECONDS, getEndpointSubscription, TARGET_ENDPOINT_KEY } from '../fhircast/utils';
+import type { FhircastChannelMessage } from '../fhircast/utils';
+import {
+  FHIRCAST_LEASE_SECONDS,
+  FhircastVersion,
+  getEndpointSubscription,
+  serializeFhircastChannelMessage,
+} from '../fhircast/utils';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
@@ -48,7 +54,7 @@ export function initFhircastHeartbeat(): void {
       for (const projectAndTopic of topicRefCountMap.keys()) {
         publish(
           projectAndTopic,
-          JSON.stringify({
+          serializeFhircastChannelMessage({
             ...baseHeartbeatPayload,
             event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
           })
@@ -85,39 +91,37 @@ const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
  * Decides what a subscriber should be sent from a message published to its topic.
  *
  * Everything the topic publishes reaches every one of its sockets, so this is where a message is
- * matched against the one subscriber it names, and against the events this subscriber asked for.
- * Messages carrying no `hub.event` are Hub control messages and are always delivered, as are
- * unparseable messages -- dropping either would be worse than sending an unwanted event.
+ * matched against the subscriber it targets, and against the events this subscriber asked for. A
+ * payload carrying no `hub.event` is a Hub control message, delivered whatever the subscriber asked
+ * for.
  * @param message - The raw message published to the topic.
  * @param endpoint - The endpoint this subscriber connected with.
  * @param subscribedEvents - The events this subscriber requested.
- * @returns The message to forward, or `undefined` if it is not for this subscriber.
+ * @returns The payload to forward, or `undefined` if the message is not for this subscriber.
  */
 function messageForSubscriber(message: string, endpoint: string, subscribedEvents: Set<string>): string | undefined {
-  let payload: Record<string, any>;
+  let channelMessage: FhircastChannelMessage | undefined;
   try {
-    payload = JSON.parse(message);
+    channelMessage = JSON.parse(message);
   } catch (_err) {
-    return message;
+    channelMessage = undefined;
+  }
+  if (!channelMessage?.payload) {
+    globalLogger.error('[FHIRcast]: Discarding a message published to a topic without a payload');
+    return undefined;
+  }
+  if (channelMessage.target && channelMessage.target !== endpoint) {
+    return undefined;
   }
 
-  const targetEndpoint = payload?.[TARGET_ENDPOINT_KEY];
-  if (targetEndpoint) {
-    if (targetEndpoint !== endpoint) {
+  const eventName = channelMessage.payload.event?.['hub.event'];
+  if (typeof eventName === 'string') {
+    const normalizedEventName = eventName.toLowerCase();
+    if (!UNCONDITIONAL_EVENTS.has(normalizedEventName) && !subscribedEvents.has(normalizedEventName)) {
       return undefined;
     }
-    delete payload[TARGET_ENDPOINT_KEY];
-    return JSON.stringify(payload);
   }
-
-  const eventName = payload?.event?.['hub.event'];
-  if (typeof eventName !== 'string') {
-    return message;
-  }
-  const normalizedEventName = eventName.toLowerCase();
-  return UNCONDITIONAL_EVENTS.has(normalizedEventName) || subscribedEvents.has(normalizedEventName)
-    ? message
-    : undefined;
+  return JSON.stringify(channelMessage.payload);
 }
 
 /**
@@ -224,7 +228,7 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
     'hub.events': events.join(','),
     'hub.lease_seconds': FHIRCAST_LEASE_SECONDS,
   };
-  if (version !== 'STU3') {
+  if (version !== FhircastVersion.STU3) {
     // STU3 dropped these, but STU2 clients still expect them
     // TODO: Fill in these properties
     Object.assign(confirmation, {
