@@ -7,12 +7,12 @@ import type {
   GoogleLoginRequest,
   LoginAuthenticationResponse,
 } from '@medplum/core';
-import { locationUtils, normalizeOperationOutcome } from '@medplum/core';
+import { badRequest, locationUtils, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconPencil } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
@@ -24,6 +24,7 @@ import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly disableEmailAuth?: boolean;
   readonly disableGoogleAuth?: boolean;
+  readonly externalAuthDomain?: string;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
@@ -43,6 +44,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
 export interface EmailFormProps extends BaseLoginRequest {
   readonly disableEmailAuth?: boolean;
   readonly disableGoogleAuth?: boolean;
+  readonly externalAuthDomain?: string;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
   readonly setEmail: (email: string) => void;
@@ -50,7 +52,15 @@ export interface EmailFormProps extends BaseLoginRequest {
 }
 
 export function EmailForm(props: EmailFormProps): JSX.Element {
-  const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, ...baseLoginRequest } = props;
+  const {
+    setEmail,
+    onRegister,
+    handleAuthResponse,
+    children,
+    disableEmailAuth,
+    externalAuthDomain,
+    ...baseLoginRequest
+  } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
   const [outcome, setOutcome] = useState<OperationOutcome>();
@@ -101,6 +111,24 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
     },
     [medplum, baseLoginRequest, isExternalAuth, handleAuthResponse]
   );
+
+  // When an external auth domain is provided (e.g. a direct-launch link), initiate external auth
+  // immediately instead of waiting for the user to type their email.
+  const externalAuthInitiated = useRef(false);
+  useEffect(() => {
+    if (!externalAuthDomain || externalAuthInitiated.current) {
+      return;
+    }
+    externalAuthInitiated.current = true;
+    medplum
+      .post('auth/method', { domain: externalAuthDomain })
+      .then(async (authMethod) => {
+        if (!(await isExternalAuth(authMethod))) {
+          setOutcome(badRequest(`No identity provider configured for ${externalAuthDomain}`));
+        }
+      })
+      .catch((err: unknown) => setOutcome(normalizeOperationOutcome(err)));
+  }, [medplum, externalAuthDomain, isExternalAuth]);
 
   return (
     <Form onSubmit={handleSubmit}>
