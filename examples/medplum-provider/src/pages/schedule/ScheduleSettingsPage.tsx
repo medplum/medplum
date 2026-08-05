@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Group, Loader, Stack, Switch, Text, Title, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { deepClone, EMPTY, formatReferenceString, getExtensionValue, getReferenceString } from '@medplum/core';
+import {
+  deepClone,
+  EMPTY,
+  formatReferenceString,
+  getExtensionValue,
+  getReferenceString,
+  hasSchedulingParameters,
+  serviceTypeIncludesService,
+  ServiceTypeReferenceURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type { HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import { Document, MedplumLink, OperationOutcomeAlert, useMedplum } from '@medplum/react';
 import { useResource, useSearchResources } from '@medplum/react-hooks';
@@ -13,8 +23,6 @@ import { useParams } from 'react-router';
 import { AlphaBanner } from '../../components/AlphaBanner';
 import { DocsLink } from '../../components/DocsLink';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { hasSchedulingParameters } from '../../utils/scheduling';
-import { isCodeableReferenceLikeTo, ServiceTypeReferenceURI, toCodeableReferenceLike } from '../../utils/servicetype';
 
 // Eventually we should paginate the HealthcareService search so this is not a
 // hard limit. We expect that 1000 rows should be plenty for most providers, so
@@ -37,7 +45,7 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
   function toggleServiceType(service: WithId<HealthcareService>, enabled: boolean): void {
     setDirty(true);
     if (enabled) {
-      const serviceType = toCodeableReferenceLike(service);
+      const serviceType = toServiceTypeCodeableConcepts(service);
       setSchedule((prevValue) => ({
         ...prevValue,
         serviceType: [...(prevValue.serviceType ?? EMPTY), ...serviceType],
@@ -110,7 +118,7 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
               >
                 <Switch
                   label={service.name}
-                  checked={isCodeableReferenceLikeTo(schedule.serviceType, service)}
+                  checked={serviceTypeIncludesService(schedule.serviceType, service)}
                   onChange={(e) => toggleServiceType(service, e.target.checked)}
                   disabled={!schedulable}
                 />

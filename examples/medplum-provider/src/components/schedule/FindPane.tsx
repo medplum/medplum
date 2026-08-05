@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { EMPTY, formatDateTime, getReferenceString, isDefined } from '@medplum/core';
+import {
+  EMPTY,
+  extractServiceTypeReferences,
+  formatDateTime,
+  getReferenceString,
+  hasSchedulingParameters,
+  isDefined,
+} from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, Patient, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
@@ -13,8 +20,7 @@ import { BookAppointmentForm } from '../../components/schedule/BookAppointmentFo
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-import { hasSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
-import { extractReferencesFromCodeableReferenceLike } from '../../utils/servicetype';
+import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -56,7 +62,7 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
 
   useEffect(() => {
     const seen = new Set<string>();
-    const allRefs = extractReferencesFromCodeableReferenceLike(schedule.serviceType);
+    const allRefs = extractServiceTypeReferences(schedule.serviceType);
     const refs = allRefs.filter((ref) => {
       if (!ref.reference) {
         return false;

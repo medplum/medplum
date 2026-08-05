@@ -11,14 +11,13 @@ import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
 import { Button, Group, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
-import { EMPTY, getReferenceString } from '@medplum/core';
+import { assertNever, EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { Range } from '../types/scheduling';
-import { assertNever } from '../utils/assert';
+import type { DateTimeRange } from '../types';
 import classes from './Calendar.module.css';
 
 type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
@@ -60,16 +59,18 @@ function slotsToEvents(slots: Slot[]): EventInput[] {
   }));
 }
 
-export function Calendar(props: {
-  slots: Slot[];
-  appointments: Appointment[];
-  onSelectInterval?: (slotInfo: Range) => void;
+export interface CalendarProps {
+  slots?: Slot[];
+  appointments?: Appointment[];
+  onSelectInterval?: (slotInfo: DateTimeRange) => void;
   onSelectSlot?: (slot: Slot) => void;
   onSelectAppointment?: (appointment: Appointment) => void;
   onDoubleClickAppointment?: (appointment: Appointment) => void;
-  onRangeChange?: (range: Range) => void;
+  onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
-}): JSX.Element {
+}
+
+export function Calendar(props: CalendarProps): JSX.Element {
   const colorScheme = useComputedColorScheme();
   const controller = useCalendarController();
   const { onSelectAppointment, onSelectSlot, onDoubleClickAppointment } = props;
@@ -112,7 +113,9 @@ export function Calendar(props: {
   }, []);
 
   const events = useMemo(() => {
-    const appointmentIndex = props.appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
+    const appointments = props.appointments ?? [];
+    const slots = props.slots ?? [];
+    const appointmentIndex = appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
       (appointment.slot ?? EMPTY).forEach((slotRef) => {
         const key = getReferenceString(slotRef);
         if (key) {
@@ -122,7 +125,7 @@ export function Calendar(props: {
       return acc;
     }, {});
 
-    const filteredSlots = props.slots.filter((slot) => {
+    const filteredSlots = slots.filter((slot) => {
       // never show "entered-in-error" slots on the calendar
       if (slot.status === 'entered-in-error') {
         return false;
@@ -137,7 +140,7 @@ export function Calendar(props: {
       return true;
     });
 
-    return [...appointmentsToEvents(props.appointments), ...slotsToEvents(filteredSlots)];
+    return [...appointmentsToEvents(appointments), ...slotsToEvents(filteredSlots)];
   }, [props.appointments, props.slots]);
 
   return (

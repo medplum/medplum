@@ -24,6 +24,7 @@ PACKAGES=(
   "mock"
   "react"
   "react-hooks"
+  "react-scheduling"
   "scriptsure-react"
 )
 
