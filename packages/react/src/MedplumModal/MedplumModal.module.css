@@ -1,0 +1,77 @@
+/*
+ * Mantine makes `.content` the scroll container and sticks `.header` to its top, which can never
+ * pin a footer. So the scroll container moves down one level: `.content` becomes a non-scrolling
+ * flex column, `.body` a nested column that absorbs the leftover height, and `.scroll` is the only
+ * element that scrolls:
+ *
+ *   .content > .body > [<form> >] (.scroll + .footer)
+ *
+ * Every link in that chain needs `min-height: 0`, or a flex item refuses to shrink below its
+ * content height and pushes the footer out of the modal. The optional form element that `onSubmit`
+ * inserts is styled inline in the component, since `Form` takes a style but not a className.
+ *
+ * Rules that contradict Mantine's own Modal styles use a doubled class, so the outcome never
+ * depends on which of the two stylesheets the bundler happens to insert first.
+ */
+
+.content.content {
+  display: flex;
+  flex-direction: column;
+  /* Mantine sets `overflow-y: auto` here; `.scroll` scrolls instead. */
+  overflow: hidden;
+}
+
+.header.header {
+  flex: 0 0 auto;
+  /* `position: sticky` only mattered while `.content` was the scroll container. */
+  position: static;
+  /*
+   * Logical longhands, to override Mantine's `padding` + `padding-inline-end` pair unambiguously.
+   * Deliberately not tied to `--mb-padding`: the header is fixed chrome, so `padding={0}` for a
+   * flush body must not collapse it.
+   */
+  padding-block: var(--mantine-spacing-sm);
+  padding-inline-start: var(--mantine-spacing-lg);
+  padding-inline-end: var(--mantine-spacing-sm);
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.title.title {
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 700;
+}
+
+.body.body {
+  display: flex;
+  flex-direction: column;
+  /*
+   * flex-basis stays `auto` rather than the `flex: 1` shorthand's `0%`, so that the height below -
+   * and the intrinsic content height when it is unset - is the flex base size. With `0%` a fixed
+   * body height would be ignored.
+   */
+  flex: 1 1 auto;
+  min-height: 0;
+  height: var(--medplum-modal-body-height, auto);
+  /* Padding lives on `.scroll` and `.footer` so the footer border runs the full width. */
+  padding: 0;
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Without this, wide content (a table, a Grid) stretches the modal instead of scrolling. */
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--mb-padding, var(--mantine-spacing-lg));
+}
+
+.footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* Stretch, the default, is what makes plain Button children full width. */
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mb-padding, var(--mantine-spacing-lg));
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
