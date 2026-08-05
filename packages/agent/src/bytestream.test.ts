@@ -14,6 +14,7 @@ import {
   parseAutoRespondRules,
   parseBodyEncoding,
   parseByteSequences,
+  parseKeepControlChars,
 } from './bytestream';
 import { createEndpointWithRandomPort, createMockLogger, waitFor } from './test-utils';
 
@@ -21,6 +22,16 @@ const medplum = new MockClient();
 let bot: Bot;
 let endpoint: Endpoint;
 let port: number;
+
+// ASTM E1394 low-level control bytes.
+const STX = 0x02;
+const ETX = 0x03;
+const EOT = 0x04;
+const ENQ = 0x05;
+const ACK = 0x06;
+const CR = 0x0d;
+const LF = 0x0a;
+const ETB = 0x17;
 
 describe('Byte Stream', () => {
   beforeAll(async () => {
@@ -602,6 +613,54 @@ describe('Byte Stream', () => {
       mockServer.stop();
     });
 
+    test('ASTM E1394 session: every ACK is returned and only framing is stripped', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+
+      // The BioRad ASTM channel, expressed in address params. ENQ frames the session start and
+      // EOT its end; ENQ/ETX/EOT/LF each earn an ACK; CR and LF survive the control-char sweep
+      // because they terminate ASTM records and frames.
+      const [agentId, agentPort] = await createByteStreamAgent(
+        '&autoRespond=%05:%06,%03:%06,%04:%06,%0A:%06&stripControlChars=true&keepControlChars=%0D%0A&bodyEncoding=utf-8',
+        { startChar: '%05', endChar: '%04' }
+      );
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      const ackCount = (): number => Buffer.concat(received).length;
+
+      // A real analyzer waits for each ACK before sending the next frame, so drive it that way.
+      client.write(Buffer.from([ENQ]));
+      await waitFor(() => ackCount() === 1, 1000, 'ACK for ENQ');
+
+      // Intermediate frame, terminated by ETB: only its trailing LF is mapped, so one ACK.
+      client.write(astmFrame('1', 'H|\\^&|||BioRad^1.0|||||||P|1|20251217223735', ETB, 'C5'));
+      await waitFor(() => ackCount() === 2, 1000, 'ACK for the intermediate frame');
+
+      // Final frame, terminated by ETX: both ETX and the trailing LF are mapped, so two ACKs.
+      client.write(astmFrame('2', 'P|1||||Doe^John||19700101|M', ETX, '4F'));
+      await waitFor(() => ackCount() === 4, 1000, 'ACKs for the final frame');
+
+      client.write(Buffer.from([EOT]));
+      await waitFor(() => ackCount() === 5, 1000, 'ACK for EOT');
+
+      // Five ACKs, and nothing but ACKs.
+      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK, ACK, ACK, ACK, ACK]));
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      // ENQ, STX, ETB, ETX and EOT are gone; CR and LF remain, as do the frame numbers and
+      // checksums, which are printable and so were never candidates for stripping.
+      expect(bodies[0]).toBe(
+        '1H|\\^&|||BioRad^1.0|||||||P|1|20251217223735\rC5\r\n2P|1||||Doe^John||19700101|M\r4F\r\n'
+      );
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
     test('Default hex encoding preserves bytes above 0x7f', async () => {
       const bodies: string[] = [];
       const mockServer = startMockAgentServer(bodies);
@@ -760,6 +819,33 @@ describe('parseByteSequences', () => {
   });
 });
 
+describe('parseKeepControlChars', () => {
+  test('Collects every byte, however the entries are grouped', () => {
+    const log = createMockLogger();
+
+    // Grouping is meaningless for a byte set, so all three spellings agree.
+    expect(parseKeepControlChars(['\r\n'], log)).toEqual([0x0d, 0x0a]);
+    expect(parseKeepControlChars(['\r,\n'], log)).toEqual([0x0d, 0x0a]);
+    expect(parseKeepControlChars(['\r', '\n'], log)).toEqual([0x0d, 0x0a]);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Deduplicates', () => {
+    expect(parseKeepControlChars(['\r\n,\r'], createMockLogger())).toEqual([0x0d, 0x0a]);
+  });
+
+  test('No params yields no exemptions', () => {
+    expect(parseKeepControlChars([], createMockLogger())).toEqual([]);
+  });
+
+  test('Skips and warns on values outside byte range', () => {
+    const log = createMockLogger();
+
+    expect(parseKeepControlChars(['❤', '\r'], log)).toEqual([0x0d]);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('keepControlChars'));
+  });
+});
+
 describe('parseBodyEncoding', () => {
   test.each([
     [undefined, 'hex'],
@@ -877,6 +963,25 @@ describe('filterMessageBytes', () => {
     expect(filtered.toString()).toBe('Hi');
   });
 
+  test('keepControlChars exempts the listed bytes from the sweep', () => {
+    const filtered = filterMessageBytes(Buffer.from([0x02, 0x48, 0x0d, 0x0a, 0x69, 0x03]), [], true, [0x0d, 0x0a]);
+
+    expect(filtered).toEqual(Buffer.from([0x48, 0x0d, 0x0a, 0x69]));
+  });
+
+  test('stripSequence still removes a byte that keepControlChars exempts', () => {
+    // The two are independent: the exemption governs only the control-char sweep.
+    const filtered = filterMessageBytes(Buffer.from([0x48, 0x0d, 0x69]), [Buffer.from([0x0d])], true, [0x0d]);
+
+    expect(filtered).toEqual(Buffer.from([0x48, 0x69]));
+  });
+
+  test('keepControlChars is inert when stripControlChars is off', () => {
+    const buffer = Buffer.from([0x02, 0x48, 0x03]);
+
+    expect(filterMessageBytes(buffer, [], false, [0x0d])).toBe(buffer);
+  });
+
   test('stripControlChars preserves bytes at or above 0x20', () => {
     const filtered = filterMessageBytes(Buffer.from([0x20, 0x7f, 0xe9]), [], true);
 
@@ -915,16 +1020,43 @@ function startMockAgentServer(bodies: string[]): Server {
 }
 
 /**
+ * Builds one ASTM E1394 frame: `STX <seq> <record> CR <terminator> <checksum> CR LF`.
+ *
+ * The checksum is passed in rather than computed — the channel treats it as opaque payload.
+ *
+ * @param seq - The single-digit frame sequence number.
+ * @param record - The ASTM record text.
+ * @param terminator - `ETB` for an intermediate frame, `ETX` for the final one.
+ * @param checksum - The two-character frame checksum.
+ * @returns The framed bytes.
+ */
+function astmFrame(seq: string, record: string, terminator: number, checksum: string): Buffer {
+  return Buffer.concat([
+    Buffer.from([STX]),
+    Buffer.from(`${seq}${record}`, 'utf-8'),
+    Buffer.from([CR, terminator]),
+    Buffer.from(checksum, 'utf-8'),
+    Buffer.from([CR, LF]),
+  ]);
+}
+
+/**
  * Creates a byte-stream Agent and Endpoint on a free port.
  *
  * @param extraParams - Query params appended after `startChar`/`endChar`, e.g. '&autoRespond=%05:%06'.
+ * @param framing - Overrides the default STX/ETX framing chars, in `%XX` form.
+ * @param framing.startChar - The message start char.
+ * @param framing.endChar - The message end char.
  * @returns The agent id and the port its channel listens on.
  */
-async function createByteStreamAgent(extraParams: string): Promise<[string, number]> {
+async function createByteStreamAgent(
+  extraParams: string,
+  framing: { startChar: string; endChar: string } = { startChar: '%02', endChar: '%03' }
+): Promise<[string, number]> {
   const [created, agentPort] = await createEndpointWithRandomPort(medplum, {
     resourceType: 'Endpoint',
     status: 'active',
-    address: `tcp://0.0.0.0:9999?startChar=%02&endChar=%03${extraParams}`,
+    address: `tcp://0.0.0.0:9999?startChar=${framing.startChar}&endChar=${framing.endChar}${extraParams}`,
     connectionType: { code: ContentType.OCTET_STREAM },
     payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
   });

@@ -28,6 +28,7 @@ export type ByteStreamConfig = {
   readonly autoRespond: readonly ByteSequenceRule[];
   readonly stripSequences: readonly Buffer[];
   readonly stripControlChars: boolean;
+  readonly keepControlChars: readonly number[];
   readonly bodyEncoding: ByteStreamBodyEncoding;
 };
 
@@ -148,6 +149,28 @@ export function parseByteSequences(rawValues: readonly string[], label: string, 
 }
 
 /**
+ * Parses the `keepControlChars` param into the set of bytes exempt from `stripControlChars`.
+ *
+ * Unlike `stripSequence`, grouping carries no meaning here — this is a set of single bytes, so
+ * `%0D%0A` and `%0D,%0A` are equivalent and every byte of every entry is collected.
+ *
+ * @param rawValues - Every `keepControlChars` value, already percent-decoded.
+ * @param logger - Logger used to warn about values that are dropped.
+ * @returns The exempt bytes, deduplicated.
+ */
+export function parseKeepControlChars(rawValues: readonly string[], logger: ILogger): number[] {
+  const bytes = new Set<number>();
+
+  for (const sequence of parseByteSequences(rawValues, 'keepControlChars', logger)) {
+    for (const byte of sequence) {
+      bytes.add(byte);
+    }
+  }
+
+  return [...bytes];
+}
+
+/**
  * Normalizes the configured transmit body encoding.
  *
  * Defaults to `hex`, which is the encoding byte-stream channels have always used, so bots
@@ -250,10 +273,18 @@ export class ByteSequenceMatcher {
  * @param buffer - The assembled message, framing chars included.
  * @param sequences - Sequences to remove.
  * @param stripControlChars - Also drop every remaining C0 control byte (0x00-0x1F), framing
- * chars included — a channel wanting them preserved should leave this off.
+ * chars included.
+ * @param keepControlChars - Bytes exempt from `stripControlChars`. Record-oriented protocols
+ * need their terminators to survive the sweep: an ASTM body stripped of CR is one run-on line
+ * the receiver can no longer split into records.
  * @returns The filtered bytes, or `buffer` itself when there is nothing to filter.
  */
-export function filterMessageBytes(buffer: Buffer, sequences: readonly Buffer[], stripControlChars: boolean): Buffer {
+export function filterMessageBytes(
+  buffer: Buffer,
+  sequences: readonly Buffer[],
+  stripControlChars: boolean,
+  keepControlChars: readonly number[] = []
+): Buffer {
   if (sequences.length === 0 && !stripControlChars) {
     return buffer;
   }
@@ -279,7 +310,7 @@ export function filterMessageBytes(buffer: Buffer, sequences: readonly Buffer[],
     }
 
     const byte = buffer[i];
-    if (!(stripControlChars && byte < 0x20)) {
+    if (!(stripControlChars && byte < 0x20 && !keepControlChars.includes(byte))) {
       filtered[written] = byte;
       written++;
     }
@@ -303,6 +334,7 @@ export class AgentByteStreamChannel extends BaseChannel {
     autoRespond: [],
     stripSequences: [],
     stripControlChars: false,
+    keepControlChars: [],
     bodyEncoding: 'hex',
   };
 
@@ -410,12 +442,19 @@ export class AgentByteStreamChannel extends BaseChannel {
 
     // Every setting is read from the address string, so reloadConfig's address comparison is
     // enough to pick up any of them — there is no separate settings source to refresh.
+    const stripControlChars = params.get('stripControlChars')?.toLowerCase() === 'true';
+    const keepControlChars = parseKeepControlChars(params.getAll('keepControlChars'), this.log);
+    if (keepControlChars.length > 0 && !stripControlChars) {
+      this.log.warn('keepControlChars is configured but stripControlChars is off; it has no effect without it');
+    }
+
     this.config = Object.freeze({
       startChar,
       endChar,
       autoRespond: parseAutoRespondRules(params.getAll('autoRespond'), this.log),
       stripSequences: parseByteSequences(params.getAll('stripSequence'), 'stripSequence', this.log),
-      stripControlChars: params.get('stripControlChars')?.toLowerCase() === 'true',
+      stripControlChars,
+      keepControlChars,
       bodyEncoding: parseBodyEncoding(params.get('bodyEncoding'), this.log),
     });
 
@@ -506,7 +545,12 @@ export class ByteStreamChannelConnection {
           this.msgTotalLength += slice.length;
 
           const messageBuffer = Buffer.concat(this.msgChunks, this.msgTotalLength);
-          const body = filterMessageBytes(messageBuffer, config.stripSequences, config.stripControlChars);
+          const body = filterMessageBytes(
+            messageBuffer,
+            config.stripSequences,
+            config.stripControlChars,
+            config.keepControlChars
+          );
           if (body.length !== messageBuffer.length) {
             this.channel.channelLog.debug(`Filtered ${messageBuffer.length - body.length} byte(s) from message body`);
           }
