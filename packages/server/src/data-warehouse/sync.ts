@@ -308,14 +308,12 @@ async function writeWarehouseTable(
     );
   }
 
-  const result: SyncTableResult = {
+  return {
     destination,
     rowsInserted,
     syncDurationMs,
     watermarkDurationMs,
   };
-  recordSyncTableMetrics(result, spec.icebergTable);
-  return result;
 }
 
 function buildSkippedTableResult(
@@ -333,36 +331,31 @@ function buildSkippedTableResult(
 }
 
 /**
- * Records per-table OTEL metrics; `table` is icebergTable, not a local Parquet path.
- * @param result - Sync outcome for one warehouse table.
- * @param table - Iceberg table name used as the metric `table` attribute.
+ * Records sync-level OTEL metrics aggregated across all table outcomes.
+ * @param tables - Per-table sync results from a completed warehouse sync.
  */
-function recordSyncTableMetrics(result: SyncTableResult, table: string): void {
-  const attributes = { table };
-  recordHistogramValue('medplum.dataWarehouse.sync.watermarkDuration', result.watermarkDurationMs / 1000, {
-    attributes,
+function recordSyncMetrics(tables: SyncTableResult[]): void {
+  const rowsInserted = tables.map((t) => t.rowsInserted).reduce((a, b) => a + b, 0);
+  const syncDurationMs = tables.map((t) => t.syncDurationMs).reduce((a, b) => a + b, 0);
+  const watermarkDurationMs = tables.map((t) => t.watermarkDurationMs).reduce((a, b) => a + b, 0);
+  const skippedByReason = tables.reduce<Partial<Record<SyncTableSkipReason, number>>>((acc, table) => {
+    if (table.status) {
+      const status = table.status;
+      acc[status] = (acc[status] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  incrementCounter('medplum.dataWarehouse.sync.rows', undefined, rowsInserted);
+  recordHistogramValue('medplum.dataWarehouse.sync.duration', syncDurationMs / 1000, {
     options: { unit: 's' },
   });
-
-  if (result.status) {
-    incrementCounter('medplum.dataWarehouse.sync.tables', {
-      attributes: {
-        ...attributes,
-        result: 'skipped',
-        skipReason: result.status,
-      },
-    });
-    return;
+  recordHistogramValue('medplum.dataWarehouse.sync.watermarkDuration', watermarkDurationMs / 1000, {
+    options: { unit: 's' },
+  });
+  for (const [skipReason, count] of Object.entries(skippedByReason) as [SyncTableSkipReason, number][]) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { skipReason } }, count);
   }
-
-  incrementCounter('medplum.dataWarehouse.sync.tables', {
-    attributes: { ...attributes, result: 'success' },
-  });
-  incrementCounter('medplum.dataWarehouse.sync.rows', { attributes }, result.rowsInserted);
-  recordHistogramValue('medplum.dataWarehouse.sync.duration', result.syncDurationMs / 1000, {
-    attributes,
-    options: { unit: 's' },
-  });
 }
 
 async function reportSkippedTableProgress(
@@ -408,9 +401,7 @@ async function runWarehouseTableSync(
         const destination = options.destination.getDestinationName(watermark.spec);
 
         if (watermark.status === 'missing-table') {
-          const skipped = buildSkippedTableResult(destination, 'missing-table', watermark.watermarkDurationMs);
-          recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
-          tables.push(skipped);
+          tables.push(buildSkippedTableResult(destination, 'missing-table', watermark.watermarkDurationMs));
           await reportSkippedTableProgress(
             options,
             destination,
@@ -422,9 +413,7 @@ async function runWarehouseTableSync(
         }
 
         if (watermark.status === 'watermark') {
-          const skipped = buildSkippedTableResult(destination, 'watermark', watermark.watermarkDurationMs);
-          recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
-          tables.push(skipped);
+          tables.push(buildSkippedTableResult(destination, 'watermark', watermark.watermarkDurationMs));
           await reportSkippedTableProgress(options, destination, 'watermark read failed', tablesCompleted, tablesTotal);
           continue;
         }
@@ -449,9 +438,7 @@ async function runWarehouseTableSync(
             }
           );
 
-          const skipped = buildSkippedTableResult(destination, 'conflict', watermark.watermarkDurationMs);
-          recordSyncTableMetrics(skipped, watermark.spec.icebergTable);
-          tables.push(skipped);
+          tables.push(buildSkippedTableResult(destination, 'conflict', watermark.watermarkDurationMs));
           await reportSkippedTableProgress(
             options,
             destination,
@@ -478,5 +465,6 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
   const namespace = options.namespace ?? DEFAULT_NAMESPACE;
 
   const tables = await runWarehouseTableSync(options, namespace, sourceConnectionString);
+  recordSyncMetrics(tables);
   return { tables };
 }

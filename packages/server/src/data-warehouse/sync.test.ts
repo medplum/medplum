@@ -18,26 +18,6 @@ const tableSpec = { postgresTable: 'Patient_History', icebergTable: 'patient_his
 const namespace = 'default';
 const connection = {} as never;
 
-function appendPredicateSql(predicate: Expression): {
-  sql: string;
-  values: unknown[];
-} {
-  const builder = new SqlBuilder();
-  builder.appendExpression(predicate);
-  return { sql: builder.toString(), values: builder.getValues() };
-}
-
-function makeSyncOptions(overrides: Partial<SyncOptions> & Pick<SyncOptions, 'destination'>): SyncOptions {
-  return {
-    database: {},
-    warehouseSources: [tableSpec],
-    ...overrides,
-  };
-}
-
-function assertDefined<T>(value: T | undefined): asserts value is T {
-  expect(value).toBeDefined();
-}
 
 describe('buildWarehouseSourcePredicate', () => {
   test('returns undefined when destination has no predicate and startDate is omitted', async () => {
@@ -61,7 +41,10 @@ describe('buildWarehouseSourcePredicate', () => {
       namespace
     );
 
-    assertDefined(predicate);
+    expect(predicate).toBeDefined();
+    if (!predicate) {
+      return;
+    }
     expect(appendPredicateSql(predicate)).toStrictEqual({
       sql: appendPredicateSql(buildStartDatePredicate(startDate)).sql,
       values: [startDate],
@@ -81,7 +64,10 @@ describe('buildWarehouseSourcePredicate', () => {
       namespace
     );
 
-    assertDefined(predicate);
+    expect(predicate).toBeDefined();
+    if (!predicate) {
+      return;
+    }
     expect(appendPredicateSql(predicate)).toStrictEqual(appendPredicateSql(destinationPredicate));
   });
 
@@ -99,7 +85,10 @@ describe('buildWarehouseSourcePredicate', () => {
       namespace
     );
 
-    assertDefined(predicate);
+    expect(predicate).toBeDefined();
+    if (!predicate) {
+      return;
+    }
     expect(appendPredicateSql(predicate)).toStrictEqual({
       sql: `("lastUpdated" > $1 AND "lastUpdated" >= $2)`,
       values: [watermark, startDate],
@@ -362,6 +351,18 @@ describe('syncData metrics', () => {
     postgresTable: 'Patient_History',
     icebergTable: 'patient_history',
   };
+  const observationSource: WarehouseSourceTable = {
+    postgresTable: 'Observation_History',
+    icebergTable: 'observation_history',
+  };
+  const conditionSource: WarehouseSourceTable = {
+    postgresTable: 'Condition_History',
+    icebergTable: 'condition_history',
+  };
+  const encounterSource: WarehouseSourceTable = {
+    postgresTable: 'Encounter_History',
+    icebergTable: 'encounter_history',
+  };
 
   let incrementCounterSpy: ReturnType<typeof vi.spyOn>;
   let recordHistogramValueSpy: ReturnType<typeof vi.spyOn>;
@@ -377,80 +378,67 @@ describe('syncData metrics', () => {
     recordHistogramValueSpy.mockRestore();
   });
 
-  test('records rows, duration, watermarkDuration, and tables metrics on successful sync', async () => {
+  test('records aggregate rows, durations, and skipped-table counts by reason', async () => {
     const destination = createFakeDestination({
-      writeRows: async () => 7,
+      ensureTargetExists: async (tableSpec) => {
+        if (tableSpec.icebergTable === encounterSource.icebergTable) {
+          throw new Error('Managed Iceberg table does not exist');
+        }
+      },
+      buildSourcePredicate: async (_connection, tableSpec) => {
+        if (tableSpec.icebergTable === conditionSource.icebergTable) {
+          throw new Error('iceberg_column_stats failed');
+        }
+        return undefined;
+      },
+      writeRows: async (_connection, context) => {
+        if (context.tableSpec.icebergTable === patientSource.icebergTable) {
+          throw new Error('HTTP 409 Conflict 409: commit conflict during compaction');
+        }
+        return 7;
+      },
     });
 
-    await syncData({
+    const result = await syncData({
       database: {},
-      warehouseSources: [patientSource],
+      warehouseSources: [patientSource, observationSource, conditionSource, encounterSource],
       destination,
     });
 
-    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.tables', {
-      attributes: { table: 'patient_history', result: 'success' },
-    });
+    const synced = result.tables.filter((t) => !t.status);
+    const expectedRows = synced.reduce((sum, t) => sum + t.rowsInserted, 0);
+    const expectedDurationSeconds = synced.reduce((sum, t) => sum + t.syncDurationMs, 0) / 1000;
+    const expectedWatermarkSeconds =
+      result.tables.reduce((sum, t) => sum + t.watermarkDurationMs, 0) / 1000;
+
+    expect(incrementCounterSpy).toHaveBeenCalledTimes(4);
+    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.rows', undefined, expectedRows);
     expect(incrementCounterSpy).toHaveBeenCalledWith(
-      'medplum.dataWarehouse.sync.rows',
-      { attributes: { table: 'patient_history' } },
-      7
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { skipReason: 'conflict' } },
+      1
     );
-    expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.duration', expect.any(Number), {
-      attributes: { table: 'patient_history' },
-      options: { unit: 's' },
-    });
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { skipReason: 'watermark' } },
+      1
+    );
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { skipReason: 'missing-table' } },
+      1
+    );
+
+    expect(recordHistogramValueSpy).toHaveBeenCalledTimes(2);
+    expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.duration',
+      expectedDurationSeconds,
+      { options: { unit: 's' } }
+    );
     expect(recordHistogramValueSpy).toHaveBeenCalledWith(
       'medplum.dataWarehouse.sync.watermarkDuration',
-      expect.any(Number),
-      { attributes: { table: 'patient_history' }, options: { unit: 's' } }
-    );
-  });
-
-  test.each([
-    {
-      skipReason: 'conflict' as const,
-      destination: createFakeDestination({
-        writeRows: async () => {
-          throw new Error('HTTP 409 Conflict 409: commit conflict during compaction');
-        },
-      }),
-    },
-    {
-      skipReason: 'watermark' as const,
-      destination: createFakeDestination({
-        buildSourcePredicate: async () => {
-          throw new Error('iceberg_column_stats failed');
-        },
-      }),
-    },
-    {
-      skipReason: 'missing-table' as const,
-      destination: createFakeDestination({
-        ensureTargetExists: async () => {
-          throw new Error('Managed Iceberg table does not exist');
-        },
-      }),
-    },
-  ])('records skipped tables metric with $skipReason skipReason', async ({ skipReason, destination }) => {
-    await syncData({
-      database: {},
-      warehouseSources: [patientSource],
-      destination,
-    });
-
-    expect(incrementCounterSpy).toHaveBeenCalledWith('medplum.dataWarehouse.sync.tables', {
-      attributes: { table: 'patient_history', result: 'skipped', skipReason },
-    });
-    expect(incrementCounterSpy).not.toHaveBeenCalledWith(
-      'medplum.dataWarehouse.sync.rows',
-      expect.anything(),
-      expect.anything()
-    );
-    expect(recordHistogramValueSpy).not.toHaveBeenCalledWith(
-      'medplum.dataWarehouse.sync.duration',
-      expect.anything(),
-      expect.anything()
+      expectedWatermarkSeconds,
+      { options: { unit: 's' } }
     );
   });
 });
@@ -478,5 +466,23 @@ function createFakeDestination(
     buildSourcePredicate: overrides.buildSourcePredicate ?? (async () => undefined),
     writeRows: overrides.writeRows ?? (async () => 1),
     getDestinationName: overrides.getDestinationName ?? ((spec: WarehouseSourceTable) => spec.icebergTable),
+  };
+}
+
+
+function appendPredicateSql(predicate: Expression): {
+  sql: string;
+  values: unknown[];
+} {
+  const builder = new SqlBuilder();
+  builder.appendExpression(predicate);
+  return { sql: builder.toString(), values: builder.getValues() };
+}
+
+function makeSyncOptions(overrides: Partial<SyncOptions> & Pick<SyncOptions, 'destination'>): SyncOptions {
+  return {
+    database: {},
+    warehouseSources: [tableSpec],
+    ...overrides,
   };
 }
