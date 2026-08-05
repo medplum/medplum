@@ -9,21 +9,21 @@ import { defineConfig } from 'vitest/config';
 
 dns.setDefaultResultOrder('verbatim');
 
-if (!existsSync(path.join(__dirname, '.env'))) {
-  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
+if (!existsSync(path.join(import.meta.dirname, '.env'))) {
+  copyFileSync(path.join(import.meta.dirname, '.env.defaults'), path.join(import.meta.dirname, '.env'));
 }
 
 // Resolve aliases to local packages when working within the monorepo
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
-    '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
-    '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
-    '@medplum/scriptsure-react': path.resolve(__dirname, '../../packages/scriptsure-react/src'),
-    '@medplum/react': path.resolve(__dirname, '../../packages/react/src'),
-    '@medplum/react-scheduling': path.resolve(__dirname, '../../packages/react-scheduling/src'),
-    '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
-    '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
-    '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
+    '@medplum/core': path.resolve(import.meta.dirname, '../../packages/core/src'),
+    '@medplum/dosespot-react': path.resolve(import.meta.dirname, '../../packages/dosespot-react/src'),
+    '@medplum/scriptsure-react': path.resolve(import.meta.dirname, '../../packages/scriptsure-react/src'),
+    '@medplum/react': path.resolve(import.meta.dirname, '../../packages/react/src'),
+    '@medplum/react-scheduling': path.resolve(import.meta.dirname, '../../packages/react-scheduling/src'),
+    '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../packages/react-hooks/src'),
+    '@medplum/health-gorilla-core': path.resolve(import.meta.dirname, '../../packages/health-gorilla-core/src'),
+    '@medplum/health-gorilla-react': path.resolve(import.meta.dirname, '../../packages/health-gorilla-react/src'),
   }).filter(([, relPath]) => existsSync(relPath))
 );
 
