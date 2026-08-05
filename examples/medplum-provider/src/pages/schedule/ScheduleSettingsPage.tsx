@@ -23,7 +23,7 @@ import {
   getExtensionValue,
   getReferenceString,
   getSchedulingTimezone,
-  hasAvailabilityOverride,
+  hasScheduleAvailability,
   hasSchedulingParameters,
   serviceTypeIncludesService,
   ServiceTypeReferenceURI,
@@ -141,7 +141,7 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
         {services?.map((service) => {
           const schedulable = hasSchedulingParameters(service);
           const enabled = serviceTypeIncludesService(schedule.serviceType, service);
-          const overriding = enabled && hasAvailabilityOverride(schedule, service);
+          const overriding = enabled && hasScheduleAvailability(schedule, service);
           return (
             <Group key={service.id} justify="space-between">
               <Tooltip
@@ -208,7 +208,7 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
             key={editingService.id}
             schedule={schedule}
             service={editingService}
-            timezone={getSchedulingTimezone(schedule, editingService, actor)}
+            timezone={getSchedulingTimezone(editingService, schedule, actor)}
             onCancel={editorHandlers.close}
             onSave={(updated) => {
               setSchedule(updated);

@@ -106,7 +106,7 @@ const actor = useResource(schedule.actor[0]);
 <ScheduleAvailabilityEditor
   schedule={schedule}
   service={service}
-  timezone={getSchedulingTimezone(schedule, service, actor)}
+  timezone={getSchedulingTimezone(service, schedule, actor)}
   onSave={onSave}
 />;
 ```

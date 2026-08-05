@@ -16,10 +16,10 @@ import {
 } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
 import {
-  clearAvailabilityOverride,
-  hasAvailabilityOverride,
+  clearScheduleAvailability,
+  hasScheduleAvailability,
   resolveAvailability,
-  setAvailabilityOverride,
+  setScheduleAvailability,
 } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
@@ -196,8 +196,9 @@ interface CommonProps {
   readonly service: WithId<HealthcareService>;
   /**
    * IANA name of the time zone the times entered are in, shown as a hint beneath the week. Resolve it with
-   * `getSchedulingTimezone` from `@medplum/core`, which reads the Schedule, then the service, then the actor's
-   * timezone extension, the way the server does. Omit to leave the hint off.
+   * `getSchedulingTimezone(service, schedule, actor)` from `@medplum/core`, which reads the Schedule
+   * parameters, then the service parameters, then the actor's timezone extension, the way the server does.
+   * Omit to leave the hint off.
    */
   readonly timezone?: string;
   /** Called when the user cancels. Omit to hide the cancel button, e.g. when the editor is inline on a page. */
@@ -250,11 +251,11 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
   // Seed from the Schedule override when it has one, otherwise from the
   // service-level default, so the editor opens showing the hours currently in
   // effect rather than a blank week.
-  const [overriding, setOverriding] = useState(() => (schedule ? hasAvailabilityOverride(schedule, service) : true));
+  const [overriding, setOverriding] = useState(() => (schedule ? hasScheduleAvailability(schedule, service) : true));
   // `resolveAvailability` falls back to the service default on its own, and
   // reads the service alone when there is no Schedule, so it covers both modes.
   const [weekly, setWeekly] = useState<WeeklyAvailability>(() =>
-    toWeeklyAvailability(resolveAvailability(schedule, service))
+    toWeeklyAvailability(resolveAvailability(service, schedule))
   );
   const [saving, setSaving] = useState(false);
   // The flash on an auto-moved end time is only visible, so the same change is
@@ -296,8 +297,8 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
     try {
       if (props.schedule) {
         const updated = overriding
-          ? setAvailabilityOverride(props.schedule, service, fromWeeklyAvailability(weekly))
-          : clearAvailabilityOverride(props.schedule, service);
+          ? setScheduleAvailability(props.schedule, service, fromWeeklyAvailability(weekly))
+          : clearScheduleAvailability(props.schedule, service);
         await props.onSave(updated);
       } else {
         await props.onSave({ ...service, availableTime: fromWeeklyAvailability(weekly) });

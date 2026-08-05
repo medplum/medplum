@@ -195,7 +195,7 @@ function EditorStory(props: {
       <ScheduleAvailabilityEditor
         schedule={schedule}
         service={forService}
-        timezone={getSchedulingTimezone(schedule, forService)}
+        timezone={getSchedulingTimezone(forService, schedule)}
         onCancel={props.onCancel}
         onSave={setSchedule}
       />
@@ -261,11 +261,7 @@ function ServiceDefaultStory(props: { readonly initial: WithId<HealthcareService
       <Title order={3} mb="md">
         Default Availability for {edited.name}
       </Title>
-      <ScheduleAvailabilityEditor
-        service={edited}
-        timezone={getSchedulingTimezone(undefined, edited)}
-        onSave={setEdited}
-      />
+      <ScheduleAvailabilityEditor service={edited} timezone={getSchedulingTimezone(edited)} onSave={setEdited} />
     </StoryShell>
   );
 }

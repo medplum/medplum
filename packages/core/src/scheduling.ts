@@ -61,6 +61,9 @@ export function isDayOfWeek(value: string | undefined): value is DayOfWeek {
 
 /**
  * Returns whether a Schedule or HealthcareService has a SchedulingParameters extension.
+ *
+ * Unscoped: on a Schedule, where the extension repeats once per service, this reports that some
+ * service is configured rather than any particular one. Ask `getScheduleParameters` about a service.
  * @param resource - Schedule or HealthcareService to inspect
  * @returns True if the resource has a SchedulingParameters extension
  */
@@ -70,7 +73,7 @@ export function hasSchedulingParameters(resource: Schedule | HealthcareService):
 
 // Scheduling matches a `service` reference on resourceType and id, so a stored reference carrying a version
 // suffix still names the service. Match the same way: a reference the server honours but this module missed
-// would read as belonging to another service, and `setAvailabilityOverride` would then add a second
+// would read as belonging to another service, and `setScheduleParameter` would then add a second
 // SchedulingParameters extension for it, which the scheduling operations reject outright.
 function isServiceReference(reference: Reference | undefined, serviceReference: string): boolean {
   if (!reference?.reference) {
@@ -92,14 +95,45 @@ function matchesServiceSchedulingParameters(extension: Extension, serviceReferen
 }
 
 /**
- * Finds the SchedulingParameters extensions on a Schedule for a HealthcareService.
+ * Finds the SchedulingParameters extensions a Schedule carries for a HealthcareService.
+ *
+ * Kept internal, since `getScheduleParameters` and its write pair reach a parameter without exposing
+ * how SchedulingParameters nests. More than one extension can match, and matching is expected to widen
+ * further, so every caller here treats the result as a list rather than a single container.
  * @param schedule - Schedule to inspect
  * @param service - HealthcareService referenced by the desired parameters
  * @returns Every matching SchedulingParameters extension, in document order
  */
-function getServiceSchedulingParameters(schedule: Schedule, service: WithId<HealthcareService>): Extension[] {
+function getScheduleParameterExtensions(schedule: Schedule, service: WithId<HealthcareService>): Extension[] {
   const reference = getReferenceString(service);
   return schedule.extension?.filter((extension) => matchesServiceSchedulingParameters(extension, reference)) ?? [];
+}
+
+/**
+ * Reads one scheduling parameter a Schedule sets for a HealthcareService, taking precedence over the
+ * service-level parameter of the same name. Pairs with `setScheduleParameter` and `clearScheduleParameter`.
+ *
+ * The result is a list rather than a single extension because a Schedule may carry more than one
+ * SchedulingParameters extension matching the service, and because a parameter may legitimately repeat.
+ * @param schedule - Schedule to inspect
+ * @param service - HealthcareService referenced by the parameters
+ * @param url - Url of the SchedulingParameters sub-extension to read, for example `availability`
+ * @returns Every matching sub-extension, in document order
+ */
+export function getScheduleParameters(
+  schedule: Schedule,
+  service: WithId<HealthcareService>,
+  url: string
+): Extension[] {
+  return getScheduleParameterExtensions(schedule, service).flatMap((parameters) => getExtensions(parameters, url));
+}
+
+// The service-level twin of `getScheduleParameters`. A HealthcareService carries a single
+// SchedulingParameters extension, about itself, so there is no service reference to match on.
+// Export this, alongside a `setServiceParameter`, once something edits service-level defaults such as
+// `duration`; today only `getSchedulingTimezone` reads them.
+function getServiceParameters(service: WithId<HealthcareService>, url: string): Extension[] {
+  return getExtensions(getExtension(service, SchedulingParametersURI), url);
 }
 
 // Convert a single `SchedulingParameters.availability.availableTime`
@@ -121,13 +155,14 @@ function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTi
   };
 }
 
-function getAvailabilityOverride(
+// The hours a Schedule sets for a service, ignoring the service default, or undefined when it sets
+// none. Kept internal: `resolveAvailability` answers what is in effect and `hasScheduleAvailability`
+// answers whether the calendar has hours of its own, which covers both questions a caller has.
+function getScheduleAvailability(
   schedule: Schedule,
   service: WithId<HealthcareService>
 ): HealthcareServiceAvailableTime[] | undefined {
-  const availability = getServiceSchedulingParameters(schedule, service).flatMap((parameters) =>
-    getExtensions(parameters, 'availability')
-  );
+  const availability = getScheduleParameters(schedule, service, 'availability');
 
   if (!availability.length) {
     return undefined;
@@ -137,34 +172,42 @@ function getAvailabilityOverride(
 }
 
 /**
- * Resolves the availability in effect for a Schedule/HealthcareService pair.
- * A Schedule-level override wins over the service default when present.
- * @param schedule - Schedule that may override the service default
+ * Resolves the availability in effect for a HealthcareService, on a given calendar or on its own.
+ * Hours the Schedule sets for the service take precedence over the service default.
+ *
+ * Three states are worth telling apart. A Schedule that sets no availability inherits
+ * `HealthcareService.availableTime`. One that sets an empty availability means explicitly no hours,
+ * which is why that is returned rather than falling through, and also why it cannot be stored: an
+ * extension with neither a value nor sub-extensions fails FHIR constraint `ext-1`. `undefined` means
+ * nothing is configured at either level, which scheduling reads as unconstrained rather than unavailable.
+ *
+ * Omitting the Schedule returns `service.availableTime` and nothing more, so this is not the way to read
+ * a service default; the field is. The Schedule is optional so that one call covers a caller that may or
+ * may not have one.
  * @param service - HealthcareService providing the default availability
+ * @param schedule - Schedule that may set hours of its own for the service
  * @returns The availability in effect, or undefined when none is configured
  */
 export function resolveAvailability(
-  schedule: Schedule | undefined,
-  service: WithId<HealthcareService> | undefined
+  service: WithId<HealthcareService> | undefined,
+  schedule?: Schedule
 ): HealthcareServiceAvailableTime[] | undefined {
   if (!service) {
     return undefined;
   }
 
-  const override = schedule && getAvailabilityOverride(schedule, service);
-  return override ?? service.availableTime;
+  return (schedule && getScheduleAvailability(schedule, service)) ?? service.availableTime;
 }
 
 /**
- * Returns whether a Schedule overrides a HealthcareService's default availability.
+ * Returns whether a Schedule sets availability of its own for a HealthcareService, in place of the
+ * service default. Distinguishes the two cases `resolveAvailability` folds together.
  * @param schedule - Schedule to inspect
  * @param service - HealthcareService referenced by the desired parameters
- * @returns True if matching parameters contain an availability override
+ * @returns True if the Schedule sets availability for the service
  */
-export function hasAvailabilityOverride(schedule: Schedule, service: WithId<HealthcareService>): boolean {
-  return getServiceSchedulingParameters(schedule, service).some((parameters) =>
-    parameters.extension?.some((subextension) => subextension.url === 'availability')
-  );
+export function hasScheduleAvailability(schedule: Schedule, service: WithId<HealthcareService>): boolean {
+  return getScheduleParameters(schedule, service, 'availability').length > 0;
 }
 
 /**
@@ -193,26 +236,27 @@ function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTim
 }
 
 /**
- * Immutably sets one SchedulingParameters parameter on a Schedule for a HealthcareService, replacing
- * whatever that Schedule already holds at the sub-extension's url. The SchedulingParameters extension
- * is created if the Schedule has none for the service yet.
+ * Immutably sets one scheduling parameter on a Schedule for a HealthcareService, so that calendar keeps
+ * it in place of the service-level parameter of the same name. Whatever the Schedule already holds at the
+ * sub-extension's url is replaced, and the SchedulingParameters extension is created if the Schedule has
+ * none for the service yet.
  *
- * Kept internal: availability is the only parameter this module writes today, through
- * `setAvailabilityOverride`. Export it when a second parameter needs setting, for example
- * `{ url: 'bufferBefore', valueDuration: ... }`.
+ * This is the general form, taking any sub-extension of the shape the parameter calls for, for example
+ * `{ url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } }`. `setScheduleAvailability` is a
+ * typed wrapper over it. Pairs with `clearScheduleParameter` and `getScheduleParameters`.
  * @param schedule - Schedule to update
  * @param service - HealthcareService referenced by the parameters
  * @param subextension - SchedulingParameters sub-extension to set
  * @returns A cloned Schedule containing the parameter
  */
-function setSchedulingParameter(
+export function setScheduleParameter(
   schedule: Schedule,
   service: WithId<HealthcareService>,
   subextension: Extension
 ): Schedule {
   // Start from a cleared clone so a Schedule carrying more than one matching
-  // SchedulingParameters extension cannot keep a stale override behind.
-  const updated = clearSchedulingParameter(schedule, service, subextension.url);
+  // SchedulingParameters extension cannot keep a stale value behind.
+  const updated = clearScheduleParameter(schedule, service, subextension.url);
   const serviceReference = createReference(service);
 
   updated.extension ??= [];
@@ -235,16 +279,18 @@ function setSchedulingParameter(
 }
 
 /**
- * Immutably clears one SchedulingParameters parameter a Schedule holds for a HealthcareService.
+ * Immutably clears one scheduling parameter a Schedule sets for a HealthcareService, dropping that
+ * calendar back to the service-level parameter of the same name. Pairs with `setScheduleParameter`
+ * and `getScheduleParameters`.
  * @param schedule - Schedule to update
  * @param service - HealthcareService referenced by the parameters
  * @param url - Url of the SchedulingParameters sub-extension to remove, for example `availability`
  * @returns A cloned Schedule without the matching parameter
  */
-function clearSchedulingParameter(schedule: Schedule, service: WithId<HealthcareService>, url: string): Schedule {
+export function clearScheduleParameter(schedule: Schedule, service: WithId<HealthcareService>, url: string): Schedule {
   const updated = deepClone(schedule);
 
-  for (const parameters of getServiceSchedulingParameters(updated, service)) {
+  for (const parameters of getScheduleParameterExtensions(updated, service)) {
     if (parameters.extension) {
       parameters.extension = parameters.extension.filter((subextension) => subextension.url !== url);
     }
@@ -254,59 +300,62 @@ function clearSchedulingParameter(schedule: Schedule, service: WithId<Healthcare
 }
 
 /**
- * Immutably sets a Schedule's availability override for a HealthcareService, so that calendar keeps
- * these hours in place of the service default. Pairs with `clearAvailabilityOverride`, which drops
- * back to the default, and `hasAvailabilityOverride`, which reports whether one is set.
+ * Immutably gives a Schedule its own hours for a HealthcareService, in place of the service default.
+ * Pairs with `clearScheduleAvailability`, which drops back to the default, and `hasScheduleAvailability`,
+ * which reports whether the calendar has hours of its own.
  *
- * To edit the service default itself, write `HealthcareService.availableTime` directly; the override
- * stores exactly that shape.
+ * Schedule level by necessity: a HealthcareService holds its hours in the native `availableTime` field
+ * rather than in a scheduling parameter, so there is no service-level counterpart to this. Editing a
+ * service default is a plain write to that field, and the parameter stores exactly the same shape.
  * @param schedule - Schedule to update
  * @param service - HealthcareService referenced by the parameters
- * @param availableTime - Availability the calendar should keep
- * @returns A cloned Schedule containing the availability override
+ * @param availableTime - The full set of windows the calendar should be available in
+ * @returns A cloned Schedule holding those hours for the service
  */
-export function setAvailabilityOverride(
+export function setScheduleAvailability(
   schedule: Schedule,
   service: WithId<HealthcareService>,
   availableTime: HealthcareServiceAvailableTime[]
 ): Schedule {
-  return setSchedulingParameter(schedule, service, buildAvailabilityExtension(availableTime));
+  return setScheduleParameter(schedule, service, buildAvailabilityExtension(availableTime));
 }
 
 /**
- * Immutably clears a Schedule's availability override for a HealthcareService.
+ * Immutably drops the hours a Schedule sets for a HealthcareService, so the calendar follows the
+ * service default again.
  * @param schedule - Schedule to update
  * @param service - HealthcareService referenced by the parameters
- * @returns A cloned Schedule without the matching availability override
+ * @returns A cloned Schedule without availability for the service
  */
-export function clearAvailabilityOverride(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
-  return clearSchedulingParameter(schedule, service, 'availability');
+export function clearScheduleAvailability(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
+  return clearScheduleParameter(schedule, service, 'availability');
 }
 
 /**
- * Resolves the timezone used by scheduling in server priority order:
- * Schedule parameters, HealthcareService parameters, then the actor's standard
- * FHIR timezone extension.
+ * Resolves the timezone used by scheduling in server priority order: the Schedule's parameters for the
+ * service, then the service's own parameters, then the actor's standard FHIR timezone extension.
+ *
+ * Precedence is per parameter rather than per resource, so a Schedule that sets other parameters but no
+ * timezone still falls through to the service.
+ * @param service - HealthcareService whose parameters may define a timezone
  * @param schedule - Schedule whose parameters may define a timezone. Omit to resolve the service's own timezone,
  * as when the service default hours are being read on their own rather than through a particular calendar.
- * @param service - HealthcareService whose parameters may define a timezone
  * @param actor - Optional Schedule actor used as a timezone fallback
  * @returns The resolved IANA timezone identifier, if present
  */
 export function getSchedulingTimezone(
-  schedule: Schedule | undefined,
   service: WithId<HealthcareService>,
+  schedule?: Schedule,
   actor?: Resource
 ): string | undefined {
-  const scheduleTimezone = (schedule ? getServiceSchedulingParameters(schedule, service) : [])
-    .flatMap((parameters) => getExtensions(parameters, 'timezone'))
+  const scheduleTimezone = (schedule ? getScheduleParameters(schedule, service, 'timezone') : [])
     .map((subextension) => subextension.valueCode)
     .find(isDefined);
   if (scheduleTimezone) {
     return scheduleTimezone;
   }
 
-  const serviceTimezone = getExtensions(getExtension(service, SchedulingParametersURI), 'timezone')
+  const serviceTimezone = getServiceParameters(service, 'timezone')
     .map((subextension) => subextension.valueCode)
     .find(isDefined);
   if (serviceTimezone) {
