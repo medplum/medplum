@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Divider, Stack, Text, TextInput } from '@mantine/core';
+import { Stack, Text, TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -74,8 +74,6 @@ export const ThreadMessageForm = (props: ThreadMessageFormProps): JSX.Element =>
 
         <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => onTopicChange(e.target.value)} />
       </Stack>
-
-      <Divider pt="xs" />
     </>
   );
 };
