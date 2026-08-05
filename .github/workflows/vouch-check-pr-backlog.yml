@@ -9,32 +9,114 @@ on:
         description: "Comma-separated PR numbers to check (empty = all open PRs)"
         required: false
         default: ""
+      include-vouched-authors:
+        description: "Also check PRs whose author is vouched in .github/VOUCHED.td (normally skipped)"
+        required: false
+        default: false
+        type: boolean
 
 name: "Vouch - Check PR Backlog"
+
+env:
+  # Matrix jobs cap out at 256. Anything past that is deferred to a later run
+  # rather than failing the whole sweep up front, and is listed in the summary
+  # so it's clear what still needs a pass.
+  MATRIX_MAX: 256
 
 jobs:
   list-prs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       pr-numbers: ${{ steps.list.outputs.numbers }}
+      considered: ${{ steps.list.outputs.considered }}
+      skipped: ${{ steps.list.outputs.skipped }}
+      deferred: ${{ steps.list.outputs.deferred }}
     steps:
+      # Sparse-checkout of the base ref only, just to read the vouched list.
+      # Path matches the vouch action's own `vouched-file` default, which the
+      # check jobs rely on, so the two can't disagree about who's vouched.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/VOUCHED.td
+
+      # Most of the open-PR backlog belongs to maintainers and other vouched
+      # contributors, whose PRs the check can only ever leave alone. Dropping
+      # them here keeps the matrix (and the summary) down to the PRs where the
+      # answer isn't known in advance. Denounced entries (leading "-") are
+      # deliberately *not* dropped: those are the ones that do get closed.
       - name: List target PRs
         id: list
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBERS_INPUT: ${{ github.event.inputs.pr-numbers }}
+          INCLUDE_VOUCHED: ${{ github.event.inputs.include-vouched-authors }}
+          REPO: ${{ github.repository }}
         run: |
-          if [ -n "$PR_NUMBERS_INPUT" ]; then
-            NUMBERS=$(echo "$PR_NUMBERS_INPUT" | tr ',' '\n' | jq -R 'select(length > 0) | tonumber' | jq -s -c '.')
-          else
-            NUMBERS=$(gh pr list --repo "${{ github.repository }}" --state open --limit 1000 --json number --jq '[.[].number]')
-          fi
-          echo "Targeting PR numbers: $NUMBERS"
-          echo "numbers=$NUMBERS" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
 
-  # Matrix jobs cap out at 256 -- if the open-PR backlog ever exceeds that,
-  # batch it manually across a few runs using the pr-numbers input instead
-  # of trying to sweep everything in one go.
+          # Same normalization the vouch tool applies to this file: strip
+          # comments and any platform prefix (github:user), lowercase, and
+          # ignore denounced entries.
+          VOUCHED=$(awk '!/^[[:space:]]*#/ && NF && $1 !~ /^-/ {
+              sub(/^[A-Za-z0-9_-]+:/, "", $1); print tolower($1)
+            }' .github/VOUCHED.td | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "Vouched authors: $VOUCHED"
+
+          # An explicit list may name closed PRs, which `gh pr list` won't
+          # return, so those are looked up one at a time. tonumber doubles as
+          # input validation before anything reaches a command line; the trim
+          # is what makes "1, 2, 3" work as well as "1,2,3".
+          if [ -n "$PR_NUMBERS_INPUT" ]; then
+            CANDIDATES="[]"
+            for NUMBER in $(echo "$PR_NUMBERS_INPUT" | tr ',' '\n' \
+              | jq -R -r 'gsub("^\\s+|\\s+$"; "") | select(length > 0) | tonumber'); do
+              PR=$(gh pr view "$NUMBER" --repo "$REPO" --json number,author)
+              CANDIDATES=$(jq -c -s 'add' <(echo "$CANDIDATES") <(echo "[$PR]"))
+            done
+          else
+            CANDIDATES=$(gh pr list --repo "$REPO" --state open --limit 1000 --json number,author)
+          fi
+
+          # Partition into what the matrix will check and what got filtered
+          # out, keeping the latter so the summary can account for every PR
+          # the sweep looked at. "app/" is how the gh CLI renders bot logins.
+          PARTITION=$(jq -c \
+            --argjson vouched "$VOUCHED" \
+            --arg include "$INCLUDE_VOUCHED" \
+            --argjson max "$MATRIX_MAX" '
+            ($vouched | INDEX(.)) as $set
+            | [.[] | {number, author: .author.login}]
+            | map(. + {
+                skip: ($include != "true"
+                  and $set[(.author | ascii_downcase | sub("^app/"; ""))] != null)
+              })
+            | (map(select(.skip | not)) | sort_by(.number)) as $check
+            | {
+                considered: length,
+                check: ($check[0:$max] | map(del(.skip))),
+                deferred: ($check[$max:] | map(.number)),
+                skipped: (map(select(.skip)) | sort_by(.author | ascii_downcase) | map(del(.skip)))
+              }' <<<"$CANDIDATES")
+
+          NUMBERS=$(jq -c '[.check[].number]' <<<"$PARTITION")
+          DEFERRED=$(jq -c '.deferred' <<<"$PARTITION")
+
+          {
+            echo "numbers=$NUMBERS"
+            echo "considered=$(jq -r '.considered' <<<"$PARTITION")"
+            echo "skipped=$(jq -c '.skipped' <<<"$PARTITION")"
+            echo "deferred=$DEFERRED"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Targeting PR numbers: $NUMBERS"
+
+          if [ "$(jq 'length' <<<"$DEFERRED")" -gt 0 ]; then
+            echo "::warning::More than $MATRIX_MAX PRs to check; deferred $(jq -c '.' <<<"$DEFERRED") to a later run (pass them via the pr-numbers input)."
+          fi
+
   check:
     needs: list-prs
     if: needs.list-prs.outputs.pr-numbers != '[]'
@@ -50,4 +132,115 @@ jobs:
     uses: ./.github/workflows/vouch-check-pr-shared.yml
     with:
       pr-number: ${{ matrix.pr-number }}
+      report-artifact: true
     secrets: inherit
+
+  # Rolls the per-PR result artifacts up into one table, so a 100-job sweep
+  # can be read (and, in dry-run mode, acted on) without opening every job.
+  summary:
+    needs: [list-prs, check]
+    if: ${{ !cancelled() && needs.list-prs.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      # download-artifact errors out when nothing matches the pattern, which
+      # is a legitimate state here (every PR got filtered out, or every check
+      # job died before uploading). Let it fail and have the renderer below
+      # account for the missing results instead.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        id: download
+        continue-on-error: true
+        with:
+          path: results
+          pattern: vouch-result-*
+
+      - name: Render summary
+        env:
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+          TARGETED: ${{ needs.list-prs.outputs.pr-numbers }}
+          CONSIDERED: ${{ needs.list-prs.outputs.considered }}
+          SKIPPED: ${{ needs.list-prs.outputs.skipped }}
+          DEFERRED: ${{ needs.list-prs.outputs.deferred }}
+        run: |
+          set -euo pipefail
+
+          RESULTS="[]"
+          if [ -d results ]; then
+            RESULTS=$(find results -name '*.json' -print0 | xargs -0 -r cat | jq -s -c '.')
+          fi
+
+          jq -n -r \
+            --argjson results "$RESULTS" \
+            --argjson targeted "$TARGETED" \
+            --argjson skipped "$SKIPPED" \
+            --argjson deferred "$DEFERRED" \
+            --argjson considered "$CONSIDERED" \
+            --arg repo "$REPO" \
+            --arg dry_run "$DRY_RUN" '
+            ($dry_run == "true") as $dry
+
+            # PR titles are arbitrary text; keep them from breaking out of a
+            # table cell.
+            | def cell: (. // "") | gsub("\r?\n"; " ") | gsub("\\|"; "\\|")
+              | if length > 80 then .[0:77] + "..." else . end;
+            def link: "[#\(.)](https://github.com/\($repo)/pull/\(.))";
+            def table($cols; $rows):
+              "| " + ($cols | join(" | ")) + " |",
+              "| " + ($cols | map("---") | join(" | ")) + " |",
+              ($rows | map("| " + join(" | ") + " |") | .[]);
+            def section($title; $rows):
+              if ($rows | length) == 0 then empty
+              else "", "### \($title) (\($rows | length))", "",
+                table(["PR", "Author", "Title"];
+                  $rows | map([(.number | link), .author, (.title | cell)]))
+              end;
+            def details($title; $body):
+              if ($body | length) == 0 then empty
+              else "", "<details><summary>\($title)</summary>", "", $body, "", "</details>"
+              end;
+
+            # Every outcome the shared workflow can record, in the order a
+            # reviewer cares about: what got closed first, then failures,
+            # then the PRs it deliberately left alone.
+            [ {key: "close-denounced", label: "Closed: denounced author"},
+              {key: "would-close-denounced", label: "Would close: denounced author"},
+              {key: "close-unvouched", label: "Closed: unvouched author, no linked `open-to-community` issue"},
+              {key: "would-close-unvouched", label: "Would close: unvouched author, no linked `open-to-community` issue"},
+              {key: "error", label: "Errored (check the job logs)"},
+              {key: "linked-issue", label: "Left open: linked issue has the `open-to-community` label"},
+              {key: "vouched", label: "Left open: the action vouched the author itself (repo write access)"},
+              {key: "bot", label: "Left open: author is a bot"}
+            ] as $outcomes
+            | ($results | group_by(.outcome) | map({key: .[0].outcome, rows: sort_by(.number)})
+               | INDEX(.key)) as $byOutcome
+            | ($targeted - ($results | map(.number))) as $missing
+            | ($byOutcome | keys - ($outcomes | map(.key))) as $unknown
+
+            | [ "## Vouch backlog sweep",
+                "",
+                if $dry then
+                  "**Dry run** (`VOUCH_DRY_RUN` is not `false`): nothing was commented on or closed. Flip the repo variable to act for real."
+                else
+                  "**Live run**: unvouched and denounced PRs listed below were commented on and closed."
+                end,
+                "",
+                "- Considered: **\($considered)** PR(s)",
+                "- Skipped as vouched authors: **\($skipped | length)**",
+                "- Checked: **\($targeted | length)**",
+                if ($deferred | length) > 0 then
+                  "- Deferred past the 256-job matrix cap: **\($deferred | length)** (\($deferred | map(link) | join(", ")))"
+                else empty end,
+                if ($missing | length) > 0 then
+                  "- No result reported (job failed or was cancelled): **\($missing | length)** (\($missing | map(link) | join(", ")))"
+                else empty end,
+
+                ($outcomes[] | section(.label; $byOutcome[.key].rows // [])),
+                ($unknown[] | section("Unrecognized outcome `\(.)`"; $byOutcome[.].rows)),
+
+                details("Skipped: \($skipped | length) PR(s) from vouched authors";
+                  [table(["PR", "Author"]; $skipped | map([(.number | link), .author]))] | join("\n"))
+              ]
+            | join("\n")
+          ' | tee -a "$GITHUB_STEP_SUMMARY"
