@@ -9,111 +9,273 @@ import net from 'node:net';
 import type { App } from './app';
 import { BaseChannel } from './channel';
 
+/** Encodings available for the `body` of a byte-stream channel's transmit request/response. */
+export type ByteStreamBodyEncoding = 'hex' | 'utf-8';
+
+/** A byte sequence to watch for on the wire, and the reply written back once it completes. */
+export type ByteSequenceRule = { readonly pattern: Buffer; readonly response: Buffer };
+
 /**
- * Matches byte patterns in a streaming byte sequence and returns corresponding response buffers.
- * Uses a sliding window approach to efficiently match patterns as bytes stream in.
+ * A byte-stream channel's fully-parsed endpoint settings.
+ *
+ * Immutable, and rebuilt only on start and on an endpoint address change, so one instance is
+ * shared read-only across every connection. Per-stream matching state lives outside it, in
+ * {@link ByteSequenceMatcher}.
  */
-class ByteSequenceMatcher {
-  private readonly patterns: { pattern: Buffer; response?: Buffer; strip: boolean }[] = [];
-  private readonly buffer: number[] = [];
-  private maxPatternLength = 0;
+export type ByteStreamConfig = {
+  readonly startChar: number;
+  readonly endChar: number;
+  readonly autoRespond: readonly ByteSequenceRule[];
+  readonly stripSequences: readonly Buffer[];
+  readonly stripControlChars: boolean;
+  readonly bodyEncoding: ByteStreamBodyEncoding;
+};
 
-  /**
-   * Register a pattern and its corresponding response.
-   * @param pattern - The byte sequence to match
-   * @param response - The byte sequence to return when pattern matches (optional)
-   * @param strip - Whether to strip bytes matching this pattern from the message
-   */
-  addPattern(pattern: Buffer, response?: Buffer, strip: boolean = false): void {
-    this.patterns.push({ pattern, response, strip });
-    this.maxPatternLength = Math.max(this.maxPatternLength, pattern.length);
-  }
-
-  /**
-   * Process an incoming byte and check for pattern matches.
-   * @param byte - The incoming byte (0-255)
-   * @returns Array of response buffers for any patterns that matched, empty array if none
-   */
-  processByte(byte: number): Buffer[] {
-    this.buffer.push(byte);
-
-    // Keep buffer size limited to max pattern length
-    if (this.buffer.length > this.maxPatternLength) {
-      this.buffer.shift();
-    }
-
-    const matches: Buffer[] = [];
-
-    // Check each pattern for a match ending at the current byte
-    for (const { pattern, response } of this.patterns) {
-      if (this.buffer.length < pattern.length) {
-        continue;
-      }
-
-      // Check if the last N bytes match the pattern
-      let match = true;
-      for (let i = 0; i < pattern.length; i++) {
-        if (this.buffer[this.buffer.length - pattern.length + i] !== pattern[i]) {
-          match = false;
-          break;
-        }
-      }
-
-      if (match && response) {
-        matches.push(response);
-      }
-    }
-
-    return matches;
-  }
-
-  /**
-   * Check if a byte matches a pattern and return the strip value for that pattern.
-   * Uses a separate buffer to avoid affecting the main matcher state.
-   * @param byte - The byte to check
-   * @param checkBuffer - A separate buffer to use for checking (to avoid affecting main state)
-   * @returns The strip value if a pattern matches, undefined otherwise
-   */
-  getStripValue(byte: number, checkBuffer: number[]): boolean | undefined {
-    // Add byte to check buffer
-    checkBuffer.push(byte);
-
-    // Keep buffer size limited to max pattern length
-    if (checkBuffer.length > this.maxPatternLength) {
-      checkBuffer.shift();
-    }
-
-    // Check each pattern for a match ending at the current byte
-    for (const { pattern, strip } of this.patterns) {
-      if (checkBuffer.length < pattern.length) {
-        continue;
-      }
-
-      // Check if the last N bytes match the pattern
-      let match = true;
-      for (let i = 0; i < pattern.length; i++) {
-        if (checkBuffer[checkBuffer.length - pattern.length + i] !== pattern[i]) {
-          match = false;
-          break;
-        }
-      }
-
-      if (match) {
-        // Remove the matched bytes from check buffer
-        checkBuffer.splice(checkBuffer.length - pattern.length, pattern.length);
-        return strip;
-      }
-    }
-
+/**
+ * Decodes one `%XX`-style byte sequence param value into raw bytes.
+ *
+ * `URLSearchParams` percent-decodes before we see the value, so this reads code points
+ * exactly as `startChar`/`endChar` do. That decoding is UTF-8, so a byte >= 0x80 has to be
+ * written as its UTF-8 encoding (`%C3%A9` for 0xE9); a bare `%E9` is invalid UTF-8 and
+ * arrives as U+FFFD, which the range check below rejects rather than silently corrupting.
+ *
+ * @param decoded - The already-decoded value, e.g. '\x05\x15'.
+ * @param label - Param name, used in warnings.
+ * @param logger - Logger used to warn about values that are dropped.
+ * @returns The bytes, or undefined if the value was empty or not byte-representable.
+ */
+function parseByteSequence(decoded: string, label: string, logger: ILogger): Buffer | undefined {
+  if (!decoded) {
+    logger.warn(`Invalid ${label}: empty byte sequence. Ignoring.`);
     return undefined;
   }
 
-  /**
-   * Clear the internal buffer (e.g., when a start character is detected).
-   */
-  reset(): void {
-    this.buffer.length = 0;
+  const bytes: number[] = [];
+  for (const char of decoded) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint === undefined || codePoint > 0xff) {
+      logger.warn(
+        `Invalid ${label} ${JSON.stringify(decoded)}: not a byte sequence. ` +
+          `Write bytes >= 0x80 as their UTF-8 encoding, e.g. %C3%A9 for 0xE9. Ignoring.`
+      );
+      return undefined;
+    }
+    bytes.push(codePoint);
   }
+  return Buffer.from(bytes);
+}
+
+/**
+ * Renders bytes in the `%XX` form used to configure them, for log messages.
+ * @param bytes - The bytes to render.
+ * @returns The `%XX` form, e.g. '%05%15'.
+ */
+function formatByteSequence(bytes: Buffer): string {
+  let formatted = '';
+  for (const byte of bytes) {
+    formatted += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+  }
+  return formatted;
+}
+
+/**
+ * Parses the repeatable `autoRespond=<pattern>:<response>` params into match rules.
+ *
+ * The `:` is structural and is consumed after percent-decoding, so a 0x3A byte cannot appear
+ * in a pattern or response. In practice these are link-level handshakes built from C0 control
+ * bytes (ENQ/ACK/NAK/EOT), well below 0x20.
+ *
+ * @param rawValues - Every `autoRespond` value, already percent-decoded.
+ * @param logger - Logger used to warn about entries that are dropped.
+ * @returns The valid rules in declaration order; invalid and duplicate entries are skipped.
+ */
+export function parseAutoRespondRules(rawValues: readonly string[], logger: ILogger): ByteSequenceRule[] {
+  const rules: ByteSequenceRule[] = [];
+
+  for (const rawValue of rawValues) {
+    const separator = rawValue.indexOf(':');
+    if (separator === -1) {
+      logger.warn(`Invalid autoRespond ${JSON.stringify(rawValue)}; expected '<pattern>:<response>'. Ignoring.`);
+      continue;
+    }
+
+    const pattern = parseByteSequence(rawValue.slice(0, separator), 'autoRespond pattern', logger);
+    const response = parseByteSequence(rawValue.slice(separator + 1), 'autoRespond response', logger);
+    if (!pattern || !response) {
+      continue;
+    }
+
+    if (rules.some((rule) => rule.pattern.equals(pattern))) {
+      logger.warn(`Duplicate autoRespond pattern ${formatByteSequence(pattern)}; keeping the first.`);
+      continue;
+    }
+    rules.push({ pattern, response });
+  }
+
+  return rules;
+}
+
+/**
+ * Parses a repeatable `%XX`-style byte sequence param into raw byte sequences.
+ *
+ * @param rawValues - Every value for the param, already percent-decoded.
+ * @param label - Param name, used in warnings.
+ * @param logger - Logger used to warn about values that are dropped.
+ * @returns The valid sequences, deduplicated, in declaration order.
+ */
+export function parseByteSequences(rawValues: readonly string[], label: string, logger: ILogger): Buffer[] {
+  const sequences: Buffer[] = [];
+
+  for (const rawValue of rawValues) {
+    const sequence = parseByteSequence(rawValue, label, logger);
+    if (sequence && !sequences.some((existing) => existing.equals(sequence))) {
+      sequences.push(sequence);
+    }
+  }
+
+  return sequences;
+}
+
+/**
+ * Normalizes the configured transmit body encoding.
+ *
+ * Defaults to `hex`, which is the encoding byte-stream channels have always used, so bots
+ * decoding with `Buffer.from(body, 'hex')` keep working unless a channel opts out.
+ *
+ * @param rawValue - The raw `bodyEncoding` query param value.
+ * @param logger - Logger used to warn about an unrecognized value.
+ * @returns The parsed encoding, or `hex` if unset or invalid.
+ */
+export function parseBodyEncoding(rawValue: string | null | undefined, logger: ILogger): ByteStreamBodyEncoding {
+  if (!rawValue) {
+    return 'hex';
+  }
+
+  const normalizedValue = rawValue.toLowerCase();
+  if (normalizedValue === 'hex') {
+    return 'hex';
+  }
+  if (normalizedValue === 'utf-8' || normalizedValue === 'utf8') {
+    return 'utf-8';
+  }
+
+  logger.warn(`Invalid bodyEncoding '${rawValue}'; expected 'hex' or 'utf-8'. Using 'hex'.`);
+  return 'hex';
+}
+
+/**
+ * @param window - The most recent bytes of the stream, oldest first.
+ * @param pattern - The sequence to look for at the end of `window`.
+ * @returns True when the last `pattern.length` entries of `window` equal `pattern`.
+ */
+function endsWith(window: readonly number[], pattern: Buffer): boolean {
+  if (window.length < pattern.length) {
+    return false;
+  }
+  const offset = window.length - pattern.length;
+  for (let i = 0; i < pattern.length; i++) {
+    if (window[offset + i] !== pattern[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Sliding-window matcher for {@link ByteSequenceRule} patterns over a single byte stream.
+ *
+ * Rules are shared read-only; the window is not, so there is one matcher per
+ * {@link ByteStreamChannelConnection}. A channel-wide instance would let concurrent
+ * connections interleave into one window — one socket's bytes completing another's pattern,
+ * and either socket's reset discarding the other's progress.
+ */
+export class ByteSequenceMatcher {
+  private readonly rules: readonly ByteSequenceRule[];
+  private readonly window: number[] = [];
+  private readonly windowSize: number;
+
+  constructor(rules: readonly ByteSequenceRule[]) {
+    this.rules = rules;
+    this.windowSize = rules.reduce((longest, rule) => Math.max(longest, rule.pattern.length), 0);
+  }
+
+  /**
+   * Feeds the next byte of the stream to the matcher.
+   * @param byte - The byte to match against.
+   * @returns Responses for every rule whose pattern completes at `byte`, in rule order.
+   */
+  match(byte: number): Buffer[] {
+    if (this.windowSize === 0) {
+      return [];
+    }
+
+    this.window.push(byte);
+    if (this.window.length > this.windowSize) {
+      this.window.shift();
+    }
+
+    const responses: Buffer[] = [];
+    for (const { pattern, response } of this.rules) {
+      if (endsWith(this.window, pattern)) {
+        responses.push(response);
+      }
+    }
+    return responses;
+  }
+
+  /** Discards partial progress, e.g. when message framing restarts at a start char. */
+  reset(): void {
+    this.window.length = 0;
+  }
+}
+
+/**
+ * Removes configured byte sequences from an assembled message body.
+ *
+ * Whole occurrences are removed, so a multi-byte sequence never leaves its leading bytes
+ * behind. The longest sequence wins where several could match at one offset, and the scan
+ * resumes past a match so sequences cannot match inside one another.
+ *
+ * @param buffer - The assembled message, framing chars included.
+ * @param sequences - Sequences to remove.
+ * @param stripControlChars - Also drop every remaining C0 control byte (0x00-0x1F), framing
+ * chars included — a channel wanting them preserved should leave this off.
+ * @returns The filtered bytes, or `buffer` itself when there is nothing to filter.
+ */
+export function filterMessageBytes(buffer: Buffer, sequences: readonly Buffer[], stripControlChars: boolean): Buffer {
+  if (sequences.length === 0 && !stripControlChars) {
+    return buffer;
+  }
+
+  const longestFirst = [...sequences].sort((a, b) => b.length - a.length);
+  const filtered = Buffer.allocUnsafe(buffer.length);
+  let written = 0;
+  let i = 0;
+
+  while (i < buffer.length) {
+    let matchedLength = 0;
+    for (const sequence of longestFirst) {
+      // A short tail makes subarray shorter than the sequence, so equals() correctly fails.
+      if (buffer.subarray(i, i + sequence.length).equals(sequence)) {
+        matchedLength = sequence.length;
+        break;
+      }
+    }
+
+    if (matchedLength > 0) {
+      i += matchedLength;
+      continue;
+    }
+
+    const byte = buffer[i];
+    if (!(stripControlChars && byte < 0x20)) {
+      filtered[written] = byte;
+      written++;
+    }
+    i++;
+  }
+
+  return filtered.subarray(0, written);
 }
 
 export class AgentByteStreamChannel extends BaseChannel {
@@ -124,9 +286,14 @@ export class AgentByteStreamChannel extends BaseChannel {
   readonly log: ILogger;
   readonly channelLog: ILogger;
 
-  startChar = -1;
-  endChar = -1;
-  sequenceMappings: ByteSequenceMatcher = new ByteSequenceMatcher();
+  private config: ByteStreamConfig = {
+    startChar: -1,
+    endChar: -1,
+    autoRespond: [],
+    stripSequences: [],
+    stripControlChars: false,
+    bodyEncoding: 'hex',
+  };
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -138,6 +305,11 @@ export class AgentByteStreamChannel extends BaseChannel {
     // So this channel's name will remain the same for the duration of its lifetime
     this.log = app.log.clone({ options: { prefix: `[Byte Stream:${definition.name}] ` } });
     this.channelLog = app.channelLog.clone({ options: { prefix: `[Byte Stream:${definition.name}] ` } });
+  }
+
+  /** @returns The channel's parsed endpoint settings. Shared read-only with its connections. */
+  getConfig(): ByteStreamConfig {
+    return this.config;
   }
 
   async start(): Promise<void> {
@@ -211,105 +383,34 @@ export class AgentByteStreamChannel extends BaseChannel {
 
   private configureTcpServerAndConnections(): void {
     const address = new URL(this.getEndpoint().address);
+    const params = address.searchParams;
 
-    const startCharStr = address.searchParams.get('startChar');
-    const endCharStr = address.searchParams.get('endChar');
+    const startCharStr = params.get('startChar');
+    const endCharStr = params.get('endChar');
     if (!(startCharStr && endCharStr)) {
       throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
     }
 
-    this.startChar = startCharStr.codePointAt(0) ?? -1;
-    this.endChar = endCharStr.codePointAt(0) ?? -1;
+    const startChar = startCharStr.codePointAt(0) ?? -1;
+    const endChar = endCharStr.codePointAt(0) ?? -1;
 
     // These should never eval to -1, but just in case we assert
-    assert(this.startChar !== -1 && this.endChar !== -1);
+    assert(startChar !== -1 && endChar !== -1);
 
-    // Parse byte sequence mappings from extensions
-    this.parseSequenceMappings();
-  }
+    // Every setting is read from the address string, so reloadConfig's address comparison is
+    // enough to pick up any of them — there is no separate settings source to refresh.
+    this.config = Object.freeze({
+      startChar,
+      endChar,
+      autoRespond: parseAutoRespondRules(params.getAll('autoRespond'), this.log),
+      stripSequences: parseByteSequences(params.getAll('stripSequence'), 'stripSequence', this.log),
+      stripControlChars: params.get('stripControlChars')?.toLowerCase() === 'true',
+      bodyEncoding: parseBodyEncoding(params.get('bodyEncoding'), this.log),
+    });
 
-  /**
-   * Parse byte sequence mappings from Endpoint extensions.
-   * Looks for extensions with URL: https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings
-   * Each extension should have nested extensions for "pattern" and "response" with URL-encoded byte sequences.
-   */
-  private parseSequenceMappings(): void {
-    const endpoint = this.getEndpoint();
-    const extensionUrl = 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings';
-
-    // Reset matcher
-    this.sequenceMappings = new ByteSequenceMatcher();
-
-    if (!endpoint.extension) {
-      return;
+    for (const connection of this.connections.values()) {
+      connection.applyConfig(this.config);
     }
-
-    // Find all extensions with the mapping URL
-    for (const ext of endpoint.extension) {
-      if (ext.url !== extensionUrl || !ext.extension) {
-        continue;
-      }
-
-      // Extract pattern, response, and strip from nested extensions
-      let patternStr: string | undefined;
-      let responseStr: string | undefined;
-      let strip = true; // Default to true
-
-      for (const nestedExt of ext.extension) {
-        if (nestedExt.url === 'pattern' && nestedExt.valueString) {
-          patternStr = nestedExt.valueString;
-        } else if (nestedExt.url === 'response' && nestedExt.valueString) {
-          responseStr = nestedExt.valueString;
-        } else if (nestedExt.url === 'strip' && nestedExt.valueBoolean !== undefined) {
-          strip = nestedExt.valueBoolean;
-        }
-      }
-
-      if (patternStr) {
-        try {
-          const pattern = this.parseUrlEncodedBytes(patternStr);
-          let response: Buffer | undefined = undefined;
-          if (responseStr) {
-            response = this.parseUrlEncodedBytes(responseStr);
-          }
-          this.sequenceMappings.addPattern(pattern, response, strip);
-          this.log.debug(
-            `Registered byte sequence mapping: pattern=${patternStr}, response=${responseStr}, strip=${strip}`
-          );
-        } catch (err) {
-          this.log.warn(`Failed to parse byte sequence mapping: ${normalizeErrorString(err)}`);
-        }
-      }
-    }
-  }
-
-  /**
-   * Parse URL percent-encoded byte sequence string into a Buffer.
-   * @param encoded - URL-encoded string (e.g., "%05%06")
-   * @returns Buffer containing the decoded bytes
-   */
-  private parseUrlEncodedBytes(encoded: string): Buffer {
-    const bytes: number[] = [];
-    let i = 0;
-
-    while (i < encoded.length) {
-      if (encoded[i] === '%' && i + 2 < encoded.length) {
-        // Parse %HH sequence
-        const hex = encoded.substring(i + 1, i + 3);
-        const byte = Number.parseInt(hex, 16);
-        if (Number.isNaN(byte)) {
-          throw new Error(`Invalid hex sequence in URL-encoded byte sequence: ${hex}`);
-        }
-        bytes.push(byte);
-        i += 3;
-      } else {
-        // Regular character - convert to byte
-        bytes.push(encoded.charCodeAt(i));
-        i += 1;
-      }
-    }
-
-    return Buffer.from(bytes);
   }
 
   sendToRemote(msg: AgentTransmitResponse): boolean {
@@ -317,7 +418,7 @@ export class AgentByteStreamChannel extends BaseChannel {
     if (!connection) {
       return false;
     }
-    connection.write(Buffer.from(msg.body, 'hex'));
+    connection.write(Buffer.from(msg.body, this.config.bodyEncoding));
     return true;
   }
 
@@ -331,6 +432,7 @@ export class AgentByteStreamChannel extends BaseChannel {
 export class ByteStreamChannelConnection {
   private readonly msgChunks: Buffer[] = [];
   private msgTotalLength = -1; // -1 signals message start char has not yet been received
+  private matcher: ByteSequenceMatcher;
   readonly channel: AgentByteStreamChannel;
   readonly socket: net.Socket;
   readonly remote: string;
@@ -339,75 +441,48 @@ export class ByteStreamChannelConnection {
     this.channel = channel;
     this.socket = socket;
     this.remote = `${socket.remoteAddress}:${socket.remotePort}`;
+    this.matcher = new ByteSequenceMatcher(channel.getConfig().autoRespond);
 
     // Add listener immediately to handle incoming messages
     this.socket.on('data', (data: Buffer) => this.handler(data));
   }
 
   /**
-   * Filter bytes from a buffer based on control character status and pattern mappings.
-   * Logic:
-   * 1. If byte matches a pattern with strip=true, strip it (regardless of control/non-control)
-   * 2. If byte matches a pattern with strip=false, keep it (regardless of control/non-control)
-   * 3. If byte is a control character (0x00-0x1F) and no pattern match, strip it
-   * 4. If byte is non-control (0x20-0x7F) and no pattern match, keep it
-   * @param buffer - The buffer to filter
-   * @returns Filtered ASCII string with bytes removed according to the rules above
+   * Rebinds this connection to reloaded channel settings.
+   *
+   * Partial pattern progress is dropped along with the rules that were being matched, since
+   * a half-matched old rule says nothing about the new ones.
+   *
+   * @param config - The channel's newly parsed settings.
    */
-  private filterControlCharacters(buffer: Buffer): string {
-    let filtered = '';
-    const checkBuffer: number[] = []; // Separate buffer for checking strip patterns
-
-    for (const byte of buffer) {
-      // Check if this byte matches any pattern and get its strip value
-      const stripValue = this.channel.sequenceMappings.getStripValue(byte, checkBuffer);
-
-      // Determine if this is a control character
-      const controlChar = byte < 0x20;
-
-      if (stripValue) {
-        // Pattern matched with strip=true - strip it (regardless of control/non-control)
-        this.channel.channelLog.debug(`Stripping byte(s) matching pattern with strip=true: 0x${byte.toString(16).padStart(2, '0')}`);
-        continue;
-      } else if (stripValue === false) {
-        // Pattern matched with strip=false - keep it (regardless of control/non-control)
-        this.channel.channelLog.debug(`Keeping byte matching pattern with strip=false: 0x${byte.toString(16).padStart(2, '0')}`);
-        filtered += String.fromCharCode(byte);
-      } else if (controlChar) {
-        // Control character with no pattern match - strip it
-        this.channel.channelLog.debug(`Stripping unmatched control character: 0x${byte.toString(16).padStart(2, '0')}`);
-        continue;
-      } else {
-        // Non-control character (0x20-0x7F) with no pattern match - keep it
-        filtered += String.fromCharCode(byte);
-      }
-    }
-    return filtered;
+  applyConfig(config: ByteStreamConfig): void {
+    this.matcher = new ByteSequenceMatcher(config.autoRespond);
   }
 
   private async handler(data: Buffer): Promise<void> {
     try {
-      this.channel.channelLog.info(`Received: ${data.toString('ascii').replaceAll('\r', '\n')}`);
+      const config = this.channel.getConfig();
+      this.channel.channelLog.info(`Received ${data.length} byte(s): ${data.toString('hex')}`);
 
       let lastEndIndex = -1;
 
       for (let i = 0; i < data.length; i++) {
         const char = data[i];
 
-        // Check for byte sequence matches and inject responses immediately
-        const matches = this.channel.sequenceMappings.processByte(char);
-        for (const response of matches) {
-          this.channel.channelLog.debug(`Pattern matched, injecting response: ${response.toString('ascii')}`);
+        // Auto-responses are a link-level handshake, answered the moment their pattern
+        // completes — before framing, and between framed messages as readily as inside one.
+        for (const response of this.matcher.match(char)) {
+          this.channel.channelLog.debug(`Auto-responding ${formatByteSequence(response)}`);
           this.write(response);
         }
 
-        if (char === this.channel.startChar) {
+        if (char === config.startChar) {
           // Clear chunks when we hit a start character
           this.msgChunks.length = 0;
           this.msgTotalLength = 0;
-          // Reset matcher on start character
-          this.channel.sequenceMappings.reset();
-        } else if (char === this.channel.endChar) {
+          // A restarted frame means any partial match belonged to bytes we just discarded
+          this.matcher.reset();
+        } else if (char === config.endChar) {
           // If received end character but there's no start to the message, just continue
           if (this.msgTotalLength === -1) {
             continue;
@@ -419,16 +494,19 @@ export class ByteStreamChannelConnection {
           this.msgChunks.push(slice);
           this.msgTotalLength += slice.length;
 
-          // Create final buffer, filter control characters, and transmit
           const messageBuffer = Buffer.concat(this.msgChunks, this.msgTotalLength);
-          const filteredBody = this.filterControlCharacters(messageBuffer);
+          const body = filterMessageBytes(messageBuffer, config.stripSequences, config.stripControlChars);
+          if (body.length !== messageBuffer.length) {
+            this.channel.channelLog.debug(`Filtered ${messageBuffer.length - body.length} byte(s) from message body`);
+          }
+
           this.channel.app.addToWebSocketQueue({
             type: 'agent:transmit:request',
             accessToken: 'placeholder',
             channel: this.channel.getDefinition().name,
             remote: this.remote,
             contentType: ContentType.OCTET_STREAM,
-            body: filteredBody,
+            body: body.toString(config.bodyEncoding),
             callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
           });
 

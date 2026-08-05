@@ -8,6 +8,14 @@ import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';
 import { App } from './app';
+import {
+  ByteSequenceMatcher,
+  filterMessageBytes,
+  parseAutoRespondRules,
+  parseBodyEncoding,
+  parseByteSequences,
+} from './bytestream';
+import { createEndpointWithRandomPort, createMockLogger, waitFor } from './test-utils';
 
 const medplum = new MockClient();
 let bot: Bot;
@@ -468,546 +476,143 @@ describe('Byte Stream', () => {
     console.log = originalConsoleLog;
   });
 
-  describe('Byte sequence mapping', () => {
-    test('Single byte pattern matching with immediate ACK injection', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-      const receivedMessages: string[] = [];
-      const receivedData: Buffer[] = [];
+  describe('Byte sequences', () => {
+    test('autoRespond replies as soon as its pattern completes', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&autoRespond=%05:%06');
 
-      mockServer.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-
-          if (command.type === 'agent:transmit:request') {
-            receivedMessages.push(command.body);
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:transmit:response',
-                  channel: command.channel,
-                  callback: command.callback,
-                  remote: command.remote,
-                  body: command.body,
-                })
-              )
-            );
-          }
-        });
-      });
-
-      // Create endpoint with byte sequence mapping: ENQ (0x05) -> ACK (0x06)
-      const mappingEndpoint = await medplum.createResource<Endpoint>({
-        resourceType: 'Endpoint',
-        status: 'active',
-        address: 'tcp://0.0.0.0:58010?startChar=%02&endChar=%03',
-        connectionType: { code: ContentType.OCTET_STREAM },
-        payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%05' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-        ],
-      });
-
-      const agent = await medplum.createResource<Agent>({
-        resourceType: 'Agent',
-        name: 'Test Agent',
-        status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: createReference(mappingEndpoint),
-            targetReference: createReference(bot),
-          },
-        ],
-      });
-
-      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const app = new App(medplum, agentId, LogLevel.INFO);
       await app.start();
 
-      const client = new net.Socket();
-      // Send ENQ (0x05) followed by a message
-      const testData = Buffer.from([0x05, 0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([0x05]));
 
-      await new Promise<void>((resolve, reject) => {
-        client.connect(58010, 'localhost', () => {
-          client.write(testData);
-        });
+      await waitFor(() => received.length > 0, 1000, 'auto-response');
+      expect(Buffer.concat(received)).toEqual(Buffer.from([0x06]));
 
-        client.on('data', (data) => {
-          receivedData.push(data);
-          // Should receive ACK (0x06) immediately after ENQ
-          if (receivedData.length === 1 && receivedData[0][0] === 0x06) {
-            resolve();
-          }
-        });
-
-        client.on('error', reject);
-        setTimeout(() => resolve(), 500); // Timeout fallback
-      });
-
-      await sleep(150);
-
-      // Verify ACK was sent immediately
-      expect(receivedData.length).toBeGreaterThan(0);
-      expect(receivedData[0][0]).toBe(0x06);
-
-      // Verify original message still flows to bot
-      expect(receivedMessages.length).toBeGreaterThan(0);
-      const messageHex = receivedMessages[0];
-      expect(messageHex).toContain('05'); // ENQ should be in the message
+      // The handshake is a side channel: a framed message still arrives intact after it.
+      client.write(Buffer.from([0x02, 0x48, 0x69, 0x03]));
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe('02486903');
 
       client.destroy();
       await app.stop();
       mockServer.stop();
     });
 
-    test('Multi-byte pattern matching', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-      const receivedData: Buffer[] = [];
+    test('Multi-byte pattern completes across separate chunks', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&autoRespond=%05%15:%06');
 
-      mockServer.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-        });
-      });
-
-      // Create endpoint with multi-byte pattern: 0x05 0x15 -> 0x06
-      const mappingEndpoint = await medplum.createResource<Endpoint>({
-        resourceType: 'Endpoint',
-        status: 'active',
-        address: 'tcp://0.0.0.0:58011?startChar=%02&endChar=%03',
-        connectionType: { code: ContentType.OCTET_STREAM },
-        payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%05%15' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-        ],
-      });
-
-      const agent = await medplum.createResource<Agent>({
-        resourceType: 'Agent',
-        name: 'Test Agent',
-        status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: createReference(mappingEndpoint),
-            targetReference: createReference(bot),
-          },
-        ],
-      });
-
-      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const app = new App(medplum, agentId, LogLevel.INFO);
       await app.start();
 
-      const client = new net.Socket();
-      // Send multi-byte pattern
-      const testData = Buffer.from([0x05, 0x15, 0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
-
-      await new Promise<void>((resolve, reject) => {
-        client.connect(58011, 'localhost', () => {
-          client.write(testData);
-        });
-
-        client.on('data', (data) => {
-          receivedData.push(data);
-          if (receivedData.length >= 1) {
-            resolve();
-          }
-        });
-
-        client.on('error', reject);
-        setTimeout(() => resolve(), 500);
-      });
-
-      await sleep(150);
-
-      // Verify response was sent
-      expect(receivedData.length).toBeGreaterThan(0);
-      const allData = Buffer.concat(receivedData);
-      expect(allData[0]).toBe(0x06);
-
-      client.destroy();
-      await app.stop();
-      mockServer.stop();
-    });
-
-    test('Multiple patterns', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-      const receivedData: Buffer[] = [];
-
-      mockServer.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-        });
-      });
-
-      // Create endpoint with multiple patterns: ENQ (0x05) -> ACK (0x06), NAK (0x15) -> ACK (0x06)
-      const mappingEndpoint = await medplum.createResource<Endpoint>({
-        resourceType: 'Endpoint',
-        status: 'active',
-        address: 'tcp://0.0.0.0:58012?startChar=%02&endChar=%03',
-        connectionType: { code: ContentType.OCTET_STREAM },
-        payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%05' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%15' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-        ],
-      });
-
-      const agent = await medplum.createResource<Agent>({
-        resourceType: 'Agent',
-        name: 'Test Agent',
-        status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: createReference(mappingEndpoint),
-            targetReference: createReference(bot),
-          },
-        ],
-      });
-
-      const app = new App(medplum, agent.id, LogLevel.INFO);
-      await app.start();
-
-      const client = new net.Socket();
-      // Send ENQ then NAK
-      const testData = Buffer.from([0x05, 0x15, 0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
-
-      await new Promise<void>((resolve, reject) => {
-        client.connect(58012, 'localhost', () => {
-          client.write(testData);
-        });
-
-        client.on('data', (data) => {
-          receivedData.push(data);
-          if (receivedData.length >= 2) {
-            resolve();
-          }
-        });
-
-        client.on('error', reject);
-        setTimeout(() => resolve(), 500);
-      });
-
-      await sleep(150);
-
-      // Verify both responses were sent
-      expect(receivedData.length).toBeGreaterThanOrEqual(2);
-      expect(receivedData[0][0]).toBe(0x06); // ACK for ENQ
-      expect(receivedData[1][0]).toBe(0x06); // ACK for NAK
-
-      client.destroy();
-      await app.stop();
-      mockServer.stop();
-    });
-
-    test('Pattern matching across buffer boundaries', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-      const receivedData: Buffer[] = [];
-
-      mockServer.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-        });
-      });
-
-      // Create endpoint with 2-byte pattern
-      const mappingEndpoint = await medplum.createResource<Endpoint>({
-        resourceType: 'Endpoint',
-        status: 'active',
-        address: 'tcp://0.0.0.0:58013?startChar=%02&endChar=%03',
-        connectionType: { code: ContentType.OCTET_STREAM },
-        payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%05%15' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-        ],
-      });
-
-      const agent = await medplum.createResource<Agent>({
-        resourceType: 'Agent',
-        name: 'Test Agent',
-        status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: createReference(mappingEndpoint),
-            targetReference: createReference(bot),
-          },
-        ],
-      });
-
-      const app = new App(medplum, agent.id, LogLevel.INFO);
-      await app.start();
-
-      const client = new net.Socket();
-
-      // Send first byte of pattern
-      await new Promise<void>((resolve) => {
-        client.connect(58013, 'localhost', () => {
-          client.write(Buffer.from([0x05]));
-          resolve();
-        });
-      });
-
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([0x05]));
       await sleep(50);
+      expect(received).toHaveLength(0);
 
-      // Send second byte of pattern (should trigger match)
-      await new Promise<void>((resolve, reject) => {
-        client.write(Buffer.from([0x15]));
-
-        client.on('data', (data) => {
-          receivedData.push(data);
-          resolve();
-        });
-
-        client.on('error', reject);
-        setTimeout(() => resolve(), 500);
-      });
-
-      await sleep(150);
-
-      // Verify response was sent when pattern completed
-      expect(receivedData.length).toBeGreaterThan(0);
-      expect(receivedData[0][0]).toBe(0x06);
+      client.write(Buffer.from([0x15]));
+      await waitFor(() => received.length > 0, 1000, 'auto-response');
+      expect(Buffer.concat(received)).toEqual(Buffer.from([0x06]));
 
       client.destroy();
       await app.stop();
       mockServer.stop();
     });
 
-    test('Matcher reset on startChar', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-      const receivedData: Buffer[] = [];
+    test('Concurrent connections match independently', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&autoRespond=%05%15:%06');
 
-      mockServer.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-        });
-      });
-
-      // Create endpoint with 2-byte pattern that spans startChar
-      const mappingEndpoint = await medplum.createResource<Endpoint>({
-        resourceType: 'Endpoint',
-        status: 'active',
-        address: 'tcp://0.0.0.0:58014?startChar=%02&endChar=%03',
-        connectionType: { code: ContentType.OCTET_STREAM },
-        payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%05%15' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-        ],
-      });
-
-      const agent = await medplum.createResource<Agent>({
-        resourceType: 'Agent',
-        name: 'Test Agent',
-        status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: createReference(mappingEndpoint),
-            targetReference: createReference(bot),
-          },
-        ],
-      });
-
-      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const app = new App(medplum, agentId, LogLevel.INFO);
       await app.start();
 
-      const client = new net.Socket();
-      // Send first byte of pattern, then startChar (should reset), then second byte (should not match)
-      const testData = Buffer.from([0x05, 0x02, 0x15, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
+      const [clientA, receivedA] = await connectCollecting(agentPort);
+      const [clientB, receivedB] = await connectCollecting(agentPort);
 
-      await new Promise<void>((resolve, reject) => {
-        client.connect(58014, 'localhost', () => {
-          client.write(testData);
-        });
+      // Split the pattern across the two sockets. A shared match window would splice these
+      // into %05%15 and wrongly answer B.
+      clientA.write(Buffer.from([0x05]));
+      await sleep(50);
+      clientB.write(Buffer.from([0x15]));
+      await sleep(100);
 
-        client.on('data', (data) => {
-          receivedData.push(data);
-        });
+      expect(receivedA).toHaveLength(0);
+      expect(receivedB).toHaveLength(0);
 
-        client.on('error', reject);
-        setTimeout(() => resolve(), 500);
-      });
+      // A's own window still holds its %05, so A completing the pattern answers A alone.
+      clientA.write(Buffer.from([0x15]));
+      await waitFor(() => receivedA.length > 0, 1000, "connection A's auto-response");
+      expect(Buffer.concat(receivedA)).toEqual(Buffer.from([0x06]));
+      expect(receivedB).toHaveLength(0);
 
-      await sleep(150);
+      clientA.destroy();
+      clientB.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
 
-      // Should not have received response because pattern was reset by startChar
-      expect(receivedData.length).toBe(0);
+    test('stripSequence and stripControlChars clean the transmitted body', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent(
+        '&autoRespond=%05:%06&stripSequence=%15&stripControlChars=true&bodyEncoding=utf-8'
+      );
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      // ENQ, then STX H e l NAK l o ETX
+      client.write(Buffer.from([0x05, 0x02, 0x48, 0x65, 0x6c, 0x15, 0x6c, 0x6f, 0x03]));
+
+      await waitFor(() => received.length > 0, 1000, 'auto-response');
+      expect(Buffer.concat(received)).toEqual(Buffer.from([0x06]));
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe('Hello');
 
       client.destroy();
       await app.stop();
       mockServer.stop();
     });
 
-    test('Original bytes still flow to bot', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-      const receivedMessages: string[] = [];
+    test('Default hex encoding preserves bytes above 0x7f', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('');
 
-      mockServer.on('connection', (socket) => {
-        socket.on('message', (data) => {
-          const command = JSON.parse((data as Buffer).toString('utf8'));
-          if (command.type === 'agent:connect:request') {
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:connect:response',
-                })
-              )
-            );
-          }
-
-          if (command.type === 'agent:transmit:request') {
-            receivedMessages.push(command.body);
-            socket.send(
-              Buffer.from(
-                JSON.stringify({
-                  type: 'agent:transmit:response',
-                  channel: command.channel,
-                  callback: command.callback,
-                  remote: command.remote,
-                  body: command.body,
-                })
-              )
-            );
-          }
-        });
-      });
-
-      // Create endpoint with byte sequence mapping
-      const mappingEndpoint = await medplum.createResource<Endpoint>({
-        resourceType: 'Endpoint',
-        status: 'active',
-        address: 'tcp://0.0.0.0:58015?startChar=%02&endChar=%03',
-        connectionType: { code: ContentType.OCTET_STREAM },
-        payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/endpoint-bytestream-sequence-mappings',
-            extension: [
-              { url: 'pattern', valueString: '%05' },
-              { url: 'response', valueString: '%06' },
-            ],
-          },
-        ],
-      });
-
-      const agent = await medplum.createResource<Agent>({
-        resourceType: 'Agent',
-        name: 'Test Agent',
-        status: 'active',
-        channel: [
-          {
-            name: 'test',
-            endpoint: createReference(mappingEndpoint),
-            targetReference: createReference(bot),
-          },
-        ],
-      });
-
-      const app = new App(medplum, agent.id, LogLevel.INFO);
+      const app = new App(medplum, agentId, LogLevel.INFO);
       await app.start();
 
-      const client = new net.Socket();
-      // Send ENQ followed by a complete message
-      const testData = Buffer.from([0x05, 0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
+      const [client] = await connectCollecting(agentPort);
+      client.write(Buffer.from([0x02, 0xe9, 0xff, 0x80, 0x03]));
 
-      await new Promise<void>((resolve, reject) => {
-        client.connect(58015, 'localhost', () => {
-          client.write(testData);
-        });
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe('02e9ff8003');
 
-        client.on('error', reject);
-        setTimeout(() => resolve(), 500);
-      });
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
 
-      await sleep(150);
+    test('utf-8 encoding decodes multi-byte characters', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&stripControlChars=true&bodyEncoding=utf-8');
 
-      // Verify message was received by bot (should include ENQ byte)
-      expect(receivedMessages.length).toBeGreaterThan(0);
-      const messageHex = receivedMessages[0];
-      expect(messageHex).toContain('05'); // ENQ should be in the message
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client] = await connectCollecting(agentPort);
+      client.write(Buffer.concat([Buffer.from([0x02]), Buffer.from('café', 'utf-8'), Buffer.from([0x03])]));
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe('café');
 
       client.destroy();
       await app.stop();
@@ -1015,3 +620,282 @@ describe('Byte Stream', () => {
     });
   });
 });
+
+describe('parseAutoRespondRules', () => {
+  test('Single-byte pattern and response', () => {
+    const log = createMockLogger();
+    const rules = parseAutoRespondRules(['\x05:\x06'], log);
+
+    expect(rules).toHaveLength(1);
+    expect(rules[0].pattern).toEqual(Buffer.from([0x05]));
+    expect(rules[0].response).toEqual(Buffer.from([0x06]));
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Multi-byte pattern and response', () => {
+    const rules = parseAutoRespondRules(['\x05\x15:\x06\x04'], createMockLogger());
+
+    expect(rules).toHaveLength(1);
+    expect(rules[0].pattern).toEqual(Buffer.from([0x05, 0x15]));
+    expect(rules[0].response).toEqual(Buffer.from([0x06, 0x04]));
+  });
+
+  test('Repeated params accumulate in order', () => {
+    const rules = parseAutoRespondRules(['\x05:\x06', '\x15:\x04'], createMockLogger());
+
+    expect(rules.map((rule) => [...rule.pattern])).toEqual([[0x05], [0x15]]);
+    expect(rules.map((rule) => [...rule.response])).toEqual([[0x06], [0x04]]);
+  });
+
+  test('Bytes above 0x7f written as their UTF-8 encoding', () => {
+    // %C3%A9 percent-decodes to U+00E9, a single byte once mapped back.
+    const rules = parseAutoRespondRules(['é:\x06'], createMockLogger());
+
+    expect(rules).toHaveLength(1);
+    expect(rules[0].pattern).toEqual(Buffer.from([0xe9]));
+  });
+
+  test.each([
+    ['missing separator', '\x05\x06'],
+    ['empty pattern', ':\x06'],
+    ['empty response', '\x05:'],
+    ['pattern outside byte range', '❤:\x06'],
+    ['response outside byte range', '\x05:❤'],
+  ])('Skips and warns on %s', (_label, rawValue) => {
+    const log = createMockLogger();
+
+    expect(parseAutoRespondRules([rawValue], log)).toEqual([]);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('autoRespond'));
+  });
+
+  test('Keeps the first of a duplicated pattern', () => {
+    const log = createMockLogger();
+    const rules = parseAutoRespondRules(['\x05:\x06', '\x05:\x04'], log);
+
+    expect(rules).toHaveLength(1);
+    expect(rules[0].response).toEqual(Buffer.from([0x06]));
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('Duplicate autoRespond pattern %05'));
+  });
+
+  test('No params yields no rules', () => {
+    const log = createMockLogger();
+
+    expect(parseAutoRespondRules([], log)).toEqual([]);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('parseByteSequences', () => {
+  test('Parses and deduplicates', () => {
+    const log = createMockLogger();
+    const sequences = parseByteSequences(['\x05', '\x15\x04', '\x05'], 'stripSequence', log);
+
+    expect(sequences).toEqual([Buffer.from([0x05]), Buffer.from([0x15, 0x04])]);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Skips and warns on values outside byte range', () => {
+    const log = createMockLogger();
+
+    expect(parseByteSequences(['❤', '\x05'], 'stripSequence', log)).toEqual([Buffer.from([0x05])]);
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('stripSequence'));
+  });
+});
+
+describe('parseBodyEncoding', () => {
+  test.each([
+    [undefined, 'hex'],
+    [null, 'hex'],
+    ['', 'hex'],
+    ['hex', 'hex'],
+    ['HEX', 'hex'],
+    ['utf-8', 'utf-8'],
+    ['utf8', 'utf-8'],
+    ['UTF-8', 'utf-8'],
+  ])('Parses %s as %s', (rawValue, expected) => {
+    const log = createMockLogger();
+
+    expect(parseBodyEncoding(rawValue, log)).toBe(expected);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test.each(['ascii', 'latin1', 'base64'])('Falls back to hex and warns on %s', (rawValue) => {
+    const log = createMockLogger();
+
+    expect(parseBodyEncoding(rawValue, log)).toBe('hex');
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining(`Invalid bodyEncoding '${rawValue}'`));
+  });
+});
+
+describe('ByteSequenceMatcher', () => {
+  test('Matches a single-byte pattern', () => {
+    const matcher = new ByteSequenceMatcher([{ pattern: Buffer.from([0x05]), response: Buffer.from([0x06]) }]);
+
+    expect(matcher.match(0x01)).toEqual([]);
+    expect(matcher.match(0x05)).toEqual([Buffer.from([0x06])]);
+  });
+
+  test('Matches a multi-byte pattern one byte at a time', () => {
+    const matcher = new ByteSequenceMatcher([{ pattern: Buffer.from([0x05, 0x15]), response: Buffer.from([0x06]) }]);
+
+    expect(matcher.match(0x05)).toEqual([]);
+    expect(matcher.match(0x15)).toEqual([Buffer.from([0x06])]);
+  });
+
+  test('Matches a pattern preceded by unrelated bytes', () => {
+    const matcher = new ByteSequenceMatcher([{ pattern: Buffer.from([0x05, 0x15]), response: Buffer.from([0x06]) }]);
+
+    for (const byte of [0x41, 0x42, 0x05]) {
+      expect(matcher.match(byte)).toEqual([]);
+    }
+    expect(matcher.match(0x15)).toEqual([Buffer.from([0x06])]);
+  });
+
+  test('Returns every overlapping rule that completes, in rule order', () => {
+    const matcher = new ByteSequenceMatcher([
+      { pattern: Buffer.from([0x15]), response: Buffer.from([0x06]) },
+      { pattern: Buffer.from([0x05, 0x15]), response: Buffer.from([0x04]) },
+    ]);
+
+    expect(matcher.match(0x05)).toEqual([]);
+    expect(matcher.match(0x15)).toEqual([Buffer.from([0x06]), Buffer.from([0x04])]);
+  });
+
+  test('reset discards partial progress', () => {
+    const matcher = new ByteSequenceMatcher([{ pattern: Buffer.from([0x05, 0x15]), response: Buffer.from([0x06]) }]);
+
+    expect(matcher.match(0x05)).toEqual([]);
+    matcher.reset();
+    expect(matcher.match(0x15)).toEqual([]);
+  });
+
+  test('No rules never matches', () => {
+    const matcher = new ByteSequenceMatcher([]);
+
+    expect(matcher.match(0x05)).toEqual([]);
+  });
+});
+
+describe('filterMessageBytes', () => {
+  test('Returns the input untouched when nothing is configured', () => {
+    const buffer = Buffer.from([0x02, 0x48, 0x03]);
+
+    expect(filterMessageBytes(buffer, [], false)).toBe(buffer);
+  });
+
+  test('Removes a multi-byte sequence whole', () => {
+    const filtered = filterMessageBytes(Buffer.from('xABy'), [Buffer.from('AB')], false);
+
+    expect(filtered.toString()).toBe('xy');
+  });
+
+  test('Removes every occurrence', () => {
+    const filtered = filterMessageBytes(Buffer.from('ABxAByAB'), [Buffer.from('AB')], false);
+
+    expect(filtered.toString()).toBe('xy');
+  });
+
+  test('Prefers the longest sequence at a given offset', () => {
+    const filtered = filterMessageBytes(Buffer.from('ABCD'), [Buffer.from('AB'), Buffer.from('ABC')], false);
+
+    expect(filtered.toString()).toBe('D');
+  });
+
+  test('Resumes scanning past a match rather than inside it', () => {
+    const filtered = filterMessageBytes(Buffer.from([0x05, 0x15, 0x05]), [Buffer.from([0x05, 0x15])], false);
+
+    expect(filtered).toEqual(Buffer.from([0x05]));
+  });
+
+  test('Leaves a truncated sequence at the tail alone', () => {
+    const filtered = filterMessageBytes(Buffer.from('xA'), [Buffer.from('AB')], false);
+
+    expect(filtered.toString()).toBe('xA');
+  });
+
+  test('stripControlChars removes control bytes including framing', () => {
+    const filtered = filterMessageBytes(Buffer.from([0x02, 0x48, 0x0d, 0x0a, 0x69, 0x03]), [], true);
+
+    expect(filtered.toString()).toBe('Hi');
+  });
+
+  test('stripControlChars preserves bytes at or above 0x20', () => {
+    const filtered = filterMessageBytes(Buffer.from([0x20, 0x7f, 0xe9]), [], true);
+
+    expect(filtered).toEqual(Buffer.from([0x20, 0x7f, 0xe9]));
+  });
+
+  test('Sequences are removed even when they are not control bytes', () => {
+    const filtered = filterMessageBytes(Buffer.from([0x02, 0x41, 0x42, 0x43, 0x03]), [Buffer.from('B')], true);
+
+    expect(filtered.toString()).toBe('AC');
+  });
+});
+
+/**
+ * Boots the agent-facing mock WebSocket server.
+ *
+ * @param bodies - Collects the `body` of every `agent:transmit:request` the agent sends.
+ * @returns The running server, for the caller to stop.
+ */
+function startMockAgentServer(bodies: string[]): Server {
+  const mockServer = new Server('wss://example.com/ws/agent');
+
+  mockServer.on('connection', (socket) => {
+    socket.on('message', (data) => {
+      const command = JSON.parse((data as Buffer).toString('utf8'));
+      if (command.type === 'agent:connect:request') {
+        socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+      }
+      if (command.type === 'agent:transmit:request') {
+        bodies.push(command.body);
+      }
+    });
+  });
+
+  return mockServer;
+}
+
+/**
+ * Creates a byte-stream Agent and Endpoint on a free port.
+ *
+ * @param extraParams - Query params appended after `startChar`/`endChar`, e.g. '&autoRespond=%05:%06'.
+ * @returns The agent id and the port its channel listens on.
+ */
+async function createByteStreamAgent(extraParams: string): Promise<[string, number]> {
+  const [created, agentPort] = await createEndpointWithRandomPort(medplum, {
+    resourceType: 'Endpoint',
+    status: 'active',
+    address: `tcp://0.0.0.0:9999?startChar=%02&endChar=%03${extraParams}`,
+    connectionType: { code: ContentType.OCTET_STREAM },
+    payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
+  });
+
+  const agent = await medplum.createResource<Agent>({
+    resourceType: 'Agent',
+    name: 'Test Agent',
+    status: 'active',
+    channel: [{ name: 'test', endpoint: createReference(created), targetReference: createReference(bot) }],
+  });
+
+  return [agent.id, agentPort];
+}
+
+/**
+ * Opens a client socket to the channel and collects everything written back to it.
+ *
+ * @param port - The channel's listening port.
+ * @returns The connected socket and its accumulating received chunks.
+ */
+async function connectCollecting(port: number): Promise<[net.Socket, Buffer[]]> {
+  const client = new net.Socket();
+  const received: Buffer[] = [];
+
+  client.on('data', (data: Buffer) => received.push(data));
+  await new Promise<void>((resolve, reject) => {
+    client.once('error', reject);
+    client.connect(port, 'localhost', resolve);
+  });
+
+  return [client, received];
+}
