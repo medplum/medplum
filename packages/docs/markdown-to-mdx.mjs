@@ -90,12 +90,22 @@ const ALLOWED_HTML_TAGS = new Set([
   'var',
 ]);
 
+// Sticky so it can be anchored at an index rather than matching against a fresh
+// slice of the remaining document for every `<` in it.
+const TAG_START = /<\/?([A-Za-z][A-Za-z0-9-]*)/y;
+
 // Whether the `<` at index `i` begins a token that is NOT a known HTML tag (and so
 // should be escaped to `&lt;` to keep MDX from treating it as JSX).
 function shouldEscapeAngleBracket(text, i) {
-  const match = /^<\/?([A-Za-z][A-Za-z0-9-]*)/.exec(text.slice(i));
+  TAG_START.lastIndex = i;
+  const match = TAG_START.exec(text);
   if (!match) {
     // Not a tag-like token (e.g. `a < b`); leave it untouched.
+    return false;
+  }
+  if (text[i + match[0].length] === ':') {
+    // A URI scheme, so this is a Markdown autolink such as `<https://example.com>`.
+    // Escaping it would render the brackets rather than the link.
     return false;
   }
   return !ALLOWED_HTML_TAGS.has(match[1].toLowerCase());
