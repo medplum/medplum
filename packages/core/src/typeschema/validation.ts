@@ -760,15 +760,17 @@ function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedVa
   }
 
   const extensionElement = Object.create(null);
+  let hasExtension = false;
   for (const key in v.value) {
     if (Object.hasOwn(v.value, key) && !Object.hasOwn(primitiveValue, key)) {
       extensionElement[key] = v.value[key];
+      hasExtension = true;
     }
   }
 
   return [
     { type: v.type, value: primitiveValue },
-    { type: 'Element', value: extensionElement },
+    hasExtension ? { type: 'Element', value: extensionElement } : undefined,
   ];
 }
 
