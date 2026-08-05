@@ -298,6 +298,18 @@ export function filterMessageBytes(
   // Ordering only decides which of several matches at one offset wins, so a lone sequence is
   // used as-is rather than copied and sorted once per message.
   const longestFirst = sequences.length > 1 ? [...sequences].sort((a, b) => b.length - a.length) : sequences;
+
+  // The whole C0 range fits in a 32-bit mask, so the exemption test below is a bit check
+  // rather than a scan of keepControlChars per byte of the body. Building it costs one pass
+  // over a handful of bytes. Anything >= 0x20 is left out: the sweep never reaches those
+  // bytes, and `1 << byte` would wrap and exempt an unrelated control char.
+  let keepMask = 0;
+  for (const byte of keepControlChars) {
+    if (byte < 0x20) {
+      keepMask |= 1 << byte;
+    }
+  }
+
   const filtered = Buffer.allocUnsafe(buffer.length);
   let written = 0;
   let i = 0;
@@ -330,7 +342,7 @@ export function filterMessageBytes(
     }
 
     const byte = buffer[i];
-    if (!(stripControlChars && byte < 0x20 && !keepControlChars.includes(byte))) {
+    if (!(stripControlChars && byte < 0x20 && (keepMask & (1 << byte)) === 0)) {
       filtered[written] = byte;
       written++;
     }
