@@ -348,6 +348,18 @@ export class BackEnd extends Construct {
           resources: [`arn:aws:ses:${region}:${accountNumber}:identity/*`],
         }),
 
+        // SES: Send emails via an identity that has a configuration set attached.
+        // AWS requires authorization on the configuration-set resource in addition to the
+        // identity resource whenever a configuration set is in play, or SendEmail/SendRawEmail
+        // fails at send time with an IAM authorization error even though the caller is
+        // authorized on the identity.
+        // https://docs.aws.amazon.com/ses/latest/dg/sending-authorization-policy-examples.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+          resources: [`arn:aws:ses:${region}:${accountNumber}:configuration-set/*`],
+        }),
+
         // S3: List storage bucket
         // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
         new iam.PolicyStatement({
