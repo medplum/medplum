@@ -8,7 +8,7 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { SubmitButton } from '../Form/SubmitButton';
-import { MedplumModal } from '../MedplumModal/MedplumModal';
+import { Modal } from '../Modal/Modal';
 
 export interface GoalDialogProps {
   readonly patient: Patient;
@@ -42,7 +42,7 @@ export function GoalDialog(props: GoalDialogProps): JSX.Element {
   );
 
   return (
-    <MedplumModal
+    <Modal
       opened={opened}
       onClose={onClose}
       title={goal ? 'Edit Goal' : 'Add Goal'}
@@ -78,6 +78,6 @@ export function GoalDialog(props: GoalDialogProps): JSX.Element {
         <TextInput type="date" name="startDate" label="Start Date" defaultValue={goal?.startDate} />
         <TextInput type="date" name="dueDate" label="Target Date" defaultValue={goal?.target?.[0]?.dueDate} />
       </Stack>
-    </MedplumModal>
+    </Modal>
   );
 }

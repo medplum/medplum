@@ -10,7 +10,7 @@ import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInp
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { SubmitButton } from '../Form/SubmitButton';
-import { MedplumModal } from '../MedplumModal/MedplumModal';
+import { Modal } from '../Modal/Modal';
 import { formatStatusLabel } from './PatientSummary.utils';
 
 export interface ImmunizationDialogProps {
@@ -48,7 +48,7 @@ export function ImmunizationDialog(props: ImmunizationDialogProps): JSX.Element 
   );
 
   return (
-    <MedplumModal
+    <Modal
       opened={opened}
       onClose={onClose}
       title={immunization ? 'Edit Immunization' : 'Add Immunization'}
@@ -89,6 +89,6 @@ export function ImmunizationDialog(props: ImmunizationDialogProps): JSX.Element 
           ))}
         </Radio.Group>
       </Stack>
-    </MedplumModal>
+    </Modal>
   );
 }
