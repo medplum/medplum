@@ -15,7 +15,12 @@ const options = {
   resolveExtensions: ['.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  minify: true,
+  minifyWhitespace: true,
+  minifySyntax: true,
+  // Equivalent to `minify: true`, split apart so identifier renaming can be disabled on its own.
+  // V8 reports the compile-time identifier in CPU profiles and stack traces, so a fully minified
+  // build shows `dd` instead of `parseQueryString` no matter what the source map says.
+  minifyIdentifiers: false,
   sourcemap: true,
   external: ['@medplum/core', 'dataloader'],
 };

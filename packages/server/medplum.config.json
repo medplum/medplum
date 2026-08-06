@@ -32,5 +32,7 @@
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
   },
+  "maxJsonSize": "8mb",
+  "logAuditEvents": true,
   "shutdownTimeoutMilliseconds": 30000
 }
