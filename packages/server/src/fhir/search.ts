@@ -114,6 +114,7 @@ export async function searchImpl<T extends Resource>(
   options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
   validateSearchResourceTypes(repo, searchRequest);
+  validateSearchFilterCount(searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
@@ -212,6 +213,19 @@ export async function searchByReferenceImpl<T extends Resource>(
   }
 
   return results;
+}
+
+/**
+ * Rejects searches carrying more filters than the server allows.
+ *
+ * @param searchRequest - The search request.
+ */
+function validateSearchFilterCount(searchRequest: SearchRequest): void {
+  const maxParams = getConfig().maxSearchFilters;
+  const count = searchRequest.filters?.length;
+  if (maxParams !== undefined && count !== undefined && count > maxParams) {
+    throw new OperationOutcomeError(badRequest(`Search filter count exceeds maximum (got ${count}, max ${maxParams})`));
+  }
 }
 
 function applyCountAndOffsetLimits<T extends Resource>(
