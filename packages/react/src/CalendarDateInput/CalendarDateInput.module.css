@@ -1,39 +1,84 @@
+/* Sized by whatever column it is dropped into rather than to a fixed width: it
+   sits in a narrow rail beside search results in one caller and in a panel of
+   its own in another, and seven 44px days do not fit the narrower of the two.
+   Fixed layout divides the width evenly between the seven columns however wide
+   that turns out to be. */
 .table {
-  width: 350px;
+  width: 100%;
+  min-width: 260px;
+  max-width: 350px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  /* Dragging a range across the days would otherwise select their numbers as
+     text, which puts a highlight over the one the calendar draws itself. */
+  user-select: none;
 
   & th {
     font-weight: normal;
     font-size: 11px;
-    padding: 8px;
+    padding: 8px 2px;
     text-align: center;
   }
 
   & td {
-    padding: 2px 4px;
+    padding: 2px;
+    text-align: center;
   }
 
+  /* A plain day: nothing on offer, but still reachable where the caller accepts
+     a request for a specific time. Empty is the calendar's resting state, so a
+     day says something only by being filled. */
   & td button {
-    width: 44px;
-    height: 44px;
-    color: theme.colors[theme.primaryColor][5];
+    /* Square at whatever size its column allows, up to the size the calendar was
+       drawn at, so that the days stay circles instead of stretching to pills. */
+    width: 100%;
+    max-width: 44px;
+    height: auto;
+    aspect-ratio: 1;
+    margin: 0 auto;
+    color: var(--mantine-color-gray-6);
     font-size: 16px;
-    font-weight: 500;
+    font-weight: normal;
     text-align: center;
     padding: 0;
-    background-color: theme.colors[theme.primaryColor][0];
+    background-color: transparent;
     border: 0;
-    border-radius: 50px;
+    border-radius: 50%;
     cursor: pointer;
   }
 
   & td button:hover {
-    background-color: theme.colors[theme.primaryColor][1];
+    background-color: var(--mantine-color-gray-1);
   }
 
-  & td button:disabled {
-    background-color: transparen;
-    cursor: defaul;
+  /* A day with times on it. Filled, because which days are worth clicking is the
+     one thing a month view is read for, and quiet enough for the chosen day to
+     still stand out against a month of them. */
+  & td button.available {
+    background-color: var(--mantine-color-gray-2);
+    color: var(--mantine-color-text);
+    font-weight: 500;
+  }
+
+  & td button.available:hover {
+    background-color: var(--mantine-color-gray-3);
+  }
+
+  /* A day with nothing on it that cannot be asked about either, so it offers no
+     hover and reads as out of reach. */
+  & td button:disabled,
+  & td button:disabled:hover {
+    background-color: transparent;
+    cursor: default;
     color: var(--mantine-color-gray-4);
     font-weight: normal;
+  }
+
+  /* The chosen day, or either end of a chosen range. */
+  & td button.selected,
+  & td button.selected:hover {
+    background-color: var(--mantine-primary-color-filled);
+    color: var(--mantine-color-white);
+    font-weight: 500;
   }
 }
