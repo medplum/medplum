@@ -4,7 +4,8 @@ import { generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
-import type { RawData, WebSocket } from 'ws';
+import type { RawData, WebSocket as WebSocketType } from 'ws';
+import WebSocket from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
@@ -15,14 +16,21 @@ const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 let heartbeatHandler: (() => void) | undefined;
 
-const websocketMap = new Map<WebSocket, string>();
+const websocketMap = new Map<WebSocketType, { topic: string; missedPongs: number }>();
 const topicRefCountMap = new Map<string, number>();
 let fhircastMessagesSent = 0;
 let fhircastMessagesReceived = 0;
 
+const PING_INTERVAL_MS = 30_000;
+const MAX_MISSED_PONGS = 3;
+const PING_TICK_DIVISOR = Math.round(PING_INTERVAL_MS / DEFAULT_HEARTBEAT_MS);
+const BACKPRESSURE_WARN_BYTES = 64 * 1024;
+
 export function initFhircastHeartbeat(): void {
   if (!heartbeatHandler) {
-    heartbeatHandler = (): void => {
+    let pingTickCount = 0;
+
+    heartbeatHandler = async (): Promise<void> => {
       const baseHeartbeatPayload = {
         timestamp: new Date().toISOString(),
         id: generateId(),
@@ -33,13 +41,35 @@ export function initFhircastHeartbeat(): void {
       };
 
       for (const projectAndTopic of topicRefCountMap.keys()) {
-        publish(
-          projectAndTopic,
-          JSON.stringify({
-            ...baseHeartbeatPayload,
-            event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
-          })
-        ).catch((err) => globalLogger.error('[FHIRcast]: Failed to publish heartbeat', err));
+        try {
+          publish(
+            projectAndTopic,
+            JSON.stringify({
+              ...baseHeartbeatPayload,
+              event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
+            })
+          ).catch((err) => globalLogger.error('[FHIRcast]: Failed to publish heartbeat', { err }));
+        } catch (err) {
+          globalLogger.error('[FHIRcast]: Failed to publish heartbeat', { err });
+        }
+      }
+
+      pingTickCount = (pingTickCount + 1) % PING_TICK_DIVISOR;
+      if (pingTickCount === 0) {
+        for (const [socket, meta] of websocketMap) {
+          if (socket.readyState !== WebSocket.OPEN) {
+            continue;
+          }
+          if (meta.missedPongs >= MAX_MISSED_PONGS) {
+            globalLogger.warn('[FHIRcast]: Terminating stale connection after missed pongs', {
+              missedPongs: meta.missedPongs,
+            });
+            socket.terminate();
+          } else {
+            meta.missedPongs++;
+            socket.ping();
+          }
+        }
       }
 
       const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
@@ -67,7 +97,7 @@ export function stopFhircastHeartbeat(): void {
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */
-export async function handleFhircastConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
+export async function handleFhircastConnection(socket: WebSocketType, request: IncomingMessage): Promise<void> {
   const topicEndpoint = (request.url as string).split('/').filter(Boolean)[2];
   const endpointTopicKey = `medplum:fhircast:endpoint:${topicEndpoint}:topic`;
 
@@ -103,10 +133,25 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   const topic = projectAndTopic?.split(':')[1] ?? 'invalid topic';
   // Increment ref count for the specified topic
   topicRefCountMap.set(projectAndTopic, (topicRefCountMap.get(projectAndTopic) ?? 0) + 1);
-  websocketMap.set(socket, projectAndTopic);
+  websocketMap.set(socket, { topic: projectAndTopic, missedPongs: 0 });
+
+  socket.on('pong', () => {
+    const meta = websocketMap.get(socket);
+    if (meta) {
+      meta.missedPongs = 0;
+    }
+  });
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
-    // Forward the message to the client
+    if (socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    if (socket.bufferedAmount > BACKPRESSURE_WARN_BYTES) {
+      globalLogger.warn('[FHIRcast]: Dropping message due to full send buffer', {
+        bufferedAmount: socket.bufferedAmount,
+      });
+      return;
+    }
     socket.send(message, { binary: false });
     fhircastMessagesSent++;
   });
@@ -125,16 +170,16 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   );
 
   socket.on('close', () => {
-    const topic = websocketMap.get(socket);
-    if (topic) {
+    const meta = websocketMap.get(socket);
+    if (meta) {
       websocketMap.delete(socket);
-      const topicRefCount = topicRefCountMap.get(topic);
+      const topicRefCount = topicRefCountMap.get(meta.topic);
       if (!topicRefCount) {
         globalLogger.error('[FHIRcast]: No topic ref count for this topic');
       } else if (topicRefCount === 1) {
-        topicRefCountMap.delete(topic);
+        topicRefCountMap.delete(meta.topic);
       } else {
-        topicRefCountMap.set(topic, topicRefCount - 1);
+        topicRefCountMap.set(meta.topic, topicRefCount - 1);
       }
     }
     redisSubscriber.disconnect();

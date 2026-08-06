@@ -21,10 +21,11 @@ import type { WebSocket } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import * as redis from '../redis';
 import { initTestAuth, withTestContext } from '../test.setup';
-import { handleFhircastConnection } from './fhircast';
+import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat } from './fhircast';
 
 describe('FHIRcast WebSocket', () => {
   describe('Basic flow', () => {
@@ -1052,6 +1053,136 @@ describe('FHIRcast WebSocket', () => {
           cacheSpy.mockRestore();
           subscriberSpy.mockRestore();
           errorSpy.mockRestore();
+        }
+      }));
+  });
+
+  describe('Ping/pong and backpressure', () => {
+    const PING_TICK_DIVISOR = 3;
+    const MAX_MISSED_PONGS = 3;
+
+    function makeSocket(overrides: Partial<Record<string, any>> = {}): Record<string, any> {
+      const handlers: Record<string, (...args: any[]) => any> = {};
+      return {
+        on: vi.fn((event: string, cb: (...args: any[]) => any) => {
+          handlers[event] = cb;
+        }),
+        send: vi.fn(),
+        close: vi.fn(),
+        ping: vi.fn(),
+        terminate: vi.fn(),
+        readyState: 1,
+        bufferedAmount: 0,
+        _handlers: handlers,
+        ...overrides,
+      };
+    }
+
+    function makeSubscriberSpy(): ReturnType<typeof vi.spyOn> {
+      return vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+        subscribe: vi.fn().mockResolvedValue(undefined),
+        on: vi.fn(),
+        disconnect: vi.fn(),
+      } as any);
+    }
+
+    function makeCacheSpy(): ReturnType<typeof vi.spyOn> {
+      return vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+        get: vi.fn().mockResolvedValue('project-id:my-topic'),
+      } as any);
+    }
+
+    beforeEach(() => {
+      initFhircastHeartbeat();
+    });
+
+    afterEach(() => {
+      stopFhircastHeartbeat();
+    });
+
+    test('Terminates connection after MAX_MISSED_PONGS consecutive missed pongs', () =>
+      withTestContext(async () => {
+        const cacheSpy = makeCacheSpy();
+        const subscriberSpy = makeSubscriberSpy();
+        const socket = makeSocket() as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await handleFhircastConnection(socket, req);
+
+          const totalTicks = PING_TICK_DIVISOR * (MAX_MISSED_PONGS + 1);
+          for (let i = 0; i < totalTicks; i++) {
+            heartbeat.dispatchEvent({ type: 'heartbeat' });
+          }
+
+          expect((socket as any).ping).toHaveBeenCalledTimes(MAX_MISSED_PONGS);
+          expect((socket as any).terminate).toHaveBeenCalledTimes(1);
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+        }
+      }));
+
+    test('Resets missed-pong counter when pong is received', () =>
+      withTestContext(async () => {
+        const cacheSpy = makeCacheSpy();
+        const subscriberSpy = makeSubscriberSpy();
+        const socket = makeSocket() as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await handleFhircastConnection(socket, req);
+
+          for (let i = 0; i < PING_TICK_DIVISOR * 2; i++) {
+            heartbeat.dispatchEvent({ type: 'heartbeat' });
+          }
+          expect((socket as any).terminate).not.toHaveBeenCalled();
+
+          (socket as any)._handlers['pong']?.();
+
+          for (let i = 0; i < PING_TICK_DIVISOR; i++) {
+            heartbeat.dispatchEvent({ type: 'heartbeat' });
+          }
+          expect((socket as any).terminate).not.toHaveBeenCalled();
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+        }
+      }));
+
+    test('Drops Redis-forwarded message and warns when send buffer is full', () =>
+      withTestContext(async () => {
+        const cacheSpy = makeCacheSpy();
+
+        const redisHandlers: Record<string, (...args: any[]) => any> = {};
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: vi.fn().mockResolvedValue(undefined),
+          on: vi.fn((event: string, cb: (...args: any[]) => any) => {
+            redisHandlers[event] = cb;
+          }),
+          disconnect: vi.fn(),
+        } as any);
+
+        const socket = makeSocket({ bufferedAmount: 65 * 1024 }) as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+        const warnSpy = vi.spyOn(globalLogger, 'warn').mockImplementation(() => undefined);
+
+        try {
+          await handleFhircastConnection(socket, req);
+
+          (socket as any).send.mockClear();
+
+          redisHandlers['message']?.('project-id:my-topic', JSON.stringify({ event: 'test' }));
+
+          expect((socket as any).send).not.toHaveBeenCalled();
+          expect(warnSpy).toHaveBeenCalledWith(
+            '[FHIRcast]: Dropping message due to full send buffer',
+            expect.objectContaining({ bufferedAmount: expect.any(Number) })
+          );
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          warnSpy.mockRestore();
         }
       }));
   });
