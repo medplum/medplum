@@ -704,13 +704,16 @@ export class ByteStreamChannelConnection {
    * @param body - The message body, already stripped of whatever framing its mode uses.
    */
   private enqueueBody(body: Buffer): void {
+    const config = this.channel.getConfig();
     this.channel.app.addToWebSocketQueue({
       type: 'agent:transmit:request',
       accessToken: 'placeholder',
       channel: this.channel.getDefinition().name,
       remote: this.remote,
-      contentType: ContentType.OCTET_STREAM,
-      body: body.toString(this.channel.getConfig().bodyEncoding),
+      // Both modes carry bytes, but not interchangeably: a raw body is hex-encoded and still
+      // framed, an ASTM body is record text. A Bot serving both needs to tell them apart.
+      contentType: config.mode === ByteStreamMode.Astm ? ContentType.ASTM_E1394 : ContentType.OCTET_STREAM,
+      body: body.toString(config.bodyEncoding),
       callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
     });
   }

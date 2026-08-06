@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
+import { AstmMessage } from '@medplum/core';
 
 /**
  * ASTM E1381 link-level control bytes.
@@ -45,58 +46,6 @@ export function astmChecksum(payload: Buffer): string {
     sum = (sum + byte) & 0xff;
   }
   return sum.toString(16).toUpperCase().padStart(2, '0');
-}
-
-/** One E1394 record. `type` is its leading character: `H`, `P`, `O`, `R`, `C`, `Q`, `L`. */
-export type AstmRecord = {
-  readonly type: string;
-  readonly text: string;
-};
-
-/**
- * One ASTM E1394 transmission — everything a device sent between `ENQ` and `EOT`.
- *
- * Deliberately independent of how the bytes arrived, so a serial channel can produce the same
- * object as the TCP byte-stream channel does. Records are modelled; fields are not, because
- * E1394 declares its delimiters inside the `H` record the way HL7 does in `MSH-1`/`MSH-2`, and
- * nothing here needs them yet.
- */
-export class AstmMessage {
-  private readonly recordList: readonly AstmRecord[];
-
-  constructor(records: readonly AstmRecord[]) {
-    this.recordList = records;
-  }
-
-  /**
-   * Splits assembled record text into records.
-   *
-   * @param text - Record text, one record per line, as {@link AstmSession} accumulates it.
-   * @returns The parsed message. Blank lines are dropped, so a trailing separator is harmless.
-   */
-  static parse(text: string): AstmMessage {
-    const records: AstmRecord[] = [];
-    for (const line of text.split('\n')) {
-      if (line.length > 0) {
-        records.push({ type: line[0], text: line });
-      }
-    }
-    return new AstmMessage(records);
-  }
-
-  /** @returns The records, in the order the device sent them. */
-  get records(): readonly AstmRecord[] {
-    return this.recordList;
-  }
-
-  /** @returns The record text, one `\n`-terminated record per line. */
-  toString(): string {
-    let text = '';
-    for (const record of this.recordList) {
-      text += `${record.text}\n`;
-    }
-    return text;
-  }
 }
 
 /** Where an {@link AstmSession} sends its link-level replies and completed transmissions. */

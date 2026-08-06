@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { AstmMessage } from '@medplum/core';
 import type { Mock } from 'vitest';
 import { describe, expect, test } from 'vitest';
-import type { AstmMessage, AstmSessionOptions } from './astm';
-import { AstmByte, astmChecksum, AstmMessage as AstmMessageClass, AstmSession } from './astm';
+import type { AstmSessionOptions } from './astm';
+import { AstmByte, astmChecksum, AstmSession } from './astm';
 import { createMockLogger } from './test-utils';
 
 const { STX, ETX, EOT, ENQ, ACK, NAK, CR, LF, ETB } = AstmByte;
@@ -80,26 +81,6 @@ describe('astmChecksum', () => {
   test('renders as two upper-case digits', () => {
     expect(astmChecksum(Buffer.from([0x0a]))).toBe('0A');
     expect(astmChecksum(Buffer.from([]))).toBe('00');
-  });
-});
-
-describe('AstmMessage', () => {
-  test('splits record text into typed records', () => {
-    const message = AstmMessageClass.parse('H|\\^&|||BioRad\nP|1||PID123\nL|1|N\n');
-
-    expect(message.records.map((record) => record.type)).toEqual(['H', 'P', 'L']);
-    expect(message.records[1].text).toBe('P|1||PID123');
-  });
-
-  test('drops blank lines so a trailing separator is harmless', () => {
-    expect(AstmMessageClass.parse('H|1\n').records).toHaveLength(1);
-    expect(AstmMessageClass.parse('').records).toHaveLength(0);
-  });
-
-  test('toString round-trips the record text', () => {
-    const text = 'H|\\^&|||BioRad\nP|1||PID123\n';
-
-    expect(AstmMessageClass.parse(text).toString()).toBe(text);
   });
 });
 

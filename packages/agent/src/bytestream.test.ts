@@ -709,7 +709,8 @@ describe('Byte Stream', () => {
       // No startChar/endChar: the protocol supplies its own framing, and requiring them would
       // defeat the point of a preset.
       const bodies: string[] = [];
-      const mockServer = startMockAgentServer(bodies);
+      const contentTypes: string[] = [];
+      const mockServer = startMockAgentServer(bodies, contentTypes);
       const [agentId, agentPort] = await createAstmAgent();
 
       const app = new App(medplum, agentId, LogLevel.INFO);
@@ -735,6 +736,9 @@ describe('Byte Stream', () => {
 
       await waitFor(() => bodies.length > 0, 1000, 'transmit request');
       expect(bodies).toEqual(['H|\\^&|||BioRad^1.0|||||||P|1|20251217223735\nP|1||||Doe^John||19700101|M\n']);
+      // Not OCTET_STREAM: a raw byte-stream body is hex-encoded and still framed, so a Bot
+      // serving both kinds of channel needs the content type to tell them apart.
+      expect(contentTypes).toEqual([ContentType.ASTM_E1394]);
 
       client.destroy();
       await app.stop();
@@ -1218,9 +1222,10 @@ describe('filterMessageBytes', () => {
  * Boots the agent-facing mock WebSocket server.
  *
  * @param bodies - Collects the `body` of every `agent:transmit:request` the agent sends.
+ * @param contentTypes - Optionally collects each request's `contentType` alongside it.
  * @returns The running server, for the caller to stop.
  */
-function startMockAgentServer(bodies: string[]): Server {
+function startMockAgentServer(bodies: string[], contentTypes?: string[]): Server {
   const mockServer = new Server('wss://example.com/ws/agent');
 
   mockServer.on('connection', (socket) => {
@@ -1231,6 +1236,7 @@ function startMockAgentServer(bodies: string[]): Server {
       }
       if (command.type === 'agent:transmit:request') {
         bodies.push(command.body);
+        contentTypes?.push(command.contentType);
       }
     });
   });
