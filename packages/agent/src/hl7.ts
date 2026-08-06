@@ -1416,14 +1416,17 @@ export function resolveRetryPolicy(
 export const DEFAULT_MAX_WORKERS = 1;
 
 /**
- * Hard ceiling on a channel's worker-pool size. A physical channel is one MLLP
- * listener draining a single SQLite queue, so a handful of concurrent dispatches
- * already saturates it, and every worker is a live polling loop plus a heartbeat
- * listener. This cap keeps a typo (`maxWorkers=1000000`) or a bad agent setting
- * from synchronously instantiating a runaway number of workers and stalling the
- * event loop / exhausting memory.
+ * Hard ceiling on a channel's worker-pool size. Every worker is a live polling
+ * loop plus a heartbeat listener, so this exists to keep a typo
+ * (`maxWorkers=1000000`) or a bad agent setting from synchronously instantiating
+ * a runaway number of workers and stalling the event loop / exhausting memory.
+ *
+ * It is a backstop, not a recommendation. Useful concurrency is bounded by the
+ * downstream service time and by the single SQLite queue every worker claims
+ * from, both far below this number — a pool sized past the point where claims
+ * start contending costs throughput rather than adding it.
  */
-export const MAX_MAX_WORKERS = 64;
+export const MAX_MAX_WORKERS = 500;
 
 /**
  * Resolves the channel's worker-pool size: how many messages (across distinct
