@@ -5,12 +5,25 @@ sidebar_position: 21
 # ASTM Channels
 
 Clinical analyzers — Bio-Rad, Beckman, Roche, and many others — commonly speak **ASTM E1381** (the
-link layer) carrying **ASTM E1394** (the record format) over a TCP socket. The Agent handles these
-with a [byte stream channel](./features.md), configured entirely through query parameters on the
-channel's `Endpoint.address`.
+link layer) carrying **ASTM E1394** (the record format). The Agent handles these with a
+[byte stream channel](./features.md), configured entirely through query parameters on the channel's
+`Endpoint.address`.
 
 This page covers the configuration those analyzers need, and the behaviors that most often surprise
 people integrating one for the first time.
+
+:::info Transport: raw TCP only
+
+Everything here describes ASTM carried over a **raw TCP stream**. A byte stream channel listens on a
+TCP port, so an analyzer that presents a serial (RS-232) interface — still the majority — has to
+reach the Agent through a serial-to-TCP/IP adapter, sometimes sold as a serial device server or
+terminal server. The adapter passes bytes through untouched, so the ASTM framing and the
+configuration below are unaffected by it.
+
+Connecting to a serial port directly from the Agent is **not yet supported**, but is planned. Until
+then an adapter is required for serial-only analyzers.
+
+:::
 
 ## Recommended configuration
 
