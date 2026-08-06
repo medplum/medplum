@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
-import { normalizeErrorString } from '@medplum/core';
+import { normalizeErrorString, sleep } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
@@ -178,6 +178,13 @@ export class DurableQueue {
   // loop (startCheckpointLoop) polls this via checkpointWalIfDirty(). Starts true
   // because open() itself writes (pragmas, migrations, lease).
   private walDirty = true;
+
+  // Claim mutex, held per channel for the duration of a logicalChannelKey rewrite
+  // (recomputeLogicalChannelKeys). Held in memory rather than in the DB because it
+  // guards against this process's own workers, which are the only claimants — a
+  // peer that takes the lease mid-rewrite is stopped by assertNotDemoted instead.
+  // See isClaimPaused.
+  private readonly repartitioning = new Set<string>();
 
   // WAL-checkpoint loop. Runs while the queue is open, INDEPENDENT of the
   // dispatch lease: a follower still accepts intake writes (enqueue runs on any
@@ -1292,6 +1299,23 @@ export class DurableQueue {
   }
 
   /**
+   * Whether a worker must hold off claiming from `channelName` because its stored
+   * partition keys are mid-rewrite ({@link recomputeLogicalChannelKeys}).
+   *
+   * Claim-time keying compares a row's freshly-computed key against the keys STORED
+   * on earlier rows, so it is only correct while those stored keys all reflect one
+   * spec. Rather than make the rewrite uninterruptible — it has to parse every
+   * queued/delayed message, far too much for one macrotask — it pauses claims for
+   * its duration. Rows simply stay `queued`; the rewrite wakes the pool when it
+   * finishes.
+   * @param channelName - The channel a worker is about to claim from.
+   * @returns True while that channel's partition keys are being rewritten.
+   */
+  isClaimPaused(channelName: string): boolean {
+    return this.repartitioning.has(channelName);
+  }
+
+  /**
    * Whether the logical channel `key` is occupied by a message EARLIER than `id` —
    * a lower-id row of the same partition still `queued` (backing off), `delayed`,
    * `claimed`, or `inflight`. The worker calls this right after claiming a row to
@@ -1383,38 +1407,64 @@ export class DurableQueue {
    * batch's read and write are skipped by the `state IN ('queued','delayed')`
    * guard on the update.
    *
-   * Deliberately synchronous despite the unbounded row count: awaiting between
-   * batches would let a claim run against a half-rewritten key set, which is the
-   * skip-ahead this exists to prevent. Bounding its event-loop cost the way the
-   * worker's park burst is bounded would require pausing the pool for the duration;
-   * being rare, operator-initiated, and leader-only, it isn't worth that.
+   * Yields the event loop between batches — parsing a whole backlog is far too much
+   * to do in one macrotask — and holds the channel's claim mutex ({@link isClaimPaused})
+   * across those yields. The mutex is what a claim would otherwise violate: a worker
+   * that keyed a row under the new spec and compared it against a half-rewritten set
+   * of stored keys could miss an older same-partition row and dispatch ahead of it.
+   * It is raised before the first `await`, so a caller that fires this off without
+   * awaiting still pauses claims from the moment it calls.
+   *
+   * New intake during the rewrite is safe without any gating: ids are monotonic, so a
+   * row inserted now always lands ahead of the pagination cursor and is keyed under
+   * the new spec when its batch is reached.
    * @param channelName - The channel whose queued/delayed rows to repartition.
    * @param compute - Maps a row's original message bytes to its key under the current spec.
    * @returns The number of rows whose partition was rewritten.
    */
-  recomputeLogicalChannelKeys(channelName: string, compute: (originalMessage: Buffer) => string): number {
+  async recomputeLogicalChannelKeys(
+    channelName: string,
+    compute: (originalMessage: Buffer) => string
+  ): Promise<number> {
     this.assertNotDemoted();
     const BATCH = 500;
     let lastId = 0;
     let changed = 0;
-    for (;;) {
-      const rows = this.selectQueuedOrDelayedForRecomputeStmt.all(channelName, lastId, BATCH) as {
-        id: number;
-        original_message: SQLInputValue;
-      }[];
-      if (rows.length === 0) {
-        break;
-      }
-      this.runInTransaction(() => {
-        for (const row of rows) {
-          lastId = row.id;
-          const newKey = compute(toBuffer(row.original_message));
-          changed += Number(this.recomputeSetKeyStmt.run(newKey, row.id).changes);
+    this.repartitioning.add(channelName);
+    try {
+      for (;;) {
+        // Re-checked every batch, not just at entry: the yield below is a window for
+        // a peer to take the lease or for the queue to close under us, and a demoted
+        // process must stop rewriting dispatch state it no longer owns. Whatever is
+        // left keeps its old key and is re-derived at claim time by the new leader.
+        this.assertNotDemoted();
+        if (this.closed) {
+          break;
         }
-      });
-      if (rows.length < BATCH) {
-        break;
+        const rows = this.selectQueuedOrDelayedForRecomputeStmt.all(channelName, lastId, BATCH) as {
+          id: number;
+          original_message: SQLInputValue;
+        }[];
+        if (rows.length === 0) {
+          break;
+        }
+        this.runInTransaction(() => {
+          for (const row of rows) {
+            lastId = row.id;
+            const newKey = compute(toBuffer(row.original_message));
+            changed += Number(this.recomputeSetKeyStmt.run(newKey, row.id).changes);
+          }
+        });
+        if (rows.length < BATCH) {
+          break;
+        }
+        // A whole batch came back, so there is more to do — yield before the next
+        // one. `sleep(0)` rather than the worker's `setImmediate`: this runs once per
+        // 500 rows on a rare path, where a clamped timer's ~1ms is irrelevant.
+        await sleep(0);
       }
+    } finally {
+      this.repartitioning.delete(channelName);
     }
     if (changed > 0) {
       this.walDirty = true;

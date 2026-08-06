@@ -341,33 +341,40 @@ export class AgentHl7Channel extends BaseChannel {
     if (!queue.isLeader()) {
       return;
     }
-    try {
-      const changed = queue.recomputeLogicalChannelKeys(this.getDefinition().name, (originalMessage) =>
+    // Deliberately not awaited, so config reload (and the constructor, which reaches
+    // here synchronously) doesn't block on a backlog-sized rewrite. Safe because the
+    // recompute raises the channel's claim mutex before its first `await`: claims are
+    // paused from this call, not from whenever the promise first runs.
+    queue
+      .recomputeLogicalChannelKeys(this.getDefinition().name, (originalMessage) =>
         this.computeLogicalChannelKeyForStoredMessage(originalMessage)
-      );
-      if (changed > 0) {
+      )
+      .then((changed) => {
+        // Always wake the pool, even at 0 changes — workers parked on the claim
+        // mutex would otherwise wait out their idle poll.
         this.notifyWorkers();
-        this.log.info(
-          `logicalChannelKey changed to '${raw || '(none)'}'; recomputed the partition of ${changed} queued/delayed message(s)`
-        );
-      }
-    } catch (err) {
-      // Recompute is best-effort: claim-time keying re-derives each row's partition
-      // when it is next claimed, so a transient failure here can't corrupt state.
-      // Still un-park any `delayed` rows so none is stranded waiting on a wake that
-      // now targets a re-keyed partition (they re-evaluate at their next claim).
-      this.log.warn(
-        `logicalChannelKey changed to '${raw || '(none)'}', but recomputing queued/delayed partitions failed ` +
-          `(will self-heal at claim time): ${normalizeErrorString(err)}`
-      );
-      try {
-        if (queue.flipDelayedToQueued(this.getDefinition().name) > 0) {
-          this.notifyWorkers();
+        if (changed > 0) {
+          this.log.info(
+            `logicalChannelKey changed to '${raw || '(none)'}'; recomputed the partition of ${changed} queued/delayed message(s)`
+          );
         }
-      } catch {
-        // Best-effort only — recoverOnStartup re-queues any lingering delayed rows on restart.
-      }
-    }
+      })
+      .catch((err) => {
+        // Recompute is best-effort: claim-time keying re-derives each row's partition
+        // when it is next claimed, so a transient failure here can't corrupt state.
+        // Still un-park any `delayed` rows so none is stranded waiting on a wake that
+        // now targets a re-keyed partition (they re-evaluate at their next claim).
+        this.log.warn(
+          `logicalChannelKey changed to '${raw || '(none)'}', but recomputing queued/delayed partitions failed ` +
+            `(will self-heal at claim time): ${normalizeErrorString(err)}`
+        );
+        try {
+          queue.flipDelayedToQueued(this.getDefinition().name);
+        } catch {
+          // Best-effort only — recoverOnStartup re-queues any lingering delayed rows on restart.
+        }
+        this.notifyWorkers();
+      });
   }
 
   /**

@@ -655,7 +655,10 @@ export class ChannelQueueWorker {
         // now would only sit in the in-memory WS queue until the response timer
         // errored it. Rows stay durably `queued` and drain on reconnect (§9);
         // app.ts notifies us when the connection comes back.
-        if (!this.app.isLive()) {
+        // Also hold off while a logicalChannelKey rewrite is in progress: claiming
+        // against a half-rewritten set of stored keys is the skip-ahead that rewrite
+        // exists to close (see DurableQueue.isClaimPaused). It notifies us when done.
+        if (!this.app.isLive() || this.queue.isClaimPaused(this.channelName)) {
           parkBurstStartedAt = undefined;
           await this.waitForWork();
           continue;

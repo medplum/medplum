@@ -1371,6 +1371,35 @@ describe('ChannelQueueWorker', () => {
       await waitFor(() => queue.getChannelDepth('ch1').delayed === followers.length, 3000, 'backlog fully parked');
       await worker.stop();
     });
+
+    test('holds off claiming while the channel claim mutex is up', async () => {
+      // The worker's half of the logicalChannelKey-rewrite contract: claiming mid
+      // rewrite would compare a new-spec key against half-rewritten stored keys.
+      // Driven through the mutex directly rather than a real rewrite — that a
+      // rewrite raises and releases it is durable-queue's own test, and a real one
+      // finishes far too fast to observe from here.
+      const r = enqueueOne(queue, 'MX1');
+      const paused = vi.spyOn(queue, 'isClaimPaused').mockReturnValue(true);
+      const { app } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+      });
+      worker.start();
+
+      await sleep(50);
+      expect(paused).toHaveBeenCalledWith('ch1');
+      expect(queue.getById(r.id)?.state).toBe(MessageState.QUEUED);
+
+      paused.mockReturnValue(false);
+      await waitFor(() => queue.getById(r.id)?.state !== MessageState.QUEUED, 3000, 'claiming resumed');
+      await worker.stop();
+      paused.mockRestore();
+    });
   });
 });
 

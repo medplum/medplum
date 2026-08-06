@@ -511,7 +511,7 @@ describe('DurableQueue', () => {
       expect(queue.getById(d.id)?.state).toBe(MessageState.QUEUED);
     });
 
-    test('recomputeLogicalChannelKeys re-keys queued/delayed rows and un-parks delayed, leaving claimed rows alone', () => {
+    test('recomputeLogicalChannelKeys re-keys queued/delayed rows and un-parks delayed, leaving claimed rows alone', async () => {
       // Spec-change path: refresh the stored partition of rows not actively being
       // claimed (backing-off `queued`, parked `delayed`), which claim-time keying
       // can't reach on its own; `claimed` rows finish under their current partition.
@@ -543,7 +543,7 @@ describe('DurableQueue', () => {
       assertRowState(c, MessageState.CLAIMED);
       queue.setLogicalChannelKey(cId, 'old');
 
-      const changed = queue.recomputeLogicalChannelKeys('RK', () => 'new');
+      const changed = await queue.recomputeLogicalChannelKeys('RK', () => 'new');
       expect(changed).toBe(2); // a (queued) + b (delayed); c (claimed) left alone
 
       expect(queue.getById(aId)?.logicalChannelKey).toBe('new');
@@ -552,6 +552,39 @@ describe('DurableQueue', () => {
       expect(queue.getById(bId)?.state).toBe(MessageState.QUEUED); // un-parked
       expect(queue.getById(cId)?.logicalChannelKey).toBe('old'); // claimed → untouched
       expect(queue.getById(cId)?.state).toBe(MessageState.CLAIMED);
+    });
+
+    test('recomputeLogicalChannelKeys pauses claims on its channel until it finishes', async () => {
+      // The rewrite yields between batches, so it needs the claim mutex: a worker
+      // claiming mid-rewrite would compare a new-spec key against stored keys that
+      // are still half old-spec, and could dispatch ahead of an older same-partition
+      // row. Enough rows to force more than one batch, hence at least one yield.
+      const BATCH = 500;
+      for (let i = 0; i < BATCH + 1; i++) {
+        queue.enqueue(makeEnqueueInput({ channelName: 'PAUSE', msgControlId: `PZ${i}` }));
+      }
+      expect(queue.isClaimPaused('PAUSE')).toBe(false);
+
+      // Not awaited: the mutex must be up from the call itself, before the first
+      // yield — that is what lets applyLogicalChannelKeySpec fire this off.
+      const running = queue.recomputeLogicalChannelKeys('PAUSE', () => 'k');
+      expect(queue.isClaimPaused('PAUSE')).toBe(true);
+      // Scoped to the one channel being rewritten; others keep dispatching.
+      expect(queue.isClaimPaused('OTHER')).toBe(false);
+
+      expect(await running).toBe(BATCH + 1);
+      expect(queue.isClaimPaused('PAUSE')).toBe(false);
+    });
+
+    test('a failed recomputeLogicalChannelKeys still releases the claim mutex', async () => {
+      queue.enqueue(makeEnqueueInput({ channelName: 'THROW', msgControlId: 'TZ1' }));
+      await expect(
+        queue.recomputeLogicalChannelKeys('THROW', () => {
+          throw new Error('bad spec');
+        })
+      ).rejects.toThrow('bad spec');
+      // A stuck mutex would silently stop the channel dispatching forever.
+      expect(queue.isClaimPaused('THROW')).toBe(false);
     });
   });
 

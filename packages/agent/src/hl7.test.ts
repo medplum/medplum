@@ -3393,7 +3393,9 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     appLog: ReturnType<typeof createMockLogger>;
   } {
     const appLog = createMockLogger();
-    const recompute = vi.fn().mockReturnValue(0);
+    // Resolves, not returns: applyLogicalChannelKeySpec fires the rewrite off and
+    // chains its logging / delayed-row fallback onto the promise.
+    const recompute = vi.fn().mockResolvedValue(0);
     const mockApp = {
       log: appLog,
       channelLog: createMockLogger(),
@@ -3457,7 +3459,7 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
   });
 
   test('a non-leader skips the recompute (re-keys at claim time if it later takes the lease)', () => {
-    const recompute = vi.fn().mockReturnValue(0);
+    const recompute = vi.fn().mockResolvedValue(0);
     const appLog = createMockLogger();
     const mockApp = {
       log: appLog,

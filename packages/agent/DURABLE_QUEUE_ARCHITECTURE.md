@@ -444,13 +444,25 @@ self-heals the rest. `claimed`/`inflight` rows are left alone — they finish un
 current partition, a bounded transitional window during the reconfigure (the one
 accepted limitation).
 
-Unlike the park burst above, the recompute deliberately stays **synchronous** rather than
-yielding between batches: it rewrites stored keys while `isPartitionBlocked` is trusting
-them, so a claim interleaving mid-recompute could read a mix of old and new keys and let a
-message skip ahead of an older one — the exact hazard the recompute exists to close.
-Bounding its blocking would mean pausing the pool for its duration. It blocks the loop for
-as long as parsing the channel's `queued`/`delayed` backlog takes, accepted because it is
-rare, operator-initiated, and leader-only.
+Parsing a whole backlog is far too much for one macrotask, so the recompute **yields
+between batches and pauses claims** for its duration, via a per-channel claim mutex the
+workers check before `claimNext` (`isClaimPaused`). The mutex is what a claim would
+otherwise violate: a worker that keyed a row under the new spec and compared it against a
+half-rewritten set of stored keys could miss an older same-partition row and dispatch
+ahead of it. It is raised before the recompute's first `await`, which is why
+`applyLogicalChannelKeySpec` can fire the rewrite off without awaiting it (config reload
+and the channel constructor both reach it synchronously) and still have claims pause
+immediately. Intake needs no gate: ids are monotonic, so a row inserted mid-rewrite lands
+ahead of the pagination cursor and is keyed under the new spec when its batch arrives.
+
+Dispatch therefore stalls for the length of the rewrite — but it did before too, and the
+event loop stalled with it. What the mutex does not give back is durable atomicity: the
+rewrite commits per batch, so a crash or a mid-rewrite demotion (`assertNotDemoted` is
+re-checked each batch) can leave a mix of old and new keys behind, and neither
+`recoverOnStartup` nor claim-time keying re-keys the *older* rows a claim compares
+against. That window is pre-existing — per-batch commits always had it on crash — and
+closing it properly wants a persisted "repartition in progress" marker that a restart or
+a new leader resumes from.
 
 **Worker pool lifecycle.** `AgentHl7Channel` owns `workers` (the active pool) and sizes
 it to `maxWorkers` via `resizeWorkerPool` on config reload; `refreshLogicalChannelConfig`
