@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentTransmitResponse, ILogger } from '@medplum/core';
-import { ContentType, normalizeErrorString, sleep } from '@medplum/core';
-import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import type { AgentTransmitResponse, ILogger, MedplumClient } from '@medplum/core';
+import { ContentType, createReference, normalizeErrorString, sleep } from '@medplum/core';
+import type { AgentChannel, Binary, Endpoint } from '@medplum/fhirtypes';
 import * as dcmjs from 'dcmjs';
 import * as dimse from 'dcmjs-dimse';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync, unlinkSync } from 'node:fs';
 import type net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +21,24 @@ const { DicomMetaDictionary, DicomDict } = data;
 const { constants, Dataset, Implementation } = dimse;
 const { StorageClass } = constants;
 
+/**
+ * Where a DICOM channel puts the instances it receives via C-STORE.
+ *
+ * - `binary` uploads each instance as a FHIR `Binary` and includes a reference to it in the
+ *   `Bot` payload. Works against every Medplum server version.
+ * - `dicomweb` sends each instance to the server's DICOMweb STOW-RS endpoint, which files it into
+ *   `DicomStudy`/`DicomSeries`/`DicomInstance` resources; the agent creates no `Binary` of its own,
+ *   so the `Bot` payload has no `binary` field. Requires a server with DICOMweb support (Medplum
+ *   server 5.1.28 or later).
+ */
+export const DicomStorageMode = {
+  BINARY: 'binary',
+  DICOMWEB: 'dicomweb',
+} as const;
+export type DicomStorageMode = (typeof DicomStorageMode)[keyof typeof DicomStorageMode];
+
+const DICOM_STORAGE_MODES = Object.values(DicomStorageMode) as string[];
+
 export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
@@ -28,6 +46,7 @@ export class AgentDicomChannel extends BaseChannel {
   readonly log: ILogger;
   readonly channelLog: ILogger;
   private prefix: string;
+  private storageMode: DicomStorageMode;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -92,21 +111,42 @@ export class AgentDicomChannel extends BaseChannel {
       private async cStoreImpl(request: dimse.requests.CStoreRequest): Promise<dimse.responses.CStoreResponse> {
         const response = dimse.responses.CStoreResponse.fromRequest(request);
         try {
+          const channel = DcmjsDimseScp.channel;
           const dataset = request.getDataset();
+          let binary: Binary | undefined = undefined;
           let dicomJson: Record<string, unknown> | undefined = undefined;
           if (dataset) {
-            const buffer = datasetToBuffer(dataset);
             const medplum = App.instance.medplum;
-            const boundary = `medplum-${Date.now()}`;
-            const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
-            const stream = new PassThrough();
-            const writePromise = writeMultipartRelatedBody(stream, [buffer], boundary);
-            const requestPromise = medplum.post('/dicomweb/studies', stream, contentType);
-            await writePromise;
-            const text = await requestPromise;
-            DcmjsDimseScp.channel.log.info(`DICOM instance stored successfully via DICOMweb STOW-RS: ${text}`);
+            let buffer: Buffer;
+
+            if (channel.storageMode === DicomStorageMode.DICOMWEB) {
+              buffer = datasetToBuffer(dataset);
+              const text = await storeViaDicomWeb(medplum, buffer);
+              channel.log.info(`DICOM instance stored successfully via DICOMweb STOW-RS: ${text}`);
+            } else {
+              // Save the DICOM file to a temp file
+              const tempFileName = join(channel.tempDir, randomUUID() + '.dcm');
+              dataset.toFile(tempFileName);
+
+              // Read the temp file into a buffer
+              buffer = readFileSync(tempFileName);
+
+              // Upload to Medplum as a FHIR Binary
+              binary = await medplum.createBinary({
+                data: buffer,
+                filename: 'dicom.dcm',
+                contentType: 'application/dicom',
+              });
+
+              // Delete the temp file
+              unlinkSync(tempFileName);
+            }
+
+            // Parse the DICOM file into DICOM JSON
+            const dicomDict = dcmjs.data.DicomMessage.readFile(new Uint8Array(buffer));
             dicomJson = {
-              ...dataset.getElements(),
+              ...dicomDict.meta,
+              ...dicomDict.dict,
               '7FE00010': undefined, // Remove PixelData
             };
           }
@@ -117,6 +157,7 @@ export class AgentDicomChannel extends BaseChannel {
               calledAeTitle: this.association?.getCalledAeTitle(),
             },
             dataset: dicomJson,
+            binary: binary ? createReference(binary) : undefined,
           };
 
           App.instance.addToWebSocketQueue({
@@ -148,6 +189,7 @@ export class AgentDicomChannel extends BaseChannel {
     this.prefix = `[DICOM:${definition.name}] `;
     this.log = app.log.clone({ options: { prefix: this.prefix } });
     this.channelLog = app.channelLog.clone({ options: { prefix: this.prefix } });
+    this.storageMode = this.readStorageMode();
   }
 
   async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
@@ -155,6 +197,9 @@ export class AgentDicomChannel extends BaseChannel {
     this.definition = definition;
     this.endpoint = endpoint;
     this.prefix = `[DICOM:${definition.name}] `;
+    // Re-read unconditionally: the storage mode can change with no port change, and the
+    // rebind below only happens when the port itself moves.
+    this.storageMode = this.readStorageMode();
 
     this.log.info('Reloading config... Evaluating if channel needs to change address...');
 
@@ -165,6 +210,16 @@ export class AgentDicomChannel extends BaseChannel {
     } else {
       this.log.info(`No address change needed. Listening at ${endpoint.address}`);
     }
+  }
+
+  private readStorageMode(): DicomStorageMode {
+    const address = new URL(this.getEndpoint().address);
+    return parseDicomStorageMode(address.searchParams.get('storage') ?? undefined, this.log);
+  }
+
+  /** @returns The channel's storage mode, as parsed from the endpoint URL. */
+  getStorageMode(): DicomStorageMode {
+    return this.storageMode;
   }
 
   private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
@@ -183,7 +238,7 @@ export class AgentDicomChannel extends BaseChannel {
     }
     this.started = true;
     const address = new URL(this.getEndpoint().address);
-    this.log.info(`Channel starting on ${address}`);
+    this.log.info(`Channel starting on ${address} with ${this.storageMode} storage`);
     const port = Number.parseInt(address.port, 10);
 
     await new Promise((resolve) => {
@@ -227,6 +282,51 @@ export class AgentDicomChannel extends BaseChannel {
   sendToRemote(msg: AgentTransmitResponse): boolean {
     throw new Error(`sendToRemote not implemented (${JSON.stringify(msg)})`);
   }
+}
+
+/**
+ * Parses the `storage` query param from a DICOM channel endpoint URL.
+ *
+ * Defaults to `binary` so that a channel configured before DICOMweb existed keeps uploading
+ * `Binary` resources. An unrecognized value warns and falls back to that default too, rather
+ * than failing the channel, matching how the HL7 channel params behave.
+ *
+ * @param rawValue - The raw `storage` query param value, if any.
+ * @param logger - The logger to warn on for an unrecognized value.
+ * @returns The storage mode to use.
+ */
+export function parseDicomStorageMode(rawValue: string | undefined, logger: ILogger): DicomStorageMode {
+  if (!rawValue) {
+    return DicomStorageMode.BINARY;
+  }
+  const normalized = rawValue.toLowerCase();
+  if (DICOM_STORAGE_MODES.includes(normalized)) {
+    return normalized as DicomStorageMode;
+  }
+  logger.warn(
+    `Invalid storage value '${rawValue}'; expected one of ${DICOM_STORAGE_MODES.join(', ')}. Using ${DicomStorageMode.BINARY}.`
+  );
+  return DicomStorageMode.BINARY;
+}
+
+/**
+ * Sends a DICOM P10 buffer to the Medplum server's DICOMweb STOW-RS endpoint.
+ *
+ * The multipart body is streamed rather than assembled in memory, so the write and the request
+ * have to be in flight at the same time: the request consumes the stream as the writer fills it.
+ *
+ * @param medplum - The Medplum client to send the instance with.
+ * @param buffer - The DICOM P10 file data to store.
+ * @returns The STOW-RS response body.
+ */
+async function storeViaDicomWeb(medplum: MedplumClient, buffer: Buffer): Promise<string> {
+  const boundary = `medplum-${Date.now()}`;
+  const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+  const stream = new PassThrough();
+  const writePromise = writeMultipartRelatedBody(stream, [buffer], boundary);
+  const requestPromise = medplum.post<string>('/dicomweb/studies', stream, contentType);
+  await writePromise;
+  return requestPromise;
 }
 
 /**
