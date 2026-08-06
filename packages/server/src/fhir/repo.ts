@@ -1546,7 +1546,7 @@ export class Repository extends FhirRepository implements Disposable {
 
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
 
-        if (collectStorageKeys) {
+        if (collectStorageKeys && historyResult.length > 0) {
           // Deliberately after the transaction commits: deleting stored objects is irreversible, and
           // this transaction is serializable and may be retried or rolled back.
           const storageKeys = historyResult.map((row) => getBinaryStorageKey(row.id, row.versionId));
@@ -2680,7 +2680,7 @@ async function deleteBinaryStorageObjects(storageKeys: string[]): Promise<void> 
   for (const key of storageKeys) {
     try {
       await storage.deleteFile(key);
-    } catch (err: any) {
+    } catch (err) {
       getLogger().warn('Failed to delete binary storage object during expunge', {
         key,
         error: normalizeErrorString(err),
