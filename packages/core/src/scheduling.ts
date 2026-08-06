@@ -148,8 +148,8 @@ function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTi
 }
 
 // The hours a Schedule sets for a service, ignoring the service default, or undefined when it sets
-// none. Kept internal: `resolveAvailability` answers what is in effect and `hasScheduleAvailability`
-// answers whether the calendar has hours of its own, which covers both questions a caller has.
+// none. Kept internal: `getEffectiveAvailability` answers what is in effect, and a caller asking the
+// narrower question of whether the calendar has hours of its own reads `getScheduleParameters`.
 function getScheduleAvailability(
   schedule: Schedule,
   service: WithId<HealthcareService>
@@ -181,7 +181,7 @@ function getScheduleAvailability(
  * @param schedule - Schedule that may set hours of its own for the service
  * @returns The availability in effect, or undefined when none is configured
  */
-export function resolveAvailability(
+export function getEffectiveAvailability(
   service: WithId<HealthcareService> | undefined,
   schedule?: Schedule
 ): HealthcareServiceAvailableTime[] | undefined {
@@ -190,17 +190,6 @@ export function resolveAvailability(
   }
 
   return (schedule && getScheduleAvailability(schedule, service)) ?? service.availableTime;
-}
-
-/**
- * Returns whether a Schedule sets availability of its own for a HealthcareService, in place of the
- * service default. Distinguishes the two cases `resolveAvailability` folds together.
- * @param schedule - Schedule to inspect
- * @param service - HealthcareService referenced by the desired parameters
- * @returns True if the Schedule sets availability for the service
- */
-export function hasScheduleAvailability(schedule: Schedule, service: WithId<HealthcareService>): boolean {
-  return getScheduleParameters(schedule, service, 'availability').length > 0;
 }
 
 // One `availability.availableTime` sub-sub-extension. `HealthcareServiceAvailableTime` allows an entry
@@ -240,7 +229,7 @@ function buildAvailableTimeExtension(entry: HealthcareServiceAvailableTime): Ext
 function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTime[]): Extension {
   // No entries would serialize to `{ url: 'availability', extension: [] }`, an extension with neither a
   // value nor sub-extensions, which fails ext-1. Refused rather than treated as no override, because
-  // "explicitly no hours" and "follow the service default" are the two states `resolveAvailability`
+  // "explicitly no hours" and "follow the service default" are the two states `getEffectiveAvailability`
   // exists to tell apart, and storing one as the other means the opposite of what the caller asked for.
   if (!availableTime.length) {
     throw new OperationOutcomeError(
@@ -317,8 +306,13 @@ export function clearScheduleParameter(schedule: Schedule, service: WithId<Healt
 
 /**
  * Immutably gives a Schedule its own hours for a HealthcareService, in place of the service default.
- * Pairs with `clearScheduleAvailability`, which drops back to the default, and `hasScheduleAvailability`,
- * which reports whether the calendar has hours of its own.
+ * Reads back through `getEffectiveAvailability`; to drop the calendar back to the default, clear the
+ * parameter with `clearScheduleParameter(schedule, service, 'availability')`.
+ *
+ * The one parameter with a typed wrapper, because it is the only one that is not a single `value[x]`:
+ * `bufferBefore` and the rest go through `setScheduleParameter` directly, already legible as
+ * `{ url: 'bufferBefore', valueDuration: { value: 10, unit: 'min' } }`. Availability is a repeating
+ * nested structure, so hand-building it at every call site would mean re-deriving the encoding.
  *
  * Schedule level by necessity: a HealthcareService holds its hours in the native `availableTime` field
  * rather than in a scheduling parameter, so there is no service-level counterpart to this. Editing a
@@ -329,7 +323,7 @@ export function clearScheduleParameter(schedule: Schedule, service: WithId<Healt
  * setting either `allDay` or both times, since anything else has no valid extension form.
  * @returns A cloned Schedule holding those hours for the service
  * @throws {@link OperationOutcomeError} If `availableTime` is empty, or an entry sets neither `allDay` nor both
- * times. To have the calendar follow the service default, call `clearScheduleAvailability` instead.
+ * times. To have the calendar follow the service default, clear the parameter instead.
  */
 export function setScheduleAvailability(
   schedule: Schedule,
@@ -337,17 +331,6 @@ export function setScheduleAvailability(
   availableTime: HealthcareServiceAvailableTime[]
 ): Schedule {
   return setScheduleParameter(schedule, service, buildAvailabilityExtension(availableTime));
-}
-
-/**
- * Immutably drops the hours a Schedule sets for a HealthcareService, so the calendar follows the
- * service default again.
- * @param schedule - Schedule to update
- * @param service - HealthcareService referenced by the parameters
- * @returns A cloned Schedule without availability for the service
- */
-export function clearScheduleAvailability(schedule: Schedule, service: WithId<HealthcareService>): Schedule {
-  return clearScheduleParameter(schedule, service, 'availability');
 }
 
 /**

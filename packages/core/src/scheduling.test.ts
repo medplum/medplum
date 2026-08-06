@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
 import {
-  clearScheduleAvailability,
   clearScheduleParameter,
   extractServiceTypeReferences,
+  getEffectiveAvailability,
   getScheduleParameters,
   getSchedulingTimezone,
-  hasScheduleAvailability,
-  resolveAvailability,
   SchedulingParametersURI,
   serviceTypeIncludesService,
   setScheduleAvailability,
@@ -85,9 +83,18 @@ function durationOf(schedule: Schedule): unknown {
   return schedulingParameters(schedule)[0]?.extension?.find((extension) => extension.url === 'duration')?.valueDuration;
 }
 
-describe('resolveAvailability', () => {
+// Whether a Schedule sets availability of its own, read off the resource for the same reason as
+// `schedulingParameters` above. The module has no wrapper for this: the question is one line through
+// `getScheduleParameters`, which is how callers ask it.
+function hasAvailability(schedule: Schedule, serviceId = 'service-1'): boolean {
+  return schedulingParameters(schedule, serviceId).some((parameters) =>
+    parameters.extension?.some((subextension) => subextension.url === 'availability')
+  );
+}
+
+describe('getEffectiveAvailability', () => {
   test('resolves ranges and all-day entries from the hours the Schedule sets', () => {
-    const availability = resolveAvailability(
+    const availability = getEffectiveAvailability(
       service,
       scheduleWith(
         availableTime('mon', '09:00:00', '12:00:00'),
@@ -113,7 +120,7 @@ describe('resolveAvailability', () => {
       ],
     });
 
-    expect(resolveAvailability(service, schedule)).toEqual([
+    expect(getEffectiveAvailability(service, schedule)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
       { daysOfWeek: ['sun'], allDay: true },
     ]);
@@ -125,14 +132,14 @@ describe('resolveAvailability', () => {
       availableTime: [{ daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '16:00:00' }],
     };
 
-    expect(resolveAvailability(serviceWithDefaults, clearScheduleAvailability(scheduleWith(), service))).toEqual(
-      serviceWithDefaults.availableTime
-    );
-    expect(resolveAvailability(serviceWithDefaults)).toEqual(serviceWithDefaults.availableTime);
+    expect(
+      getEffectiveAvailability(serviceWithDefaults, clearScheduleParameter(scheduleWith(), service, 'availability'))
+    ).toEqual(serviceWithDefaults.availableTime);
+    expect(getEffectiveAvailability(serviceWithDefaults)).toEqual(serviceWithDefaults.availableTime);
   });
 
   test('returns undefined without a service', () => {
-    expect(resolveAvailability(undefined, scheduleWith())).toBeUndefined();
+    expect(getEffectiveAvailability(undefined, scheduleWith())).toBeUndefined();
   });
 
   test('ignores hours belonging to another service', () => {
@@ -143,7 +150,7 @@ describe('resolveAvailability', () => {
       availableTime: [{ daysOfWeek: ['fri'], availableStartTime: '08:00:00', availableEndTime: '16:00:00' }],
     };
 
-    expect(resolveAvailability(otherService, scheduleWith(availableTime('mon', '09:00:00', '12:00:00')))).toEqual(
+    expect(getEffectiveAvailability(otherService, scheduleWith(availableTime('mon', '09:00:00', '12:00:00')))).toEqual(
       otherService.availableTime
     );
   });
@@ -157,7 +164,7 @@ describe('schedule availability', () => {
     ];
 
     const updated = setScheduleAvailability(scheduleWith(), service, availability);
-    expect(resolveAvailability(service, updated)).toEqual(availability);
+    expect(getEffectiveAvailability(service, updated)).toEqual(availability);
 
     // The wire shape is the part callers never have to assemble: daysOfWeek repeats as its own
     // sub-extension rather than holding an array, and allDay replaces the start/end pair.
@@ -186,7 +193,7 @@ describe('schedule availability', () => {
 
     const updated = setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'], allDay: true }]);
 
-    expect(resolveAvailability(service, updated)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
+    expect(getEffectiveAvailability(service, updated)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
     expect(schedulingParameters(updated)[0]?.extension?.filter((e) => e.url === 'availability')).toHaveLength(1);
   });
 
@@ -198,14 +205,14 @@ describe('schedule availability', () => {
       { daysOfWeek: ['tue'], availableStartTime: '10:00:00', availableEndTime: '14:00:00' },
     ]);
     expect(schedule).toEqual(before);
-    expect(hasScheduleAvailability(updated, service)).toBe(true);
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(hasAvailability(updated)).toBe(true);
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['tue'], availableStartTime: '10:00:00', availableEndTime: '14:00:00' },
     ]);
     expect(durationOf(updated)).toEqual({ value: 30, unit: 'min' });
 
-    const cleared = clearScheduleAvailability(updated, service);
-    expect(hasScheduleAvailability(cleared, service)).toBe(false);
+    const cleared = clearScheduleParameter(updated, service, 'availability');
+    expect(hasAvailability(cleared)).toBe(false);
     expect(durationOf(cleared)).toEqual({ value: 30, unit: 'min' });
   });
 
@@ -220,7 +227,7 @@ describe('schedule availability', () => {
     });
 
     const updated = setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'], allDay: true }]);
-    expect(resolveAvailability(service, updated)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
+    expect(getEffectiveAvailability(service, updated)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
   });
 
   test('matches a service reference that carries a version suffix', () => {
@@ -234,13 +241,14 @@ describe('schedule availability', () => {
         : subextension
     );
 
-    expect(hasScheduleAvailability(schedule, service)).toBe(true);
+    // Asked through the module rather than the local reader, since tolerating the suffix is the point.
+    expect(getScheduleParameters(schedule, service, 'availability')).toHaveLength(1);
 
     const updated = setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'], allDay: true }]);
     expect(schedulingParameters(updated, 'service-1/_history/2')).toHaveLength(1);
     expect(schedule.extension).toHaveLength(1);
     expect(updated.extension).toHaveLength(1);
-    expect(resolveAvailability(service, updated)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
+    expect(getEffectiveAvailability(service, updated)).toEqual([{ daysOfWeek: ['tue'], allDay: true }]);
   });
 
   test('creates service-specific SchedulingParameters when missing', () => {
@@ -253,7 +261,7 @@ describe('schedule availability', () => {
       { daysOfWeek: ['wed'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
     expect(schedulingParameters(updated)).toHaveLength(1);
-    expect(resolveAvailability(service, updated)).toHaveLength(1);
+    expect(getEffectiveAvailability(service, updated)).toHaveLength(1);
   });
 
   // Both shapes below would serialize to an extension with neither a value nor sub-extensions of its
@@ -265,7 +273,7 @@ describe('schedule availability', () => {
 
     expect(() => setScheduleAvailability(schedule, service, [])).toThrow(/at least one availableTime/);
     // Clearing is the way to hand the calendar back to the service default, and it still works.
-    expect(hasScheduleAvailability(clearScheduleAvailability(schedule, service), service)).toBe(false);
+    expect(hasAvailability(clearScheduleParameter(schedule, service, 'availability'))).toBe(false);
   });
 
   test('refuses an entry that sets neither allDay nor both times', () => {
@@ -279,15 +287,19 @@ describe('schedule availability', () => {
       setScheduleAvailability(schedule, service, [{ daysOfWeek: ['tue'], availableEndTime: '17:00:00' }])
     ).toThrow(/must set allDay/);
 
-    expect(resolveAvailability(service, schedule)).toEqual([
+    expect(getEffectiveAvailability(service, schedule)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
   });
 
   test('leaves sibling parameters alone when clearing availability', () => {
-    const cleared = clearScheduleAvailability(scheduleWith(availableTime('mon', '09:00:00', '17:00:00')), service);
+    const cleared = clearScheduleParameter(
+      scheduleWith(availableTime('mon', '09:00:00', '17:00:00')),
+      service,
+      'availability'
+    );
 
-    expect(hasScheduleAvailability(cleared, service)).toBe(false);
+    expect(hasAvailability(cleared)).toBe(false);
     // The clear is scoped to the availability url, so duration survives it.
     expect(durationOf(cleared)).toEqual({ value: 30, unit: 'min' });
     expect(schedulingParameters(cleared)).toHaveLength(1);
@@ -307,11 +319,11 @@ describe('schedule parameters', () => {
     expect(getScheduleParameters(updated, service, 'bufferBefore')).toEqual([bufferBefore]);
     // Setting one parameter leaves the others in place, availability included.
     expect(durationOf(updated)).toEqual({ value: 30, unit: 'min' });
-    expect(hasScheduleAvailability(updated, service)).toBe(true);
+    expect(hasAvailability(updated)).toBe(true);
 
     const cleared = clearScheduleParameter(updated, service, 'bufferBefore');
     expect(getScheduleParameters(cleared, service, 'bufferBefore')).toEqual([]);
-    expect(hasScheduleAvailability(cleared, service)).toBe(true);
+    expect(hasAvailability(cleared)).toBe(true);
   });
 
   test('replaces a parameter rather than appending a second one', () => {

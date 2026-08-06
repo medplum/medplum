@@ -16,9 +16,9 @@ import {
 } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
 import {
-  clearScheduleAvailability,
-  hasScheduleAvailability,
-  resolveAvailability,
+  clearScheduleParameter,
+  getEffectiveAvailability,
+  getScheduleParameters,
   setScheduleAvailability,
 } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
@@ -253,11 +253,13 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
   // Seed from the Schedule override when it has one, otherwise from the
   // service-level default, so the editor opens showing the hours currently in
   // effect rather than a blank week.
-  const [overriding, setOverriding] = useState(() => (schedule ? hasScheduleAvailability(schedule, service) : true));
-  // `resolveAvailability` falls back to the service default on its own, and
+  const [overriding, setOverriding] = useState(() =>
+    schedule ? getScheduleParameters(schedule, service, 'availability').length > 0 : true
+  );
+  // `getEffectiveAvailability` falls back to the service default on its own, and
   // reads the service alone when there is no Schedule, so it covers both modes.
   const [weekly, setWeekly] = useState<WeeklyAvailability>(() =>
-    toWeeklyAvailability(resolveAvailability(service, schedule))
+    toWeeklyAvailability(getEffectiveAvailability(service, schedule))
   );
   const [saving, setSaving] = useState(false);
   // The flash on an auto-moved end time is only visible, so the same change is
@@ -303,7 +305,7 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
       if (props.schedule) {
         const updated = overriding
           ? setScheduleAvailability(props.schedule, service, fromWeeklyAvailability(weekly))
-          : clearScheduleAvailability(props.schedule, service);
+          : clearScheduleParameter(props.schedule, service, 'availability');
         await props.onSave(updated);
       } else {
         await props.onSave({ ...service, availableTime: fromWeeklyAvailability(weekly) });

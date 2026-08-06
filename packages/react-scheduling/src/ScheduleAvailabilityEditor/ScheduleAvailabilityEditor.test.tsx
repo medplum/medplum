@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { hasScheduleAvailability, resolveAvailability, SchedulingParametersURI } from '@medplum/core';
+import { getEffectiveAvailability, getScheduleParameters, SchedulingParametersURI } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ScheduleAvailabilityEditor } from './ScheduleAvailabilityEditor';
@@ -22,6 +22,12 @@ import {
   toWeeklyAvailability,
   typedTimes,
 } from './ScheduleAvailabilityEditor.utils';
+
+// Whether the Schedule the editor handed back sets hours of its own, which is the
+// distinction `getEffectiveAvailability` folds away by falling back to the default.
+function overridesAvailability(schedule: Schedule, service: WithId<HealthcareService>): boolean {
+  return getScheduleParameters(schedule, service, 'availability').length > 0;
+}
 
 const service: WithId<HealthcareService> = {
   resourceType: 'HealthcareService',
@@ -424,7 +430,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     expect(onSave).toHaveBeenCalledTimes(1);
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
   });
@@ -458,7 +464,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     await save();
 
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
       { daysOfWeek: ['tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
     ]);
@@ -492,7 +498,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     await save();
 
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
       { daysOfWeek: ['mon'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
     ]);
@@ -514,7 +520,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
     ]);
   });
@@ -567,7 +573,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '14:00:00', availableEndTime: '15:00:00' },
     ]);
   });
@@ -688,7 +694,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '18:30:00' },
     ]);
   });
@@ -724,7 +730,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     expect(screen.getByTestId('schedule-availability-end-mon-0')).toHaveValue('6:30 PM');
 
     await save();
-    expect(resolveAvailability(service, onSave.mock.calls[0][0])).toEqual([
+    expect(getEffectiveAvailability(service, onSave.mock.calls[0][0])).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '18:30:00' },
     ]);
   });
@@ -758,7 +764,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     expect(input).toHaveValue('6:30 PM');
     await save();
-    expect(resolveAvailability(service, onChange.mock.calls[0][0])).toEqual([
+    expect(getEffectiveAvailability(service, onChange.mock.calls[0][0])).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '18:30:00' },
     ]);
   });
@@ -784,7 +790,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     await save();
 
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([{ daysOfWeek: ['mon'], allDay: true }]);
+    expect(getEffectiveAvailability(service, updated)).toEqual([{ daysOfWeek: ['mon'], allDay: true }]);
   });
 
   test('reads stored allDay hours back as a full day', () => {
@@ -812,7 +818,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     // Saving without edits keeps the same bookable hours, in the split form.
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['fri'], availableStartTime: '22:00:00', availableEndTime: '00:00:00' },
       { daysOfWeek: ['sat'], availableStartTime: '00:00:00', availableEndTime: '06:00:00' },
     ]);
@@ -828,7 +834,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     // Saving without touching it keeps the stored time.
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:07:00', availableEndTime: '17:00:00' },
     ]);
   });
@@ -883,7 +889,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '15:03:00' },
     ]);
   });
@@ -914,7 +920,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(resolveAvailability(service, updated)).toEqual([
+    expect(getEffectiveAvailability(service, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '09:15:00', availableEndTime: '17:00:00' },
     ]);
   });
@@ -957,7 +963,7 @@ describe('ScheduleAvailabilityEditor component', () => {
     await save();
 
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(hasScheduleAvailability(updated, serviceWithHours)).toBe(false);
+    expect(overridesAvailability(updated, serviceWithHours)).toBe(false);
   });
 
   test('switching custom availability on creates an override', async () => {
@@ -974,8 +980,8 @@ describe('ScheduleAvailabilityEditor component', () => {
     await save();
 
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(hasScheduleAvailability(updated, serviceWithHours)).toBe(true);
-    expect(resolveAvailability(serviceWithHours, updated)).toEqual([
+    expect(overridesAvailability(updated, serviceWithHours)).toBe(true);
+    expect(getEffectiveAvailability(serviceWithHours, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '08:00:00', availableEndTime: '16:00:00' },
       { daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '16:00:00' },
       { daysOfWeek: ['wed'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
@@ -1002,7 +1008,7 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(hasScheduleAvailability(updated, serviceWithHours)).toBe(false);
+    expect(overridesAvailability(updated, serviceWithHours)).toBe(false);
   });
 
   test('reset restores the service default hours while staying an override', async () => {
@@ -1022,9 +1028,9 @@ describe('ScheduleAvailabilityEditor component', () => {
 
     await save();
     const updated: Schedule = onSave.mock.calls[0][0];
-    expect(hasScheduleAvailability(updated, serviceWithHours)).toBe(true);
+    expect(overridesAvailability(updated, serviceWithHours)).toBe(true);
     // The same hours as the service default, written out one day at a time.
-    expect(resolveAvailability(serviceWithHours, updated)).toEqual([
+    expect(getEffectiveAvailability(serviceWithHours, updated)).toEqual([
       { daysOfWeek: ['mon'], availableStartTime: '08:00:00', availableEndTime: '16:00:00' },
       { daysOfWeek: ['tue'], availableStartTime: '08:00:00', availableEndTime: '16:00:00' },
       { daysOfWeek: ['sat'], allDay: true },
