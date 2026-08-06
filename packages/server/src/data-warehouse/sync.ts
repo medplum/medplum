@@ -345,18 +345,33 @@ function buildErrorTableResult(destination: string, watermarkDurationMs: number)
  * @param tables - Per-table sync results (including partial progress when a hard failure aborts the run).
  */
 function recordSyncMetrics(tables: SyncTableResult[]): void {
-  const rowsInserted = tables.map((t) => t.rowsInserted).reduce((a, b) => a + b, 0);
-  const syncDurationMs = tables.map((t) => t.syncDurationMs).reduce((a, b) => a + b, 0);
-  const watermarkDurationMs = tables.map((t) => t.watermarkDurationMs).reduce((a, b) => a + b, 0);
-  const successCount = tables.filter((t) => !t.status).length;
-  const errorCount = tables.filter((t) => t.status === 'error').length;
-  const skippedByReason = tables.reduce<Partial<Record<SyncTableSkipReason, number>>>((acc, table) => {
-    if (table.status && table.status !== 'error') {
+  let rowsInserted = 0;
+  let syncDurationMs = 0;
+  let watermarkDurationMs = 0;
+  let successCount = 0;
+  let errorCount = 0;
+  const skippedByReason: Record<SyncTableSkipReason, number> = {
+    conflict: 0,
+    watermark: 0,
+    'missing-table': 0
+  };
+
+  // accumulate metrics across all tables
+  for (const table of tables) {
+    rowsInserted += table.rowsInserted;
+    syncDurationMs += table.syncDurationMs;
+    watermarkDurationMs += table.watermarkDurationMs;
+
+    if (!table.status) {
+      successCount += 1;
+    } else if (table.status === 'error') {
+      errorCount += 1;
+    } else {
+      // skipped by a specific reason
       const status = table.status;
-      acc[status] = (acc[status] ?? 0) + 1;
+      skippedByReason[status] = (skippedByReason[status] ?? 0) + 1;
     }
-    return acc;
-  }, {});
+  }
 
   incrementCounter('medplum.dataWarehouse.sync.rows', undefined, rowsInserted);
   recordHistogramValue('medplum.dataWarehouse.sync.duration', syncDurationMs / 1000, {
