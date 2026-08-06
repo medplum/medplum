@@ -20,6 +20,7 @@ import { setTopicCurrentContext } from './utils';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2';
 const STU3_BASE_ROUTE = '/fhircast/STU3';
+const HUB_ALIAS_ROUTE = '/api/hub';
 
 type ExecResult = Awaited<ReturnType<ChainableCommander['exec']>>;
 
@@ -110,6 +111,51 @@ describe('FHIRcast routes', () => {
       expect(res).toHaveStatus(202);
       expect(res.body['hub.channel.endpoint']).toBeDefined();
     }
+  });
+
+  test('New subscription with url-encoded body', async () => {
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE, HUB_ALIAS_ROUTE]) {
+      const res = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.FORM_URL_ENCODED)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(
+          new URLSearchParams({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'subscribe',
+            'hub.topic': 'topic',
+            'hub.events': 'Patient-open,Patient-close',
+          }).toString()
+        );
+      expect(res).toHaveStatus(202);
+      expect(res.body['hub.channel.endpoint']).toBeDefined();
+    }
+  });
+
+  test('Hub alias serves the STU3 router', async () => {
+    const wellKnown = await request(server).get(`${HUB_ALIAS_ROUTE}/.well-known/fhircast-configuration`);
+    expect(wellKnown).toHaveStatus(200);
+    expect(wellKnown.body.fhircastVersion).toBe('STU3');
+
+    const subscribe = await request(server)
+      .post(HUB_ALIAS_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'alias-topic',
+        'hub.events': 'Patient-open',
+      });
+    expect(subscribe).toHaveStatus(202);
+    expect(subscribe.body['hub.channel.endpoint']).toMatch(/ws:\/\/localhost:8103\/ws\/fhircast\/*/);
+
+    // STU3 shape for an empty current context, rather than the STU2 empty array
+    const currentContext = await request(server)
+      .get(`${HUB_ALIAS_ROUTE}/alias-topic`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(currentContext).toHaveStatus(200);
+    expect(currentContext.body).toStrictEqual({ 'context.type': '', context: [] });
   });
 
   test('New subscription no auth', async () => {
