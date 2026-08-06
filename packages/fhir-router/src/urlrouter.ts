@@ -84,12 +84,20 @@ function parseQueryString(path: string): Record<string, string | string[]> {
   // Pass in dummy host for parsing purposes.
   // The host is ignored.
   const url = new URL(path, 'https://example.com/');
-  const queryParams = Object.create(null);
+  const queryParams: Record<string, string | string[]> = Object.create(null);
 
-  const raw = url.searchParams;
-  for (const param of raw.keys()) {
-    const values = raw.getAll(param);
-    queryParams[param] = values.length === 1 ? values[0] : values;
+  // Iterate entries once rather than calling getAll() per key. keys() yields one entry per
+  // param including duplicates, so a getAll() per key rescans the whole list n times over,
+  // which is quadratic for a query repeating the same param thousands of times.
+  for (const [key, value] of url.searchParams) {
+    const existing = queryParams[key];
+    if (existing === undefined) {
+      queryParams[key] = value;
+    } else if (Array.isArray(existing)) {
+      existing.push(value);
+    } else {
+      queryParams[key] = [existing, value];
+    }
   }
 
   return queryParams;
