@@ -77,7 +77,8 @@ import {
   removeActiveSubscriptions,
   removeUserActiveWebSocketSubscriptions,
 } from '../pubsub';
-import { getBinaryStorage } from '../storage/loader';
+import { getBinaryStorageKey } from '../storage/base';
+import { getBinaryStorage, isBinaryStorageInitialized } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -1531,8 +1532,27 @@ export class Repository extends FhirRepository implements Disposable {
           await txRepo.deleteFromLookupTables({ resourceType, id: res.id } as WithId<Resource>);
         }
 
-        await txRepo.sqlWrite(new DeleteQuery(resourceType + '_History').where('id', 'IN', deletedIds), resourceType);
+        // Expunging a Binary must also remove its bytes from binary storage. Every version of a
+        // Binary has its own stored object (see BaseBinaryStorage.getKey: "binary/<id>/<versionId>"),
+        // so collect the versionIds from the history rows being deleted rather than only the current
+        // version. RETURNING on the delete avoids a separate read, which would target the reader
+        // pool and conflict with the writer client pinned by this transaction.
+        const historyDelete = new DeleteQuery(resourceType + '_History').where('id', 'IN', deletedIds);
+        const collectStorageKeys = resourceType === 'Binary' && isBinaryStorageInitialized();
+        if (collectStorageKeys) {
+          historyDelete.returning('id').returning('versionId');
+        }
+        const historyResult = await txRepo.sqlWrite<{ id: string; versionId: string }>(historyDelete, resourceType);
+
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
+
+        if (collectStorageKeys) {
+          // Deliberately after the transaction commits: deleting stored objects is irreversible, and
+          // this transaction is serializable and may be retried or rolled back.
+          const storageKeys = historyResult.map((row) => getBinaryStorageKey(row.id, row.versionId));
+          await txRepo.postCommit(() => deleteBinaryStorageObjects(storageKeys));
+        }
+
         return deletedIds;
       },
       { serializable: true, resourceTypes: resourceType, source: 'repo.expungeResources' }
@@ -2647,3 +2667,24 @@ const patchOperationDefinition: OperationDefinition = {
 };
 
 const SuperAdminProjectIdEditableResourceTypes = ['User', 'Subscription'];
+
+/**
+ * Deletes stored objects for expunged Binary resources.
+ *
+ * Best effort: a storage failure must not fail the expunge, because the database rows are already
+ * gone by the time this runs. Failures are logged with the key so the object can be reclaimed.
+ * @param storageKeys - The storage keys to delete.
+ */
+async function deleteBinaryStorageObjects(storageKeys: string[]): Promise<void> {
+  const storage = getBinaryStorage();
+  for (const key of storageKeys) {
+    try {
+      await storage.deleteFile(key);
+    } catch (err: any) {
+      getLogger().warn('Failed to delete binary storage object during expunge', {
+        key,
+        error: normalizeErrorString(err),
+      });
+    }
+  }
+}

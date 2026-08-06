@@ -33,6 +33,17 @@ export function getBinaryStorage(): BinaryStorage {
   return binaryStorage;
 }
 
+/**
+ * Returns true if binary storage has been initialized.
+ *
+ * Callers that clean up storage opportunistically can use this to skip the work on deployments
+ * where `binaryStorage` is not configured, rather than handling the error from `getBinaryStorage`.
+ * @returns True if binary storage has been initialized.
+ */
+export function isBinaryStorageInitialized(): boolean {
+  return binaryStorage !== undefined;
+}
+
 export async function getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
   const config = getConfig();
 

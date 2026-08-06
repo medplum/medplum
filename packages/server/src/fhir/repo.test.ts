@@ -44,6 +44,8 @@ import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
+import { getBinaryStorageKey } from '../storage/base';
+import { getBinaryStorage } from '../storage/loader';
 import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
@@ -1549,6 +1551,53 @@ describe('FHIR Repo', () => {
           );
         }));
     });
+
+    test('Expunge Binary deletes the stored object for every version', () =>
+      withTestContext(async () => {
+        const storage = getBinaryStorage();
+        const deleteFile = vi.spyOn(storage, 'deleteFile');
+
+        try {
+          // Each write stores its own object, so a two-version Binary has two stored objects.
+          const created = await systemRepo.createResource<Binary>({
+            resourceType: 'Binary',
+            contentType: 'text/plain',
+            data: Buffer.from('expunge me').toString('base64'),
+          });
+          const updated = await systemRepo.updateResource<Binary>({
+            ...created,
+            data: Buffer.from('expunge me too').toString('base64'),
+          });
+
+          const firstKey = getBinaryStorageKey(created.id, created.meta?.versionId);
+          const secondKey = getBinaryStorageKey(updated.id, updated.meta?.versionId);
+          expect(firstKey).not.toStrictEqual(secondKey);
+          await expect(storage.readFile(firstKey)).resolves.toBeDefined();
+          await expect(storage.readFile(secondKey)).resolves.toBeDefined();
+
+          await systemRepo.expungeResource('Binary', created.id);
+
+          const deletedKeys = deleteFile.mock.calls.map(([key]) => key);
+          expect(deletedKeys).toContain(firstKey);
+          expect(deletedKeys).toContain(secondKey);
+          await expect(storage.readFile(firstKey)).rejects.toThrow();
+          await expect(storage.readFile(secondKey)).rejects.toThrow();
+        } finally {
+          deleteFile.mockRestore();
+        }
+      }));
+
+    test('Expunge non-Binary does not touch binary storage', () =>
+      withTestContext(async () => {
+        const deleteFile = vi.spyOn(getBinaryStorage(), 'deleteFile');
+        try {
+          const patient = await createPatient(systemRepo);
+          await systemRepo.expungeResource('Patient', patient.id);
+          expect(deleteFile).not.toHaveBeenCalled();
+        } finally {
+          deleteFile.mockRestore();
+        }
+      }));
   });
 
   test('Expunge too many IDs', async () => {
