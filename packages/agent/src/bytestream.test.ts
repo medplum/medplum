@@ -7,13 +7,16 @@ import { getFreePort } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Server } from 'mock-socket';
 import net from 'node:net';
+import type { Mock } from 'vitest';
 import { App } from './app';
+import { astmChecksum } from './astm';
 import {
   ByteSequenceMatcher,
   filterMessageBytes,
   parseAutoRespondRules,
   parseBodyEncoding,
   parseByteSequences,
+  parseByteStreamMode,
   parseKeepControlChars,
 } from './bytestream';
 import { createEndpointWithRandomPort, createMockLogger, waitFor } from './test-utils';
@@ -32,6 +35,7 @@ const ACK = 0x06;
 const CR = 0x0d;
 const LF = 0x0a;
 const ETB = 0x17;
+const NAK = 0x15;
 
 describe('Byte Stream', () => {
   beforeAll(async () => {
@@ -699,6 +703,213 @@ describe('Byte Stream', () => {
       mockServer.stop();
     });
   });
+
+  describe('ASTM mode', () => {
+    test('mode=astm alone drives a whole session and delivers only record text', async () => {
+      // No startChar/endChar: the protocol supplies its own framing, and requiring them would
+      // defeat the point of a preset.
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createAstmAgent();
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      const replyCount = (): number => Buffer.concat(received).length;
+
+      // Driven ACK-by-ACK, the way an analyzer that waits for each one does.
+      client.write(Buffer.from([ENQ]));
+      await waitFor(() => replyCount() === 1, 1000, 'ACK for ENQ');
+      client.write(checkedFrame('1', 'H|\\^&|||BioRad^1.0|||||||P|1|20251217223735', ETB));
+      await waitFor(() => replyCount() === 2, 1000, 'ACK for the header frame');
+      client.write(checkedFrame('2', 'P|1||||Doe^John||19700101|M', ETX));
+      await waitFor(() => replyCount() === 3, 1000, 'ACK for the patient frame');
+      client.write(Buffer.from([EOT]));
+      await waitFor(() => replyCount() === 4, 1000, 'ACK for EOT');
+
+      // One ACK per frame, and nothing else. The raw-mode session above answers five times for
+      // equivalent traffic, because it matches four separate byte patterns rather than parsing
+      // frames — so ETX and the trailing LF of the same frame each earn their own reply.
+      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK, ACK, ACK, ACK]));
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies).toEqual(['H|\\^&|||BioRad^1.0|||||||P|1|20251217223735\nP|1||||Doe^John||19700101|M\n']);
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('A corrupt frame is NAKed and its retransmission lands exactly once', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createAstmAgent();
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      const replyCount = (): number => Buffer.concat(received).length;
+
+      client.write(Buffer.from([ENQ]));
+      await waitFor(() => replyCount() === 1, 1000, 'ACK for ENQ');
+
+      // Same frame the analyzer meant to send, with the checksum mangled in transit.
+      client.write(checkedFrame('1', 'R|1|GLU|95', ETX, '00'));
+      await waitFor(() => replyCount() === 2, 1000, 'NAK for the corrupt frame');
+      expect(received[received.length - 1]).toEqual(Buffer.from([NAK]));
+
+      client.write(checkedFrame('1', 'R|1|GLU|95', ETX));
+      await waitFor(() => replyCount() === 3, 1000, 'ACK for the retransmission');
+      client.write(Buffer.from([EOT]));
+      await waitFor(() => replyCount() === 4, 1000, 'ACK for EOT');
+
+      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK, NAK, ACK, ACK]));
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      // The corrupt copy never reached the body, and the good one is not duplicated.
+      expect(bodies).toEqual(['R|1|GLU|95\n']);
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('Concurrent analyzers keep independent sessions', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createAstmAgent();
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [clientA, receivedA] = await connectCollecting(agentPort);
+      const [clientB, receivedB] = await connectCollecting(agentPort);
+
+      // Interleaved on purpose: a channel-wide session would splice B's record into A's body.
+      clientA.write(Buffer.from([ENQ]));
+      clientB.write(Buffer.from([ENQ]));
+      await waitFor(() => receivedA.length > 0 && receivedB.length > 0, 1000, 'ACKs for both ENQs');
+      clientA.write(checkedFrame('1', 'FROM-A'));
+      clientB.write(checkedFrame('1', 'FROM-B'));
+      await waitFor(() => receivedA.length > 1 && receivedB.length > 1, 1000, 'ACKs for both frames');
+      clientA.write(Buffer.from([EOT]));
+      clientB.write(Buffer.from([EOT]));
+
+      await waitFor(() => bodies.length === 2, 1000, 'both transmit requests');
+      expect(bodies.toSorted()).toEqual(['FROM-A\n', 'FROM-B\n']);
+
+      clientA.destroy();
+      clientB.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('A session abandoned before EOT is dropped, and says so', async () => {
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createAstmAgent();
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([ENQ]));
+      await waitFor(() => received.length === 1, 1000, 'ACK for ENQ');
+      client.write(checkedFrame('1', 'NEVER-COMPLETED'));
+      await waitFor(() => received.length === 2, 1000, 'ACK for the frame');
+
+      // The analyzer vanishes without its EOT; it will resend the transmission whole, so
+      // delivering this half would duplicate every record. Dropping ACKed results is worth a
+      // log line, though — nothing else would tell an operator it happened.
+      client.destroy();
+      await waitFor(
+        () => (console.log as Mock).mock.calls.some((call) => String(call[0]).includes('ASTM session abandoned')),
+        1000,
+        'abandoned-session warning'
+      );
+      expect(bodies).toEqual([]);
+
+      await app.stop();
+      mockServer.stop();
+      console.log = originalConsoleLog;
+    });
+
+    test('Raw-mode body options are ignored, with a warning', async () => {
+      const originalConsoleLog = console.log;
+      console.log = vi.fn();
+
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createAstmAgent(
+        '&autoRespond=%05:%06&stripControlChars=true&keepControlChars=%0D&startChar=%02'
+      );
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([ENQ]));
+      await waitFor(() => received.length > 0, 1000, 'ACK for ENQ');
+      await sleep(100);
+
+      // One ACK, from the ASTM handshake. A surviving autoRespond rule would add a second.
+      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK]));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('autoRespond is ignored under mode=astm'));
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('startChar is ignored under mode=astm'));
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+      console.log = originalConsoleLog;
+    });
+
+    test('bodyEncoding=hex overrides the utf-8 default', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createAstmAgent('&bodyEncoding=hex');
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client] = await connectCollecting(agentPort);
+      client.write(Buffer.concat([Buffer.from([ENQ]), checkedFrame('1', 'Hi'), Buffer.from([EOT])]));
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe(Buffer.from('Hi\n', 'utf-8').toString('hex'));
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+  });
+});
+
+describe('parseByteStreamMode', () => {
+  test('Defaults to raw when unset', () => {
+    const log = createMockLogger();
+
+    expect(parseByteStreamMode(null, log)).toBe('raw');
+    expect(parseByteStreamMode(undefined, log)).toBe('raw');
+    expect(parseByteStreamMode('', log)).toBe('raw');
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  test('Is case-insensitive', () => {
+    expect(parseByteStreamMode('ASTM', createMockLogger())).toBe('astm');
+    expect(parseByteStreamMode('Astm', createMockLogger())).toBe('astm');
+    expect(parseByteStreamMode('RAW', createMockLogger())).toBe('raw');
+  });
+
+  test('Warns and falls back to raw on an unknown mode', () => {
+    const log = createMockLogger();
+
+    expect(parseByteStreamMode('mllp', log)).toBe('raw');
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("Invalid mode 'mllp'"));
+  });
 });
 
 describe('parseAutoRespondRules', () => {
@@ -1038,6 +1249,28 @@ function startMockAgentServer(bodies: string[]): Server {
  * @param checksum - The two-character frame checksum.
  * @returns The framed bytes.
  */
+/**
+ * Builds one ASTM frame with a real computed checksum, for `mode=astm` tests.
+ *
+ * Distinct from {@link astmFrame}, whose checksums are arbitrary because the raw channel never
+ * looks at them — under `mode=astm` those frames would all be NAKed.
+ *
+ * @param seq - The single-digit frame sequence number.
+ * @param record - The ASTM record text.
+ * @param terminator - `ETB` for an intermediate frame, `ETX` for the final one.
+ * @param checksum - Overrides the computed value, to simulate corruption on the wire.
+ * @returns The framed bytes.
+ */
+function checkedFrame(seq: string, record: string, terminator: number = ETX, checksum?: string): Buffer {
+  const covered = Buffer.concat([Buffer.from(`${seq}${record}`, 'utf-8'), Buffer.from([CR, terminator])]);
+  return Buffer.concat([
+    Buffer.from([STX]),
+    covered,
+    Buffer.from(checksum ?? astmChecksum(covered), 'utf-8'),
+    Buffer.from([CR, LF]),
+  ]);
+}
+
 function astmFrame(seq: string, record: string, terminator: number, checksum: string): Buffer {
   return Buffer.concat([
     Buffer.from([STX]),
@@ -1061,10 +1294,33 @@ async function createByteStreamAgent(
   extraParams: string,
   framing: { startChar: string; endChar: string } = { startChar: '%02', endChar: '%03' }
 ): Promise<[string, number]> {
+  return createAgentWithQuery(`startChar=${framing.startChar}&endChar=${framing.endChar}${extraParams}`);
+}
+
+/**
+ * Creates an ASTM byte-stream Agent and Endpoint on a free port.
+ *
+ * Deliberately passes no `startChar`/`endChar`: ASTM defines its own framing, and a channel
+ * that had to supply them anyway would not be much of a preset.
+ *
+ * @param extraParams - Query params appended after `mode=astm`, e.g. '&bodyEncoding=hex'.
+ * @returns The agent id and the port its channel listens on.
+ */
+async function createAstmAgent(extraParams = ''): Promise<[string, number]> {
+  return createAgentWithQuery(`mode=astm${extraParams}`);
+}
+
+/**
+ * Creates a byte-stream Agent and Endpoint whose address carries exactly `query`.
+ *
+ * @param query - The endpoint address query string, without its leading '?'.
+ * @returns The agent id and the port its channel listens on.
+ */
+async function createAgentWithQuery(query: string): Promise<[string, number]> {
   const [created, agentPort] = await createEndpointWithRandomPort(medplum, {
     resourceType: 'Endpoint',
     status: 'active',
-    address: `tcp://0.0.0.0:9999?startChar=${framing.startChar}&endChar=${framing.endChar}${extraParams}`,
+    address: `tcp://0.0.0.0:9999?${query}`,
     connectionType: { code: ContentType.OCTET_STREAM },
     payloadType: [{ coding: [{ code: ContentType.OCTET_STREAM }] }],
   });

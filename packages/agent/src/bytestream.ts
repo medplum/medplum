@@ -7,6 +7,7 @@ import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import net from 'node:net';
 import type { App } from './app';
+import { AstmSession } from './astm';
 import { BaseChannel } from './channel';
 
 /** Encodings available for the `body` of a byte-stream channel's transmit request/response. */
@@ -23,6 +24,7 @@ export type ByteSequenceRule = { readonly pattern: Buffer; readonly response: Bu
  * {@link ByteSequenceMatcher}.
  */
 export type ByteStreamConfig = {
+  readonly mode: ByteStreamMode;
   readonly startChar: number;
   readonly endChar: number;
   readonly autoRespond: readonly ByteSequenceRule[];
@@ -174,15 +176,21 @@ export function parseKeepControlChars(rawValues: readonly string[], logger: ILog
  * Normalizes the configured transmit body encoding.
  *
  * Defaults to `hex`, which is the encoding byte-stream channels have always used, so bots
- * decoding with `Buffer.from(body, 'hex')` keep working unless a channel opts out.
+ * decoding with `Buffer.from(body, 'hex')` keep working unless a channel opts out. ASTM mode
+ * passes `utf-8` instead, since its bodies are records rather than opaque bytes.
  *
  * @param rawValue - The raw `bodyEncoding` query param value.
  * @param logger - Logger used to warn about an unrecognized value.
- * @returns The parsed encoding, or `hex` if unset or invalid.
+ * @param defaultEncoding - Used when the param is unset or invalid.
+ * @returns The parsed encoding, or `defaultEncoding` if unset or invalid.
  */
-export function parseBodyEncoding(rawValue: string | null | undefined, logger: ILogger): ByteStreamBodyEncoding {
+export function parseBodyEncoding(
+  rawValue: string | null | undefined,
+  logger: ILogger,
+  defaultEncoding: ByteStreamBodyEncoding = 'hex'
+): ByteStreamBodyEncoding {
   if (!rawValue) {
-    return 'hex';
+    return defaultEncoding;
   }
 
   const normalizedValue = rawValue.toLowerCase();
@@ -193,8 +201,50 @@ export function parseBodyEncoding(rawValue: string | null | undefined, logger: I
     return 'utf-8';
   }
 
-  logger.warn(`Invalid bodyEncoding '${rawValue}'; expected 'hex' or 'utf-8'. Using 'hex'.`);
-  return 'hex';
+  logger.warn(`Invalid bodyEncoding '${rawValue}'; expected 'hex' or 'utf-8'. Using '${defaultEncoding}'.`);
+  return defaultEncoding;
+}
+
+/**
+ * How a byte-stream channel interprets what arrives on the socket.
+ *
+ * `raw` is the `startChar`…`endChar` delimiter framing every byte-stream channel has always
+ * used. `astm` speaks ASTM E1381 instead: the agent answers the link-level handshake, validates
+ * each frame's checksum, and delivers one message per `ENQ`…`EOT` transmission.
+ */
+export const ByteStreamMode = {
+  Raw: 'raw',
+  Astm: 'astm',
+} as const;
+export type ByteStreamMode = (typeof ByteStreamMode)[keyof typeof ByteStreamMode];
+
+/**
+ * @param value - A candidate mode, already lower-cased.
+ * @returns True when the value names a supported mode.
+ */
+export function isByteStreamMode(value: string | undefined): value is ByteStreamMode {
+  return value === ByteStreamMode.Raw || value === ByteStreamMode.Astm;
+}
+
+/**
+ * Normalizes the configured framing mode.
+ *
+ * @param rawValue - The raw `mode` query param value.
+ * @param logger - Logger used to warn about an unrecognized value.
+ * @returns The parsed mode, or `raw` if unset or invalid.
+ */
+export function parseByteStreamMode(rawValue: string | null | undefined, logger: ILogger): ByteStreamMode {
+  if (!rawValue) {
+    return ByteStreamMode.Raw;
+  }
+
+  const normalizedValue = rawValue.toLowerCase();
+  if (isByteStreamMode(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  logger.warn(`Invalid mode '${rawValue}'; expected 'raw' or 'astm'. Using 'raw'.`);
+  return ByteStreamMode.Raw;
 }
 
 /**
@@ -361,6 +411,7 @@ export class AgentByteStreamChannel extends BaseChannel {
   readonly channelLog: ILogger;
 
   private config: ByteStreamConfig = {
+    mode: ByteStreamMode.Raw,
     startChar: -1,
     endChar: -1,
     autoRespond: [],
@@ -460,6 +511,17 @@ export class AgentByteStreamChannel extends BaseChannel {
     const address = new URL(this.getEndpoint().address);
     const params = address.searchParams;
 
+    // Parsed first: under ASTM the protocol defines its own framing, so startChar/endChar are
+    // neither required nor consulted, and the check below must not reject their absence.
+    const mode = parseByteStreamMode(params.get('mode'), this.log);
+    if (mode === ByteStreamMode.Astm) {
+      this.config = Object.freeze(this.parseAstmConfig(params));
+      for (const connection of this.connections.values()) {
+        connection.applyConfig(this.config);
+      }
+      return;
+    }
+
     const startCharStr = params.get('startChar');
     const endCharStr = params.get('endChar');
     if (!(startCharStr && endCharStr)) {
@@ -481,6 +543,7 @@ export class AgentByteStreamChannel extends BaseChannel {
     }
 
     this.config = Object.freeze({
+      mode,
       startChar,
       endChar,
       autoRespond: parseAutoRespondRules(params.getAll('autoRespond'), this.log),
@@ -493,6 +556,44 @@ export class AgentByteStreamChannel extends BaseChannel {
     for (const connection of this.connections.values()) {
       connection.applyConfig(this.config);
     }
+  }
+
+  /**
+   * Builds the config for an ASTM channel.
+   *
+   * ASTM owns the whole byte path — the handshake, the framing and the body — so the raw
+   * channel's knobs for those are forced off rather than merged. Setting one is a
+   * misunderstanding worth surfacing, not a partial override to honor.
+   *
+   * @param params - The endpoint address query params.
+   * @returns The channel's settings.
+   */
+  private parseAstmConfig(params: URLSearchParams): ByteStreamConfig {
+    for (const owned of [
+      'startChar',
+      'endChar',
+      'autoRespond',
+      'stripSequence',
+      'stripControlChars',
+      'keepControlChars',
+    ]) {
+      if (params.has(owned)) {
+        this.log.warn(`${owned} is ignored under mode=astm; the protocol defines its own framing and handshake`);
+      }
+    }
+
+    return {
+      mode: ByteStreamMode.Astm,
+      // ASTM frames on ENQ/EOT internally, so the delimiter framing is inert here.
+      startChar: -1,
+      endChar: -1,
+      autoRespond: [],
+      stripSequences: [],
+      stripControlChars: false,
+      keepControlChars: [],
+      // ASTM records are text, so hex would only make every Bot decode it back.
+      bodyEncoding: parseBodyEncoding(params.get('bodyEncoding'), this.log, 'utf-8'),
+    };
   }
 
   sendToRemote(msg: AgentTransmitResponse): boolean {
@@ -515,6 +616,7 @@ export class ByteStreamChannelConnection {
   private readonly msgChunks: Buffer[] = [];
   private msgTotalLength = -1; // -1 signals message start char has not yet been received
   private matcher: ByteSequenceMatcher;
+  private astm: AstmSession | undefined;
   readonly channel: AgentByteStreamChannel;
   readonly socket: net.Socket;
   readonly remote: string;
@@ -524,21 +626,58 @@ export class ByteStreamChannelConnection {
     this.socket = socket;
     this.remote = `${socket.remoteAddress}:${socket.remotePort}`;
     this.matcher = new ByteSequenceMatcher(channel.getConfig().autoRespond);
+    this.astm = this.createAstmSession(channel.getConfig());
 
     // Add listener immediately to handle incoming messages
     this.socket.on('data', (data: Buffer) => this.handler(data));
+
+    this.socket.on('close', () => {
+      this.astm?.abort('socket closed');
+      this.channel.connections.delete(this.remote);
+      this.channel.log.info(`Byte stream connection closed: ${this.remote}`);
+    });
+
+    // A net.Socket with no 'error' listener throws, which would take the whole agent down on
+    // an ordinary connection reset.
+    this.socket.on('error', (err: Error) => {
+      this.channel.channelLog.warn(`Byte stream socket error from ${this.remote}: ${normalizeErrorString(err)}`);
+    });
   }
 
   /**
    * Rebinds this connection to reloaded channel settings.
    *
    * Partial pattern progress is dropped along with the rules that were being matched, since
-   * a half-matched old rule says nothing about the new ones.
+   * a half-matched old rule says nothing about the new ones. An ASTM session is rebuilt only
+   * when the mode itself changes, so an unrelated edit does not abandon a transmission in
+   * flight.
    *
    * @param config - The channel's newly parsed settings.
    */
   applyConfig(config: ByteStreamConfig): void {
     this.matcher = new ByteSequenceMatcher(config.autoRespond);
+    const wantsAstm = config.mode === ByteStreamMode.Astm;
+    if (wantsAstm !== Boolean(this.astm)) {
+      this.astm?.abort('channel mode changed');
+      this.astm = this.createAstmSession(config);
+    }
+  }
+
+  /**
+   * @param config - The channel's settings.
+   * @returns A session bound to this socket, or undefined when the channel is not in ASTM mode.
+   */
+  private createAstmSession(config: ByteStreamConfig): AstmSession | undefined {
+    if (config.mode !== ByteStreamMode.Astm) {
+      return undefined;
+    }
+    return new AstmSession(
+      { log: this.channel.channelLog },
+      {
+        write: (reply) => this.write(reply),
+        emit: (message) => this.enqueueBody(Buffer.from(message.toString(), 'utf-8')),
+      }
+    );
   }
 
   private async handler(data: Buffer): Promise<void> {
@@ -546,75 +685,100 @@ export class ByteStreamChannelConnection {
       const config = this.channel.getConfig();
       this.channel.channelLog.info(`Received ${data.length} byte(s): ${data.toString('hex')}`);
 
-      let lastEndIndex = -1;
-
-      for (let i = 0; i < data.length; i++) {
-        const char = data[i];
-
-        // Auto-responses are a link-level handshake, answered the moment their pattern
-        // completes — before framing, and between framed messages as readily as inside one.
-        for (const response of this.matcher.match(char)) {
-          this.channel.channelLog.debug(`Auto-responding ${formatByteSequence(response)}`);
-          this.write(response);
-        }
-
-        if (char === config.startChar) {
-          // Clear chunks when we hit a start character
-          this.msgChunks.length = 0;
-          this.msgTotalLength = 0;
-          // A restarted frame means any partial match belonged to bytes we just discarded
-          this.matcher.reset();
-        } else if (char === config.endChar) {
-          // If received end character but there's no start to the message, just continue
-          if (this.msgTotalLength === -1) {
-            continue;
-          }
-          // Slice from after the last end char (or beginning) to current position
-          const startSlice = lastEndIndex + 1;
-          const slice = data.subarray(startSlice, i + 1); // Include the end char
-
-          this.msgChunks.push(slice);
-          this.msgTotalLength += slice.length;
-
-          const messageBuffer = Buffer.concat(this.msgChunks, this.msgTotalLength);
-          const body = filterMessageBytes(
-            messageBuffer,
-            config.stripSequences,
-            config.stripControlChars,
-            config.keepControlChars
-          );
-          if (body.length !== messageBuffer.length) {
-            this.channel.channelLog.debug(`Filtered ${messageBuffer.length - body.length} byte(s) from message body`);
-          }
-
-          this.channel.app.addToWebSocketQueue({
-            type: 'agent:transmit:request',
-            accessToken: 'placeholder',
-            channel: this.channel.getDefinition().name,
-            remote: this.remote,
-            contentType: ContentType.OCTET_STREAM,
-            body: body.toString(config.bodyEncoding),
-            callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
-          });
-
-          // Reset for next message
-          this.msgChunks.length = 0;
-          lastEndIndex = i;
-          this.msgTotalLength = -1;
-        }
+      // Dispatched once per chunk rather than inside the raw path's per-byte loop, which is
+      // hot enough that it should not grow a mode test.
+      if (this.astm) {
+        this.astm.consume(data);
+        return;
       }
-
-      // After processing all bytes, handle any remaining data after the last end char
-      if (lastEndIndex < data.length - 1) {
-        const remainingSlice = data.subarray(lastEndIndex + 1);
-        if (remainingSlice.length > 0) {
-          this.msgChunks.push(remainingSlice);
-          this.msgTotalLength += remainingSlice.length;
-        }
-      }
+      this.handleRaw(data, config);
     } catch (err) {
       this.channel.log.error(`Byte stream error occurred - check channel logs`);
       this.channel.channelLog.error(`Byte stream error: ${normalizeErrorString(err)}`);
+    }
+  }
+
+  /**
+   * Enqueues one assembled message for the server.
+   *
+   * @param body - The message body, already stripped of whatever framing its mode uses.
+   */
+  private enqueueBody(body: Buffer): void {
+    this.channel.app.addToWebSocketQueue({
+      type: 'agent:transmit:request',
+      accessToken: 'placeholder',
+      channel: this.channel.getDefinition().name,
+      remote: this.remote,
+      contentType: ContentType.OCTET_STREAM,
+      body: body.toString(this.channel.getConfig().bodyEncoding),
+      callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
+    });
+  }
+
+  /**
+   * Reassembles `startChar`…`endChar` framed messages.
+   *
+   * @param data - The chunk as it came off the socket.
+   * @param config - The channel's settings, read once by the caller.
+   */
+  private handleRaw(data: Buffer, config: ByteStreamConfig): void {
+    let lastEndIndex = -1;
+
+    for (let i = 0; i < data.length; i++) {
+      const char = data[i];
+
+      // Auto-responses are a link-level handshake, answered the moment their pattern
+      // completes — before framing, and between framed messages as readily as inside one.
+      for (const response of this.matcher.match(char)) {
+        this.channel.channelLog.debug(`Auto-responding ${formatByteSequence(response)}`);
+        this.write(response);
+      }
+
+      if (char === config.startChar) {
+        // Clear chunks when we hit a start character
+        this.msgChunks.length = 0;
+        this.msgTotalLength = 0;
+        // A restarted frame means any partial match belonged to bytes we just discarded
+        this.matcher.reset();
+      } else if (char === config.endChar) {
+        // If received end character but there's no start to the message, just continue
+        if (this.msgTotalLength === -1) {
+          continue;
+        }
+        // Slice from after the last end char (or beginning) to current position
+        const startSlice = lastEndIndex + 1;
+        const slice = data.subarray(startSlice, i + 1); // Include the end char
+
+        this.msgChunks.push(slice);
+        this.msgTotalLength += slice.length;
+
+        const messageBuffer = Buffer.concat(this.msgChunks, this.msgTotalLength);
+        const body = filterMessageBytes(
+          messageBuffer,
+          config.stripSequences,
+          config.stripControlChars,
+          config.keepControlChars
+        );
+        if (body.length !== messageBuffer.length) {
+          this.channel.channelLog.debug(`Filtered ${messageBuffer.length - body.length} byte(s) from message body`);
+        }
+
+        this.enqueueBody(body);
+
+        // Reset for next message
+        this.msgChunks.length = 0;
+        lastEndIndex = i;
+        this.msgTotalLength = -1;
+      }
+    }
+
+    // After processing all bytes, handle any remaining data after the last end char
+    if (lastEndIndex < data.length - 1) {
+      const remainingSlice = data.subarray(lastEndIndex + 1);
+      if (remainingSlice.length > 0) {
+        this.msgChunks.push(remainingSlice);
+        this.msgTotalLength += remainingSlice.length;
+      }
     }
   }
 
