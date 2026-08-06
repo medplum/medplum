@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { HealthcareService } from '@medplum/fhirtypes';
-import { extractServiceTypeReferences, serviceTypeIncludesService, toServiceTypeCodeableConcepts } from './scheduling';
+import {
+  durationToMinutes,
+  extractServiceTypeReferences,
+  serviceTypeIncludesService,
+  toServiceTypeCodeableConcepts,
+} from './scheduling';
 import type { WithId } from './utils';
 import { createReference } from './utils';
 
@@ -43,5 +48,28 @@ describe('serviceType CodeableConcepts', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
     expect(serviceTypeIncludesService(serviceType, { ...service, id: 'service-2' })).toBe(false);
     expect(serviceTypeIncludesService(undefined, service)).toBe(false);
+  });
+});
+
+describe('durationToMinutes', () => {
+  test('converts every unit scheduling accepts', () => {
+    expect(durationToMinutes({ value: 30, unit: 'min' })).toBe(30);
+    expect(durationToMinutes({ value: 1, unit: 'h' })).toBe(60);
+    expect(durationToMinutes({ value: 1, unit: 'd' })).toBe(1440);
+    expect(durationToMinutes({ value: 1, unit: 'wk' })).toBe(10080);
+    expect(durationToMinutes({ value: 0, unit: 'min' })).toBe(0);
+  });
+
+  test('refuses a duration the scheduling operations would refuse', () => {
+    // Rejected rather than read as minutes: a unit guessed wrong here and
+    // validated there would have the two disagree by hours.
+    expect(durationToMinutes({ value: 30, unit: 's' })).toBeUndefined();
+    expect(durationToMinutes({ value: 1, unit: 'mo' })).toBeUndefined();
+    // `unit` is what the operations validate; a UCUM code alone is not enough.
+    expect(durationToMinutes({ value: 1, code: 'h' })).toBeUndefined();
+    expect(durationToMinutes({ value: 1 })).toBeUndefined();
+    expect(durationToMinutes({ unit: 'min' })).toBeUndefined();
+    expect(durationToMinutes({ value: -30, unit: 'min' })).toBeUndefined();
+    expect(durationToMinutes(undefined)).toBeUndefined();
   });
 });
