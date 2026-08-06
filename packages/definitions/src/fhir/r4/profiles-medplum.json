@@ -1406,11 +1406,17 @@
           {
             "id" : "User.email",
             "path" : "User.email",
-            "definition" : "The email address that uniquely identifies the user.",
+            "definition" : "The email address that uniquely identifies the user. Must be all lowercase.",
             "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "user-1",
+              "severity" : "error",
+              "human" : "Email must be all lowercase",
+              "expression" : "$this = $this.lower()"
             }],
             "base": {
               "path" : "User.email",
