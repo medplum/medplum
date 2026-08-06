@@ -32,6 +32,7 @@ const config: StorybookConfig = {
         '@medplum/core': path.resolve(import.meta.dirname, '../../core/src'),
         '@medplum/react': path.resolve(import.meta.dirname, '../../react/src'),
         '@medplum/react-hooks': path.resolve(import.meta.dirname, '../../react-hooks/src'),
+        '@medplum/react-scheduling': path.resolve(import.meta.dirname, '../../react-scheduling/src'),
         '@medplum/mock': path.resolve(import.meta.dirname, '../../mock/src'),
         '@medplum/fhir-router': path.resolve(import.meta.dirname, '../../fhir-router/src'),
         '@medplum/definitions': path.resolve(import.meta.dirname, '../../definitions/src'),

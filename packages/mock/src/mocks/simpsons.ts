@@ -7,6 +7,7 @@ import type {
   DiagnosticReport,
   Encounter,
   Group,
+  Identifier,
   Media,
   Observation,
   Patient,
@@ -24,6 +25,27 @@ const SIMPSONS_ADDRESS: Address = {
   postalCode: '12345',
 };
 
+/** The system Springfield General issues its medical record numbers under. */
+const MRN_SYSTEM = 'http://springfieldgeneral.example.com/mrn';
+
+/**
+ * Builds a medical record number.
+ *
+ * Every patient on a real system has one, so every patient here does too. The
+ * `MR` type from v2-0203 is what marks it as the MRN rather than one of the other
+ * numbers a record carries, and is what a UI looking for one matches on.
+ *
+ * @param value - The number itself.
+ * @returns The identifier.
+ */
+function mrn(value: string): Identifier {
+  return {
+    type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR' }], text: 'MRN' },
+    system: MRN_SYSTEM,
+    value,
+  };
+}
+
 export const LisaSimpson: Patient = {
   resourceType: 'Patient',
   id: 'lisa-simpson',
@@ -32,6 +54,7 @@ export const LisaSimpson: Patient = {
     lastUpdated: '2020-01-01T12:00:00Z',
     author: createReference(DrAliceSmith),
   },
+  identifier: [mrn('SG-000104')],
   birthDate: '1981-05-09',
   name: [
     {
@@ -114,6 +137,7 @@ export const BartSimpson: Patient = {
     lastUpdated: '2020-01-01T12:00:00Z',
     author: createReference(DrAliceSmith),
   },
+  identifier: [mrn('SG-000103')],
   birthDate: '1979-12-17',
   name: [
     {
@@ -201,8 +225,11 @@ export const HomerSimpson: Patient = {
     author: createReference(DrAliceSmith),
   },
   identifier: [
+    // Untyped, and ahead of the MRN: a record's first identifier is not
+    // necessarily the one to show a user.
     { system: 'abc', value: '123' },
     { system: 'def', value: '456' },
+    mrn('SG-000101'),
   ],
   active: true,
   birthDate: '1956-05-12',
@@ -249,7 +276,7 @@ export const MargeSimpson: Patient = {
   resourceType: 'Patient',
   id: 'marge-simpson',
   gender: 'female',
-
+  identifier: [mrn('SG-000102')],
   active: true,
   birthDate: '1961-08-23',
   name: [
@@ -281,6 +308,9 @@ export const HomerSimpsonPreviousVersion: Patient = {
     lastUpdated: '2020-01-01T00:00:00.000Z',
     author: createReference(DrAliceSmith),
   },
+  // The same record, so the same MRN: it is issued once and does not change
+  // between versions.
+  identifier: [mrn('SG-000101')],
   name: [
     {
       given: ['Homer'],
