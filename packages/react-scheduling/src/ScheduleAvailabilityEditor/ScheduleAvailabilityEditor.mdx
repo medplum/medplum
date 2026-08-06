@@ -11,8 +11,9 @@ or as the service's own default hours. For the data model underneath it, see
 
 The component renders form content only, so you choose the container: place it inline in a page, or wrap it
 in a Modal or Drawer. It returns an updated resource for you to persist (for example, via
-`medplum.updateResource`). `@medplum/core` exports the framework-agnostic helpers it is built on, for reading
-and writing the `availability` override without the UI (for example, in a bot or a custom editor).
+`medplum.updateResource`). The helpers it reads and writes the `availability` override through,
+`getEffectiveAvailability` and `setScheduleAvailability`, are exported alongside it and are plain functions
+over FHIR resources, so a custom editor can use them without the component.
 
 ## Editing a Schedule's override
 

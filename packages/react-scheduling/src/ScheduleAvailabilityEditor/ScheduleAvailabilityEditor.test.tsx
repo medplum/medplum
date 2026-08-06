@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getEffectiveAvailability, getScheduleParameters, SchedulingParametersURI } from '@medplum/core';
+import { getScheduleParameters, SchedulingParametersURI } from '@medplum/core';
 import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
+import { getEffectiveAvailability } from '../availability';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ScheduleAvailabilityEditor } from './ScheduleAvailabilityEditor';
 import {

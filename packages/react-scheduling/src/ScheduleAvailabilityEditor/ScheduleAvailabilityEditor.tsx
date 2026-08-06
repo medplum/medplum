@@ -15,16 +15,12 @@ import {
   VisuallyHidden,
 } from '@mantine/core';
 import type { DayOfWeek, WithId } from '@medplum/core';
-import {
-  clearScheduleParameter,
-  getEffectiveAvailability,
-  getScheduleParameters,
-  setScheduleAvailability,
-} from '@medplum/core';
+import { clearScheduleParameter, getScheduleParameters } from '@medplum/core';
 import type { HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useId, useRef, useState } from 'react';
+import { getEffectiveAvailability, setScheduleAvailability } from '../availability';
 import classes from './ScheduleAvailabilityEditor.module.css';
 import type { DayAvailability, WeeklyAvailability } from './ScheduleAvailabilityEditor.utils';
 import {
