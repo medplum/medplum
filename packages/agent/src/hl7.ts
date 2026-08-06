@@ -104,11 +104,26 @@ export class AgentHl7Channel extends BaseChannel {
   /** Parsed `logicalChannelKey` spec used to partition inbound messages; `[]` = single queue. */
   private logicalChannelKeySpec: LogicalChannelField[] = [];
   /**
-   * The raw `logicalChannelKey` spec string currently applied to the queue.
-   * Compared on reload to decide whether to recompute already-queued rows. Starts
-   * `''` (the default) so an unchanged default channel never triggers a recompute.
+   * The raw `logicalChannelKey` spec string this channel has adopted. Gates the
+   * once-per-change config warnings in {@link refreshLogicalChannelConfig}. Starts
+   * `''` (the default) so an unchanged default channel never looks changed.
    */
   private appliedLogicalChannelKeyRaw = '';
+  /**
+   * The raw spec string the queue's STORED partition keys were last successfully
+   * rewritten for — distinct from {@link appliedLogicalChannelKeyRaw}, which advances
+   * on adoption. Anything else means a rewrite is still owed (skipped because we
+   * weren't leader, or failed part-way) and must be retried; see
+   * {@link applyLogicalChannelKeySpec}.
+   */
+  private rewrittenLogicalChannelKeyRaw = '';
+  /**
+   * The spec a rewrite is currently running for, so repeated reloads of the SAME spec
+   * don't stack redundant rewrites on top of an in-flight one. A reload carrying a
+   * DIFFERENT spec deliberately still starts its own: the newer spec must win, and
+   * the queue's refcounted claim mutex keeps claims paused across both.
+   */
+  private rewriteInFlightRaw: string | undefined;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -240,10 +255,16 @@ export class AgentHl7Channel extends BaseChannel {
 
   /**
    * Notification from the App that we've taken the durable-queue lease.
-   * Triggers worker bring-up for this channel if the pool isn't already full.
+   * Brings the pool up for this channel, and retries any `logicalChannelKey` rewrite
+   * that was owed while we were a follower — a channel that resolved its spec before
+   * winning the lease skipped the rewrite, and nothing else would ever go back for it
+   * (see {@link applyLogicalChannelKeySpec}). Goes through
+   * {@link refreshLogicalChannelConfig} rather than {@link maybeStartWorkers} directly
+   * because that is what re-enters the spec apply; it ends in `resizeWorkerPool`, so
+   * the pool is still brought up.
    */
   onBecameQueueLeader(): void {
-    this.maybeStartWorkers();
+    this.refreshLogicalChannelConfig();
   }
 
   /**
@@ -314,30 +335,43 @@ export class AgentHl7Channel extends BaseChannel {
    *   so nothing stored needs rewriting — except on a spec CHANGE, which calls
    *   {@link DurableQueue.recomputeLogicalChannelKeys} to refresh the rows claiming
    *   can't reach on its own.
+   *
+   * Two markers, because "we have seen this spec" and "stored keys match this spec"
+   * come apart whenever the rewrite is skipped or fails:
+   * {@link appliedLogicalChannelKeyRaw} advances as soon as the spec is adopted (it
+   * gates the reload warnings in {@link refreshLogicalChannelConfig}), while
+   * {@link rewrittenLogicalChannelKeyRaw} advances only once the rewrite has actually
+   * completed. A spec whose rewrite is still owed therefore stays owed, and is
+   * retried on the next reload or on {@link onBecameQueueLeader}.
    * @param params - The endpoint URL query params.
    */
   private applyLogicalChannelKeySpec(params: URLSearchParams): void {
     const raw = params.get('logicalChannelKey') ?? this.app.getChannelLogicalChannelKey() ?? '';
     const parsed = parseLogicalChannelKeySpec(raw, this.log);
     if (parsed === undefined) {
-      // Invalid — keep the prior spec (and prior appliedLogicalChannelKeyRaw), so
-      // a bad reload doesn't repartition.
+      // Invalid — keep the prior spec (and prior markers), so a bad reload doesn't
+      // repartition.
       return;
     }
     this.logicalChannelKeySpec = parsed;
-    if (raw === this.appliedLogicalChannelKeyRaw) {
-      // Unchanged — no stored key can have gone stale relative to this spec.
+    this.appliedLogicalChannelKeyRaw = raw;
+    if (raw === this.rewrittenLogicalChannelKeyRaw || raw === this.rewriteInFlightRaw) {
+      // Stored keys already reflect this spec, or a rewrite for it is already running
+      // (reloads can arrive faster than a backlog-sized rewrite completes).
       return;
     }
-    this.appliedLogicalChannelKeyRaw = raw;
     const queue = this.app.getDurableQueue();
     if (!queue) {
+      // No queue means no stored keys to go stale, so the rewrite is vacuously done.
+      this.rewrittenLogicalChannelKeyRaw = raw;
       return;
     }
-    // Only the dispatching leader claims, so only it needs stored keys refreshed;
-    // a non-leader re-keys at claim time if it later takes the lease. Skipping it
-    // here also keeps the recompute off a demoted process, which must not rewrite
-    // dispatch state it no longer owns.
+    // Only the dispatching leader claims, so only it needs stored keys refreshed —
+    // and a demoted process must not rewrite dispatch state it no longer owns. The
+    // rewrite stays OWED (marker unadvanced) rather than being dropped: claim-time
+    // keying cannot self-heal it, since it only keys the row being claimed and never
+    // revisits the earlier rows isPartitionBlocked compares that key against. We
+    // retry from onBecameQueueLeader instead.
     if (!queue.isLeader()) {
       return;
     }
@@ -345,11 +379,16 @@ export class AgentHl7Channel extends BaseChannel {
     // here synchronously) doesn't block on a backlog-sized rewrite. Safe because the
     // recompute raises the channel's claim mutex before its first `await`: claims are
     // paused from this call, not from whenever the promise first runs.
+    this.rewriteInFlightRaw = raw;
     queue
       .recomputeLogicalChannelKeys(this.getDefinition().name, (originalMessage) =>
         this.computeLogicalChannelKeyForStoredMessage(originalMessage)
       )
       .then((changed) => {
+        this.clearRewriteInFlight(raw);
+        // Only now are stored keys known to match `raw`. Advancing this earlier is
+        // what previously made a partial or skipped rewrite unrecoverable.
+        this.rewrittenLogicalChannelKeyRaw = raw;
         // Always wake the pool, even at 0 changes — workers parked on the claim
         // mutex would otherwise wait out their idle poll.
         this.notifyWorkers();
@@ -360,13 +399,15 @@ export class AgentHl7Channel extends BaseChannel {
         }
       })
       .catch((err) => {
-        // Recompute is best-effort: claim-time keying re-derives each row's partition
-        // when it is next claimed, so a transient failure here can't corrupt state.
-        // Still un-park any `delayed` rows so none is stranded waiting on a wake that
-        // now targets a re-keyed partition (they re-evaluate at their next claim).
+        this.clearRewriteInFlight(raw);
+        // Leaves rewrittenLogicalChannelKeyRaw unadvanced, so the rewrite is retried
+        // on the next reload / lease acquisition rather than being silently lost —
+        // a half-rewritten key set does not heal on its own. Meanwhile un-park any
+        // `delayed` rows so none is stranded waiting on a wake that now targets a
+        // re-keyed partition.
         this.log.warn(
           `logicalChannelKey changed to '${raw || '(none)'}', but recomputing queued/delayed partitions failed ` +
-            `(will self-heal at claim time): ${normalizeErrorString(err)}`
+            `(will retry on the next config reload): ${normalizeErrorString(err)}`
         );
         try {
           queue.flipDelayedToQueued(this.getDefinition().name);
@@ -375,6 +416,18 @@ export class AgentHl7Channel extends BaseChannel {
         }
         this.notifyWorkers();
       });
+  }
+
+  /**
+   * Clears {@link rewriteInFlightRaw}, but only if `raw` is still the spec in flight —
+   * a newer spec may have superseded this rewrite while it ran, and that one owns the
+   * marker now.
+   * @param raw - The spec whose rewrite just settled.
+   */
+  private clearRewriteInFlight(raw: string): void {
+    if (this.rewriteInFlightRaw === raw) {
+      this.rewriteInFlightRaw = undefined;
+    }
   }
 
   /**

@@ -576,6 +576,25 @@ describe('DurableQueue', () => {
       expect(queue.isClaimPaused('PAUSE')).toBe(false);
     });
 
+    test('overlapping recomputes hold the claim mutex until the last one finishes', async () => {
+      // Back-to-back spec changes can overlap two rewrites on one channel. A boolean
+      // flag would let the first to finish drop the mutex while the second is still
+      // rewriting, reopening exactly the window the mutex exists to close.
+      const BATCH = 500;
+      for (let i = 0; i < BATCH + 1; i++) {
+        queue.enqueue(makeEnqueueInput({ channelName: 'OVER', msgControlId: `OV${i}` }));
+      }
+      const first = queue.recomputeLogicalChannelKeys('OVER', () => 'a');
+      const second = queue.recomputeLogicalChannelKeys('OVER', () => 'b');
+      expect(queue.isClaimPaused('OVER')).toBe(true);
+
+      await first;
+      expect(queue.isClaimPaused('OVER')).toBe(true);
+
+      await second;
+      expect(queue.isClaimPaused('OVER')).toBe(false);
+    });
+
     test('a failed recomputeLogicalChannelKeys still releases the claim mutex', async () => {
       queue.enqueue(makeEnqueueInput({ channelName: 'THROW', msgControlId: 'TZ1' }));
       await expect(

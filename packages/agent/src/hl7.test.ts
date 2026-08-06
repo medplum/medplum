@@ -3458,15 +3458,16 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH-9:ADT^A01');
   });
 
-  test('a non-leader skips the recompute (re-keys at claim time if it later takes the lease)', () => {
+  test('a non-leader defers the recompute and runs it on becoming leader', async () => {
     const recompute = vi.fn().mockResolvedValue(0);
     const appLog = createMockLogger();
+    let leader = false;
     const mockApp = {
       log: appLog,
       channelLog: createMockLogger(),
       heartbeatEmitter: { addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() },
       getDurableQueue: vi.fn().mockReturnValue({
-        isLeader: () => false,
+        isLeader: () => leader,
         recomputeLogicalChannelKeys: recompute,
         flipDelayedToQueued: vi.fn(),
       }),
@@ -3489,5 +3490,63 @@ describe('AgentHl7Channel logicalChannelKey partitioning', () => {
     // Non-leader: no recompute, but the spec still takes effect for its own claims.
     expect(recompute).not.toHaveBeenCalled();
     expect(channel.getLogicalChannelKey(MSG('HOSPA'))).toBe('MSH-4:HOSPA');
+
+    // The rewrite is owed, not dropped — nothing else would ever re-key the older
+    // rows a claim compares against, so taking the lease has to go back for it.
+    leader = true;
+    channel.onBecameQueueLeader();
+    expect(recompute).toHaveBeenCalledTimes(1);
+    expect(recompute).toHaveBeenLastCalledWith('vc-channel', expect.any(Function));
+
+    // Once it succeeds the debt is settled: a further acquisition is a no-op.
+    await Promise.resolve();
+    channel.onBecameQueueLeader();
+    expect(recompute).toHaveBeenCalledTimes(1);
+  });
+
+  test('a failed recompute stays owed and is retried on the next reload', async () => {
+    const recompute = vi.fn().mockRejectedValueOnce(new Error('rewrite blew up')).mockResolvedValue(3);
+    const flip = vi.fn();
+    const appLog = createMockLogger();
+    const mockApp = {
+      log: appLog,
+      channelLog: createMockLogger(),
+      heartbeatEmitter: { addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() },
+      getDurableQueue: vi.fn().mockReturnValue({
+        isLeader: () => true,
+        recomputeLogicalChannelKeys: recompute,
+        flipDelayedToQueued: flip,
+      }),
+      getChannelRetrySettings: vi.fn().mockReturnValue({}),
+      getChannelMaxWorkers: vi.fn().mockReturnValue(undefined),
+      getChannelLogicalChannelKey: vi.fn().mockReturnValue(undefined),
+    } as unknown as App;
+    const channel = new AgentHl7Channel(
+      mockApp,
+      { name: 'vc-channel' } as AgentChannel,
+      { resourceType: 'Endpoint', status: 'active', address: `${ADDR}?logicalChannelKey=` } as Endpoint
+    );
+    const reconfigure = (spec: string): void => {
+      (channel as unknown as { endpoint: Endpoint }).endpoint = {
+        resourceType: 'Endpoint',
+        status: 'active',
+        address: `${ADDR}?logicalChannelKey=${spec}`,
+      } as Endpoint;
+      (channel as unknown as { configureHl7ServerAndConnections(): void }).configureHl7ServerAndConnections();
+    };
+
+    reconfigure('MSH-4');
+    expect(recompute).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(flip).toHaveBeenCalled());
+
+    // Same spec as the failed attempt: without the separate "rewritten" marker this
+    // would read as unchanged and the half-rewritten keys would never be repaired.
+    reconfigure('MSH-4');
+    expect(recompute).toHaveBeenCalledTimes(2);
+
+    // Now that it succeeded, re-applying the same spec really is a no-op.
+    await Promise.resolve();
+    reconfigure('MSH-4');
+    expect(recompute).toHaveBeenCalledTimes(2);
   });
 });

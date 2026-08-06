@@ -183,8 +183,10 @@ export class DurableQueue {
   // (recomputeLogicalChannelKeys). Held in memory rather than in the DB because it
   // guards against this process's own workers, which are the only claimants — a
   // peer that takes the lease mid-rewrite is stopped by assertNotDemoted instead.
-  // See isClaimPaused.
-  private readonly repartitioning = new Set<string>();
+  // Refcounted, not a flag: back-to-back spec changes can overlap two rewrites on one
+  // channel, and the first to finish must not release the mutex out from under the
+  // second. See isClaimPaused.
+  private readonly repartitioning = new Map<string, number>();
 
   // WAL-checkpoint loop. Runs while the queue is open, INDEPENDENT of the
   // dispatch lease: a follower still accepts intake writes (enqueue runs on any
@@ -1312,7 +1314,7 @@ export class DurableQueue {
    * @returns True while that channel's partition keys are being rewritten.
    */
   isClaimPaused(channelName: string): boolean {
-    return this.repartitioning.has(channelName);
+    return (this.repartitioning.get(channelName) ?? 0) > 0;
   }
 
   /**
@@ -1430,7 +1432,7 @@ export class DurableQueue {
     const BATCH = 500;
     let lastId = 0;
     let changed = 0;
-    this.repartitioning.add(channelName);
+    this.repartitioning.set(channelName, (this.repartitioning.get(channelName) ?? 0) + 1);
     try {
       for (;;) {
         // Re-checked every batch, not just at entry: the yield below is a window for
@@ -1464,7 +1466,12 @@ export class DurableQueue {
         await sleep(0);
       }
     } finally {
-      this.repartitioning.delete(channelName);
+      const held = (this.repartitioning.get(channelName) ?? 1) - 1;
+      if (held > 0) {
+        this.repartitioning.set(channelName, held);
+      } else {
+        this.repartitioning.delete(channelName);
+      }
     }
     if (changed > 0) {
       this.walDirty = true;

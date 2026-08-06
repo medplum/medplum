@@ -438,9 +438,8 @@ recompute that rewrites the stored key of every `queued`/`delayed` row under the
 spec (and un-parks `delayed → queued`). Unlike the removed intake-time recompute it is
 the **rare** path, so it is **chunked** (paginated by id, one transaction per batch, so
 a large backlog doesn't materialize every blob at once) and **lease-gated** (only the
-leader runs it; a follower re-keys at claim time if it later takes the lease). If it
-fails it falls back to `flipDelayedToQueued` so no row strands, and claim-time keying
-self-heals the rest. `claimed`/`inflight` rows are left alone — they finish under their
+leader runs it). If it fails it falls back to `flipDelayedToQueued` so no row strands.
+`claimed`/`inflight` rows are left alone — they finish under their
 current partition, a bounded transitional window during the reconfigure (the one
 accepted limitation).
 
@@ -456,13 +455,23 @@ immediately. Intake needs no gate: ids are monotonic, so a row inserted mid-rewr
 ahead of the pagination cursor and is keyed under the new spec when its batch arrives.
 
 Dispatch therefore stalls for the length of the rewrite — but it did before too, and the
-event loop stalled with it. What the mutex does not give back is durable atomicity: the
-rewrite commits per batch, so a crash or a mid-rewrite demotion (`assertNotDemoted` is
-re-checked each batch) can leave a mix of old and new keys behind, and neither
-`recoverOnStartup` nor claim-time keying re-keys the *older* rows a claim compares
-against. That window is pre-existing — per-batch commits always had it on crash — and
-closing it properly wants a persisted "repartition in progress" marker that a restart or
-a new leader resumes from.
+event loop stalled with it.
+
+**Partial rewrites are retried, not self-healed.** The rewrite commits per batch, so a
+crash, a mid-rewrite demotion (`assertNotDemoted` is re-checked each batch), or a thrown
+`compute` can leave a mix of old and new stored keys. Nothing repairs that on its own:
+`recoverOnStartup` only flips states, `flipDelayedToQueued` only un-parks, and claim-time
+keying computes the key of the row *being claimed* — never the earlier rows
+`isPartitionBlocked` compares that key against, which is exactly where a stale key does
+damage. So the channel tracks the rewrite as **owed** and redoes it, using two markers:
+`appliedLogicalChannelKeyRaw` advances when a spec is adopted, while
+`rewrittenLogicalChannelKeyRaw` advances only once a rewrite for it has completed. Any
+gap between them is a debt, retried on the next reload and on `onBecameQueueLeader` —
+which is what covers the common case of a channel that resolved its spec while still a
+follower and so skipped the rewrite entirely. Redoing a whole rewrite is cheap enough
+(and idempotent) that no persisted resume marker is needed. Overlapping rewrites on one
+channel are safe because the claim mutex is refcounted, so the first to finish cannot
+release it out from under the second.
 
 **Worker pool lifecycle.** `AgentHl7Channel` owns `workers` (the active pool) and sizes
 it to `maxWorkers` via `resizeWorkerPool` on config reload; `refreshLogicalChannelConfig`
