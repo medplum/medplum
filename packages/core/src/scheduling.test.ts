@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
+import type { Extension, HealthcareService, Identifier, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import {
   clearScheduleParameter,
+  durationToMinutes,
   extractServiceTypeReferences,
   getEffectiveAvailability,
   getScheduleParameters,
   getSchedulingTimezone,
   SchedulingParametersURI,
+  SchedulingTransientIdentifier,
   serviceTypeIncludesService,
   setScheduleAvailability,
   setScheduleParameter,
@@ -431,5 +433,74 @@ describe('serviceType CodeableConcepts', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
     expect(serviceTypeIncludesService(serviceType, { ...service, id: 'service-2' })).toBe(false);
     expect(serviceTypeIncludesService(undefined, service)).toBe(false);
+  });
+});
+
+describe('durationToMinutes', () => {
+  test('converts every unit scheduling accepts', () => {
+    expect(durationToMinutes({ value: 30, unit: 'min' })).toBe(30);
+    expect(durationToMinutes({ value: 1, unit: 'h' })).toBe(60);
+    expect(durationToMinutes({ value: 1, unit: 'd' })).toBe(1440);
+    expect(durationToMinutes({ value: 1, unit: 'wk' })).toBe(10080);
+    expect(durationToMinutes({ value: 0, unit: 'min' })).toBe(0);
+  });
+
+  test('refuses a duration the scheduling operations would refuse', () => {
+    // Rejected rather than read as minutes: a unit guessed wrong here and
+    // validated there would have the two disagree by hours.
+    expect(durationToMinutes({ value: 30, unit: 's' })).toBeUndefined();
+    expect(durationToMinutes({ value: 1, unit: 'mo' })).toBeUndefined();
+    // `unit` is what the operations validate; a UCUM code alone is not enough.
+    expect(durationToMinutes({ value: 1, code: 'h' })).toBeUndefined();
+    expect(durationToMinutes({ value: 1 })).toBeUndefined();
+    expect(durationToMinutes({ unit: 'min' })).toBeUndefined();
+    expect(durationToMinutes({ value: -30, unit: 'min' })).toBeUndefined();
+    expect(durationToMinutes(undefined)).toBeUndefined();
+  });
+});
+
+describe('SchedulingTransientIdentifier', () => {
+  // Built fresh per test, since `set` and `remove` mutate the resource.
+  function buildSlot(identifier?: Identifier[]): Slot {
+    return {
+      resourceType: 'Slot',
+      start: '2026-01-15T00:00:00.000Z',
+      end: '2026-01-15T00:00:00.000Z',
+      schedule: { reference: 'Schedule/12345' },
+      status: 'busy',
+      identifier,
+    };
+  }
+
+  test('set', () => {
+    const slot = buildSlot();
+
+    SchedulingTransientIdentifier.set(slot);
+    expect(slot.identifier).toHaveLength(1);
+    expect(slot.identifier?.[0]).toHaveProperty('system', 'https://medplum.com/fhir/scheduling-transient-id');
+    expect(slot.identifier?.[0]).toHaveProperty('use', 'temp');
+    // naive check: does this look like a uuid
+    expect(slot.identifier?.[0].value).toMatch(/[-0-9a-f]{36}/);
+  });
+
+  test('get on a resource that was not `set` upon returns undefined', () => {
+    expect(SchedulingTransientIdentifier.get(buildSlot())).toBeUndefined();
+  });
+
+  test('get on a resource that was `set` upon returns the ID', () => {
+    const id = 'cb103a82-f313-4b22-8918-ed8de4b4143d';
+    const slot = buildSlot([{ system: 'https://medplum.com/fhir/scheduling-transient-id', value: id, use: 'temp' }]);
+
+    expect(SchedulingTransientIdentifier.get(slot)).toEqual(id);
+  });
+
+  test('remove strips the transient identifier and preserves others', () => {
+    const other: Identifier = { system: 'https://example.com/mrn', value: 'abc' };
+    const slot = buildSlot([other]);
+    SchedulingTransientIdentifier.set(slot);
+
+    SchedulingTransientIdentifier.remove(slot);
+    expect(slot.identifier).toEqual([other]);
+    expect(SchedulingTransientIdentifier.get(slot)).toBeUndefined();
   });
 });

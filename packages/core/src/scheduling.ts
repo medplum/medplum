@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   CodeableConcept,
+  Duration,
   Extension,
   HealthcareService,
   HealthcareServiceAvailableTime,
+  Identifier,
   Reference,
   Resource,
   Schedule,
 } from '@medplum/fhirtypes';
+import { generateId } from './crypto';
 import { badRequest, OperationOutcomeError } from './outcomes';
 import type { WithId } from './utils';
 import {
@@ -17,8 +20,10 @@ import {
   getExtension,
   getExtensions,
   getExtensionValue,
+  getIdentifier,
   getReferenceString,
   isDefined,
+  setIdentifier,
 } from './utils';
 
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
@@ -423,3 +428,63 @@ export function extractServiceTypeReferences(
     .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
     .filter(isDefined);
 }
+
+/**
+ * The duration units SchedulingParameters accepts, and what each is worth in
+ * minutes.
+ *
+ * Scheduling works in whole minutes throughout, so these are the UCUM units that
+ * divide into one. Read from `Duration.unit` rather than `Duration.code`, which
+ * is what the scheduling operations validate against.
+ */
+export const SCHEDULING_DURATION_UNITS: Record<string, number | undefined> = {
+  wk: 60 * 24 * 7,
+  d: 60 * 24,
+  h: 60,
+  min: 1,
+};
+
+/**
+ * Converts a SchedulingParameters duration to minutes.
+ *
+ * Shared with the scheduling operations so that a `duration` or a buffer means
+ * the same length of time to whatever is reading it: a client showing a visit as
+ * an hour long and a server placing it on the hour have to agree, and a unit one
+ * of them silently read as minutes would put them a day apart.
+ *
+ * @param duration - The duration to convert.
+ * @returns The length in minutes, or undefined when the duration has no value, a
+ * negative value, or a unit scheduling does not accept.
+ */
+export function durationToMinutes(duration: Duration | undefined): number | undefined {
+  const value = duration?.value;
+  if (value === undefined || value < 0) {
+    return undefined;
+  }
+  const perUnit = duration?.unit === undefined ? undefined : SCHEDULING_DURATION_UNITS[duration.unit];
+  return perUnit === undefined ? undefined : value * perUnit;
+}
+
+const MedplumSchedulingTransientIdentifierURI = 'https://medplum.com/fhir/scheduling-transient-id';
+
+/**
+ * Tags resources that do not exist on the server yet, such as the proposed
+ * Appointments and Slots returned by `$find`, with a `use: 'temp'` identifier.
+ * This gives clients a stable key for a resource that has no `id`. Call
+ * `remove` before persisting, so the identifier never reaches the server.
+ */
+export const SchedulingTransientIdentifier = {
+  set(resource: Resource & { identifier?: Identifier[] }) {
+    setIdentifier(resource, MedplumSchedulingTransientIdentifierURI, generateId(), { use: 'temp' });
+  },
+
+  get(resource: Resource) {
+    return getIdentifier(resource, MedplumSchedulingTransientIdentifierURI);
+  },
+
+  remove(resource: Resource & { identifier?: Identifier[] }) {
+    resource.identifier = resource.identifier?.filter(
+      (identifier) => identifier.system !== MedplumSchedulingTransientIdentifierURI
+    );
+  },
+};
