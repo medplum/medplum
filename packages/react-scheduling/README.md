@@ -25,6 +25,18 @@ Note the following peer dependencies:
 - [@mantine/hooks](https://www.npmjs.com/package/@mantine/hooks)
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 - [@medplum/fhirtypes](https://www.npmjs.com/package/@medplum/fhirtypes)
+- [@medplum/react](https://www.npmjs.com/package/@medplum/react)
+- [@medplum/react-hooks](https://www.npmjs.com/package/@medplum/react-hooks)
+
+
+## Components
+
+- `Calendar` — a month, week or day view of a practitioner's `Appointment`s and `Slot`s.
+- `AppointmentFinder` — a booking flow over `Appointment/$find`: pick a visit service type, the people, rooms
+  and devices that must attend, then a time out of the ones they are all free for.
+- `ScheduleAvailabilityEditor` — edits the weekly hours a visit service type is available for, either as a
+  `Schedule`'s override or as the service's own default. See
+  [Defining Availability](https://www.medplum.com/docs/scheduling/defining-availability).
 
 
 ## Basic Usage

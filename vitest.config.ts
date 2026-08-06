@@ -19,6 +19,7 @@ export const medplumAliases = {
   '@medplum/mock': resolve(repoDir, 'packages/mock/src'),
   '@medplum/react': resolve(repoDir, 'packages/react/src'),
   '@medplum/react-hooks': resolve(repoDir, 'packages/react-hooks/src'),
+  '@medplum/react-scheduling': resolve(repoDir, 'packages/react-scheduling/src'),
 };
 
 export default defineConfig({

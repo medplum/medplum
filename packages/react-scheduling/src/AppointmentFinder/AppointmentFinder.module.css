@@ -1,0 +1,117 @@
+/* The site and the visit type are asked side by side, because choosing one
+   narrows the other and reading them apart hides that. */
+.pickColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-xl);
+  align-items: start;
+}
+
+.pickList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  /* Long enough to read down, short enough that the button below it stays in
+     view on a laptop. */
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+
+.pickRow:last-child {
+  border-bottom: none;
+}
+
+.pickRow:hover:not(:disabled) {
+  background-color: var(--mantine-color-default-hover);
+}
+
+/* An inset ring rather than a border, so choosing a row does not move the ones
+   below it. */
+.pickRow[data-selected] {
+  background-color: var(--mantine-color-blue-light);
+  box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
+}
+
+.pickRowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.pickRowCheck {
+  flex-shrink: 0;
+  color: var(--mantine-primary-color-filled);
+}
+
+/* The criteria sit beside the times they produce: narrowing a search is a
+   change to a list already on screen, not a form to be submitted. The rail is
+   first in the source so that it reads first when the columns stack. */
+.searchLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--mantine-spacing-xl);
+  align-items: start;
+}
+
+.rail {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.resultsColumn {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+/* What is being booked is read back beside the fields, so the time and the
+   person it is for can be checked against each other. */
+.confirmLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
+  gap: var(--mantine-spacing-xl);
+  align-items: start;
+}
+
+.summaryIcon {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  padding-top: 2px;
+  color: var(--mantine-color-dimmed);
+}
+
+/* Times wrap into as many columns as fit rather than a fixed grid, so a card
+   holding four times is not padded out to the width of one holding twenty. */
+.timeGrid {
+  row-gap: var(--mantine-spacing-xs);
+}
+
+/* The time, who it is with, and the button share a line where there is room and
+   wrap as a whole when there is not. */
+.customTimeRow {
+  row-gap: var(--mantine-spacing-xs);
+}
+
+@media (max-width: 62em) {
+  .pickColumns,
+  .confirmLayout,
+  .searchLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail,
+  .resultsColumn {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
