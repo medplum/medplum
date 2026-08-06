@@ -553,6 +553,7 @@ describe('Reset Password', () => {
       const res = await request(app).post('/auth/resetpassword').type('json').send({
         email,
         projectId: project.id,
+        recaptchaToken: 'xyz',
       });
       expect(res).toHaveStatus(200);
       expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
