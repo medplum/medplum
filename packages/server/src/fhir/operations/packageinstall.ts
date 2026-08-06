@@ -14,6 +14,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
 } from '@medplum/core';
 import type { FhirRepository, FhirRequest, FhirResponse, FhirRouter } from '@medplum/fhir-router';
 import { processBatch } from '@medplum/fhir-router';
@@ -21,6 +22,7 @@ import type {
   Binary,
   Bot,
   Bundle,
+  BundleEntry,
   Extension,
   PackageInstallation,
   PackageRelease,
@@ -39,6 +41,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
+import { deployBot } from './deploy';
 
 /**
  * Canonical `meta.tag` system applied by the install Bundle to every resource it
@@ -84,6 +87,21 @@ export const PackageInstallationMigrationProgressUrl =
  * (RFC §Stuck installing/upgrading states; default 5 min on read).
  */
 export const STALE_INSTALL_MS = 5 * 60 * 1000;
+
+/** Kebab-case URLs emitted by an earlier `@medplum-ee/package-types` build (pre-2026-06). */
+const LEGACY_PACKAGE_RELEASE_EXTENSION_URLS: Record<string, string> = {
+  [PackageReleaseImplProjectUrl]: 'https://medplum.com/fhir/StructureDefinition/package-release-impl-project',
+  [PackageReleaseSetupBotUrl]: 'https://medplum.com/fhir/StructureDefinition/package-release-setup-bot',
+};
+
+function getReleaseExtensionValue(release: PackageRelease, url: string): ReturnType<typeof getExtensionValue> {
+  const direct = getExtensionValue(release, url);
+  if (direct !== undefined) {
+    return direct;
+  }
+  const legacyUrl = LEGACY_PACKAGE_RELEASE_EXTENSION_URLS[url];
+  return legacyUrl ? getExtensionValue(release, legacyUrl) : undefined;
+}
 
 /** Where an `$install` failed, recorded so a re-invoke can resume from the right point. */
 type InstallErrorPhase = 'stage-1' | 'setup-bot';
@@ -245,9 +263,66 @@ async function runStage1(
     package: packageRelease.package,
     version: packageRelease.version,
   });
-  const result = await processBatch(req, repo, router, bundle);
+  const result = await processBatch(req, repo, router, await resolveConditionalEntries(repo, bundle));
   validateBatchResponse(result);
   return result;
+}
+
+/**
+ * Rewrites the conditional entries of an install Bundle into unconditional ones.
+ *
+ * Install Bundles are written as conditional upserts (`PUT <Type>?<query>`) because
+ * an install must be re-runnable. That makes the whole transaction serializable,
+ * which caps it at `maxSerializableTransactionEntries` entries — a limit packages
+ * outgrow as they ship more bots, and one that cannot keep being raised without
+ * enlarging the worst-case serializable transaction for every other caller.
+ *
+ * Resolving the queries up front removes the need for that isolation while keeping
+ * the install atomic: the Bundle still applies as a single transaction, just an
+ * ordinary one. Two properties of install Bundles make this safe. They are
+ * independent — no `fullUrl`s and no intra-Bundle references, since generated
+ * resources bind to their bots by logical identifier — and `$install` already
+ * excludes concurrent installs of the same package by rejecting a second attempt
+ * while one is `in-progress`, which is the writer that serializable isolation
+ * would otherwise be guarding against.
+ *
+ * @param repo - The FHIR repository of the calling project.
+ * @param bundle - The install Bundle as published.
+ * @returns An equivalent Bundle whose entries carry no search queries.
+ */
+async function resolveConditionalEntries(repo: FhirRepository, bundle: Bundle): Promise<Bundle> {
+  const entries: BundleEntry[] = [];
+  for (const entry of bundle.entry ?? []) {
+    const url = entry.request?.url;
+    if (entry.request?.method !== 'PUT' || !url?.includes('?')) {
+      entries.push(entry);
+      continue;
+    }
+
+    const searchRequest = parseSearchRequest(url);
+    searchRequest.count = 2;
+    searchRequest.offset = 0;
+    searchRequest.sortRules = undefined;
+    const [match, duplicate] = await repo.searchResources(searchRequest);
+    if (duplicate) {
+      throw new OperationOutcomeError(badRequest(`Conditional PUT matched multiple resources: ${url}`));
+    }
+
+    const resource = { ...entry.resource } as Resource;
+    if (match) {
+      entries.push({
+        ...entry,
+        resource: { ...resource, id: match.id },
+        request: { method: 'PUT', url: `${searchRequest.resourceType}/${match.id}` },
+      });
+    } else {
+      // Create, not create-by-id: assigning the id would require the privileged
+      // id-assignment path, which the installing project admin does not have.
+      delete resource.id;
+      entries.push({ ...entry, resource, request: { method: 'POST', url: searchRequest.resourceType } });
+    }
+  }
+  return { ...bundle, entry: entries };
 }
 
 // Stage 2: invoke the declared setupBot, passing the PackageInstallation and the
@@ -259,7 +334,7 @@ async function runStage2(
   installation: WithId<PackageInstallation>,
   settings: InstallSettings
 ): Promise<Resource | undefined> {
-  const setupBotIdentifier = getExtensionValue(packageRelease, PackageReleaseSetupBotUrl);
+  const setupBotIdentifier = getReleaseExtensionValue(packageRelease, PackageReleaseSetupBotUrl);
   if (!setupBotIdentifier || typeof setupBotIdentifier !== 'string') {
     return undefined;
   }
@@ -274,7 +349,14 @@ async function runStage2(
   }
 
   // Read as system to load extended metadata (mirrors the $execute operation).
-  const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+  let bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+
+  // Marketplace setup bots ship inline `code` in the install Bundle; vmcontext
+  // execution requires `executableCode` pointing at a Binary (same as $deploy).
+  if (!bot.executableCode?.url && bot.code) {
+    await deployBot(ctx.repo, bot, bot.code, 'post-install.js');
+    bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+  }
 
   const result = await executeBot({
     bot,
@@ -303,7 +385,7 @@ async function linkImplProject(
   project: WithId<Project>,
   packageRelease: PackageRelease
 ): Promise<void> {
-  const implProjectRef = getExtensionValue(packageRelease, PackageReleaseImplProjectUrl) as
+  const implProjectRef = getReleaseExtensionValue(packageRelease, PackageReleaseImplProjectUrl) as
     | Reference<Project>
     | undefined;
   if (!implProjectRef?.reference) {

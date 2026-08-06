@@ -189,6 +189,97 @@ describe('PackageRelease $install', () => {
     expect(installations[0].version).toBe('1.0.0');
   });
 
+  test('Install Bundle of conditional upserts is not limited by the serializable entry cap', async () => {
+    const systemRepo = getGlobalSystemRepo();
+    const identifierSystem = 'https://example.com/' + randomUUID();
+
+    // The entry caps only apply when the Bundle is processed as a transaction,
+    // which requires the project feature.
+    const txProject = await createTestProject({
+      withAccessToken: true,
+      project: { features: ['transaction-bundles'] },
+      membership: { admin: true },
+    });
+    const txToken = txProject.accessToken;
+
+    // Deliberately larger than maxSerializableTransactionEntries. Install Bundles
+    // are written as conditional upserts so an install can be re-run, which would
+    // otherwise force the whole transaction to be serializable and cap its size.
+    const entryCount = 20;
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: Array.from({ length: entryCount }, (_, i) => ({
+        resource: {
+          resourceType: 'Patient' as const,
+          identifier: [{ system: identifierSystem, value: `p${i}` }],
+        },
+        request: {
+          method: 'PUT' as const,
+          url: `Patient?identifier=${encodeURIComponent(identifierSystem)}|p${i}`,
+        },
+      })),
+    };
+
+    // The same Bundle submitted directly is rejected, which is the behavior the
+    // install path has to avoid inheriting.
+    const direct = await request(app)
+      .post('/fhir/R4')
+      .set('Authorization', 'Bearer ' + txToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(bundle);
+    expect(direct.status).toBe(400);
+    expect(direct.body.issue[0].details.text).toMatch(/too many entries/);
+
+    const binary = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        meta: { project: txProject.project.id },
+        contentType: ContentType.FHIR_JSON,
+      })
+    );
+    const packageRelease = await withTestContext(() =>
+      systemRepo.createResource<PackageRelease>({
+        resourceType: 'PackageRelease',
+        meta: { project: txProject.project.id },
+        package: { reference: 'Package/' + randomUUID() },
+        version: '1.0.0',
+        content: { contentType: ContentType.FHIR_JSON, url: `Binary/${binary.id}` },
+      })
+    );
+    vi.spyOn(storage, 'getBinaryStorage').mockImplementation(
+      () => new MockBinaryStorage(JSON.stringify(bundle)) as unknown as BinaryStorage
+    );
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)
+      .set('Authorization', 'Bearer ' + txToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).toBe(200);
+
+    const created = await request(app)
+      .get(`/fhir/R4/Patient?identifier=${encodeURIComponent(identifierSystem + '|p0')}`)
+      .set('Authorization', 'Bearer ' + txToken);
+    expect(created.body.entry).toHaveLength(1);
+    const firstId = created.body.entry[0].resource.id;
+
+    // Re-installing has to converge on the same resources rather than duplicate
+    // them, which is the whole reason the entries are conditional.
+    const reinstall = await request(app)
+      .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)
+      .set('Authorization', 'Bearer ' + txToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'force', valueBoolean: true }] });
+    expect(reinstall.status).toBe(200);
+
+    const after = await request(app)
+      .get(`/fhir/R4/Patient?identifier=${encodeURIComponent(identifierSystem + '|p0')}`)
+      .set('Authorization', 'Bearer ' + txToken);
+    expect(after.body.entry).toHaveLength(1);
+    expect(after.body.entry[0].resource.id).toBe(firstId);
+  });
+
   test('Error handling when bundle processing fails', async () => {
     const systemRepo = getGlobalSystemRepo();
 
