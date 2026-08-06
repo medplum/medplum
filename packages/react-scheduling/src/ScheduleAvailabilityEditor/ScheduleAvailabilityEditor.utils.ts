@@ -127,11 +127,11 @@ function normalizeRanges(ranges: MinuteRange[]): MinuteRange[] {
  * Pivots availability entries into the day-keyed view the editor edits.
  *
  * The editor cannot author a window that runs past midnight, but stored
- * availability can contain one, whether written by an earlier version of this
- * editor or by the API. Rather than lock those schedules out, a window like
- * Friday 10:00 PM to 6:00 AM is split at midnight into Friday 10:00 PM to
- * 12:00 AM plus Saturday 12:00 AM to 6:00 AM, which the scheduling operations
- * read identically.
+ * availability can hold one, written through the API or the `@medplum/core`
+ * helpers. Rather than lock those schedules out, a window like Friday 10:00 PM
+ * to 6:00 AM is split at midnight into Friday 10:00 PM to 12:00 AM plus
+ * Saturday 12:00 AM to 6:00 AM, which the scheduling operations read
+ * identically.
  * @param availableTime - Availability entries to pivot
  * @returns The equivalent day-keyed availability
  */

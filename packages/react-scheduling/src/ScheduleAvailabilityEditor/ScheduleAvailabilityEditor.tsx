@@ -250,12 +250,13 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
   // Without a Schedule, the service's own hours are what is being edited, so
   // there is no default to inherit from and no override to switch on.
   const editingDefault = schedule === undefined;
-  // Seed from the Schedule override when it has one, otherwise from the
-  // service-level default, so the editor opens showing the hours currently in
-  // effect rather than a blank week.
+  // The switch starts on when the calendar already sets hours of its own, and
+  // always on when editing the service default, where there is nothing to
+  // inherit and so nothing to switch off.
   const [overriding, setOverriding] = useState(() =>
     schedule ? getScheduleParameters(schedule, service, 'availability').length > 0 : true
   );
+  // Seeded from the hours in effect rather than a blank week:
   // `getEffectiveAvailability` falls back to the service default on its own, and
   // reads the service alone when there is no Schedule, so it covers both modes.
   const [weekly, setWeekly] = useState<WeeklyAvailability>(() =>

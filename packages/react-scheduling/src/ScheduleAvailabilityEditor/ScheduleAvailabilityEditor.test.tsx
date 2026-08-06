@@ -555,8 +555,8 @@ describe('ScheduleAvailabilityEditor component', () => {
       fireEvent.focus(screen.getByTestId('schedule-availability-end-mon-0'));
     });
 
-    // Overnight windows are no longer authorable, so nothing earlier than the
-    // start time is on offer.
+    // An end at or before its start would mean a window running into the next
+    // day, which the editor does not author, so the list starts after the start.
     expect(screen.queryByText('8:00 AM')).toBeNull();
     expect(screen.getByText('9:15 AM')).toBeDefined();
   });
