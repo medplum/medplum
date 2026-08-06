@@ -85,6 +85,8 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   maxSearchOffset?: number;
+  /** Maximum distinct search filters allowed on a single search. Unlimited when unset. */
+  maxSearchParams?: number;
   base64BinaryMaxBytes?: number;
   inlineAttachmentsMaxTotalBytes?: number;
   defaultSuperAdminEmail?: string;

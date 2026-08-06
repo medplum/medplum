@@ -170,6 +170,32 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       config.maxSearchOffset = prevMax;
     }));
 
+  test('Search parameter count max', async () =>
+    withTestContext(async () => {
+      // Temporarily set a low maxSearchParams
+      const prevMax = config.maxSearchParams;
+      config.maxSearchParams = 2;
+
+      // Under the limit, this should succeed
+      await expect(repo.search(parseSearchRequest('Patient?name=Homer&birthdate=1956-05-12'))).resolves.toBeDefined();
+
+      // Exact duplicates collapse while parsing, so they never count toward the limit
+      await expect(
+        repo.search(parseSearchRequest('Patient?name=Homer&name=Homer&name=Homer&birthdate=1956-05-12'))
+      ).resolves.toBeDefined();
+
+      // Distinct values over the limit, this should fail
+      try {
+        await repo.search(parseSearchRequest('Patient?name=Homer&name=Marge&name=Bart'));
+        expect.fail('Expected error');
+      } catch (err) {
+        expect(normalizeErrorString(err)).toStrictEqual('Search parameter count exceeds maximum (got 3, max 2)');
+      }
+
+      // Restore the maxSearchParams
+      config.maxSearchParams = prevMax;
+    }));
+
   test.each<[number | undefined, number, number | undefined, number]>([
     // offset, estimateCount, rowCount, expected
     [undefined, 0, undefined, 0],
