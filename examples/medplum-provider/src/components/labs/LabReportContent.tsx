@@ -29,13 +29,21 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
   // Health Gorilla doesn't always fold the lab-branded PDF into presentedForm; derivedFrom is a
   // more reliable fallback source for it, so it's placed first.
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       resolveDerivedFromAttachments(medplum, report.result),
       resolvePresentedFormAttachments(medplum, report.presentedForm),
     ])
-      .then(([derivedFromAttachments, presentedFormAttachments]) =>
-        setLabDocumentAttachments([...derivedFromAttachments, ...presentedFormAttachments])
-      )
+      .then(([derivedFromResult, presentedFormResult]) => {
+        if (derivedFromResult.status === 'rejected') {
+          console.error('Error resolving derivedFrom attachments:', derivedFromResult.reason);
+        }
+        if (presentedFormResult.status === 'rejected') {
+          console.error('Error resolving presentedForm attachments:', presentedFormResult.reason);
+        }
+        const derivedFromAttachments = derivedFromResult.status === 'fulfilled' ? derivedFromResult.value : [];
+        const presentedFormAttachments = presentedFormResult.status === 'fulfilled' ? presentedFormResult.value : [];
+        setLabDocumentAttachments([...derivedFromAttachments, ...presentedFormAttachments]);
+      })
       .catch(console.error);
 
     return () => {
