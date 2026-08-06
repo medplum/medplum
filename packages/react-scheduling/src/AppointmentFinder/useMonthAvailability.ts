@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Appointment, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
+import { startOfMonth } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
-import { endOfDay, endOfMonth, findAppointments, startOfMonth } from './AppointmentFinder.utils';
+import { endOfDay, endOfMonth, findAppointments } from './AppointmentFinder.utils';
 
 /**
  * The most times one leg of the scan asks for. The ceiling `$find` allows, and

@@ -11,7 +11,7 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { Appointment, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
-import { ResourceName } from '@medplum/react';
+import { ResourceName, startOfMonth } from '@medplum/react';
 import { useResource } from '@medplum/react-hooks';
 import { IconMapPin, IconStethoscope } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -36,7 +36,6 @@ import {
   getSelectedCandidates,
   getSelectedSchedules,
   groupAppointmentsByDay,
-  startOfMonth,
 } from './AppointmentFinder.utils';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
 import { AppointmentServiceSelect, toServiceReference } from './AppointmentServiceSelect';

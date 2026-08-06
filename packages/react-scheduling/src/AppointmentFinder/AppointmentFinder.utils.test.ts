@@ -57,7 +57,6 @@ import {
   parseDayKey,
   parseZonedTime,
   searchEligibleSchedules,
-  startOfMonth,
 } from './AppointmentFinder.utils';
 
 const EASTERN = 'America/New_York';
@@ -895,9 +894,8 @@ describe('formatting', () => {
   });
 });
 
-describe('startOfMonth and endOfMonth', () => {
+describe('endOfMonth', () => {
   test('Covers the whole of a month, whatever its length', () => {
-    expect(startOfMonth(new Date(2026, 6, 27, 14, 30))).toStrictEqual(new Date(2026, 6, 1));
     expect(endOfMonth(new Date(2026, 6, 27))).toStrictEqual(new Date(2026, 6, 31, 23, 59, 59, 999));
     expect(endOfMonth(new Date(2026, 1, 3))).toStrictEqual(new Date(2026, 1, 28, 23, 59, 59, 999));
     // A leap February, which the month's own length has to come from rather than

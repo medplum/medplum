@@ -1222,15 +1222,6 @@ export interface DateRange {
 }
 
 /**
- * Returns local midnight on the first of a date's month.
- * @param date - Any instant during the month.
- * @returns The first day of that month.
- */
-export function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-/**
  * Returns the last instant of a date's month.
  * @param date - Any instant during the month.
  * @returns The close of that month's last day.
