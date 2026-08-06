@@ -618,10 +618,11 @@ describe('Byte Stream', () => {
       const mockServer = startMockAgentServer(bodies);
 
       // The BioRad ASTM channel, expressed in address params. ENQ frames the session start and
-      // EOT its end; ENQ/ETX/EOT/LF each earn an ACK; CR and LF survive the control-char sweep
+      // EOT its end; per E1381 the ACK-bearing bytes are ENQ and the two frame terminators,
+      // ETX and ETB — EOT is never acknowledged. CR and LF survive the control-char sweep
       // because they terminate ASTM records and frames.
       const [agentId, agentPort] = await createByteStreamAgent(
-        '&autoRespond=%05:%06,%03:%06,%04:%06,%0A:%06&stripControlChars=true&keepControlChars=%0D%0A&bodyEncoding=utf-8',
+        '&autoRespond=%05:%06,%03:%06,%17:%06&stripControlChars=true&keepControlChars=%0D%0A&bodyEncoding=utf-8',
         { startChar: '%05', endChar: '%04' }
       );
 
@@ -635,19 +636,21 @@ describe('Byte Stream', () => {
       client.write(Buffer.from([ENQ]));
       await waitFor(() => ackCount() === 1, 1000, 'ACK for ENQ');
 
-      // Intermediate frame, terminated by ETB: only its trailing LF is mapped, so one ACK.
+      // One ACK per frame, whichever terminator it carries: ETB for an intermediate frame...
       client.write(astmFrame('1', 'H|\\^&|||BioRad^1.0|||||||P|1|20251217223735', ETB, 'C5'));
       await waitFor(() => ackCount() === 2, 1000, 'ACK for the intermediate frame');
 
-      // Final frame, terminated by ETX: both ETX and the trailing LF are mapped, so two ACKs.
+      // ...and ETX for the final one. A second ACK here would leave a real analyzer reading
+      // frame N's reply as frame N+1's, permanently one ahead of the exchange.
       client.write(astmFrame('2', 'P|1||||Doe^John||19700101|M', ETX, '4F'));
-      await waitFor(() => ackCount() === 4, 1000, 'ACKs for the final frame');
+      await waitFor(() => ackCount() === 3, 1000, 'ACK for the final frame');
 
+      // EOT ends the session unacknowledged; the sender has already dropped to idle.
       client.write(Buffer.from([EOT]));
-      await waitFor(() => ackCount() === 5, 1000, 'ACK for EOT');
+      await sleep(100);
 
-      // Five ACKs, and nothing but ACKs.
-      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK, ACK, ACK, ACK, ACK]));
+      // Three ACKs, and nothing but ACKs.
+      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK, ACK, ACK]));
 
       await waitFor(() => bodies.length > 0, 1000, 'transmit request');
       // ENQ, STX, ETB, ETX and EOT are gone; CR and LF remain, as do the frame numbers and
@@ -655,6 +658,98 @@ describe('Byte Stream', () => {
       expect(bodies[0]).toBe(
         '1H|\\^&|||BioRad^1.0|||||||P|1|20251217223735\rC5\r\n2P|1||||Doe^John||19700101|M\r4F\r\n'
       );
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('Bytes ahead of the start char are not spliced onto the body', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&stripControlChars=true&bodyEncoding=utf-8', {
+        startChar: '%05',
+        endChar: '%04',
+      });
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client] = await connectCollecting(agentPort);
+      // Junk, the start char, the message and the end char all in one read. Slicing the body
+      // from the previous end char rather than from the start char would prepend the junk.
+      client.write(
+        Buffer.concat([
+          Buffer.from('JUNK', 'utf-8'),
+          Buffer.from([ENQ]),
+          Buffer.from('Hi', 'utf-8'),
+          Buffer.from([EOT]),
+        ])
+      );
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe('Hi');
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('Junk between two messages stays out of the second body', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&stripControlChars=true&bodyEncoding=utf-8', {
+        startChar: '%05',
+        endChar: '%04',
+      });
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client] = await connectCollecting(agentPort);
+      client.write(Buffer.concat([Buffer.from([ENQ]), Buffer.from('one', 'utf-8'), Buffer.from([EOT])]));
+      await waitFor(() => bodies.length > 0, 1000, 'first transmit request');
+
+      // Unframed bytes in their own read, so they are buffered before the next start char.
+      client.write(Buffer.from('JUNK', 'utf-8'));
+      await sleep(50);
+
+      client.write(Buffer.concat([Buffer.from([ENQ]), Buffer.from('two', 'utf-8'), Buffer.from([EOT])]));
+      await waitFor(() => bodies.length > 1, 1000, 'second transmit request');
+
+      expect(bodies).toEqual(['one', 'two']);
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('An end char with no start char before it dispatches nothing', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+      const [agentId, agentPort] = await createByteStreamAgent('&stripControlChars=true&bodyEncoding=utf-8', {
+        startChar: '%05',
+        endChar: '%04',
+      });
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client] = await connectCollecting(agentPort);
+      // Body bytes and the end char in separate reads. Buffering bytes that belong to no message
+      // would move msgTotalLength off its -1 sentinel, letting the end char dispatch a message
+      // that never had a start char — and Buffer.concat trim a byte to match the stale length.
+      client.write(Buffer.from('orphan', 'utf-8'));
+      await sleep(50);
+      client.write(Buffer.from([EOT]));
+      await sleep(200);
+
+      expect(bodies).toEqual([]);
+
+      // The connection still frames the next message correctly.
+      client.write(Buffer.concat([Buffer.from([ENQ]), Buffer.from('Hi', 'utf-8'), Buffer.from([EOT])]));
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies[0]).toBe('Hi');
 
       client.destroy();
       await app.stop();

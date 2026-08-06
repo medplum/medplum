@@ -546,7 +546,9 @@ export class ByteStreamChannelConnection {
       const config = this.channel.getConfig();
       this.channel.channelLog.info(`Received ${data.length} byte(s): ${data.toString('hex')}`);
 
-      let lastEndIndex = -1;
+      // First byte of this read still eligible to join a message body. Every dispatch and every
+      // start char advances it, so bytes outside the framing never reach a body.
+      let pendingStart = 0;
 
       for (let i = 0; i < data.length; i++) {
         const char = data[i];
@@ -559,9 +561,9 @@ export class ByteStreamChannelConnection {
         }
 
         if (char === config.startChar) {
-          // Clear chunks when we hit a start character
           this.msgChunks.length = 0;
           this.msgTotalLength = 0;
+          pendingStart = i;
           // A restarted frame means any partial match belonged to bytes we just discarded
           this.matcher.reset();
         } else if (char === config.endChar) {
@@ -569,9 +571,7 @@ export class ByteStreamChannelConnection {
           if (this.msgTotalLength === -1) {
             continue;
           }
-          // Slice from after the last end char (or beginning) to current position
-          const startSlice = lastEndIndex + 1;
-          const slice = data.subarray(startSlice, i + 1); // Include the end char
+          const slice = data.subarray(pendingStart, i + 1); // Include the end char
 
           this.msgChunks.push(slice);
           this.msgTotalLength += slice.length;
@@ -599,18 +599,18 @@ export class ByteStreamChannelConnection {
 
           // Reset for next message
           this.msgChunks.length = 0;
-          lastEndIndex = i;
+          pendingStart = i + 1;
           this.msgTotalLength = -1;
         }
       }
 
-      // After processing all bytes, handle any remaining data after the last end char
-      if (lastEndIndex < data.length - 1) {
-        const remainingSlice = data.subarray(lastEndIndex + 1);
-        if (remainingSlice.length > 0) {
-          this.msgChunks.push(remainingSlice);
-          this.msgTotalLength += remainingSlice.length;
-        }
+      // Carry the tail of an unfinished message into the next read. Bytes outside the framing are
+      // dropped rather than buffered: they belong to no message, and adding their length would
+      // push msgTotalLength off its -1 sentinel, permanently defeating the endChar guard above.
+      if (this.msgTotalLength !== -1 && pendingStart < data.length) {
+        const remainingSlice = data.subarray(pendingStart);
+        this.msgChunks.push(remainingSlice);
+        this.msgTotalLength += remainingSlice.length;
       }
     } catch (err) {
       this.channel.log.error(`Byte stream error occurred - check channel logs`);
