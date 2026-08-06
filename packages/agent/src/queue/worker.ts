@@ -27,6 +27,12 @@ export const DEFAULT_WORKER_RESPONSE_TIMEOUT_MS = 60_000;
 export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
 
 /**
+ * Longest an unbroken run of parked rows may hold the event loop before
+ * {@link ChannelQueueWorker.loop} yields a turn — see the park budget there.
+ */
+export const DEFAULT_PARK_YIELD_BUDGET_MS = 5;
+
+/**
  * The channel's retry behavior, as a single configuration knob. Collapses what
  * would otherwise be two orthogonal booleans (auto-retry on/off × guaranteed
  * delivery on/off) into the three combinations that actually make sense, so the
@@ -255,6 +261,8 @@ export interface ChannelQueueWorkerOptions {
   responseTimeoutMs?: number;
   /** Override for unit tests; default {@link DEFAULT_WORKER_IDLE_POLL_MS}. */
   idlePollMs?: number;
+  /** Override for unit tests; default {@link DEFAULT_PARK_YIELD_BUDGET_MS}. */
+  parkYieldBudgetMs?: number;
   /**
    * How to deliver the app-level ACK back to the source device. Injected (not
    * read off the channel) so the worker can stay agnostic about which channel
@@ -296,6 +304,14 @@ interface PendingResponse {
 }
 
 /**
+ * What {@link ChannelQueueWorker.process} did with a claimed row. `dispatched`
+ * covers every path that reached {@link ChannelQueueWorker.dispatch} and so awaited
+ * real I/O, however it then settled; `parked` is the one that awaited nothing, which
+ * is why {@link ChannelQueueWorker.loop} budgets a run of them.
+ */
+type ProcessOutcome = 'parked' | 'dispatched';
+
+/**
  * Sentinel rejection used when an in-flight row was returned to `queued` by
  * {@link ChannelQueueWorker.onWebSocketDisconnect} — tells {@link ChannelQueueWorker.process}
  * the row already has its final (non-errored) state and needs no further handling.
@@ -328,6 +344,7 @@ export class ChannelQueueWorker {
   private readonly log: ILogger;
   private readonly responseTimeoutMs: number;
   private readonly idlePollMs: number;
+  private readonly parkYieldBudgetMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
   private readonly computeKey: (originalMessage: Buffer) => string;
   private readonly notifyPool: () => void;
@@ -348,6 +365,7 @@ export class ChannelQueueWorker {
     this.log = options.log;
     this.responseTimeoutMs = options.responseTimeoutMs ?? DEFAULT_WORKER_RESPONSE_TIMEOUT_MS;
     this.idlePollMs = options.idlePollMs ?? DEFAULT_WORKER_IDLE_POLL_MS;
+    this.parkYieldBudgetMs = options.parkYieldBudgetMs ?? DEFAULT_PARK_YIELD_BUDGET_MS;
     this.sendAck = options.sendAck;
     this.computeKey = options.computeKey ?? (() => '');
     this.notifyPool = options.notifyPool ?? ((): void => {});
@@ -628,6 +646,9 @@ export class ChannelQueueWorker {
   }
 
   private async loop(): Promise<void> {
+    // When the current unbroken run of parks began; undefined whenever the last
+    // iteration did something other than park. See the budget check below.
+    let parkBurstStartedAt: number | undefined;
     try {
       while (!this.stopping) {
         // Don't claim while the server connection is down — a dispatch started
@@ -635,14 +656,35 @@ export class ChannelQueueWorker {
         // errored it. Rows stay durably `queued` and drain on reconnect (§9);
         // app.ts notifies us when the connection comes back.
         if (!this.app.isLive()) {
+          parkBurstStartedAt = undefined;
           await this.waitForWork();
           continue;
         }
         const row = this.queue.claimNext(this.channelName);
-        if (row) {
-          await this.process(row);
-        } else {
+        if (!row) {
+          parkBurstStartedAt = undefined;
           await this.waitForWork();
+          continue;
+        }
+        if ((await this.process(row)) !== 'parked') {
+          parkBurstStartedAt = undefined;
+          continue;
+        }
+        // Parking suspends on nothing: awaiting an already-resolved promise is a
+        // microtask, and microtasks drain to empty before the event loop turns. So a
+        // blocked partition would otherwise park its whole backlog in ONE turn — no
+        // socket reads, no source ACKs, no WS heartbeat replies, no chance to observe
+        // `stopping` — for seconds at realistic depths. Yield a real turn once a run
+        // of parks has held the loop for the budget. The work is unchanged (each row
+        // is parked once and woken once), only spread out.
+        //
+        // The yield belongs HERE, after process() resolves — never between
+        // claimNext() and the key write, whose await-free critical section is what
+        // makes the claim→key decision atomic against sibling pool workers.
+        parkBurstStartedAt ??= Date.now();
+        if (Date.now() - parkBurstStartedAt >= this.parkYieldBudgetMs) {
+          parkBurstStartedAt = undefined;
+          await yieldToEventLoop();
         }
       }
     } catch (err) {
@@ -662,7 +704,7 @@ export class ChannelQueueWorker {
     }
   }
 
-  private async process(row: InboundRow): Promise<void> {
+  private async process(row: InboundRow): Promise<ProcessOutcome> {
     // ── Partition gate ─────────────────────────────────────────────────────
     // MUST stay synchronous (NO `await`) from loop()'s `claimNext()` through to the
     // write below, which on the single JS thread is what makes the claim→key
@@ -677,7 +719,7 @@ export class ChannelQueueWorker {
       // next one; it re-enters `queued` when that message settles (releasePartition)
       // or on a spec change / startup recovery. Never dispatched, so no ordering risk.
       this.queue.markDelayed(row.id, row.attemptCount, key);
-      return;
+      return 'parked';
     }
     // Partition is free: record the key so later same-partition claims see it as
     // occupied, and mirror it onto the in-memory row so releasePartition wakes the
@@ -693,7 +735,7 @@ export class ChannelQueueWorker {
       if (err instanceof RowRequeuedError) {
         // onWebSocketDisconnect already returned the row to `queued`; the loop's
         // liveness gate keeps it there until the connection comes back.
-        return;
+        return 'dispatched';
       }
       if (err instanceof QueueLeaseError) {
         // Lost the lease mid-dispatch (the watchdog cancelled the in-flight wait,
@@ -706,10 +748,11 @@ export class ChannelQueueWorker {
       // gates it: review-only in normal mode, retried under guaranteed delivery.
       const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
       this.handleFailure(row, code, normalizeErrorString(err));
-      return;
+      return 'dispatched';
     }
 
     this.applyServerResponse(row, response);
+    return 'dispatched';
   }
 
   /**
@@ -1090,6 +1133,19 @@ function parseAckCode(body: string | undefined): AckCode | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Yields one full event-loop turn. `setImmediate` (check phase) rather than a 0ms
+ * timer: it resumes us after the poll phase, so pending socket reads and timers are
+ * serviced first, and it costs none of the ~1ms a clamped `setTimeout(…, 0)` would
+ * add to every yield of a long drain.
+ * @returns A promise that resolves on the next turn of the event loop.
+ */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
 }
 
 function makeWakeSignal(): { promise: Promise<void>; resolve: () => void } {

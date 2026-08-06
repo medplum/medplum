@@ -404,6 +404,19 @@ _current_ spec each time it approaches dispatch, so the common re-dispatch paths
    `wakePartition`: it promotes the single lowest-id `delayed` row of that key back to
    `queued` and nudges the pool. Each follower is thus parked once and woken once.
 
+**Park cost.** A parked row is invisible to `claimNext`, so each follower is parked once
+and woken once — but a blocked partition parks its followers *back to back*, and the park
+path is the one loop outcome that awaits nothing (parking claims, checks, and writes
+synchronously). Left alone the loop would drain an entire backlog inside a single
+macrotask, freezing socket reads, source ACKs and WS heartbeats for as long as that takes
+(~50 ms per 400 rows; seconds at real depths). So `loop` budgets an unbroken run of parks
+to `DEFAULT_PARK_YIELD_BUDGET_MS` and then yields a full event-loop turn. The work is
+unchanged, only spread. This is not a pool-only concern: a **default** channel (no
+`logicalChannelKey`, one worker) hits it whenever a backing-off head blocks a backlog —
+`claimNext` skips the head on `next_attempt_at` while `isPartitionBlocked` still counts
+it — and again after `RECOVER_DELAYED` / `flipDelayedToQueued` return every parked row to
+`queued` at once.
+
 Because the critical section is await-free and `node:sqlite` is synchronous, no two pool
 workers on the single JS thread can observe a row between its claim and the moment its
 key is written — so the claim→decision is atomic even though the partition check is no
@@ -430,6 +443,14 @@ fails it falls back to `flipDelayedToQueued` so no row strands, and claim-time k
 self-heals the rest. `claimed`/`inflight` rows are left alone — they finish under their
 current partition, a bounded transitional window during the reconfigure (the one
 accepted limitation).
+
+Unlike the park burst above, the recompute deliberately stays **synchronous** rather than
+yielding between batches: it rewrites stored keys while `isPartitionBlocked` is trusting
+them, so a claim interleaving mid-recompute could read a mix of old and new keys and let a
+message skip ahead of an older one — the exact hazard the recompute exists to close.
+Bounding its blocking would mean pausing the pool for its duration. It blocks the loop for
+as long as parsing the channel's `queued`/`delayed` backlog takes, accepted because it is
+rare, operator-initiated, and leader-only.
 
 **Worker pool lifecycle.** `AgentHl7Channel` owns `workers` (the active pool) and sizes
 it to `maxWorkers` via `resizeWorkerPool` on config reload; `refreshLogicalChannelConfig`

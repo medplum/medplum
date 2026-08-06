@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { AgentMessage, AgentTransmitResponse } from '@medplum/core';
-import { ContentType, TypedEventTarget } from '@medplum/core';
+import { ContentType, sleep, TypedEventTarget } from '@medplum/core';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -1332,6 +1332,44 @@ describe('ChannelQueueWorker', () => {
 
       await wA.stop();
       await wB.stop();
+    });
+
+    test('parks a blocked backlog across event-loop turns instead of draining it in one', async () => {
+      // A backing-off head is skipped by CLAIM_NEXT but still counted by
+      // IS_PARTITION_BLOCKED, so every follower is claimed and parked while nothing
+      // dispatches — the deepest park burst the worker can hit. Deliberately a
+      // DEFAULT channel (no `computeKey`, so every row keys to the single ''
+      // partition, matching the head's never-claimed stored key): this costs the
+      // event loop just as much with no `logicalChannelKey` spec and one worker.
+      const head = enqueueOne(queue, 'PY0');
+      const followers = ['PY1', 'PY2', 'PY3', 'PY4', 'PY5', 'PY6', 'PY7', 'PY8', 'PY9'];
+      for (const id of followers) {
+        enqueueOne(queue, id);
+      }
+      queue.scheduleRetry(head.id, 0, 'backing off', QueueErrorCode.ServerError, Date.now() + 60_000);
+
+      const { app } = makeStubApp();
+      const worker = new ChannelQueueWorker({
+        channelName: 'ch1',
+        app,
+        queue,
+        log: createMockLogger(),
+        sendAck: () => true,
+        idlePollMs: 10,
+        // Yield after every park, so "did it yield at all?" is a count assertion
+        // rather than a wall-clock one.
+        parkYieldBudgetMs: 0,
+      });
+      worker.start();
+
+      // One `await` drains the whole microtask queue. Without the yield the loop
+      // never leaves that drain, so all nine would already be parked here.
+      await sleep(0);
+      expect(queue.getChannelDepth('ch1').delayed).toBeLessThan(followers.length);
+
+      // The budget only spreads the parks out — it must not lose any.
+      await waitFor(() => queue.getChannelDepth('ch1').delayed === followers.length, 3000, 'backlog fully parked');
+      await worker.stop();
     });
   });
 });

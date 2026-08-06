@@ -1382,6 +1382,12 @@ export class DurableQueue {
    * materialize every `original_message` blob at once. Rows claimed between a
    * batch's read and write are skipped by the `state IN ('queued','delayed')`
    * guard on the update.
+   *
+   * Deliberately synchronous despite the unbounded row count: awaiting between
+   * batches would let a claim run against a half-rewritten key set, which is the
+   * skip-ahead this exists to prevent. Bounding its event-loop cost the way the
+   * worker's park burst is bounded would require pausing the pool for the duration;
+   * being rare, operator-initiated, and leader-only, it isn't worth that.
    * @param channelName - The channel whose queued/delayed rows to repartition.
    * @param compute - Maps a row's original message bytes to its key under the current spec.
    * @returns The number of rows whose partition was rewritten.
