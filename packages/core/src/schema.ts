@@ -79,7 +79,9 @@ function checkArrayForNull(array: unknown[], path: string, issues: OperationOutc
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
-  for (const [key, value] of Object.entries(obj)) {
-    checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
+  for (const key in obj) {
+    if (Object.hasOwn(obj, key)) {
+      checkForNull(obj[key], `${path}${path ? '.' : ''}${key}`, issues);
+    }
   }
 }

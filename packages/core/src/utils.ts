@@ -830,9 +830,16 @@ function deepIncludesArray(value: any[], pattern: any[]): boolean {
 }
 
 function deepIncludesObject(value: { [key: string]: unknown }, pattern: { [key: string]: unknown }): boolean {
-  return Object.entries(pattern).every(
-    ([patternKey, patternVal]) => patternKey in value && deepIncludes(value[patternKey], patternVal)
-  );
+  for (const patternKey in pattern) {
+    if (!Object.hasOwn(pattern, patternKey)) {
+      continue;
+    }
+
+    if (!(patternKey in value) || !deepIncludes(value[patternKey], pattern[patternKey])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -1442,7 +1449,13 @@ export function getWebSocketUrl(baseUrl: URL | string, path: string): string {
  */
 export function getQueryString(query: QueryTypes): string {
   if (typeof query === 'object' && !Array.isArray(query) && !(query instanceof URLSearchParams)) {
-    query = Object.fromEntries(Object.entries(query).filter((entry) => entry[1] !== undefined));
+    const original = query;
+    query = Object.create(null);
+    for (const key in original) {
+      if (Object.hasOwn(original, key) && original[key] !== undefined) {
+        (query as Record<string, unknown>)[key] = original[key];
+      }
+    }
   }
   // @ts-expect-error Technically `Record<string, string, number, boolean>` is not valid to pass into `URLSearchParams` constructor since `boolean` and `number`
   // are not considered to be valid values based on the WebIDL definition from WhatWG. The current runtime behavior relies on implementation-specific coercion to string under the hood.

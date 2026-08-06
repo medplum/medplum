@@ -61,7 +61,12 @@ export async function translateConcept(
   const matches: ConceptMapTranslateMatch[] = [];
   const sourceCodes = indexConceptMapCodings(params);
 
-  for (const [system, codes] of Object.entries(sourceCodes)) {
+  for (const system in sourceCodes) {
+    if (!Object.hasOwn(sourceCodes, system)) {
+      continue;
+    }
+
+    const codes = sourceCodes[system];
     const results = await findConceptMappings(conceptMap, params, system, codes);
     if (results.length) {
       matches.push(...results);

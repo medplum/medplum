@@ -863,9 +863,12 @@ function buildFhirPathVariables(
     buildFhirPathVariables(ctx.parent, result);
   }
   if (ctx.variables) {
-    for (const [key, value] of Object.entries(ctx.variables)) {
-      result[key] = value;
-      result['%' + key] = value;
+    for (const key in ctx.variables) {
+      if (Object.hasOwn(ctx.variables, key)) {
+        const value = ctx.variables[key];
+        result[key] = value;
+        result['%' + key] = value;
+      }
     }
   }
   return result;
@@ -880,9 +883,7 @@ function buildFhirPathVariables(
  * @internal
  */
 function setVariable(ctx: TransformContext, name: string, value: TypedValue[] | TypedValue): void {
-  if (!ctx.variables) {
-    ctx.variables = {};
-  }
+  ctx.variables ??= {};
   safeAssign(ctx.variables, name, value);
 }
 

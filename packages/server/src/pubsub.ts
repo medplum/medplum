@@ -28,8 +28,12 @@ export function getActiveSubsKey(projectId: string, resourceType: ResourceType |
 
 export function getSubRefsByResourceType(entries: ActiveSubscriptionMap): Map<ResourceType, string[]> {
   const result = new Map<ResourceType, string[]>();
-  for (const [ref, entry] of Object.entries(entries)) {
-    const resourceType = entry.criteria.split('?')[0] as ResourceType;
+  for (const ref in entries) {
+    if (!Object.hasOwn(entries, ref)) {
+      continue;
+    }
+
+    const resourceType = entries[ref].criteria.split('?')[0] as ResourceType;
     let refs = result.get(resourceType);
     if (!refs) {
       refs = [];
@@ -42,7 +46,12 @@ export function getSubRefsByResourceType(entries: ActiveSubscriptionMap): Map<Re
 
 export function getSubRefsByAuthorRef(entries: ActiveSubscriptionMap): Map<string, string[]> {
   const result = new Map<string, string[]>();
-  for (const [ref, entry] of Object.entries(entries)) {
+  for (const ref in entries) {
+    if (!Object.hasOwn(entries, ref)) {
+      continue;
+    }
+
+    const entry = entries[ref];
     let refs = result.get(entry.author);
     if (!refs) {
       refs = [];

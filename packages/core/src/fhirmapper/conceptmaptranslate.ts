@@ -3,7 +3,7 @@
 import type { CodeableConcept, Coding, ConceptMap, ConceptMapGroup } from '@medplum/fhirtypes';
 import { badRequest, OperationOutcomeError } from '../outcomes';
 import type { TypedValue } from '../types';
-import { append, EMPTY } from '../utils';
+import { append, EMPTY, flatMapFilter } from '../utils';
 
 export interface ConceptMapTranslateParameters {
   url?: string;
@@ -81,23 +81,27 @@ export function indexConceptMapCodings(params: ConceptMapTranslateParameters): R
 
 function translateCodes(sourceCodes: Record<string, string[]>, groups: ConceptMapGroup[]): ConceptMapTranslateMatch[] {
   const matches: ConceptMapTranslateMatch[] = [];
-  for (const [system, codes] of Object.entries(sourceCodes)) {
-    for (const group of groups.filter((g) => (g.source ?? '') === system)) {
-      let mappings: ConceptMapTranslateMatch[] | undefined = group.element
-        ?.filter((m) => codes.includes(m.code as string))
-        .flatMap(
-          (m) =>
-            m.target?.map((target) => ({
-              equivalence: target.equivalence,
-              concept: {
-                system: group.target,
-                code: target.code,
-                display: target.display,
-              },
-            })) ?? []
-        );
+  for (const system in sourceCodes) {
+    if (!Object.hasOwn(sourceCodes, system)) {
+      continue;
+    }
+    const codes = sourceCodes[system];
 
-      if (!mappings?.length) {
+    for (const group of groups) {
+      if ((group.source ?? '') !== system) {
+        continue;
+      }
+
+      let mappings: ConceptMapTranslateMatch[] | undefined = flatMapFilter(group.element, (el) =>
+        codes.includes(el.code as string)
+          ? el.target?.map(({ equivalence, code, display }) => ({
+              equivalence,
+              concept: { system: group.target, code, display },
+            }))
+          : undefined
+      );
+
+      if (!mappings.length) {
         mappings = handleUnmappedCodes(codes, group);
       }
       if (mappings) {

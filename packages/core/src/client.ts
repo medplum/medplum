@@ -2660,8 +2660,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       if (options?.headers) {
         const headers = options.headers as Record<string, string>;
-        for (const [key, value] of Object.entries(headers)) {
-          xhr.setRequestHeader(key, value);
+        for (const key in headers) {
+          if (Object.hasOwn(headers, key)) {
+            xhr.setRequestHeader(key, headers[key]);
+          }
         }
       }
 
@@ -3997,9 +3999,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private addFetchOptionsDefaults(options: MedplumRequestOptions): void {
     // Apply default headers
-    Object.entries(this.defaultHeaders).forEach(([name, value]) => {
-      this.setRequestHeader(options, name, value);
-    });
+    for (const name in this.defaultHeaders) {
+      if (Object.hasOwn(this.defaultHeaders, name)) {
+        this.setRequestHeader(options, name, this.defaultHeaders[name]);
+      }
+    }
 
     this.setRequestHeader(options, 'Accept', DEFAULT_ACCEPT, true);
 

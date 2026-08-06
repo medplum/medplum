@@ -520,7 +520,12 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     const cachedCriteriaEvalMap = new Map<string, boolean>();
     const wsEvalStartTime = Date.now();
 
-    for (const [ref, entry] of Object.entries(entries)) {
+    for (const ref in entries) {
+      if (!Object.hasOwn(entries, ref)) {
+        continue;
+      }
+
+      const entry = entries[ref];
       const { criteria, expiration } = entry;
       // Expiration comes directly from the JWT, so it's in seconds
       // If it's less than Date.now(), add this subscription entry to the expired list

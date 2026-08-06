@@ -298,8 +298,10 @@ function sendErrorRedirect(
  */
 function sendSuccessRedirect(req: Request, res: Response, params: Record<string, any>): void {
   const redirectUrl = new URL(getConfig().appBaseUrl + 'oauth');
-  for (const [name, value] of Object.entries(params)) {
-    redirectUrl.searchParams.set(name, value);
+  for (const name in params) {
+    if (Object.hasOwn(params, name)) {
+      redirectUrl.searchParams.set(name, params[name]);
+    }
   }
   res.redirect(redirectUrl.toString());
 }

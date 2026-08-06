@@ -834,7 +834,13 @@ export class BatchProcessor {
   }
 
   private rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
+    const result = Object.create(null);
+    for (const key in input) {
+      if (Object.hasOwn(input, key)) {
+        result[key] = this.rewriteIds(input[key]);
+      }
+    }
+    return result;
   }
 
   private rewriteIdsInString(input: string): string {

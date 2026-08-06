@@ -343,11 +343,12 @@ export function convertScimToJsonPatch(scimPatch: ScimPatchRequest): Operation[]
       throw new Error('Invalid SCIM patch: value must be an object if path is missing');
     }
 
-    const entries = Object.entries(value);
-    return entries.map(([key, val]) => ({
-      op: op,
-      path: `/${key}`,
-      value: val,
-    }));
+    const patch: Operation[] = [];
+    for (const key in value as Record<string, any>) {
+      if (Object.hasOwn(value, key)) {
+        patch.push({ op, path: '/' + key, value: (value as Record<string, any>)[key] });
+      }
+    }
+    return patch;
   });
 }

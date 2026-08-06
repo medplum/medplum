@@ -3,6 +3,7 @@
 import type { InternalSchemaElement } from '@medplum/core';
 import {
   capitalize,
+  EMPTY,
   evalFhirPathTyped,
   getDataType,
   getResourceTypes,
@@ -97,8 +98,13 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
     };
   }
 
-  for (const [key, elementDefinition] of Object.entries(schema.elements)) {
-    for (const type of elementDefinition.type as ElementDefinitionType[]) {
+  for (const key in schema.elements) {
+    if (!Object.hasOwn(schema.elements, key)) {
+      continue;
+    }
+
+    const elementDefinition = schema.elements[key];
+    for (const type of elementDefinition.type ?? EMPTY) {
       buildOutputPropertyField(fields, key, elementDefinition, type);
     }
   }
@@ -167,7 +173,12 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
     // Add all "string" and "code" properties as arguments
     const fieldTypeSchema = tryGetDataType(fieldTypeName);
     if (fieldTypeSchema?.elements) {
-      for (const [fieldKey, fieldElementDefinition] of Object.entries(fieldTypeSchema.elements)) {
+      for (const fieldKey in fieldTypeSchema.elements) {
+        if (!Object.hasOwn(fieldTypeSchema.elements, fieldKey)) {
+          continue;
+        }
+
+        const fieldElementDefinition = fieldTypeSchema.elements[fieldKey];
         for (const type of fieldElementDefinition.type) {
           buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);
         }
@@ -245,7 +256,12 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
     const enumValues: GraphQLEnumValueConfigMap = {};
     let count = 0;
     if (childSearchParams) {
-      for (const [code, searchParam] of Object.entries(childSearchParams)) {
+      for (const code in childSearchParams) {
+        if (!Object.hasOwn(childSearchParams, code)) {
+          continue;
+        }
+
+        const searchParam = childSearchParams[code];
         if (searchParam.target?.includes(resourceType)) {
           enumValues[fhirParamToGraphQLField(code)] = { value: code };
           count++;
@@ -312,8 +328,10 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
   const { _offset, _count, fhirpath, ...rest } = args;
   let array = fieldValue as any[];
 
-  for (const [key, value] of Object.entries(rest)) {
-    array = array.filter((item) => item[key] === value);
+  for (const key in rest) {
+    if (Object.hasOwn(rest, key)) {
+      array = array.filter((item) => item[key] === rest[key]);
+    }
   }
 
   if (fhirpath) {

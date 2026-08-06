@@ -101,8 +101,10 @@ export function buildElementsContext({
   mergedElements = markReadonlyFields(mergedElements, accessPolicyResource, keyPrefix);
 
   const elementsByPath: Record<string, ExtendedInternalSchemaElement> = Object.create(null);
-  for (const [key, property] of Object.entries(mergedElements)) {
-    elementsByPath[path + '.' + key] = property;
+  for (const key in mergedElements) {
+    if (Object.hasOwn(mergedElements, key)) {
+      elementsByPath[path + '.' + key] = mergedElements[key];
+    }
   }
 
   /*
@@ -152,19 +154,27 @@ function mergeElementsForContext(
   const result: Record<string, InternalSchemaElement> = Object.create(null);
 
   if (parentContext) {
-    for (const [elementPath, element] of Object.entries(parentContext.elementsByPath)) {
+    for (const elementPath in parentContext.elementsByPath) {
+      if (!Object.hasOwn(parentContext.elementsByPath, elementPath)) {
+        continue;
+      }
+
       const key = getPathDifference(path, elementPath);
       if (key !== undefined) {
-        result[key] = element;
+        result[key] = parentContext.elementsByPath[elementPath];
       }
     }
   }
 
   let usedNewElements = false;
   if (elements) {
-    for (const [key, element] of Object.entries(elements)) {
+    for (const key in elements) {
+      if (!Object.hasOwn(elements, key)) {
+        continue;
+      }
+
       if (!(key in result)) {
-        result[key] = element;
+        result[key] = elements[key];
         usedNewElements = true;
       }
     }
@@ -190,9 +200,13 @@ function removeHiddenFields(
   }
 
   const prefix = keyPrefix ? keyPrefix + '.' : '';
-  return Object.fromEntries(
-    Object.entries(elements).filter(([key]) => !matchesKeyPrefixes(prefix + key, accessPolicyResource.hiddenFields))
-  );
+  const result = Object.create(null);
+  for (const key in elements) {
+    if (Object.hasOwn(elements, key) && !matchesKeyPrefixes(prefix + key, accessPolicyResource.hiddenFields)) {
+      result[key] = elements[key];
+    }
+  }
+  return result;
 }
 
 function markReadonlyFields(
@@ -207,7 +221,12 @@ function markReadonlyFields(
   const result: Record<string, ExtendedInternalSchemaElement> = Object.create(null);
 
   const prefix = keyPrefix ? keyPrefix + '.' : '';
-  for (const [key, element] of Object.entries(elements)) {
+  for (const key in elements) {
+    if (!Object.hasOwn(elements, key)) {
+      continue;
+    }
+    const element = elements[key];
+
     const isReadonly = matchesKeyPrefixes(prefix + key, accessPolicyResource.readonlyFields);
     if (isReadonly) {
       // shallow-clone `element` to avoid modifying the in-memory DATA_TYPES cache access via `getDataType`

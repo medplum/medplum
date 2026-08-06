@@ -164,10 +164,13 @@ function cleanDicomJsonElement(tag: string, element: DcmjsDicomElement): DcmjsDi
 export function cleanDicomJsonDict(dataset: DcmjsDicomDict): DcmjsDicomDict {
   const out: DcmjsDicomDict = {};
 
-  for (const [tag, element] of Object.entries(dataset)) {
-    const fixed = cleanDicomJsonElement(tag, element);
-    if (fixed) {
-      out[tag] = fixed;
+  for (const tag in dataset) {
+    if (Object.hasOwn(dataset, tag)) {
+      const element = dataset[tag];
+      const fixed = cleanDicomJsonElement(tag, element);
+      if (fixed) {
+        out[tag] = fixed;
+      }
     }
   }
 

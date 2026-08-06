@@ -290,7 +290,7 @@ export function evalFhirPathTyped(
   return ast.eval({ variables }, input).map((v) => {
     const result: TypedValue & { path?: string } = {
       type: v.type,
-      value: v.value?.valueOf(),
+      value: typeof v.value?.valueOf === 'function' ? v.value.valueOf() : v.value,
     };
     if ('path' in v) {
       result.path = v.path as string;

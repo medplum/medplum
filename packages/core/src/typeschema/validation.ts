@@ -642,7 +642,12 @@ function isChoiceOfType(
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
-  for (const [key, value] of Object.entries(obj)) {
+  for (const key in obj) {
+    if (!Object.hasOwn(obj, key)) {
+      continue;
+    }
+    const value = obj[key];
+
     const propertyPath = `${path}.${key}`;
     const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
     if (value === null) {
@@ -748,16 +753,24 @@ function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedVa
   if (typeof v.value !== 'object' || !v.value) {
     return [v, undefined];
   }
-  const primitiveValue = v.value.valueOf();
-  if (primitiveValue === v.value) {
+
+  const primitiveValue = v.value.valueOf?.();
+  if (primitiveValue === v.value || primitiveValue === undefined) {
     return [undefined, { type: 'Element', value: v.value }];
   }
-  const primitiveKeys = new Set(Object.keys(primitiveValue));
-  const extensionEntries = Object.entries(v.value).filter(([k, _]) => !primitiveKeys.has(k));
-  const extensionElement = extensionEntries.length > 0 ? Object.fromEntries(extensionEntries) : undefined;
+
+  const extensionElement = Object.create(null);
+  let hasExtension = false;
+  for (const key in v.value) {
+    if (Object.hasOwn(v.value, key) && !Object.hasOwn(primitiveValue, key)) {
+      extensionElement[key] = v.value[key];
+      hasExtension = true;
+    }
+  }
+
   return [
     { type: v.type, value: primitiveValue },
-    { type: 'Element', value: extensionElement },
+    hasExtension ? { type: 'Element', value: extensionElement } : undefined,
   ];
 }
 

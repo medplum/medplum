@@ -162,15 +162,18 @@ export class BulkExporter {
   }
 
   formatOutput(): Parameters {
-    return {
-      resourceType: 'Parameters',
-      parameter: Object.entries(this.writers).map(([resourceType, writer]) => ({
-        name: 'output',
-        part: [
-          { name: 'type', valueCode: resourceType },
-          { name: 'url', valueUri: getReferenceString(writer.binary) },
-        ],
-      })),
-    };
+    const output: Parameters & { parameter: [] } = { resourceType: 'Parameters', parameter: [] };
+    for (const resourceType in this.writers) {
+      if (Object.hasOwn(this.writers, resourceType)) {
+        output.parameter.push({
+          name: 'output',
+          part: [
+            { name: 'type', valueCode: resourceType },
+            { name: 'url', valueUri: getReferenceString(this.writers[resourceType].binary) },
+          ],
+        });
+      }
+    }
+    return output;
   }
 }
