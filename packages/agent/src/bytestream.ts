@@ -30,6 +30,7 @@ export type ByteStreamConfig = {
   readonly stripControlChars: boolean;
   readonly keepControlChars: readonly number[];
   readonly bodyEncoding: ByteStreamBodyEncoding;
+  readonly ignoreResponse: boolean;
 };
 
 /**
@@ -368,6 +369,7 @@ export class AgentByteStreamChannel extends BaseChannel {
     stripControlChars: false,
     keepControlChars: [],
     bodyEncoding: 'hex',
+    ignoreResponse: false,
   };
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
@@ -488,6 +490,7 @@ export class AgentByteStreamChannel extends BaseChannel {
       stripControlChars,
       keepControlChars,
       bodyEncoding: parseBodyEncoding(params.get('bodyEncoding'), this.log),
+      ignoreResponse: params.get('ignoreResponse')?.toLowerCase() === 'true',
     });
 
     for (const connection of this.connections.values()) {
@@ -496,6 +499,14 @@ export class AgentByteStreamChannel extends BaseChannel {
   }
 
   sendToRemote(msg: AgentTransmitResponse): boolean {
+    // Dropped ahead of the connection lookup: a one-way device is not waiting for a reply, so a
+    // missing socket is not a failure either. This also keeps the server's fallback response —
+    // the Bot's own execution logs, sent whenever the Bot returns nothing — off the device.
+    if (this.config.ignoreResponse) {
+      this.channelLog.debug(`Ignoring ${msg.body.length} byte(s) of response for ${msg.remote}`);
+      return true;
+    }
+
     const connection = this.connections.get(msg.remote);
     if (!connection) {
       return false;

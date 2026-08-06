@@ -756,6 +756,55 @@ describe('Byte Stream', () => {
       mockServer.stop();
     });
 
+    test('Responses reach the socket unless ignoreResponse is set', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies, 'REPLY');
+      const [agentId, agentPort] = await createByteStreamAgent('&stripControlChars=true&bodyEncoding=utf-8');
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([STX, 0x48, 0x69, ETX]));
+
+      await waitFor(() => received.length > 0, 1000, 'response written back');
+      expect(Buffer.concat(received).toString('utf-8')).toBe('REPLY');
+      expect(bodies).toEqual(['Hi']);
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('ignoreResponse drops the response without touching the socket', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies, 'REPLY');
+      const [agentId, agentPort] = await createByteStreamAgent(
+        '&autoRespond=%05:%06&stripControlChars=true&bodyEncoding=utf-8&ignoreResponse=true'
+      );
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client, received] = await connectCollecting(agentPort);
+      client.write(Buffer.from([STX, 0x48, 0x69, ETX]));
+
+      // The message still reaches the Bot; only the reply is dropped.
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      expect(bodies).toEqual(['Hi']);
+      await sleep(200);
+      expect(received).toHaveLength(0);
+
+      // autoRespond is a link-level handshake, so it still answers.
+      client.write(Buffer.from([ENQ]));
+      await waitFor(() => received.length > 0, 1000, 'auto-response');
+      expect(Buffer.concat(received)).toEqual(Buffer.from([ACK]));
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
     test('Default hex encoding preserves bytes above 0x7f', async () => {
       const bodies: string[] = [];
       const mockServer = startMockAgentServer(bodies);
@@ -1102,9 +1151,11 @@ describe('filterMessageBytes', () => {
  * Boots the agent-facing mock WebSocket server.
  *
  * @param bodies - Collects the `body` of every `agent:transmit:request` the agent sends.
+ * @param replyBody - Answers each request with this body, standing in for a Bot's return value.
+ * Omit to leave requests unanswered, as most tests here do.
  * @returns The running server, for the caller to stop.
  */
-function startMockAgentServer(bodies: string[]): Server {
+function startMockAgentServer(bodies: string[], replyBody?: string): Server {
   const mockServer = new Server('wss://example.com/ws/agent');
 
   mockServer.on('connection', (socket) => {
@@ -1115,6 +1166,21 @@ function startMockAgentServer(bodies: string[]): Server {
       }
       if (command.type === 'agent:transmit:request') {
         bodies.push(command.body);
+        if (replyBody !== undefined) {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:transmit:response',
+                channel: command.channel,
+                remote: command.remote,
+                contentType: ContentType.OCTET_STREAM,
+                statusCode: 200,
+                body: replyBody,
+                callback: command.callback,
+              } satisfies AgentTransmitResponse)
+            )
+          );
+        }
       }
     });
   });
