@@ -126,6 +126,8 @@ export class BatchProcessor {
   private readonly req: FhirRequest;
   private resolvedIdentities: Record<string, string>;
   private bundleInfo: BundlePreprocessInfo | undefined;
+  /** Route lookups for this bundle, keyed by request method and URL. See {@link BatchProcessor.getRouteForEntry}. */
+  private readonly routeCache: Map<string, RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined>;
 
   /** The state mutated through processing (and preprocessing) */
   private state: ProcessingState;
@@ -143,6 +145,7 @@ export class BatchProcessor {
     this.bundle = bundle;
     this.req = req;
     this.resolvedIdentities = Object.create(null);
+    this.routeCache = new Map();
     this.state = {
       position: 0,
       resultEntries: new Array(bundle.entry?.length ?? 0),
@@ -525,8 +528,29 @@ export class BatchProcessor {
     }
   }
 
+  /**
+   * Resolves the route for an entry, memoized for the lifetime of this bundle.
+   *
+   * Every entry is routed three times — once to resolve its identity, once while preprocessing,
+   * and once to execute it — and each lookup re-parses the URL, including its query string. That
+   * is the dominant cost for entries carrying large queries.
+   *
+   * Keying on method and URL keeps this correct rather than merely fast: an entry whose URL is
+   * rewritten in between (a conditional update or delete resolved by `resolveModificationIdentity`,
+   * or a local reference substituted by `rewriteIdsInObject`) produces a different key and is
+   * routed again. Entries sharing a key share one {@link RouteResult}, whose `params` and `query`
+   * are only ever read by handlers, never mutated.
+   * @param entry - The bundle entry to route.
+   * @returns The matching route, or undefined if the entry matches no route.
+   */
   private getRouteForEntry(entry: BundleEntry): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
-    return this.router.find(entry.request?.method as HttpMethod, entry.request?.url ?? '');
+    const method = entry.request?.method ?? '';
+    const url = entry.request?.url ?? '';
+    const key = method + '\0' + url;
+    if (!this.routeCache.has(key)) {
+      this.routeCache.set(key, this.router.find(method as HttpMethod, url));
+    }
+    return this.routeCache.get(key);
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {

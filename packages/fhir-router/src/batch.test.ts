@@ -1285,6 +1285,56 @@ describe('Batch', () => {
     expect(bundle.entry?.map((e) => e.response?.status)).toStrictEqual(['200', '201', '200']);
   });
 
+  test('Routes each distinct entry URL once', async () => {
+    const spy = vi.spyOn(router, 'find');
+    try {
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          { request: { method: 'GET', url: 'Patient?name=alice' } },
+          { request: { method: 'GET', url: 'Patient?name=alice' } },
+          { request: { method: 'GET', url: 'Patient?name=alice' } },
+          { request: { method: 'GET', url: 'Patient?name=bob' } },
+        ],
+      });
+      expect(bundle.entry).toHaveLength(4);
+      // Every entry is routed three times (identity, preprocessing, execution), so this would be
+      // twelve lookups unmemoized. The four entries cover two distinct URLs.
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test('Re-routes an entry whose conditional URL is rewritten', async () => {
+    const identifier = randomUUID();
+    await repo.createResource<Patient>({ resourceType: 'Patient', identifier: [{ value: identifier }] });
+
+    const spy = vi.spyOn(router, 'find');
+    try {
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'PUT', url: `Patient?identifier=${identifier}` },
+            resource: { resourceType: 'Patient', identifier: [{ value: identifier }], active: true },
+          },
+        ],
+      });
+      expect(bundle.entry?.[0].response?.status).toStrictEqual('200');
+      // resolveModificationIdentity resolves the conditional URL to an instance URL partway
+      // through, so the two forms must route separately rather than share a cache entry.
+      expect(spy.mock.calls.map((call) => call[1])).toStrictEqual([
+        `Patient?identifier=${identifier}`,
+        expect.stringMatching(/^Patient\/[0-9a-f-]+$/),
+      ]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   describe('Process Transactions', () => {
     test('Embedded urn:uuid', async () => {
       const bundle = await processBatch(req, repo, router, {
