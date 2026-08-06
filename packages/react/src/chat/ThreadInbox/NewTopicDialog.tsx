@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Modal, Stack } from '@mantine/core';
+import { Button } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import classes from './EditThreadDialog.module.css';
+import { Modal } from '../../Modal/Modal';
 import { ThreadMessageForm } from './ThreadMessageForm';
 
 /**
@@ -70,26 +70,26 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="New Message" size="md" classNames={classes}>
-      <Stack gap={0}>
-        <Stack gap="lg" p="lg">
-          <ThreadMessageForm
-            defaultPractitioners={initialPractitioners}
-            onPractitionersChange={setPractitioners}
-            topic={topic}
-            onTopicChange={setTopic}
-            defaultPatient={patient}
-            onPatientChange={setPatient}
-            allowPatientSelection={allowPatientSelection}
-          />
-        </Stack>
-
-        <Box px="lg" pb="lg">
-          <Button w="100%" onClick={handleSubmit} disabled={!patient || practitioners.length === 0}>
-            Next
-          </Button>
-        </Box>
-      </Stack>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="New Message"
+      size="md"
+      actions={
+        <Button onClick={handleSubmit} disabled={!patient || practitioners.length === 0}>
+          Next
+        </Button>
+      }
+    >
+      <ThreadMessageForm
+        defaultPractitioners={initialPractitioners}
+        onPractitionersChange={setPractitioners}
+        topic={topic}
+        onTopicChange={setTopic}
+        defaultPatient={patient}
+        onPatientChange={setPatient}
+        allowPatientSelection={allowPatientSelection}
+      />
     </Modal>
   );
 };

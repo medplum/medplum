@@ -82,6 +82,12 @@ import {
   STATIC_QUALIFIER_MATCHER,
 } from '../../components/meds/quantity-qualifiers';
 import { ScriptSurePracticeSwitcher, useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
+import {
+  getDisplayNameFromMedication,
+  getGcnSeqnosFromMedication,
+  getUnambiguousGcnSeqnoFromMedication,
+  getVendorKeyFromMedication,
+} from '../../utils/medication-gcn';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderSetTabPanel } from './OrderSetTabPanel';
 
@@ -155,14 +161,7 @@ function narrowReference<T extends Resource>(
 }
 
 function getRoutedMedIdFromMedication(m: Medication): number | undefined {
-  const v =
-    getIdentifier(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM) ??
-    (m.code && getCodeBySystem(m.code, SCRIPTSURE_ROUTED_MED_ID_SYSTEM));
-  if (!v) {
-    return undefined;
-  }
-  const n = Number.parseInt(v, 10);
-  return Number.isFinite(n) ? n : undefined;
+  return getVendorKeyFromMedication(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM);
 }
 
 function normalizeNdcDigits(ndc: string | undefined): string | undefined {
@@ -489,10 +488,21 @@ function medicationToOrderDrugInput(
   const ndc = (m.code && getCodeBySystem(m.code, NDC)) ?? getIdentifier(m, NDC);
   const rxNorm = (m.code && getCodeBySystem(m.code, RXNORM)) ?? getIdentifier(m, RXNORM);
   const routedMedId = getRoutedMedIdFromMedication(m);
+  // A drug whose formulation lookup came back empty (OTC / topical products) has
+  // no NDC or RxNorm; it is ordered on routedMedId + GCN, with the name carried
+  // explicitly because there is no dose-level record to derive it from.
+  //
+  // The name is what makes such a line legible to the pharmacy, so a GCN-keyed
+  // line is only emitted when one is available — otherwise this falls back to
+  // routedMedId alone and the vendor requires a resolvable formulation, which
+  // fails with a clearer error than a nameless order would.
+  const drugName = getDisplayNameFromMedication(m, SCRIPTSURE_ROUTED_MED_ID_SYSTEM);
+  const gcnSeqno = ndc || rxNorm || !drugName ? undefined : getUnambiguousGcnSeqnoFromMedication(m);
   return {
     ...(ndc ? { ndc } : {}),
     ...(rxNorm ? { rxNorm } : {}),
     ...(routedMedId === undefined ? {} : { routedMedId }),
+    ...(gcnSeqno === undefined ? {} : { gcnSeqno, drugName }),
     quantity: opts.quantity,
     quantityQualifier: opts.quantityQualifier ?? DEFAULT_QUANTITY_QUALIFIER,
     refill: opts.refill,
@@ -544,10 +554,13 @@ function medicationToCodeableConcept(
   // (not a code.coding). Promote it to a coding so the draft MR carries the
   // FDB clinical-formulation key: the ScriptSure prescription webhook reconciles
   // draft→sent by GCN when the NDC drifts (#9300) or a generic is substituted
-  // (brand/generic share a GCN). See scriptsure-react SCRIPTSURE_GCN_SEQNO_SYSTEM.
-  const gcn = getIdentifier(format, SCRIPTSURE_GCN_SEQNO_SYSTEM);
-  if (gcn && !coding.some((c) => c.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)) {
-    coding.push({ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, code: gcn });
+  // (brand/generic share a GCN). It also makes a draft orderable when the drug
+  // has no formulations at all (`format` falls back to the name-search hit, so
+  // there is no NDC) — the order is then keyed on routedMedId + GCN. Skipped
+  // when several GCNs are present, since none of them is "the" strength.
+  const gcn = getUnambiguousGcnSeqnoFromMedication(format);
+  if (gcn !== undefined && !coding.some((c) => c.system === SCRIPTSURE_GCN_SEQNO_SYSTEM)) {
+    coding.push({ system: SCRIPTSURE_GCN_SEQNO_SYSTEM, code: String(gcn) });
   }
   return {
     coding,
@@ -930,7 +943,10 @@ export function OrderMedicationPage(props: Readonly<OrderMedicationPageProps>): 
     }
     let cancelled = false;
     setLoadingFormats(true);
-    searchMedications({ routedMedId: rid })
+    // The GCNs come along so a drug with no dose formats still yields selectable
+    // strengths (each GCN resolves to a named product) instead of dropping the
+    // prescriber onto the strength-less name-search hit.
+    searchMedications({ routedMedId: rid, gcnSeqnos: getGcnSeqnosFromMedication(termMedication) })
       .then((list) => {
         if (!cancelled) {
           const deduped = dedupeMedications(list);
@@ -1830,7 +1846,7 @@ interface CompoundLineState {
 interface CompoundLineEditorProps {
   index: number;
   line: CompoundLineState;
-  searchMedications: (p: { term?: string; routedMedId?: number }) => Promise<Medication[]>;
+  searchMedications: (p: { term?: string; routedMedId?: number; gcnSeqnos?: number[] }) => Promise<Medication[]>;
   onChange: (line: CompoundLineState) => void;
 }
 
@@ -1868,7 +1884,9 @@ function CompoundLineEditor(props: Readonly<CompoundLineEditorProps>): JSX.Eleme
     }
     setLoading(true);
     try {
-      const list = dedupeMedications(await searchMedications({ routedMedId: rid }));
+      const list = dedupeMedications(
+        await searchMedications({ routedMedId: rid, gcnSeqnos: getGcnSeqnosFromMedication(m) })
+      );
       setFormats(list);
       onChange({ ...line, termMed: m, formatMed: list[0] ?? m });
     } catch (e) {
