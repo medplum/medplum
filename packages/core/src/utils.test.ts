@@ -767,16 +767,17 @@ describe('Core Utils', () => {
       ],
     };
 
-    // Every match at one level, where getExtension would read only the first.
+    // Every match at one level.
     expect(getExtensions(resource, 'http://example.com/complex')).toHaveLength(2);
-    expect(getExtension(resource, 'http://example.com/complex', 'key1')).toHaveProperty('valueCode', 'foo');
 
-    // Repeats are gathered across every matching parent, not just the first.
+    // Repeats are gathered across every matching parent, not just the first. The getExtension call below is
+    // the deliberate contrast: given the same urls it reads one of the three, which is what this exists to fix.
     expect(getExtensions(resource, ['http://example.com/complex', 'key1']).map((e) => e.valueCode)).toStrictEqual([
       'foo',
       'bar',
       'baz',
     ]);
+    expect(getExtension(resource, 'http://example.com/complex', 'key1')).toHaveProperty('valueCode', 'foo');
 
     expect(getExtensions(resource, 'http://example.com/basic')).toStrictEqual([resource.extension?.[0]]);
     expect(getExtensions(resource, 'http://example.com/missing')).toStrictEqual([]);

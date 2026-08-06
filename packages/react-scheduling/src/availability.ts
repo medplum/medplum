@@ -10,14 +10,28 @@
  */
 import type { WithId } from '@medplum/core';
 import {
-  badRequest,
   getExtensions,
   getScheduleParameters,
   isDayOfWeek,
   OperationOutcomeError,
   setScheduleParameter,
+  validationError,
 } from '@medplum/core';
 import type { Extension, HealthcareService, HealthcareServiceAvailableTime, Schedule } from '@medplum/fhirtypes';
+
+// Reads a sub-extension that may be set at most once. `daysOfWeek` repeats by design; `allDay` and the two
+// times are single-valued, and a second copy is ambiguous rather than redundant. Refused rather than settled
+// by taking the first, because scheduling configuration is intricate enough that hours that are quietly
+// wrong cost more to track down than a read that fails where the ambiguity is.
+function getSingleValue(availableTime: Extension, url: string): Extension | undefined {
+  const matches = getExtensions(availableTime, url);
+  if (matches.length > 1) {
+    throw new OperationOutcomeError(
+      validationError(`availableTime must set at most one ${url}, found ${matches.length}`)
+    );
+  }
+  return matches[0];
+}
 
 // Convert a single `SchedulingParameters.availability.availableTime`
 // sub-sub-extension into a HealthcareServiceAvailableTime.
@@ -26,15 +40,17 @@ function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTi
     .map((subextension) => subextension.valueCode)
     .filter(isDayOfWeek);
 
-  if (getExtensions(availableTime, 'allDay')[0]?.valueBoolean) {
+  // All three are read before either shape returns, so a repeat is reported wherever it sits rather than
+  // only on the branch that would have used it.
+  const allDay = getSingleValue(availableTime, 'allDay');
+  const start = getSingleValue(availableTime, 'availableStartTime');
+  const end = getSingleValue(availableTime, 'availableEndTime');
+
+  if (allDay?.valueBoolean) {
     return { daysOfWeek, allDay: true };
   }
 
-  return {
-    daysOfWeek,
-    availableStartTime: getExtensions(availableTime, 'availableStartTime')[0]?.valueTime,
-    availableEndTime: getExtensions(availableTime, 'availableEndTime')[0]?.valueTime,
-  };
+  return { daysOfWeek, availableStartTime: start?.valueTime, availableEndTime: end?.valueTime };
 }
 
 // The hours a Schedule sets for a service, ignoring the service default, or undefined when it sets none.
@@ -70,6 +86,8 @@ function getScheduleAvailability(
  * @param service - HealthcareService providing the default availability
  * @param schedule - Schedule that may set hours of its own for the service
  * @returns The availability in effect, or undefined when none is configured
+ * @throws An `OperationOutcomeError` if an availableTime the Schedule holds sets `allDay`,
+ * `availableStartTime`, or `availableEndTime` more than once, leaving its hours ambiguous.
  */
 export function getEffectiveAvailability(
   service: WithId<HealthcareService> | undefined,
@@ -96,7 +114,11 @@ function buildAvailableTimeExtension(entry: HealthcareServiceAvailableTime): Ext
 
   if (!entry.availableStartTime || !entry.availableEndTime) {
     throw new OperationOutcomeError(
-      badRequest('availableTime must set allDay, or both availableStartTime and availableEndTime')
+      validationError(
+        'availableTime must set allDay, or both availableStartTime and availableEndTime',
+        undefined,
+        'required'
+      )
     );
   }
 
@@ -123,7 +145,11 @@ function buildAvailabilityExtension(availableTime: HealthcareServiceAvailableTim
   // exists to tell apart, and storing one as the other means the opposite of what the caller asked for.
   if (!availableTime.length) {
     throw new OperationOutcomeError(
-      badRequest('availability must have at least one availableTime; to follow the service default, clear it instead')
+      validationError(
+        'availability must have at least one availableTime; to follow the service default, clear it instead',
+        undefined,
+        'required'
+      )
     );
   }
 

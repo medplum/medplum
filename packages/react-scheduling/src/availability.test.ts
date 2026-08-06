@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { OperationOutcomeError, WithId } from '@medplum/core';
 import { clearScheduleParameter, SchedulingParametersURI } from '@medplum/core';
-import type { Extension, HealthcareService, Schedule } from '@medplum/fhirtypes';
+import type { Extension, HealthcareService, OperationOutcome, Schedule } from '@medplum/fhirtypes';
 import { getEffectiveAvailability, setScheduleAvailability } from './availability';
 
 const service = {
@@ -130,6 +130,46 @@ describe('getEffectiveAvailability', () => {
     expect(getEffectiveAvailability(undefined, scheduleWith())).toBeUndefined();
   });
 
+  // Scheduling configuration is intricate enough that hours resolved from an ambiguous entry are harder to
+  // track down than a read that fails outright, so a repeated single-valued sub-extension is refused rather
+  // than settled by taking the first. `daysOfWeek` is the one that repeats by design.
+  test.each([
+    { url: 'allDay', value: { valueBoolean: true } },
+    { url: 'availableStartTime', value: { valueTime: '09:00:00' } },
+    { url: 'availableEndTime', value: { valueTime: '17:00:00' } },
+  ])('refuses a repeated $url', ({ url, value }) => {
+    const entry: Extension = {
+      url: 'availableTime',
+      extension: [
+        { url: 'daysOfWeek', valueCode: 'mon' },
+        { url, ...value },
+        { url, ...value },
+      ],
+    };
+
+    expect(() => getEffectiveAvailability(service, scheduleWith(entry))).toThrow(
+      new RegExp(`at most one ${url}, found 2`)
+    );
+  });
+
+  test('reads repeated daysOfWeek as the set of days it is', () => {
+    const entry = availableTime('mon', '09:00:00', '12:00:00');
+    entry.extension?.push({ url: 'daysOfWeek', valueCode: 'tue' });
+
+    expect(getEffectiveAvailability(service, scheduleWith(entry))).toEqual([
+      { daysOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
+    ]);
+  });
+
+  test('reports a repeat on the branch it does not read from', () => {
+    // An all-day entry never reads the times, but a repeat among them still leaves the entry ambiguous.
+    const entry = allDayTime('sat');
+    entry.extension?.push({ url: 'availableEndTime', valueTime: '17:00:00' });
+    entry.extension?.push({ url: 'availableEndTime', valueTime: '18:00:00' });
+
+    expect(() => getEffectiveAvailability(service, scheduleWith(entry))).toThrow(/at most one availableEndTime/);
+  });
+
   test('ignores hours belonging to another service', () => {
     // The Schedule sets hours for service-1 only, so service-2 sees its own default rather than those.
     const otherService: WithId<HealthcareService> = {
@@ -228,6 +268,17 @@ describe('setScheduleAvailability', () => {
     expect(() => setScheduleAvailability(schedule, service, [])).toThrow(/at least one availableTime/);
     // Clearing is the way to hand the calendar back to the service default, and it still works.
     expect(hasAvailability(clearScheduleParameter(schedule, service, 'availability'))).toBe(false);
+  });
+
+  test('reports what is missing as a required-value validation issue', () => {
+    let outcome: OperationOutcome | undefined;
+    try {
+      setScheduleAvailability(scheduleWith(), service, []);
+    } catch (err) {
+      outcome = (err as OperationOutcomeError).outcome;
+    }
+
+    expect(outcome?.issue?.[0]).toMatchObject({ severity: 'error', code: 'required' });
   });
 
   test('refuses an entry that sets neither allDay nor both times', () => {

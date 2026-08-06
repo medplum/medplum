@@ -351,7 +351,7 @@ export function ScheduleAvailabilityEditor(props: ScheduleAvailabilityEditorProp
       <Text c="dimmed">
         {editingDefault
           ? `Set the default weekly working hours for ${serviceName}. Every calendar without hours of its own follows these.`
-          : `Customize your weekly working hours to override the general availability for ${serviceName}.`}
+          : `Customize the weekly working hours on this calendar, in place of the default availability for ${serviceName}.`}
       </Text>
       <Paper withBorder radius="md" p="xl">
         {!editingDefault && (
