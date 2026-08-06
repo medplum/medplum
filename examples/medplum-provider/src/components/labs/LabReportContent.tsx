@@ -5,7 +5,7 @@ import type { Attachment, DiagnosticReport } from '@medplum/fhirtypes';
 import { AttachmentDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { resolvePresentedFormAttachments } from '../../utils/documentReference';
+import { resolveDerivedFromAttachments, resolvePresentedFormAttachments } from '../../utils/documentReference';
 import classes from './LabReportContent.module.css';
 
 interface LabReportContentProps {
@@ -22,29 +22,37 @@ interface LabReportContentProps {
 export function LabReportContent(props: LabReportContentProps): JSX.Element {
   const { report } = props;
   const medplum = useMedplum();
-  const [presentedFormAttachments, setPresentedFormAttachments] = useState<Attachment[]>([]);
+  const [labDocumentAttachments, setLabDocumentAttachments] = useState<Attachment[]>([]);
 
-  // Resolve presentedForm entries that point at a DocumentReference instead of binary content
+  // Resolve both attachment sources together and commit them in a single state update, so the
+  // list doesn't render with just one source and then visibly reorder once the other resolves.
+  // Health Gorilla doesn't always fold the lab-branded PDF into presentedForm; derivedFrom is a
+  // more reliable fallback source for it, so it's placed first.
   useEffect(() => {
-    resolvePresentedFormAttachments(medplum, report.presentedForm)
-      .then(setPresentedFormAttachments)
+    Promise.all([
+      resolveDerivedFromAttachments(medplum, report.result),
+      resolvePresentedFormAttachments(medplum, report.presentedForm),
+    ])
+      .then(([derivedFromAttachments, presentedFormAttachments]) =>
+        setLabDocumentAttachments([...derivedFromAttachments, ...presentedFormAttachments])
+      )
       .catch(console.error);
 
     return () => {
-      setPresentedFormAttachments([]);
+      setLabDocumentAttachments([]);
     };
   }, [medplum, report]);
 
   return (
     <Stack gap="sm" mb="xl">
       {/* Results PDF */}
-      {presentedFormAttachments.length > 0 && (
+      {labDocumentAttachments.length > 0 && (
         <Stack gap="lg" mb="xl">
           <Text fw={800} size="md" pb="0">
             Lab Document
           </Text>
           <Stack gap="md">
-            {presentedFormAttachments.map((form, index) => (
+            {labDocumentAttachments.map((form, index) => (
               <Stack key={index} gap="xs">
                 <div className={classes.attachment}>
                   <AttachmentDisplay value={form} />
