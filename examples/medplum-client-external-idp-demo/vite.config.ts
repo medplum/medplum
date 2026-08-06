@@ -6,7 +6,10 @@ import path from 'path';
 import { defineConfig } from 'vite';
 
 if (!existsSync(path.join(import.meta.dirname, '.env'))) {
-  copyFileSync(path.join(import.meta.dirname, '.env.defaults'), path.join(import.meta.dirname, '.env'));
+  copyFileSync(
+    path.join(import.meta.dirname, '.env.defaults'),
+    path.join(import.meta.dirname, '.env'),
+  );
 }
 
 export default defineConfig({
