@@ -3,6 +3,7 @@
 export * from './access';
 export * from './agent';
 export * from './array';
+export * from './astm';
 export * from './base-schema-utils';
 export * from './base64';
 export * from './bundle';

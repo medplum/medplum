@@ -5,6 +5,9 @@
  * Content type constants.
  */
 export const ContentType = {
+  // Not an IANA type; follows the same x-application/ convention as HL7_V2 below. The body is
+  // ASTM E1394 record text, one record per line, with all E1381 framing already removed.
+  ASTM_E1394: 'x-application/astm-e1394',
   CSS: 'text/css',
   DICOM: 'application/dicom',
   DICOM_JSON: 'application/dicom+json',
