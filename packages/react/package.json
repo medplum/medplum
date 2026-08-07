@@ -89,8 +89,7 @@
     "react-dom": "19.2.8",
     "react-router": "7.18.2",
     "signature_pad": "5.1.4",
-    "sinon": "22.1.0",
-    "typescript": "6.0.3"
+    "sinon": "22.1.0"
   },
   "peerDependencies": {
     "@mantine/core": "^8.0.0",
