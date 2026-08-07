@@ -30,7 +30,12 @@ describe('AppointmentDayTimes', () => {
     );
 
     render(
-      <AppointmentDayTimes date={day.date} day={day} timezone={EASTERN} onSelectAppointment={onSelectAppointment} />,
+      <AppointmentDayTimes
+        date={day.date}
+        groups={day.groups}
+        timezone={EASTERN}
+        onSelectAppointment={onSelectAppointment}
+      />,
       wrapper
     );
 
@@ -43,7 +48,7 @@ describe('AppointmentDayTimes', () => {
   });
 
   test('Says so on a day that offers nothing', () => {
-    render(<AppointmentDayTimes date={new Date(2026, 6, 28)} day={undefined} onSelectAppointment={vi.fn()} />, wrapper);
+    render(<AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />, wrapper);
 
     expect(screen.getByText('Tuesday, July 28')).toBeInTheDocument();
     expect(screen.getByText('No times are offered on this day.')).toBeInTheDocument();
