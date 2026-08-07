@@ -1,0 +1,37 @@
+.pickList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-sm);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pickRow {
+  border: none;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+  padding: 8px 12px;
+}
+
+.pickRow:last-child {
+  border-bottom: none;
+}
+
+.pickRow:hover:not(:disabled) {
+  background-color: var(--mantine-color-default-hover);
+}
+
+.pickRow[data-checked] {
+  background-color: var(--mantine-color-blue-light);
+  box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
+}
+
+.pickRowCheck {
+  flex-shrink: 0;
+  color: var(--mantine-primary-color-filled);
+}
+
+.pickRowBody {
+  flex: 1;
+  min-width: 0;
+}
