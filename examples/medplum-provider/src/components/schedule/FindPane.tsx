@@ -85,14 +85,6 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
     [healthcareServices]
   );
 
-  useEffect(() => {
-    // If there is exactly one option, select it immediately instead of forcing user
-    // to select it
-    if (scheduleableServices?.length === 1) {
-      setSelectedHealthcareService(scheduleableServices[0]);
-    }
-  }, [scheduleableServices]);
-
   // Ensure that we are searching for appointments in the future by at least 30 minutes.
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
 
@@ -204,11 +196,9 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
         <Title order={4}>
           <Group justify="space-between">
             <HealthcareServiceDisplay value={selectedHealthcareService} />
-            {scheduleableServices.length > 1 && (
-              <Button variant="subtle" onClick={handleDismiss} aria-label="Clear selection">
-                <IconX size={20} />
-              </Button>
-            )}
+            <Button variant="subtle" onClick={handleDismiss} aria-label="Clear selection">
+              <IconX size={20} />
+            </Button>
           </Group>
         </Title>
         {(appointments ?? EMPTY).map((appointment) => (

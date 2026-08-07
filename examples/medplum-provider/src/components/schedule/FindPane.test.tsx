@@ -268,36 +268,6 @@ describe('FindPane', () => {
     });
   });
 
-  describe('Auto-Selection with Single Service', () => {
-    test('auto-selects when there is exactly one schedulable service', async () => {
-      const schedule = createScheduleWithServices([healthcareService]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      // Should immediately show the service type name, not the selection UI
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
-
-      // Should fetch slots automatically
-      expect(medplum.get).toHaveBeenCalled();
-    });
-
-    test('does not show dismiss button when auto-selected with single option', async () => {
-      const schedule = createScheduleWithServices([healthcareService]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-
-      // Dismiss button should not be present
-      expect(screen.queryByLabelText('Clear selection')).not.toBeInTheDocument();
-    });
-  });
-
   describe('Appointment Selection', () => {
     test('Displays a form for the chosen appointment', async () => {
       const user = userEvent.setup();
@@ -505,8 +475,11 @@ describe('FindPane', () => {
     test('navigates to the encounter page and does not call onSuccess when an encounter is returned', async () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
-      // Single service → auto-selected; $find returns mock appointments from the outer beforeEach.
+      // $find returns mock appointments from the outer beforeEach.
       setupWithRoutes(createScheduleWithServices([serviceWithEncounterConfig]), onSuccess);
+
+      // Select the service to trigger the $find search
+      await user.click(await screen.findByText('Encounter Service'));
 
       // Click the first appointment slot that appeared from $find (there are two)
       const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
@@ -522,8 +495,10 @@ describe('FindPane', () => {
       const user = userEvent.setup();
       const onSuccess = vi.fn();
       // healthcareService has no encounter extensions → bookEncounter returns undefined.
-      // Single service → auto-selected, so we go straight to waiting for the appointment buttons.
       setupWithRoutes(createScheduleWithServices([healthcareService]), onSuccess);
+
+      // Select the service to trigger the $find search
+      await user.click(await screen.findByText('Annual Checkup'));
 
       const apptButtons = await screen.findAllByRole('button', { name: /2024/i });
       await user.click(apptButtons[0]);
