@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useDisclosure } from '@mantine/hooks';
 import type { SpotlightActionData } from '@mantine/spotlight';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
@@ -12,7 +13,6 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
-  IconQrcode,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -24,6 +24,8 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
+import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
+import { SmartLogo } from './pages/smart/SmartLogo';
 import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -85,6 +87,7 @@ export function App(): JSX.Element | null {
   const hasScriptSure = hasScriptSureIdentifier(membership);
 
   const navigate = useNavigate();
+  const [shlOpened, shlHandlers] = useDisclosure(false);
 
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
@@ -92,6 +95,12 @@ export function App(): JSX.Element | null {
   };
 
   const spotlightActions: SpotlightActionData[] = [
+    {
+      id: 'action-import-shl',
+      label: 'Import from SMART Health Link or Card',
+      leftSection: <SmartLogo size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: shlHandlers.open,
+    },
     {
       id: 'action-new-patient-intake',
       label: 'New Patient Intake',
@@ -200,7 +209,6 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
-                  { icon: <IconQrcode />, label: 'SMART Health Link', href: '/smart-health-link' },
                 ],
               },
             ]
@@ -308,5 +316,12 @@ export function App(): JSX.Element | null {
     </AppShell>
   );
 
-  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
+  const content = (
+    <>
+      {appShellContent}
+      <SmartHealthLinkImportModal opened={shlOpened} onClose={shlHandlers.close} />
+    </>
+  );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{content}</ScriptSurePracticeProvider> : content;
 }
