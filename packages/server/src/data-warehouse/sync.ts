@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DuckDBInstance } from '@duckdb/node-api';
-import { countBy, normalizeErrorString, sumBy } from '@medplum/core';
+import { countBy, countWhere, normalizeErrorString, sumBy } from '@medplum/core';
 
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -357,23 +357,24 @@ function recordSyncMetrics(tables: SyncTableResult[]): void {
   const rowsInserted = sumBy(tables, (t) => t.rowsInserted);
   const syncDurationMs = sumBy(tables, (t) => t.syncDurationMs);
   const watermarkDurationMs = sumBy(tables, (t) => t.watermarkDurationMs);
-  const successCount = countBy(tables, (t) => !t.status);
-  const errorCount = countBy(tables, (t) => t.status === 'error');
+  const successCount = countWhere(tables, (t) => !t.status);
+  const errorCount = countWhere(tables, (t) => t.status === 'error');
 
-  // count tables by skip reason (excluding errors)
-  const skippedByReason = tables.values().reduce<Record<SyncTableSkipReason, number>>(
-    (acc, t) => {
-      if (t.status && t.status !== 'error') {
-        acc[t.status]++;
-      }
-      return acc;
-    },
-    { conflict: 0, watermark: 0, 'missing-table': 0 }
+  /*
+   * count tables by skip reason (excluding errors)
+   */
+  const skippedByReason = countBy(
+    tables.filter((t) => t.status && t.status !== 'error'),
+    (t) => t.status as SyncTableSkipReason
   );
 
-  // record as metrics
+  /*
+   * record as metrics
+   * NOTE: Sums of per-table durations, not wall-clock, because watermarks are done in parallel
+   */
   incrementCounter('medplum.dataWarehouse.sync.rows', undefined, rowsInserted);
-  recordHistogramValue('medplum.dataWarehouse.sync.duration', syncDurationMs / 1000, {
+
+  recordHistogramValue('medplum.dataWarehouse.sync.tableDuration', syncDurationMs / 1000, {
     options: { unit: 's' },
   });
   recordHistogramValue('medplum.dataWarehouse.sync.watermarkDuration', watermarkDurationMs / 1000, {
@@ -383,9 +384,7 @@ function recordSyncMetrics(tables: SyncTableResult[]): void {
     incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'success' } }, successCount);
   }
   for (const [skipReason, count] of Object.entries(skippedByReason) as [SyncTableSkipReason, number][]) {
-    if (count > 0) {
-      incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'skipped', skipReason } }, count);
-    }
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'skipped', skipReason } }, count);
   }
   if (errorCount > 0) {
     incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'error' } }, errorCount);

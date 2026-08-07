@@ -434,7 +434,7 @@ describe('syncData metrics', () => {
 
     expect(recordHistogramValueSpy).toHaveBeenCalledTimes(2);
     expect(recordHistogramValueSpy).toHaveBeenCalledWith(
-      'medplum.dataWarehouse.sync.duration',
+      'medplum.dataWarehouse.sync.tableDuration',
       expectedDurationSeconds,
       { options: { unit: 's' } }
     );

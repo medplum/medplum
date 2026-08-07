@@ -1549,28 +1549,57 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   return result;
 }
 
-export function sumBy<T>(arr: T[], fn: (value: T) => number): number {
-  return arr.values().reduce((a, b) => a + fn(b), 0);
+export function sumBy<T>(items: Iterable<T>, fn: (value: T) => number): number {
+  let sum = 0;
+  for (const value of items) {
+    sum += fn(value);
+  }
+  return sum;
 }
 
-export function countBy<T>(arr: T[], fn: (value: T) => boolean): number {
-  return arr.values().reduce((a, b) => a + (fn(b) ? 1 : 0), 0);
+export function countWhere<T>(items: Iterable<T>, fn: (value: T) => boolean): number {
+  let count = 0;
+  for (const value of items) {
+    if (fn(value)) {
+      count++;
+    }
+  }
+  return count;
 }
 
 /**
- * Groups an array of items by a key function, returning a map of key to array of items.
- * @param array - The array of items to group.
+ * Counts iterable elements by a key function, returning a sparse map of key to count.
+ * Matches Lodash `countBy` semantics (no zero-fill for missing keys).
+ * @param items - The items to count.
+ * @param keyFn - The function to extract the key from each item.
+ * @returns A map of key to count for keys that appear at least once.
+ */
+export function countBy<T, K extends keyof any>(
+  items: Iterable<T>,
+  keyFn: (value: T) => K
+): Partial<Record<K, number>> {
+  const result: Partial<Record<K, number>> = {};
+  for (const item of items) {
+    const key = keyFn(item);
+    result[key] = (result[key] ?? 0) + 1;
+  }
+  return result;
+}
+
+/**
+ * Groups iterable items by a key function, returning a map of key to array of items.
+ * @param items - The items to group.
  * @param keyFn - The function to extract the key from each item.
  * @param acc - Optional accumulator to build on top of.
  * @returns A map of key to array of items.
  */
 export function groupBy<T, K extends keyof any>(
-  array: T[],
+  items: Iterable<T>,
   keyFn: (item: T) => K,
   acc?: Record<K, T[]>
 ): Record<K, T[]> {
   const result = acc ?? ({} as Record<K, T[]>);
-  for (const item of array) {
+  for (const item of items) {
     const key = keyFn(item);
     (result[key] ||= []).push(item);
   }
