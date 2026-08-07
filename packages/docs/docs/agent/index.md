@@ -223,7 +223,7 @@ HL7 Feeds can be extremely high volume, and before you go live with a high-volum
 ## Supported Protocols
 
 - [HL7 v2](https://www.hl7.org): A widely used low-level message protocol for healthcare data exchange.
-- [DICOM](https://www.dicomstandard.org/): A protocol used for storing metadata about medical images. Currently, Medplum supports the C-STORE and C-ECHO operations. Support for other DICOM operations such C-FIND, C-GET, and C-MOVE is coming soon.
+- [DICOM](https://www.dicomstandard.org/): A protocol used for storing medical images and their metadata. Currently, Medplum supports the C-STORE and C-ECHO operations. Support for other DICOM operations such C-FIND, C-GET, and C-MOVE is coming soon. See [DICOM with the Medplum Agent](/docs/dicom/agent-dimse) for channel setup, and [DICOM & DICOMweb](/docs/dicom) for how received studies are stored and served.
 - [ASTM](https://www.astm.org/): Used to transfer data between clinical instruments and computer systems. ASTM support is still in [alpha](/docs/compliance/alpha-beta).
 
 ## See also
