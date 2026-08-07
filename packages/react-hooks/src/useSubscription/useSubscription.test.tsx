@@ -133,6 +133,23 @@ describe('useSubscription()', () => {
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
 
+  test('Does not update React state after unmount', () => {
+    vi.useFakeTimers();
+    try {
+      const { unmount } = setup(<TestComponent criteria="Communication" />);
+      unmount();
+
+      // Reproduce the test environment teardown that exposed the delayed state update in #9654.
+      vi.stubGlobal('window', undefined);
+
+      expect(() => vi.advanceTimersByTime(3000)).not.toThrow();
+      expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   test('Mount and remount before debounce timeout', async () => {
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
     const { rerender } = setup(<RenderToggleComponent render={true} />);
