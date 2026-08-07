@@ -8,6 +8,8 @@ import type {
   Condition,
   Coverage,
   DiagnosticReport,
+  Goal,
+  Immunization,
   MedicationRequest,
   MedicationStatement,
   Observation,
@@ -23,6 +25,8 @@ import {
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { Allergies } from './Allergies';
+import { Goals } from './Goals';
+import { Immunizations } from './Immunizations';
 import { Insurance } from './Insurance';
 import { Labs } from './Labs';
 import { Medications } from './Medications';
@@ -160,6 +164,26 @@ export const MedicationsSection: PatientSummarySectionConfig = {
   ),
 };
 
+/** Immunizations section — searches for Immunization resources. */
+export const ImmunizationsSection: PatientSummarySectionConfig = {
+  key: 'immunizations',
+  title: 'Immunizations',
+  searches: [{ key: 'immunizations', resourceType: 'Immunization', patientParam: 'patient' }],
+  component: ({ results, patient }: SectionRenderContext) => (
+    <Immunizations patient={patient} immunizations={(results['immunizations'] as Immunization[]) || []} />
+  ),
+};
+
+/** Goals section — searches for Goal resources. */
+export const GoalsSection: PatientSummarySectionConfig = {
+  key: 'goals',
+  title: 'Goals',
+  searches: [{ key: 'goals', resourceType: 'Goal', patientParam: 'patient' }],
+  component: ({ results, patient }: SectionRenderContext) => (
+    <Goals patient={patient} goals={(results['goals'] as Goal[]) || []} />
+  ),
+};
+
 /**
  * Labs section — searches for both ServiceRequest and DiagnosticReport resources.
  * Accepts an optional `onRequestLabs` callback via closure.
@@ -261,10 +285,12 @@ export const PharmaciesSection: PatientSummarySectionConfig = createPharmaciesSe
 export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySectionConfig[] {
   return [
     DemographicsSection,
+    GoalsSection,
     InsuranceSection,
     AllergiesSection,
     ProblemListSection,
     MedicationsSection,
+    ImmunizationsSection,
     createLabsSection(onRequestLabs),
     SexualOrientationSection,
     SmokingStatusSection,
