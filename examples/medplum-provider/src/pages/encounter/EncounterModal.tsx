@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
+import { Button, Card, Grid, Group, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { isResource, normalizeErrorString } from '@medplum/core';
 import type { Coding, Encounter, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
-import { CodeInput, CodingInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
+import { CodeInput, CodingInput, DateTimeInput, Modal, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -74,106 +74,104 @@ export const EncounterModal = (): JSX.Element => {
       }}
       size="60%"
       title="New encounter"
-      styles={{ title: { fontSize: '1.125rem', fontWeight: 600 }, body: { padding: 0, height: '60vh' } }}
-    >
-      <Stack h="100%" justify="space-between" gap={0}>
-        <Box flex={1} miw={0}>
-          <Grid p="md" h="100%">
-            <Grid.Col span={6} pr="md">
-              <Stack gap="md">
-                <ResourceInput
-                  label="Patient"
-                  resourceType="Patient"
-                  name="Patient-id"
-                  defaultValue={patient}
-                  disabled={true}
-                  required={true}
-                />
-
-                <ResourceInput
-                  label="Practitioner"
-                  resourceType="Practitioner"
-                  name="Practitioner-id"
-                  defaultValue={practitioner}
-                  required={true}
-                  onChange={(value) => setPractitioner(value)}
-                />
-
-                <DateTimeInput
-                  name="start"
-                  label="Start Time"
-                  required={true}
-                  onChange={(value) => {
-                    setStart(new Date(value));
-                  }}
-                />
-
-                <DateTimeInput
-                  name="end"
-                  label="End Time"
-                  required={true}
-                  onChange={(value) => {
-                    setEnd(new Date(value));
-                  }}
-                />
-
-                <CodingInput
-                  name="class"
-                  label="Class"
-                  binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
-                  required={true}
-                  onChange={setEncounterClass}
-                  path="Encounter.type"
-                />
-
-                <CodeInput
-                  name="status"
-                  label="Status"
-                  binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
-                  maxValues={1}
-                  required={true}
-                  onChange={(value) => {
-                    if (value) {
-                      setStatus(value as typeof status);
-                    }
-                  }}
-                />
-              </Stack>
-            </Grid.Col>
-
-            <Grid.Col span={6}>
-              <Card padding="lg" radius="md" className={classes.planDefinition}>
-                <Text size="md" fw={500} mb="xs">
-                  Apply care template
-                </Text>
-                <Text size="sm" color="dimmed" mb="lg">
-                  You can select template for new encounter. Tasks from the template will be automatically added to the
-                  encounter. Administrators can create and edit templates in the{' '}
-                  <Text component="a" href="#" variant="link">
-                    Medplum app
-                  </Text>
-                  .
-                </Text>
-
-                <ResourceInput
-                  name="plandefinition"
-                  label="Care template"
-                  resourceType="PlanDefinition"
-                  onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
-                />
-
-                <PlanDefinitionSummary planDefinition={planDefinitionData} />
-              </Card>
-            </Grid.Col>
-          </Grid>
-        </Box>
-
-        <Box className={classes.footer} h={70} p="md">
+      padding="md"
+      bodyHeight="60vh"
+      actions={
+        <Group justify="flex-end">
           <Button fullWidth={false} onClick={handleCreateEncounter} loading={isLoading} disabled={isLoading}>
             Create Encounter
           </Button>
-        </Box>
-      </Stack>
+        </Group>
+      }
+    >
+      <Grid h="100%">
+        <Grid.Col span={6} pr="md">
+          <Stack gap="md">
+            <ResourceInput
+              label="Patient"
+              resourceType="Patient"
+              name="Patient-id"
+              defaultValue={patient}
+              disabled={true}
+              required={true}
+            />
+
+            <ResourceInput
+              label="Practitioner"
+              resourceType="Practitioner"
+              name="Practitioner-id"
+              defaultValue={practitioner}
+              required={true}
+              onChange={(value) => setPractitioner(value)}
+            />
+
+            <DateTimeInput
+              name="start"
+              label="Start Time"
+              required={true}
+              onChange={(value) => {
+                setStart(new Date(value));
+              }}
+            />
+
+            <DateTimeInput
+              name="end"
+              label="End Time"
+              required={true}
+              onChange={(value) => {
+                setEnd(new Date(value));
+              }}
+            />
+
+            <CodingInput
+              name="class"
+              label="Class"
+              binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
+              required={true}
+              onChange={setEncounterClass}
+              path="Encounter.type"
+            />
+
+            <CodeInput
+              name="status"
+              label="Status"
+              binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+              maxValues={1}
+              required={true}
+              onChange={(value) => {
+                if (value) {
+                  setStatus(value as typeof status);
+                }
+              }}
+            />
+          </Stack>
+        </Grid.Col>
+
+        <Grid.Col span={6}>
+          <Card padding="lg" radius="md" className={classes.planDefinition}>
+            <Text size="md" fw={500} mb="xs">
+              Apply care template
+            </Text>
+            <Text size="sm" color="dimmed" mb="lg">
+              You can select template for new encounter. Tasks from the template will be automatically added to the
+              encounter. Administrators can create and edit templates in the{' '}
+              <Text component="a" href="#" variant="link">
+                Medplum app
+              </Text>
+              .
+            </Text>
+
+            <ResourceInput
+              name="plandefinition"
+              label="Care template"
+              resourceType="PlanDefinition"
+              onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
+            />
+
+            <PlanDefinitionSummary planDefinition={planDefinitionData} />
+          </Card>
+        </Grid.Col>
+      </Grid>
     </Modal>
   );
 };
