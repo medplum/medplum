@@ -72,6 +72,7 @@ export * from './Loading/Loading';
 export * from './Logo/Logo';
 export * from './MeasureReportDisplay/MeasureReportDisplay';
 export * from './MedplumLink/MedplumLink';
+export * from './Modal/Modal';
 export * from './MoneyDisplay/MoneyDisplay';
 export * from './MoneyInput/MoneyInput';
 export * from './NoteDisplay/NoteDisplay';

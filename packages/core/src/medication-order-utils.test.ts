@@ -242,6 +242,15 @@ describe('Custom FHIR operation Parameters helpers', () => {
     ]);
   });
 
+  test('medicationSearchParamsToParameters repeats gcnSeqnos, one parameter per key', () => {
+    const result = medicationSearchParamsToParameters({ routedMedId: 6143, gcnSeqnos: [8346, 22528] });
+    expect(result.parameter).toEqual([
+      { name: 'routedMedId', valueInteger: 6143 },
+      { name: 'gcnSeqnos', valueInteger: 8346 },
+      { name: 'gcnSeqnos', valueInteger: 22528 },
+    ]);
+  });
+
   test('medicationOrderRequestToParameters emits one drugs entry per line', () => {
     const req: MedicationOrderRequest = {
       patientId: 'pat-1',
@@ -328,6 +337,29 @@ describe('Custom FHIR operation Parameters helpers', () => {
 
     const compoundSig = result.parameter?.find((p) => p.name === 'compoundSigs');
     expect(compoundSig?.part).toContainEqual({ name: 'drugId', valueInteger: 42 });
+  });
+
+  test('medicationOrderRequestToParameters encodes a GCN-keyed drug line (no NDC or RxNorm)', () => {
+    const result = medicationOrderRequestToParameters({
+      patientId: 'pat-1',
+      drugs: [
+        {
+          routedMedId: 177770,
+          gcnSeqno: 7341,
+          drugName: 'Tolcylen topical',
+          line1: 'solution',
+          quantity: 30,
+          quantityQualifier: 'C28254',
+        },
+      ],
+    });
+
+    const drugs = result.parameter?.find((p) => p.name === 'drugs');
+    expect(drugs?.part).toContainEqual({ name: 'routedMedId', valueInteger: 177770 });
+    expect(drugs?.part).toContainEqual({ name: 'gcnSeqno', valueInteger: 7341 });
+    expect(drugs?.part).toContainEqual({ name: 'drugName', valueString: 'Tolcylen topical' });
+    expect(drugs?.part).toContainEqual({ name: 'line1', valueString: 'solution' });
+    expect(drugs?.part?.some((p) => p.name === 'ndc' || p.name === 'rxNorm')).toBe(false);
   });
 
   test('parametersToMedicationOrderResponse round-trips the order response shape', () => {
