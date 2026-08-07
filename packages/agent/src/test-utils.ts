@@ -124,21 +124,34 @@ export async function createEndpointWithRandomPort(
   return [createdEndpoint, port];
 }
 
+const WAIT_FOR_POLL_MS = 10;
+
 /**
  * Polls `predicate` until it returns `true` or `timeoutMs` elapses, then throws.
  * The predicate may itself throw to fail fast (e.g. to surface an error observed
  * while waiting); that error propagates out of `waitFor` unchanged.
+ *
+ * The budget is time spent polling, not wall-clock: the predicate is always evaluated once more
+ * after the deadline passes, and time the event loop spent blocked (a GC pause, a synchronous
+ * flush) is credited back. Neither is time in which the predicate could have been observed, so
+ * charging it would time out on conditions that already hold.
  * @param predicate - Condition to wait for.
  * @param timeoutMs - Total time to wait before throwing (defaults to 1000ms).
  * @param label - Optional description used in the timeout error message.
  */
 export async function waitFor(predicate: () => boolean, timeoutMs = 1000, label?: string): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
+  let deadline = Date.now() + timeoutMs;
+  for (;;) {
     if (predicate()) {
       return;
     }
-    await sleep(10);
+    if (Date.now() >= deadline) {
+      break;
+    }
+    const before = Date.now();
+    await sleep(WAIT_FOR_POLL_MS);
+    // Whatever the poll overran by is stall, not waiting.
+    deadline += Math.max(0, Date.now() - before - WAIT_FOR_POLL_MS);
   }
   throw new Error(
     label ? `waitFor: ${label} not satisfied after ${timeoutMs}ms` : `waitFor timed out after ${timeoutMs}ms`
