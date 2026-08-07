@@ -346,6 +346,13 @@ function buildErrorTableResult(destination: string, watermarkDurationMs: number)
  * @param tables - Per-table sync results (including partial progress when a hard failure aborts the run).
  */
 function recordSyncMetrics(tables: SyncTableResult[]): void {
+  // Early abort before any table outcome (watermark/attach failure, etc.): emit a positive error
+  // signal for alarms, but skip duration histograms so empty runs do not pollute p50/avg with zeros.
+  if (tables.length === 0) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'error' } }, 1);
+    return;
+  }
+
   // count totals for all tables
   const rowsInserted = sumBy(tables, (t) => t.rowsInserted);
   const syncDurationMs = sumBy(tables, (t) => t.syncDurationMs);

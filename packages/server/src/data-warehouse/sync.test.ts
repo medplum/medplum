@@ -499,6 +499,28 @@ describe('syncData metrics', () => {
       1
     );
   });
+
+  test('records tables error without duration histograms when sync fails before any table', async () => {
+    const destination = createFakeDestination({
+      getPostgresAttachQueries: () => ['SELECT * FROM nonexistent_attach_table'],
+    });
+
+    await expect(
+      syncData({
+        database: {},
+        warehouseSources: [patientSource, observationSource],
+        destination,
+      })
+    ).rejects.toThrow();
+
+    expect(incrementCounterSpy).toHaveBeenCalledTimes(1);
+    expect(incrementCounterSpy).toHaveBeenCalledWith(
+      'medplum.dataWarehouse.sync.tables',
+      { attributes: { result: 'error' } },
+      1
+    );
+    expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+  });
 });
 
 /**
@@ -513,13 +535,14 @@ function createFakeDestination(
     buildSourcePredicate: DataWarehouseDestination['buildSourcePredicate'];
     writeRows: DataWarehouseDestination['writeRows'];
     getDestinationName: DataWarehouseDestination['getDestinationName'];
+    getPostgresAttachQueries: DataWarehouseDestination['getPostgresAttachQueries'];
   }> = {}
 ): DataWarehouseDestination {
   return {
     type: 'local',
     getSetupQueries: () => [],
     getConnectionSetupQueries: () => [],
-    getPostgresAttachQueries: () => [],
+    getPostgresAttachQueries: overrides.getPostgresAttachQueries ?? (() => []),
     ensureTargetExists: overrides.ensureTargetExists ?? (async () => undefined),
     buildSourcePredicate: overrides.buildSourcePredicate ?? (async () => undefined),
     writeRows: overrides.writeRows ?? (async () => 1),
