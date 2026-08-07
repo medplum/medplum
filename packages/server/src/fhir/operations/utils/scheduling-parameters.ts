@@ -25,6 +25,7 @@ import {
   assertExtensionBoolean,
   assertExtensionCode,
   assertExtensionDuration,
+  assertExtensionPositiveInt,
   assertExtensionTime,
   getExtensions,
 } from '../../../util/extension';
@@ -75,6 +76,7 @@ export type SchedulingParametersExtensionExtension =
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
+  | { url: 'slotCapacity'; valuePositiveInt: number }
   | { url: 'service'; valueReference: Reference<HealthcareService> & { reference: string } }
   | { url: 'timezone'; valueCode: string }
   | { url: 'alignmentTimezone'; valueCode: string }
@@ -100,6 +102,7 @@ type BaseSchedulingParameters = {
   bufferAfter: number; // minutes
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
+  slotCapacity: number; // max concurrent bookings per time (1 = no overbooking)
   service: Reference<HealthcareService> & { reference: string };
   timezone?: string;
   alignmentTimezone: string;
@@ -132,6 +135,7 @@ const SERVICE_DEFAULTS = Object.freeze({
   bufferAfter: 0,
   alignmentOffset: 0,
   alignmentTimezone: 'Etc/UTC',
+  slotCapacity: 1,
 });
 
 // This is a `Temporal.Instant` singleton that we instantiate once for
@@ -350,6 +354,11 @@ function extractAlignmentInterval(ext: WithPath<Extension>): number {
   return value;
 }
 
+function extractSlotCapacity(ext: WithPath<Extension>): number {
+  assertExtensionPositiveInt(ext);
+  return ext.valuePositiveInt;
+}
+
 // Get SchedulingParameters from a HealthcareService or throw
 export function getHealthcareServiceSchedulingParameters(
   healthcareService: WithPath<HealthcareService>
@@ -400,6 +409,7 @@ export function getHealthcareServiceSchedulingParameters(
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
   const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
+  const slotCapacityExt = atMostOne(getExtensions(extension, 'slotCapacity'), 'slotCapacity');
 
   // `service` sub-extension not allowed in HealthcareService; implied by resource
   exactlyZero(getExtensions(extension, 'service'), 'service', healthcareService.resourceType);
@@ -425,6 +435,7 @@ export function getHealthcareServiceSchedulingParameters(
         ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
         ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
         ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+        ...(slotCapacityExt && { slotCapacity: extractSlotCapacity(slotCapacityExt) }),
       },
       getPath(extension)
     )
@@ -478,6 +489,7 @@ export function getScheduleSchedulingParameters(
   const alignmentIntervalExt = atMostOne(getExtensions(extension, 'alignmentInterval'), 'alignmentInterval');
   const alignmentTimezoneExt = atMostOne(getExtensions(extension, 'alignmentTimezone'), 'alignmentTimezone');
   const timezoneExt = atMostOne(getExtensions(extension, 'timezone'), 'timezone');
+  const slotCapacityExt = atMostOne(getExtensions(extension, 'slotCapacity'), 'slotCapacity');
 
   if (timezoneExt) {
     assertValidTimezone(timezoneExt);
@@ -502,6 +514,7 @@ export function getScheduleSchedulingParameters(
       ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
       ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
       ...(timezoneExt && { timezone: timezoneExt.valueCode }),
+      ...(slotCapacityExt && { slotCapacity: extractSlotCapacity(slotCapacityExt) }),
     },
     getPath(extension)
   );

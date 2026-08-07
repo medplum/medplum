@@ -26,6 +26,16 @@ export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDe
 export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
 
 /**
+ * This extension is set on `Slot` resources created through scheduling APIs.
+ * Its value is a positive integer recording the slotCapacity for the service
+ * and schedule at the time the booking was created. Omitted when the
+ * slotCapacity is `1`.
+ *
+ * @see https://www.medplum.com/docs/scheduling/defining-availability#overbooking
+ */
+export const SchedulingSlotCapacityURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity';
+
+/**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
  *
  * In R5/R6, `serviceType` attributes change from `CodeableConcept[]` to
