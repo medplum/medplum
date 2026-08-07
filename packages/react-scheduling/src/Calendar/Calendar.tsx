@@ -105,12 +105,19 @@ export function Calendar(props: CalendarProps): JSX.Element {
     onDoubleClickRef.current = onDoubleClickAppointment;
   }, [onDoubleClickAppointment]);
 
-  const handleDblClick = useCallback((e: Event) => {
-    const ext = eventDataRef.current.get(e.currentTarget as Element);
-    if (ext?.type === 'appointment') {
-      onDoubleClickRef.current?.(ext.appointment);
-    }
-  }, []);
+  const handleDblClick = useCallback(
+    (e: Event) => {
+      const ext = eventDataRef.current.get(e.currentTarget as Element);
+      if (ext?.type === 'appointment') {
+        onDoubleClickRef.current?.(ext.appointment);
+
+        // The first click started a timer for `handleSelectEvent`; cancel that pending
+        // event since we are emitting the double-click instead.
+        handleSelectEventDebounced.cancel();
+      }
+    },
+    [handleSelectEventDebounced]
+  );
 
   const events = useMemo(() => {
     const appointments = props.appointments ?? [];
