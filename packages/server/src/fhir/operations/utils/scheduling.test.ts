@@ -810,6 +810,50 @@ describe('applyExistingSlots', () => {
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });
+
+  test('busy slots without service type block any requested service type', () => {
+    const availability = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const busyIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const slots = makeSlots(schedule, busyIntervals, 'busy'); // No serviceType
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
+
+    expect(applyExistingSlots({ availability, slots, range, serviceType })).toEqual([]);
+  });
+
+  test('busy slots with matching service type are removed from availability', () => {
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
+    const availability = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const busyIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T12:00:00.000Z') }];
+    const slots = makeSlots(schedule, busyIntervals, 'busy', serviceType);
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+
+    expect(applyExistingSlots({ availability, slots, range, serviceType })).toEqual([
+      { start: new Date('2025-12-01T12:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') },
+    ]);
+  });
+
+  test('busy slots with non-matching service type do not block availability', () => {
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
+    const slotServiceType = [{ coding: [{ system: 'http://example.com', code: 'new-patient' }] }];
+    const availability = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const busyIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T12:00:00.000Z') }];
+    const slots = makeSlots(schedule, busyIntervals, 'busy', slotServiceType);
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+
+    expect(applyExistingSlots({ availability, slots, range, serviceType })).toEqual(availability);
+  });
+
+  test('busy-unavailable slots with non-matching service type do not block availability', () => {
+    const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
+    const slotServiceType = [{ coding: [{ system: 'http://example.com', code: 'new-patient' }] }];
+    const availability = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const blockIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
+    const slots = makeSlots(schedule, blockIntervals, 'busy-unavailable', slotServiceType);
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+
+    expect(applyExistingSlots({ availability, slots, range, serviceType })).toEqual(availability);
+  });
 });
 
 describe('isAlignedToGrid', () => {
