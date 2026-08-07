@@ -19,7 +19,7 @@ import { typeInAutocomplete } from '../test-utils/asyncAutocomplete';
 import { act, fireEvent, render, screen, waitFor, within } from '../test-utils/render';
 import type { AppointmentFinderProps } from './AppointmentFinder';
 import { AppointmentFinder } from './AppointmentFinder';
-import { MAX_FIND_WINDOW_DAYS } from './AppointmentFinder.utils';
+import { MAX_FIND_WINDOW_DAYS } from './AppointmentFinder.times';
 import { MONTH_SCAN_COUNT } from './useMonthAvailability';
 
 const medplum = new MockClient();

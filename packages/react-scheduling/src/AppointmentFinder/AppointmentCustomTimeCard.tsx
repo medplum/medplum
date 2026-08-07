@@ -4,16 +4,10 @@ import { Alert, Button, Group, Paper, Select, Stack, Text, TextInput } from '@ma
 import type { Appointment, CodeableConcept } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { buildCustomAppointment, findAppointmentAt } from './AppointmentFinder.assemble';
 import classes from './AppointmentFinder.module.css';
-import type { ActorCombination } from './AppointmentFinder.utils';
-import {
-  buildCustomAppointment,
-  findAppointmentAt,
-  formatDayHeading,
-  formatZonedTime,
-  getNativeInputType,
-  parseZonedTime,
-} from './AppointmentFinder.utils';
+import type { ActorCombination } from './AppointmentFinder.schedules';
+import { formatDayHeading, formatZonedTime, getNativeInputType, parseZonedTime } from './AppointmentFinder.times';
 
 /** How a chosen time relates to what the server offered. */
 export interface AppointmentSelectionOptions {

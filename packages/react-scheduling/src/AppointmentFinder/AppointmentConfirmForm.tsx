@@ -9,7 +9,8 @@ import { IconCalendarEvent, IconClock, IconMapPin, IconStethoscope, IconUser } f
 import type { JSX, ReactNode } from 'react';
 import { ActorName } from './ActorName';
 import classes from './AppointmentFinder.module.css';
-import { formatDayHeading, formatZonedTime, getActorRoleLabel, getDurationMinutes } from './AppointmentFinder.utils';
+import { getActorRoleLabel } from './AppointmentFinder.roles';
+import { formatDayHeading, formatZonedTime, getDurationMinutes } from './AppointmentFinder.times';
 import { AppointmentPatientSelect } from './AppointmentPatientSelect';
 
 /** What the person booking adds to a time the search proposed. */

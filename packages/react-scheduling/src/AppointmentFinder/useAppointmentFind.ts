@@ -4,7 +4,8 @@ import { getReferenceString, isDefined, normalizeErrorString } from '@medplum/co
 import type { Appointment, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useEffect, useState } from 'react';
-import { findAppointments, getAppointmentKey, getFindWindow } from './AppointmentFinder.utils';
+import { findAppointments, getFindWindow } from './AppointmentFinder.find';
+import { getAppointmentKey } from './AppointmentFinder.times';
 
 export interface AppointmentFindCriteria {
   readonly service: Reference<HealthcareService>;

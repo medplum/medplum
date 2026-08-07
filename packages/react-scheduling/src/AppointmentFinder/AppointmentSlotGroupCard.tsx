@@ -6,8 +6,9 @@ import type { Appointment } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { ActorName } from './ActorName';
 import classes from './AppointmentFinder.module.css';
-import type { AppointmentSlotGroup } from './AppointmentFinder.utils';
-import { formatZonedTime, getActorRoleLabel } from './AppointmentFinder.utils';
+import { getActorRoleLabel } from './AppointmentFinder.roles';
+import type { AppointmentSlotGroup } from './AppointmentFinder.times';
+import { formatZonedTime } from './AppointmentFinder.times';
 
 export interface AppointmentSlotGroupCardProps {
   readonly group: AppointmentSlotGroup;

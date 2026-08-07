@@ -4,8 +4,8 @@ import { Button, CloseButton, Combobox, Group, Input, Paper, Stack, Text, useCom
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import type { ScheduleCandidateGroup } from './AppointmentFinder.utils';
-import { candidateMatchesQuery, getSelectedCandidates } from './AppointmentFinder.utils';
+import type { ScheduleCandidateGroup } from './AppointmentFinder.schedules';
+import { candidateMatchesQuery, getSelectedCandidates } from './AppointmentFinder.schedules';
 
 export interface AppointmentActorSelectProps {
   /** The role being filled, and the actors that can fill it. */

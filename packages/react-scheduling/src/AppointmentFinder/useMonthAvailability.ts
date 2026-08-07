@@ -5,7 +5,8 @@ import type { Appointment, HealthcareService, Reference, Schedule } from '@medpl
 import { startOfMonth } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
-import { endOfDay, endOfMonth, findAppointments } from './AppointmentFinder.utils';
+import { findAppointments } from './AppointmentFinder.find';
+import { endOfDay, endOfMonth } from './AppointmentFinder.times';
 
 /**
  * The most times one leg of the scan asks for. The ceiling `$find` allows, and

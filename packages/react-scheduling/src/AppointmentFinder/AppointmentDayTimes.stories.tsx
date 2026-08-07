@@ -8,8 +8,8 @@ import { useState } from 'react';
 import { withMockedDate } from '../stories/decorators';
 import { buildProposedAppointment } from '../stories/scheduling';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
-import type { AppointmentDay } from './AppointmentFinder.utils';
-import { groupAppointmentsByDay } from './AppointmentFinder.utils';
+import type { AppointmentDay } from './AppointmentFinder.times';
+import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
 export default {
   title: 'Medplum/AppointmentDayTimes',

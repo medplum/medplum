@@ -8,8 +8,8 @@ import { withMockedDate } from '../stories/decorators';
 import { buildProposedAppointment } from '../stories/scheduling';
 import type { AppointmentSelectionOptions } from './AppointmentCustomTimeCard';
 import { AppointmentCustomTimeCard } from './AppointmentCustomTimeCard';
-import type { ActorCombination } from './AppointmentFinder.utils';
-import { getActorsKey } from './AppointmentFinder.utils';
+import type { ActorCombination } from './AppointmentFinder.schedules';
+import { getActorsKey } from './AppointmentFinder.times';
 
 export default {
   title: 'Medplum/AppointmentCustomTimeCard',

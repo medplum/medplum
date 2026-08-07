@@ -4,14 +4,11 @@ import { Anchor, Group, SegmentedControl, Stack, Text } from '@mantine/core';
 import { CalendarDateInput, getStartMonth } from '@medplum/react';
 import type { JSX } from 'react';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
-import type { ActorSelections, ScheduleCandidateGroup, SchedulingRole, TimeOfDay } from './AppointmentFinder.utils';
-import {
-  endOfMonth,
-  formatDateRange,
-  formatDayHeading,
-  getSelectedCandidates,
-  getSelectionError,
-} from './AppointmentFinder.utils';
+import type { SchedulingRole } from './AppointmentFinder.roles';
+import type { ActorSelections, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
+import { getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
+import type { TimeOfDay } from './AppointmentFinder.times';
+import { endOfMonth, formatDateRange, formatDayHeading } from './AppointmentFinder.times';
 
 export interface AppointmentSearchCriteria {
   /** Chosen schedule ids per role. Everything chosen attends. */

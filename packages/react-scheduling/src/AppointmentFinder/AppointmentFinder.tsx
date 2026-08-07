@@ -21,22 +21,20 @@ import { AppointmentConfirmForm, getBookingError } from './AppointmentConfirmFor
 import type { AppointmentSearchCriteria } from './AppointmentCriteriaForm';
 import { AppointmentCriteriaForm, getCriteriaError } from './AppointmentCriteriaForm';
 import type { AppointmentSelectionOptions } from './AppointmentCustomTimeCard';
+import { applyBookingDetails } from './AppointmentFinder.assemble';
 import classes from './AppointmentFinder.module.css';
-import type { ActorSelections, ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.utils';
+import { getConfiguredDurationMinutes } from './AppointmentFinder.params';
+import type { ActorSelections, ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
+import { getActorCombination, getSelectedCandidates, getSelectedSchedules } from './AppointmentFinder.schedules';
 import {
   MAX_FIND_WINDOW_DAYS,
-  applyBookingDetails,
   endOfDay,
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
-  getActorCombination,
-  getConfiguredDurationMinutes,
   getDurationMinutes,
-  getSelectedCandidates,
-  getSelectedSchedules,
   groupAppointmentsByDay,
-} from './AppointmentFinder.utils';
+} from './AppointmentFinder.times';
 import { AppointmentLocationSelect } from './AppointmentLocationSelect';
 import { AppointmentServiceSelect, toServiceReference } from './AppointmentServiceSelect';
 import type { CustomTimeConfig } from './AppointmentSlotPicker';

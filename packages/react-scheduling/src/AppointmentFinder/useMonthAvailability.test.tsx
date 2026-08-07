@@ -6,7 +6,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { buildFindBundle, buildProposedAppointment } from '../stories/scheduling';
 import { render, screen, waitFor } from '../test-utils/render';
-import { endOfMonth } from './AppointmentFinder.utils';
+import { endOfMonth } from './AppointmentFinder.times';
 import type { MonthAvailabilityCriteria } from './useMonthAvailability';
 import { MONTH_SCAN_COUNT, useMonthAvailability } from './useMonthAvailability';
 

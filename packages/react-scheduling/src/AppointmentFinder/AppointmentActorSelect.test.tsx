@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { DrOkaforSchedule, DrRiveraSchedule, ExamRoomASchedule } from '../stories/scheduling';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
-import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.utils';
+import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
 
 const SURGERY: Coding = { system: 'http://snomed.info/sct', code: '394609007', display: 'Surgery' };
 const ANAESTHETICS: Coding = { system: 'http://snomed.info/sct', code: '394577000', display: 'Anaesthetics' };

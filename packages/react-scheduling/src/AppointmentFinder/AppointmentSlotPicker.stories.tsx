@@ -9,8 +9,8 @@ import { useState } from 'react';
 import { withMockedDate } from '../stories/decorators';
 import { buildProposedAppointment } from '../stories/scheduling';
 import type { AppointmentSelectionOptions } from './AppointmentCustomTimeCard';
-import type { ActorCombination } from './AppointmentFinder.utils';
-import { getActorsKey } from './AppointmentFinder.utils';
+import type { ActorCombination } from './AppointmentFinder.schedules';
+import { getActorsKey } from './AppointmentFinder.times';
 import type { CustomTimeConfig } from './AppointmentSlotPicker';
 import { AppointmentSlotPicker } from './AppointmentSlotPicker';
 

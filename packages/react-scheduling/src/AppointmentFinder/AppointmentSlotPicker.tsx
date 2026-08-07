@@ -8,8 +8,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AppointmentSelectionOptions } from './AppointmentCustomTimeCard';
 import { AppointmentCustomTimeCard } from './AppointmentCustomTimeCard';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
-import type { ActorCombination } from './AppointmentFinder.utils';
-import { groupAppointmentsByDay } from './AppointmentFinder.utils';
+import type { ActorCombination } from './AppointmentFinder.schedules';
+import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
 /** How many days of times are shown at once unless the caller says otherwise. */
 const DEFAULT_DAYS_SHOWN = 1;
