@@ -53,27 +53,56 @@ flowchart TD
 | `subscriber` | Reference to the subscriber Patient | Yes |
 | `insurance` | Array of Coverages. If there are more than one, the array item labeled as the focal will be used for the eligibility check | Yes |
 | `servicedPeriod.start` | Service period start date | No (defaults to current date if not provided) |
-| `item` | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. | No |
+| `item` | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. `item.category` is what selects the service types the check asks about, described below. | No (defaults to service type code `30`) |
+
+#### Service type codes
 
 :::note[]
-In the CoverageEligibilityRequest.item field, STEDI insurance eligibility check only supports **Plan Coverage and General Benefits**. If it is not provided, it will default to Plan Coverage and General Benefits. 
+Most payers respond to only a small subset of the X12 service type codes, and many return general benefits no matter what was requested, so treat a specific code as a request rather than a guarantee.
+:::
 
-Example:
+Each `item.category.coding` entry with the system `https://x12.org/codes/service-type-codes` adds a service type to the check. You can supply several codings, or several `item` entries, and all of them are sent together on a single eligibility check. If no X12 service type coding is present, the check defaults to `30` (Health Benefit Plan Coverage). A code that Stedi does not accept is rejected before the request reaches the payer, and the error names the `item` and `coding` it came from.
+
+These are the codes most implementations start with.
+
+| Code | Display |
+|------|---------|
+| `30` | Health Benefit Plan Coverage |
+| `12` | Durable Medical Equipment Purchase |
+| `35` | Dental Care |
+| `47` | Hospital |
+| `48` | Hospital - Inpatient |
+| `50` | Hospital - Outpatient |
+| `88` | Pharmacy |
+| `98` | Professional (Physician) Visit - Office |
+| `AL` | Vision (Optometry) |
+| `MH` | Mental Health |
+| `UC` | Urgent Care |
+
+For the complete set of accepted codes, see the service type codes section of [Stedi's eligibility code lists](https://www.stedi.com/docs/healthcare/eligibility-code-lists). Stedi also publishes [guidance on choosing service type codes](https://www.stedi.com/docs/healthcare/eligibility-stc-procedure-codes), and the codes themselves are maintained as the [X12 Service Type Codes](https://x12.org/codes/service-type-codes).
+
+This example asks about both durable medical equipment and mental health benefits.
+
 ```ts
 item: [
-    {
-      category: {
-        coding: [
-          {
-            system: 'https://x12.org/codes/service-type-codes',
-            code: '30',
-            display: 'Plan Coverage and General Benefits',
-          },
-        ],
-      },
+  {
+    category: {
+      coding: [
+        {
+          system: 'https://x12.org/codes/service-type-codes',
+          code: '12',
+          display: 'Durable Medical Equipment Purchase',
+        },
+        {
+          system: 'https://x12.org/codes/service-type-codes',
+          code: 'MH',
+          display: 'Mental Health',
+        },
+      ],
     },
-  ],
-  ```
+  },
+],
+```
 :::
 
 ### Organization (Payer)
@@ -270,7 +299,7 @@ The Stedi sandbox successfully validates only a few payloads. **We recommend usi
                 {
                   "system": "https://x12.org/codes/service-type-codes",
                   "code": "30",
-                  "display": "Plan Coverage and General Benefits"
+                  "display": "Health Benefit Plan Coverage"
                 }
               ]
             }
@@ -328,6 +357,8 @@ It will also contain the benefits information for the coverage in it's `insuranc
 
 [CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse).insurance.item field will contain the benefits information about the patient's coverage. Read more about [Receiving a CoverageEligibilityResponse](/docs/billing/insurance-eligibility-checks#receiving-a-response).  
 
+Each `insurance.item` entry describes a benefit the payer reported, and its `category.coding` records the X12 service type codes that benefit applies to, using the system `https://x12.org/codes/service-type-codes`. Benefits scoped to general coverage also carry a `http://terminology.hl7.org/CodeSystem/ex-benefitcategory` coding for code `30`. A payer may report benefits for service types beyond the ones you asked about, and a benefit the payer did not scope to any service type has no `category` at all.
+
 <details>
 <summary>Example CoverageEligibilityResponse from a STEDI insurance and benefits eligibility check</summary>
 ```ts
@@ -360,6 +391,11 @@ It will also contain the benefits information for the coverage in it's `insuranc
             "coding": [
               {
                 "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
                 "code": "30",
                 "display": "Health Benefit Plan Coverage"
               }
@@ -425,6 +461,11 @@ It will also contain the benefits information for the coverage in it's `insuranc
                 "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
                 "code": "30",
                 "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
               }
             ]
           },
@@ -478,6 +519,11 @@ It will also contain the benefits information for the coverage in it's `insuranc
             "coding": [
               {
                 "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
                 "code": "30",
                 "display": "Health Benefit Plan Coverage"
               }
@@ -552,6 +598,11 @@ It will also contain the benefits information for the coverage in it's `insuranc
                 "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
                 "code": "30",
                 "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
               }
             ]
           },
@@ -623,6 +674,11 @@ It will also contain the benefits information for the coverage in it's `insuranc
             "coding": [
               {
                 "system": "http://terminology.hl7.org/CodeSystem/ex-benefitcategory",
+                "code": "30",
+                "display": "Health Benefit Plan Coverage"
+              },
+              {
+                "system": "https://x12.org/codes/service-type-codes",
                 "code": "30",
                 "display": "Health Benefit Plan Coverage"
               }
