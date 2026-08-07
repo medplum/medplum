@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CodeableConcept, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
+import type { CodeableConcept, Duration, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import type { WithId } from './utils';
 import { createReference, getExtension, getExtensionValue, getReferenceString, isDefined } from './utils';
 
@@ -105,4 +105,31 @@ export function extractServiceTypeReferences(
   return serviceType
     .map((concept) => getExtensionValue(concept, ServiceTypeReferenceURI) as Reference<HealthcareService> | undefined)
     .filter(isDefined);
+}
+
+/**
+ * The duration units SchedulingParameters accepts, and what each is worth in
+ * minutes.
+ */
+const MINUTES_PER_UNIT: Record<string, number | undefined> = {
+  wk: 60 * 24 * 7,
+  d: 60 * 24,
+  h: 60,
+  min: 1,
+};
+
+/**
+ * Converts a SchedulingParameters duration to minutes.
+ *
+ * @param duration - The duration to convert.
+ * @returns The length in minutes, or undefined when the duration has no value, a
+ * negative value, or a unit scheduling does not accept.
+ */
+export function durationToMinutes(duration: Duration | undefined): number | undefined {
+  const value = duration?.value;
+  if (value === undefined || value < 0) {
+    return undefined;
+  }
+  const perUnit = duration?.unit === undefined ? undefined : MINUTES_PER_UNIT[duration.unit];
+  return perUnit === undefined ? undefined : value * perUnit;
 }
