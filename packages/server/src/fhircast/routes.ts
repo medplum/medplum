@@ -158,7 +158,7 @@ protectedCommonRoutes.post(
         body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
         body('hub.mode').notEmpty().withMessage('Missing hub.mode'),
         body('hub.topic').notEmpty().withMessage('Missing hub.topic'),
-        body('hub.events').notEmpty().withMessage('Missing hub.events'),
+        // `hub.events` is checked in the handler, since only a subscribe request carries it
       ],
     ],
     { errorType: 'least_errored' }
@@ -234,9 +234,14 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     return;
   }
 
-  // `hub.events` is only checked for presence by the validator, which does not trim, so a
-  // whitespace- or comma-only value reaches here and names no events. Subscribing to nothing would
-  // hand back a socket that only ever receives heartbeats.
+  // Only a subscribe request names events, so this is checked past the unsubscribe branch above.
+  if (!req.body['hub.events']) {
+    sendOutcome(res, badRequest('Missing hub.events'));
+    return;
+  }
+
+  // A value that names no events -- whitespace, or bare commas -- would otherwise hand back a
+  // socket that only ever receives heartbeats.
   const events = parseFhircastEvents(req.body['hub.events']);
   if (events.length === 0) {
     sendOutcome(res, badRequest('Invalid hub.events'));
@@ -299,7 +304,9 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
       {
         'hub.mode': 'denied',
         'hub.topic': topic,
-        'hub.events': req.body['hub.events'],
+        // The events the cancelled subscription held, which the Hub remembers and the request no
+        // longer has to name
+        'hub.events': subscription.events.join(','),
         'hub.reason': 'Subscriber unsubscribed from topic',
       },
       // Deny only the unsubscribing socket, leaving the topic's other subscribers connected

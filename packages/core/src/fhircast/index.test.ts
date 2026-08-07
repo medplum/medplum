@@ -199,6 +199,22 @@ describe('serializeFhircastSubscriptionRequest', () => {
     );
   });
 
+  // The endpoint names the subscription being cancelled, and the Hub holds the events it was
+  // issued for, so an unsubscribe has no reason to repeat them
+  test('Valid unsubscribe request omits the events', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'unsubscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['Patient-open'],
+        endpoint: 'wss://abc.com/hub',
+      })
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=unsubscribe&hub.topic=abc123&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+    );
+  });
+
   test('Invalid subscription request', () => {
     expect(() =>
       serializeFhircastSubscriptionRequest({ mode: 'unsubscribe' } as unknown as SubscriptionRequest)

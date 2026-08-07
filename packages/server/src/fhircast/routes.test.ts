@@ -375,6 +375,67 @@ describe('FHIRcast routes', () => {
     }
   });
 
+  test('Unsubscribe without naming any events', async () => {
+    const topic = randomUUID();
+    const subRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': topic,
+        'hub.events': 'Patient-open,Patient-close',
+      });
+    expect(subRes).toHaveStatus(202);
+    const endpointUrl = subRes.body['hub.channel.endpoint'];
+
+    await request(server)
+      .ws(new URL(endpointUrl).pathname)
+      .expectJson((obj) => {
+        expect(obj['hub.mode']).toBe('subscribe');
+      })
+      .exec(async () => {
+        const unsubRes = await request(server)
+          .post(STU3_BASE_ROUTE)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'unsubscribe',
+            'hub.topic': topic,
+            'hub.channel.endpoint': endpointUrl,
+          });
+        expect(unsubRes).toHaveStatus(202);
+      })
+      // The Hub names the events the cancelled subscription held, which the request never repeated
+      .expectJson({
+        'hub.topic': topic,
+        'hub.mode': 'denied',
+        'hub.events': 'Patient-open,Patient-close',
+        'hub.reason': 'Subscriber unsubscribed from topic',
+      })
+      .expectClosed();
+
+    await expect(getEndpointSubscription(extractEndpoint(endpointUrl) as string)).resolves.toBeUndefined();
+  });
+
+  test('New subscription missing hub.events', async () => {
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+        });
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toStrictEqual('Missing hub.events');
+    }
+  });
+
   // Pins the field the client names the endpoint in to the one the Hub reads it from: a subscription
   // the client cannot cancel is indistinguishable from one that was never issued
   test('Unsubscribe with a request serialized by the client', async () => {

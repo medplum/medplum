@@ -293,8 +293,12 @@ export function serializeFhircastSubscriptionRequest(
     'hub.channel.type': channelType,
     'hub.mode': mode,
     'hub.topic': topic,
-    'hub.events': events.join(','),
   } as Record<string, string>;
+
+  if (mode === 'subscribe') {
+    // An unsubscribe cancels an endpoint, and the Hub already holds the events it was issued for
+    formattedSubRequest['hub.events'] = events.join(',');
+  }
 
   if (isCompletedSubscriptionRequest(subscriptionRequest)) {
     // Named for the field the Hub issued the endpoint under, which is what identifies the
