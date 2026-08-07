@@ -9,6 +9,9 @@ import { randomUUID } from 'node:crypto';
 import type { App } from './app';
 import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
+import type { LogicalChannelField } from './logical-channel';
+import { computeLogicalChannelKey, parseLogicalChannelKeySpec } from './logical-channel';
+import { ChannelDispatcher } from './queue/dispatcher';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
 import { AckOutcome, DuplicateBehavior, QueueErrorCode, SETTLED_MESSAGE_STATES } from './queue/types';
@@ -72,7 +75,66 @@ export class AgentHl7Channel extends BaseChannel {
   // commit ACK until after the DB write); the connection therefore can't be the
   // source of truth, so we track it here and the durable path reads it directly.
   private enhancedMode: EnhancedMode = undefined;
-  worker: ChannelQueueWorker | undefined;
+  /**
+   * Bounded pool of dispatch slots draining this channel's durable queue, sized to
+   * {@link maxWorkers} (default 1). Each holds one message in flight; concurrency
+   * comes from running several of them. They do not claim — {@link dispatcher} does,
+   * and its partition gate keeps at most one message of a given logical channel in
+   * flight across the whole pool.
+   */
+  workers: ChannelQueueWorker[] = [];
+  /**
+   * The channel's single claimer, feeding {@link workers}. One per channel rather
+   * than one per worker: claims serialize on the same thread anyway (`node:sqlite`
+   * is synchronous), so N claimers only multiply the wasted work — see
+   * {@link ChannelDispatcher}. Created on demand once the queue exists, and started
+   * only while this process holds the queue lease.
+   */
+  private dispatcher: ChannelDispatcher | undefined;
+  /** The queue instance {@link dispatcher} was built against; see maybeStartWorkers. */
+  private dispatcherQueue: DurableQueue | undefined;
+  /**
+   * Excess workers removed from {@link workers} by a pool shrink that are still
+   * draining their in-flight dispatch ({@link resizeWorkerPool} calls
+   * `stop({ drain: true })`). Each removes itself once its `stop()` resolves.
+   */
+  private drainingWorkers: ChannelQueueWorker[] = [];
+  /**
+   * @returns Every worker that may still own an in-flight dispatch: the active
+   * pool plus any still draining after a shrink. Response routing
+   * ({@link routeServerResponse}) and WS-disconnect handling must consult BOTH — a
+   * worker spliced out of {@link workers} while still awaiting its server response
+   * is otherwise unreachable, and its response is dropped (spurious failure /
+   * duplicate dispatch).
+   */
+  get allWorkers(): ChannelQueueWorker[] {
+    return this.drainingWorkers.length === 0 ? this.workers : [...this.workers, ...this.drainingWorkers];
+  }
+  /** Max concurrent workers in {@link workers}; resolved from config (default 1). */
+  private maxWorkers = 1;
+  /** Parsed `logicalChannelKey` spec used to partition inbound messages; `[]` = single queue. */
+  private logicalChannelKeySpec: LogicalChannelField[] = [];
+  /**
+   * The raw `logicalChannelKey` spec string this channel has adopted. Gates the
+   * once-per-change config warnings in {@link refreshLogicalChannelConfig}. Starts
+   * `''` (the default) so an unchanged default channel never looks changed.
+   */
+  private appliedLogicalChannelKeyRaw = '';
+  /**
+   * The raw spec string the queue's STORED partition keys were last successfully
+   * rewritten for — distinct from {@link appliedLogicalChannelKeyRaw}, which advances
+   * on adoption. Anything else means a rewrite is still owed (skipped because we
+   * weren't leader, or failed part-way) and must be retried; see
+   * {@link applyLogicalChannelKeySpec}.
+   */
+  private rewrittenLogicalChannelKeyRaw = '';
+  /**
+   * The spec a rewrite is currently running for, so repeated reloads of the SAME spec
+   * don't stack redundant rewrites on top of an in-flight one. A reload carrying a
+   * DIFFERENT spec deliberately still starts its own: the newer spec must win, and
+   * the queue's refcounted claim mutex keeps claims paused across both.
+   */
+  private rewriteInFlightRaw: string | undefined;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -97,7 +159,7 @@ export class AgentHl7Channel extends BaseChannel {
     this.log.info(`Channel starting on ${address}...`);
     this.stats = new ChannelStatsTracker({ heartbeatEmitter: this.app.heartbeatEmitter, log: this.log });
     this.configureHl7ServerAndConnections();
-    this.maybeStartWorker();
+    this.maybeStartWorkers();
     await this.server.start(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
   }
@@ -107,10 +169,16 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
-    if (this.worker) {
-      await this.worker.stop();
-      this.worker = undefined;
-    }
+    // Claiming first: a slot stopped while the dispatcher is still running could be
+    // handed another row on its way out.
+    await this.dispatcher?.stop();
+    this.dispatcher = undefined;
+    this.dispatcherQueue = undefined;
+    // Then the active pool AND any slots still draining from a prior shrink, so a
+    // stopped channel leaves nothing writing to the queue behind our back.
+    await Promise.allSettled([...this.workers, ...this.drainingWorkers].map((worker) => worker.stop()));
+    this.workers = [];
+    this.drainingWorkers = [];
     await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
     this.stats.cleanup();
@@ -119,57 +187,305 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   /**
-   * Starts a {@link ChannelQueueWorker} bound to this channel and the app's
-   * durable queue, but only if we currently hold the queue lease.
+   * Brings the worker pool up to {@link maxWorkers} running workers, but only if
+   * we currently hold the queue lease. Grow-only — shrinking is handled by
+   * {@link resizeWorkerPool} on config reload.
    *
-   * Called both from `start()` (when leadership may already be established by
-   * the time the channel comes up) and from `onBecameQueueLeader()` (when
-   * leadership arrives later, e.g. after waiting out a peer's lease during a
-   * zero-downtime upgrade overlap).
+   * Called from `start()` (when leadership may already be established by the time
+   * the channel comes up) and from `onBecameQueueLeader()` (when leadership
+   * arrives later, e.g. after waiting out a peer's lease during a zero-downtime
+   * upgrade overlap).
    *
-   * No-op when the queue is off, we're not leader, or the worker is already
-   * running — so it's safe to call from either entry point.
+   * No-op when the queue is off, we're not leader, or the pool is already full —
+   * so it's safe to call from either entry point.
    */
-  private maybeStartWorker(): void {
-    // Reap a worker that stepped down on lease loss (it self-terminates on a
+  private maybeStartWorkers(): void {
+    // Reap slots that stepped down on lease loss (they self-terminate on a
     // QueueLeaseError rather than via a callback), so a later re-acquisition can
-    // start a fresh one — maybeStartWorker no-ops while `this.worker` is set.
-    if (this.worker && !this.worker.isRunning()) {
-      this.worker = undefined;
-    }
-    if (this.worker) {
-      return;
-    }
+    // start fresh ones.
+    this.workers = this.workers.filter((worker) => worker.isRunning());
     // Leader-gated, the cheap optimistic half: getDurableQueue() is undefined when
     // the queue is off, and isLeader() is false until we hold the lease.
     // `onBecameQueueLeader` calls back in once we acquire. The authoritative gate
     // is implicit in the queue's dispatch ops, which throw QueueLeaseError if the
-    // lease moves out from under a running worker (the loop catches it and steps down).
+    // lease moves out from under us (the dispatcher catches it and steps down).
     const queue = this.app.getDurableQueue();
     if (!queue?.isLeader()) {
       return;
     }
-    this.worker = new ChannelQueueWorker({
+    while (this.workers.length < this.maxWorkers) {
+      const worker = new ChannelQueueWorker({
+        channelName: this.getDefinition().name,
+        app: this.app,
+        queue,
+        log: this.log,
+        retryPolicy: this.retryPolicy,
+        sendAck: (response) => this.sendToRemote(response),
+        notifyDispatcher: () => this.notifyWorkers(),
+        onLeaseLost: () => this.dispatcher?.onSlotLeaseLost(),
+      });
+      worker.start();
+      this.workers.push(worker);
+    }
+    // Toggling the `durableQueue` setting off and on closes the queue and opens a
+    // new one, leaving a dispatcher bound to a dead handle. It would not die on its
+    // own — claim errors are caught per iteration so one bad row can't stop the
+    // channel — so retire it explicitly rather than let it log forever.
+    if (this.dispatcher && this.dispatcherQueue !== queue) {
+      const stale = this.dispatcher;
+      this.dispatcher = undefined;
+      stale.stop().catch((err) => this.log.error(`Error stopping stale dispatcher: ${normalizeErrorString(err)}`));
+    }
+    // Otherwise created once and reused: the dispatcher reads `this.workers` live, so
+    // a pool resize reaches its loop without restarting it. A dispatcher that stepped
+    // down on lease loss restarts here, which is why start() is idempotent.
+    this.dispatcher ??= new ChannelDispatcher({
       channelName: this.getDefinition().name,
       app: this.app,
       queue,
       log: this.log,
-      retryPolicy: this.retryPolicy,
-      sendAck: (response) => this.sendToRemote(response),
+      workers: () => this.workers,
+      // The arrow reads `this.logicalChannelKeySpec` live, so a spec change reaches
+      // the partition gate without recreating anything.
+      computeKey: (originalMessage) => this.computeLogicalChannelKeyForStoredMessage(originalMessage),
     });
-    this.worker.start();
-    // Wake the worker so any rows that landed in queue but were never dispatched
-    // (e.g. left over from a prior process or inserted while the worker was off)
-    // start moving without waiting for the idle poll.
-    this.worker.notify();
+    this.dispatcherQueue = queue;
+    this.dispatcher.start();
+    // Claim any rows that landed in the queue but were never dispatched (e.g. left
+    // over from a prior process, or inserted while the pool was off) without
+    // waiting for the idle poll.
+    this.dispatcher.notify();
+  }
+
+  /**
+   * Reconciles the running pool to the current {@link maxWorkers} and pushes the
+   * current retry policy to every worker. Called from
+   * {@link configureHl7ServerAndConnections} on config reload, since the workers
+   * outlive reloads. Shrinking stops the excess workers with `{ drain: true }`
+   * (fire-and-forget: each finishes its in-flight row rather than cancelling it —
+   * a resize is not a shutdown); growing defers to {@link maybeStartWorkers}
+   * (which is leader-gated).
+   */
+  private resizeWorkerPool(): void {
+    this.workers = this.workers.filter((worker) => worker.isRunning());
+    if (this.workers.length > this.maxWorkers) {
+      const extras = this.workers.splice(this.maxWorkers);
+      for (const worker of extras) {
+        // Track the draining worker so its in-flight response / disconnect still
+        // reaches it (see allWorkers); it removes itself once stop() resolves.
+        this.drainingWorkers.push(worker);
+        worker
+          .stop({ drain: true })
+          .catch((err) => this.log.error(`Error draining worker: ${normalizeErrorString(err)}`))
+          .finally(() => {
+            this.drainingWorkers = this.drainingWorkers.filter((w) => w !== worker);
+          })
+          .catch(() => {
+            /* filter above cannot throw; keeps the fire-and-forget chain settled */
+          });
+      }
+    }
+    this.maybeStartWorkers();
+    for (const worker of this.workers) {
+      worker.setRetryPolicy(this.retryPolicy);
+    }
   }
 
   /**
    * Notification from the App that we've taken the durable-queue lease.
-   * Triggers worker bring-up for this channel if it isn't already running.
+   * Brings the pool up for this channel, and retries any `logicalChannelKey` rewrite
+   * that was owed while we were a follower — a channel that resolved its spec before
+   * winning the lease skipped the rewrite, and nothing else would ever go back for it
+   * (see {@link applyLogicalChannelKeySpec}). Goes through
+   * {@link refreshLogicalChannelConfig} rather than {@link maybeStartWorkers} directly
+   * because that is what re-enters the spec apply; it ends in `resizeWorkerPool`, so
+   * the pool is still brought up.
    */
   onBecameQueueLeader(): void {
-    this.maybeStartWorker();
+    this.refreshLogicalChannelConfig();
+  }
+
+  /**
+   * Computes the logical channel key for a parsed message under this channel's
+   * current `logicalChannelKey` spec. `''` when no spec is set (single queue).
+   *
+   * NOT on the live dispatch path — a worker keys a claimed row from its stored
+   * bytes via {@link computeLogicalChannelKeyForStoredMessage}. This variant takes
+   * an already-parsed {@link Hl7Message}, for diagnostics and for asserting that a
+   * spec reload took effect; both read the same current spec.
+   * @param message - The parsed inbound HL7 message.
+   * @returns The logical channel key (partition) for the message.
+   */
+  getLogicalChannelKey(message: Hl7Message): string {
+    return computeLogicalChannelKey(message, this.logicalChannelKeySpec);
+  }
+
+  /**
+   * Wakes the channel's dispatcher so it claims newly-available work without
+   * waiting on its idle poll. One wake, whatever the pool size — the pool used to
+   * be broadcast-woken on every enqueue and every settle, which cost a redundant
+   * claim per idle worker each time.
+   */
+  notifyWorkers(): void {
+    this.dispatcher?.notify();
+  }
+
+  /**
+   * Routes a server `agent:transmit:response` to the pool worker that owns it.
+   *
+   * The response's callback identifies exactly one in-flight dispatch, so we ask
+   * each worker in turn — the active pool AND any still draining after a shrink
+   * ({@link allWorkers}), since a spliced-out worker may still own this response —
+   * and the first to claim it wins. If none owns it, the response is *late* (its
+   * row already timed out/settled) and any worker can apply it: every worker shares
+   * this channel's queue, retry policy, and ACK sender, so the late-settle is
+   * identical whichever handles it. See {@link ChannelQueueWorker.tryResolveInFlight}
+   * / {@link ChannelQueueWorker.applyLateResponse}.
+   * @param response - The server response to route.
+   */
+  routeServerResponse(response: AgentTransmitResponse): void {
+    const workers = this.allWorkers;
+    for (const worker of workers) {
+      if (worker.tryResolveInFlight(response)) {
+        return;
+      }
+    }
+    const handler = workers[0];
+    if (handler) {
+      handler.applyLateResponse(response);
+    } else {
+      // No worker to consume it (the pool is momentarily empty — e.g. all workers
+      // stepped down on a lease loss). applyLateResponse — which normally logs the
+      // drop — can't run, so log it here. Deliberately NOT forwarded to the legacy
+      // in-memory path (that would re-send a stale ACK to the source).
+      this.log.warn(
+        `Discarding server response for channel '${this.getDefinition().name}': no worker available ` +
+          `(callback=${response.callback ?? 'n/a'})`
+      );
+    }
+  }
+
+  /**
+   * Resolves and applies the channel's `logicalChannelKey` spec (endpoint URL
+   * param over agent-wide `channelLogicalChannelKey` over `''`), validating it
+   * BEFORE it takes effect.
+   *
+   * - Invalid spec: {@link parseLogicalChannelKeySpec} already warned; we keep the
+   *   previously-applied spec so a typo can't silently re-partition the channel.
+   * - Valid: adopt the parsed spec. Rows re-derive their partition at CLAIM time,
+   *   so nothing stored needs rewriting — except on a spec CHANGE, which calls
+   *   {@link DurableQueue.recomputeLogicalChannelKeys} to refresh the rows claiming
+   *   can't reach on its own.
+   *
+   * Two markers, because "we have seen this spec" and "stored keys match this spec"
+   * come apart whenever the rewrite is skipped or fails:
+   * {@link appliedLogicalChannelKeyRaw} advances as soon as the spec is adopted (it
+   * gates the reload warnings in {@link refreshLogicalChannelConfig}), while
+   * {@link rewrittenLogicalChannelKeyRaw} advances only once the rewrite has actually
+   * completed. A spec whose rewrite is still owed therefore stays owed, and is
+   * retried on the next reload or on {@link onBecameQueueLeader}.
+   * @param params - The endpoint URL query params.
+   */
+  private applyLogicalChannelKeySpec(params: URLSearchParams): void {
+    const raw = params.get('logicalChannelKey') ?? this.app.getChannelLogicalChannelKey() ?? '';
+    const parsed = parseLogicalChannelKeySpec(raw, this.log);
+    if (parsed === undefined) {
+      // Invalid — keep the prior spec (and prior markers), so a bad reload doesn't
+      // repartition.
+      return;
+    }
+    this.logicalChannelKeySpec = parsed;
+    this.appliedLogicalChannelKeyRaw = raw;
+    if (raw === this.rewrittenLogicalChannelKeyRaw || raw === this.rewriteInFlightRaw) {
+      // Stored keys already reflect this spec, or a rewrite for it is already running
+      // (reloads can arrive faster than a backlog-sized rewrite completes).
+      return;
+    }
+    const queue = this.app.getDurableQueue();
+    if (!queue) {
+      // No queue means no stored keys to go stale, so the rewrite is vacuously done.
+      this.rewrittenLogicalChannelKeyRaw = raw;
+      return;
+    }
+    // Only the dispatching leader claims, so only it needs stored keys refreshed —
+    // and a demoted process must not rewrite dispatch state it no longer owns. The
+    // rewrite stays OWED (marker unadvanced) rather than being dropped: claim-time
+    // keying cannot self-heal it, since it only keys the row being claimed and never
+    // revisits the earlier rows isPartitionBlocked compares that key against. We
+    // retry from onBecameQueueLeader instead.
+    if (!queue.isLeader()) {
+      return;
+    }
+    // Deliberately not awaited, so config reload (and the constructor, which reaches
+    // here synchronously) doesn't block on a backlog-sized rewrite. Safe because the
+    // recompute raises the channel's claim mutex before its first `await`: claims are
+    // paused from this call, not from whenever the promise first runs.
+    this.rewriteInFlightRaw = raw;
+    queue
+      .recomputeLogicalChannelKeys(this.getDefinition().name, (originalMessage) =>
+        this.computeLogicalChannelKeyForStoredMessage(originalMessage)
+      )
+      .then((changed) => {
+        this.clearRewriteInFlight(raw);
+        // Only now are stored keys known to match `raw`. Advancing this earlier is
+        // what previously made a partial or skipped rewrite unrecoverable.
+        this.rewrittenLogicalChannelKeyRaw = raw;
+        // Always wake the pool, even at 0 changes — workers parked on the claim
+        // mutex would otherwise wait out their idle poll.
+        this.notifyWorkers();
+        if (changed > 0) {
+          this.log.info(
+            `logicalChannelKey changed to '${raw || '(none)'}'; recomputed the partition of ${changed} queued/delayed message(s)`
+          );
+        }
+      })
+      .catch((err) => {
+        this.clearRewriteInFlight(raw);
+        // Leaves rewrittenLogicalChannelKeyRaw unadvanced, so the rewrite is retried
+        // on the next reload / lease acquisition rather than being silently lost —
+        // a half-rewritten key set does not heal on its own. Meanwhile un-park any
+        // `delayed` rows so none is stranded waiting on a wake that now targets a
+        // re-keyed partition.
+        this.log.warn(
+          `logicalChannelKey changed to '${raw || '(none)'}', but recomputing queued/delayed partitions failed ` +
+            `(will retry on the next config reload): ${normalizeErrorString(err)}`
+        );
+        try {
+          queue.flipDelayedToQueued(this.getDefinition().name);
+        } catch {
+          // Best-effort only — recoverOnStartup re-queues any lingering delayed rows on restart.
+        }
+        this.notifyWorkers();
+      });
+  }
+
+  /**
+   * Clears {@link rewriteInFlightRaw}, but only if `raw` is still the spec in flight —
+   * a newer spec may have superseded this rewrite while it ran, and that one owns the
+   * marker now.
+   * @param raw - The spec whose rewrite just settled.
+   */
+  private clearRewriteInFlight(raw: string): void {
+    if (this.rewriteInFlightRaw === raw) {
+      this.rewriteInFlightRaw = undefined;
+    }
+  }
+
+  /**
+   * Computes a stored row's logical channel key from its persisted bytes under the
+   * channel's CURRENT spec. Injected into each {@link ChannelQueueWorker} as its
+   * claim-time `computeKey`. Synchronous and never throws — a row that no longer
+   * parses as HL7 falls back to the default partition (`''`) — so the worker's
+   * await-free critical section can rely on it.
+   * @param originalMessage - The row's `original_message` bytes (UTF-8 HL7 text).
+   * @returns The computed logical channel key.
+   */
+  private computeLogicalChannelKeyForStoredMessage(originalMessage: Buffer): string {
+    try {
+      return computeLogicalChannelKey(Hl7Message.parse(originalMessage.toString('utf8')), this.logicalChannelKeySpec);
+    } catch {
+      return '';
+    }
   }
 
   shouldAssignSeqNo(): boolean {
@@ -257,13 +573,14 @@ export class AgentHl7Channel extends BaseChannel {
     } else {
       this.log.info(`No address change needed. Listening at ${endpoint.address}`);
       // The rest of configureHl7ServerAndConnections' inputs are endpoint URL
-      // params, unchanged when the address string itself hasn't changed — but
-      // the retry policy ALSO depends on agent-wide channelRetryMode /
-      // channelAutoRetry* settings, which can change on their own (an operator
-      // pushes a new Agent.setting with no endpoint edit at all). Refresh it
-      // unconditionally so that reaches the running worker instead of waiting
-      // for an unrelated address change or a process restart.
+      // params, unchanged when the address string itself hasn't changed — but the
+      // retry policy AND the logical-channels config (maxWorkers / logicalChannelKey)
+      // ALSO depend on agent-wide settings, which an operator can change on their
+      // own (a new Agent.setting with no endpoint edit at all). Refresh both
+      // unconditionally so those reach the running pool instead of waiting for an
+      // unrelated address change or a process restart.
       this.refreshRetryPolicy();
+      this.refreshLogicalChannelConfig();
     }
   }
 
@@ -315,6 +632,7 @@ export class AgentHl7Channel extends BaseChannel {
     const queueOn = this.app.getDurableQueue() !== undefined;
 
     this.refreshRetryPolicy();
+    this.refreshLogicalChannelConfig();
 
     const connectionEnhancedMode = queueOn ? undefined : enhancedMode;
 
@@ -332,8 +650,8 @@ export class AgentHl7Channel extends BaseChannel {
    * Resolves and pushes the channel's Path-2 (queue → Bot) auto-retry policy:
    * endpoint URL params override agent-wide `channelRetryMode` /
    * `channelAutoRetry*` settings, field by field (see `resolveRetryPolicy`). The
-   * worker outlives config reloads, so the new policy is pushed at it directly
-   * rather than the worker re-reading it.
+   * pool workers outlive config reloads, so the new policy is pushed at each
+   * directly rather than the workers re-reading it.
    *
    * Split out from {@link configureHl7ServerAndConnections} — and called
    * unconditionally by both it and {@link reloadConfig}'s no-address-change
@@ -356,7 +674,63 @@ export class AgentHl7Channel extends BaseChannel {
     if (this.retryPolicy.enabled && !queueOn && retryExplicitlyConfigured) {
       this.log.warn('retryMode is configured but the durable queue is off; auto-retry has no effect without it');
     }
-    this.worker?.setRetryPolicy(this.retryPolicy);
+    for (const worker of this.workers) {
+      worker.setRetryPolicy(this.retryPolicy);
+    }
+  }
+
+  /**
+   * Resolves and pushes the channel's logical-channels config — pool size
+   * (`maxWorkers`) and partition spec (`logicalChannelKey`) — endpoint URL params
+   * over agent-wide settings (`channelMaxWorkers` / `channelLogicalChannelKey`)
+   * over the built-in defaults, then reconciles the worker pool.
+   *
+   * Called unconditionally by {@link configureHl7ServerAndConnections} and by
+   * {@link reloadConfig}'s no-address-change branch, for the same reason as
+   * {@link refreshRetryPolicy}: these inputs include agent-wide settings an
+   * operator can change with no endpoint edit at all, so gating the refresh behind
+   * an address change would leave a settings-only update unapplied until an
+   * unrelated address edit or a restart.
+   */
+  private refreshLogicalChannelConfig(): void {
+    const params = new URL(this.getEndpoint().address).searchParams;
+    const queueOn = this.app.getDurableQueue() !== undefined;
+
+    const newMaxWorkers = resolveMaxWorkers(params, this.app.getChannelMaxWorkers(), this.log);
+    const maxWorkersChanged = newMaxWorkers !== this.maxWorkers;
+    this.maxWorkers = newMaxWorkers;
+
+    // Mirrors applyLogicalChannelKeySpec's own change check, computed BEFORE apply
+    // so the warnings below can gate on a real change.
+    const rawSpec = params.get('logicalChannelKey') ?? this.app.getChannelLogicalChannelKey() ?? '';
+    const specChanged = rawSpec !== this.appliedLogicalChannelKeyRaw;
+
+    this.applyLogicalChannelKeySpec(params);
+
+    // Config-combination warnings: emit ONLY on a real change, since this method
+    // runs on every reload and would otherwise re-log the same no-effect warnings.
+    if (maxWorkersChanged || specChanged) {
+      if (this.maxWorkers > 1 && !queueOn) {
+        this.log.warn('maxWorkers > 1 has no effect without the durable queue (concurrent processing requires it)');
+      }
+      // assignSeqNo stamps MSH.13 in per-channel arrival order at intake, but with a
+      // worker pool, delivery across logical channels is concurrent — so a later
+      // sequence number can reach the downstream before an earlier one. Warn rather
+      // than forbid: the combination is valid if the downstream tolerates gaps.
+      if (this.maxWorkers > 1 && this.assignSeqNo) {
+        this.log.warn(
+          'assignSeqNo with maxWorkers > 1: sequence numbers are assigned in arrival order, but delivery across ' +
+            'logical channels is concurrent, so MSH.13 may reach the downstream out of order'
+        );
+      }
+      // Symmetric to the maxWorkers warning: a partition spec does nothing without
+      // the durable queue, since the legacy path never enqueues.
+      if (this.logicalChannelKeySpec.length > 0 && !queueOn) {
+        this.log.warn('logicalChannelKey has no effect without the durable queue (partitioning requires it)');
+      }
+    }
+
+    this.resizeWorkerPool();
   }
 
   getDuplicateBehavior(): DuplicateBehavior {
@@ -561,6 +935,8 @@ export class AgentHl7ChannelConnection {
           callbackId,
           seqNo,
           receivedAt,
+          // No logicalChannelKey at intake: the partition is computed at claim time
+          // from the current spec (see ChannelQueueWorker), so it can never go stale.
           // Snapshot the channel's guaranteed-delivery setting so recoverOnStartup
           // (which runs before channel policies resolve) requeues vs. fails this
           // row correctly if the agent restarts mid-dispatch.
@@ -637,7 +1013,7 @@ export class AgentHl7ChannelConnection {
     // (applyServerResponse), so sendToRemote (the only other balancer) never runs,
     // and every message lingers in the pending map until the 5-min GC warns.
     this.recordImmediateAck(msgControlId);
-    this.channel.worker?.notify();
+    this.channel.notifyWorkers();
   }
 
   /**
@@ -1075,6 +1451,49 @@ export function resolveRetryPolicy(
     policy.maxDelayMs = policy.baseDelayMs;
   }
   return policy;
+}
+
+/** Default worker-pool size for a channel: 1, i.e. one fully serial worker. */
+export const DEFAULT_MAX_WORKERS = 1;
+
+/**
+ * Hard ceiling on a channel's worker-pool size. Every worker is a live polling
+ * loop plus a heartbeat listener, so this exists to keep a typo
+ * (`maxWorkers=1000000`) or a bad agent setting from synchronously instantiating
+ * a runaway number of workers and stalling the event loop / exhausting memory.
+ *
+ * It is a backstop, not a recommendation. Useful concurrency is bounded by the
+ * downstream service time and by the single SQLite queue every worker claims
+ * from, both far below this number — a pool sized past the point where claims
+ * start contending costs throughput rather than adding it.
+ */
+export const MAX_MAX_WORKERS = 500;
+
+/**
+ * Resolves the channel's worker-pool size: how many messages (across distinct
+ * logical channels) it may process concurrently. Precedence mirrors the retry
+ * knobs — endpoint `maxWorkers` URL param over the agent-wide `channelMaxWorkers`
+ * setting over {@link DEFAULT_MAX_WORKERS} — clamped to an integer in
+ * `[1, MAX_MAX_WORKERS]`, warning on an invalid param or an over-ceiling value
+ * from any source, so a misconfiguration degrades to a sane pool.
+ *
+ * This bounds *concurrency* only: per-logical-channel ordering comes from the
+ * worker's post-claim partition check regardless of pool size, so raising it never
+ * reorders a partition — and with no partition spec it has no visible effect at
+ * all, since the check keeps one row in flight per key.
+ * @param params - The endpoint URL query params.
+ * @param agentDefault - The agent-wide `channelMaxWorkers` setting (undefined = not set).
+ * @param logger - Logger used to warn on an invalid or out-of-range value.
+ * @returns The resolved pool size (integer in `[1, MAX_MAX_WORKERS]`).
+ */
+export function resolveMaxWorkers(params: URLSearchParams, agentDefault: number | undefined, logger: ILogger): number {
+  const fromParam = parseRetryNumberParam(params.get('maxWorkers'), 'maxWorkers', 1, logger);
+  const resolved = Math.max(1, Math.floor(fromParam ?? agentDefault ?? DEFAULT_MAX_WORKERS));
+  if (resolved > MAX_MAX_WORKERS) {
+    logger.warn(`maxWorkers ${resolved} exceeds the maximum of ${MAX_MAX_WORKERS}; clamping to ${MAX_MAX_WORKERS}`);
+    return MAX_MAX_WORKERS;
+  }
+  return resolved;
 }
 
 function parseRetryModeParam(rawValue: string | null, logger: ILogger): RetryMode | undefined {

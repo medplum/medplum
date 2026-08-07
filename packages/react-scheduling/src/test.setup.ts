@@ -24,3 +24,8 @@ class ResizeObserver {
 }
 
 window.ResizeObserver = ResizeObserver;
+
+// jsdom does not implement scrollIntoView, which Mantine's Combobox calls when it
+// moves the active option.
+// See: https://github.com/jsdom/jsdom/issues/1695#issuecomment-449931788
+Element.prototype.scrollIntoView = vi.fn();

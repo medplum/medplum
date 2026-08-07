@@ -9,6 +9,7 @@ import { FC, useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { useFakeTimers } from 'sinon';
 import { addons } from 'storybook/preview-api';
+import { withSchedulingHeader } from '../src/decorators';
 import { themePresetMap, themePresets } from './themes';
 
 export const parameters = {
@@ -63,6 +64,7 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export const decorators = [
+  withSchedulingHeader,
   (Story: FC) => (
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
