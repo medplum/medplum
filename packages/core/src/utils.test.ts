@@ -28,6 +28,7 @@ import {
   codeableConceptMatchesToken,
   codingMatchesToken,
   concatUrls,
+  countBy,
   createReference,
   deepClone,
   deepEquals,
@@ -78,6 +79,7 @@ import {
   sortStringArray,
   splitN,
   stringify,
+  sumBy,
   trimTrailingEmptyElements,
 } from './utils';
 
@@ -1874,5 +1876,17 @@ describe('assertNever', () => {
 
     expect(handle('a')).toBe(1);
     expect(handle('b')).toBe(2);
+  });
+});
+
+describe('sumBy', () => {
+  test('sums numbers', () => {
+    expect(sumBy([1, 2, 3], (x) => x)).toBe(6);
+  });
+});
+
+describe('countBy', () => {
+  test('counts numbers', () => {
+    expect(countBy([1, 2, 3], (x) => x > 1)).toBe(2);
   });
 });

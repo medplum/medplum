@@ -1549,6 +1549,34 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   return result;
 }
 
+export function sumBy<T>(arr: T[], fn: (value: T) => number): number {
+  return arr.values().reduce((a, b) => a + fn(b), 0);
+}
+
+export function countBy<T>(arr: T[], fn: (value: T) => boolean): number {
+  return arr.values().reduce((a, b) => a + (fn(b) ? 1 : 0), 0);
+}
+
+/**
+ * Groups an array of items by a key function, returning a map of key to array of items.
+ * @param array - The array of items to group.
+ * @param keyFn - The function to extract the key from each item.
+ * @param acc - Optional accumulator to build on top of.
+ * @returns A map of key to array of items.
+ */
+export function groupBy<T, K extends keyof any>(
+  array: T[],
+  keyFn: (item: T) => K,
+  acc?: Record<K, T[]>
+): Record<K, T[]> {
+  const result = acc ?? ({} as Record<K, T[]>);
+  for (const item of array) {
+    const key = keyFn(item);
+    (result[key] ||= []).push(item);
+  }
+  return result;
+}
+
 /**
  * Returns the escaped HTML string of the input string.
  * @param unsafe - The unsafe HTML string to escape.

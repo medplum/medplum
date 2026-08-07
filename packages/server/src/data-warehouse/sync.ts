@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DuckDBInstance } from '@duckdb/node-api';
-import { normalizeErrorString } from '@medplum/core';
+import { countBy, normalizeErrorString, sumBy } from '@medplum/core';
+
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -345,34 +346,25 @@ function buildErrorTableResult(destination: string, watermarkDurationMs: number)
  * @param tables - Per-table sync results (including partial progress when a hard failure aborts the run).
  */
 function recordSyncMetrics(tables: SyncTableResult[]): void {
-  let rowsInserted = 0;
-  let syncDurationMs = 0;
-  let watermarkDurationMs = 0;
-  let successCount = 0;
-  let errorCount = 0;
-  const skippedByReason: Record<SyncTableSkipReason, number> = {
-    conflict: 0,
-    watermark: 0,
-    'missing-table': 0,
-  };
+  // count totals for all tables
+  const rowsInserted = sumBy(tables, (t) => t.rowsInserted);
+  const syncDurationMs = sumBy(tables, (t) => t.syncDurationMs);
+  const watermarkDurationMs = sumBy(tables, (t) => t.watermarkDurationMs);
+  const successCount = countBy(tables, (t) => !t.status);
+  const errorCount = countBy(tables, (t) => t.status === 'error');
 
-  // accumulate metrics across all tables
-  for (const table of tables) {
-    rowsInserted += table.rowsInserted;
-    syncDurationMs += table.syncDurationMs;
-    watermarkDurationMs += table.watermarkDurationMs;
+  // count tables by skip reason (excluding errors)
+  const skippedByReason = tables.values().reduce<Record<SyncTableSkipReason, number>>(
+    (acc, t) => {
+      if (t.status && t.status !== 'error') {
+        acc[t.status]++;
+      }
+      return acc;
+    },
+    { conflict: 0, watermark: 0, 'missing-table': 0 }
+  );
 
-    if (!table.status) {
-      successCount += 1;
-    } else if (table.status === 'error') {
-      errorCount += 1;
-    } else {
-      // skipped by a specific reason
-      const status = table.status;
-      skippedByReason[status] = (skippedByReason[status] ?? 0) + 1;
-    }
-  }
-
+  // record as metrics
   incrementCounter('medplum.dataWarehouse.sync.rows', undefined, rowsInserted);
   recordHistogramValue('medplum.dataWarehouse.sync.duration', syncDurationMs / 1000, {
     options: { unit: 's' },
