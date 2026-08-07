@@ -281,10 +281,10 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
 
   const subscription = await getEndpointSubscription(endpoint);
   if (subscription?.projectId !== ctx.project.id || subscription.topic !== topic) {
-    // Already cancelled, expired, or another project's. Unsubscribing stays idempotent, and the
-    // empty body keeps the response from disclosing whether the endpoint exists.
-    getLogger().warn('[FHIRcast]: Ignoring an unsubscribe request for an unknown endpoint', { topic });
-    res.status(202).json({});
+    // The endpoint names no subscription this caller holds on this topic, so there is nothing it
+    // can cancel and the request itself is malformed.
+    getLogger().warn('[FHIRcast]: Rejecting an unsubscribe request for an unknown endpoint', { topic });
+    sendOutcome(res, badRequest('Invalid endpoint'));
     return;
   }
 

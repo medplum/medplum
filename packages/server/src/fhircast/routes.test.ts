@@ -414,7 +414,7 @@ describe('FHIRcast routes', () => {
       .expectClosed();
   });
 
-  test('Unsubscribe with an unknown endpoint is a no-op', async () => {
+  test('Unsubscribe with an unknown endpoint is rejected', async () => {
     const unsubRes = await request(server)
       .post(STU3_BASE_ROUTE)
       .set('Content-Type', ContentType.JSON)
@@ -426,9 +426,8 @@ describe('FHIRcast routes', () => {
         'hub.events': 'Patient-open',
         endpoint: `ws://localhost:8103/ws/fhircast/${randomUUID()}`,
       });
-    expect(unsubRes).toHaveStatus(202);
-    // The empty body keeps the response from disclosing whether the endpoint exists
-    expect(unsubRes.body).toStrictEqual({});
+    expect(unsubRes).toHaveStatus(400);
+    expect(unsubRes.body.issue[0].details.text).toStrictEqual('Invalid endpoint');
   });
 
   test('Unsubscribe leaves the topic`s other subscribers connected', async () => {
@@ -538,8 +537,8 @@ describe('FHIRcast routes', () => {
             'hub.events': 'Patient-open',
             endpoint: endpointUrl,
           });
-        expect(unsubRes).toHaveStatus(202);
-        expect(unsubRes.body).toStrictEqual({});
+        expect(unsubRes).toHaveStatus(400);
+        expect(unsubRes.body.issue[0].details.text).toStrictEqual('Invalid endpoint');
 
         await request(server)
           .post(`${STU3_BASE_ROUTE}/${topic}`)
