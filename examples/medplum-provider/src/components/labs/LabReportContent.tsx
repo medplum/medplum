@@ -50,9 +50,14 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
         const derivedFromAttachments = derivedFromResult.status === 'fulfilled' ? derivedFromResult.value : [];
         const presentedFormAttachments = presentedFormResult.status === 'fulfilled' ? presentedFormResult.value : [];
 
+        // Only de-dupe attachments that have a URL to key on; attachments without one
+        // (e.g. a bare presentedForm entry with just a title/contentType) always render.
         const seenUrls = new Set<string>();
         const deduped = [...derivedFromAttachments, ...presentedFormAttachments].filter((attachment) => {
-          if (!attachment.url || seenUrls.has(attachment.url)) {
+          if (!attachment.url) {
+            return true;
+          }
+          if (seenUrls.has(attachment.url)) {
             return false;
           }
           seenUrls.add(attachment.url);
