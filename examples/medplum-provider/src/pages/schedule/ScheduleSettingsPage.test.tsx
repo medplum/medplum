@@ -68,10 +68,10 @@ describe('ScheduleSettings', () => {
   }
 
   describe('Empty / no-services state', () => {
-    test('shows "No HealthcareServices found" alert when services list is empty', async () => {
+    test('shows "No visit service types found" alert when services list is empty', async () => {
       medplum.searchResources = vi.fn().mockResolvedValue([]);
       await act(async () => renderSettings(defaultSchedule));
-      expect(screen.getByText('No HealthcareServices found.')).toBeInTheDocument();
+      expect(screen.getByText('No visit service types found.')).toBeInTheDocument();
     });
   });
 
@@ -294,7 +294,7 @@ describe('ScheduleSettingsPage', () => {
 
     // With no HealthcareServices, the form shows the empty-state alert
     await waitFor(() => {
-      expect(screen.getByText('No HealthcareServices found.')).toBeInTheDocument();
+      expect(screen.getByText('No visit service types found.')).toBeInTheDocument();
     });
   });
 
