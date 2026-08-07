@@ -100,7 +100,11 @@ const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
  * @param subscribedEvents - The events this subscriber requested.
  * @returns The payload to forward, or `undefined` if the message is not for this subscriber.
  */
-function messageForSubscriber(message: string, endpoint: string, subscribedEvents: Set<string>): string | undefined {
+function messageForSubscriber(
+  message: string,
+  endpoint: string,
+  subscribedEvents: Set<string>
+): Record<string, any> | undefined {
   let channelMessage: FhircastChannelMessage | undefined;
   try {
     channelMessage = JSON.parse(message);
@@ -122,7 +126,7 @@ function messageForSubscriber(message: string, endpoint: string, subscribedEvent
       return undefined;
     }
   }
-  return JSON.stringify(channelMessage.payload);
+  return channelMessage.payload;
 }
 
 /**
@@ -175,12 +179,17 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
       // The socket is gone; nothing left to deliver to
       return;
     }
-    const forwarded = messageForSubscriber(message, endpoint, subscribedEvents);
-    if (!forwarded) {
+    const payload = messageForSubscriber(message, endpoint, subscribedEvents);
+    if (!payload) {
       return;
     }
+    // A denial ends this subscription, so the Hub closes the socket rather than leaving it to keep
+    // receiving events until the subscriber gets around to it. Closing is deferred to the send
+    // callback, which runs once the frame has been written to the socket, so the subscriber is still
+    // told why. `close()` then completes the closing handshake, unlike `terminate()`.
+    const onSent = payload['hub.mode'] === 'denied' ? (): void => socket.close() : undefined;
     // Forward the message to the client
-    socket.send(forwarded, { binary: false });
+    socket.send(JSON.stringify(payload), { binary: false }, onSent);
     fhircastMessagesSent++;
   });
 

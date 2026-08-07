@@ -84,7 +84,7 @@ function isFhircastSubscription(subscription: unknown): subscription is Fhircast
     typeof candidate.topic === 'string' &&
     Array.isArray(candidate.events) &&
     candidate.events.every((event) => typeof event === 'string') &&
-    candidate.version in FhircastVersion
+    Object.values(FhircastVersion).includes(candidate.version)
   );
 }
 

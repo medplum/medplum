@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import request from 'superwstest';
 import { vi } from 'vitest';
+import type { RawData } from 'ws';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -354,7 +355,7 @@ describe('FHIRcast routes', () => {
           'hub.reason': 'Subscriber unsubscribed from topic',
           'hub.events': 'Patient-open',
         })
-        .close()
+        // The Hub closes the socket behind the denial, so the subscriber does not have to
         .expectClosed();
 
       // The subscription record is gone, so a reconnect to this endpoint would be denied
@@ -449,6 +450,7 @@ describe('FHIRcast routes', () => {
 
     const endpointToKeep = await subscribe();
     const endpointToCancel = await subscribe();
+    const afterDenial: string[] = [];
 
     await request(server)
       .ws(new URL(endpointToKeep).pathname)
@@ -478,18 +480,20 @@ describe('FHIRcast routes', () => {
           .expectJson((obj) => {
             expect(obj['hub.mode']).toBe('denied');
           })
-          .close()
+          .exec(async (ws) => {
+            ws.on('message', (data: RawData) => afterDenial.push((data as Buffer).toString('utf8')));
+            await request(server)
+              .post(`${STU3_BASE_ROUTE}/${topic}`)
+              .set('Content-Type', ContentType.JSON)
+              .set('Authorization', 'Bearer ' + accessToken)
+              .send(
+                createFhircastMessagePayload(topic, 'Patient-open', [
+                  { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
+                ])
+              );
+          })
+          // The Hub closed this socket behind the denial, without the subscriber asking it to
           .expectClosed();
-
-        await request(server)
-          .post(`${STU3_BASE_ROUTE}/${topic}`)
-          .set('Content-Type', ContentType.JSON)
-          .set('Authorization', 'Bearer ' + accessToken)
-          .send(
-            createFhircastMessagePayload(topic, 'Patient-open', [
-              { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
-            ])
-          );
       })
       // The denial went to the other subscriber, so the next thing this one hears is the event
       .expectJson((obj) => {
@@ -497,6 +501,9 @@ describe('FHIRcast routes', () => {
       })
       .close()
       .expectClosed();
+
+    // The cancelled subscriber heard nothing after its denial, though the topic went on publishing
+    expect(afterDenial).toStrictEqual([]);
   });
 
   test('Unsubscribe cannot cancel a subscription from another project', async () => {
