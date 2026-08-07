@@ -27,12 +27,17 @@ type OptionalCalendarCell = CalendarCell | undefined;
 export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   const { onChangeMonth, onClick, selected, allowUnavailableDates, earliestDate } = props;
   const [uncontrolledMonth, setUncontrolledMonth] = useState<Date>(getStartMonth);
-  const month = startOfMonth(props.month ?? uncontrolledMonth);
+  const shownMonth = props.month ?? uncontrolledMonth;
+  const year = shownMonth.getFullYear();
+  const monthIndex = shownMonth.getMonth();
+  const month = useMemo(() => new Date(year, monthIndex, 1), [year, monthIndex]);
   const atEarliestMonth = !!earliestDate && month <= startOfMonth(earliestDate);
 
   function moveMonth(delta: number): void {
     const newMonth = new Date(month.getFullYear(), month.getMonth() + delta, 1);
-    setUncontrolledMonth(newMonth);
+    if (props.month === undefined) {
+      setUncontrolledMonth(newMonth);
+    }
     onChangeMonth(newMonth);
   }
 

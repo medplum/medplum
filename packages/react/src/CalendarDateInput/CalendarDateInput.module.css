@@ -57,8 +57,8 @@
     font-weight: normal;
   }
 
-  & td button.selected,
-  & td button.selected:hover {
+  & td button.selected:not(:disabled),
+  & td button.selected:not(:disabled):hover {
     background-color: var(--mantine-primary-color-filled);
     color: var(--mantine-color-white);
     font-weight: 500;
