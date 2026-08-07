@@ -1,39 +1,66 @@
 .table {
-  width: 350px;
+  width: 100%;
+  min-width: 260px;
+  max-width: 350px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  user-select: none;
 
   & th {
     font-weight: normal;
     font-size: 11px;
-    padding: 8px;
+    padding: 8px 2px;
     text-align: center;
   }
 
   & td {
-    padding: 2px 4px;
+    padding: 2px;
+    text-align: center;
   }
 
   & td button {
-    width: 44px;
-    height: 44px;
-    color: theme.colors[theme.primaryColor][5];
+    width: 100%;
+    max-width: 44px;
+    height: auto;
+    aspect-ratio: 1;
+    margin: 0 auto;
+    color: var(--mantine-color-gray-6);
     font-size: 16px;
-    font-weight: 500;
+    font-weight: normal;
     text-align: center;
     padding: 0;
-    background-color: theme.colors[theme.primaryColor][0];
+    background-color: transparent;
     border: 0;
-    border-radius: 50px;
+    border-radius: 50%;
     cursor: pointer;
   }
 
   & td button:hover {
-    background-color: theme.colors[theme.primaryColor][1];
+    background-color: var(--mantine-color-gray-1);
   }
 
-  & td button:disabled {
-    background-color: transparen;
-    cursor: defaul;
+  & td button.available {
+    background-color: var(--mantine-color-gray-2);
+    color: var(--mantine-color-text);
+    font-weight: 500;
+  }
+
+  & td button.available:hover {
+    background-color: var(--mantine-color-gray-3);
+  }
+
+  & td button:disabled,
+  & td button:disabled:hover {
+    background-color: transparent;
+    cursor: default;
     color: var(--mantine-color-gray-4);
     font-weight: normal;
+  }
+
+  & td button.selected,
+  & td button.selected:hover {
+    background-color: var(--mantine-primary-color-filled);
+    color: var(--mantine-color-white);
+    font-weight: 500;
   }
 }

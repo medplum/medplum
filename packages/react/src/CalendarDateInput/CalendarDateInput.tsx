@@ -1,15 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group } from '@mantine/core';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarDateInput.module.css';
-import { getMonthString, getStartMonth } from './CalendarDateInput.utils';
+import { getMonthString, getStartMonth, isBeforeDay, isSameDay, startOfMonth } from './CalendarDateInput.utils';
 
 export interface CalendarDateInputProps {
   readonly availableDates: Date[];
   readonly onChangeMonth: (date: Date) => void;
   readonly onClick: (date: Date) => void;
+  readonly month?: Date;
+  readonly selected?: Date;
+  readonly allowUnavailableDates?: boolean;
+  readonly earliestDate?: Date;
 }
 
 interface CalendarCell {
@@ -20,16 +25,19 @@ interface CalendarCell {
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
-  const { onChangeMonth, onClick } = props;
-  const [month, setMonth] = useState<Date>(getStartMonth);
+  const { onChangeMonth, onClick, selected, allowUnavailableDates, earliestDate } = props;
+  const [uncontrolledMonth, setUncontrolledMonth] = useState<Date>(getStartMonth);
+  const month = startOfMonth(props.month ?? uncontrolledMonth);
+  const atEarliestMonth = !!earliestDate && month <= startOfMonth(earliestDate);
 
   function moveMonth(delta: number): void {
-    setMonth((currMonth) => {
-      const newMonth = new Date(currMonth);
-      newMonth.setMonth(currMonth.getMonth() + delta);
-      onChangeMonth(newMonth);
-      return newMonth;
-    });
+    const newMonth = new Date(month.getFullYear(), month.getMonth() + delta, 1);
+    setUncontrolledMonth(newMonth);
+    onChangeMonth(newMonth);
+  }
+
+  function isDayDisabled(day: CalendarCell): boolean {
+    return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
   }
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
@@ -39,7 +47,12 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
       <Group justify="space-between" gap="xs" grow wrap="nowrap">
         <p style={{ flex: 1 }}>{getMonthString(month)}</p>
         <Group justify="flex-end" gap="xs">
-          <Button variant="outline" aria-label="Previous month" onClick={() => moveMonth(-1)}>
+          <Button
+            variant="outline"
+            aria-label="Previous month"
+            disabled={atEarliestMonth}
+            onClick={() => moveMonth(-1)}
+          >
             &lt;
           </Button>
           <Button variant="outline" aria-label="Next month" onClick={() => moveMonth(1)}>
@@ -65,7 +78,16 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
               {week.map((day, dayIndex) => (
                 <td key={'day-' + dayIndex}>
                   {day && (
-                    <Button variant="light" disabled={!day.available} onClick={() => onClick(day.date)}>
+                    <Button
+                      variant="light"
+                      className={cx(
+                        day.available && classes.available,
+                        isSameDay(day.date, selected) && classes.selected
+                      )}
+                      aria-pressed={selected ? isSameDay(day.date, selected) : undefined}
+                      disabled={isDayDisabled(day)}
+                      onClick={() => onClick(day.date)}
+                    >
                       {day.date.getDate()}
                     </Button>
                   )}
@@ -122,15 +144,5 @@ function buildGrid(startDate: Date, availableDates: Date[]): OptionalCalendarCel
  */
 function isDayAvailable(day: Date, availableDates: Date[]): boolean {
   // Note that slot start and end time may or may not be in UTC.
-  for (const availableDate of availableDates) {
-    if (
-      availableDate.getFullYear() === day.getFullYear() &&
-      availableDate.getMonth() === day.getMonth() &&
-      availableDate.getDate() === day.getDate()
-    ) {
-      return true;
-    }
-  }
-
-  return false;
+  return availableDates.some((availableDate) => isSameDay(availableDate, day));
 }
