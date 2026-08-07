@@ -1822,6 +1822,18 @@ describe('flatMapFilter', () => {
     const input = [1, 2, 3];
     expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, x] : x))).toStrictEqual([1, 2, 2, 3]);
   });
+
+  test('undefined input returns empty array', () => {
+    expect(flatMapFilter(undefined, (x) => x)).toStrictEqual([]);
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(flatMapFilter(new Set([1, 2, 3]), (x) => (x >= 2 ? x * x : undefined))).toStrictEqual([4, 9]);
+  });
+
+  test('passes sequential indexes', () => {
+    expect(flatMapFilter(new Set(['a', 'b']), (_x, idx) => idx)).toStrictEqual([0, 1]);
+  });
 });
 
 describe('singularize', () => {
