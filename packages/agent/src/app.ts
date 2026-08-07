@@ -415,9 +415,9 @@ export class App {
             this.notLiveHeartbeats = 0;
             this.outstandingHeartbeats = 0;
             this.startWebSocketWorker();
-            // Wake the channel queue workers — their loops idle (without
-            // claiming rows) while the connection is down.
-            this.forEachChannelWorker((worker) => worker.notify());
+            // Wake each channel's dispatcher — they idle (without claiming rows)
+            // while the connection is down.
+            this.notifyChannelDispatchers();
             this.log.info('Successfully connected to Medplum server');
             break;
           case 'agent:heartbeat:request':
@@ -1318,9 +1318,29 @@ export class App {
   }
 
   /**
-   * Invokes `fn` for every durable-queue worker across every channel's pool.
+   * Wakes every channel's dispatcher, collecting failures so one throwing channel
+   * can't stop the rest from being notified.
+   */
+  private notifyChannelDispatchers(): void {
+    const errors: Error[] = [];
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        try {
+          channel.notifyWorkers();
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to notify dispatchers for ${errors.length} channel(s)`, { cause: errors });
+    }
+  }
+
+  /**
+   * Invokes `fn` for every durable-queue dispatch slot across every channel's pool.
    *
-   * Collects any failures so one worker throwing can't stop `fn` from reaching the
+   * Collects any failures so one slot throwing can't stop `fn` from reaching the
    * rest, then surfaces them together as an aggregate error with the collected
    * errors as its `cause`.
    * @param fn - Callback applied to each running {@link ChannelQueueWorker}.

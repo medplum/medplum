@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { AckCode, AgentTransmitResponse, ILogger } from '@medplum/core';
-import { ContentType, Hl7Message, normalizeErrorString, sleep } from '@medplum/core';
+import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { App } from '../app';
 import type { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
@@ -22,15 +22,6 @@ import {
  * `agent:transmit:request` before timing out and marking the row errored.
  */
 export const DEFAULT_WORKER_RESPONSE_TIMEOUT_MS = 60_000;
-
-/** Polling delay when the queue is empty (in addition to wake-on-notify). */
-export const DEFAULT_WORKER_IDLE_POLL_MS = 250;
-
-/**
- * Longest an unbroken run of parked rows may hold the event loop before
- * {@link ChannelQueueWorker.loop} yields a turn — see the park budget there.
- */
-export const DEFAULT_PARK_YIELD_BUDGET_MS = 5;
 
 /**
  * The channel's retry behavior, as a single configuration knob. Collapses what
@@ -259,10 +250,6 @@ export interface ChannelQueueWorkerOptions {
   retryPolicy?: RetryPolicy;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
   responseTimeoutMs?: number;
-  /** Override for unit tests; default {@link DEFAULT_WORKER_IDLE_POLL_MS}. */
-  idlePollMs?: number;
-  /** Override for unit tests; default {@link DEFAULT_PARK_YIELD_BUDGET_MS}. */
-  parkYieldBudgetMs?: number;
   /**
    * How to deliver the app-level ACK back to the source device. Injected (not
    * read off the channel) so the worker can stay agnostic about which channel
@@ -274,24 +261,18 @@ export interface ChannelQueueWorkerOptions {
    */
   sendAck: (response: AgentTransmitResponse, row: InboundRow) => boolean;
   /**
-   * Computes a claimed row's logical-channel key (FIFO partition) from its stored
-   * bytes under the channel's CURRENT spec. Injected rather than read off the
-   * channel so the worker stays decoupled from it and the key always reflects the
-   * live spec. Must be synchronous and must not throw (a row that no longer parses
-   * falls back to the default `''` partition) — the worker calls it inside an
-   * await-free critical section.
-   *
-   * Defaults to `() => ''`: one fully-serialized logical channel, i.e. no
-   * partitioning. Production always injects the channel's real computer.
+   * Tells the channel's {@link ChannelDispatcher} that there may be work to claim:
+   * this slot just freed up, or it woke a partition by settling its head. Injected
+   * because a slot has no reference to the dispatcher. Defaults to a no-op, leaving
+   * the work for the next idle poll.
    */
-  computeKey?: (originalMessage: Buffer) => string;
+  notifyDispatcher?: () => void;
   /**
-   * Nudges the whole worker pool so an idle sibling immediately claims a row this
-   * worker just released by waking a partition. Injected because a worker only
-   * knows its own `notify()`. Defaults to a no-op, leaving the released row for
-   * the next idle poll.
+   * Reports that a settle write was refused because a peer holds the queue lease,
+   * so the dispatcher can stop claiming. Only the dispatcher sees lease loss at
+   * claim time; a slot can discover it later, mid-settle. Defaults to a no-op.
    */
-  notifyPool?: () => void;
+  onLeaseLost?: () => void;
 }
 
 interface PendingResponse {
@@ -302,14 +283,6 @@ interface PendingResponse {
   reject: (err: Error) => void;
   timeout: NodeJS.Timeout;
 }
-
-/**
- * What {@link ChannelQueueWorker.process} did with a claimed row. `dispatched`
- * covers every path that reached {@link ChannelQueueWorker.dispatch} and so awaited
- * real I/O, however it then settled; `parked` is the one that awaited nothing, which
- * is why {@link ChannelQueueWorker.loop} budgets a run of them.
- */
-type ProcessOutcome = 'parked' | 'dispatched';
 
 /**
  * Sentinel rejection used when an in-flight row was returned to `queued` by
@@ -323,19 +296,23 @@ class RowRequeuedError extends Error {
 }
 
 /**
- * Per-channel serial worker that drains the durable queue.
+ * One dispatch slot in a channel's worker pool: it holds at most one row in
+ * flight, awaits the server's response, and settles the row.
  *
- * One running tick at a time per channel — exactly the per-channel ordering
- * guarantee §1.1 promises. Cross-channel parallelism is achieved by running
- * one worker instance per channel.
+ * A slot does NOT claim. The channel's single {@link ChannelDispatcher} owns the
+ * claim loop and the logical-channel partition gate, and hands each claimed row
+ * to a free slot via {@link assign} — so claim cost stays independent of pool
+ * size, and the partition gate is atomic by construction rather than by an
+ * await-free convention spread across N racing claimers.
  *
  * Lifecycle:
- * - {@link start} starts the dispatch loop in the background.
- * - {@link notify} is called whenever a new row is inserted so the loop wakes
- *   immediately instead of waiting on the idle poll.
+ * - {@link start} makes the slot claimable and attaches the lease watchdog.
+ * - {@link assign} runs one row: dispatch → await response → settle. It returns
+ *   immediately; the work continues in the background and the slot reports itself
+ *   free again via `notifyDispatcher`.
  * - {@link onServerResponse} is called from `app.ts` when the server replies;
  *   it resolves the in-flight pending promise.
- * - {@link stop} drains the in-flight row (if any) and stops claiming new ones.
+ * - {@link stop} cancels or drains the in-flight row.
  */
 export class ChannelQueueWorker {
   readonly channelName: string;
@@ -343,19 +320,22 @@ export class ChannelQueueWorker {
   private readonly queue: DurableQueue;
   private readonly log: ILogger;
   private readonly responseTimeoutMs: number;
-  private readonly idlePollMs: number;
-  private readonly parkYieldBudgetMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
-  private readonly computeKey: (originalMessage: Buffer) => string;
-  private readonly notifyPool: () => void;
+  private readonly notifyDispatcher: () => void;
+  private readonly onLeaseLost: () => void;
   private retryPolicy: RetryPolicy;
 
   private running = false;
   private stopping = false;
-  private loopPromise: Promise<void> | undefined;
-  // Resolves whenever `notify()` is called, then is replaced with a fresh promise.
-  // Lets the loop sleep without polling when the queue is known-empty.
-  private wakeSignal: { promise: Promise<void>; resolve: () => void };
+  /**
+   * Set synchronously by {@link assign} and cleared when the row settles. Distinct
+   * from `pending`, which only exists while a dispatch is actually awaiting the
+   * server: this is what makes {@link isFree} correct for the whole assignment,
+   * so the dispatcher can never hand a second row to a slot that is mid-settle.
+   */
+  private assigned = false;
+  /** The in-progress assignment, awaited by a draining {@link stop}. */
+  private activePromise: Promise<void> | undefined;
   private pending: PendingResponse | undefined;
 
   constructor(options: ChannelQueueWorkerOptions) {
@@ -364,13 +344,10 @@ export class ChannelQueueWorker {
     this.queue = options.queue;
     this.log = options.log;
     this.responseTimeoutMs = options.responseTimeoutMs ?? DEFAULT_WORKER_RESPONSE_TIMEOUT_MS;
-    this.idlePollMs = options.idlePollMs ?? DEFAULT_WORKER_IDLE_POLL_MS;
-    this.parkYieldBudgetMs = options.parkYieldBudgetMs ?? DEFAULT_PARK_YIELD_BUDGET_MS;
     this.sendAck = options.sendAck;
-    this.computeKey = options.computeKey ?? (() => '');
-    this.notifyPool = options.notifyPool ?? ((): void => {});
+    this.notifyDispatcher = options.notifyDispatcher ?? ((): void => {});
+    this.onLeaseLost = options.onLeaseLost ?? ((): void => {});
     this.retryPolicy = options.retryPolicy ?? DEFAULT_RETRY_POLICY;
-    this.wakeSignal = makeWakeSignal();
   }
 
   /**
@@ -383,7 +360,7 @@ export class ChannelQueueWorker {
     this.retryPolicy = policy;
   }
 
-  /** Starts the dispatch loop. No-op if already started. */
+  /** Makes the slot claimable and attaches the lease watchdog. No-op if already started. */
   start(): void {
     if (this.running) {
       return;
@@ -393,18 +370,47 @@ export class ChannelQueueWorker {
     // Tie the in-flight lease check to the App's existing 10s heartbeat rather than
     // a dedicated timer (same idiom as the WAL checkpoint / stats GC listeners).
     this.app.heartbeatEmitter.addEventListener('heartbeat', this.onHeartbeat);
-    this.loopPromise = this.loop().catch((err) => {
-      this.log.error(`Worker loop crashed: ${normalizeErrorString(err)}`);
-    });
   }
 
   /**
-   * @returns True while the dispatch loop is live. Goes false after {@link stop}
-   * or after the worker self-terminates on lease loss — the channel checks this
-   * to reap a demoted worker before starting a fresh one on re-acquisition.
+   * @returns True while the slot is live. Goes false after {@link stop} or after
+   * the slot self-terminates on lease loss — the channel checks this to reap a
+   * demoted slot before starting a fresh one on re-acquisition.
    */
   isRunning(): boolean {
     return this.running;
+  }
+
+  /**
+   * @returns True when the dispatcher may {@link assign} a row to this slot.
+   */
+  isFree(): boolean {
+    return this.running && !this.stopping && !this.assigned;
+  }
+
+  /**
+   * Runs one claimed row: dispatch it, await the server's response, settle it.
+   *
+   * Returns as soon as the dispatch is registered — deliberately, so the
+   * dispatcher can go straight back to claiming and fill the rest of the pool
+   * instead of serializing on this round trip. The remainder runs detached; the
+   * slot frees itself and notifies the dispatcher when it finishes, however it
+   * settles.
+   * @param row - The claimed row, with its partition key already recorded.
+   */
+  assign(row: InboundRow): void {
+    if (!this.isFree()) {
+      // The dispatcher checks isFree() before claiming, so reaching here means a
+      // caller bypassed it — dispatching anyway would put two rows in flight on
+      // one slot and lose track of the first.
+      throw new Error(`Cannot assign row id=${row.id}: slot is not free`);
+    }
+    this.assigned = true;
+    this.activePromise = this.run(row).finally(() => {
+      this.assigned = false;
+      this.activePromise = undefined;
+      this.notifyDispatcher();
+    });
   }
 
   /**
@@ -426,14 +432,6 @@ export class ChannelQueueWorker {
     this.pending = undefined;
     pending.reject(new QueueLeaseError(undefined, this.queue.getCurrentLease()?.holder));
   };
-
-  /**
-   * Signals to the loop that work may be available. Idempotent; multiple calls
-   * before the loop wakes coalesce into a single wake.
-   */
-  notify(): void {
-    this.wakeSignal.resolve();
-  }
 
   /**
    * Routes a server `agent:transmit:response` to its row: resolve the in-flight
@@ -571,7 +569,7 @@ export class ChannelQueueWorker {
    *   guaranteed mode (duplicate Bot execution) or strand a spurious `failed` row.
    *   The heartbeat watchdog stays attached through the drain — a concurrent lease
    *   loss must still tear the worker down at once, since a demoted process may
-   *   not keep writing — and is removed only once the loop has exited.
+   *   not keep writing — and is removed only once the assignment has settled.
    * @param options - Stop options.
    * @param options.drain - `true` to let the in-flight row settle instead of cancelling it.
    */
@@ -579,6 +577,8 @@ export class ChannelQueueWorker {
     if (!this.running) {
       return;
     }
+    // Set first so isFree() goes false immediately: the dispatcher must not hand
+    // this slot another row while we are tearing it down.
     this.stopping = true;
     if (!options?.drain) {
       // Immediate: cancel the in-flight dispatch so its row settles terminally
@@ -591,11 +591,11 @@ export class ChannelQueueWorker {
         pending.reject(new QueueError(QueueErrorCode.WorkerStopped, 'worker stopping'));
       }
     }
-    // Wake the loop so an idle worker observes `stopping` without waiting on its
-    // poll; a draining worker finishes its current dispatch first, then exits.
-    this.notify();
-    if (this.loopPromise) {
-      await this.loopPromise;
+    // Either way the assignment now settles on its own — cancelled above, or left
+    // to finish on a drain. Wait for it so a stopped slot leaves nothing running.
+    const active = this.activePromise;
+    if (active) {
+      await active;
     }
     if (options?.drain) {
       this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
@@ -603,7 +603,7 @@ export class ChannelQueueWorker {
     this.running = false;
   }
 
-  /** @returns True if a row is currently in-flight (worker awaiting a server response). */
+  /** @returns True if a row is currently in-flight (slot awaiting a server response). */
   hasInFlight(): boolean {
     return this.pending !== undefined;
   }
@@ -645,117 +645,54 @@ export class ChannelQueueWorker {
     pending.reject(new RowRequeuedError());
   }
 
-  private async loop(): Promise<void> {
-    // When the current unbroken run of parks began; undefined whenever the last
-    // iteration did something other than park. See the budget check below.
-    let parkBurstStartedAt: number | undefined;
+  /**
+   * The body of one assignment: dispatch the row, await the server, settle it.
+   * Never rejects — {@link assign} runs it detached, so an escaping error would
+   * be an unhandled rejection rather than something the dispatcher could act on.
+   * @param row - The claimed row to dispatch.
+   */
+  private async run(row: InboundRow): Promise<void> {
     try {
-      while (!this.stopping) {
-        // Don't claim while the server connection is down — a dispatch started
-        // now would only sit in the in-memory WS queue until the response timer
-        // errored it. Rows stay durably `queued` and drain on reconnect (§9);
-        // app.ts notifies us when the connection comes back.
-        // Also hold off while a logicalChannelKey rewrite is in progress: claiming
-        // against a half-rewritten set of stored keys is the skip-ahead that rewrite
-        // exists to close (see DurableQueue.isClaimPaused). It notifies us when done.
-        if (!this.app.isLive() || this.queue.isClaimPaused(this.channelName)) {
-          parkBurstStartedAt = undefined;
-          await this.waitForWork();
-          continue;
+      let response: AgentTransmitResponse;
+      try {
+        response = await this.dispatch(row);
+      } catch (err) {
+        if (err instanceof RowRequeuedError) {
+          // onWebSocketDisconnect already returned the row to `queued`; the
+          // dispatcher's liveness gate keeps it there until the connection is back.
+          return;
         }
-        const row = this.queue.claimNext(this.channelName);
-        if (!row) {
-          parkBurstStartedAt = undefined;
-          await this.waitForWork();
-          continue;
+        if (err instanceof QueueLeaseError) {
+          throw err; // handled below — do NOT settle the row
         }
-        if ((await this.process(row)) !== 'parked') {
-          parkBurstStartedAt = undefined;
-          continue;
-        }
-        // Parking suspends on nothing: awaiting an already-resolved promise is a
-        // microtask, and microtasks drain to empty before the event loop turns. So a
-        // blocked partition would otherwise park its whole backlog in ONE turn — no
-        // socket reads, no source ACKs, no WS heartbeat replies, no chance to observe
-        // `stopping` — for seconds at realistic depths. Yield a real turn once a run
-        // of parks has held the loop for the budget. The work is unchanged (each row
-        // is parked once and woken once), only spread out.
-        //
-        // The yield belongs HERE, after process() resolves — never between
-        // claimNext() and the key write, whose await-free critical section is what
-        // makes the claim→key decision atomic against sibling pool workers.
-        parkBurstStartedAt ??= Date.now();
-        if (Date.now() - parkBurstStartedAt >= this.parkYieldBudgetMs) {
-          parkBurstStartedAt = undefined;
-          await yieldToEventLoop();
-        }
+        // A dispatch-leg failure (timeout, worker-stopped, unclassified) is always
+        // transient/ambiguous — never a rejection of the message. handleFailure
+        // gates it: review-only in normal mode, retried under guaranteed delivery.
+        const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
+        this.handleFailure(row, code, normalizeErrorString(err));
+        return;
       }
+      this.applyServerResponse(row, response);
     } catch (err) {
-      if (!(err instanceof QueueLeaseError)) {
-        throw err; // a genuine crash — surfaces via start()'s loopPromise .catch
-      }
-      // A peer took the lease (detected at claimNext, the in-flight watchdog, or a
-      // terminal write). Stop driving the queue and step down. We deliberately
-      // leave any row we had mid-flight untouched (it stays `claimed`/`inflight`)
-      // for the new leader's recoverOnStartup to reconcile — a demoted process
-      // must not write dispatch state. The channel reaps this stopped worker from
-      // its pool and starts a fresh one if we later reacquire (AgentHl7Channel.maybeStartWorkers).
-      this.log.info(`Worker for channel '${this.channelName}' stepping down: queue lease taken by a peer.`);
-      this.stopping = true;
-      this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
-      this.running = false;
-    }
-  }
-
-  private async process(row: InboundRow): Promise<ProcessOutcome> {
-    // ── Partition gate ─────────────────────────────────────────────────────
-    // MUST stay synchronous (NO `await`) from loop()'s `claimNext()` through to the
-    // write below, which on the single JS thread is what makes the claim→key
-    // decision atomic against sibling pool workers: no other worker can observe
-    // this row between the claim and the moment its key is recorded (or it is
-    // parked). An `await` here lets two workers dispatch the same logical channel
-    // concurrently, out of order.
-    const key = this.computeKey(row.originalMessage);
-    if (this.queue.isPartitionBlocked(this.channelName, key, row.id)) {
-      // An earlier message in this logical channel is still in play. Park the row
-      // `delayed` (undoing the claim's attempt bump) and let the loop claim the
-      // next one; it re-enters `queued` when that message settles (releasePartition)
-      // or on a spec change / startup recovery. Never dispatched, so no ordering risk.
-      this.queue.markDelayed(row.id, row.attemptCount, key);
-      return 'parked';
-    }
-    // Partition is free: record the key so later same-partition claims see it as
-    // occupied, and mirror it onto the in-memory row so releasePartition wakes the
-    // right partition when this row settles.
-    this.queue.setLogicalChannelKey(row.id, key);
-    row.logicalChannelKey = key;
-    // ───────────────────────────────────────────────────────────────────────
-
-    let response: AgentTransmitResponse | undefined;
-    try {
-      response = await this.dispatch(row);
-    } catch (err) {
-      if (err instanceof RowRequeuedError) {
-        // onWebSocketDisconnect already returned the row to `queued`; the loop's
-        // liveness gate keeps it there until the connection comes back.
-        return 'dispatched';
-      }
       if (err instanceof QueueLeaseError) {
-        // Lost the lease mid-dispatch (the watchdog cancelled the in-flight wait,
-        // or a terminal write was refused). Propagate so the loop tears the worker
-        // down; do NOT settle the row — it's the new leader's to reconcile.
-        throw err;
+        // A peer took the lease (the watchdog cancelled our in-flight wait, or a
+        // terminal write was refused). Step down and tell the dispatcher to stop
+        // claiming. The row is deliberately left as-is (`claimed`/`inflight`) for
+        // the new leader's recoverOnStartup — a demoted process must not write
+        // dispatch state. The channel reaps this stopped slot and starts a fresh
+        // one if we later reacquire (AgentHl7Channel.maybeStartWorkers).
+        this.log.info(`Worker for channel '${this.channelName}' stepping down: queue lease taken by a peer.`);
+        this.stopping = true;
+        this.app.heartbeatEmitter.removeEventListener('heartbeat', this.onHeartbeat);
+        this.running = false;
+        this.onLeaseLost();
+        return;
       }
-      // A dispatch-leg failure (timeout, worker-stopped, unclassified) is always
-      // transient/ambiguous — never a rejection of the message. handleFailure
-      // gates it: review-only in normal mode, retried under guaranteed delivery.
-      const code = err instanceof QueueError ? err.code : QueueErrorCode.DispatchFailed;
-      this.handleFailure(row, code, normalizeErrorString(err));
-      return 'dispatched';
+      // A genuine crash settling one row. Contained here so it takes down neither
+      // the slot nor the dispatcher; the row is left for the in-flight watchdog or
+      // startup recovery to reconcile.
+      this.log.error(`Worker error settling row id=${row.id}: ${normalizeErrorString(err)}`);
     }
-
-    this.applyServerResponse(row, response);
-    return 'dispatched';
   }
 
   /**
@@ -891,8 +828,8 @@ export class ChannelQueueWorker {
 
   /**
    * Releases the next message in a settled row's logical channel: promotes the
-   * head `delayed` row of the partition to `queued` and nudges the pool so an idle
-   * worker claims it without waiting on the idle poll. Called ONLY on a terminal
+   * head `delayed` row of the partition to `queued` and nudges the dispatcher so it
+   * claims the row without waiting on the idle poll. Called ONLY on a terminal
    * settle (processed/rejected/failed), never on a scheduled retry — a retrying
    * head keeps blocking its partition until it terminally settles. `row.logicalChannelKey`
    * was stored at claim time (normal path) or read from the row (late path), so it
@@ -901,7 +838,7 @@ export class ChannelQueueWorker {
    */
   private releasePartition(row: InboundRow): void {
     if (this.queue.wakePartition(this.channelName, row.logicalChannelKey)) {
-      this.notifyPool();
+      this.notifyDispatcher();
     }
   }
 
@@ -1092,15 +1029,6 @@ export class ChannelQueueWorker {
       });
     });
   }
-
-  private async waitForWork(): Promise<void> {
-    const wake = this.wakeSignal;
-    this.wakeSignal = makeWakeSignal();
-    // Race the explicit wake against a short timeout — the timeout is a safety
-    // net so that if `notify()` is missed (shouldn't happen, but cheap insurance)
-    // the loop still makes progress.
-    await Promise.race([wake.promise, sleep(this.idlePollMs)]);
-  }
 }
 
 /**
@@ -1136,25 +1064,4 @@ function parseAckCode(body: string | undefined): AckCode | undefined {
   } catch {
     return undefined;
   }
-}
-
-/**
- * Yields one full event-loop turn. `setImmediate` (check phase) rather than a 0ms
- * timer: it resumes us after the poll phase, so pending socket reads and timers are
- * serviced first, and it costs none of the ~1ms a clamped `setTimeout(…, 0)` would
- * add to every yield of a long drain.
- * @returns A promise that resolves on the next turn of the event loop.
- */
-function yieldToEventLoop(): Promise<void> {
-  return new Promise<void>((resolve) => {
-    setImmediate(resolve);
-  });
-}
-
-function makeWakeSignal(): { promise: Promise<void>; resolve: () => void } {
-  let resolve!: () => void;
-  const promise = new Promise<void>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
 }

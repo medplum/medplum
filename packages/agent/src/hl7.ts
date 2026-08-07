@@ -11,6 +11,7 @@ import { BaseChannel } from './channel';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { LogicalChannelField } from './logical-channel';
 import { computeLogicalChannelKey, parseLogicalChannelKeySpec } from './logical-channel';
+import { ChannelDispatcher } from './queue/dispatcher';
 import type { DurableQueue } from './queue/durable-queue';
 import type { EnqueueResult, InboundRow } from './queue/types';
 import { AckOutcome, DuplicateBehavior, QueueErrorCode, SETTLED_MESSAGE_STATES } from './queue/types';
@@ -75,13 +76,23 @@ export class AgentHl7Channel extends BaseChannel {
   // source of truth, so we track it here and the durable path reads it directly.
   private enhancedMode: EnhancedMode = undefined;
   /**
-   * Bounded pool of workers draining this channel's durable queue, sized to
-   * {@link maxWorkers} (default 1). Each is an ordinary single-in-flight
-   * {@link ChannelQueueWorker}; concurrency comes from running several of them,
-   * and each one's post-claim partition check keeps at most one message of a given
-   * logical channel in flight across the whole pool.
+   * Bounded pool of dispatch slots draining this channel's durable queue, sized to
+   * {@link maxWorkers} (default 1). Each holds one message in flight; concurrency
+   * comes from running several of them. They do not claim — {@link dispatcher} does,
+   * and its partition gate keeps at most one message of a given logical channel in
+   * flight across the whole pool.
    */
   workers: ChannelQueueWorker[] = [];
+  /**
+   * The channel's single claimer, feeding {@link workers}. One per channel rather
+   * than one per worker: claims serialize on the same thread anyway (`node:sqlite`
+   * is synchronous), so N claimers only multiply the wasted work — see
+   * {@link ChannelDispatcher}. Created on demand once the queue exists, and started
+   * only while this process holds the queue lease.
+   */
+  private dispatcher: ChannelDispatcher | undefined;
+  /** The queue instance {@link dispatcher} was built against; see maybeStartWorkers. */
+  private dispatcherQueue: DurableQueue | undefined;
   /**
    * Excess workers removed from {@link workers} by a pool shrink that are still
    * draining their in-flight dispatch ({@link resizeWorkerPool} calls
@@ -158,8 +169,13 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
-    // Stop the active pool AND any workers still draining from a prior shrink, so
-    // a stopped channel leaves no worker writing to the queue behind our back.
+    // Claiming first: a slot stopped while the dispatcher is still running could be
+    // handed another row on its way out.
+    await this.dispatcher?.stop();
+    this.dispatcher = undefined;
+    this.dispatcherQueue = undefined;
+    // Then the active pool AND any slots still draining from a prior shrink, so a
+    // stopped channel leaves nothing writing to the queue behind our back.
     await Promise.allSettled([...this.workers, ...this.drainingWorkers].map((worker) => worker.stop()));
     this.workers = [];
     this.drainingWorkers = [];
@@ -184,7 +200,7 @@ export class AgentHl7Channel extends BaseChannel {
    * so it's safe to call from either entry point.
    */
   private maybeStartWorkers(): void {
-    // Reap workers that stepped down on lease loss (they self-terminate on a
+    // Reap slots that stepped down on lease loss (they self-terminate on a
     // QueueLeaseError rather than via a callback), so a later re-acquisition can
     // start fresh ones.
     this.workers = this.workers.filter((worker) => worker.isRunning());
@@ -192,7 +208,7 @@ export class AgentHl7Channel extends BaseChannel {
     // the queue is off, and isLeader() is false until we hold the lease.
     // `onBecameQueueLeader` calls back in once we acquire. The authoritative gate
     // is implicit in the queue's dispatch ops, which throw QueueLeaseError if the
-    // lease moves out from under a running worker (the loop catches it and steps down).
+    // lease moves out from under us (the dispatcher catches it and steps down).
     const queue = this.app.getDurableQueue();
     if (!queue?.isLeader()) {
       return;
@@ -205,18 +221,40 @@ export class AgentHl7Channel extends BaseChannel {
         log: this.log,
         retryPolicy: this.retryPolicy,
         sendAck: (response) => this.sendToRemote(response),
-        // The arrow reads `this.logicalChannelKeySpec` live, so a spec change
-        // reaches the pool without recreating workers (they outlive reloads).
-        computeKey: (originalMessage) => this.computeLogicalChannelKeyForStoredMessage(originalMessage),
-        notifyPool: () => this.notifyWorkers(),
+        notifyDispatcher: () => this.notifyWorkers(),
+        onLeaseLost: () => this.dispatcher?.onSlotLeaseLost(),
       });
       worker.start();
-      // Wake the worker so any rows that landed in queue but were never dispatched
-      // (e.g. left over from a prior process or inserted while the pool was off)
-      // start moving without waiting for the idle poll.
-      worker.notify();
       this.workers.push(worker);
     }
+    // Toggling the `durableQueue` setting off and on closes the queue and opens a
+    // new one, leaving a dispatcher bound to a dead handle. It would not die on its
+    // own — claim errors are caught per iteration so one bad row can't stop the
+    // channel — so retire it explicitly rather than let it log forever.
+    if (this.dispatcher && this.dispatcherQueue !== queue) {
+      const stale = this.dispatcher;
+      this.dispatcher = undefined;
+      stale.stop().catch((err) => this.log.error(`Error stopping stale dispatcher: ${normalizeErrorString(err)}`));
+    }
+    // Otherwise created once and reused: the dispatcher reads `this.workers` live, so
+    // a pool resize reaches its loop without restarting it. A dispatcher that stepped
+    // down on lease loss restarts here, which is why start() is idempotent.
+    this.dispatcher ??= new ChannelDispatcher({
+      channelName: this.getDefinition().name,
+      app: this.app,
+      queue,
+      log: this.log,
+      workers: () => this.workers,
+      // The arrow reads `this.logicalChannelKeySpec` live, so a spec change reaches
+      // the partition gate without recreating anything.
+      computeKey: (originalMessage) => this.computeLogicalChannelKeyForStoredMessage(originalMessage),
+    });
+    this.dispatcherQueue = queue;
+    this.dispatcher.start();
+    // Claim any rows that landed in the queue but were never dispatched (e.g. left
+    // over from a prior process, or inserted while the pool was off) without
+    // waiting for the idle poll.
+    this.dispatcher.notify();
   }
 
   /**
@@ -282,11 +320,14 @@ export class AgentHl7Channel extends BaseChannel {
     return computeLogicalChannelKey(message, this.logicalChannelKeySpec);
   }
 
-  /** Wakes every pool worker so an idle one claims newly-enqueued work without waiting on its poll. */
+  /**
+   * Wakes the channel's dispatcher so it claims newly-available work without
+   * waiting on its idle poll. One wake, whatever the pool size — the pool used to
+   * be broadcast-woken on every enqueue and every settle, which cost a redundant
+   * claim per idle worker each time.
+   */
   notifyWorkers(): void {
-    for (const worker of this.workers) {
-      worker.notify();
-    }
+    this.dispatcher?.notify();
   }
 
   /**

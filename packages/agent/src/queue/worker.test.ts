@@ -8,6 +8,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { App } from '../app';
 import { createMockLogger, waitFor } from '../test-utils';
+import type { ChannelDispatcherOptions } from './dispatcher';
+import { ChannelDispatcher } from './dispatcher';
 import { DurableQueue } from './durable-queue';
 import type { InboundRow } from './types';
 import { AckOutcome, assertRowState, MessageState, QueueErrorCode } from './types';
@@ -104,16 +106,56 @@ function makeResponse(callback: string, statusCode: number, body: string = 'MSH|
 describe('ChannelQueueWorker', () => {
   let dir: string;
   let queue: DurableQueue;
+  let dispatchers: ChannelDispatcher[];
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'wq-test-'));
     queue = DurableQueue.open({ path: join(dir, 'queue.sqlite'), log: createMockLogger() });
+    dispatchers = [];
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Before closing the queue: a live dispatcher claims against it, and its
+    // per-iteration error handling would otherwise keep it looping (and logging)
+    // over a closed database for the rest of the run.
+    await Promise.allSettled(dispatchers.map((dispatcher) => dispatcher.stop()));
     queue.close();
     rmSync(dir, { recursive: true, force: true });
   });
+
+  /**
+   * Starts one or more slots behind a dispatcher — the production pairing, minus
+   * the channel. Tests go through this rather than `worker.start()` because a slot
+   * no longer claims: with no dispatcher, nothing would ever hand it a row.
+   * @param app - The stub App both halves share.
+   * @param workers - The slot, or the pool of slots, the dispatcher feeds.
+   * @param options - Dispatcher overrides (partition key, yield budget).
+   * @returns The started dispatcher, for tests that need to wake it directly.
+   */
+  function startSlot(
+    app: App,
+    workers: ChannelQueueWorker | ChannelQueueWorker[],
+    options?: Pick<ChannelDispatcherOptions, 'computeKey' | 'loopYieldBudgetMs'>
+  ): ChannelDispatcher {
+    const pool = Array.isArray(workers) ? workers : [workers];
+    const dispatcher = new ChannelDispatcher({
+      channelName: 'ch1',
+      app,
+      queue,
+      log: createMockLogger(),
+      workers: () => pool,
+      // Well under any test's waitFor budget, so a missed wake shows up as a slow
+      // test rather than a hang.
+      idlePollMs: 10,
+      ...options,
+    });
+    for (const worker of pool) {
+      worker.start();
+    }
+    dispatcher.start();
+    dispatchers.push(dispatcher);
+    return dispatcher;
+  }
 
   test('processes queued rows in FIFO order with successful end-to-end ACK', async () => {
     const rows = ['M1', 'M2', 'M3', 'M4', 'M5'].map((id) => enqueueOne(queue, id));
@@ -127,9 +169,8 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck,
       responseTimeoutMs: 5000,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
 
     // The worker dispatches one row at a time; satisfy each in order. Each row is
     // dispatched exactly once here, so its wire callback is always attempt 1.
@@ -162,23 +203,24 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck: () => true,
-      idlePollMs: 10,
     });
-    worker.start();
+    const dispatcher = startSlot(app, worker);
 
     // Drains the first row normally while we hold the lease.
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
 
-    // A peer steals the lease. The idle worker's next claimNext throws
+    // A peer steals the lease. The idle dispatcher's next claimNext throws
     // QueueLeaseError and it steps down on its own — no lost-leadership callback.
+    // The slots stay up: they hold no rows, and claiming is what a demoted process
+    // must stop doing.
     queue.releaseLease('us');
     expect(queue.tryAcquireLease('peer', 60_000)).toBe(true);
-    await waitFor(() => !worker.isRunning(), 1000);
+    await waitFor(() => !dispatcher.isRunning(), 1000);
 
-    // A row enqueued after the steal is never claimed by the demoted worker — it
-    // never even reaches its first dispatch attempt.
+    // A row enqueued after the steal is never claimed by the demoted dispatcher —
+    // it never even reaches its first dispatch attempt.
     const r2 = enqueueOne(queue, 'LD2');
     await new Promise<void>((resolve) => {
       setTimeout(resolve, 50);
@@ -203,10 +245,9 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck: () => true,
-      idlePollMs: 10,
       responseTimeoutMs: 60_000, // long — the heartbeat check, not the timeout, must end the wait
     });
-    worker.start();
+    startSlot(app, worker);
 
     // Worker dispatches r1 and wedges awaiting a response that never comes.
     await waitFor(() => worker.hasInFlight());
@@ -236,12 +277,11 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck: () => true,
-      idlePollMs: 10,
       // Auto-retry defaults to ON (guaranteed); opt out so the transient failure
       // settles terminally as `failed` for this classification test.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
-    worker.start();
+    startSlot(app, worker);
 
     await waitFor(() => pendingRowId(worker) === r1.id);
     worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'service down'));
@@ -270,12 +310,11 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck: () => true,
-      idlePollMs: 10,
       // Auto-retry off so the terminal classification is observed directly: a
       // transient 429 would otherwise be re-queued for retry, not left `failed`.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
-    worker.start();
+    startSlot(app, worker);
 
     await waitFor(() => pendingRowId(worker) === r1.id);
     worker.onServerResponse(makeResponse(currentCallback(worker), 422, 'bad message'));
@@ -302,9 +341,8 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck: () => false,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -329,9 +367,8 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -358,9 +395,8 @@ describe('ChannelQueueWorker', () => {
         }
         return true;
       },
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r1.id)?.state === MessageState.PROCESSED);
@@ -391,9 +427,8 @@ describe('ChannelQueueWorker', () => {
       queue,
       log,
       sendAck: () => false,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -428,9 +463,8 @@ describe('ChannelQueueWorker', () => {
       sendAck: () => {
         throw new Error('socket gone');
       },
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -491,9 +525,8 @@ describe('ChannelQueueWorker', () => {
         }
         return true;
       },
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
 
@@ -530,12 +563,11 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
-      idlePollMs: 10,
       // Auto-retry off so the ambiguous timeout lands terminally in `failed`.
       // (Under the guaranteed default it would be retried — covered separately.)
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     expect(queue.getById(r.id)?.lastError).toContain('Timed out');
     expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
@@ -553,12 +585,11 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck,
       responseTimeoutMs: 50,
-      idlePollMs: 10,
       // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
       // for review — the precondition this late-ACK settlement exercises.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();
@@ -586,12 +617,11 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
-      idlePollMs: 10,
       // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
       // for review — the precondition this late-ACK settlement exercises.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     await worker.stop();
 
@@ -618,12 +648,11 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck,
       responseTimeoutMs: 50,
-      idlePollMs: 10,
       // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
       // for review — the precondition this late-response/lease test exercises.
       retryPolicy: { ...DEFAULT_RETRY_POLICY, enabled: false },
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => queue.getById(r.id)?.state === MessageState.FAILED, 2000);
     expect(queue.getById(r.id)?.errorCode).toBe(QueueErrorCode.ResponseTimeout);
     await worker.stop();
@@ -656,9 +685,8 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -716,9 +744,8 @@ describe('ChannelQueueWorker', () => {
       queue,
       log: createMockLogger(),
       sendAck: () => true,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -744,9 +771,8 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 100,
-      idlePollMs: 10,
     });
-    worker.start();
+    const dispatcher = startSlot(app, worker);
 
     // Give the loop several ticks — nothing should be claimed or dispatched,
     // and crucially nothing should time out into `errored`.
@@ -758,7 +784,7 @@ describe('ChannelQueueWorker', () => {
 
     // Reconnect: the row dispatches and completes normally.
     setLive(true);
-    worker.notify();
+    dispatcher.notify();
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -775,9 +801,8 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 100,
-      idlePollMs: 10,
     });
-    worker.start();
+    const dispatcher = startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
     // The stub App never sends, so markSent never fires — the row sits in `claimed`
     // (worker owns it, request still buffered), exactly the state requeue targets.
@@ -798,7 +823,7 @@ describe('ChannelQueueWorker', () => {
 
     // Reconnect: the same row is re-claimed and completes.
     setLive(true);
-    worker.notify();
+    dispatcher.notify();
     await waitFor(() => worker.hasInFlight());
     worker.onServerResponse(makeResponse(currentCallback(worker), 200));
     await waitFor(() => queue.getById(r.id)?.state === MessageState.PROCESSED);
@@ -815,14 +840,13 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
-      idlePollMs: 10,
       // Normal mode isolates the disconnect semantics under test: the worker must
       // not requeue an already-sent request, and the ambiguous timeout then lands
       // terminally in `failed`. (Under the guaranteed default that timeout would
       // be retried instead — covered by the guaranteed-delivery tests.)
       retryPolicy: { ...DEFAULT_RETRY_POLICY, guaranteedDelivery: false },
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => worker.hasInFlight());
 
     // Simulate the request having gone out on the wire: it's no longer in the
@@ -865,9 +889,8 @@ describe('ChannelQueueWorker', () => {
       log: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
-      idlePollMs: 10,
     });
-    worker.start();
+    startSlot(app, worker);
     await waitFor(() => queue.getById(r.id)?.state === MessageState.QUEUED, 2000);
     const scheduled = queue.getById(r.id);
     assertRowState(scheduled, MessageState.QUEUED);
@@ -879,14 +902,19 @@ describe('ChannelQueueWorker', () => {
 
   describe('auto-retry', () => {
     // Multiplier 1 keeps the deterministic backoff at baseDelayMs; equal jitter then
-    // lands each delay in [baseDelayMs/2, baseDelayMs]. Kept small so retries fire
-    // promptly and the tests stay fast. Jitter itself is covered by the
-    // computeRetryDelayMs unit tests.
+    // lands each delay in [baseDelayMs/2, baseDelayMs]. Jitter itself is covered by
+    // the computeRetryDelayMs unit tests.
+    //
+    // The floor of that window is what makes these tests deterministic: several
+    // assert the row is back in `queued` between attempts, and the dispatcher
+    // re-claims it the moment its backoff elapses. At 20ms the window could close
+    // inside a single 10ms `waitFor` poll, so the intermediate state was a coin
+    // flip. 200ms leaves it comfortably observable while still keeping the suite fast.
     const fastRetryPolicy: RetryPolicy = {
       enabled: true,
       guaranteedDelivery: false,
-      baseDelayMs: 20,
-      maxDelayMs: 100,
+      baseDelayMs: 200,
+      maxDelayMs: 400,
       maxAttempts: 3,
       backoffMultiplier: 1,
     };
@@ -899,7 +927,6 @@ describe('ChannelQueueWorker', () => {
         log: createMockLogger(),
         sendAck,
         responseTimeoutMs: 5000,
-        idlePollMs: 10,
         retryPolicy: { ...fastRetryPolicy, ...policy },
       });
     }
@@ -908,7 +935,7 @@ describe('ChannelQueueWorker', () => {
       const r = enqueueOne(queue, 'RETRY1');
       const { app } = makeStubApp();
       const worker = makeWorker(app, () => true);
-      worker.start();
+      startSlot(app, worker);
 
       await waitFor(() => worker.hasInFlight());
       const before = Date.now();
@@ -936,7 +963,7 @@ describe('ChannelQueueWorker', () => {
       const r400 = enqueueOne(queue, 'BAD1');
       const { app } = makeStubApp();
       const worker = makeWorker(app, () => true);
-      worker.start();
+      startSlot(app, worker);
 
       await waitFor(() => pendingRowId(worker) === r429.id);
       worker.onServerResponse(makeResponse(currentCallback(worker), 429, 'slow down'));
@@ -961,7 +988,7 @@ describe('ChannelQueueWorker', () => {
       const r = enqueueOne(queue, 'EXHAUST1');
       const { app } = makeStubApp();
       const worker = makeWorker(app, () => true, { maxAttempts: 2 });
-      worker.start();
+      startSlot(app, worker);
 
       for (let attempt = 1; attempt <= 2; attempt++) {
         await waitFor(() => worker.hasInFlight(), 2000);
@@ -989,10 +1016,9 @@ describe('ChannelQueueWorker', () => {
         log: createMockLogger(),
         sendAck: () => true,
         responseTimeoutMs: 50,
-        idlePollMs: 10,
         retryPolicy: fastRetryPolicy,
       });
-      worker.start();
+      startSlot(app, worker);
       // The timeout is an ambiguous failure: the server may have processed the
       // message, so even with auto-retry enabled it must NOT be re-dispatched —
       // it lands in `failed` for an operator to decide. This is the core of the
@@ -1020,10 +1046,9 @@ describe('ChannelQueueWorker', () => {
           log: createMockLogger(),
           sendAck: () => true,
           responseTimeoutMs: 50,
-          idlePollMs: 10,
           retryPolicy: guaranteedPolicy,
         });
-        worker.start();
+        startSlot(app, worker);
 
         // The first dispatch times out — ambiguous, but guaranteed mode retries it.
         await waitFor(() => queue.getById(r.id)?.errorCode === QueueErrorCode.ResponseTimeout, 2000);
@@ -1040,7 +1065,7 @@ describe('ChannelQueueWorker', () => {
         const r = enqueueOne(queue, 'GD-400');
         const { app } = makeStubApp();
         const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         worker.onServerResponse(makeResponse(currentCallback(worker), 400, 'not an hl7 ack'));
@@ -1059,7 +1084,7 @@ describe('ChannelQueueWorker', () => {
         const { app } = makeStubApp();
         const sendAck = vi.fn(() => true);
         const worker = makeWorker(app, sendAck, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         worker.onServerResponse(makeResponse(currentCallback(worker), 400, makeAckBody(ackCode)));
@@ -1079,7 +1104,7 @@ describe('ChannelQueueWorker', () => {
         const { app } = makeStubApp();
         const sendAck = vi.fn(() => true);
         const worker = makeWorker(app, sendAck, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AE')));
@@ -1106,7 +1131,7 @@ describe('ChannelQueueWorker', () => {
         const { app } = makeStubApp();
         const sendAck = vi.fn(() => true);
         const worker = makeWorker(app, sendAck, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         const attempt1Callback = currentCallback(worker);
@@ -1143,7 +1168,7 @@ describe('ChannelQueueWorker', () => {
         const r = enqueueOne(queue, 'GD-ACKFAIL');
         const { app } = makeStubApp();
         const worker = makeWorker(app, () => false, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         worker.onServerResponse(makeResponse(currentCallback(worker), 200, makeAckBody('AA')));
@@ -1161,7 +1186,7 @@ describe('ChannelQueueWorker', () => {
         const r = enqueueOne(queue, 'GD-STOP');
         const { app } = makeStubApp();
         const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         await worker.stop();
@@ -1178,7 +1203,7 @@ describe('ChannelQueueWorker', () => {
         const r = enqueueOne(queue, 'GD-DRAIN');
         const { app } = makeStubApp();
         const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 0 });
-        worker.start();
+        startSlot(app, worker);
 
         await waitFor(() => worker.hasInFlight());
         const cb = currentCallback(worker);
@@ -1196,7 +1221,7 @@ describe('ChannelQueueWorker', () => {
         const r = enqueueOne(queue, 'GD-CAP');
         const { app } = makeStubApp();
         const worker = makeWorker(app, () => true, { guaranteedDelivery: true, maxAttempts: 2 });
-        worker.start();
+        startSlot(app, worker);
 
         for (let attempt = 1; attempt <= 2; attempt++) {
           await waitFor(() => worker.hasInFlight(), 2000);
@@ -1219,7 +1244,7 @@ describe('ChannelQueueWorker', () => {
       const { app } = makeStubApp();
       const worker = makeWorker(app, () => true, { enabled: false });
       worker.setRetryPolicy(fastRetryPolicy);
-      worker.start();
+      startSlot(app, worker);
 
       await waitFor(() => worker.hasInFlight());
       worker.onServerResponse(makeResponse(currentCallback(worker), 503, 'down'));
@@ -1245,28 +1270,23 @@ describe('ChannelQueueWorker', () => {
       backoffMultiplier: 2,
     };
 
-    // A pool worker that keys EVERY row into the same logical channel 'K', so a
-    // second worker must serialize behind the first. notifyPool wakes all siblings.
-    function makePoolWorker(app: App, pool: ChannelQueueWorker[]): ChannelQueueWorker {
-      const worker = new ChannelQueueWorker({
+    // Two slots fed by a dispatcher that keys EVERY row into the same logical
+    // channel 'K' (see POOL_KEY at the startSlot calls), so the second row must
+    // serialize behind the first.
+    function makePoolWorker(app: App): ChannelQueueWorker {
+      return new ChannelQueueWorker({
         channelName: 'ch1',
         app,
         queue,
         log: createMockLogger(),
         sendAck: () => true,
         responseTimeoutMs: 5000,
-        idlePollMs: 10,
         retryPolicy: NORMAL_POLICY,
-        computeKey: () => 'K',
-        notifyPool: () => {
-          for (const w of pool) {
-            w.notify();
-          }
-        },
       });
-      pool.push(worker);
-      return worker;
     }
+
+    /** Collapses every row into one partition, so two slots contend for it. */
+    const POOL_KEY: Pick<ChannelDispatcherOptions, 'computeKey'> = { computeKey: () => 'K' };
 
     // Waits until exactly one of the two rows is held by a worker (`claimed` — the
     // stub app never calls markSent, so an in-flight dispatch stays `claimed`) and
@@ -1291,11 +1311,9 @@ describe('ChannelQueueWorker', () => {
       const r1 = enqueueOne(queue, 'PP1');
       const r2 = enqueueOne(queue, 'PP2');
       const { app } = makeStubApp();
-      const pool: ChannelQueueWorker[] = [];
-      const wA = makePoolWorker(app, pool);
-      const wB = makePoolWorker(app, pool);
-      wA.start();
-      wB.start();
+      const wA = makePoolWorker(app);
+      const wB = makePoolWorker(app);
+      startSlot(app, [wA, wB], POOL_KEY);
 
       const { claimedId, delayedId } = await untilOneClaimedOneDelayed(r1, r2);
       expect(queue.getById(delayedId)?.state).toBe(MessageState.DELAYED);
@@ -1315,11 +1333,9 @@ describe('ChannelQueueWorker', () => {
       const r1 = enqueueOne(queue, 'PF1');
       const r2 = enqueueOne(queue, 'PF2');
       const { app } = makeStubApp();
-      const pool: ChannelQueueWorker[] = [];
-      const wA = makePoolWorker(app, pool);
-      const wB = makePoolWorker(app, pool);
-      wA.start();
-      wB.start();
+      const wA = makePoolWorker(app);
+      const wB = makePoolWorker(app);
+      startSlot(app, [wA, wB], POOL_KEY);
 
       const { claimedId, delayedId } = await untilOneClaimedOneDelayed(r1, r2);
 
@@ -1355,12 +1371,10 @@ describe('ChannelQueueWorker', () => {
         queue,
         log: createMockLogger(),
         sendAck: () => true,
-        idlePollMs: 10,
-        // Yield after every park, so "did it yield at all?" is a count assertion
-        // rather than a wall-clock one.
-        parkYieldBudgetMs: 0,
       });
-      worker.start();
+      // Yield after every park, so "did it yield at all?" is a count assertion
+      // rather than a wall-clock one.
+      startSlot(app, worker, { loopYieldBudgetMs: 0 });
 
       // One `await` drains the whole microtask queue. Without the yield the loop
       // never leaves that drain, so all nine would already be parked here.
@@ -1387,9 +1401,8 @@ describe('ChannelQueueWorker', () => {
         queue,
         log: createMockLogger(),
         sendAck: () => true,
-        idlePollMs: 10,
       });
-      worker.start();
+      startSlot(app, worker);
 
       await sleep(50);
       expect(paused).toHaveBeenCalledWith('ch1');
