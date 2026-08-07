@@ -16,8 +16,12 @@ import {
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { AppointmentSearchCriteria } from './AppointmentCriteriaForm';
 import { AppointmentCriteriaForm, getCriteriaError, getRangeError } from './AppointmentCriteriaForm';
-import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.utils';
-import { filterCandidatesByClinic, groupCandidatesByRole, searchEligibleSchedules } from './AppointmentFinder.utils';
+import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
+import {
+  filterCandidatesByClinic,
+  groupCandidatesByRole,
+  searchEligibleSchedules,
+} from './AppointmentFinder.schedules';
 
 function candidate(
   schedule: typeof DrRiveraSchedule,

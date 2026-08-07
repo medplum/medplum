@@ -6,7 +6,7 @@ import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes'
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useMemo } from 'react';
-import { getConfiguredDurationMinutes } from './AppointmentFinder.utils';
+import { getConfiguredDurationMinutes } from './AppointmentFinder.params';
 import type { AppointmentPickListItem } from './AppointmentPickList';
 import { AppointmentPickList } from './AppointmentPickList';
 import { usePickListSearch } from './usePickListSearch';

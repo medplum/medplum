@@ -8,8 +8,8 @@ import { buildProposedAppointment } from '../stories/scheduling';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { AppointmentCustomTimeCardProps } from './AppointmentCustomTimeCard';
 import { AppointmentCustomTimeCard } from './AppointmentCustomTimeCard';
-import type { ActorCombination } from './AppointmentFinder.utils';
-import { getActorsKey } from './AppointmentFinder.utils';
+import type { ActorCombination } from './AppointmentFinder.schedules';
+import { getActorsKey } from './AppointmentFinder.times';
 
 const EASTERN = 'America/New_York';
 

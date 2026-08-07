@@ -6,7 +6,7 @@ import type { JSX, ReactNode } from 'react';
 import { buildProposedAppointment } from '../stories/scheduling';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
-import { groupAppointmentsByDay } from './AppointmentFinder.utils';
+import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
 const medplum = new MockClient();
 

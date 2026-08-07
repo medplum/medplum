@@ -3,8 +3,8 @@
 import { Stack, Text, Title } from '@mantine/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
-import type { AppointmentDay } from './AppointmentFinder.utils';
-import { formatDayHeading } from './AppointmentFinder.utils';
+import type { AppointmentDay } from './AppointmentFinder.times';
+import { formatDayHeading } from './AppointmentFinder.times';
 import { AppointmentSlotGroupCard } from './AppointmentSlotGroupCard';
 
 export interface AppointmentDayTimesProps {

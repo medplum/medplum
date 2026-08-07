@@ -6,8 +6,8 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { SchedulingFixtures, buildProposedAppointment } from '../stories/scheduling';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import type { ActorCombination } from './AppointmentFinder.utils';
-import { getActorsKey } from './AppointmentFinder.utils';
+import type { ActorCombination } from './AppointmentFinder.schedules';
+import { getActorsKey } from './AppointmentFinder.times';
 import type { AppointmentSlotPickerProps, CustomTimeConfig } from './AppointmentSlotPicker';
 import { AppointmentSlotPicker } from './AppointmentSlotPicker';
 

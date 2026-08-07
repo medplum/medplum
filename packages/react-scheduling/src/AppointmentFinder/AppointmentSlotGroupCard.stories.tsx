@@ -7,8 +7,8 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { withMockedDate } from '../stories/decorators';
 import { buildProposedAppointment } from '../stories/scheduling';
-import type { AppointmentSlotGroup } from './AppointmentFinder.utils';
-import { groupAppointmentsByDay } from './AppointmentFinder.utils';
+import type { AppointmentSlotGroup } from './AppointmentFinder.times';
+import { groupAppointmentsByDay } from './AppointmentFinder.times';
 import { AppointmentSlotGroupCard } from './AppointmentSlotGroupCard';
 
 export default {

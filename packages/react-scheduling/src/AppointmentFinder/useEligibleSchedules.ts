@@ -5,8 +5,12 @@ import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
-import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.utils';
-import { filterCandidatesByClinic, groupCandidatesByRole, searchEligibleSchedules } from './AppointmentFinder.utils';
+import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
+import {
+  filterCandidatesByClinic,
+  groupCandidatesByRole,
+  searchEligibleSchedules,
+} from './AppointmentFinder.schedules';
 
 export interface UseEligibleSchedulesResult {
   readonly candidates: readonly ScheduleCandidate[];
