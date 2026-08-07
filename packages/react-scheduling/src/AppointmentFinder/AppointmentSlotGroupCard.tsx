@@ -3,8 +3,8 @@
 import { Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
+import { ReferenceDisplay } from '@medplum/react';
 import type { JSX } from 'react';
-import { ActorName } from './ActorName';
 import classes from './AppointmentFinder.module.css';
 import { getActorRoleLabel } from './AppointmentFinder.roles';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
@@ -45,8 +45,11 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
                   {getActorRoleLabel(actor)}
                 </Text>
               )}
+              {/* The display the reference carries, which `$find` copies from the Schedule's actor.
+                  Resolving the actor instead would name a PractitionerRole by its code, calling
+                  every surgeon "Doctor". Unlinked, so that choosing a time is not interrupted. */}
               <Text size="sm" fw={500}>
-                <ActorName actor={actor} />
+                <ReferenceDisplay value={actor} link={false} />
               </Text>
             </Stack>
           ))}

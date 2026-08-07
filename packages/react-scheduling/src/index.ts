@@ -4,7 +4,6 @@
 export type * from './types';
 
 // Export all components
-export * from './AppointmentFinder/ActorName';
 export * from './AppointmentFinder/AppointmentDayTimes';
 export * from './AppointmentFinder/AppointmentFinder.roles';
 export * from './AppointmentFinder/AppointmentFinder.times';
