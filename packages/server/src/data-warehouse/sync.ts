@@ -353,7 +353,7 @@ function recordSyncMetrics(tables: SyncTableResult[]): void {
   const skippedByReason: Record<SyncTableSkipReason, number> = {
     conflict: 0,
     watermark: 0,
-    'missing-table': 0
+    'missing-table': 0,
   };
 
   // accumulate metrics across all tables
