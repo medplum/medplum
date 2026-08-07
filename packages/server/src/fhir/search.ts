@@ -36,6 +36,7 @@ import { getExtraEntries } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
+import { recordHistogramValue } from '../otel/otel';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
@@ -216,7 +217,11 @@ export async function searchByReferenceImpl<T extends Resource>(
 }
 
 /**
- * Rejects searches carrying more filters than the server allows.
+ * Records the number of filters on a search, then rejects it if that exceeds what the server allows.
+ *
+ * The histogram is recorded unconditionally, including when no limit is configured, so that
+ * `maxSearchParams` can be sized against the real distribution of production traffic rather than
+ * guessed at. It is emitted before the limit is applied, so rejected searches are still counted.
  *
  * Exact duplicate filters are already collapsed by `parseSearchRequest`, so this bounds queries
  * with thousands of *distinct* values, which cost a WHERE condition and a bound parameter each,
@@ -224,9 +229,13 @@ export async function searchByReferenceImpl<T extends Resource>(
  * @param searchRequest - The search request.
  */
 function validateSearchFilterCount(searchRequest: SearchRequest): void {
+  const count = searchRequest.filters?.length ?? 0;
+  recordHistogramValue('medplum.fhir.search.filters', count, {
+    attributes: { resourceType: searchRequest.resourceType },
+  });
+
   const maxParams = getConfig().maxSearchParams;
-  const count = searchRequest.filters?.length;
-  if (maxParams !== undefined && count !== undefined && count > maxParams) {
+  if (maxParams !== undefined && count > maxParams) {
     throw new OperationOutcomeError(
       badRequest(`Search parameter count exceeds maximum (got ${count}, max ${maxParams})`)
     );
