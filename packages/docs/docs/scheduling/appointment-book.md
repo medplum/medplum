@@ -194,7 +194,7 @@ For multi-resource bookings, include multiple Slot resources in `Appointment.con
 - Each referenced Schedule must have exactly **one actor**
 - Each actor must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
 - The requested time must match a valid slot duration from the Schedule's `SchedulingParameters`
-- No existing busy Slots may overlap the requested time window (including buffer windows)
+- The requested time must have fewer slots than the requested `slotCapacity`. All existing slots overlapping the requested time must be below their maximum `slotCapacity`. See [Overbooking](/docs/scheduling/defining-availability#overbooking)
 - The `serviceType` attribute must reference the HealthcareService you are trying to schedule via the `https://medplum.com/fhir/service-type-reference` extension
 - The input `Appointment` must not already contain `slot` references (these are set by `$book`)
 
@@ -248,10 +248,12 @@ Returns `201 Created` with a [`Bundle`](/docs/api/fhir/resources/bundle) wrappin
 
 1. Validates that each proposed Slot's start/end matches a valid slot duration defined in the Schedule's `SchedulingParameters`
 2. Loads existing Slots in the time window (including buffer margins) for each Schedule
-3. Checks that no existing busy Slot overlaps the requested time
+3. Checks that the requested time has spare capacity under the strictest applicable limit — the requested `slotCapacity` and the tolerance of every `busy`/`busy-tentative` booking already overlapping it (at the default capacity of 1, any overlapping busy Slot blocks it), and no `busy-unavailable` block or buffer conflicts
 4. Verifies the requested time falls within the Schedule's defined availability windows or existing slots with status `free`
 5. Creates the `Appointment`, busy `Slot`(s), and any buffer `Slot`(s)
 6. Returns all created resources in the response Bundle
+
+Because these steps run inside a `SERIALIZABLE` transaction, two requests racing for the last unit of capacity cannot both succeed — one commits and the other is rejected. An outstanding [`$hold`](/docs/scheduling/appointment-hold) also consumes a unit of `slotCapacity` (via its `busy-tentative` Slot) until it is confirmed, booked, or released.
 
 ## Error Responses
 

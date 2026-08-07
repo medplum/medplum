@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, DEFAULT_MAX_SEARCH_COUNT, generateId } from '@medplum/core';
+import { createReference, DEFAULT_MAX_SEARCH_COUNT, generateId, SchedulingSlotCapacityURI } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule, Slot } from '@medplum/fhirtypes';
 import type { Interval } from '../../../util/date';
 import { LayeredDict } from '../../../util/layereddict';
@@ -10,6 +10,7 @@ import type { Repository } from '../../repo';
 import {
   applyExistingSlots,
   intersectIntervals,
+  intervalsExceedingCapacity,
   isAlignedToGrid,
   normalizeIntervals,
   pairWithOverlaps,
@@ -68,6 +69,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     const range = {
@@ -102,6 +104,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     const range = {
@@ -131,6 +134,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     const range = {
@@ -162,6 +166,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     const range = {
@@ -191,6 +196,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     const range = {
@@ -221,6 +227,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     const range = {
@@ -250,6 +257,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     // NY has a DST "spring forward" on March 8 2026
@@ -289,6 +297,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     // NY has a DST "spring forward" on March 8 2026
@@ -332,6 +341,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     // NY has a DST "fall back" on Nov 2 2025: 1:30am: happens twice
@@ -363,6 +373,7 @@ describe('resolveAvailability', () => {
       alignmentOffset: 0,
       alignmentTimezone: 'America/New_York',
       service: createReference(service),
+      slotCapacity: 1,
     });
 
     // NY has a DST "spring forward" on March 8 2026; 2:30am never happens
@@ -629,7 +640,8 @@ function makeSlots(
   schedule: Schedule,
   intervals: Interval[],
   status: Slot['status'] = 'busy',
-  serviceType?: Slot['serviceType']
+  serviceType?: Slot['serviceType'],
+  slotCapacity?: number
 ): Slot[] {
   return intervals.map((interval) => ({
     resourceType: 'Slot',
@@ -638,8 +650,79 @@ function makeSlots(
     start: interval.start.toISOString(),
     end: interval.end.toISOString(),
     serviceType,
+    // `slotCapacity` extension is omitted when it is the default (`1`, representing no overbooking allowed)
+    ...(slotCapacity !== undefined && slotCapacity > 1
+      ? { extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: slotCapacity }] }
+      : {}),
   }));
 }
+
+describe('intervalsExceedingCapacity', () => {
+  const f = (hour: number): string => `2025-12-01T${String(hour).padStart(2, '0')}:00:00Z`;
+  const iv = (startHour: number, endHour: number): Interval => ({
+    start: new Date(f(startHour)),
+    end: new Date(f(endHour)),
+  });
+  const bk = (startHour: number, endHour: number, capacity: number): Slot => ({
+    resourceType: 'Slot',
+    status: 'busy',
+    schedule: { reference: `Schedule/${schedule.id}` },
+    start: f(startHour),
+    end: f(endHour),
+    ...(capacity > 1 ? { extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity }] } : {}),
+  });
+
+  test('throws when candidateCapacity is below 1', () => {
+    expect(() => intervalsExceedingCapacity([], 0)).toThrow('Invalid capacity');
+  });
+
+  test('no bookings blocks nothing', () => {
+    expect(intervalsExceedingCapacity([], 2)).toEqual([]);
+  });
+
+  test('candidate capacity 1 blocks the union regardless of slot capacities', () => {
+    expect(intervalsExceedingCapacity([bk(0, 10, 5), bk(5, 15, 5)], 1)).toEqual([iv(0, 15)]);
+  });
+
+  test('a capacity-1 booking blocks a capacity-2 candidate (cross-service exclusivity)', () => {
+    expect(intervalsExceedingCapacity([bk(0, 10, 1)], 2)).toEqual([iv(0, 10)]);
+  });
+
+  test('a lone capacity-2 booking does not block a capacity-2 candidate', () => {
+    expect(intervalsExceedingCapacity([bk(0, 10, 2)], 2)).toEqual([]);
+  });
+
+  test('two capacity-2 bookings block only their overlap for a capacity-2 candidate', () => {
+    expect(intervalsExceedingCapacity([bk(0, 10, 2), bk(5, 15, 2)], 2)).toEqual([iv(5, 10)]);
+  });
+
+  test('the strictest overlapping capacity wins', () => {
+    // A capacity-1 booking punched into a capacity-3 region blocks a capacity-3 candidate there.
+    expect(intervalsExceedingCapacity([bk(0, 10, 3), bk(4, 6, 1)], 3)).toEqual([iv(4, 6)]);
+  });
+
+  test('order independence: the capacity-1 booking blocks regardless of insertion order', () => {
+    expect(intervalsExceedingCapacity([bk(2, 8, 2), bk(0, 10, 1)], 2)).toEqual([iv(0, 10)]);
+  });
+
+  test('adjacent bookings do not create phantom overlap at the shared boundary', () => {
+    // Half-open: the first ends exactly where the second starts, so the instant
+    // they share is never covered by both.
+    expect(intervalsExceedingCapacity([bk(0, 10, 2), bk(10, 20, 2)], 2)).toEqual([]);
+  });
+
+  test('staircase overlaps: capacity 2 spans the middle, capacity 3 the innermost', () => {
+    const bookings = [bk(0, 6, 3), bk(2, 8, 3), bk(4, 10, 3)];
+    expect(intervalsExceedingCapacity(bookings, 2)).toEqual([iv(2, 8)]);
+    expect(intervalsExceedingCapacity(bookings, 3)).toEqual([iv(4, 6)]);
+  });
+
+  test('a gap splits the blocked region into two intervals', () => {
+    // Two double-booked cores (2–4 and 6–8) separated by a single-booked gap.
+    const bookings = [bk(0, 4, 2), bk(2, 4, 2), bk(6, 10, 2), bk(6, 8, 2)];
+    expect(intervalsExceedingCapacity(bookings, 2)).toEqual([iv(2, 4), iv(6, 8)]);
+  });
+});
 
 describe('applyExistingSlots', () => {
   test('with no availability or free slots', () => {
@@ -809,6 +892,65 @@ describe('applyExistingSlots', () => {
     const serviceType = [{ coding: [{ system: 'http://example.com', code: 'office-visit' }] }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
+  });
+
+  test('defaults to capacity 1: a single busy slot blocks the time', () => {
+    const availability = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    const busy = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T10:00:00Z') }];
+    const slots = makeSlots(schedule, busy, 'busy');
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots({ availability, slots, range })).toEqual([
+      { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+    ]);
+  });
+
+  test('with capacity 2, a single capacity-2 booking leaves the time available', () => {
+    const availability = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    const busy = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T10:00:00Z') }];
+    const slots = makeSlots(schedule, busy, 'busy', undefined, 2);
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots({ availability, slots, range, capacity: 2 })).toEqual(availability);
+  });
+
+  test('an unstamped (capacity-1) busy slot blocks a capacity-2 candidate', () => {
+    // A booking made under slotCapacity 1 tolerates no overlap, so even a capacity-2
+    // service cannot overbook it (the cross-service exclusivity fix).
+    const availability = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    const busy = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T10:00:00Z') }];
+    const slots = makeSlots(schedule, busy, 'busy'); // no capacity stamp => capacity 1
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots({ availability, slots, range, capacity: 2 })).toEqual([
+      { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+    ]);
+  });
+
+  test('with capacity 2, two capacity-2 bookings block only their overlap', () => {
+    const availability = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    const busy = [
+      { start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T11:00:00Z') },
+      { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T11:00:00Z') },
+    ];
+    const slots = makeSlots(schedule, busy, 'busy', undefined, 2);
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    // Depth reaches 2 only from 10:00–11:00; 09:00–10:00 (depth 1) stays open.
+    expect(applyExistingSlots({ availability, slots, range, capacity: 2 })).toEqual([
+      { start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T10:00:00Z') },
+      { start: new Date('2025-12-01T11:00:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+    ]);
+  });
+
+  test('capacity counts across busy, busy-tentative, busy-unavailable status slots', () => {
+    const availability = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T12:00:00Z') }];
+    const interval = [{ start: new Date('2025-12-01T09:00:00Z'), end: new Date('2025-12-01T10:00:00Z') }];
+    const slots = [
+      ...makeSlots(schedule, interval, 'busy', undefined, 3),
+      ...makeSlots(schedule, interval, 'busy-tentative', undefined, 3),
+      ...makeSlots(schedule, interval, 'busy-unavailable', undefined, 3),
+    ];
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-02') };
+    expect(applyExistingSlots({ availability, slots, range, capacity: 3 })).toEqual([
+      { start: new Date('2025-12-01T10:00:00Z'), end: new Date('2025-12-01T12:00:00Z') },
+    ]);
   });
 });
 
