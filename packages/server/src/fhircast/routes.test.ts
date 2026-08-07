@@ -1,7 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CurrentContext, FhircastEventContext, FhircastEventPayload, WithId } from '@medplum/core';
-import { ContentType, createFhircastMessagePayload, generateId, isOperationOutcome } from '@medplum/core';
+import type {
+  CurrentContext,
+  FhircastEventContext,
+  FhircastEventPayload,
+  PendingSubscriptionRequest,
+  WithId,
+} from '@medplum/core';
+import {
+  ContentType,
+  createFhircastMessagePayload,
+  generateId,
+  isOperationOutcome,
+  serializeFhircastSubscriptionRequest,
+} from '@medplum/core';
 import type { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -344,7 +356,7 @@ describe('FHIRcast routes', () => {
               'hub.mode': 'unsubscribe',
               'hub.topic': topic,
               'hub.events': 'Patient-open',
-              endpoint: endpointUrl,
+              'hub.channel.endpoint': endpointUrl,
             });
           expect(unsubRes).toHaveStatus(202);
           expect(unsubRes.body['hub.channel.endpoint']).toStrictEqual(endpointUrl);
@@ -361,6 +373,38 @@ describe('FHIRcast routes', () => {
       // The subscription record is gone, so a reconnect to this endpoint would be denied
       await expect(getEndpointSubscription(extractEndpoint(endpointUrl) as string)).resolves.toBeUndefined();
     }
+  });
+
+  // Pins the field the client names the endpoint in to the one the Hub reads it from: a subscription
+  // the client cannot cancel is indistinguishable from one that was never issued
+  test('Unsubscribe with a request serialized by the client', async () => {
+    const topic = randomUUID();
+    const subscriptionRequest = {
+      mode: 'subscribe',
+      channelType: 'websocket',
+      topic,
+      events: ['Patient-open'],
+    } satisfies PendingSubscriptionRequest;
+
+    const subRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.FORM_URL_ENCODED)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(serializeFhircastSubscriptionRequest(subscriptionRequest));
+    expect(subRes).toHaveStatus(202);
+    const endpointUrl = subRes.body['hub.channel.endpoint'];
+
+    const unsubRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.FORM_URL_ENCODED)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(
+        serializeFhircastSubscriptionRequest({ ...subscriptionRequest, mode: 'unsubscribe', endpoint: endpointUrl })
+      );
+    expect(unsubRes).toHaveStatus(202);
+    expect(unsubRes.body['hub.channel.endpoint']).toStrictEqual(endpointUrl);
+
+    await expect(getEndpointSubscription(extractEndpoint(endpointUrl) as string)).resolves.toBeUndefined();
   });
 
   test('Unsubscribe without an endpoint is rejected', async () => {
@@ -424,7 +468,7 @@ describe('FHIRcast routes', () => {
         'hub.mode': 'unsubscribe',
         'hub.topic': randomUUID(),
         'hub.events': 'Patient-open',
-        endpoint: `ws://localhost:8103/ws/fhircast/${randomUUID()}`,
+        'hub.channel.endpoint': `ws://localhost:8103/ws/fhircast/${randomUUID()}`,
       });
     expect(unsubRes).toHaveStatus(400);
     expect(unsubRes.body.issue[0].details.text).toStrictEqual('Invalid endpoint');
@@ -472,7 +516,7 @@ describe('FHIRcast routes', () => {
                 'hub.mode': 'unsubscribe',
                 'hub.topic': topic,
                 'hub.events': 'Patient-open',
-                endpoint: endpointToCancel,
+                'hub.channel.endpoint': endpointToCancel,
               });
             expect(unsubRes).toHaveStatus(202);
           })
@@ -535,7 +579,7 @@ describe('FHIRcast routes', () => {
             'hub.mode': 'unsubscribe',
             'hub.topic': topic,
             'hub.events': 'Patient-open',
-            endpoint: endpointUrl,
+            'hub.channel.endpoint': endpointUrl,
           });
         expect(unsubRes).toHaveStatus(400);
         expect(unsubRes.body.issue[0].details.text).toStrictEqual('Invalid endpoint');

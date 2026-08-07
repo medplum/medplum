@@ -270,10 +270,10 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
 async function handleUnsubscribeRequest(req: Request, res: Response, topic: string): Promise<void> {
   const ctx = getAuthenticatedContext();
 
-  // Subscribers echo back the endpoint URL they were issued, which is what identifies the
+  // Subscribers echo back the `hub.channel.endpoint` they were issued, which is what identifies the
   // subscription to cancel. Several subscribers can share a topic, so an unsubscribe the Hub cannot
   // address is not actionable: honoring it would mean denying every one of them.
-  const endpoint = extractEndpoint(req.body.endpoint);
+  const endpoint = extractEndpoint(req.body['hub.channel.endpoint']);
   if (!endpoint) {
     sendOutcome(res, badRequest('Missing endpoint'));
     return;

@@ -195,7 +195,7 @@ describe('serializeFhircastSubscriptionRequest', () => {
         endpoint: 'wss://abc.com/hub',
       })
     ).toStrictEqual(
-      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
     );
   });
 

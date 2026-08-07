@@ -297,7 +297,9 @@ export function serializeFhircastSubscriptionRequest(
   } as Record<string, string>;
 
   if (isCompletedSubscriptionRequest(subscriptionRequest)) {
-    formattedSubRequest.endpoint = subscriptionRequest.endpoint;
+    // Named for the field the Hub issued the endpoint under, which is what identifies the
+    // subscription being cancelled back to it
+    formattedSubRequest['hub.channel.endpoint'] = subscriptionRequest.endpoint;
   }
   return new URLSearchParams(formattedSubRequest).toString();
 }
