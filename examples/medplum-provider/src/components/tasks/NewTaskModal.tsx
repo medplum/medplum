@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Grid, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Box, Button, Grid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import type { CodeableConcept, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
@@ -8,6 +8,7 @@ import {
   CodeableConceptInput,
   CodeInput,
   DateTimeInput,
+  Modal,
   ReferenceInput,
   ResourceInput,
   useMedplum,
@@ -123,120 +124,108 @@ export function NewTaskModal(props: NewTaskModalProps): JSX.Element {
       onClose={handleClose}
       size="xl"
       title="Create New Task"
-      styles={{
-        body: {
-          padding: 0,
-          height: '70vh',
-        },
-      }}
+      padding="md"
+      bodyHeight="70vh"
+      actions={
+        <Button variant="filled" onClick={handleSubmit} loading={isSubmitting}>
+          Create Task
+        </Button>
+      }
     >
-      <Stack h="100%" justify="space-between" gap={0}>
-        <Box flex={1} miw={0}>
-          <Grid p="md" h="100%">
-            <Grid.Col span={6} pr="lg">
-              <Stack gap="md" h="100%">
-                <Box>
-                  <Stack gap="sm">
-                    <TextInput
-                      label="Title"
-                      placeholder="Enter task title"
-                      value={title}
-                      onChange={(event) => setTitle(event.currentTarget.value)}
-                      required
-                      size="md"
-                    />
+      <Grid h="100%">
+        <Grid.Col span={6} pr="lg">
+          <Stack gap="md" h="100%">
+            <Box>
+              <Stack gap="sm">
+                <TextInput
+                  label="Title"
+                  placeholder="Enter task title"
+                  value={title}
+                  onChange={(event) => setTitle(event.currentTarget.value)}
+                  required
+                  size="md"
+                />
 
-                    <Textarea
-                      label="Description"
-                      placeholder="Enter task description (optional)"
-                      value={description}
-                      onChange={(event) => setDescription(event.currentTarget.value)}
-                      minRows={4}
-                      autosize
-                      maxRows={8}
-                    />
-                  </Stack>
-                </Box>
+                <Textarea
+                  label="Description"
+                  placeholder="Enter task description (optional)"
+                  value={description}
+                  onChange={(event) => setDescription(event.currentTarget.value)}
+                  minRows={4}
+                  autosize
+                  maxRows={8}
+                />
               </Stack>
-            </Grid.Col>
+            </Box>
+          </Stack>
+        </Grid.Col>
 
-            <Grid.Col span={6} pl="lg">
-              <Stack gap="md" h="100%">
+        <Grid.Col span={6} pl="lg">
+          <Stack gap="md" h="100%">
+            <Box>
+              <Stack gap="sm">
+                <CodeInput
+                  name="status"
+                  label="Status"
+                  binding="http://hl7.org/fhir/ValueSet/task-status"
+                  maxValues={1}
+                  defaultValue={status}
+                  onChange={(value) => setStatus((value as Task['status']) || 'draft')}
+                  required
+                />
+
+                <DateTimeInput
+                  name="dueDate"
+                  label="Due Date"
+                  placeholder="Select due date (optional)"
+                  defaultValue={dueDate}
+                  onChange={setDueDate}
+                />
+
+                <CodeInput
+                  name="priority"
+                  label="Priority"
+                  binding="http://hl7.org/fhir/ValueSet/request-priority"
+                  maxValues={1}
+                  defaultValue={priority}
+                  onChange={(value) => setPriority(value || 'routine')}
+                />
+
+                <ResourceInput<Patient>
+                  resourceType="Patient"
+                  name="patient"
+                  label="Patient"
+                  placeholder="Select patient"
+                  defaultValue={taskPatient}
+                  onChange={(value: Patient | undefined) => setTaskPatient(value ? createReference(value) : undefined)}
+                />
+
                 <Box>
-                  <Stack gap="sm">
-                    <CodeInput
-                      name="status"
-                      label="Status"
-                      binding="http://hl7.org/fhir/ValueSet/task-status"
-                      maxValues={1}
-                      defaultValue={status}
-                      onChange={(value) => setStatus((value as Task['status']) || 'draft')}
-                      required
-                    />
-
-                    <DateTimeInput
-                      name="dueDate"
-                      label="Due Date"
-                      placeholder="Select due date (optional)"
-                      defaultValue={dueDate}
-                      onChange={setDueDate}
-                    />
-
-                    <CodeInput
-                      name="priority"
-                      label="Priority"
-                      binding="http://hl7.org/fhir/ValueSet/request-priority"
-                      maxValues={1}
-                      defaultValue={priority}
-                      onChange={(value) => setPriority(value || 'routine')}
-                    />
-
-                    <ResourceInput<Patient>
-                      resourceType="Patient"
-                      name="patient"
-                      label="Patient"
-                      placeholder="Select patient"
-                      defaultValue={taskPatient}
-                      onChange={(value: Patient | undefined) =>
-                        setTaskPatient(value ? createReference(value) : undefined)
-                      }
-                    />
-
-                    <Box>
-                      <Text size="sm" fw={500} mb="xs">
-                        Assignee
-                      </Text>
-                      <ReferenceInput
-                        name="assignee"
-                        targetTypes={['Practitioner', 'Organization']}
-                        placeholder="Select assignee (optional)"
-                        onChange={(value) => setAssignee(value as Reference<Practitioner>)}
-                      />
-                    </Box>
-
-                    <CodeableConceptInput
-                      name="performerType"
-                      label="Performer Type"
-                      placeholder="Select performer type (optional)"
-                      binding="http://hl7.org/fhir/ValueSet/performer-role"
-                      maxValues={1}
-                      onChange={(value) => setPerformerType(value)}
-                      path={'Task.performerType'}
-                    />
-                  </Stack>
+                  <Text size="sm" fw={500} mb="xs">
+                    Assignee
+                  </Text>
+                  <ReferenceInput
+                    name="assignee"
+                    targetTypes={['Practitioner', 'Organization']}
+                    placeholder="Select assignee (optional)"
+                    onChange={(value) => setAssignee(value as Reference<Practitioner>)}
+                  />
                 </Box>
-              </Stack>
-            </Grid.Col>
-          </Grid>
-        </Box>
 
-        <Stack p="md">
-          <Divider />
-          <Button variant="filled" w="100%" onClick={handleSubmit} loading={isSubmitting}>
-            Create Task
-          </Button>
-        </Stack>
-      </Stack>
+                <CodeableConceptInput
+                  name="performerType"
+                  label="Performer Type"
+                  placeholder="Select performer type (optional)"
+                  binding="http://hl7.org/fhir/ValueSet/performer-role"
+                  maxValues={1}
+                  onChange={(value) => setPerformerType(value)}
+                  path={'Task.performerType'}
+                />
+              </Stack>
+            </Box>
+          </Stack>
+        </Grid.Col>
+      </Grid>
     </Modal>
   );
 }
