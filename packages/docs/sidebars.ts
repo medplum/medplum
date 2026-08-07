@@ -73,6 +73,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'scheduling/appointment-find' },
         { type: 'doc', id: 'scheduling/appointment-book' },
         { type: 'doc', id: 'scheduling/timezones' },
+        { type: 'doc', id: 'scheduling/beta-changelog' },
       ],
     },
     {
