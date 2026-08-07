@@ -23,6 +23,8 @@
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "receive-logical-channels": "tsx src/scripts/receive-logical-channel-messages.ts",
+    "send-logical-channels": "tsx src/scripts/send-logical-channel-messages.ts",
     "test": "vitest run"
   },
   "dependencies": {

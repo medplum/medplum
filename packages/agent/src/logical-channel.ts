@@ -175,7 +175,7 @@ function escapeKeyPart(value: string): string {
  * @param field - The field path to extract.
  * @returns The addressed value, or an empty string if not present.
  */
-function extractFieldValue(message: Hl7Message, field: LogicalChannelField): string {
+export function extractFieldValue(message: Hl7Message, field: LogicalChannelField): string {
   const segment = message.getSegment(field.segment);
   if (!segment) {
     return '';
