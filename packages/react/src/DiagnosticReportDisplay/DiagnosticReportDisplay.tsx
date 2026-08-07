@@ -293,7 +293,6 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
 
   const critical = isCritical(observation);
 
-  // Nesting depth, used to indent the "Test" column so members read as belonging to their group.
   const depth = props.ancestorIds?.length ?? 0;
 
   const memberRows = observation.hasMember && (
