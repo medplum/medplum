@@ -565,8 +565,10 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
       websocket.addEventListener('message', (event: MessageEvent) => {
         const message = JSON.parse(event.data) as Record<string, string | object>;
 
-        // This is a check for `subscription request confirmations`, we just discard these for now
-        if (message['hub.topic']) {
+        // Discard the Hub's control messages: a subscription confirmation or a denial carries no
+        // `event`, so there is nothing for a listener to receive. A denial the Hub could not resolve
+        // an endpoint for names no topic, so `hub.topic` alone does not identify one.
+        if (!message.event) {
           return;
         }
 

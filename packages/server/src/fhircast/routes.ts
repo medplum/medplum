@@ -234,6 +234,15 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     return;
   }
 
+  // `hub.events` is only checked for presence by the validator, which does not trim, so a
+  // whitespace- or comma-only value reaches here and names no events. Subscribing to nothing would
+  // hand back a socket that only ever receives heartbeats.
+  const events = parseFhircastEvents(req.body['hub.events']);
+  if (events.length === 0) {
+    sendOutcome(res, badRequest('Invalid hub.events'));
+    return;
+  }
+
   // Every subscribe request gets its own endpoint, so that the Hub can tell apart subscribers
   // sharing a topic and remember the events each one asked for.
   const endpoint = generateId();
@@ -241,7 +250,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     await setEndpointSubscription(endpoint, {
       projectId: ctx.project.id,
       topic,
-      events: parseFhircastEvents(req.body['hub.events']),
+      events,
       version: getFhircastVersion(req),
     });
   } catch (err) {
@@ -262,20 +271,27 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
   const ctx = getAuthenticatedContext();
 
   // Subscribers echo back the endpoint URL they were issued, which is what identifies the
-  // subscription to cancel.
+  // subscription to cancel. Several subscribers can share a topic, so an unsubscribe the Hub cannot
+  // address is not actionable: honoring it would mean denying every one of them.
   const endpoint = extractEndpoint(req.body.endpoint);
-  const subscription = endpoint ? await getEndpointSubscription(endpoint) : undefined;
-  const ownsSubscription = subscription?.projectId === ctx.project.id && subscription?.topic === topic;
-
-  if (endpoint && ownsSubscription) {
-    await deleteEndpointSubscription(endpoint);
+  if (!endpoint) {
+    sendOutcome(res, badRequest('Missing endpoint'));
+    return;
   }
 
-  // The spec defines no body for an unsubscribe response, so echo the endpoint back only when the
-  // request identified one
-  res
-    .status(202)
-    .json(endpoint ? { 'hub.channel.endpoint': getWebSocketUrl(getConfig().baseUrl, `/ws/fhircast/${endpoint}`) } : {});
+  const subscription = await getEndpointSubscription(endpoint);
+  if (subscription?.projectId !== ctx.project.id || subscription.topic !== topic) {
+    // Already cancelled, expired, or another project's. Unsubscribing stays idempotent, and the
+    // empty body keeps the response from disclosing whether the endpoint exists.
+    getLogger().warn('[FHIRcast]: Ignoring an unsubscribe request for an unknown endpoint', { topic });
+    res.status(202).json({});
+    return;
+  }
+
+  await deleteEndpointSubscription(endpoint);
+
+  // The spec defines no body for an unsubscribe response, so echo back the endpoint that was cancelled
+  res.status(202).json({ 'hub.channel.endpoint': getWebSocketUrl(getConfig().baseUrl, `/ws/fhircast/${endpoint}`) });
 
   publish(
     `${ctx.project.id}:${topic}`,
@@ -286,9 +302,8 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
         'hub.events': req.body['hub.events'],
         'hub.reason': 'Subscriber unsubscribed from topic',
       },
-      // Deny only the unsubscribing socket when we know which one it is. A request without a usable
-      // endpoint can only be honored by denying every subscriber on the topic.
-      endpoint && ownsSubscription ? endpoint : undefined
+      // Deny only the unsubscribing socket, leaving the topic's other subscribers connected
+      endpoint
     )
   ).catch((err: Error) => {
     getLogger().error(

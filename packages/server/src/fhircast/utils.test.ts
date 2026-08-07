@@ -147,7 +147,12 @@ describe('FHIRcast Utils', () => {
     test.each([
       ['ws://localhost:8103/ws/fhircast/abc-123', 'abc-123'],
       ['abc-123', 'abc-123'],
+      // Neither a query string, a fragment, nor a trailing slash is part of the endpoint
+      ['ws://localhost:8103/ws/fhircast/abc-123?token=xyz', 'abc-123'],
+      ['ws://localhost:8103/ws/fhircast/abc-123#frag', 'abc-123'],
+      ['ws://localhost:8103/ws/fhircast/abc-123/', 'abc-123'],
       ['', undefined],
+      ['?token=xyz', undefined],
       [undefined, undefined],
     ])('%j -> %j', (endpointUrl, expected) => {
       expect(extractEndpoint(endpointUrl)).toStrictEqual(expected);
@@ -174,6 +179,18 @@ describe('FHIRcast Utils', () => {
       );
 
       await deleteEndpointSubscription(endpoint);
+      await expect(getEndpointSubscription(endpoint)).resolves.toBeUndefined();
+    });
+
+    // A value the Hub cannot read is no better than no subscription, and callers already deny that
+    test.each([
+      ['not json at all'],
+      [JSON.stringify({ projectId: generateId() })],
+      [JSON.stringify({ projectId: generateId(), topic: generateId(), events: [42], version: 'STU3' })],
+      [JSON.stringify({ projectId: generateId(), topic: generateId(), events: [], version: 'STU4' })],
+    ])('A cached subscription of %j reads as no subscription', async (cached) => {
+      const endpoint = generateId();
+      await getCacheRedis().set(getEndpointSubscriptionKey(endpoint), cached);
       await expect(getEndpointSubscription(endpoint)).resolves.toBeUndefined();
     });
   });

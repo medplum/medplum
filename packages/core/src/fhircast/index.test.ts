@@ -682,6 +682,25 @@ describe('FhircastConnection', () => {
       wsServer.send(message);
     }));
 
+  // A denial names no topic when the Hub could not resolve the endpoint, so it cannot be told apart
+  // from a context change by `hub.topic` alone
+  test('.addEventListener("message") - Denial', () =>
+    new Promise<void>((done) => {
+      const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      });
+
+      const handler = (event: FhircastMessageEvent): void => {
+        expect(event.payload).toStrictEqual(message);
+        connection.removeEventListener('message', handler);
+        done();
+      };
+      connection.addEventListener('message', handler);
+      wsServer.send({ 'hub.mode': 'denied', 'hub.topic': '', 'hub.events': '', 'hub.reason': 'invalid endpoint' });
+      wsServer.send(message);
+    }));
+
   test('.addEventListener("message") - Heartbeat message', () =>
     new Promise<void>((done) => {
       const heartbeatMessage = {

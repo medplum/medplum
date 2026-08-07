@@ -7,6 +7,7 @@ import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import type { FhircastChannelMessage } from '../fhircast/utils';
 import {
+  extractEndpoint,
   FHIRCAST_LEASE_SECONDS,
   FhircastVersion,
   getEndpointSubscription,
@@ -130,10 +131,10 @@ function messageForSubscriber(message: string, endpoint: string, subscribedEvent
  * @param request - The HTTP request.
  */
 export async function handleFhircastConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
-  const endpoint = (request.url as string).split('/').filter(Boolean)[2];
+  const endpoint = extractEndpoint(request.url);
 
-  const subscription = await getEndpointSubscription(endpoint);
-  if (!subscription) {
+  const subscription = endpoint ? await getEndpointSubscription(endpoint) : undefined;
+  if (!endpoint || !subscription) {
     globalLogger.error(`[FHIRcast]: No subscription associated with the endpoint '${endpoint}'`);
     // Close the socket since this endpoint is not valid
     socket.send(

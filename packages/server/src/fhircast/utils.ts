@@ -3,6 +3,7 @@
 import type { CurrentContext, FhircastAnchorResourceType } from '@medplum/core';
 import { OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
+import { globalLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 
 const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {
@@ -76,12 +77,35 @@ export async function setEndpointSubscription(endpoint: string, subscription: Fh
   );
 }
 
+function isFhircastSubscription(subscription: unknown): subscription is FhircastSubscription {
+  const candidate = subscription as FhircastSubscription | null;
+  return (
+    typeof candidate?.projectId === 'string' &&
+    typeof candidate.topic === 'string' &&
+    Array.isArray(candidate.events) &&
+    candidate.events.every((event) => typeof event === 'string') &&
+    candidate.version in FhircastVersion
+  );
+}
+
 export async function getEndpointSubscription(endpoint: string): Promise<FhircastSubscription | undefined> {
   const subscriptionStr = await getCacheRedis().get(getEndpointSubscriptionKey(endpoint));
   if (!subscriptionStr) {
     return undefined;
   }
-  return JSON.parse(subscriptionStr);
+  let subscription: unknown;
+  try {
+    subscription = JSON.parse(subscriptionStr);
+  } catch (_err) {
+    subscription = undefined;
+  }
+  // Schema drift reads as no subscription, which callers already handle by denying the endpoint,
+  // rather than flowing downstream as a malformed object.
+  if (!isFhircastSubscription(subscription)) {
+    globalLogger.error('[FHIRcast]: Discarding a malformed subscription read from the cache', { endpoint });
+    return undefined;
+  }
+  return subscription;
 }
 
 export async function deleteEndpointSubscription(endpoint: string): Promise<void> {
@@ -109,7 +133,8 @@ export function parseFhircastEvents(events: unknown): string[] {
 
 /**
  * Extracts the endpoint a subscription was issued under from the `hub.channel.endpoint` URL
- * previously handed to the subscriber. Subscribers echo the whole URL back when unsubscribing.
+ * previously handed to the subscriber. Subscribers echo the whole URL back when unsubscribing, and
+ * are free to have appended a query string or fragment, neither of which names the endpoint.
  * @param endpointUrl - The endpoint URL, or a bare endpoint.
  * @returns The endpoint, or `undefined` if the URL has no path segments.
  */
@@ -117,7 +142,7 @@ export function extractEndpoint(endpointUrl: unknown): string | undefined {
   if (typeof endpointUrl !== 'string') {
     return undefined;
   }
-  return endpointUrl.split('/').findLast(Boolean);
+  return endpointUrl.split(/[?#]/)[0].split('/').findLast(Boolean);
 }
 
 export function getTopicCurrentContextKey(projectId: string, topic: string): string {

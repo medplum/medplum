@@ -1080,6 +1080,33 @@ describe('FHIRcast WebSocket', () => {
           .expectClosed();
       }));
 
+    // A subscriber is free to append its own query string to the endpoint URL it was handed
+    test('Connect with a query string on the endpoint', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const res = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        await request(server)
+          .ws(`${new URL(res.body['hub.channel.endpoint']).pathname}?token=xyz`)
+          .expectJson((obj) => {
+            expect(obj['hub.mode']).toBe('subscribe');
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .close()
+          .expectClosed();
+      }));
+
     test('Invalid endpoint', () =>
       withTestContext(async () => {
         const globalLoggerErrorSpy = vi.spyOn(globalLogger, 'error');
@@ -1251,7 +1278,7 @@ describe('FHIRcast WebSocket', () => {
           get: vi
             .fn()
             .mockResolvedValue(
-              JSON.stringify({ projectId: 'project-id', topic: 'my-topic', events: ['Patient-open'] })
+              JSON.stringify({ projectId: 'project-id', topic: 'my-topic', events: ['Patient-open'], version: 'STU3' })
             ),
         } as any);
         const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
@@ -1284,7 +1311,7 @@ describe('FHIRcast WebSocket', () => {
           get: vi
             .fn()
             .mockResolvedValue(
-              JSON.stringify({ projectId: 'project-id', topic: 'my-topic', events: ['Patient-open'] })
+              JSON.stringify({ projectId: 'project-id', topic: 'my-topic', events: ['Patient-open'], version: 'STU3' })
             ),
         } as any);
         const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({

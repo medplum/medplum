@@ -202,6 +202,24 @@ describe('FHIRcast routes', () => {
     }
   });
 
+  test('New subscription naming no events', async () => {
+    // `notEmpty()` does not trim, so these reach the handler and parse to an empty list
+    for (const events of [' ', ',', ' , ']) {
+      const res = await request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          'hub.channel.type': 'websocket',
+          'hub.mode': 'subscribe',
+          'hub.topic': 'topic',
+          'hub.events': events,
+        });
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toStrictEqual('Invalid hub.events');
+    }
+  });
+
   test('Each subscription to a topic yields its own endpoint and remembers its events', async () => {
     const topic = randomUUID();
     const subscribe = async (events: string): Promise<string> => {
@@ -344,7 +362,7 @@ describe('FHIRcast routes', () => {
     }
   });
 
-  test('Unsubscribe without an endpoint denies every subscriber on the topic', async () => {
+  test('Unsubscribe without an endpoint is rejected', async () => {
     const topic = randomUUID();
     const subRes = await request(server)
       .post(STU3_BASE_ROUTE)
@@ -374,14 +392,42 @@ describe('FHIRcast routes', () => {
             'hub.topic': topic,
             'hub.events': 'Patient-open',
           });
-        expect(unsubRes).toHaveStatus(202);
-        expect(unsubRes.body['hub.channel.endpoint']).toBeUndefined();
+        expect(unsubRes).toHaveStatus(400);
+        expect(unsubRes.body.issue[0].details.text).toStrictEqual('Missing endpoint');
+
+        await request(server)
+          .post(`${STU3_BASE_ROUTE}/${topic}`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            createFhircastMessagePayload(topic, 'Patient-open', [
+              { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
+            ])
+          );
       })
+      // An unsubscribe the Hub cannot address denies no one, so this subscriber hears the next event
       .expectJson((obj) => {
-        expect(obj['hub.mode']).toBe('denied');
+        expect(obj.event['hub.event']).toBe('Patient-open');
       })
       .close()
       .expectClosed();
+  });
+
+  test('Unsubscribe with an unknown endpoint is a no-op', async () => {
+    const unsubRes = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'unsubscribe',
+        'hub.topic': randomUUID(),
+        'hub.events': 'Patient-open',
+        endpoint: `ws://localhost:8103/ws/fhircast/${randomUUID()}`,
+      });
+    expect(unsubRes).toHaveStatus(202);
+    // The empty body keeps the response from disclosing whether the endpoint exists
+    expect(unsubRes.body).toStrictEqual({});
   });
 
   test('Unsubscribe leaves the topic`s other subscribers connected', async () => {
@@ -468,18 +514,42 @@ describe('FHIRcast routes', () => {
     expect(subRes).toHaveStatus(202);
     const endpointUrl = subRes.body['hub.channel.endpoint'];
 
-    const unsubRes = await request(server)
-      .post(STU3_BASE_ROUTE)
-      .set('Content-Type', ContentType.JSON)
-      .set('Authorization', 'Bearer ' + tokenForAnotherProject)
-      .send({
-        'hub.channel.type': 'websocket',
-        'hub.mode': 'unsubscribe',
-        'hub.topic': topic,
-        'hub.events': 'Patient-open',
-        endpoint: endpointUrl,
-      });
-    expect(unsubRes).toHaveStatus(202);
+    await request(server)
+      .ws(new URL(endpointUrl).pathname)
+      .expectJson((obj) => {
+        expect(obj['hub.mode']).toBe('subscribe');
+      })
+      .exec(async () => {
+        const unsubRes = await request(server)
+          .post(STU3_BASE_ROUTE)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + tokenForAnotherProject)
+          .send({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'unsubscribe',
+            'hub.topic': topic,
+            'hub.events': 'Patient-open',
+            endpoint: endpointUrl,
+          });
+        expect(unsubRes).toHaveStatus(202);
+        expect(unsubRes.body).toStrictEqual({});
+
+        await request(server)
+          .post(`${STU3_BASE_ROUTE}/${topic}`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            createFhircastMessagePayload(topic, 'Patient-open', [
+              { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
+            ])
+          );
+      })
+      // The other project owns nothing here, so the subscriber is left connected
+      .expectJson((obj) => {
+        expect(obj.event['hub.event']).toBe('Patient-open');
+      })
+      .close()
+      .expectClosed();
 
     await expect(getEndpointSubscription(extractEndpoint(endpointUrl) as string)).resolves.toMatchObject({
       projectId: project.id,
