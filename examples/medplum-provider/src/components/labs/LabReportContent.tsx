@@ -27,13 +27,20 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
   // Resolve both attachment sources together and commit them in a single state update, so the
   // list doesn't render with just one source and then visibly reorder once the other resolves.
   // Health Gorilla doesn't always fold the lab-branded PDF into presentedForm; derivedFrom is a
-  // more reliable fallback source for it, so it's placed first.
+  // more reliable fallback source for it, so it's placed first. The two sources often resolve the
+  // *same* lab-branded PDF (Health Gorilla usually folds it into presentedForm too), so de-dupe by
+  // URL before rendering.
   useEffect(() => {
+    let cancelled = false;
+
     Promise.allSettled([
       resolveDerivedFromAttachments(medplum, report.result),
       resolvePresentedFormAttachments(medplum, report.presentedForm),
     ])
       .then(([derivedFromResult, presentedFormResult]) => {
+        if (cancelled) {
+          return;
+        }
         if (derivedFromResult.status === 'rejected') {
           console.error('Error resolving derivedFrom attachments:', derivedFromResult.reason);
         }
@@ -42,11 +49,21 @@ export function LabReportContent(props: LabReportContentProps): JSX.Element {
         }
         const derivedFromAttachments = derivedFromResult.status === 'fulfilled' ? derivedFromResult.value : [];
         const presentedFormAttachments = presentedFormResult.status === 'fulfilled' ? presentedFormResult.value : [];
-        setLabDocumentAttachments([...derivedFromAttachments, ...presentedFormAttachments]);
+
+        const seenUrls = new Set<string>();
+        const deduped = [...derivedFromAttachments, ...presentedFormAttachments].filter((attachment) => {
+          if (!attachment.url || seenUrls.has(attachment.url)) {
+            return false;
+          }
+          seenUrls.add(attachment.url);
+          return true;
+        });
+        setLabDocumentAttachments(deduped);
       })
       .catch(console.error);
 
     return () => {
+      cancelled = true;
       setLabDocumentAttachments([]);
     };
   }, [medplum, report]);
