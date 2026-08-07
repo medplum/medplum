@@ -3,6 +3,7 @@
 import type { CurrentContext, FhircastAnchorResourceType } from '@medplum/core';
 import { OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
+import { createHash } from 'node:crypto';
 import { globalLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 
@@ -206,6 +207,12 @@ return 1
 `;
 
 /**
+ * Redis keys its script cache by the SHA-1 of the script body, so the digest the cache is addressed
+ * by can be derived here instead of being learned from a `SCRIPT LOAD` round trip at startup.
+ */
+const COMPARE_AND_SET_CURRENT_CONTEXT_SHA = createHash('sha1').update(COMPARE_AND_SET_CURRENT_CONTEXT).digest('hex');
+
+/**
  * Replaces a topic's current context, unless it has changed since the caller read it.
  *
  * Applying a context update is a read-modify-write: the Hub reads the current context, applies the
@@ -229,13 +236,32 @@ export async function compareAndSetTopicCurrentContext<
   expectedVersionId: string,
   currentContext: CurrentContext<ResourceType>
 ): Promise<boolean> {
-  const replaced = await getCacheRedis().eval(
-    COMPARE_AND_SET_CURRENT_CONTEXT,
-    1,
-    getTopicCurrentContextKey(projectId, topic),
-    expectedVersionId,
-    JSON.stringify(currentContext)
-  );
+  const key = getTopicCurrentContextKey(projectId, topic);
+  const serializedContext = JSON.stringify(currentContext);
+  let replaced: unknown;
+  try {
+    replaced = await getCacheRedis().evalsha(
+      COMPARE_AND_SET_CURRENT_CONTEXT_SHA,
+      1,
+      key,
+      expectedVersionId,
+      serializedContext
+    );
+  } catch (err: unknown) {
+    // A `NOSCRIPT` reply means the cache no longer holds the script, which a flush, a restart, or a
+    // failover to a replica can each leave behind. `EVAL` runs the script and caches it under the
+    // same digest, putting later calls back on `EVALSHA`.
+    if (!(err instanceof Error && err.message.includes('NOSCRIPT'))) {
+      throw err;
+    }
+    replaced = await getCacheRedis().eval(
+      COMPARE_AND_SET_CURRENT_CONTEXT,
+      1,
+      key,
+      expectedVersionId,
+      serializedContext
+    );
+  }
   return replaced === 1;
 }
 

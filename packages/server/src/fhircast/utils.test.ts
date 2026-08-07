@@ -247,5 +247,44 @@ describe('FHIRcast Utils', () => {
       await expect(compareAndSetTopicCurrentContext(projectId, topic, generateId(), context)).resolves.toBe(false);
       await expect(getCurrentContext(projectId, topic)).resolves.toBeUndefined();
     });
+
+    test('Replaces the context when the script is no longer cached by Redis', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+      const versionId = generateId();
+      await setTopicCurrentContext(projectId, topic, contextAtVersion(versionId));
+      await getCacheRedis().script('FLUSH');
+
+      const next = contextAtVersion(generateId());
+      await expect(compareAndSetTopicCurrentContext(projectId, topic, versionId, next)).resolves.toBe(true);
+      await expect(getCurrentContext(projectId, topic)).resolves.toStrictEqual(next);
+    });
+
+    test('Sends only the script digest once Redis has the script cached', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+      const versionId = generateId();
+      await setTopicCurrentContext(projectId, topic, contextAtVersion(versionId));
+
+      // Caches the script, so the call being measured has no reason to send the body again.
+      const nextVersionId = generateId();
+      await expect(
+        compareAndSetTopicCurrentContext(projectId, topic, versionId, contextAtVersion(nextVersionId))
+      ).resolves.toBe(true);
+
+      const redis = getCacheRedis();
+      const evalshaSpy = vi.spyOn(redis, 'evalsha');
+      const evalSpy = vi.spyOn(redis, 'eval');
+      try {
+        const next = contextAtVersion(generateId());
+        await expect(compareAndSetTopicCurrentContext(projectId, topic, nextVersionId, next)).resolves.toBe(true);
+        expect(evalshaSpy).toHaveBeenCalledTimes(1);
+        expect(evalSpy).not.toHaveBeenCalled();
+        await expect(getCurrentContext(projectId, topic)).resolves.toStrictEqual(next);
+      } finally {
+        evalshaSpy.mockRestore();
+        evalSpy.mockRestore();
+      }
+    });
   });
 });
