@@ -177,8 +177,66 @@ export async function getCurrentContext<ResourceType extends FhircastAnchorResou
 export async function setTopicCurrentContext<
   ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType,
 >(projectId: string, topic: string, currentContext: CurrentContext<ResourceType>): Promise<void> {
-  const topicCurrentContextKey = `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
+  const topicCurrentContextKey = getTopicCurrentContextKey(projectId, topic);
   await getCacheRedis().set(topicCurrentContextKey, JSON.stringify(currentContext));
+}
+
+/**
+ * Replaces a topic's current context, but only if it is still at the version the caller read it at.
+ *
+ * Redis runs a script to completion before serving another command, so the version is compared and
+ * the context replaced without another update landing in between.
+ * Source: https://redis.io/docs/latest/develop/programmability/eval-intro/
+ *
+ * `KEYS[1]` is the context key, `ARGV[1]` the version the caller expects to still be stored, and
+ * `ARGV[2]` the serialized context to store. Returns 1 when the context was replaced, 0 when it was
+ * missing or had already moved on.
+ */
+const COMPARE_AND_SET_CURRENT_CONTEXT = `
+local stored = redis.call('GET', KEYS[1])
+if not stored then
+  return 0
+end
+local ok, context = pcall(cjson.decode, stored)
+if not ok or context['context.versionId'] ~= ARGV[1] then
+  return 0
+end
+redis.call('SET', KEYS[1], ARGV[2])
+return 1
+`;
+
+/**
+ * Replaces a topic's current context, unless it has changed since the caller read it.
+ *
+ * Applying a context update is a read-modify-write: the Hub reads the current context, applies the
+ * subscriber's update bundle to it, and stores the result under a new version. Two updates racing on
+ * one topic would both pass the version check they are each validated against, and the write that
+ * landed second would drop the other's changes while announcing a `context.priorVersionId` that was
+ * never the version it was actually applied to. Making the write conditional keeps the version chain
+ * honest: whichever update loses the race is rejected and its subscriber can retry against the
+ * context that won.
+ * @param projectId - The project the topic belongs to.
+ * @param topic - The topic whose current context is being replaced.
+ * @param expectedVersionId - The `context.versionId` the caller read and applied its update to.
+ * @param currentContext - The context to store, carrying its new `context.versionId`.
+ * @returns `true` if the context was replaced, `false` if it had already moved on.
+ */
+export async function compareAndSetTopicCurrentContext<
+  ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType,
+>(
+  projectId: string,
+  topic: string,
+  expectedVersionId: string,
+  currentContext: CurrentContext<ResourceType>
+): Promise<boolean> {
+  const replaced = await getCacheRedis().eval(
+    COMPARE_AND_SET_CURRENT_CONTEXT,
+    1,
+    getTopicCurrentContextKey(projectId, topic),
+    expectedVersionId,
+    JSON.stringify(currentContext)
+  );
+  return replaced === 1;
 }
 
 export async function cleanupContextForResource(
