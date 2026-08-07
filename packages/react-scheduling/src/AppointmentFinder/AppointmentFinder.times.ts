@@ -41,9 +41,6 @@ interface ZonedParts {
 /**
  * Breaks an instant into calendar parts in a given timezone.
  *
- * Days and times are always read in the schedule's timezone rather than the
- * browser's, so a clinic three timezones away still shows its own hours.
- *
  * @param date - The instant to read.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
  * @returns The year, month, day, and hour in that timezone.
@@ -109,9 +106,6 @@ function getTimezoneOffsetMs(instant: Date, timezone: string): number {
 /**
  * Reads a wall-clock time on a given day as an instant in a timezone.
  *
- * A time typed into the form means the time on the clinic's clock, so it has to
- * be resolved through the scheduling timezone rather than the browser's.
- *
  * @param day - Local midnight of the day the time falls on.
  * @param time - A 24-hour `HH:MM` time.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
@@ -166,10 +160,6 @@ export function filterByTimeOfDay(
 /**
  * Groups proposed appointments into days, and each day into the sets of actors
  * offering those times.
- *
- * A search holds one set of actors, so a day usually has a single group. The
- * grouping is what names who the times are with, and it keeps the times from an
- * earlier search from being read as this one's when the selection changes.
  *
  * @param appointments - Proposed appointments from `$find`.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
@@ -245,10 +235,6 @@ export function getActorsKey(actors: readonly Reference[]): string {
 
 /**
  * Returns an appointment's length in whole minutes.
- *
- * Taken from the proposed appointment itself rather than re-resolving
- * `SchedulingParameters`, which is what the server already did to produce it.
- *
  * @param appointment - The proposed appointment.
  * @returns The length in minutes, or 0 when either end is missing.
  */
@@ -276,11 +262,6 @@ export function getAppointmentKey(appointment: Appointment): string {
 
 /**
  * Converts a `YYYY-MM-DD` key into local midnight of that calendar day.
- *
- * The calendar reads dates with `getDate()` and friends, so a day identified in
- * the schedule's timezone has to be re-expressed locally to land on the right
- * cell.
- *
  * @param key - A `YYYY-MM-DD` day key.
  * @returns Local midnight of that day.
  */
@@ -320,16 +301,6 @@ export function endOfDay(date: Date): Date {
 
 /**
  * Returns whether two instants fall on the same local day.
- *
- * Local rather than zoned, unlike the rest of this module: the calendar reads
- * dates with `getDate()` and friends, and `parseDayKey` re-expresses a zoned day
- * locally to match. Making this timezone-aware would break that pairing.
- *
- * `@medplum/react` keeps its calendar date helpers internal, so this is held
- * separately rather than shared. A few lines of date comparison are cheaper to
- * hold twice than a public export is to maintain, and unlike a duration the two
- * cannot disagree about anything that reaches the server.
- *
  * @param left - The first instant.
  * @param right - The second, or undefined when there is nothing to compare.
  * @returns True when both fall on the same local day.
@@ -366,7 +337,6 @@ export function endOfMonth(date: Date): Date {
 
 /**
  * Lists the days a range covers, for marking them on the calendar.
- *
  * @param range - The days asked for.
  * @param limit - The most days to return, so an open-ended range stays bounded.
  * @returns Local midnight of each day, or an empty array for an open range.

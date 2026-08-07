@@ -21,13 +21,6 @@ export interface AppointmentSlotGroupCardProps {
 
 /**
  * One card of available times, headed by the actors offering them.
- *
- * A search across several providers returns overlapping times from each of them,
- * so the actors have to stay attached to the times they belong to — a bare list
- * of times would not say who any of them are with. Each actor is labelled with
- * the role it fills and what it is, so a card headed by three names reads as a
- * provider, a room and a device rather than as three names.
- *
  * @param props - The React props.
  * @returns The card.
  */
@@ -45,9 +38,6 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
                   {getActorRoleLabel(actor)}
                 </Text>
               )}
-              {/* The display the reference carries, which `$find` copies from the Schedule's actor.
-                  Resolving the actor instead would name a PractitionerRole by its code, calling
-                  every surgeon "Doctor". Unlinked, so that choosing a time is not interrupted. */}
               <Text size="sm" fw={500}>
                 <ReferenceDisplay value={actor} link={false} />
               </Text>
