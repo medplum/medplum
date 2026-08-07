@@ -321,9 +321,13 @@ export function endOfDay(date: Date): Date {
 /**
  * Returns whether two instants fall on the same local day.
  *
- * `CalendarDateInput` keeps its own copy, deliberately internal to
- * `@medplum/react`. Three lines of local-date comparison are cheaper to hold
- * twice than a public export is to maintain, and unlike a duration the two
+ * Local rather than zoned, unlike the rest of this module: the calendar reads
+ * dates with `getDate()` and friends, and `parseDayKey` re-expresses a zoned day
+ * locally to match. Making this timezone-aware would break that pairing.
+ *
+ * `@medplum/react` keeps its calendar date helpers internal, so this is held
+ * separately rather than shared. A few lines of date comparison are cheaper to
+ * hold twice than a public export is to maintain, and unlike a duration the two
  * cannot disagree about anything that reaches the server.
  *
  * @param left - The first instant.

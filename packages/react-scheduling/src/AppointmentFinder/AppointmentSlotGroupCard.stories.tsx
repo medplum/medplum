@@ -70,9 +70,6 @@ export const OneProvider = (): JSX.Element => <Card group={buildGroup([RIVERA])}
 
 /**
  * A booking that takes a person, a place and a machine, all free at once.
- *
- * Each actor is labelled with the role it fills, so that a card headed by three
- * names reads as a provider, a room and a device rather than as three names.
  * @returns The story.
  */
 export const ATeam = (): JSX.Element => <Card group={buildGroup([CHEN_ROLE, EXAM_ROOM, ULTRASOUND], 120)} />;

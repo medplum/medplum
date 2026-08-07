@@ -21,8 +21,8 @@ export interface AppointmentDayTimesProps {
 /**
  * Shows one day's available times, a card per set of actors offering them.
  *
- * Split out from the picker so that times can be listed without a calendar
- * beside them, which is all some views want.
+ * Holds no calendar of its own, so that a view wanting only a list of times can
+ * render it alone.
  *
  * @param props - The React props.
  * @returns The day's heading and its times.

@@ -1,19 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
-import type { JSX, ReactNode } from 'react';
 import { buildProposedAppointment } from '../stories/scheduling';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
-
-const medplum = new MockClient();
-
-// The actor names on a card are resolved through the client.
-const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
-  <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-);
 
 const EASTERN = 'America/New_York';
 
@@ -35,8 +25,7 @@ describe('AppointmentDayTimes', () => {
         groups={day.groups}
         timezone={EASTERN}
         onSelectAppointment={onSelectAppointment}
-      />,
-      wrapper
+      />
     );
 
     expect(screen.getByText('Monday, July 27')).toBeInTheDocument();
@@ -48,7 +37,7 @@ describe('AppointmentDayTimes', () => {
   });
 
   test('Says so on a day that offers nothing', () => {
-    render(<AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />, wrapper);
+    render(<AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />);
 
     expect(screen.getByText('Tuesday, July 28')).toBeInTheDocument();
     expect(screen.getByText('No times are offered on this day.')).toBeInTheDocument();

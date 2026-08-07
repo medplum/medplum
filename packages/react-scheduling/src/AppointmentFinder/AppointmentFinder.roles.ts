@@ -59,8 +59,8 @@ export function getSchedulingRole(actorType: SchedulingActorType): SchedulingRol
 /**
  * Names the role an actor is filling, from its own reference.
  *
- * Used where an actor is shown away from the field it was chosen in, so that a
- * card headed by three names says which of them is the provider.
+ * Needed where an actor is shown away from the field it was chosen in, which is
+ * the only thing that would otherwise say which role it answers.
  *
  * @param actor - A reference to a scheduling actor.
  * @returns The role's label, or undefined for a reference of another type.
