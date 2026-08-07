@@ -10,11 +10,20 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
+  HealthGorillaCholesterolObservation,
+  HealthGorillaClinicalPdfGroup,
+  HealthGorillaClinicalPdfObservation,
   HealthGorillaDiagnosticReport,
+  HealthGorillaHdlObservation,
+  HealthGorillaLipidPanelDiagnosticReport,
+  HealthGorillaLipidPanelGroup,
   HealthGorillaObservation1,
   HealthGorillaObservation2,
   HealthGorillaObservationGroup1,
   HealthGorillaObservationGroup2,
+  HealthGorillaQuestLabSacramento,
+  HealthGorillaQuestParentLab,
+  HealthGorillaTriglyceridesObservation,
 } from '../stories/healthgorilla';
 import { LabPanelDiagnosticReport, LabPanelObservations, LabPanelSpecimen } from '../stories/labPanel';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
@@ -256,6 +265,46 @@ export const ObservationGroups = (): JSX.Element => {
 
   useEffect(() => {
     createHealthGorillaReport(medplum).then(setReport).catch(console.log);
+  }, [medplum]);
+
+  if (!report) {
+    return <></>;
+  }
+
+  return (
+    <Document>
+      <DiagnosticReportDisplay value={report} />
+    </Document>
+  );
+};
+
+/**
+ * A Health Gorilla lipid panel. Neither group has a value of its own to put in the table, so each
+ * renders as a section header with its members indented beneath.
+ * @returns The observation group hierarchy story.
+ */
+export const ObservationGroupHierarchy = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [report, setReport] = useState<DiagnosticReport>();
+
+  useEffect(() => {
+    (async (): Promise<DiagnosticReport> => {
+      for (const resource of [
+        HealthGorillaQuestParentLab,
+        HealthGorillaQuestLabSacramento,
+        HealthGorillaCholesterolObservation,
+        HealthGorillaHdlObservation,
+        HealthGorillaTriglyceridesObservation,
+        HealthGorillaLipidPanelGroup,
+        HealthGorillaClinicalPdfObservation,
+        HealthGorillaClinicalPdfGroup,
+      ]) {
+        await medplum.createResource(deepClone(resource));
+      }
+      return HealthGorillaLipidPanelDiagnosticReport;
+    })()
+      .then(setReport)
+      .catch(console.log);
   }, [medplum]);
 
   if (!report) {
