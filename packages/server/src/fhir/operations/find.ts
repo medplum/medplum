@@ -11,6 +11,7 @@ import {
   isReference,
   OperationOutcomeError,
   resolveId,
+  SchedulingSlotCapacityURI,
   serviceTypeIncludesService,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -150,6 +151,7 @@ async function handler(params: {
       slots: scheduleSlots,
       range: effectiveRange,
       serviceType: healthcareService.type,
+      capacity: schedulingParameters.get('slotCapacity'),
     });
 
     // Trim off bufferBefore/bufferAfter from availability
@@ -198,15 +200,18 @@ async function handler(params: {
       const parameters = parameterGroup.get(schedule);
       assert(parameters);
 
-      const resultSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          start,
-          end,
-          schedule: createReference(schedule),
-          status: 'busy',
-        },
-      ];
+      const busySlot: Slot = {
+        resourceType: 'Slot',
+        start,
+        end,
+        schedule: createReference(schedule),
+        status: 'busy',
+      };
+      const capacity = parameters.get('slotCapacity');
+      if (capacity > 1) {
+        busySlot.extension = [{ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity }];
+      }
+      const resultSlots: Slot[] = [busySlot];
 
       if (parameters.get('bufferBefore')) {
         resultSlots.push({

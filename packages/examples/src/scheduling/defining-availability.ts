@@ -385,6 +385,53 @@ const scheduleOverride: Schedule =
   };
 // end-block scheduleOverride
 
+// A Schedule that allows overbooking by setting slotCapacity above 1.
+const overbookingSchedule: Schedule =
+  // start-block overbookingSchedule
+  {
+    resourceType: 'Schedule',
+    id: 'dr-chen-group-visit-schedule',
+    active: true,
+    comment: 'Dr. Chen - Group Visit (up to 8 patients per slot)',
+    actor: [{ reference: 'Practitioner/dr-chen' }],
+    serviceType: [
+      {
+        coding: [{ code: 'group-visit' }],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/service-type-reference',
+            valueReference: {
+              reference: 'HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672',
+              display: 'Group Visit',
+            },
+          },
+        ],
+      },
+    ],
+    extension: [
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+        extension: [
+          {
+            // required: identifies which HealthcareService these parameters override
+            url: 'service',
+            valueReference: {
+              reference: 'HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672',
+              display: 'Group Visit',
+            },
+          },
+          {
+            // Up to 8 appointments may occupy the same time. The default is 1 (no
+            // overbooking). Cannot be combined with bufferBefore / bufferAfter.
+            url: 'slotCapacity',
+            valuePositiveInt: 8,
+          },
+        ],
+      },
+    ],
+  };
+// end-block overbookingSchedule
+
 // A Slot that blocks time for a specific service type.
 const slotBlocking: Slot =
   // start-block slotBlocking
@@ -1116,6 +1163,7 @@ console.log(
   healthcareServiceServiceLevel,
   scheduleServiceTypeLink,
   scheduleOverride,
+  overbookingSchedule,
   slotBlocking,
   actorTimezone,
   multiTimezoneSchedule,

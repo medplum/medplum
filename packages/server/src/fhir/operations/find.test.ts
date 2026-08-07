@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, ServiceTypeReferenceURI, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  SchedulingSlotCapacityURI,
+  ServiceTypeReferenceURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type {
   Appointment,
   Bundle,
@@ -31,6 +37,7 @@ type AvailabilityOptions = {
   alignmentInterval?: number;
   alignmentOffset?: number;
   duration?: number;
+  slotCapacity?: number;
   availability: SchedulingParametersExtensionExtension;
   timezone?: string;
   alignmentTimezone?: string;
@@ -196,7 +203,7 @@ describe('Appointment/$find', () => {
 
   function makeSchedulingExtension(availability: AvailabilityOptions[]): Extension[] {
     return availability.map((options) => {
-      const { availability, timezone, alignmentTimezone, service, ...durations } = options;
+      const { availability, timezone, alignmentTimezone, service, slotCapacity, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -219,6 +226,10 @@ describe('Appointment/$find', () => {
           url: 'alignmentTimezone',
           valueCode: alignmentTimezone,
         });
+      }
+
+      if (slotCapacity !== undefined) {
+        extension.extension.push({ url: 'slotCapacity', valuePositiveInt: slotCapacity });
       }
 
       extension.extension.push({
@@ -535,6 +546,131 @@ describe('Appointment/$find', () => {
     expect(starts).not.toContain(new Date('2026-03-17T14:00:00-04:00').toISOString()); // 2pm EDT — blocked
     expect(starts).toContain(new Date('2026-03-17T15:00:00-04:00').toISOString()); // 3pm EDT — ok
     expect(starts).toContain(new Date('2026-03-17T16:00:00-04:00').toISOString()); // 4pm EDT — ok
+  });
+
+  test('with slotCapacity > 1, a slot stays available until capacity is reached', async () => {
+    // Mon-Tue 9am-5pm, 60min, capacity 2 (double-booking allowed)
+    const schedule = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 2, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+
+    const tenAm = new Date('2026-03-16T10:00:00-04:00'); // Mon 10am EDT
+    const elevenAm = new Date('2026-03-16T11:00:00-04:00');
+    const window = {
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    };
+    const bookTenAm = (): Promise<Slot> =>
+      systemRepo.createResource<Slot>({
+        resourceType: 'Slot',
+        meta: { project: project.id },
+        schedule: createReference(schedule),
+        status: 'busy',
+        start: tenAm.toISOString(),
+        end: elevenAm.toISOString(),
+        extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+      });
+
+    // One booking at 10am: capacity 2 means the slot is still offered (1 of 2 used)
+    await bookTenAm();
+    const first = await makeRequest(window);
+    expect(first).toHaveStatus(200);
+    const firstStarts = (first.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(firstStarts).toContain(tenAm.toISOString());
+
+    // A second booking at 10am fills capacity (2 of 2) — the slot drops out
+    await bookTenAm();
+    const second = await makeRequest(window);
+    expect(second).toHaveStatus(200);
+    const secondStarts = (second.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(secondStarts).not.toContain(tenAm.toISOString());
+    // Adjacent slots are unaffected
+    expect(secondStarts).toContain(elevenAm.toISOString());
+  });
+
+  test('multi-schedule intersection is gated by the smaller slotCapacity', async () => {
+    // Schedule A: capacity 2; Schedule B: capacity 1. Availability overlap is Tue 1pm-5pm.
+    const scheduleA = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 2, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    const scheduleB = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 1, availability: tueWedAvailability }],
+      { actor: [createReference(location)] }
+    );
+
+    const twoPm = new Date('2026-03-17T14:00:00-04:00'); // Tue 2pm EDT (inside the 1pm-5pm overlap)
+    const threePm = new Date('2026-03-17T15:00:00-04:00');
+
+    // One booking at 2pm on each schedule. A's booking is stamped capacity 2 (room to
+    // spare); B's is a capacity-1 booking (unstamped), so B is full at 2pm.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(scheduleA),
+      status: 'busy',
+      start: twoPm.toISOString(),
+      end: threePm.toISOString(),
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(scheduleB),
+      status: 'busy',
+      start: twoPm.toISOString(),
+      end: threePm.toISOString(),
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+    });
+
+    expect(response).toHaveStatus(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    // 2pm is full on B (capacity 1) even though A (capacity 2) has room -> not offered
+    expect(starts).not.toContain(twoPm.toISOString());
+    // Neighboring overlap slots remain available
+    expect(starts).toContain(new Date('2026-03-17T13:00:00-04:00').toISOString()); // 1pm EDT
+    expect(starts).toContain(threePm.toISOString()); // 3pm EDT
+  });
+
+  test('a capacity-1 booking is not overbooked by a capacity-2 $find', async () => {
+    // Capacity-2 schedule, but an existing exclusive (capacity-1, unstamped) booking at
+    // 10am — e.g. from a capacity-1 service on the same actor — must not be offered.
+    const schedule = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 2, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    const tenAm = new Date('2026-03-16T10:00:00-04:00'); // Mon 10am EDT
+    const elevenAm = new Date('2026-03-16T11:00:00-04:00');
+
+    // Unstamped busy slot = capacity 1.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: tenAm.toISOString(),
+      end: elevenAm.toISOString(),
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+    expect(response).toHaveStatus(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(starts).not.toContain(tenAm.toISOString()); // exclusive booking not overbookable
+    expect(starts).toContain(elevenAm.toISOString()); // neighbors unaffected
   });
 
   test('each schedule can have its own timezone set in scheduling parameters', async () => {
