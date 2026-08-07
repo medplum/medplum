@@ -605,3 +605,5 @@ The Scheduling API is under active development. This [beta](/docs/compliance/alp
 
 - `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet implemented.
 - Editing availability on a calendar view, by dragging hours across days rather than picking times, is a possible future enhancement to the example app. The `ScheduleAvailabilityEditor` component covers this today with time pickers.
+
+Major changes to these APIs during the beta period are tracked in the [beta changelog](/docs/scheduling/beta-changelog).

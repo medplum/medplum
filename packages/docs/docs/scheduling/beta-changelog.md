@@ -33,7 +33,7 @@ This contradicted the [documented behavior](/docs/scheduling/defining-availabili
 > - **With serviceType**: Blocks only that specific service
 > - **Without serviceType**: Blocks all services
 
-Starting with this release, the `serviceType` filter is applied to busy Slots as well:
+Starting after September 1, the `serviceType` filter is applied to busy Slots as well:
 
 - A busy Slot **without** a `serviceType` still blocks all services (unchanged).
 - A busy Slot **with** a `serviceType` now blocks **only** the matching service(s).
@@ -42,7 +42,7 @@ Thank you to [Nick Catalano](https://github.com/nickcatal) for reporting the iss
 
 ### Who is affected
 
-Users of `$find`/`$book` / `$hold` before Medplum Server v5.1.28 will have had `Slot` resources created with a `serviceType` attribute.
+Users of `$find` / `$book` / `$hold` before Medplum Server v5.1.28 will have had `Slot` resources created with a `serviceType` attribute.
 
 These slots were intended to block their related Schedule availability for all services ("wildcard" service type matching), but before [#9998](https://github.com/medplum/medplum/pull/9998) the slots were being created with `serviceType` set to the type of the linked Appointment resource.
 
