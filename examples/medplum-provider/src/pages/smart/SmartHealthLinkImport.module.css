@@ -158,3 +158,9 @@
 .destinationCardSelected {
   border-color: var(--mantine-color-blue-6) !important;
 }
+
+/* Expiry is a caution, not a failure, so it stays on the lightest red tint. Paired with
+   Mantine's translucent red for dark mode, where red-1 would read as near-white. */
+.expiredAlert {
+  background-color: light-dark(var(--mantine-color-red-1), var(--mantine-color-red-light));
+}

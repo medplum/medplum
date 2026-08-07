@@ -21,7 +21,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { ContentType, deepClone, getDisplayString, normalizeErrorString, parseSmartHealthLink } from '@medplum/core';
+import { ContentType, deepClone, getDisplayString, normalizeErrorString } from '@medplum/core';
 import type { Bundle, BundleEntry, Parameters, Patient, Resource } from '@medplum/fhirtypes';
 import { ModalActionsFooter, ModalContentLayout, QrCodeScanner, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconCheck, IconChevronDown, IconChevronUp, IconDownload, IconEye, IconQrcode } from '@tabler/icons-react';
@@ -84,6 +84,8 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
     sourceOrigin?: string;
     expiresAt?: string;
   }>();
+  /** Whether the resolved records came from a SMART Health Card or a SMART Health Link. */
+  const [sourceKind, setSourceKind] = useState<'Card' | 'Link'>('Link');
 
   const isModal = variant === 'modal';
 
@@ -131,6 +133,7 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
 
   function resetResolvedState(): void {
     setBundle(undefined);
+    setSourceKind('Link');
     setSharedPatient(undefined);
     setSmartHealthLinkDetails(undefined);
     setMatches([]);
@@ -150,15 +153,8 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
       return;
     }
 
-    const expiredBeforeResolve = getExpiredSmartHealthLinkInputError(trimmedShlink);
-    if (expiredBeforeResolve) {
-      setError(expiredBeforeResolve);
-      if (options?.fromScan) {
-        restartScanSession();
-      }
-      return;
-    }
-
+    // An expired link is not rejected up front - its records are often still served, and
+    // only the resolve attempt can tell us. The server errors if they are truly gone.
     setLoading('resolve');
     setError(undefined);
     setWarning([]);
@@ -181,11 +177,9 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
           .map((p) => p.valueString)
           .filter((value): value is string => !!value) ?? [];
       const expiresAt = result.parameter?.find((p) => p.name === 'expiresAt')?.valueDateTime;
-      const expiredAfterResolve = getExpiredSmartHealthLinkResponseError(expiresAt, warnings);
-      if (expiredAfterResolve) {
-        throw new Error(expiredAfterResolve);
-      }
-      setWarning(warnings);
+      // Expiry is surfaced inline on the Select Patient step, so keep it out of the
+      // generic warning banner rather than reporting it twice.
+      setWarning(warnings.filter((message) => !isExpiryWarning(message)));
 
       const details = {
         sourceOrigin: result.parameter?.find((p) => p.name === 'sourceOrigin')?.valueString,
@@ -196,10 +190,16 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
       const resources = JSON.parse(
         result.parameter?.find((p) => p.name === 'fhirResources')?.valueString ?? '[]'
       ) as unknown[];
-      const resolvedBundle = getSmartHealthLinkBundle(resources) ?? (await resolveSmartHealthCardFile(resources));
+      const bundleFromLink = getSmartHealthLinkBundle(resources);
+      const resolvedBundle = bundleFromLink ?? (await resolveSmartHealthCardFile(resources));
       if (!resolvedBundle) {
         throw new Error('SMART Health Link did not contain a FHIR Bundle or SMART Health Card file.');
       }
+      // It's a card if it arrived through the "Scan SMART Health Card" camera, if the input is
+      // itself a card QR payload, or if the payload turned out to be a verifiable credential
+      // rather than a plain Bundle. Otherwise it's a link.
+      const cardSource = options?.fromScan || isSmartHealthCardInput(trimmedShlink) || !bundleFromLink;
+      setSourceKind(cardSource ? 'Card' : 'Link');
       const patient = getSmartHealthLinkPatient(resolvedBundle);
       if (!patient) {
         throw new Error('SMART Health Link Bundle did not contain a Patient resource.');
@@ -495,7 +495,7 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
           >
             <Stack gap="md">
               <Text fz="md" fw={800}>
-                SMART Health {getSmartHealthSourceKind(shlink)} Details
+                SMART Health {sourceKind} Details
               </Text>
               <div className={classes.metaGrid}>
                 <MetaItem label="Patient" value={getDisplayString(sharedPatient)} />
@@ -521,6 +521,11 @@ export function SmartHealthLinkImport({ variant = 'page', onImported }: SmartHea
                 />
                 <MetaItem label="Records Shared" value={String(importableCount)} />
               </div>
+              {isExpired(smartHealthLinkDetails?.expiresAt) && (
+                <Alert color="red" variant="light" className={classes.expiredAlert}>
+                  This {sourceKind.toLowerCase()} has expired, but its records are still available and can be imported.
+                </Alert>
+              )}
             </Stack>
 
             <Divider className={classes.sectionDivider} />
@@ -695,8 +700,9 @@ function MetaItem({ label, value }: MetaItemProps): JSX.Element {
   );
 }
 
-function getSmartHealthSourceKind(value: string): 'Card' | 'Link' {
-  return value.trim().toLowerCase().startsWith('shc:') ? 'Card' : 'Link';
+// True when the pasted or scanned value is itself a SMART Health Card QR payload.
+function isSmartHealthCardInput(value: string): boolean {
+  return value.trim().toLowerCase().startsWith('shc:');
 }
 
 interface SortableTableHeaderProps {
@@ -865,29 +871,13 @@ function ImportDestinationSummary(props: ImportDestinationSummaryProps): JSX.Ele
   );
 }
 
-function getExpiredSmartHealthLinkInputError(shlink: string): string | undefined {
-  try {
-    const payload = parseSmartHealthLink(shlink);
-    if (payload.exp !== undefined && payload.exp <= Math.floor(Date.now() / 1000)) {
-      return 'This SMART Health Link has expired.';
-    }
-  } catch {
-    // Non-shlink input (for example a SMART Health Card URI) is validated by the server.
-  }
-  return undefined;
+// Matches the server's expired-but-available warning so it isn't shown twice.
+function isExpiryWarning(message: string): boolean {
+  return /expired/i.test(message);
 }
 
-function getExpiredSmartHealthLinkResponseError(
-  expiresAt: string | undefined,
-  warnings: readonly string[]
-): string | undefined {
-  if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) {
-    return 'This SMART Health Link has expired.';
-  }
-  if (warnings.some((warning) => /expired/i.test(warning))) {
-    return 'This SMART Health Link has expired.';
-  }
-  return undefined;
+function isExpired(expiresAt: string | undefined): boolean {
+  return !!expiresAt && new Date(expiresAt).getTime() <= Date.now();
 }
 
 function preparePatientForCreate(patient: Patient): Patient {

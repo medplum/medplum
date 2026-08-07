@@ -45,6 +45,13 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 const EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS = 5000;
 const MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Returned as a `warning` when a link is past its expiration but its records were still
+ * retrievable. Exported so clients can recognize it without matching on the prose.
+ */
+export const EXPIRED_BUT_AVAILABLE_WARNING =
+  'SMART Health Link is expired. Records were still available and decrypted.';
+
 interface ResolvedSmartHealthLink {
   manifest?: Record<string, unknown>;
   fhirResources: Resource[];
@@ -339,25 +346,37 @@ async function resolveExternalSmartHealthLink(
     throw new Error('Expected recipient parameter');
   }
 
+  // Expiry alone is not fatal: hosts commonly keep serving a payload past `exp`, and
+  // records the clinician can still decrypt are worth importing. Only failing to
+  // retrieve them is fatal, and then the error names both causes.
+  const expired = payload.exp !== undefined && payload.exp <= Math.floor(Date.now() / 1000);
   const warnings: string[] = [];
-  if (payload.exp !== undefined && payload.exp <= Math.floor(Date.now() / 1000)) {
-    throw new Error('SMART Health Link has expired');
+  if (expired) {
+    warnings.push(EXPIRED_BUT_AVAILABLE_WARNING);
   }
 
   const url = new URL(payload.url);
   url.searchParams.set('recipient', recipient);
-  const response = await safeFetch(url, {
-    redirect: 'error',
-    signal: AbortSignal.timeout(EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS),
-  });
-  if (!response.ok) {
-    throw new Error(`SMART Health Link payload request failed with HTTP ${response.status}`);
+  let body: string;
+  try {
+    const response = await safeFetch(url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      throw new Error(`SMART Health Link payload request failed with HTTP ${response.status}`);
+    }
+    const contentLength = response.headers?.get('content-length');
+    if (isString(contentLength) && Number(contentLength) > MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES) {
+      throw new Error('SMART Health Link payload response is too large');
+    }
+    body = await response.text();
+  } catch (err) {
+    if (expired) {
+      throw new Error('SMART Health Link has expired and its records are no longer available');
+    }
+    throw err;
   }
-  const contentLength = response.headers?.get('content-length');
-  if (isString(contentLength) && Number(contentLength) > MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES) {
-    throw new Error('SMART Health Link payload response is too large');
-  }
-  const body = await response.text();
 
   const { contentType, plaintext } = await decryptSmartHealthLinkFile(body, payload.key);
   if (contentType !== ContentType.FHIR_JSON) {

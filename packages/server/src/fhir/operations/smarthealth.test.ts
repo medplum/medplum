@@ -446,8 +446,42 @@ describe('SMART Health operations', () => {
     fetchSpy.mockRestore();
   });
 
-  test('Rejects expired external direct SMART Health Link payloads', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+  test('Returns warnings for expired external SMART Health Link payloads that are still available', async () => {
+    const key = base64url.encode(Buffer.alloc(32, 2));
+    const encrypted = await encryptSmartHealthLinkTestFile({ resourceType: 'Bundle', type: 'collection' }, key);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => encrypted,
+    } as Response);
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          url: 'https://issuer.example.com/smart-link/payload',
+          key,
+          flag: 'U',
+          exp: Math.floor(Date.now() / 1000) - 60,
+          v: 1,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(resolveResponse).toHaveStatus(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+    expect(getStringParameter(resolveResponse.body, 'warning')).toContain('expired');
+
+    fetchSpy.mockRestore();
+  });
+
+  test('Rejects expired external SMART Health Link payloads that are no longer available', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: async () => '',
+    } as Response);
 
     const resolveResponse = await request(app)
       .post('/fhir/R4/$resolve-smart-health-link')
@@ -465,8 +499,9 @@ describe('SMART Health operations', () => {
       });
     expect(resolveResponse).toHaveStatus(200);
     expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(false);
-    expect(getStringParameter(resolveResponse.body, 'error')).toContain('expired');
-    expect(fetchSpy).not.toHaveBeenCalled();
+    const error = getStringParameter(resolveResponse.body, 'error');
+    expect(error).toContain('expired');
+    expect(error).toContain('no longer available');
 
     fetchSpy.mockRestore();
   });
