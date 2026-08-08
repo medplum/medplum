@@ -11,7 +11,15 @@ import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-vi.mock('node:child_process');
+vi.mock('node:child_process', () => {
+  const execMockFn = vi.fn();
+  return {
+    default: {
+      exec: execMockFn,
+    },
+    exec: execMockFn,
+  };
+});
 vi.mock('node:http');
 vi.mock('./util/client');
 vi.mock('node:fs', () => {
@@ -111,14 +119,14 @@ describe('CLI auth', () => {
   });
 
   test('Login with default scope includes offline_access', async () => {
-    const execSpy = vi.spyOn(cp, 'exec').mockImplementation(((
-      cmd: string,
-      callback: (error: Error | null, stdout: string, stderr: string) => void
-    ) => {
-      callback(null, '', '');
-      return {} as any;
-    }) as any);
-
+    (cp.exec as unknown as Mock).mockImplementation(
+      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
     (http.createServer as unknown as Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
@@ -129,25 +137,25 @@ describe('CLI auth', () => {
     await main(['node', 'index.js', 'login']);
 
     // Verify exec was called with a browser open command
-    expect(execSpy).toHaveBeenCalled();
-    const execCall = execSpy.mock.calls[0][0] as string;
+    expect(cp.exec).toHaveBeenCalled();
+    const capturedCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
     
     // Extract and verify the URL from the command
-    const urlMatch = execCall.match(/(https?:\/\/[^\s'"]+)/);
+    const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
     const url = new URL(urlMatch![1]);
     expect(url.searchParams.get('scope')).toBe('openid offline_access');
   });
 
   test('Login with custom scope', async () => {
-    const execSpy = vi.spyOn(cp, 'exec').mockImplementation(((
-      cmd: string,
-      callback: (error: Error | null, stdout: string, stderr: string) => void
-    ) => {
-      callback(null, '', '');
-      return {} as any;
-    }) as any);
-
+    (cp.exec as unknown as Mock).mockImplementation(
+      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
     (http.createServer as unknown as Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
@@ -158,11 +166,11 @@ describe('CLI auth', () => {
     await main(['node', 'index.js', 'login', '--scope', 'openid profile']);
 
     // Verify exec was called with a browser open command
-    expect(execSpy).toHaveBeenCalled();
-    const execCall = execSpy.mock.calls[0][0] as string;
+    expect(cp.exec).toHaveBeenCalled();
+    const capturedCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
     
     // Extract and verify the URL from the command
-    const urlMatch = execCall.match(/(https?:\/\/[^\s'"]+)/);
+    const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
     const url = new URL(urlMatch![1]);
     expect(url.searchParams.get('scope')).toBe('openid profile');
