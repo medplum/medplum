@@ -143,7 +143,8 @@ describe('CLI auth', () => {
     // Extract and verify the URL from the command
     const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
-    const url = new URL(urlMatch![1]);
+    expect(urlMatch).not.toBeNull();
+    const url = new URL(urlMatch[1]);
     expect(url.searchParams.get('scope')).toBe('openid offline_access');
   });
 
@@ -172,7 +173,8 @@ describe('CLI auth', () => {
     // Extract and verify the URL from the command
     const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
-    const url = new URL(urlMatch![1]);
+    expect(urlMatch).not.toBeNull();
+    const url = new URL(urlMatch[1]);
     expect(url.searchParams.get('scope')).toBe('openid profile');
   });
 
