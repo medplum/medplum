@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { WithId } from '@medplum/core';
 import { deepEquals, getStatus, isObject, isString, normalizeOperationOutcome, Operator } from '@medplum/core';
 import type { DicomInstance, DicomSeries, DicomStudy, Reference, Resource } from '@medplum/fhirtypes';
-import type { WithId } from '@medplum/core';
 import type { DcmjsDicomDict, DcmjsDicomElement } from 'dcmjs';
 import { once } from 'node:events';
 import type { PassThrough } from 'node:stream';
