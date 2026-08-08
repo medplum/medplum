@@ -23,6 +23,7 @@ import {
   medplumSeriesToDcmjsSeries,
   medplumStudyToDcmjsStudy,
   stringToDicomPersonName,
+  updateSeriesAggregates,
   updateStudyAggregates,
   writeMultipartRelatedBody,
 } from './utils';
@@ -123,13 +124,14 @@ describe('DICOM utils', () => {
         seriesNumber: '7',
         modality: 'CT',
         seriesDescription: 'Head CT',
+        numberOfSeriesRelatedInstances: 4,
       })
     ).toMatchObject({
       StudyInstanceUID: 'study-uid',
       SeriesInstanceUID: 'series-uid',
       SeriesNumber: 7,
       Modality: 'CT',
-      NumberOfSeriesRelatedInstances: 1,
+      NumberOfSeriesRelatedInstances: 4,
     });
   });
 
@@ -241,7 +243,11 @@ describe('DICOM study aggregates', () => {
     return repo.createResource<DicomStudy>({ resourceType: 'DicomStudy', studyInstanceUid: randomUUID() });
   }
 
-  async function addSeries(study: DicomStudy, modality: string | undefined, instances: number): Promise<void> {
+  async function addSeries(
+    study: DicomStudy,
+    modality: string | undefined,
+    instances: number
+  ): Promise<DicomSeries & { id: string }> {
     const series = await repo.createResource<DicomSeries>({
       resourceType: 'DicomSeries',
       study: createReference(study),
@@ -259,6 +265,7 @@ describe('DICOM study aggregates', () => {
         metadata: '{}',
       });
     }
+    return series;
   }
 
   test('Unions modalities across a mixed modality study', () =>
@@ -347,6 +354,55 @@ describe('DICOM study aggregates', () => {
       await expect(updateStudyAggregates(repo, study.id)).rejects.toThrow('boom');
 
       expect(updateResource).toHaveBeenCalledTimes(1);
+      updateResource.mockRestore();
+    }));
+
+  test('Counts instances per series', () =>
+    withTestContext(async () => {
+      const study = await createStudy();
+      const ct = await addSeries(study, 'CT', 3);
+      const pt = await addSeries(study, 'PT', 2);
+
+      await updateSeriesAggregates(repo, ct.id);
+      await updateSeriesAggregates(repo, pt.id);
+
+      expect(await repo.readResource<DicomSeries>('DicomSeries', ct.id)).toMatchObject({
+        numberOfSeriesRelatedInstances: 3,
+      });
+      expect(await repo.readResource<DicomSeries>('DicomSeries', pt.id)).toMatchObject({
+        numberOfSeriesRelatedInstances: 2,
+      });
+    }));
+
+  test('Does not create a new version when the series is already correct', () =>
+    withTestContext(async () => {
+      const study = await createStudy();
+      const series = await addSeries(study, 'CT', 2);
+
+      await updateSeriesAggregates(repo, series.id);
+      const first = await repo.readResource<DicomSeries>('DicomSeries', series.id);
+
+      await updateSeriesAggregates(repo, series.id);
+      const second = await repo.readResource<DicomSeries>('DicomSeries', series.id);
+
+      expect(second.meta?.versionId).toBe(first.meta?.versionId);
+    }));
+
+  test('Retries the series update when another writer gets there first', () =>
+    withTestContext(async () => {
+      const study = await createStudy();
+      const series = await addSeries(study, 'CT', 2);
+
+      const updateResource = vi
+        .spyOn(repo, 'updateResource')
+        .mockRejectedValueOnce(new OperationOutcomeError(preconditionFailed));
+
+      await updateSeriesAggregates(repo, series.id);
+
+      expect(updateResource).toHaveBeenCalledTimes(2);
+      expect(await repo.readResource<DicomSeries>('DicomSeries', series.id)).toMatchObject({
+        numberOfSeriesRelatedInstances: 2,
+      });
       updateResource.mockRestore();
     }));
 });

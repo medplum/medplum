@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { deepEquals, getStatus, isObject, isString, normalizeOperationOutcome, Operator } from '@medplum/core';
-import type { DicomInstance, DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
+import type { DicomInstance, DicomSeries, DicomStudy, Reference, Resource } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
 import type { DcmjsDicomDict, DcmjsDicomElement } from 'dcmjs';
 import { once } from 'node:events';
 import type { PassThrough } from 'node:stream';
@@ -61,7 +62,47 @@ export function medplumStudyToDcmjsStudy(study: DicomStudy): Record<string, unkn
 }
 
 /** Attempts at the read-modify-write cycle before giving up, to bound retries against a busy study. */
-const MAX_STUDY_UPDATE_ATTEMPTS = 3;
+const MAX_UPDATE_ATTEMPTS = 3;
+
+/**
+ * Applies a recomputed version of a resource, retrying when a concurrent writer gets there first.
+ *
+ * Instances in a single STOW request are stored concurrently, and separate requests can target the
+ * same study, so the aggregates below are a genuine read-modify-write race. The write is guarded by
+ * `ifMatch`; the loser of a race re-reads after the winner committed, so it always recomputes from
+ * strictly fresher data. Two concurrent writers therefore converge after one retry.
+ *
+ * @param repo - The repository to read and write with.
+ * @param resourceType - The resource type to update.
+ * @param id - The ID of the resource to update.
+ * @param recompute - Returns the updated resource, or undefined when it already holds the right values.
+ */
+async function updateWithRetry<T extends Resource>(
+  repo: Repository,
+  resourceType: T['resourceType'],
+  id: string,
+  recompute: (existing: WithId<T>) => Promise<T | undefined>
+): Promise<void> {
+  for (let attempt = 0; attempt < MAX_UPDATE_ATTEMPTS; attempt++) {
+    const existing = await repo.readResource<T>(resourceType, id);
+    const updated = await recompute(existing);
+    if (!updated) {
+      return;
+    }
+
+    try {
+      await repo.updateResource<T>(updated, { ifMatch: existing.meta?.versionId });
+      return;
+    } catch (err) {
+      if (getStatus(normalizeOperationOutcome(err)) !== 412) {
+        throw err;
+      }
+      // Another writer won. Read it back and recompute.
+    }
+  }
+
+  getLogger().warn('Unable to update DICOM aggregates', { resourceType, id });
+}
 
 /**
  * Recomputes the Study level aggregate attributes of a `DicomStudy` from its series and instances.
@@ -73,8 +114,7 @@ const MAX_STUDY_UPDATE_ATTEMPTS = 3;
  *
  * Computing from the stored series - rather than appending the modality of whatever instance just
  * arrived - keeps this idempotent, so a retry, a re-upload, or an upload following a partial failure
- * all converge on the same answer. Instances within a single request are stored concurrently, so the
- * write uses optimistic locking; a loser re-reads the series and writes the full union.
+ * all converge on the same answer.
  *
  * @param repo - The repository to read and write with.
  * @param studyId - The ID of the `DicomStudy` to update.
@@ -82,9 +122,7 @@ const MAX_STUDY_UPDATE_ATTEMPTS = 3;
 export async function updateStudyAggregates(repo: Repository, studyId: string): Promise<void> {
   const studyReference = `DicomStudy/${studyId}`;
 
-  for (let attempt = 0; attempt < MAX_STUDY_UPDATE_ATTEMPTS; attempt++) {
-    const study = await repo.readResource<DicomStudy>('DicomStudy', studyId);
-
+  await updateWithRetry<DicomStudy>(repo, 'DicomStudy', studyId, async (study) => {
     const modalities = new Set<string>();
     let seriesCount = 0;
     await repo.processAllResources<DicomSeries>(
@@ -109,34 +147,51 @@ export async function updateStudyAggregates(repo: Repository, studyId: string): 
       total: 'accurate',
     });
 
-    const updated: DicomStudy = {
+    // Sorted so that an unchanged study compares equal below, rather than churning a new version.
+    const modalitiesInStudy = modalities.size > 0 ? Array.from(modalities).sort() : undefined;
+
+    if (
+      deepEquals(study.modalitiesInStudy, modalitiesInStudy) &&
+      study.numberOfStudyRelatedSeries === seriesCount &&
+      study.numberOfStudyRelatedInstances === instanceBundle.total
+    ) {
+      return undefined;
+    }
+
+    return {
       ...study,
-      // Sorted so that an unchanged study compares equal below, rather than churning a new version.
-      modalitiesInStudy: modalities.size > 0 ? Array.from(modalities).sort() : undefined,
+      modalitiesInStudy,
       numberOfStudyRelatedSeries: seriesCount,
       numberOfStudyRelatedInstances: instanceBundle.total,
     };
+  });
+}
 
-    if (
-      deepEquals(study.modalitiesInStudy, updated.modalitiesInStudy) &&
-      study.numberOfStudyRelatedSeries === updated.numberOfStudyRelatedSeries &&
-      study.numberOfStudyRelatedInstances === updated.numberOfStudyRelatedInstances
-    ) {
-      return;
+/**
+ * Recomputes NumberOfSeriesRelatedInstances (0020,1209) for a `DicomSeries`.
+ *
+ * Another Q/R query key absent from the composite IOD, for the same reasons described on
+ * {@link updateStudyAggregates}. Only series that actually received instances need this, so STOW
+ * calls it for the series it touched rather than every series in the study.
+ *
+ * @param repo - The repository to read and write with.
+ * @param seriesId - The ID of the `DicomSeries` to update.
+ */
+export async function updateSeriesAggregates(repo: Repository, seriesId: string): Promise<void> {
+  await updateWithRetry<DicomSeries>(repo, 'DicomSeries', seriesId, async (series) => {
+    const instanceBundle = await repo.search<DicomInstance>({
+      resourceType: 'DicomInstance',
+      filters: [{ code: 'series', operator: Operator.EQUALS, value: `DicomSeries/${seriesId}` }],
+      count: 0,
+      total: 'accurate',
+    });
+
+    if (series.numberOfSeriesRelatedInstances === instanceBundle.total) {
+      return undefined;
     }
 
-    try {
-      await repo.updateResource<DicomStudy>(updated, { ifMatch: study.meta?.versionId });
-      return;
-    } catch (err) {
-      if (getStatus(normalizeOperationOutcome(err)) !== 412) {
-        throw err;
-      }
-      // Another instance in this study won the write. Read it back and recompute.
-    }
-  }
-
-  getLogger().warn('Unable to update DICOM study aggregates', { studyId });
+    return { ...series, numberOfSeriesRelatedInstances: instanceBundle.total };
+  });
 }
 
 export function dcmjsSeriesToMedplumSeries(
@@ -165,7 +220,7 @@ export function medplumSeriesToDcmjsSeries(study: DicomStudy, series: DicomSerie
     Modality: series.modality,
     SeriesDescription: series.seriesDescription,
     TimezoneOffsetFromUTC: series.timezoneOffsetFromUtc,
-    NumberOfSeriesRelatedInstances: 1,
+    NumberOfSeriesRelatedInstances: series.numberOfSeriesRelatedInstances,
     PerformedProcedureStepStartDate: series.performedProcedureStepStartDate,
     PerformedProcedureStepStartTime: series.performedProcedureStepStartTime,
   };

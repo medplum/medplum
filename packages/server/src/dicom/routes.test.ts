@@ -346,6 +346,13 @@ describe('DICOM Routes', () => {
     // Both counts have VR IS, which dcmjs denaturalizes to a string.
     expect(stored?.['00201206'].Value).toStrictEqual(['1']);
     expect(stored?.['00201208'].Value).toStrictEqual(['1']);
+
+    const series = await request(app)
+      .get(`/dicomweb/studies/1.2.826.0.1.3680043.10.543.2/series`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(series).toHaveStatus(200);
+    // NumberOfSeriesRelatedInstances (0020,1209), also computed rather than sent.
+    expect((series.body as Record<string, { Value?: unknown[] }>[])[0]['00201209'].Value).toStrictEqual(['1']);
   });
 
   test('Direct handler validation errors', async () => {

@@ -14,6 +14,7 @@ import {
   cleanDicomJsonDict,
   dcmjsSeriesToMedplumSeries,
   dcmjsStudyToMedplumStudy,
+  updateSeriesAggregates,
   updateStudyAggregates,
 } from './utils';
 
@@ -101,16 +102,17 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   }
 
   /**
-   * Recomputes Study level aggregates once per study, after every instance in the request is stored.
+   * Recomputes Study and Series level aggregates once each, after every instance is stored.
    *
    * Doing this here rather than in `processInstance` keeps a large series to a single study update
-   * instead of one per instance. Failure is logged but not fatal: the instances are already stored,
-   * and the next upload to the study recomputes them again.
+   * instead of one per instance. Only the series this request touched are updated, since the rest of
+   * the study cannot have changed. Failure is logged but not fatal: the instances are already stored,
+   * and the next upload recomputes them again.
    *
    * @param instances - The instances stored by this request.
    * @returns The same instances, for the STOW-RS response.
    */
-  async function updateStudies(instances: DicomInstance[]): Promise<DicomInstance[]> {
+  async function updateAggregates(instances: DicomInstance[]): Promise<DicomInstance[]> {
     const studyIds = new Set(instances.map((instance) => resolveId(instance.study)).filter(isString));
     for (const studyId of studyIds) {
       try {
@@ -119,6 +121,16 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
         getLogger().error('Error updating DICOM study aggregates', { err, studyId });
       }
     }
+
+    const seriesIds = new Set(instances.map((instance) => resolveId(instance.series)).filter(isString));
+    for (const seriesId of seriesIds) {
+      try {
+        await updateSeriesAggregates(repo, seriesId);
+      } catch (err) {
+        getLogger().error('Error updating DICOM series aggregates', { err, seriesId });
+      }
+    }
+
     return instances;
   }
 
@@ -185,7 +197,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   dicomwebMultipartParser.on('error', handleError);
 
   dicomwebMultipartParser.on('finish', () => {
-    Promise.all(promises).then(updateStudies).then(sendStowResponse).catch(handleError);
+    Promise.all(promises).then(updateAggregates).then(sendStowResponse).catch(handleError);
   });
 
   req.pipe(dicomwebMultipartParser);
