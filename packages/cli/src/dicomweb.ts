@@ -12,7 +12,7 @@ import { addSubcommand, MedplumCommand } from './utils';
 const DEFAULT_BATCH_SIZE = 25;
 
 /** Extensions unambiguously used for DICOM, to recognize raw datasets that carry no File Meta Information. */
-const DICOM_EXTENSIONS = ['.dcm', '.dicom', '.ima'];
+const DICOM_EXTENSIONS = new Set(['.dcm', '.dicom', '.ima']);
 
 /** A DICOM Part 10 file starts with a 128 byte preamble followed by the "DICM" prefix. */
 const DICOM_PREFIX = Buffer.from('DICM');
@@ -55,7 +55,7 @@ async function isDicomFile(filePath: string): Promise<boolean> {
     await handle.close();
   }
 
-  return DICOM_EXTENSIONS.includes(extname(filePath).toLowerCase());
+  return DICOM_EXTENSIONS.has(extname(filePath).toLowerCase());
 }
 
 /**
@@ -98,7 +98,7 @@ export async function resolveDicomFiles(inputs: string[]): Promise<string[]> {
       console.log(`Skipped ${skipped} non-DICOM file(s) in "${input}"`);
     }
   }
-  return Array.from(results).sort();
+  return Array.from(results).sort((a, b) => a.localeCompare(b));
 }
 
 async function writeBuffer(stream: PassThrough, buffer: Buffer): Promise<void> {
