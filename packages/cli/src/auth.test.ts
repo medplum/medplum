@@ -139,7 +139,7 @@ describe('CLI auth', () => {
     // Verify exec was called with a browser open command
     expect(cp.exec).toHaveBeenCalled();
     const capturedCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
-    
+
     // Extract and verify the URL from the command
     const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
@@ -172,7 +172,7 @@ describe('CLI auth', () => {
     // Verify exec was called with a browser open command
     expect(cp.exec).toHaveBeenCalled();
     const capturedCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
-    
+
     // Extract and verify the URL from the command
     const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
