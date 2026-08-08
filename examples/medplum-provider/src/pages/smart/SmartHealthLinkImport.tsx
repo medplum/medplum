@@ -802,7 +802,6 @@ function PatientDestinationCard(props: PatientDestinationCardProps): JSX.Element
               {formatMatchGradeBadge(matchGrade)}
             </Badge>
           )}
-          {selected ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null}
         </Group>
       </Group>
     </Paper>
