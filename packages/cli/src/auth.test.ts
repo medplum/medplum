@@ -115,7 +115,7 @@ describe('CLI auth', () => {
     (cp.exec as unknown as Mock).mockImplementation(
       (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
         // Extract the URL from the browser open command
-        const urlMatch = cmd.match(/(?:xdg-open|open|start)\s+['"]?([^'"]+)['"]?/);
+        const urlMatch = cmd.match(/(https?:\/\/[^\s'"]+)/);
         if (urlMatch) {
           browserUrl = urlMatch[1];
         }
@@ -145,7 +145,7 @@ describe('CLI auth', () => {
     (cp.exec as unknown as Mock).mockImplementation(
       (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
         // Extract the URL from the browser open command
-        const urlMatch = cmd.match(/(?:xdg-open|open|start)\s+['"]?([^'"]+)['"]?/);
+        const urlMatch = cmd.match(/(https?:\/\/[^\s'"]+)/);
         if (urlMatch) {
           browserUrl = urlMatch[1];
         }
