@@ -12,6 +12,19 @@ import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone, EMPTY } from './utils';
 
+const ATTACHMENT_KEYS = new Set([
+  'id',
+  'extension',
+  'contentType',
+  'language',
+  'data',
+  'url',
+  'size',
+  'hash',
+  'title',
+  'creation',
+]);
+
 /**
  * More on Bundles can be found here
  * http://hl7.org/fhir/R4/bundle.html
@@ -94,19 +107,7 @@ function referenceReplacer(parent: unknown, key: string, value: unknown, idToUui
 }
 
 function isAttachment(value: unknown): boolean {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-  const attachment = value as Record<string, unknown>;
-  return (
-    'contentType' in attachment ||
-    'language' in attachment ||
-    'data' in attachment ||
-    'size' in attachment ||
-    'hash' in attachment ||
-    'title' in attachment ||
-    'creation' in attachment
-  );
+  return !!value && typeof value === 'object' && Object.keys(value).every((key) => ATTACHMENT_KEYS.has(key));
 }
 
 /**
