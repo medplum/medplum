@@ -35,6 +35,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
+import { DocsLink } from '../DocsLink';
 import { BenefitsTable } from '../insurance/BenefitsTable';
 
 interface EncounterCoverageEligibilityModalProps {
@@ -265,9 +266,17 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
           <Box pt="md">
             {!benefitsLoading && !eligibilityResponse && (
               <Text size="sm" c="dimmed">
-                {eligibilityBot
-                  ? 'No eligibility check found. Click "Check Eligibility" to run a check.'
-                  : 'No eligibility check found. Contact support to enable eligibility checks.'}
+                {eligibilityBot ? (
+                  'No eligibility check found. Click "Check Eligibility" to run a check.'
+                ) : (
+                  <>
+                    No eligibility check found. Contact support to enable eligibility checks, or{' '}
+                    <DocsLink path="integration/stedi/insurance-eligibility/eligibility-checks">
+                      learn about insurance eligibility
+                    </DocsLink>
+                    .
+                  </>
+                )}
               </Text>
             )}
             {!benefitsLoading && eligibilityResponse?.outcome === 'error' && (
