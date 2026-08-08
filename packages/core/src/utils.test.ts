@@ -28,6 +28,8 @@ import {
   codeableConceptMatchesToken,
   codingMatchesToken,
   concatUrls,
+  countBy,
+  countWhere,
   createReference,
   deepClone,
   deepEquals,
@@ -79,6 +81,7 @@ import {
   sortStringArray,
   splitN,
   stringify,
+  sumBy,
   trimTrailingEmptyElements,
 } from './utils';
 
@@ -1917,5 +1920,47 @@ describe('assertNever', () => {
 
     expect(handle('a')).toBe(1);
     expect(handle('b')).toBe(2);
+  });
+});
+
+describe('sumBy', () => {
+  test('sums numbers', () => {
+    expect(sumBy([1, 2, 3], (x) => x)).toBe(6);
+  });
+
+  test('empty iterable is zero', () => {
+    expect(sumBy([], (x) => x)).toBe(0);
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(sumBy(new Set([1, 2, 3]), (x) => x)).toBe(6);
+  });
+});
+
+describe('countWhere', () => {
+  test('counts matching elements', () => {
+    expect(countWhere([1, 2, 3], (x) => x > 1)).toBe(2);
+  });
+
+  test('empty iterable is zero', () => {
+    expect(countWhere([], () => true)).toBe(0);
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(countWhere(new Set([1, 2, 3]), (x) => x > 1)).toBe(2);
+  });
+});
+
+describe('countBy', () => {
+  test('counts elements by key without zero-fill', () => {
+    expect(countBy(['a', 'b', 'a'], (x) => x)).toEqual({ a: 2, b: 1 });
+  });
+
+  test('empty iterable is empty map', () => {
+    expect(countBy([], (x) => x)).toEqual({});
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(countBy(new Set(['a', 'b', 'a']), (x) => x)).toEqual({ a: 1, b: 1 });
   });
 });
