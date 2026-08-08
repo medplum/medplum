@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import type { SpotlightLinkAction } from '@medplum/react';
@@ -24,6 +25,8 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
+import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
+import { SmartLogo } from './pages/smart/SmartLogo';
 import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -84,14 +87,23 @@ export function App(): JSX.Element | null {
   const membership = medplum.getProjectMembership();
   const hasScriptSure = hasScriptSureIdentifier(membership);
 
+  const [shlOpened, shlHandlers] = useDisclosure(false);
+
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
     setSetupDismissedByUser(true);
   };
 
-  // Each action points at a `/new` route; the destination page opens its own modal from the URL.
+  // The `/new` actions point at a route whose destination page opens its own modal from the URL.
   // `href` both routes the click and makes them real links, so they can be opened in a new tab.
+  // The import action has no route of its own, so it opens the modal hosted here directly.
   const spotlightActions: SpotlightLinkAction[] = [
+    {
+      id: 'action-import-shl',
+      label: 'Import from SMART Health Link or Card',
+      leftSection: <SmartLogo size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: shlHandlers.open,
+    },
     {
       id: 'action-new-patient-intake',
       href: '/onboarding',
@@ -316,5 +328,12 @@ export function App(): JSX.Element | null {
     </AppShell>
   );
 
-  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
+  const content = (
+    <>
+      {appShellContent}
+      <SmartHealthLinkImportModal opened={shlOpened} onClose={shlHandlers.close} />
+    </>
+  );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{content}</ScriptSurePracticeProvider> : content;
 }
