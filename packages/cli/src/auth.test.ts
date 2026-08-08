@@ -111,20 +111,14 @@ describe('CLI auth', () => {
   });
 
   test('Login with default scope includes offline_access', async () => {
-    let browserUrl: string | undefined;
-    (cp.exec as unknown as Mock).mockImplementation(
-      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
-        // Extract the URL from the browser open command
-        const urlMatch = cmd.match(/(https?:\/\/[^\s'"]+)/);
-        if (urlMatch) {
-          browserUrl = urlMatch[1];
-        }
-        if (callback) {
-          callback(null, '', '');
-        }
-        return true;
-      }
-    );
+    const execSpy = vi.spyOn(cp, 'exec').mockImplementation(((
+      cmd: string,
+      callback: (error: Error | null, stdout: string, stderr: string) => void
+    ) => {
+      callback(null, '', '');
+      return {} as any;
+    }) as any);
+
     (http.createServer as unknown as Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
@@ -134,27 +128,26 @@ describe('CLI auth', () => {
     // Start the login without specifying scope
     await main(['node', 'index.js', 'login']);
 
-    // Verify the browser was opened with the default scope including offline_access
-    expect(browserUrl).toBeDefined();
-    const url = new URL(browserUrl as string);
+    // Verify exec was called with a browser open command
+    expect(execSpy).toHaveBeenCalled();
+    const execCall = execSpy.mock.calls[0][0] as string;
+    
+    // Extract and verify the URL from the command
+    const urlMatch = execCall.match(/(https?:\/\/[^\s'"]+)/);
+    expect(urlMatch).toBeDefined();
+    const url = new URL(urlMatch![1]);
     expect(url.searchParams.get('scope')).toBe('openid offline_access');
   });
 
   test('Login with custom scope', async () => {
-    let browserUrl: string | undefined;
-    (cp.exec as unknown as Mock).mockImplementation(
-      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
-        // Extract the URL from the browser open command
-        const urlMatch = cmd.match(/(https?:\/\/[^\s'"]+)/);
-        if (urlMatch) {
-          browserUrl = urlMatch[1];
-        }
-        if (callback) {
-          callback(null, '', '');
-        }
-        return true;
-      }
-    );
+    const execSpy = vi.spyOn(cp, 'exec').mockImplementation(((
+      cmd: string,
+      callback: (error: Error | null, stdout: string, stderr: string) => void
+    ) => {
+      callback(null, '', '');
+      return {} as any;
+    }) as any);
+
     (http.createServer as unknown as Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
@@ -164,9 +157,14 @@ describe('CLI auth', () => {
     // Start the login with custom scope
     await main(['node', 'index.js', 'login', '--scope', 'openid profile']);
 
-    // Verify the browser was opened with the correct scope
-    expect(browserUrl).toBeDefined();
-    const url = new URL(browserUrl as string);
+    // Verify exec was called with a browser open command
+    expect(execSpy).toHaveBeenCalled();
+    const execCall = execSpy.mock.calls[0][0] as string;
+    
+    // Extract and verify the URL from the command
+    const urlMatch = execCall.match(/(https?:\/\/[^\s'"]+)/);
+    expect(urlMatch).toBeDefined();
+    const url = new URL(urlMatch![1]);
     expect(url.searchParams.get('scope')).toBe('openid profile');
   });
 
