@@ -78,7 +78,7 @@ import {
   removeUserActiveWebSocketSubscriptions,
 } from '../pubsub';
 import { getBinaryStorageKey } from '../storage/base';
-import { getBinaryStorage, isBinaryStorageInitialized } from '../storage/loader';
+import { deleteBinaryStorageObjects, getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -1538,11 +1538,11 @@ export class Repository extends FhirRepository implements Disposable {
         // version. RETURNING on the delete avoids a separate read, which would target the reader
         // pool and conflict with the writer client pinned by this transaction.
         const historyDelete = new DeleteQuery(resourceType + '_History').where('id', 'IN', deletedIds);
-        const collectStorageKeys = resourceType === 'Binary' && isBinaryStorageInitialized();
+        const collectStorageKeys = resourceType === 'Binary';
         if (collectStorageKeys) {
           historyDelete.returning('id').returning('versionId');
         }
-        const historyResult = await txRepo.sqlWrite<{ id: string; versionId: string }>(historyDelete, resourceType);
+        const historyResult = await txRepo.sqlWrite<{ id: string; versionId?: string }>(historyDelete, resourceType);
 
         await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
 
@@ -2667,24 +2667,3 @@ const patchOperationDefinition: OperationDefinition = {
 };
 
 const SuperAdminProjectIdEditableResourceTypes = ['User', 'Subscription'];
-
-/**
- * Deletes stored objects for expunged Binary resources.
- *
- * Best effort: a storage failure must not fail the expunge, because the database rows are already
- * gone by the time this runs. Failures are logged with the key so the object can be reclaimed.
- * @param storageKeys - The storage keys to delete.
- */
-async function deleteBinaryStorageObjects(storageKeys: string[]): Promise<void> {
-  const storage = getBinaryStorage();
-  for (const key of storageKeys) {
-    try {
-      await storage.deleteFile(key);
-    } catch (err) {
-      getLogger().warn('Failed to delete binary storage object during expunge', {
-        key,
-        error: normalizeErrorString(err),
-      });
-    }
-  }
-}
