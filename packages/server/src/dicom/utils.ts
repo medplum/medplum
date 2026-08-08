@@ -148,7 +148,8 @@ export async function updateStudyAggregates(repo: Repository, studyId: string): 
     });
 
     // Sorted so that an unchanged study compares equal below, rather than churning a new version.
-    const modalitiesInStudy = modalities.size > 0 ? Array.from(modalities).sort() : undefined;
+    const modalitiesInStudy =
+      modalities.size > 0 ? Array.from(modalities).sort((a, b) => a.localeCompare(b)) : undefined;
 
     if (
       deepEquals(study.modalitiesInStudy, modalitiesInStudy) &&
