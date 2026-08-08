@@ -144,6 +144,9 @@ describe('CLI auth', () => {
     const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
     expect(urlMatch).not.toBeNull();
+    if (!urlMatch) {
+      throw new Error('URL not found in command');
+    }
     const url = new URL(urlMatch[1]);
     expect(url.searchParams.get('scope')).toBe('openid offline_access');
   });
@@ -174,6 +177,9 @@ describe('CLI auth', () => {
     const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
     expect(urlMatch).toBeDefined();
     expect(urlMatch).not.toBeNull();
+    if (!urlMatch) {
+      throw new Error('URL not found in command');
+    }
     const url = new URL(urlMatch[1]);
     expect(url.searchParams.get('scope')).toBe('openid profile');
   });
