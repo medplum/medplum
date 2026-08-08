@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Group, Paper, Text, UnstyledButton } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
-import { ResourceAvatar } from '@medplum/react';
+import type { Patient, Reference } from '@medplum/fhirtypes';
+import { ResourceAvatar, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import classes from './SmartHealthLinkImport.module.css';
 
 export interface PatientDestinationCardProps {
-  readonly patient: Patient;
+  readonly patient: Patient | Reference<Patient>;
   readonly selected: boolean;
-  /** Omit to render a plain summary card rather than a selectable radio option. */
   readonly onClick?: () => void;
   readonly showNewPatientBadge?: boolean;
   readonly matchGrade?: string;
@@ -23,8 +22,14 @@ export interface PatientDestinationCardProps {
  * @param props - The PatientDestinationCard React props.
  * @returns The PatientDestinationCard React node.
  */
-export function PatientDestinationCard(props: PatientDestinationCardProps): JSX.Element {
-  const { patient, selected, onClick, showNewPatientBadge, matchGrade, secondaryText } = props;
+export function PatientDestinationCard(props: PatientDestinationCardProps): JSX.Element | null {
+  const { selected, onClick, showNewPatientBadge, matchGrade, secondaryText } = props;
+  const patient = useResource<Patient>(props.patient);
+
+  if (!patient) {
+    return null;
+  }
+
   const card = (
     <Paper withBorder p="md" radius="md" className={selected && onClick ? classes.destinationCardSelected : undefined}>
       <Group justify="space-between" wrap="nowrap" gap="sm">
