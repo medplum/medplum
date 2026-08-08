@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, isString, Operator } from '@medplum/core';
+import { createReference, isString, Operator, resolveId } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import type { DcmjsDicomDict } from 'dcmjs';
 import dcmjs from 'dcmjs';
@@ -10,7 +10,12 @@ import { PassThrough } from 'node:stream';
 import { getAuthenticatedContext } from '../context';
 import { uploadBinaryData } from '../fhir/binary';
 import { getLogger } from '../logger';
-import { cleanDicomJsonDict, dcmjsSeriesToMedplumSeries, dcmjsStudyToMedplumStudy } from './utils';
+import {
+  cleanDicomJsonDict,
+  dcmjsSeriesToMedplumSeries,
+  dcmjsStudyToMedplumStudy,
+  updateStudyAggregates,
+} from './utils';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { async, data, utilities } = dcmjs;
@@ -95,6 +100,28 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     });
   }
 
+  /**
+   * Recomputes Study level aggregates once per study, after every instance in the request is stored.
+   *
+   * Doing this here rather than in `processInstance` keeps a large series to a single study update
+   * instead of one per instance. Failure is logged but not fatal: the instances are already stored,
+   * and the next upload to the study recomputes them again.
+   *
+   * @param instances - The instances stored by this request.
+   * @returns The same instances, for the STOW-RS response.
+   */
+  async function updateStudies(instances: DicomInstance[]): Promise<DicomInstance[]> {
+    const studyIds = new Set(instances.map((instance) => resolveId(instance.study)).filter(isString));
+    for (const studyId of studyIds) {
+      try {
+        await updateStudyAggregates(repo, studyId);
+      } catch (err) {
+        getLogger().error('Error updating DICOM study aggregates', { err, studyId });
+      }
+    }
+    return instances;
+  }
+
   function sendStowResponse(instances: DicomInstance[]): void {
     res.status(200).json(
       DicomMetaDictionary.denaturalizeDataset({
@@ -158,7 +185,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   dicomwebMultipartParser.on('error', handleError);
 
   dicomwebMultipartParser.on('finish', () => {
-    Promise.all(promises).then(sendStowResponse).catch(handleError);
+    Promise.all(promises).then(updateStudies).then(sendStowResponse).catch(handleError);
   });
 
   req.pipe(dicomwebMultipartParser);

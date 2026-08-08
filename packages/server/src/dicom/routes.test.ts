@@ -332,6 +332,20 @@ describe('DICOM Routes', () => {
     expect(res).toHaveStatus(200);
     expect(JSON.stringify(res.body)).toContain('1.2.840.10008.5.1.4.1.1.7');
     expect(JSON.stringify(res.body)).toContain('1.2.826.0.1.3680043.10.543.1');
+
+    // The uploaded instance carries no ModalitiesInStudy (0008,0061), so the value below can only
+    // come from reconciling the study against its stored series.
+    const studies = await request(app)
+      .get(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(studies).toHaveStatus(200);
+    const stored = (studies.body as Record<string, { Value?: unknown[] }>[]).find(
+      (study) => study['0020000D']?.Value?.[0] === '1.2.826.0.1.3680043.10.543.2'
+    );
+    expect(stored?.['00080061'].Value).toStrictEqual(['OT']);
+    // Both counts have VR IS, which dcmjs denaturalizes to a string.
+    expect(stored?.['00201206'].Value).toStrictEqual(['1']);
+    expect(stored?.['00201208'].Value).toStrictEqual(['1']);
   });
 
   test('Direct handler validation errors', async () => {
@@ -382,7 +396,6 @@ function createDicomBuffer(): Buffer {
     StudyTime: '030405',
     AccessionNumber: 'A123',
     Modality: 'OT',
-    ModalitiesInStudy: ['OT'],
     PatientName: [{ Alphabetic: 'STOW^TEST' }],
     PatientID: 'P-STOW',
     PatientBirthDate: '20000101',

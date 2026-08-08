@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { isObject, isString } from '@medplum/core';
-import type { DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
+import { deepEquals, getStatus, isObject, isString, normalizeOperationOutcome, Operator } from '@medplum/core';
+import type { DicomInstance, DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
 import type { DcmjsDicomDict, DcmjsDicomElement } from 'dcmjs';
 import { once } from 'node:events';
 import type { PassThrough } from 'node:stream';
+import type { Repository } from '../fhir/repo';
+import { getLogger } from '../logger';
 
 export function dcmjsStudyToMedplumStudy(naturalized: Record<string, unknown>): DicomStudy {
   return {
@@ -46,17 +48,95 @@ export function medplumStudyToDcmjsStudy(study: DicomStudy): Record<string, unkn
     StudyTime: fhirTimeToDicomTime(study.studyTime),
     AccessionNumber: study.accessionNumber,
     InstanceAvailability: study.instanceAvailability,
-    // ModalitiesInStudy: study.modalitiesInStudy,
-    ModalitiesInStudy: ['DX'], // TODO: Add support for multiple modalities.
+    ModalitiesInStudy: study.modalitiesInStudy,
     ReferringPhysicianName: study.referringPhysiciansName,
     TimezoneOffsetFromUTC: study.timezoneOffsetFromUtc,
     PatientName: stringToDicomPersonName(study.patientName),
     PatientID: study.patientId,
     PatientBirthDate: fhirDateToDicomDate(study.patientBirthDate),
     PatientSex: study.patientSex,
-    NumberOfStudyRelatedSeries: 1,
-    NumberOfStudyRelatedInstances: 1,
+    NumberOfStudyRelatedSeries: study.numberOfStudyRelatedSeries,
+    NumberOfStudyRelatedInstances: study.numberOfStudyRelatedInstances,
   };
+}
+
+/** Attempts at the read-modify-write cycle before giving up, to bound retries against a busy study. */
+const MAX_STUDY_UPDATE_ATTEMPTS = 3;
+
+/**
+ * Recomputes the Study level aggregate attributes of a `DicomStudy` from its series and instances.
+ *
+ * ModalitiesInStudy (0008,0061), NumberOfStudyRelatedSeries (0020,1206), and
+ * NumberOfStudyRelatedInstances (0020,1208) are Study level query keys that the archive computes
+ * (PS3.4 C.6.2.1.2). They belong to no composite IOD, so stored instances almost never carry them,
+ * and a sender that does include them is describing its own view of the study rather than ours.
+ *
+ * Computing from the stored series - rather than appending the modality of whatever instance just
+ * arrived - keeps this idempotent, so a retry, a re-upload, or an upload following a partial failure
+ * all converge on the same answer. Instances within a single request are stored concurrently, so the
+ * write uses optimistic locking; a loser re-reads the series and writes the full union.
+ *
+ * @param repo - The repository to read and write with.
+ * @param studyId - The ID of the `DicomStudy` to update.
+ */
+export async function updateStudyAggregates(repo: Repository, studyId: string): Promise<void> {
+  const studyReference = `DicomStudy/${studyId}`;
+
+  for (let attempt = 0; attempt < MAX_STUDY_UPDATE_ATTEMPTS; attempt++) {
+    const study = await repo.readResource<DicomStudy>('DicomStudy', studyId);
+
+    const modalities = new Set<string>();
+    let seriesCount = 0;
+    await repo.processAllResources<DicomSeries>(
+      {
+        resourceType: 'DicomSeries',
+        filters: [{ code: 'study', operator: Operator.EQUALS, value: studyReference }],
+        count: 1000,
+      },
+      async (series) => {
+        seriesCount++;
+        const modality = series.modality?.trim().toUpperCase();
+        if (modality) {
+          modalities.add(modality);
+        }
+      }
+    );
+
+    const instanceBundle = await repo.search<DicomInstance>({
+      resourceType: 'DicomInstance',
+      filters: [{ code: 'study', operator: Operator.EQUALS, value: studyReference }],
+      count: 0,
+      total: 'accurate',
+    });
+
+    const updated: DicomStudy = {
+      ...study,
+      // Sorted so that an unchanged study compares equal below, rather than churning a new version.
+      modalitiesInStudy: modalities.size > 0 ? Array.from(modalities).sort() : undefined,
+      numberOfStudyRelatedSeries: seriesCount,
+      numberOfStudyRelatedInstances: instanceBundle.total,
+    };
+
+    if (
+      deepEquals(study.modalitiesInStudy, updated.modalitiesInStudy) &&
+      study.numberOfStudyRelatedSeries === updated.numberOfStudyRelatedSeries &&
+      study.numberOfStudyRelatedInstances === updated.numberOfStudyRelatedInstances
+    ) {
+      return;
+    }
+
+    try {
+      await repo.updateResource<DicomStudy>(updated, { ifMatch: study.meta?.versionId });
+      return;
+    } catch (err) {
+      if (getStatus(normalizeOperationOutcome(err)) !== 412) {
+        throw err;
+      }
+      // Another instance in this study won the write. Read it back and recompute.
+    }
+  }
+
+  getLogger().warn('Unable to update DICOM study aggregates', { studyId });
 }
 
 export function dcmjsSeriesToMedplumSeries(
