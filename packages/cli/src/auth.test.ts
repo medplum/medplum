@@ -110,6 +110,36 @@ describe('CLI auth', () => {
     expect(medplum.getActiveLogin()).toBeDefined();
   });
 
+  test('Login with default scope includes offline_access', async () => {
+    let browserUrl: string | undefined;
+    (cp.exec as unknown as Mock).mockImplementation(
+      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        // Extract the URL from the browser open command
+        const urlMatch = cmd.match(/(?:xdg-open|open|start)\s+['"]?([^'"]+)['"]?/);
+        if (urlMatch) {
+          browserUrl = urlMatch[1];
+        }
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
+    (http.createServer as unknown as Mock).mockReturnValue({
+      listen: () => ({
+        close: () => undefined,
+      }),
+    });
+
+    // Start the login without specifying scope
+    await main(['node', 'index.js', 'login']);
+
+    // Verify the browser was opened with the default scope including offline_access
+    expect(browserUrl).toBeDefined();
+    const url = new URL(browserUrl as string);
+    expect(url.searchParams.get('scope')).toBe('openid offline_access');
+  });
+
   test('Login with custom scope', async () => {
     let browserUrl: string | undefined;
     (cp.exec as unknown as Mock).mockImplementation(
@@ -132,12 +162,12 @@ describe('CLI auth', () => {
     });
 
     // Start the login with custom scope
-    await main(['node', 'index.js', 'login', '--scope', 'openid offline_access']);
+    await main(['node', 'index.js', 'login', '--scope', 'openid profile']);
 
     // Verify the browser was opened with the correct scope
     expect(browserUrl).toBeDefined();
     const url = new URL(browserUrl as string);
-    expect(url.searchParams.get('scope')).toBe('openid offline_access');
+    expect(url.searchParams.get('scope')).toBe('openid profile');
   });
 
   test('Login unsupported auth type', async () => {

@@ -142,7 +142,7 @@ async function medplumAuthorizationCodeLogin(medplum: MedplumClient, profile: Pr
   const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
-  loginUrl.searchParams.set('scope', profile.scope ?? 'openid');
+  loginUrl.searchParams.set('scope', profile.scope ?? 'openid offline_access');
   loginUrl.searchParams.set('response_type', 'code');
   loginUrl.searchParams.set('prompt', 'login');
   await openBrowser(loginUrl.toString());
