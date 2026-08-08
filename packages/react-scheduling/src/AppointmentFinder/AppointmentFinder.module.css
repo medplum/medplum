@@ -1,0 +1,5 @@
+/* Times wrap into as many columns as fit rather than a fixed grid, so a card
+   holding four times is not padded out to the width of one holding twenty. */
+.timeGrid {
+  row-gap: var(--mantine-spacing-xs);
+}
