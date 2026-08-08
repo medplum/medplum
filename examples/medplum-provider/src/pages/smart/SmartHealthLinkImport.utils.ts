@@ -1,8 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { convertToTransactionBundle, getReferenceString, isResource } from '@medplum/core';
+import { convertToTransactionBundle, getDisplayString, getReferenceString, isResource } from '@medplum/core';
 import type { Bundle, BundleEntry, CodeableConcept, Identifier, Patient, Resource } from '@medplum/fhirtypes';
+
+/** A candidate local Patient returned by `Patient/$match` for the shared patient. */
+export interface SmartHealthLinkPatientMatch {
+  readonly patient: WithId<Patient>;
+  readonly score?: number;
+  readonly grade?: string;
+}
 
 const CONDITIONAL_CREATE_RESOURCE_TYPES = new Set([
   'AllergyIntolerance',
@@ -100,6 +107,49 @@ const RESOURCE_TYPE_LABELS: Record<string, string> = {
  */
 export function getResourceTypeLabel(resourceType: string): string {
   return RESOURCE_TYPE_LABELS[resourceType] ?? resourceType.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+}
+
+/**
+ * Orders bundle entries for the import table: grouped by patient-friendly type label, then by
+ * display string within a type. A shared health summary is a few dozen records, so one stable
+ * grouping reads better than letting the columns be re-sorted.
+ * @param entries - The importable bundle entries.
+ * @returns A new sorted array.
+ */
+export function sortImportableEntries(entries: BundleEntry[]): BundleEntry[] {
+  return [...entries].sort((a, b) => {
+    const typeA = a.resource ? getResourceTypeLabel(a.resource.resourceType) : '';
+    const typeB = b.resource ? getResourceTypeLabel(b.resource.resourceType) : '';
+    return typeA.localeCompare(typeB) || getEntryDisplay(a).localeCompare(getEntryDisplay(b));
+  });
+}
+
+function getEntryDisplay(entry: BundleEntry): string {
+  return entry.resource ? getDisplayString(entry.resource) : '';
+}
+
+/**
+ * True when a sharing expiration has already passed. Records may still be importable — the
+ * server is the authority on availability — so this only drives the inline notice.
+ * @param expiresAt - The link's expiration, if it declared one.
+ * @returns True when the expiration is in the past.
+ */
+export function isExpired(expiresAt: string | undefined): boolean {
+  return !!expiresAt && new Date(expiresAt).getTime() <= Date.now();
+}
+
+/**
+ * Label for the import button, which names the destination patient once one is chosen.
+ * @param destination - The patient the records will be imported into, if already resolved.
+ * @param createNewPatient - True when the destination patient will be created by the import.
+ * @returns The button label.
+ */
+export function getImportButtonLabel(destination: Patient | undefined, createNewPatient: boolean): string {
+  if (!destination) {
+    return 'Import Records';
+  }
+  const name = getDisplayString(destination);
+  return createNewPatient ? `Create ${name} & Import Records` : `Import Records to ${name}`;
 }
 
 /**

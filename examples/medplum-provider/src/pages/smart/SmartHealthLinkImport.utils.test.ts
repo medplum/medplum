@@ -16,9 +16,12 @@ import type {
 import { describe, expect, test, vi } from 'vitest';
 import {
   buildSmartHealthLinkImportBundle,
+  getImportButtonLabel,
   getResourceTypeLabel,
   getSmartHealthCardFile,
   getSmartHealthLinkPatient,
+  isExpired,
+  sortImportableEntries,
   uploadInlineAttachments,
 } from './SmartHealthLinkImport.utils';
 
@@ -143,6 +146,43 @@ describe('SmartHealthLinkImport utils', () => {
     expect(getResourceTypeLabel('NutritionOrder')).toBe('Nutrition Order');
     expect(getResourceTypeLabel('CarePlan')).toBe('Care Plan');
     expect(getResourceTypeLabel('Observation')).toBe('Observation');
+  });
+
+  test('groups importable entries by type label, then by display string', () => {
+    const sorted = sortImportableEntries([
+      { resource: observation },
+      { resource: documentReference },
+      { resource: allergyIntolerance },
+      { resource: diagnosticReport },
+    ]);
+
+    // Allergy, Document, Observation, Report — the friendly labels, not the raw resource types,
+    // which would have ordered these AllergyIntolerance, DiagnosticReport, DocumentReference,
+    // Observation instead.
+    expect(sorted.map((entry) => getResourceTypeLabel(entry.resource?.resourceType as string))).toEqual([
+      'Allergy',
+      'Document',
+      'Observation',
+      'Report',
+    ]);
+  });
+
+  test('does not mutate the array it sorts', () => {
+    const entries: BundleEntry[] = [{ resource: observation }, { resource: allergyIntolerance }];
+    sortImportableEntries(entries);
+    expect(entries[0].resource).toBe(observation);
+  });
+
+  test('treats only past expirations as expired', () => {
+    expect(isExpired(undefined)).toBe(false);
+    expect(isExpired(new Date(Date.now() - 60_000).toISOString())).toBe(true);
+    expect(isExpired(new Date(Date.now() + 60_000).toISOString())).toBe(false);
+  });
+
+  test('names the destination patient in the import button label', () => {
+    expect(getImportButtonLabel(undefined, false)).toBe('Import Records');
+    expect(getImportButtonLabel(sharedPatient, false)).toBe('Import Records to Jessica Argonaut');
+    expect(getImportButtonLabel(sharedPatient, true)).toBe('Create Jessica Argonaut & Import Records');
   });
 
   test('finds SMART Health Card file payloads', () => {

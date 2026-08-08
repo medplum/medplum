@@ -1,51 +1,34 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  Alert,
-  Badge,
-  Button,
-  Center,
-  Checkbox,
-  Divider,
-  Group,
-  Input,
-  Loader,
-  Paper,
-  ScrollArea,
-  Stack,
-  Stepper,
-  Table,
-  Text,
-  Textarea,
-  UnstyledButton,
-} from '@mantine/core';
+import { Alert, Divider, Stack, Stepper } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { ContentType, deepClone, getDisplayString, normalizeErrorString } from '@medplum/core';
-import type { Bundle, BundleEntry, Parameters, Patient, Resource } from '@medplum/fhirtypes';
-import { QrCodeScanner, ResourceAvatar, useMedplum } from '@medplum/react';
-import { IconCheck, IconChevronDown, IconChevronUp, IconDownload, IconEye, IconQrcode } from '@tabler/icons-react';
-import type { JSX, ReactNode } from 'react';
+import { ContentType, deepClone, normalizeErrorString } from '@medplum/core';
+import type { Bundle, Parameters, Patient } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import { IconCheck } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
 import classes from './SmartHealthLinkImport.module.css';
+import type { SmartHealthLinkPatientMatch } from './SmartHealthLinkImport.utils';
 import {
   buildSmartHealthLinkImportBundle,
+  getImportButtonLabel,
   getMatchGrade,
-  getResourceTypeLabel,
   getSmartHealthCardFile,
   getSmartHealthLinkBundle,
   getSmartHealthLinkBundleEntryKey,
   getSmartHealthLinkPatient,
+  sortImportableEntries,
   uploadInlineAttachments,
 } from './SmartHealthLinkImport.utils';
-
-type ResourceSortColumn = 'type' | 'details';
-type ResourceSortDirection = 'asc' | 'desc';
+import { SmartHealthLinkInputStep } from './SmartHealthLinkInputStep';
+import { SmartHealthLinkPatientStep } from './SmartHealthLinkPatientStep';
+import { SmartHealthLinkRecordsStep } from './SmartHealthLinkRecordsStep';
 
 export interface SmartHealthLinkImportProps {
   /**
-   * Called with the resolved target Patient immediately after a successful import,
-   * before navigation. The modal passes onClose here so it dismisses itself.
+   * Called with the target Patient after a successful import. The flow itself does not navigate or
+   * dismiss — the host decides, so a page can route to the patient and a modal can just close.
    */
   readonly onImported?: (patient: WithId<Patient>) => void;
 }
@@ -56,7 +39,6 @@ const STEP_IMPORT = 2;
 
 export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [scanSessionKey, setScanSessionKey] = useState(0);
   const [activeStep, setActiveStep] = useState(STEP_INPUT);
@@ -66,12 +48,10 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
   const [warning, setWarning] = useState<string[]>([]);
   const [bundle, setBundle] = useState<Bundle>();
   const [sharedPatient, setSharedPatient] = useState<Patient>();
-  const [matches, setMatches] = useState<{ patient: WithId<Patient>; score?: number; grade?: string }[]>([]);
+  const [matches, setMatches] = useState<SmartHealthLinkPatientMatch[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<WithId<Patient>>();
   const [createNewPatient, setCreateNewPatient] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [resourceSortColumn, setResourceSortColumn] = useState<ResourceSortColumn>('type');
-  const [resourceSortDirection, setResourceSortDirection] = useState<ResourceSortDirection>('asc');
   const [smartHealthLinkDetails, setSmartHealthLinkDetails] = useState<{
     sourceOrigin?: string;
     expiresAt?: string;
@@ -79,23 +59,17 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
   /** Whether the resolved records came from a SMART Health Card or a SMART Health Link. */
   const [sourceKind, setSourceKind] = useState<'Card' | 'Link'>('Link');
 
-  const items = bundle?.entry?.filter((entry) => entry.resource && getSmartHealthLinkBundleEntryKey(entry)) ?? [];
-  const selectedItems = items.filter((entry) => {
-    const key = getSmartHealthLinkBundleEntryKey(entry);
-    return !!key && selectedKeys.has(key) && entry.resource?.resourceType !== 'Patient';
-  });
-  const importableItems = items.filter((item) => item.resource?.resourceType !== 'Patient');
-  const importableCount = importableItems.length;
-  const importableKeys = importableItems.map(getSmartHealthLinkBundleEntryKey).filter((key): key is string => !!key);
-  const allImportableSelected = importableCount > 0 && importableKeys.every((key) => selectedKeys.has(key));
-  const someImportableSelected = !allImportableSelected && importableKeys.some((key) => selectedKeys.has(key));
-  const sortedImportableItems = sortImportableItems(importableItems, resourceSortColumn, resourceSortDirection);
-  const recipient = medplum.getProject()?.name ?? 'Medplum Provider';
+  const entries = bundle?.entry?.filter((entry) => entry.resource && getSmartHealthLinkBundleEntryKey(entry)) ?? [];
+  const importableEntries = sortImportableEntries(entries.filter((e) => e.resource?.resourceType !== 'Patient'));
+  const importableKeys = importableEntries.map(getSmartHealthLinkBundleEntryKey).filter((key): key is string => !!key);
+  const selectedCount = importableKeys.filter((key) => selectedKeys.has(key)).length;
+  const allImportableSelected = importableKeys.length > 0 && selectedCount === importableKeys.length;
+  const someImportableSelected = !allImportableSelected && selectedCount > 0;
+  const recipient = medplum.getProject()?.name ?? 'Project';
   const hasTargetPatient = createNewPatient || !!selectedPatient;
   const patientSelectionValue = createNewPatient ? 'new' : (selectedPatient?.id ?? '');
-  const canContinueToImport = !!sharedPatient && hasTargetPatient && importableCount > 0;
-  const importDestinationPatient = createNewPatient ? sharedPatient : selectedPatient;
-  const importButtonLabel = getImportButtonLabel(importDestinationPatient, createNewPatient);
+  const canContinueToImport = !!sharedPatient && hasTargetPatient && importableEntries.length > 0;
+  const busy = loading === 'resolve' || loading === 'match';
 
   function handlePatientSelectionChange(value: string): void {
     if (value === 'new') {
@@ -119,10 +93,6 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
     setSelectedPatient(undefined);
     setCreateNewPatient(false);
     setSelectedKeys(new Set());
-  }
-
-  function restartScanSession(): void {
-    setScanSessionKey((key) => key + 1);
   }
 
   async function resolveLink(shlink: string, options?: { fromScan?: boolean }): Promise<void> {
@@ -202,7 +172,7 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
       setActiveStep(STEP_INPUT);
       if (options?.fromScan) {
         setScanning(true);
-        restartScanSession();
+        setScanSessionKey((key) => key + 1);
       }
     } finally {
       setLoading(undefined);
@@ -296,7 +266,6 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
       }
       setSelectedPatient(targetPatient);
       onImported?.(targetPatient);
-      navigate(`/Patient/${targetPatient.id}/timeline`)?.catch(console.error);
     } catch (err) {
       setError(normalizeErrorString(err));
     } finally {
@@ -304,31 +273,27 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
     }
   }
 
-  function handleStepClick(step: number): void {
-    // Allow returning to earlier steps only after they've been reached.
-    if (step < activeStep) {
-      setActiveStep(step);
-    }
+  function handleToggleEntry(key: string, checked: boolean): void {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
   }
 
-  function handleResourceSort(column: ResourceSortColumn): void {
-    if (resourceSortColumn === column) {
-      setResourceSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-      return;
-    }
-    setResourceSortColumn(column);
-    setResourceSortDirection('asc');
-  }
-
-  function handleSelectAllImportable(checked: boolean): void {
-    if (checked) {
-      setSelectedKeys(new Set(importableKeys));
-      return;
-    }
+  function handleToggleAll(checked: boolean): void {
     setSelectedKeys((prev) => {
       const next = new Set(prev);
       for (const key of importableKeys) {
-        next.delete(key);
+        if (checked) {
+          next.add(key);
+        } else {
+          next.delete(key);
+        }
       }
       return next;
     });
@@ -339,7 +304,7 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
       <div className={classes.stepperModule}>
         <Stepper
           active={activeStep}
-          onStepClick={handleStepClick}
+          onStepClick={(step) => step < activeStep && setActiveStep(step)}
           allowNextStepsSelect={false}
           iconSize={16}
           classNames={{
@@ -364,267 +329,64 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
       </div>
 
       <Stack gap={0} className={classes.stepContent}>
-        {activeStep === STEP_INPUT &&
-          (scanning ? (
-            <Stack gap="md">
-              <Stack gap={8}>
-                <Input.Label>Scan SMART Health Card</Input.Label>
-                <div className={classes.scanner}>
-                  <QrCodeScanner
-                    key={scanSessionKey}
-                    onScan={(data) => {
-                      setShlink(data);
-                      resolveLink(data, { fromScan: true }).catch(console.error);
-                    }}
-                  />
-                  {(loading === 'resolve' || loading === 'match') && (
-                    <div className={classes.scannerOverlay} aria-hidden>
-                      <Center h="100%">
-                        <Loader size="sm" color="gray.3" />
-                      </Center>
-                    </div>
-                  )}
-                </div>
-              </Stack>
-              {error && <Input.Error>{error}</Input.Error>}
-              <Button
-                fullWidth
-                variant="default"
-                onClick={() => {
-                  setScanning(false);
-                  setShlink('');
-                  setError(undefined);
-                }}
-              >
-                Cancel
-              </Button>
-            </Stack>
-          ) : (
-            <Stack gap="md">
-              <Stack gap="md">
-                <Stack gap={8}>
-                  <Input.Label>SMART Health Link</Input.Label>
-                  <Textarea
-                    placeholder="shlink:/..."
-                    value={shlink}
-                    onChange={(event) => {
-                      setShlink(event.currentTarget.value);
-                      setError(undefined);
-                    }}
-                    onKeyDown={(event) => {
-                      // A link is a single token, so Enter opens it rather than adding a newline.
-                      // Shift+Enter still inserts one, and we ignore Enter mid-IME-composition.
-                      if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) {
-                        return;
-                      }
-                      event.preventDefault();
-                      if (loading !== 'resolve' && loading !== 'match') {
-                        resolveLink(shlink).catch(console.error);
-                      }
-                    }}
-                    minRows={4}
-                    autosize
-                    aria-label="SMART Health Link"
-                    error={error}
-                  />
-                </Stack>
-                <Button
-                  fullWidth
-                  leftSection={<IconEye size={16} />}
-                  loading={loading === 'resolve' || loading === 'match'}
-                  onClick={() => resolveLink(shlink)}
-                >
-                  Open SMART Health Link
-                </Button>
-              </Stack>
-              <Divider label="or" labelPosition="center" />
-              <Button
-                fullWidth
-                variant="default"
-                leftSection={<IconQrcode size={16} />}
-                onClick={() => setScanning(true)}
-              >
-                Scan SMART Health Card
-              </Button>
-            </Stack>
-          ))}
-
-        {activeStep === STEP_PATIENT && sharedPatient && (
-          <>
-            <Stack gap="md">
-              <Text fz="md" fw={800}>
-                SMART Health {sourceKind} Details
-              </Text>
-              <div className={classes.metaGrid}>
-                <MetaItem label="Patient" value={getDisplayString(sharedPatient)} />
-                <MetaItem
-                  label="Date of Birth"
-                  value={sharedPatient.birthDate ? sharedPatient.birthDate : 'No birth date'}
-                />
-                <div />
-                <MetaItem label="Source" value={smartHealthLinkDetails?.sourceOrigin ?? '—'} />
-                <MetaItem
-                  label="Records Sharing Expiration"
-                  value={
-                    smartHealthLinkDetails?.expiresAt
-                      ? new Date(smartHealthLinkDetails.expiresAt).toLocaleString(undefined, {
-                          year: 'numeric',
-                          month: 'numeric',
-                          day: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })
-                      : '—'
-                  }
-                />
-                <MetaItem label="Records Shared" value={String(importableCount)} />
-              </div>
-              {isExpired(smartHealthLinkDetails?.expiresAt) && (
-                <Alert color="red" variant="light" className={classes.expiredAlert}>
-                  This {sourceKind.toLowerCase()} has expired, but its records are still available and can be imported.
-                </Alert>
-              )}
-            </Stack>
-
-            <Divider className={classes.sectionDivider} />
-
-            <Stack gap="md">
-              <div>
-                <Text fz="md" fw={800}>
-                  Select or Create a Patient for Records Import
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {matches.length > 0
-                    ? 'Import into an existing patient, or create a new one.'
-                    : '(No existing patient matches found)'}
-                </Text>
-              </div>
-              <Stack gap={8} role="radiogroup" aria-label="Select import destination">
-                {matches.map((match) => {
-                  const selected = patientSelectionValue === match.patient.id;
-                  return (
-                    <PatientDestinationCard
-                      key={match.patient.id}
-                      patient={match.patient}
-                      selected={selected}
-                      onClick={() => handlePatientSelectionChange(match.patient.id)}
-                      matchGrade={match.grade}
-                      secondaryText={match.patient.birthDate ? `Born ${match.patient.birthDate}` : 'No birth date'}
-                    />
-                  );
-                })}
-                <PatientDestinationCard
-                  patient={sharedPatient}
-                  selected={patientSelectionValue === 'new'}
-                  onClick={() => handlePatientSelectionChange('new')}
-                  showNewPatientBadge
-                />
-              </Stack>
-            </Stack>
-
-            <StepActions>
-              <Button fullWidth disabled={!canContinueToImport} onClick={() => setActiveStep(STEP_IMPORT)}>
-                Continue
-              </Button>
-            </StepActions>
-          </>
+        {activeStep === STEP_INPUT && (
+          <SmartHealthLinkInputStep
+            shlink={shlink}
+            onShlinkChange={(value) => {
+              setShlink(value);
+              setError(undefined);
+            }}
+            error={error}
+            busy={busy}
+            scanning={scanning}
+            scanSessionKey={scanSessionKey}
+            onStartScan={() => setScanning(true)}
+            onCancelScan={() => {
+              setScanning(false);
+              setShlink('');
+              setError(undefined);
+            }}
+            onScan={(data) => {
+              setShlink(data);
+              resolveLink(data, { fromScan: true }).catch(console.error);
+            }}
+            onResolve={() => resolveLink(shlink).catch(console.error)}
+          />
         )}
 
-        {activeStep === STEP_IMPORT && items.length > 0 && hasTargetPatient && sharedPatient && (
-          <>
-            <ImportDestinationSummary
-              createNewPatient={createNewPatient}
-              selectedPatient={selectedPatient}
-              sharedPatient={sharedPatient}
-              selectedCount={selectedItems.length}
-              importableCount={importableCount}
-            >
-              <ScrollArea.Autosize mah={320}>
-                <Table
-                  horizontalSpacing="sm"
-                  verticalSpacing="xs"
-                  highlightOnHover
-                  style={{
-                    borderBottom: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
-                  }}
-                >
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th style={{ width: 36 }}>
-                        <Checkbox
-                          aria-label="Select all resources"
-                          checked={allImportableSelected}
-                          indeterminate={someImportableSelected}
-                          onChange={(event) => handleSelectAllImportable(event.currentTarget.checked)}
-                        />
-                      </Table.Th>
-                      <SortableTableHeader
-                        label="Type"
-                        active={resourceSortColumn === 'type'}
-                        direction={resourceSortDirection}
-                        onClick={() => handleResourceSort('type')}
-                      />
-                      <SortableTableHeader
-                        label="Details"
-                        active={resourceSortColumn === 'details'}
-                        direction={resourceSortDirection}
-                        onClick={() => handleResourceSort('details')}
-                      />
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {sortedImportableItems.map((item) => {
-                      const key = getSmartHealthLinkBundleEntryKey(item) as string;
-                      const resource = item.resource as Resource;
-                      const checked = selectedKeys.has(key);
-                      return (
-                        <Table.Tr key={key}>
-                          <Table.Td>
-                            <Checkbox
-                              aria-label={`Select ${getDisplayString(resource)}`}
-                              checked={checked}
-                              onChange={(event) => {
-                                const nextChecked = event.currentTarget.checked;
-                                setSelectedKeys((prev) => {
-                                  const next = new Set(prev);
-                                  if (nextChecked) {
-                                    next.add(key);
-                                  } else {
-                                    next.delete(key);
-                                  }
-                                  return next;
-                                });
-                              }}
-                            />
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm">{getResourceTypeLabel(resource.resourceType)}</Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" fw={400}>
-                              {getDisplayString(resource)}
-                            </Text>
-                          </Table.Td>
-                        </Table.Tr>
-                      );
-                    })}
-                  </Table.Tbody>
-                </Table>
-              </ScrollArea.Autosize>
-            </ImportDestinationSummary>
+        {activeStep === STEP_PATIENT && sharedPatient && (
+          <SmartHealthLinkPatientStep
+            sharedPatient={sharedPatient}
+            sourceKind={sourceKind}
+            sourceOrigin={smartHealthLinkDetails?.sourceOrigin}
+            expiresAt={smartHealthLinkDetails?.expiresAt}
+            importableCount={importableEntries.length}
+            matches={matches}
+            selectionValue={patientSelectionValue}
+            onSelectionChange={handlePatientSelectionChange}
+            canContinue={canContinueToImport}
+            onContinue={() => setActiveStep(STEP_IMPORT)}
+          />
+        )}
 
-            <StepActions>
-              <Button
-                fullWidth
-                leftSection={<IconDownload size={16} />}
-                loading={loading === 'import'}
-                disabled={!sharedPatient || selectedItems.length === 0}
-                onClick={() => importSelectedResources()}
-              >
-                {importButtonLabel}
-              </Button>
-            </StepActions>
-          </>
+        {activeStep === STEP_IMPORT && hasTargetPatient && sharedPatient && (
+          <SmartHealthLinkRecordsStep
+            sharedPatient={sharedPatient}
+            createNewPatient={createNewPatient}
+            selectedPatient={selectedPatient}
+            entries={importableEntries}
+            selectedKeys={selectedKeys}
+            onToggleEntry={handleToggleEntry}
+            onToggleAll={handleToggleAll}
+            allSelected={allImportableSelected}
+            someSelected={someImportableSelected}
+            importButtonLabel={getImportButtonLabel(
+              createNewPatient ? sharedPatient : selectedPatient,
+              createNewPatient
+            )}
+            importing={loading === 'import'}
+            onImport={() => importSelectedResources()}
+          />
         )}
 
         {((error && activeStep !== STEP_INPUT) || warning.length > 0) && (
@@ -646,219 +408,14 @@ export function SmartHealthLinkImport({ onImported }: SmartHealthLinkImportProps
   );
 }
 
-interface StepActionsProps {
-  readonly children: ReactNode;
-}
-
-/**
- * Divider + full-width action button closing out a step. Kept in the step body rather than the
- * Modal's `actions` slot because the flow also renders as a page, where there is no modal footer.
- * @param props - The StepActions React props.
- * @param props.children - The action buttons to render below the divider.
- * @returns The step actions React node.
- */
-function StepActions({ children }: StepActionsProps): JSX.Element {
-  return (
-    <Stack gap="lg" pt="lg">
-      <Divider />
-      <Stack gap="sm">{children}</Stack>
-    </Stack>
-  );
-}
-
-interface MetaItemProps {
-  readonly label: string;
-  readonly value: string;
-}
-
-function MetaItem({ label, value }: MetaItemProps): JSX.Element {
-  return (
-    <div>
-      <Text size="xs" c="dimmed" fw={500}>
-        {label}
-      </Text>
-      <Text size="sm">{value}</Text>
-    </div>
-  );
-}
-
 // True when the pasted or scanned value is itself a SMART Health Card QR payload.
 function isSmartHealthCardInput(value: string): boolean {
   return value.trim().toLowerCase().startsWith('shc:');
 }
 
-interface SortableTableHeaderProps {
-  readonly label: string;
-  readonly active: boolean;
-  readonly direction: ResourceSortDirection;
-  readonly onClick: () => void;
-}
-
-function SortableTableHeader({ label, active, direction, onClick }: SortableTableHeaderProps): JSX.Element {
-  return (
-    <Table.Th>
-      <UnstyledButton onClick={onClick}>
-        <Group gap={4} wrap="nowrap">
-          <Text size="sm" fw={600}>
-            {label}
-          </Text>
-          {active && (direction === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />)}
-        </Group>
-      </UnstyledButton>
-    </Table.Th>
-  );
-}
-
-/**
- * Label for the import button, which names the destination patient once one is chosen.
- * @param destination - The patient the records will be imported into, if already resolved.
- * @param createNewPatient - True when the destination patient will be created by the import.
- * @returns The button label.
- */
-function getImportButtonLabel(destination: Patient | undefined, createNewPatient: boolean): string {
-  if (!destination) {
-    return 'Import Records';
-  }
-  const name = getDisplayString(destination);
-  return createNewPatient ? `Create ${name} & Import Records` : `Import Records to ${name}`;
-}
-
-/**
- * Sort key for a bundle entry: the friendly resource-type label, or its display string.
- * @param resource - The bundle entry's resource, if present.
- * @param column - The column being sorted on.
- * @returns The comparable string value, or empty string when there is no resource.
- */
-function sortValue(resource: Resource | undefined, column: ResourceSortColumn): string {
-  if (!resource) {
-    return '';
-  }
-  return column === 'type' ? getResourceTypeLabel(resource.resourceType) : getDisplayString(resource);
-}
-
-function sortImportableItems(
-  items: BundleEntry[],
-  column: ResourceSortColumn,
-  direction: ResourceSortDirection
-): BundleEntry[] {
-  const multiplier = direction === 'asc' ? 1 : -1;
-  return [...items].sort((a, b) => {
-    const valueA = sortValue(a.resource, column);
-    const valueB = sortValue(b.resource, column);
-    return valueA.localeCompare(valueB) * multiplier;
-  });
-}
-
-interface ImportDestinationSummaryProps {
-  readonly createNewPatient: boolean;
-  readonly selectedPatient: WithId<Patient> | undefined;
-  readonly sharedPatient: Patient;
-  readonly selectedCount: number;
-  readonly importableCount: number;
-  readonly children?: ReactNode;
-}
-
-interface PatientDestinationCardProps {
-  readonly patient: Patient;
-  readonly selected: boolean;
-  readonly onClick?: () => void;
-  readonly showNewPatientBadge?: boolean;
-  readonly matchGrade?: string;
-  readonly secondaryText?: string;
-}
-
-function formatMatchGradeBadge(grade: string): string {
-  return `${grade.charAt(0).toUpperCase()}${grade.slice(1)} Match`;
-}
-
-function getMatchGradeBadgeColor(grade: string): 'green' | 'orange' {
-  return grade === 'certain' ? 'green' : 'orange';
-}
-
-function PatientDestinationCard(props: PatientDestinationCardProps): JSX.Element {
-  const { patient, selected, onClick, showNewPatientBadge, matchGrade, secondaryText } = props;
-  const card = (
-    <Paper withBorder p="md" radius="md" className={selected && onClick ? classes.destinationCardSelected : undefined}>
-      <Group justify="space-between" wrap="nowrap" gap="sm">
-        <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-          <ResourceAvatar value={patient} size={40} radius="xl" />
-          <div style={{ minWidth: 0 }}>
-            <Text fw={600} truncate>
-              {getDisplayString(patient)}
-            </Text>
-            <Text size="xs" fw={500} c="dimmed" truncate>
-              {secondaryText ?? (patient.birthDate ? `Born ${patient.birthDate}` : 'No birth date')}
-            </Text>
-          </div>
-        </Group>
-        <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
-          {showNewPatientBadge && (
-            <Badge color="grape" variant="light" size="sm">
-              Create New Patient
-            </Badge>
-          )}
-          {matchGrade && (
-            <Badge color={getMatchGradeBadgeColor(matchGrade)} variant="light" size="sm">
-              {formatMatchGradeBadge(matchGrade)}
-            </Badge>
-          )}
-        </Group>
-      </Group>
-    </Paper>
-  );
-
-  if (!onClick) {
-    return card;
-  }
-
-  return (
-    <UnstyledButton
-      role="radio"
-      aria-checked={selected}
-      onClick={onClick}
-      w="100%"
-      style={{ borderRadius: 'var(--mantine-radius-md)' }}
-    >
-      {card}
-    </UnstyledButton>
-  );
-}
-
-function ImportDestinationSummary(props: ImportDestinationSummaryProps): JSX.Element | null {
-  const { createNewPatient, selectedPatient, sharedPatient, selectedCount, importableCount, children } = props;
-  const destinationPatient = createNewPatient ? sharedPatient : selectedPatient;
-  if (!destinationPatient) {
-    return null;
-  }
-
-  return (
-    <Stack gap="md">
-      <div>
-        <Text fz="md" fw={800}>
-          Select Records to Import to {createNewPatient ? 'New' : 'Existing'} Profile
-        </Text>
-        {!createNewPatient && (
-          <Text size="sm" c="dimmed">
-            Existing records will automatically be excluded from the import.
-          </Text>
-        )}
-      </div>
-      <PatientDestinationCard patient={destinationPatient} selected showNewPatientBadge={createNewPatient} />
-      {children}
-      <Text size="sm" c="dimmed">
-        {selectedCount} of {importableCount} selected
-      </Text>
-    </Stack>
-  );
-}
-
 // Matches the server's expired-but-available warning so it isn't shown twice.
 function isExpiryWarning(message: string): boolean {
   return /expired/i.test(message);
-}
-
-function isExpired(expiresAt: string | undefined): boolean {
-  return !!expiresAt && new Date(expiresAt).getTime() <= Date.now();
 }
 
 function preparePatientForCreate(patient: Patient): Patient {
