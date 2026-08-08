@@ -74,8 +74,9 @@ update.
 
 ## Getting started
 
-1. **Store a file from your laptop.** `medplum dicomweb stow MRBRAIN.DCM` uploads a DICOM file
-   through STOW-RS with no infrastructure to set up. See the [CLI](./cli.md).
+1. **Store a file from your laptop.** `medplum dicomweb stow MRBRAIN.DCM` uploads a DICOM file — or
+   a whole directory of them — through STOW-RS with no infrastructure to set up. See the
+   [CLI](./cli.md).
 2. **Look at it.** Medplum's hosted cloud is preconfigured with an
    [OHIF Viewer](./ohif-viewer.md) at [viewer.medplum.com](https://viewer.medplum.com) — sign in and
    the study is there.
