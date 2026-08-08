@@ -26,6 +26,46 @@ _Note: LLMs can sometimes cache sessions. If you experience issues, try disconne
 
 The Medplum MCP integration exposes several powerful tools for interacting with FHIR data. Here are the tools available in your MCP server:
 
+#### `search`
+
+- **Title:** FHIR Search
+- **Description:** Searches for FHIR resources using standard FHIR search syntax (e.g. `Patient?name=Smith`). This tool is read-only and runs through the caller's authenticated repository context. Results are bounded to keep responses small: `_count` defaults to 20 and is capped at 100, and only matching resources are returned (`_include`/`_revinclude` joins are not executed — read related resources with `fetch`). Use `_count` and `_offset` to page through more results, and `_total=accurate` to include a total match count. Each result contains a FHIR reference (`id`), a human-readable `title`, and the resource's URL on the server (`url`), following the [OpenAI MCP guide](https://developers.openai.com/api/docs/mcp) so the server can be used as a ChatGPT connector. Errors are returned as FHIR `OperationOutcome` payloads so the model can correct its query.
+- **Annotations:** Read-only.
+- **Schema:**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "FHIR search string, e.g. 'Patient?name=Smith&_count=10'."
+    }
+  },
+  "required": ["query"]
+}
+```
+
+#### `fetch`
+
+- **Title:** FHIR Read
+- **Description:** Reads a single FHIR resource by reference (e.g. `Patient/123`), typically obtained from a `search` result. Read-only; runs through the caller's authenticated repository context. Returns the resource as JSON in the `text` field, following the [OpenAI MCP guide](https://developers.openai.com/api/docs/mcp). Very large resources are truncated, and `Binary` resources are not supported. Errors are returned as FHIR `OperationOutcome` payloads.
+- **Annotations:** Read-only.
+- **Schema:**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "The reference of the resource to fetch, obtained from a search result."
+    }
+  },
+  "required": ["id"]
+}
+```
+
 #### `fhir-request`
 
 - **Title:** Perform a FHIR API Request
@@ -61,9 +101,9 @@ Here are three examples demonstrating the core capabilities of the Medplum MCP i
 
 **Example 1: Finding High Blood Pressure Patients (Using search)**
 
-- **Prompt:** "What are the names of all patients who have a blood pressure observation with a systolic value greater than 140 in the last year?"
-- **Tool Call:** The AI will use the search tool with the resourceType set to "Patient" and searchParams filtering for patients linked to specific observations.
-- **Outcome:** The Medplum server responds with a list of patient names and IDs that match the criteria, which the AI can then summarize for the user.
+- **Prompt:** "Which patients have a blood pressure observation with a systolic value greater than 140 in the last year?"
+- **Tool Call:** The AI will use the search tool with a FHIR search string such as `Observation?code=85354-9&component-value-quantity=gt140&date=gt2025-07-01`, then look up the referenced patients.
+- **Outcome:** The Medplum server responds with a bounded list of matching references and display names, which the AI can then summarize for the user.
 
 **Example 2: Scheduling a New Appointment (Using fhir-request)**
 
