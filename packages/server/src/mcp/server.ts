@@ -1,11 +1,106 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { concatUrls, isString, MEDPLUM_VERSION, MedplumClient } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import {
+  badRequest,
+  concatUrls,
+  DEFAULT_SEARCH_COUNT,
+  getDisplayString,
+  getReferenceString,
+  isString,
+  MEDPLUM_VERSION,
+  MedplumClient,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
+  parseReference,
+  parseSearchRequest,
+} from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
+import { getFullUrl } from '../fhir/response';
 import { getLogger } from '../logger';
+
+const MCP_MAX_SEARCH_COUNT = 100;
+const MCP_MAX_TITLE_LENGTH = 200;
+const MCP_MAX_FETCH_LENGTH = 50_000;
+
+interface McpSearchResult {
+  id: string;
+  title: string;
+  url: string;
+}
+
+interface McpSearchResponse extends Record<string, unknown> {
+  results: McpSearchResult[];
+  total?: number;
+}
+
+interface McpFetchResponse extends Record<string, unknown> {
+  id: string;
+  title: string;
+  text: string;
+  url: string;
+}
+
+function withJsonContent<T extends object>(
+  structuredContent: T
+): {
+  content: [{ type: 'text'; text: string }];
+  structuredContent: T;
+} {
+  return {
+    content: [{ type: 'text', text: JSON.stringify(structuredContent) }],
+    structuredContent,
+  };
+}
+
+export function clampMcpSearchCount(count: number | undefined): number {
+  if (count === undefined || !Number.isFinite(count) || count < 0) {
+    return DEFAULT_SEARCH_COUNT;
+  }
+  return Math.min(count, MCP_MAX_SEARCH_COUNT);
+}
+
+function getMcpTitle(resource: WithId<Resource>): string {
+  const reference = getReferenceString(resource);
+  const title = getDisplayString(resource) || reference;
+  return title.length > MCP_MAX_TITLE_LENGTH ? `${title.slice(0, MCP_MAX_TITLE_LENGTH - 3)}...` : title;
+}
+
+function toMcpSearchResult(resource: WithId<Resource>): McpSearchResult {
+  const id = getReferenceString(resource);
+  return {
+    id,
+    title: getMcpTitle(resource),
+    url: getFullUrl(resource.resourceType, resource.id),
+  };
+}
+
+function toMcpFetchResponse(resource: WithId<Resource>): McpFetchResponse {
+  const id = getReferenceString(resource);
+  const json = JSON.stringify(resource);
+
+  return {
+    id,
+    title: getMcpTitle(resource),
+    text:
+      json.length > MCP_MAX_FETCH_LENGTH
+        ? `${json.slice(0, MCP_MAX_FETCH_LENGTH)}... [truncated ${json.length} character resource]`
+        : json,
+    url: getFullUrl(resource.resourceType, resource.id),
+  };
+}
+
+function withOperationOutcome(err: unknown): CallToolResult {
+  return {
+    content: [{ type: 'text', text: JSON.stringify(normalizeOperationOutcome(err)) }],
+    isError: true,
+  };
+}
 
 export function getMcpServer(): McpServer {
   const server = new McpServer({
@@ -13,33 +108,112 @@ export function getMcpServer(): McpServer {
     version: MEDPLUM_VERSION,
   });
 
-  /**
-   * Dummy document used for testing purposes.
-   *
-   * ChatGPT requires two standrad tools: "search" and "fetch".
-   * We implement stub versions of these tools that return a dummy document.
-   * If these tools are not implemented, ChatGPT will not connect to the Medplum server.
-   */
-  const dummyDocument = {
-    type: 'text',
-    id: 'dummy-doc',
-    text: 'This is a dummy document used for testing purposes.',
-    uri: 'https://example.com/dummy-doc',
-  } as const;
+  server.registerTool(
+    'search',
+    {
+      title: 'FHIR Search',
+      description:
+        'Search FHIR resources using a FHIR search string such as "Patient?name=Smith&_count=10". ' +
+        `Returns at most ${MCP_MAX_SEARCH_COUNT} matches (default ${DEFAULT_SEARCH_COUNT}); use _offset to page. ` +
+        'Each result id is a FHIR reference that can be passed to fetch. _include and _revinclude are ignored.',
+      inputSchema: {
+        query: z.string().describe('FHIR search query, for example "Patient?name=Smith&_count=10".'),
+      },
+      outputSchema: {
+        results: z.array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            url: z.string(),
+          })
+        ),
+        total: z.number().optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ query }): Promise<CallToolResult> => {
+      getLogger().debug(`Performing search for: "${query}"`);
+      try {
+        const resourceType = query.split('?')[0];
+        if (!/^[A-Z][A-Za-z0-9]*$/.test(resourceType)) {
+          throw new OperationOutcomeError(
+            badRequest('Search query must start with a resource type, for example "Patient?name=Smith"')
+          );
+        }
 
-  server.registerTool('search', { inputSchema: { query: z.string() } }, async ({ query }) => {
-    getLogger().debug(`Performing search for: "${query}"`);
-    return { content: [dummyDocument] };
-  });
+        const ctx = getAuthenticatedContext();
+        const searchRequest = parseSearchRequest(query);
+        delete searchRequest.include;
+        delete searchRequest.revInclude;
+        searchRequest.count = clampMcpSearchCount(searchRequest.count);
+
+        const bundle = await ctx.repo.search(searchRequest);
+        const results = (bundle.entry ?? []).flatMap((entry) => {
+          const resource = entry.resource;
+          if (entry.search?.mode !== 'match' || !resource?.id) {
+            return [];
+          }
+          return [toMcpSearchResult(resource)];
+        });
+        const response: McpSearchResponse = { results };
+        if (bundle.total !== undefined) {
+          response.total = bundle.total;
+        }
+        return withJsonContent(response);
+      } catch (err) {
+        return withOperationOutcome(err);
+      }
+    }
+  );
 
   server.registerTool(
     'fetch',
     {
-      inputSchema: { id: z.string().describe('The ID of the resource to fetch, obtained from a search result.') },
+      title: 'FHIR Read',
+      description:
+        'Fetch one FHIR resource using a reference returned by search, such as "Patient/123". ' +
+        'Very large resources are truncated, and Binary resources are not supported.',
+      inputSchema: {
+        id: z.string().describe('FHIR resource reference returned by search, for example "Patient/123".'),
+      },
+      outputSchema: {
+        id: z.string(),
+        title: z.string(),
+        text: z.string(),
+        url: z.string(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
     },
-    async ({ id }) => {
+    async ({ id }): Promise<CallToolResult> => {
       getLogger().debug(`Performing fetch for ID: "${id}"`);
-      return { content: [dummyDocument] };
+      try {
+        const parts = id.split('/');
+        if (parts.length !== 2 || !/^[A-Z][A-Za-z0-9]*$/.test(parts[0]) || !parts[1]) {
+          throw new OperationOutcomeError(
+            badRequest('The id must be a FHIR reference of the form "ResourceType/id", for example "Patient/123"')
+          );
+        }
+        if (parts[0] === 'Binary') {
+          throw new OperationOutcomeError(badRequest('Binary resources are not supported by the fetch tool'));
+        }
+
+        const ctx = getAuthenticatedContext();
+        const [resourceType, resourceId] = parseReference<Resource>({ reference: id });
+        const resource = await ctx.repo.readResource<Resource>(resourceType, resourceId);
+        return withJsonContent(toMcpFetchResponse(resource));
+      } catch (err) {
+        return withOperationOutcome(err);
+      }
     }
   );
 
