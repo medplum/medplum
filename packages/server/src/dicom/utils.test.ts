@@ -114,6 +114,9 @@ describe('DICOM utils', () => {
       modality: 'CT',
       seriesDescription: 'Head CT',
       numberOfSeriesRelatedInstances: 4,
+      // DICOM DA and TM, reformatted to the FHIR date and time the elements are typed as
+      performedProcedureStepStartDate: '2024-01-02',
+      performedProcedureStepStartTime: '03:04:05',
     });
 
     expect(
@@ -125,6 +128,8 @@ describe('DICOM utils', () => {
         modality: 'CT',
         seriesDescription: 'Head CT',
         numberOfSeriesRelatedInstances: 4,
+        performedProcedureStepStartDate: '2024-01-02',
+        performedProcedureStepStartTime: '03:04:05',
       })
     ).toMatchObject({
       StudyInstanceUID: 'study-uid',
@@ -132,6 +137,8 @@ describe('DICOM utils', () => {
       SeriesNumber: 7,
       Modality: 'CT',
       NumberOfSeriesRelatedInstances: 4,
+      PerformedProcedureStepStartDate: '20240102',
+      PerformedProcedureStepStartTime: '030405',
     });
   });
 
@@ -187,6 +194,28 @@ describe('DICOM utils', () => {
     expect(dicomTimeToFhirTime('0304')).toBeUndefined();
     expect(fhirTimeToDicomTime('03:04:05')).toBe('030405');
     expect(fhirTimeToDicomTime(undefined)).toBeUndefined();
+  });
+
+  test('drops unparseable dates and times rather than propagating them', () => {
+    // Each of these is the right length to be reformatted, so only validating the result rejects
+    // them. Propagating "asdf-as-df" instead would fail validation and reject the whole request.
+    expect(dicomDateToFhirDate('asdfasdf')).toBeUndefined();
+    expect(dicomDateToFhirDate('99999999')).toBeUndefined();
+    expect(dicomDateToFhirDate('20241301')).toBeUndefined(); // Month 13
+    expect(dicomDateToFhirDate('20240132')).toBeUndefined(); // Day 32
+    expect(dicomDateToFhirDate('2024-01-02')).toBeUndefined(); // Already FHIR formatted
+    expect(dicomDateToFhirDate(20240102)).toBeUndefined(); // Not a string
+
+    expect(dicomTimeToFhirTime('asdfas')).toBeUndefined();
+    expect(dicomTimeToFhirTime('999999')).toBeUndefined();
+    expect(dicomTimeToFhirTime('250405')).toBeUndefined(); // Hour 25
+    expect(dicomTimeToFhirTime('036005')).toBeUndefined(); // Minute 60
+    expect(dicomTimeToFhirTime('asdfasdfasdf')).toBeUndefined(); // Long enough to pass the length check
+    expect(dicomTimeToFhirTime(30405)).toBeUndefined(); // Not a string
+
+    // Leap seconds are valid in FHIR time, and midnight must survive the truthiness of no check
+    expect(dicomTimeToFhirTime('235960')).toBe('23:59:60');
+    expect(dicomTimeToFhirTime('000000')).toBe('00:00:00');
   });
 
   test('writes multipart related body', async () => {

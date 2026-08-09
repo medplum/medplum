@@ -469,6 +469,10 @@ function createDicomBuffer(overrides?: {
     PatientBirthDate: '20000101',
     PatientSex: 'O',
     SeriesNumber: 1,
+    // Routinely sent by CT and MR scanners, and stored in elements typed as FHIR date and time,
+    // so a STOW request only succeeds if these are reformatted out of their DICOM DA and TM forms
+    PerformedProcedureStepStartDate: '20240102',
+    PerformedProcedureStepStartTime: '030405.000000',
     InstanceNumber: overrides?.instanceNumber ?? 1,
     Rows: 1,
     Columns: 1,

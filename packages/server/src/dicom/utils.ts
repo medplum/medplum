@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { deepEquals, getStatus, isObject, isString, normalizeOperationOutcome, Operator } from '@medplum/core';
+import {
+  deepEquals,
+  getStatus,
+  isObject,
+  isString,
+  normalizeOperationOutcome,
+  Operator,
+  validationRegexes,
+} from '@medplum/core';
 import type { DicomInstance, DicomSeries, DicomStudy, Reference, Resource } from '@medplum/fhirtypes';
 import type { DcmjsDicomDict, DcmjsDicomElement } from 'dcmjs';
 import { once } from 'node:events';
@@ -208,8 +216,8 @@ export function dcmjsSeriesToMedplumSeries(
     seriesDescription: naturalized.SeriesDescription as string,
     timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
     numberOfSeriesRelatedInstances: naturalized.NumberOfSeriesRelatedInstances as number,
-    performedProcedureStepStartDate: naturalized.PerformedProcedureStepStartDate as string,
-    performedProcedureStepStartTime: naturalized.PerformedProcedureStepStartTime as string,
+    performedProcedureStepStartDate: dicomDateToFhirDate(naturalized.PerformedProcedureStepStartDate),
+    performedProcedureStepStartTime: dicomTimeToFhirTime(naturalized.PerformedProcedureStepStartTime),
   };
 }
 
@@ -222,8 +230,8 @@ export function medplumSeriesToDcmjsSeries(study: DicomStudy, series: DicomSerie
     SeriesDescription: series.seriesDescription,
     TimezoneOffsetFromUTC: series.timezoneOffsetFromUtc,
     NumberOfSeriesRelatedInstances: series.numberOfSeriesRelatedInstances,
-    PerformedProcedureStepStartDate: series.performedProcedureStepStartDate,
-    PerformedProcedureStepStartTime: series.performedProcedureStepStartTime,
+    PerformedProcedureStepStartDate: fhirDateToDicomDate(series.performedProcedureStepStartDate),
+    PerformedProcedureStepStartTime: fhirTimeToDicomTime(series.performedProcedureStepStartTime),
   };
 }
 
@@ -330,7 +338,12 @@ export function stringToDicomPersonName(name: string | undefined): { Alphabetic:
 export function dicomDateToFhirDate(dicomDate: unknown): string | undefined {
   // DICOM date format is YYYYMMDD, while FHIR date format is YYYY-MM-DD
   if (isString(dicomDate) && dicomDate.length === 8) {
-    return `${dicomDate.substring(0, 4)}-${dicomDate.substring(4, 6)}-${dicomDate.substring(6, 8)}`;
+    const fhirDate = `${dicomDate.substring(0, 4)}-${dicomDate.substring(4, 6)}-${dicomDate.substring(6, 8)}`;
+    // Reformatting alone would turn "asdfasdf" into "asdf-as-df", which fails validation and would
+    // reject the whole request. Dropping an unparseable optional attribute keeps the study storable.
+    if (validationRegexes.date.test(fhirDate)) {
+      return fhirDate;
+    }
   }
   return undefined;
 }
@@ -341,9 +354,13 @@ export function fhirDateToDicomDate(fhirDate: string | undefined): string | unde
 }
 
 export function dicomTimeToFhirTime(dicomTime: unknown): string | undefined {
-  // DICOM time format is HHMMSS, while FHIR time format is HH:MM:SS
+  // DICOM time format is HHMMSS, optionally followed by fractional seconds, while FHIR time format is HH:MM:SS
   if (isString(dicomTime) && dicomTime.length >= 6) {
-    return `${dicomTime.substring(0, 2)}:${dicomTime.substring(2, 4)}:${dicomTime.substring(4, 6)}`;
+    const fhirTime = `${dicomTime.substring(0, 2)}:${dicomTime.substring(2, 4)}:${dicomTime.substring(4, 6)}`;
+    // Dropped rather than propagated when invalid, for the reason given in dicomDateToFhirDate
+    if (validationRegexes.time.test(fhirTime)) {
+      return fhirTime;
+    }
   }
   return undefined;
 }
