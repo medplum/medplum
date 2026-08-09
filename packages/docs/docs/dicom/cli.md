@@ -16,30 +16,72 @@ medplum dicomweb stow MRBRAIN.DCM
 ## `medplum dicomweb stow`
 
 ```
-medplum dicomweb stow <file>
+medplum dicomweb stow <files...> [--batch-size <count>]
 ```
 
-Reads a DICOM Part 10 file, wraps it in a `multipart/related` body with
-`Content-Type: application/dicom`, and posts it to `/dicomweb/studies` on the configured server. The
-file is streamed from disk into the request rather than read into memory first.
+Reads DICOM Part 10 files, wraps them in a `multipart/related` body with
+`Content-Type: application/dicom`, and posts them to `/dicomweb/studies` on the configured server.
+Files are streamed from disk into the request rather than read into memory first.
 
-On success the STOW-RS response is printed — a DICOM JSON dataset containing a Referenced SOP
-Sequence naming the SOP Class UID and SOP Instance UID of each stored instance.
+On success the STOW-RS response of each request is printed — a DICOM JSON dataset containing a
+Referenced SOP Sequence naming the SOP Class UID and SOP Instance UID of each stored instance.
 
 The command accepts the CLI's standard [authentication](/docs/cli#authentication) and server
 options — stored credentials from `medplum login`, `MEDPLUM_CLIENT_ID` / `MEDPLUM_CLIENT_SECRET`
 environment variables, or `--client-id` / `--client-secret` flags. Set `MEDPLUM_BASE_URL` to target a
 self-hosted server.
 
-One file per invocation; there is no glob or directory form yet. To upload a directory of instances,
-loop in the shell:
+### Files, directories, and patterns
+
+Each argument can be a file, a directory, or a glob pattern, and you can mix them freely:
 
 ```bash
-for f in ./study/*.dcm; do medplum dicomweb stow "$f"; done
+medplum dicomweb stow MRBRAIN.DCM                 # One file
+medplum dicomweb stow ./study                     # Every DICOM file in the tree, recursively
+medplum dicomweb stow ./study/*.dcm               # Expanded by your shell
+medplum dicomweb stow './study/**/*.dcm'          # Quoted, so the CLI expands it
 ```
 
-Each file is a separate STOW-RS request, but because studies and series are created conditionally on
-their DICOM UIDs, the instances still collect under a single `DicomStudy` and its series.
+An unquoted pattern such as `*.dcm` is expanded by the shell before the CLI ever runs, so it arrives
+as an ordinary list of file names. Quote the pattern to have the CLI expand it instead — which is
+also how to pass patterns on Windows, where the shell does no expansion at all.
+
+:::caution Quote `**` patterns
+
+**Always quote a pattern containing `**`.** bash only treats `**` as "any number of directories"
+when `globstar` is enabled, and it is off by default. Unquoted, `./study/**/*.dcm` expands to
+*exactly one* directory level, so a three-level study uploads only its middle level — and because
+the shell collapsed the pattern before the CLI started, nothing can detect this and warn you. Quoted,
+the CLI expands it and `**` recurses to any depth, including zero, so top level files match too.
+
+Passing the directory itself avoids the question entirely:
+
+```bash
+medplum dicomweb stow ./study
+```
+
+:::
+
+Patterns are matched case-insensitively, since `.dcm` and `.DCM` are both common. Directories are
+searched by content rather than by name, so their casing never matters.
+
+Directories are searched recursively, to any depth. When expanding a directory or a pattern, files
+that are not DICOM instances are skipped, so pointing at an export folder does not try to upload its README. A
+file counts as DICOM if it carries the `DICM` prefix at byte 128, or if it begins with a
+`(0002,xxxx)` File Meta Information tag — the two forms the server's reader recognizes structurally,
+including the extensionless file names common on modality exports and DICOM media. The server also
+accepts raw datasets carrying no File Meta Information, which have no header to test for, so those
+are recognized by a `.dcm`, `.dicom`, or `.ima` extension. `DICOMDIR` index files are always
+skipped, and the count of skipped files is printed. A file named explicitly on the command line is
+always sent, with no such filtering.
+
+### Batching
+
+Instances are sent in batches of 25 per STOW-RS request; use `--batch-size` to change that. Batching
+keeps a large upload from riding on one long-lived request, so a failure costs one batch rather than
+the whole study. Studies and series are created conditionally on their DICOM UIDs, so instances
+still collect under a single `DicomStudy` and its series no matter how they are split across
+requests.
 
 ## Verifying the upload
 
