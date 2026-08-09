@@ -44,11 +44,29 @@ medplum dicomweb stow './study/**/*.dcm'          # Quoted, so the CLI expands i
 
 An unquoted pattern such as `*.dcm` is expanded by the shell before the CLI ever runs, so it arrives
 as an ordinary list of file names. Quote the pattern to have the CLI expand it instead — which is
-how to use `**` on shells that do not enable recursive globbing (bash without `globstar`), and how to
-pass patterns on Windows, where the shell does no expansion at all.
+also how to pass patterns on Windows, where the shell does no expansion at all.
 
-Directories are searched recursively. When expanding a directory or a pattern, files that are not
-DICOM instances are skipped, so pointing at an export folder does not try to upload its README. A
+:::caution Quote `**` patterns
+
+**Always quote a pattern containing `**`.** bash only treats `**` as "any number of directories"
+when `globstar` is enabled, and it is off by default. Unquoted, `./study/**/*.dcm` expands to
+*exactly one* directory level, so a three-level study uploads only its middle level — and because
+the shell collapsed the pattern before the CLI started, nothing can detect this and warn you. Quoted,
+the CLI expands it and `**` recurses to any depth, including zero, so top level files match too.
+
+Passing the directory itself avoids the question entirely:
+
+```bash
+medplum dicomweb stow ./study
+```
+
+:::
+
+Patterns are matched case-insensitively, since `.dcm` and `.DCM` are both common. Directories are
+searched by content rather than by name, so their casing never matters.
+
+Directories are searched recursively, to any depth. When expanding a directory or a pattern, files
+that are not DICOM instances are skipped, so pointing at an export folder does not try to upload its README. A
 file counts as DICOM if it carries the `DICM` prefix at byte 128, or if it begins with a
 `(0002,xxxx)` File Meta Information tag — the two forms the server's reader recognizes structurally,
 including the extensionless file names common on modality exports and DICOM media. The server also

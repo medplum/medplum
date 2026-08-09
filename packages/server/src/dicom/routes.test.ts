@@ -355,6 +355,61 @@ describe('DICOM Routes', () => {
     expect((series.body as Record<string, { Value?: unknown[] }>[])[0]['00201209'].Value).toStrictEqual(['1']);
   });
 
+  test('Create study with multiple instances in one request', async () => {
+    // Every instance below shares a study and a series, so their conditional creates all resolve
+    // the same two resources. They must be written one at a time: `conditionalCreate` opens a
+    // serializable transaction on the connection they share, and overlapping them throws
+    // "Repository is in an active transaction".
+    const studyInstanceUid = '1.2.826.0.1.3680043.10.543.20';
+    const seriesInstanceUid = '1.2.826.0.1.3680043.10.543.21';
+    const sopInstanceUids = ['.22', '.23', '.24'].map((suffix) => `1.2.826.0.1.3680043.10.543${suffix}`);
+
+    const boundary = `medplum-${Date.now()}`;
+    const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+    const body = Buffer.concat([
+      ...sopInstanceUids.flatMap((sopInstanceUid, index) => [
+        Buffer.from(`--${boundary}\r\nContent-Type: application/dicom\r\n\r\n`),
+        createDicomBuffer({ sopInstanceUid, studyInstanceUid, seriesInstanceUid, instanceNumber: index + 1 }),
+        Buffer.from('\r\n'),
+      ]),
+      Buffer.from(`--${boundary}--\r\n`),
+    ]);
+
+    const res = await request(app)
+      .post(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', contentType)
+      .send(body);
+    expect(res).toHaveStatus(200);
+
+    // Every instance is acknowledged, once each, in the order the request listed them
+    const referenced = (res.body as Record<string, { Value?: { '00081155': { Value: string[] } }[] }>)[
+      '00081199'
+    ].Value?.map((item) => item['00081155'].Value[0]);
+    expect(referenced).toStrictEqual(sopInstanceUids);
+
+    // A single study and series absorbed all three, rather than one being created per instance
+    const studies = await request(app)
+      .get(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(studies).toHaveStatus(200);
+    const stored = (studies.body as Record<string, { Value?: unknown[] }>[]).filter(
+      (study) => study['0020000D']?.Value?.[0] === studyInstanceUid
+    );
+    expect(stored).toHaveLength(1);
+    // Counts have VR IS, which dcmjs denaturalizes to a string.
+    expect(stored[0]['00201206'].Value).toStrictEqual(['1']);
+    expect(stored[0]['00201208'].Value).toStrictEqual(['3']);
+
+    const series = await request(app)
+      .get(`/dicomweb/studies/${studyInstanceUid}/series`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(series).toHaveStatus(200);
+    const storedSeries = series.body as Record<string, { Value?: unknown[] }>[];
+    expect(storedSeries).toHaveLength(1);
+    expect(storedSeries[0]['00201209'].Value).toStrictEqual(['3']);
+  });
+
   test('Direct handler validation errors', async () => {
     await handleSearchSeries({ params: {} } as Request, createMockResponse(400, { error: 'Invalid study UID' }));
     await handleRetrieveSeriesMetadata(
@@ -384,20 +439,26 @@ describe('DICOM Routes', () => {
   });
 });
 
-function createDicomBuffer(): Buffer {
+function createDicomBuffer(overrides?: {
+  sopInstanceUid?: string;
+  studyInstanceUid?: string;
+  seriesInstanceUid?: string;
+  instanceNumber?: number;
+}): Buffer {
+  const sopInstanceUid = overrides?.sopInstanceUid ?? '1.2.826.0.1.3680043.10.543.1';
   const elements = {
     _meta: {
       FileMetaInformationVersion: new Uint8Array([0, 1]).buffer,
       MediaStorageSOPClassUID: '1.2.840.10008.5.1.4.1.1.7',
-      MediaStorageSOPInstanceUID: '1.2.826.0.1.3680043.10.543.1',
+      MediaStorageSOPInstanceUID: sopInstanceUid,
       TransferSyntaxUID: '1.2.840.10008.1.2.1',
       ImplementationClassUID: '1.2.826.0.1.3680043.10.543',
       ImplementationVersionName: 'MEDPLUM',
     },
     SOPClassUID: '1.2.840.10008.5.1.4.1.1.7',
-    SOPInstanceUID: '1.2.826.0.1.3680043.10.543.1',
-    StudyInstanceUID: '1.2.826.0.1.3680043.10.543.2',
-    SeriesInstanceUID: '1.2.826.0.1.3680043.10.543.3',
+    SOPInstanceUID: sopInstanceUid,
+    StudyInstanceUID: overrides?.studyInstanceUid ?? '1.2.826.0.1.3680043.10.543.2',
+    SeriesInstanceUID: overrides?.seriesInstanceUid ?? '1.2.826.0.1.3680043.10.543.3',
     StudyID: 'STOW',
     StudyDate: '20240102',
     StudyTime: '030405',
@@ -408,7 +469,7 @@ function createDicomBuffer(): Buffer {
     PatientBirthDate: '20000101',
     PatientSex: 'O',
     SeriesNumber: 1,
-    InstanceNumber: 1,
+    InstanceNumber: overrides?.instanceNumber ?? 1,
     Rows: 1,
     Columns: 1,
     BitsAllocated: 8,

@@ -41,7 +41,9 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
 
   const ctx = getAuthenticatedContext();
   const repo = ctx.repo;
-  const promises: Promise<DicomInstance>[] = [];
+
+  /** One entry per instance, resolving once its bytes are stored and its metadata parsed. */
+  const parsedInstances: Promise<[Binary, DcmjsDicomDict]>[] = [];
 
   async function parseDicomMetadata(stream: PassThrough): Promise<DcmjsDicomDict> {
     const listener = new DicomMetadataListener({
@@ -102,6 +104,23 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
   }
 
   /**
+   * Stores every instance in the request, one at a time.
+   *
+   * Sequential because these writes share one repository and each opens a transaction, so
+   * overlapping them throws "Repository is in an active transaction".
+   * @returns The stored instances, in the order the sender listed them.
+   */
+  async function storeInstances(): Promise<DicomInstance[]> {
+    const parsed = await Promise.all(parsedInstances);
+    const instances: DicomInstance[] = [];
+    for (const instance of parsed) {
+      instances.push(await processInstance(instance));
+    }
+    await updateAggregates(instances);
+    return instances;
+  }
+
+  /**
    * Recomputes Study and Series level aggregates once each, after every instance is stored.
    *
    * Doing this here rather than in `processInstance` keeps a large series to a single study update
@@ -110,9 +129,8 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
    * and the next upload recomputes them again.
    *
    * @param instances - The instances stored by this request.
-   * @returns The same instances, for the STOW-RS response.
    */
-  async function updateAggregates(instances: DicomInstance[]): Promise<DicomInstance[]> {
+  async function updateAggregates(instances: DicomInstance[]): Promise<void> {
     const studyIds = new Set(instances.map((instance) => resolveId(instance.study)).filter(isString));
     for (const studyId of studyIds) {
       try {
@@ -130,8 +148,6 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
         getLogger().error('Error updating DICOM series aggregates', { err, seriesId });
       }
     }
-
-    return instances;
   }
 
   function sendStowResponse(instances: DicomInstance[]): void {
@@ -167,10 +183,13 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     const uploadStream = new PassThrough();
     const parseStream = new PassThrough();
 
-    const uploadPromise = uploadBinaryData(repo, uploadStream, {
+    // Overlapping parts cannot share a repository, since creating the Binary opens a transaction.
+    // A clone is safe here, unlike in `processInstance`: each part inserts its own new row.
+    const binaryRepo = repo.clone();
+    const uploadPromise = uploadBinaryData(binaryRepo, uploadStream, {
       contentType: 'application/dicom',
       filename: 'instance.dcm',
-    });
+    }).finally(() => binaryRepo[Symbol.dispose]());
 
     const parsePromise = parseDicomMetadata(parseStream);
 
@@ -191,13 +210,13 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       parseStream.destroy(err);
     });
 
-    promises.push(Promise.all([uploadPromise, parsePromise]).then(processInstance));
+    parsedInstances.push(Promise.all([uploadPromise, parsePromise]));
   });
 
   dicomwebMultipartParser.on('error', handleError);
 
   dicomwebMultipartParser.on('finish', () => {
-    Promise.all(promises).then(updateAggregates).then(sendStowResponse).catch(handleError);
+    storeInstances().then(sendStowResponse).catch(handleError);
   });
 
   req.pipe(dicomwebMultipartParser);

@@ -81,7 +81,9 @@ export async function resolveDicomFiles(inputs: string[]): Promise<string[]> {
     if (stats?.isDirectory()) {
       matches = await fastGlob('**/*', { cwd: input, onlyFiles: true, absolute: true });
     } else if (fastGlob.isDynamicPattern(input)) {
-      matches = await fastGlob(input, { onlyFiles: true, absolute: true });
+      // Matched case-insensitively because DICOM extensions are inconsistently cased in the wild,
+      // and `*.dcm` silently matching none of a directory of `.DCM` files helps nobody
+      matches = await fastGlob(input, { onlyFiles: true, absolute: true, caseSensitiveMatch: false });
     } else {
       throw new Error(`File not found: ${input}`);
     }

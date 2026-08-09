@@ -131,6 +131,18 @@ describe('CLI DICOMweb', () => {
     expect(bodies.map((body: string) => body.match(/instance\d/g)?.length)).toStrictEqual([2, 2, 1]);
   });
 
+  test('resolveDicomFiles matches nested directories and mismatched extension case', async () => {
+    const nestedDir = join(testDir, 'series1', 'sub');
+    mkdirSync(nestedDir, { recursive: true });
+    const topFile = join(testDir, 'a.DCM');
+    const nestedFile = join(nestedDir, 'b.DCM');
+    writeDicomFile(topFile, 'first');
+    writeDicomFile(nestedFile, 'second');
+
+    // `**` matches zero or more directories, so the top level file is included too
+    await expect(resolveDicomFiles([`${testDir}/**/*.dcm`])).resolves.toStrictEqual([topFile, nestedFile]);
+  });
+
   test('resolveDicomFiles detects DICOM without a preamble', async () => {
     // Part 10 with no preamble, starting directly with a (0002,0000) File Meta Information tag
     const noPreamble = join(testDir, 'no-preamble');
