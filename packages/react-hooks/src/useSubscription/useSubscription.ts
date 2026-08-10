@@ -44,12 +44,17 @@ export function useSubscription(
   options?: UseSubscriptionOptions
 ): void {
   const medplum = useMedplum();
+  const project = medplum.getProject();
   const profile = useMedplumProfile();
+
   // When the user is not authenticated, the subscription becomes a no-op. Subscribing would
   // create a `Subscription` resource and request a WebSocket binding token, both of which 401
-  // without a profile. Treating criteria as `undefined` skips all subscription work; when the
+  // without a profile. Also disabled when the active project does not have the feature flag.
+  const enabled = profile && project?.features?.includes('websocket-subscriptions');
+
+  // Treating criteria as `undefined` skips all subscription work; when the
   // user authenticates, `profile` changes and the effect re-runs to subscribe.
-  const effectiveCriteria = profile ? criteria : undefined;
+  const effectiveCriteria = enabled ? criteria : undefined;
   const [emitter, setEmitter] = useState<SubscriptionEmitter>();
   // We don't memoize the entire options object since it contains callbacks and if the callbacks change identity, we don't want to trigger a resubscribe to criteria
   const [memoizedSubProps, setMemoizedSubProps] = useState(options?.subscriptionProps);
