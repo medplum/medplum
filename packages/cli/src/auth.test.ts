@@ -81,6 +81,10 @@ describe('CLI auth', () => {
     // Start the login
     await main(['node', 'index.js', 'login']);
 
+    const loginCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
+    const loginUrl = new URL(loginCommand.match(/https?:\/\/[^'"]+/)?.[0] as string);
+    expect(loginUrl.searchParams.get('scope')).toBe('openid');
+
     // Get the handler
     const handler = (http.createServer as unknown as Mock).mock.calls[0][0];
 
@@ -108,6 +112,26 @@ describe('CLI auth', () => {
     expect(res3.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
     expect(res3.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
     expect(medplum.getActiveLogin()).toBeDefined();
+  });
+
+  test('Login with custom scope', async () => {
+    (cp.exec as unknown as Mock).mockImplementation(
+      (_: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        callback(null, '', '');
+        return true;
+      }
+    );
+    (http.createServer as unknown as Mock).mockReturnValue({
+      listen: () => ({
+        close: () => undefined,
+      }),
+    });
+
+    await main(['node', 'index.js', 'login', '--scope', 'openid offline_access']);
+
+    const loginCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
+    const loginUrl = new URL(loginCommand.match(/https?:\/\/[^'"]+/)?.[0] as string);
+    expect(loginUrl.searchParams.get('scope')).toBe('openid offline_access');
   });
 
   test('Login unsupported auth type', async () => {
