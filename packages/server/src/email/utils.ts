@@ -115,6 +115,28 @@ export function getProjectAppName(project: Project | undefined): string | undefi
   return project?.setting?.find((s) => s.name === 'appName')?.valueString?.trim() || undefined;
 }
 
+/** App name used when neither the project nor the server config names one. */
+export const DEFAULT_APP_NAME = 'Medplum';
+
+/**
+ * Returns the app name for user-facing content, most specific first: the
+ * project's `appName` setting, then the server's `appName` config setting,
+ * then the default.
+ *
+ * The server-level setting is what a self-hosted deployment needs. Content
+ * addressed to a user whose account is not scoped to a project has no project
+ * setting to read: server-scoped users (the default for Practitioner invites)
+ * and the password reset flow that looks them up. Without a server-level
+ * default, those messages name Medplum however the deployment is branded.
+ * @param project - The project the content belongs to, if any.
+ * @returns The app name to use.
+ */
+export function getAppName(project?: Project): string {
+  // `||` on the config value, not `??`: a blank setting means unset, and
+  // trimming one to an empty string would otherwise win over the default.
+  return getProjectAppName(project) ?? (getConfig().appName?.trim() || DEFAULT_APP_NAME);
+}
+
 /**
  * Adds a display name to a from address so recipients see the project's app name in
  * their inbox list rather than a bare address. Returns nodemailer's object form
