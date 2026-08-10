@@ -1630,7 +1630,8 @@ export function groupBy<T, K extends keyof any>(
   const result = acc ?? ({} as Record<K, T[]>);
   for (const item of items) {
     const key = keyFn(item);
-    (result[key] ||= []).push(item);
+    result[key] ??= [];
+    result[key].push(item);
   }
   return result;
 }
