@@ -88,7 +88,7 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
 
         {selected.length === 0 && !group.required && (
           <Text size="sm" c="dimmed">
-            Any {label}
+            No {label} held
           </Text>
         )}
 

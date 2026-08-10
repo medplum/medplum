@@ -116,7 +116,8 @@ export const SeveralChosen = (): JSX.Element => (
 );
 
 /**
- * An optional role, which reads "Any room" until something is chosen.
+ * An optional role, left empty. The search then holds no room at all, rather
+ * than looking for whichever one is free.
  * @returns The story.
  */
 export const Optional = (): JSX.Element => <Field group={ROOMS} />;

@@ -144,7 +144,7 @@ describe('AppointmentActorSelect', () => {
     setup({ group: ROOMS });
 
     expect(screen.getByText('Optional. Leave empty to search without a room.')).toBeInTheDocument();
-    expect(screen.getByText('Any room')).toBeInTheDocument();
+    expect(screen.getByText('No room held')).toBeInTheDocument();
   });
 
   test('Takes nothing while disabled', () => {
