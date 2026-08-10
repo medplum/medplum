@@ -116,7 +116,6 @@ export function useSubscription(
 
     return () => {
       unsubTimerRef.current = setTimeout(() => {
-        setEmitter(undefined);
         if (effectiveCriteria) {
           medplum.unsubscribeFromCriteria(effectiveCriteria, memoizedSubProps);
         }
