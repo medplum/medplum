@@ -4017,10 +4017,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
     }
 
-    if (!options.cache) {
-      options.cache = 'no-cache';
-    }
-
     if (!options.credentials) {
       options.credentials = 'include';
     }

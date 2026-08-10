@@ -25,7 +25,6 @@ import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
-import assert from 'node:assert';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -35,10 +34,17 @@ import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import {
   cleanupContextForResource,
+  deleteEndpointSubscription,
   extractAnchorResourceType,
+  extractEndpoint,
+  FhircastVersion,
   getCurrentContext,
+  getEndpointSubscription,
   getTopicContextStorageKey,
   getTopicCurrentContextKey,
+  parseFhircastEvents,
+  serializeFhircastChannelMessage,
+  setEndpointSubscription,
   setTopicCurrentContext,
 } from './utils';
 
@@ -152,7 +158,7 @@ protectedCommonRoutes.post(
         body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
         body('hub.mode').notEmpty().withMessage('Missing hub.mode'),
         body('hub.topic').notEmpty().withMessage('Missing hub.topic'),
-        body('hub.events').notEmpty().withMessage('Missing hub.events'),
+        // `hub.events` is checked in the handler, since only a subscribe request carries it
       ],
     ],
     { errorType: 'least_errored' }
@@ -195,6 +201,18 @@ protectedCommonRoutes.post(
   }
 );
 
+/**
+ * Returns which version of the spec a request came in on.
+ *
+ * The STU2 and STU3 routers share these handlers, so the mount path is what tells them apart. The
+ * `/api/hub` alias serves STU3.
+ * @param req - The request.
+ * @returns The FHIRcast version this request was made against.
+ */
+function getFhircastVersion(req: Request): FhircastVersion {
+  return req.baseUrl.includes(FhircastVersion.STU2) ? FhircastVersion.STU2 : FhircastVersion.STU3;
+}
+
 async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
@@ -211,68 +229,95 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   }
 
   const topic = req.body['hub.topic'];
-  let subscriptionEndpoint: string;
+  if (mode === 'unsubscribe') {
+    await handleUnsubscribeRequest(req, res, topic);
+    return;
+  }
+
+  // Only a subscribe request names events, so this is checked past the unsubscribe branch above.
+  if (!req.body['hub.events']) {
+    sendOutcome(res, badRequest('Missing hub.events'));
+    return;
+  }
+
+  // A value that names no events -- whitespace, or bare commas -- would otherwise hand back a
+  // socket that only ever receives heartbeats.
+  const events = parseFhircastEvents(req.body['hub.events']);
+  if (events.length === 0) {
+    sendOutcome(res, badRequest('Invalid hub.events'));
+    return;
+  }
+
+  // Every subscribe request gets its own endpoint, so that the Hub can tell apart subscribers
+  // sharing a topic and remember the events each one asked for.
+  const endpoint = generateId();
   try {
-    const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id}:topic:${topic}:endpoint`;
-    const results = await getCacheRedis()
-      // Multi allows for multiple commands to be executed in a transaction
-      .multi()
-      // Sets the endpoint key for this topic if it doesn't exist
-      .setnx(topicEndpointKey, generateId())
-      // Gets the endpoint, either previously generated endpoint secret or the newly generated key if a previous one did not exist
-      .get(topicEndpointKey)
-      // Executes the transaction
-      .exec();
-
-    if (!results) {
-      throw new Error('Redis returned no results while retrieving endpoint for this topic');
-    }
-
-    assert(results.length === 2, 'Redis did not return 2 command results for FHIRcast endpoint retrieval');
-
-    const [err, result] = results[1];
-    if (err) {
-      throw err;
-    }
-    subscriptionEndpoint = result as string;
-    const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
-    await getCacheRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
+    await setEndpointSubscription(endpoint, {
+      projectId: ctx.project.id,
+      topic,
+      events,
+      version: getFhircastVersion(req),
+    });
   } catch (err) {
-    sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
-    getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
+    sendOutcome(res, serverError(new Error('Failed to create subscription for topic')));
+    getLogger().error(`[FHIRcast]: Received error while creating subscription for topic`, {
       topic,
       error: normalizeErrorString(err),
     });
     return;
   }
 
-  const config = getConfig();
-  switch (mode) {
-    case 'subscribe':
-      res.status(202).json({
-        'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
-      });
-      break;
-    case 'unsubscribe':
-      res.status(202).json({
-        'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
-      });
-      publish(
-        `${ctx.project.id}:${topic}`,
-        JSON.stringify({
-          'hub.mode': 'denied',
-          'hub.topic': topic,
-          'hub.events': req.body['hub.events'],
-          'hub.reason': 'Subscriber unsubscribed from topic',
-        })
-      ).catch((err: Error) => {
-        getLogger().error(
-          `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
-          { topic }
-        );
-      });
-      break;
+  res.status(202).json({
+    'hub.channel.endpoint': getWebSocketUrl(getConfig().baseUrl, `/ws/fhircast/${endpoint}`),
+  });
+}
+
+async function handleUnsubscribeRequest(req: Request, res: Response, topic: string): Promise<void> {
+  const ctx = getAuthenticatedContext();
+
+  // Subscribers echo back the `hub.channel.endpoint` they were issued, which is what identifies the
+  // subscription to cancel. Several subscribers can share a topic, so an unsubscribe the Hub cannot
+  // address is not actionable: honoring it would mean denying every one of them.
+  const endpoint = extractEndpoint(req.body['hub.channel.endpoint']);
+  if (!endpoint) {
+    sendOutcome(res, badRequest('Missing endpoint'));
+    return;
   }
+
+  const subscription = await getEndpointSubscription(endpoint);
+  if (subscription?.projectId !== ctx.project.id || subscription.topic !== topic) {
+    // The endpoint names no subscription this caller holds on this topic, so there is nothing it
+    // can cancel and the request itself is malformed.
+    getLogger().warn('[FHIRcast]: Rejecting an unsubscribe request for an unknown endpoint', { topic });
+    sendOutcome(res, badRequest('Invalid endpoint'));
+    return;
+  }
+
+  await deleteEndpointSubscription(endpoint);
+
+  // The spec defines no body for an unsubscribe response, so echo back the endpoint that was cancelled
+  res.status(202).json({ 'hub.channel.endpoint': getWebSocketUrl(getConfig().baseUrl, `/ws/fhircast/${endpoint}`) });
+
+  publish(
+    `${ctx.project.id}:${topic}`,
+    serializeFhircastChannelMessage(
+      {
+        'hub.mode': 'denied',
+        'hub.topic': topic,
+        // The events the cancelled subscription held, which the Hub remembers and the request no
+        // longer has to name
+        'hub.events': subscription.events.join(','),
+        'hub.reason': 'Subscriber unsubscribed from topic',
+      },
+      // Deny only the unsubscribing socket, leaving the topic's other subscribers connected
+      endpoint
+    )
+  ).catch((err: Error) => {
+    getLogger().error(
+      `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
+      { topic }
+    );
+  });
 }
 
 async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
@@ -519,7 +564,7 @@ async function finalizeContextChangeRequest(
   projectId: string,
   payload: FhircastMessagePayload
 ): Promise<void> {
-  await publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
+  await publish(`${projectId}:${payload.event['hub.topic']}`, serializeFhircastChannelMessage(payload));
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
   res.status(202).json({ success: true, event: payload });
