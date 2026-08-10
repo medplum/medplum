@@ -1,0 +1,22 @@
+.banner {
+  background-color: light-dark(var(--mantine-color-blue-1), var(--mantine-color-blue-9));
+  color: light-dark(var(--mantine-color-dark-8), var(--mantine-color-gray-3));
+}
+
+.pill {
+  background-color: light-dark(var(--mantine-color-blue-6), var(--mantine-color-blue-2));
+  color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
+  font-weight: 600;
+}
+
+.banner.alpha {
+  background-color: light-dark(var(--mantine-color-violet-1), var(--mantine-color-violet-9));
+}
+
+.pill.alpha {
+  background-color: light-dark(var(--mantine-color-violet-4), var(--mantine-color-violet-2));
+}
+
+.content {
+  flex-grow: 1;
+}

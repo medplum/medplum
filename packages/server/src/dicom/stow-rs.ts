@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, isString, Operator } from '@medplum/core';
+import { createReference, isString, Operator, resolveId } from '@medplum/core';
 import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import type { DcmjsDicomDict } from 'dcmjs';
 import dcmjs from 'dcmjs';
@@ -10,7 +10,13 @@ import { PassThrough } from 'node:stream';
 import { getAuthenticatedContext } from '../context';
 import { uploadBinaryData } from '../fhir/binary';
 import { getLogger } from '../logger';
-import { cleanDicomJsonDict, dcmjsSeriesToMedplumSeries, dcmjsStudyToMedplumStudy } from './utils';
+import {
+  cleanDicomJsonDict,
+  dcmjsSeriesToMedplumSeries,
+  dcmjsStudyToMedplumStudy,
+  updateSeriesAggregates,
+  updateStudyAggregates,
+} from './utils';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { async, data, utilities } = dcmjs;
@@ -35,7 +41,9 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
 
   const ctx = getAuthenticatedContext();
   const repo = ctx.repo;
-  const promises: Promise<DicomInstance>[] = [];
+
+  /** One entry per instance, resolving once its bytes are stored and its metadata parsed. */
+  const parsedInstances: Promise<[Binary, DcmjsDicomDict]>[] = [];
 
   async function parseDicomMetadata(stream: PassThrough): Promise<DcmjsDicomDict> {
     const listener = new DicomMetadataListener({
@@ -77,22 +85,76 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       instanceNumber = '1'; // Default to "1" if InstanceNumber is missing or invalid, as it is a required field in DICOM
     }
 
-    return repo.createResource<DicomInstance>({
-      resourceType: 'DicomInstance',
-      study: createReference(studyResult.resource),
-      series: createReference(seriesResult.resource),
-      raw: createReference(binary),
-      metadata: JSON.stringify(dict),
-      sopClassUid: naturalized.SOPClassUID as string,
-      sopInstanceUid: naturalized.SOPInstanceUID as string,
-      instanceAvailability: naturalized.InstanceAvailability as string,
-      timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
-      instanceNumber: instanceNumber,
-      rows: naturalized.Rows as number,
-      columns: naturalized.Columns as number,
-      bitsAllocated: naturalized.BitsAllocated as number,
-      numberOfFrames: naturalized.NumberOfFrames as number,
-    });
+    const instanceResult = await repo.conditionalCreate<DicomInstance>(
+      {
+        resourceType: 'DicomInstance',
+        study: createReference(studyResult.resource),
+        series: createReference(seriesResult.resource),
+        raw: createReference(binary),
+        metadata: JSON.stringify(dict),
+        sopClassUid: naturalized.SOPClassUID as string,
+        sopInstanceUid: naturalized.SOPInstanceUID as string,
+        instanceAvailability: naturalized.InstanceAvailability as string,
+        timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
+        instanceNumber: instanceNumber,
+        rows: naturalized.Rows as number,
+        columns: naturalized.Columns as number,
+        bitsAllocated: naturalized.BitsAllocated as number,
+        numberOfFrames: naturalized.NumberOfFrames as number,
+      },
+      {
+        resourceType: 'DicomInstance',
+        filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: naturalized.SOPInstanceUID as string }],
+      }
+    );
+    return instanceResult.resource;
+  }
+
+  /**
+   * Stores every instance in the request, one at a time.
+   *
+   * Sequential because these writes share one repository and each opens a transaction, so
+   * overlapping them throws "Repository is in an active transaction".
+   * @returns The stored instances, in the order the sender listed them.
+   */
+  async function storeInstances(): Promise<DicomInstance[]> {
+    const parsed = await Promise.all(parsedInstances);
+    const instances: DicomInstance[] = [];
+    for (const instance of parsed) {
+      instances.push(await processInstance(instance));
+    }
+    await updateAggregates(instances);
+    return instances;
+  }
+
+  /**
+   * Recomputes Study and Series level aggregates once each, after every instance is stored.
+   *
+   * Doing this here rather than in `processInstance` keeps a large series to a single study update
+   * instead of one per instance. Only the series this request touched are updated, since the rest of
+   * the study cannot have changed. Failure is logged but not fatal: the instances are already stored,
+   * and the next upload recomputes them again.
+   *
+   * @param instances - The instances stored by this request.
+   */
+  async function updateAggregates(instances: DicomInstance[]): Promise<void> {
+    const studyIds = new Set(instances.map((instance) => resolveId(instance.study)).filter(isString));
+    for (const studyId of studyIds) {
+      try {
+        await updateStudyAggregates(repo, studyId);
+      } catch (err) {
+        getLogger().error('Error updating DICOM study aggregates', { err, studyId });
+      }
+    }
+
+    const seriesIds = new Set(instances.map((instance) => resolveId(instance.series)).filter(isString));
+    for (const seriesId of seriesIds) {
+      try {
+        await updateSeriesAggregates(repo, seriesId);
+      } catch (err) {
+        getLogger().error('Error updating DICOM series aggregates', { err, seriesId });
+      }
+    }
   }
 
   function sendStowResponse(instances: DicomInstance[]): void {
@@ -128,10 +190,13 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     const uploadStream = new PassThrough();
     const parseStream = new PassThrough();
 
-    const uploadPromise = uploadBinaryData(repo, uploadStream, {
+    // Overlapping parts cannot share a repository, since creating the Binary opens a transaction.
+    // A clone is safe here, unlike in `processInstance`: each part inserts its own new row.
+    const binaryRepo = repo.clone();
+    const uploadPromise = uploadBinaryData(binaryRepo, uploadStream, {
       contentType: 'application/dicom',
       filename: 'instance.dcm',
-    });
+    }).finally(() => binaryRepo[Symbol.dispose]());
 
     const parsePromise = parseDicomMetadata(parseStream);
 
@@ -152,13 +217,13 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       parseStream.destroy(err);
     });
 
-    promises.push(Promise.all([uploadPromise, parsePromise]).then(processInstance));
+    parsedInstances.push(Promise.all([uploadPromise, parsePromise]));
   });
 
   dicomwebMultipartParser.on('error', handleError);
 
   dicomwebMultipartParser.on('finish', () => {
-    Promise.all(promises).then(sendStowResponse).catch(handleError);
+    storeInstances().then(sendStowResponse).catch(handleError);
   });
 
   req.pipe(dicomwebMultipartParser);

@@ -332,6 +332,129 @@ describe('DICOM Routes', () => {
     expect(res).toHaveStatus(200);
     expect(JSON.stringify(res.body)).toContain('1.2.840.10008.5.1.4.1.1.7');
     expect(JSON.stringify(res.body)).toContain('1.2.826.0.1.3680043.10.543.1');
+
+    // The uploaded instance carries no ModalitiesInStudy (0008,0061), so the value below can only
+    // come from reconciling the study against its stored series.
+    const studies = await request(app)
+      .get(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(studies).toHaveStatus(200);
+    const stored = (studies.body as Record<string, { Value?: unknown[] }>[]).find(
+      (study) => study['0020000D']?.Value?.[0] === '1.2.826.0.1.3680043.10.543.2'
+    );
+    expect(stored?.['00080061'].Value).toStrictEqual(['OT']);
+    // Both counts have VR IS, which dcmjs denaturalizes to a string.
+    expect(stored?.['00201206'].Value).toStrictEqual(['1']);
+    expect(stored?.['00201208'].Value).toStrictEqual(['1']);
+
+    const series = await request(app)
+      .get(`/dicomweb/studies/1.2.826.0.1.3680043.10.543.2/series`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(series).toHaveStatus(200);
+    // NumberOfSeriesRelatedInstances (0020,1209), also computed rather than sent.
+    expect((series.body as Record<string, { Value?: unknown[] }>[])[0]['00201209'].Value).toStrictEqual(['1']);
+  });
+
+  test('Create study with multiple instances in one request', async () => {
+    // Every instance below shares a study and a series, so their conditional creates all resolve
+    // the same two resources. They must be written one at a time: `conditionalCreate` opens a
+    // serializable transaction on the connection they share, and overlapping them throws
+    // "Repository is in an active transaction".
+    const studyInstanceUid = '1.2.826.0.1.3680043.10.543.20';
+    const seriesInstanceUid = '1.2.826.0.1.3680043.10.543.21';
+    const sopInstanceUids = ['.22', '.23', '.24'].map((suffix) => `1.2.826.0.1.3680043.10.543${suffix}`);
+
+    const boundary = `medplum-${Date.now()}`;
+    const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+    const body = Buffer.concat([
+      ...sopInstanceUids.flatMap((sopInstanceUid, index) => [
+        Buffer.from(`--${boundary}\r\nContent-Type: application/dicom\r\n\r\n`),
+        createDicomBuffer({ sopInstanceUid, studyInstanceUid, seriesInstanceUid, instanceNumber: index + 1 }),
+        Buffer.from('\r\n'),
+      ]),
+      Buffer.from(`--${boundary}--\r\n`),
+    ]);
+
+    const res = await request(app)
+      .post(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', contentType)
+      .send(body);
+    expect(res).toHaveStatus(200);
+
+    // Every instance is acknowledged, once each, in the order the request listed them
+    const referenced = (res.body as Record<string, { Value?: { '00081155': { Value: string[] } }[] }>)[
+      '00081199'
+    ].Value?.map((item) => item['00081155'].Value[0]);
+    expect(referenced).toStrictEqual(sopInstanceUids);
+
+    // A single study and series absorbed all three, rather than one being created per instance
+    const studies = await request(app)
+      .get(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(studies).toHaveStatus(200);
+    const stored = (studies.body as Record<string, { Value?: unknown[] }>[]).filter(
+      (study) => study['0020000D']?.Value?.[0] === studyInstanceUid
+    );
+    expect(stored).toHaveLength(1);
+    // Counts have VR IS, which dcmjs denaturalizes to a string.
+    expect(stored[0]['00201206'].Value).toStrictEqual(['1']);
+    expect(stored[0]['00201208'].Value).toStrictEqual(['3']);
+
+    const series = await request(app)
+      .get(`/dicomweb/studies/${studyInstanceUid}/series`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(series).toHaveStatus(200);
+    const storedSeries = series.body as Record<string, { Value?: unknown[] }>[];
+    expect(storedSeries).toHaveLength(1);
+    expect(storedSeries[0]['00201209'].Value).toStrictEqual(['3']);
+  });
+
+  test('Re-uploading an instance does not create a duplicate', async () => {
+    const studyInstanceUid = '1.2.826.0.1.3680043.10.543.30';
+    const seriesInstanceUid = '1.2.826.0.1.3680043.10.543.31';
+    const sopInstanceUid = '1.2.826.0.1.3680043.10.543.32';
+
+    async function upload(): Promise<SuperAgentResponse> {
+      const boundary = `medplum-${Date.now()}`;
+      const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+      const body = Buffer.concat([
+        Buffer.from(`--${boundary}\r\nContent-Type: application/dicom\r\n\r\n`),
+        createDicomBuffer({ sopInstanceUid, studyInstanceUid, seriesInstanceUid }),
+        Buffer.from(`\r\n--${boundary}--\r\n`),
+      ]);
+      return request(app)
+        .post(`/dicomweb/studies`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', contentType)
+        .send(body);
+    }
+
+    // Store the same SOP instance twice, in two separate requests
+    expect(await upload()).toHaveStatus(200);
+    expect(await upload()).toHaveStatus(200);
+
+    // The conditional create resolved the existing instance the second time, so the study and series
+    // still count a single instance rather than two. NumberOfStudyRelatedInstances (0020,1208) and
+    // NumberOfSeriesRelatedInstances (0020,1209) are recomputed from the stored DicomInstance rows,
+    // so a duplicate would show here as '2'.
+    const studies = await request(app)
+      .get(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(studies).toHaveStatus(200);
+    const stored = (studies.body as Record<string, { Value?: unknown[] }>[]).filter(
+      (study) => study['0020000D']?.Value?.[0] === studyInstanceUid
+    );
+    expect(stored).toHaveLength(1);
+    expect(stored[0]['00201208'].Value).toStrictEqual(['1']);
+
+    const series = await request(app)
+      .get(`/dicomweb/studies/${studyInstanceUid}/series`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(series).toHaveStatus(200);
+    const storedSeries = series.body as Record<string, { Value?: unknown[] }>[];
+    expect(storedSeries).toHaveLength(1);
+    expect(storedSeries[0]['00201209'].Value).toStrictEqual(['1']);
   });
 
   test('Direct handler validation errors', async () => {
@@ -363,32 +486,41 @@ describe('DICOM Routes', () => {
   });
 });
 
-function createDicomBuffer(): Buffer {
+function createDicomBuffer(overrides?: {
+  sopInstanceUid?: string;
+  studyInstanceUid?: string;
+  seriesInstanceUid?: string;
+  instanceNumber?: number;
+}): Buffer {
+  const sopInstanceUid = overrides?.sopInstanceUid ?? '1.2.826.0.1.3680043.10.543.1';
   const elements = {
     _meta: {
       FileMetaInformationVersion: new Uint8Array([0, 1]).buffer,
       MediaStorageSOPClassUID: '1.2.840.10008.5.1.4.1.1.7',
-      MediaStorageSOPInstanceUID: '1.2.826.0.1.3680043.10.543.1',
+      MediaStorageSOPInstanceUID: sopInstanceUid,
       TransferSyntaxUID: '1.2.840.10008.1.2.1',
       ImplementationClassUID: '1.2.826.0.1.3680043.10.543',
       ImplementationVersionName: 'MEDPLUM',
     },
     SOPClassUID: '1.2.840.10008.5.1.4.1.1.7',
-    SOPInstanceUID: '1.2.826.0.1.3680043.10.543.1',
-    StudyInstanceUID: '1.2.826.0.1.3680043.10.543.2',
-    SeriesInstanceUID: '1.2.826.0.1.3680043.10.543.3',
+    SOPInstanceUID: sopInstanceUid,
+    StudyInstanceUID: overrides?.studyInstanceUid ?? '1.2.826.0.1.3680043.10.543.2',
+    SeriesInstanceUID: overrides?.seriesInstanceUid ?? '1.2.826.0.1.3680043.10.543.3',
     StudyID: 'STOW',
     StudyDate: '20240102',
     StudyTime: '030405',
     AccessionNumber: 'A123',
     Modality: 'OT',
-    ModalitiesInStudy: ['OT'],
     PatientName: [{ Alphabetic: 'STOW^TEST' }],
     PatientID: 'P-STOW',
     PatientBirthDate: '20000101',
     PatientSex: 'O',
     SeriesNumber: 1,
-    InstanceNumber: 1,
+    // Routinely sent by CT and MR scanners, and stored in elements typed as FHIR date and time,
+    // so a STOW request only succeeds if these are reformatted out of their DICOM DA and TM forms
+    PerformedProcedureStepStartDate: '20240102',
+    PerformedProcedureStepStartTime: '030405.000000',
+    InstanceNumber: overrides?.instanceNumber ?? 1,
     Rows: 1,
     Columns: 1,
     BitsAllocated: 8,

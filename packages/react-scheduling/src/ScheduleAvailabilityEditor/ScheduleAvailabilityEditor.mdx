@@ -1,0 +1,119 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as ScheduleAvailabilityEditorStories from './ScheduleAvailabilityEditor.stories';
+
+<Meta of={ScheduleAvailabilityEditorStories} />
+
+# ScheduleAvailabilityEditor
+
+Edits weekly availability for one visit service type, either as a Schedule's override of the service hours
+or as the service's own default hours. For the data model underneath it, see
+[Defining Availability](https://www.medplum.com/docs/scheduling/defining-availability).
+
+The component renders form content only, so you choose the container: place it inline in a page, or wrap it
+in a Modal or Drawer. It returns an updated resource for you to persist (for example, via
+`medplum.updateResource`). The helpers it reads and writes the `availability` override through,
+`getEffectiveAvailability` and `setScheduleAvailability`, are exported alongside it and are plain functions
+over FHIR resources, so a custom editor can use them without the component.
+
+## Editing a Schedule's override
+
+Passing a `schedule` edits that calendar's override of the service's hours. A single switch implements the
+[override behavior](https://www.medplum.com/docs/scheduling/defining-availability#override-behavior): with
+custom availability off, the Schedule inherits the service-level default and the days are shown read-only;
+switching it on writes an override, seeded from that default so the editor starts from the hours currently
+in effect. A reset link reloads the service default hours without giving up the override.
+
+<Canvas of={ScheduleAvailabilityEditorStories.CustomHoursOverride} />
+
+<Canvas of={ScheduleAvailabilityEditorStories.InheritingServiceDefault} />
+
+## Editing the service default
+
+Omitting the `schedule` prop edits the service's own default hours instead, returning an updated
+`HealthcareService` with its `availableTime` rewritten. It is the same weekly form over the same data, since
+the Schedule override stores exactly what `HealthcareService.availableTime` holds; only the destination
+differs. Editing the default changes the hours for every Schedule that has no override of its own, so the two
+modes are worth keeping distinct in your UI. Because the service has no default to fall back on, the inherit
+switch and the reset link are not shown.
+
+<Canvas of={ScheduleAvailabilityEditorStories.ServiceDefault} />
+
+## An empty week
+
+Neither mode can save a week with no available days in it, though for different reasons. An override with no
+available days cannot be written at all, since it serializes to an extension with no value and fails FHIR
+constraint `ext-1`. A service with no `availableTime` can be written, but it means the opposite of what an
+emptied form suggests: it is unrestricted, per
+[implicit availability](https://www.medplum.com/docs/scheduling/defining-availability#the-concept-of-implicit-availability),
+so clearing every day would leave the service bookable around the clock rather than never. Both cases disable
+Save and explain why on the button.
+
+Around the clock therefore has to be said rather than implied, by making each day available for a full 24
+hours. A service that should never be scheduled is deactivated instead, and a service that should not be
+scheduled on one calendar is switched off for that calendar in your own UI.
+
+<Canvas of={ScheduleAvailabilityEditorStories.ServiceDefaultWithNoHours} />
+
+## Picking times
+
+Each day holds one or more blocks of hours, picked from a list at quarter hour intervals. Rather than validate
+after the fact, the editor only offers the times still free on that day: a block cannot start before the
+previous one ends, and the last block of the day runs no later than midnight. Overlapping blocks and windows
+that run past the end of the day are therefore unreachable. A full 24 hours is expressed as a block from
+12:00 AM to 12:00 AM, which is saved with the `allDay` flag.
+
+Typing narrows that list rather than entering free text, so a time can be reached by keyboard without opening
+the way to a value outside the bounds. Typing a time in full, minutes included, adds it to the list, so a block
+can start at 3:03 PM even though the quarter hours skip it. The bounds still hold: a time outside them is not
+offered however it is typed. Leaving the field takes whichever time the list has highlighted, the same one
+Enter would have submitted, so tabbing on to the next field does not discard what was typed. Typing something
+no available time matches leaves the field as it was.
+
+A start time may be set past its own end time, so a later block can be opened without editing both fields in
+order. When that happens the end time moves to an hour after the new start, stopping at midnight. The move
+flashes the end time and is announced to assistive technology.
+
+The interval decides what is listed, not what a block may be set to, so times written elsewhere need not fall
+on it. The editor shows such a time as it is rather than rounding a value nobody asked it to change, and lists
+it as the current selection. The interval itself is measured from midnight, so a block stored as 9:07 AM still
+offers 9:15 AM and 9:30 AM alongside it.
+
+<Canvas of={ScheduleAvailabilityEditorStories.OffIntervalHours} />
+
+## Windows that cross midnight
+
+The editor does not author
+[windows that cross midnight](https://www.medplum.com/docs/scheduling/defining-availability#windows-that-cross-midnight),
+but it does read them. On mount, a stored window like Friday 10:00 PM to 6:00 AM is split at the day boundary
+into Friday 10:00 PM to 12:00 AM plus Saturday 12:00 AM to 6:00 AM, which the scheduling operations read as the
+same bookable hours. Overlapping entries written by the API are likewise sorted and merged into single blocks.
+Availability authored elsewhere therefore still opens in the editor rather than locking it, though saving
+rewrites it into the split form.
+
+<Canvas of={ScheduleAvailabilityEditorStories.OvernightHours} />
+
+## Time zone
+
+The times entered are wall-clock times in one zone, and the editor names that zone beneath the week so the
+hours are not read as local to whoever is looking. It does not resolve the zone itself: pass `timezone`, and
+omit it to leave the hint off. Resolve it with `getSchedulingTimezone` from `@medplum/core`, which reads the
+Schedule parameters, then the service parameters, then the actor's
+[timezone extension](http://hl7.org/fhir/StructureDefinition/timezone), in the same order the scheduling
+operations do. Only the last of those needs a fetch, so the caller loads the actor:
+
+```tsx
+const actor = useResource(schedule.actor[0]);
+
+<ScheduleAvailabilityEditor
+  schedule={schedule}
+  service={service}
+  timezone={getSchedulingTimezone(service, schedule, actor)}
+  onSave={onSave}
+/>;
+```
+
+## Props
+
+The props are a discriminated union on `schedule`, which selects what is edited, so they are documented as
+types rather than as a controls table: `ScheduleOverrideEditorProps` for a Schedule's override and
+`ServiceDefaultEditorProps` for the service default. Both are exported from `@medplum/react-scheduling`.

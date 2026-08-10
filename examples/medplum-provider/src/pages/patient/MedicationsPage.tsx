@@ -257,6 +257,7 @@ export function MedicationsPage(): JSX.Element {
     const today = new Date().toISOString().split('T')[0];
     const notificationId = 'dosespot-sync';
     let cancelled = false;
+    let syncing = true;
     showNotification({
       id: notificationId,
       loading: true,
@@ -298,10 +299,17 @@ export function MedicationsPage(): JSX.Element {
           hideNotification(notificationId);
           showErrorNotification(err);
         }
+      } finally {
+        syncing = false;
       }
     })().catch(showErrorNotification);
     return () => {
       cancelled = true;
+      // Dismiss the persistent loading toast if sync is still in flight when we
+      // unmount; otherwise the global notification lingers forever after navigating away.
+      if (syncing) {
+        hideNotification(notificationId);
+      }
     };
   }, [hasDoseSpot, medplum, patient?.id]);
 

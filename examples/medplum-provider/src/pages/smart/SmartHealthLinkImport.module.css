@@ -1,0 +1,166 @@
+/* Stepper block — padding independent from step content below */
+.stepperModule {
+  display: flex;
+  flex-direction: column;
+  /* XL band between stepper and its bottom divider */
+  gap: var(--mantine-spacing-xl);
+}
+
+/* Step body — starts after the stepper divider */
+.stepContent {
+  /* MD band between stepper divider and first subhead */
+  padding-top: var(--mantine-spacing-md);
+}
+
+/* XL above divider, md below → [divider] [md] [subhead] */
+.sectionDivider {
+  margin-top: var(--mantine-spacing-xl);
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+/* Minimal stepper: labels above, small hollow dots, continuous connector line */
+.stepper {
+  --shl-dot-size: 16px;
+  --shl-dot-border: 1.5px;
+  --shl-step-gap: calc(var(--mantine-spacing-xl) * 2);
+  --shl-progress: 0%;
+  --shl-line: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  --shl-dot: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+  --shl-dot-active: var(--mantine-primary-color-filled);
+}
+
+.steps {
+  position: relative;
+  align-items: flex-end;
+  gap: var(--shl-step-gap);
+}
+
+/* Continuous line through dot centers (3 equal columns with 2xl gap between steps) */
+.steps::before {
+  content: '';
+  position: absolute;
+  left: calc((100% - 2 * var(--shl-step-gap)) / 6);
+  right: calc((100% - 2 * var(--shl-step-gap)) / 6);
+  bottom: calc(var(--shl-dot-size) / 2 - 0.5px);
+  height: 1px;
+  z-index: 0;
+  background: linear-gradient(
+    to right,
+    var(--shl-dot-active) 0,
+    var(--shl-dot-active) var(--shl-progress),
+    var(--shl-line) var(--shl-progress),
+    var(--shl-line) 100%
+  );
+}
+
+.step {
+  flex: 1 1 0;
+  flex-direction: column-reverse !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.stepBody {
+  margin: 0 !important;
+  text-align: center;
+  width: 100%;
+}
+
+.stepLabel {
+  display: block;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--mantine-color-dimmed);
+  white-space: normal;
+}
+
+.step[data-progress] .stepLabel,
+.step[data-completed] .stepLabel {
+  color: var(--mantine-primary-color-filled);
+}
+
+.stepWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--shl-dot-size);
+}
+
+.stepIcon {
+  width: var(--shl-dot-size) !important;
+  height: var(--shl-dot-size) !important;
+  min-width: var(--shl-dot-size) !important;
+  min-height: var(--shl-dot-size) !important;
+  border: var(--shl-dot-border) solid var(--shl-dot) !important;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  box-shadow: none !important;
+}
+
+.stepIcon[data-progress],
+.stepIcon[data-completed] {
+  border-color: var(--shl-dot-active) !important;
+}
+
+.stepIcon[data-completed] {
+  background-color: var(--shl-dot-active) !important;
+  color: var(--mantine-color-white) !important;
+}
+
+/* Hide step numbers; show checkmark on completed steps only */
+.stepIcon:not([data-completed]) > * {
+  display: none !important;
+}
+
+.stepIcon[data-completed] > * {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Mantine separators are replaced by .steps::before */
+.separator {
+  display: none !important;
+}
+
+/* Match TextInput / Button corner radius on the scanner preview */
+.scanner {
+  position: relative;
+}
+
+.scanner :global(video) {
+  border-radius: var(--mantine-radius-default);
+}
+
+.scannerOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--mantine-radius-default);
+  background: light-dark(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-xl);
+}
+
+.destinationCardSelected {
+  border-color: var(--mantine-color-blue-6) !important;
+}
+
+/* Expiry is a caution, not a failure, so it stays on the lightest red tint. Paired with
+   Mantine's translucent red for dark mode, where red-1 would read as near-white. */
+.expiredAlert {
+  background-color: light-dark(var(--mantine-color-red-1), var(--mantine-color-red-light));
+}
