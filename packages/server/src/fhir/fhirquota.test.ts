@@ -53,7 +53,7 @@ describe('FHIR Rate Limits', () => {
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res2).toHaveStatus(429);
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
-    expect(res2.body.issue[0].extension).toContainEqual({
+    expect(res2.body.extension).toContainEqual({
       url: 'https://medplum.com/fhir/StructureDefinition/rate-limit-reset',
       valueUnsignedInt: 60,
     });

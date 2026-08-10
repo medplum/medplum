@@ -3,6 +3,7 @@
 import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { arrayify } from './array';
 import type { Constraint } from './typeschema/types';
+import { EMPTY } from './utils';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -225,8 +226,8 @@ export const tooManyRequests: OperationOutcome = {
  * @param msBeforeNext - Milliseconds until the rate limit resets.
  */
 export function setRateLimitReset(outcome: OperationOutcome, msBeforeNext: number): void {
-  outcome.issue[0].extension = [
-    ...(outcome.issue[0].extension ?? []).filter((e) => e.url !== RATE_LIMIT_RESET_EXTENSION_URL),
+  outcome.extension = [
+    ...(outcome.extension ?? EMPTY).filter((e) => e.url !== RATE_LIMIT_RESET_EXTENSION_URL),
     {
       url: RATE_LIMIT_RESET_EXTENSION_URL,
       valueUnsignedInt: Math.ceil(msBeforeNext / 1000),
@@ -240,9 +241,7 @@ export function setRateLimitReset(outcome: OperationOutcome, msBeforeNext: numbe
  * @returns Milliseconds until reset, or undefined if not present.
  */
 export function getRateLimitReset(outcome: OperationOutcome): number | undefined {
-  const seconds = outcome.issue
-    .flatMap((issue) => issue.extension ?? [])
-    .find((e) => e.url === RATE_LIMIT_RESET_EXTENSION_URL)?.valueUnsignedInt;
+  const seconds = outcome.extension?.find((e) => e.url === RATE_LIMIT_RESET_EXTENSION_URL)?.valueUnsignedInt;
   if (seconds !== undefined) {
     return seconds * 1000;
   }
