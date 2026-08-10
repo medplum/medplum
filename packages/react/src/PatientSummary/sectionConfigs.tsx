@@ -285,7 +285,6 @@ export const PharmaciesSection: PatientSummarySectionConfig = createPharmaciesSe
 export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySectionConfig[] {
   return [
     DemographicsSection,
-    GoalsSection,
     InsuranceSection,
     AllergiesSection,
     ProblemListSection,
@@ -295,6 +294,7 @@ export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySe
     SexualOrientationSection,
     SmokingStatusSection,
     VitalsSection,
+    GoalsSection,
     PharmaciesSection,
   ];
 }

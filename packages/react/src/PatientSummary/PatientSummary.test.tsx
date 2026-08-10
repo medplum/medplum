@@ -315,7 +315,6 @@ describe('PatientSummary', () => {
     expect(sections).toHaveLength(12);
     expect(sections.map((s) => s.key)).toEqual([
       'demographics',
-      'goals',
       'insurance',
       'allergies',
       'problemList',
@@ -325,6 +324,7 @@ describe('PatientSummary', () => {
       'sexualOrientation',
       'smokingStatus',
       'vitals',
+      'goals',
       'pharmacies',
     ]);
   });
