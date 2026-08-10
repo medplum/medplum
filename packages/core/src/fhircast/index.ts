@@ -293,11 +293,17 @@ export function serializeFhircastSubscriptionRequest(
     'hub.channel.type': channelType,
     'hub.mode': mode,
     'hub.topic': topic,
-    'hub.events': events.join(','),
   } as Record<string, string>;
 
+  if (mode === 'subscribe') {
+    // An unsubscribe cancels an endpoint, and the Hub already holds the events it was issued for
+    formattedSubRequest['hub.events'] = events.join(',');
+  }
+
   if (isCompletedSubscriptionRequest(subscriptionRequest)) {
-    formattedSubRequest.endpoint = subscriptionRequest.endpoint;
+    // Named for the field the Hub issued the endpoint under, which is what identifies the
+    // subscription being cancelled back to it
+    formattedSubRequest['hub.channel.endpoint'] = subscriptionRequest.endpoint;
   }
   return new URLSearchParams(formattedSubRequest).toString();
 }
@@ -565,8 +571,14 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
       websocket.addEventListener('message', (event: MessageEvent) => {
         const message = JSON.parse(event.data) as Record<string, string | object>;
 
-        // This is a check for `subscription request confirmations`, we just discard these for now
-        if (message['hub.topic']) {
+        // The Hub's control messages carry no `event`, so there is nothing for a listener to
+        // receive. A denial ends the subscription: close from this end too, rather than holding a
+        // socket the Hub has already stopped honoring. A denial the Hub could not resolve an
+        // endpoint for names no topic, so `hub.topic` alone does not identify one.
+        if (!message.event) {
+          if (message['hub.mode'] === 'denied') {
+            websocket.close();
+          }
           return;
         }
 

@@ -17,7 +17,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { AlphaBanner } from '../../components/AlphaBanner';
+import { ReleaseStageBanner } from '../../components/ReleaseStageBanner';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 
 interface HealthcareServiceSchedulingFormProps {
@@ -75,7 +75,9 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
     <Form onSubmit={handleSubmit}>
       <Stack gap="md">
         <Title order={2}>{service.name} - Scheduling Configuration</Title>
-        <AlphaBanner bdrs="md">Medplum Scheduling is in an Alpha period and is subject to change.</AlphaBanner>
+        <ReleaseStageBanner stage="beta" bdrs="md">
+          Medplum Scheduling is in a Beta period and is subject to change.
+        </ReleaseStageBanner>
         <CodingInput
           name="encounterClass"
           label="Encounter Class"
