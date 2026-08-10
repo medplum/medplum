@@ -54,7 +54,11 @@ export function App(): JSX.Element {
                 message: (
                   <>
                     Warning: logged in as{' '}
-                    <Link to="https://www.medplum.com/docs/self-hosting/super-admin-guide" target="_blank" rel="noopener noreferrer">
+                    <Link
+                      to="https://www.medplum.com/docs/self-hosting/super-admin-guide"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Medplum Super Admin
                     </Link>
                     .
