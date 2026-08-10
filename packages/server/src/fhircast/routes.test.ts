@@ -28,7 +28,13 @@ import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { EventCategory } from './routes';
 import { getEventCategory } from './routes';
-import { extractEndpoint, getEndpointSubscription, setTopicCurrentContext } from './utils';
+import {
+  extractEndpoint,
+  getCurrentContext,
+  getEndpointSubscription,
+  getTopicCurrentContextKey,
+  setTopicCurrentContext,
+} from './utils';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2';
 const STU3_BASE_ROUTE = '/fhircast/STU3';
@@ -1176,6 +1182,74 @@ describe('FHIRcast routes', () => {
     expect(
       (publishRes.body.event.event as FhircastEventPayload<'DiagnosticReport-update'>)['context.priorVersionId']
     ).toStrictEqual(versionId);
+  });
+
+  test('`DiagnosticReport-update` is rejected when another update lands while it is applied', async () => {
+    const topic = randomUUID();
+    const versionId = generateId();
+    const reportId = generateId();
+    const openContext = (contextVersionId: string): CurrentContext<'DiagnosticReport'> => ({
+      'context.type': 'DiagnosticReport',
+      'context.versionId': contextVersionId,
+      context: [
+        {
+          key: 'report',
+          resource: {
+            id: reportId,
+            resourceType: 'DiagnosticReport',
+            status: 'preliminary',
+            code: { text: 'Radiology Imaging study' },
+          },
+        },
+        { key: 'content', resource: { id: generateId(), resourceType: 'Bundle', type: 'collection' } },
+      ],
+    });
+
+    await setTopicCurrentContext(project.id, topic, openContext(versionId));
+
+    // Stand in for a second update that commits between this one's read and its write. Both are
+    // validated against `versionId`, so only a conditional write can tell them apart.
+    const winningVersionId = generateId();
+    const redis = getCacheRedis();
+    const contextKey = getTopicCurrentContextKey(project.id, topic);
+    const originalGet = redis.get.bind(redis);
+    const getSpy = vi.spyOn(redis, 'get').mockImplementation((async (key: string): Promise<string | null> => {
+      const value = await originalGet(key);
+      if (key === contextKey) {
+        await setTopicCurrentContext(project.id, topic, openContext(winningVersionId));
+      }
+      return value;
+    }) as typeof redis.get);
+
+    try {
+      const payload = createFhircastMessagePayload(
+        topic,
+        'DiagnosticReport-update',
+        [
+          { key: 'report', reference: { reference: `DiagnosticReport/${reportId}` } },
+          { key: 'updates', resource: { id: generateId(), resourceType: 'Bundle', type: 'transaction' } },
+        ] satisfies FhircastEventContext<'DiagnosticReport-update'>[],
+        versionId
+      );
+
+      const res = await request(server)
+        .post(STU3_BASE_ROUTE)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(payload);
+      expect(res).toHaveStatus(409);
+      expect(res.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [{ severity: 'error', code: 'conflict' }],
+      });
+    } finally {
+      getSpy.mockRestore();
+    }
+
+    // The update that lost the race left the one that won it untouched
+    await expect(getCurrentContext(project.id, topic)).resolves.toMatchObject({
+      'context.versionId': winningVersionId,
+    });
   });
 
   test('`DiagnosticReport-update` returns 400 when current context is not a DiagnosticReport', async () => {

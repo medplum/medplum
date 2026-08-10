@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { CurrentContext } from '@medplum/core';
 import { generateId, OperationOutcomeError } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
@@ -7,14 +8,17 @@ import { loadTestConfig } from '../config/loader';
 import { closeRedis, getCacheRedis, initRedis } from '../redis';
 import type { FhircastSubscription } from './utils';
 import {
+  compareAndSetTopicCurrentContext,
   deleteEndpointSubscription,
   extractEndpoint,
   FHIRCAST_LEASE_SECONDS,
+  getCurrentContext,
   getEndpointSubscription,
   getEndpointSubscriptionKey,
   getTopicForUser,
   parseFhircastEvents,
   setEndpointSubscription,
+  setTopicCurrentContext,
 } from './utils';
 
 describe('FHIRcast Utils', () => {
@@ -192,6 +196,95 @@ describe('FHIRcast Utils', () => {
       const endpoint = generateId();
       await getCacheRedis().set(getEndpointSubscriptionKey(endpoint), cached);
       await expect(getEndpointSubscription(endpoint)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('compareAndSetTopicCurrentContext', () => {
+    const contextAtVersion = (versionId: string): CurrentContext<'DiagnosticReport'> => ({
+      'context.type': 'DiagnosticReport',
+      'context.versionId': versionId,
+      context: [
+        {
+          key: 'report',
+          resource: {
+            id: generateId(),
+            resourceType: 'DiagnosticReport',
+            status: 'preliminary',
+            code: { text: 'Radiology Imaging study' },
+          },
+        },
+        { key: 'content', resource: { id: generateId(), resourceType: 'Bundle', type: 'collection' } },
+      ],
+    });
+
+    test('Replaces the context when it is still at the expected version', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+      const versionId = generateId();
+      await setTopicCurrentContext(projectId, topic, contextAtVersion(versionId));
+
+      const next = contextAtVersion(generateId());
+      await expect(compareAndSetTopicCurrentContext(projectId, topic, versionId, next)).resolves.toBe(true);
+      await expect(getCurrentContext(projectId, topic)).resolves.toStrictEqual(next);
+    });
+
+    test('Leaves a context that has already moved on', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+      const winner = contextAtVersion(generateId());
+      await setTopicCurrentContext(projectId, topic, winner);
+
+      const loser = contextAtVersion(generateId());
+      await expect(compareAndSetTopicCurrentContext(projectId, topic, generateId(), loser)).resolves.toBe(false);
+      await expect(getCurrentContext(projectId, topic)).resolves.toStrictEqual(winner);
+    });
+
+    test('Establishes no context for a topic that has none', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+
+      const context = contextAtVersion(generateId());
+      await expect(compareAndSetTopicCurrentContext(projectId, topic, generateId(), context)).resolves.toBe(false);
+      await expect(getCurrentContext(projectId, topic)).resolves.toBeUndefined();
+    });
+
+    test('Replaces the context when the script is no longer cached by Redis', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+      const versionId = generateId();
+      await setTopicCurrentContext(projectId, topic, contextAtVersion(versionId));
+      await getCacheRedis().script('FLUSH');
+
+      const next = contextAtVersion(generateId());
+      await expect(compareAndSetTopicCurrentContext(projectId, topic, versionId, next)).resolves.toBe(true);
+      await expect(getCurrentContext(projectId, topic)).resolves.toStrictEqual(next);
+    });
+
+    test('Sends only the script digest once Redis has the script cached', async () => {
+      const projectId = generateId();
+      const topic = generateId();
+      const versionId = generateId();
+      await setTopicCurrentContext(projectId, topic, contextAtVersion(versionId));
+
+      // Caches the script, so the call being measured has no reason to send the body again.
+      const nextVersionId = generateId();
+      await expect(
+        compareAndSetTopicCurrentContext(projectId, topic, versionId, contextAtVersion(nextVersionId))
+      ).resolves.toBe(true);
+
+      const redis = getCacheRedis();
+      const evalshaSpy = vi.spyOn(redis, 'evalsha');
+      const evalSpy = vi.spyOn(redis, 'eval');
+      try {
+        const next = contextAtVersion(generateId());
+        await expect(compareAndSetTopicCurrentContext(projectId, topic, nextVersionId, next)).resolves.toBe(true);
+        expect(evalshaSpy).toHaveBeenCalledTimes(1);
+        expect(evalSpy).not.toHaveBeenCalled();
+        await expect(getCurrentContext(projectId, topic)).resolves.toStrictEqual(next);
+      } finally {
+        evalshaSpy.mockRestore();
+        evalSpy.mockRestore();
+      }
     });
   });
 });

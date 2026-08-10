@@ -11,6 +11,7 @@ import type {
 import {
   append,
   badRequest,
+  conflict,
   EMPTY,
   generateId,
   getWebSocketUrl,
@@ -34,6 +35,7 @@ import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import {
   cleanupContextForResource,
+  compareAndSetTopicCurrentContext,
   deleteEndpointSubscription,
   extractAnchorResourceType,
   extractEndpoint,
@@ -444,7 +446,19 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   event['context.priorVersionId'] = priorVersionId;
   currentContext['context.versionId'] = event['context.versionId'] = generateId();
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html
-  await setTopicCurrentContext(projectId, event['hub.topic'], currentContext);
+  // The version was checked above, but only a conditional write keeps it true: another update to
+  // this topic may have landed while this one was being applied, and it would be the version this
+  // event names as its prior.
+  const applied = await compareAndSetTopicCurrentContext(projectId, event['hub.topic'], priorVersionId, currentContext);
+  if (!applied) {
+    sendOutcome(
+      res,
+      conflict(
+        `Context for this topic changed while the update was being applied, it is no longer at version '${priorVersionId}'`
+      )
+    );
+    return;
+  }
   await finalizeContextChangeRequest(res, projectId, req.body);
 }
 
