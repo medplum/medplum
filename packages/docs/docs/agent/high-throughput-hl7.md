@@ -218,17 +218,6 @@ An `Agent` configured for a high-volume feed: durable queue on, partitioned by p
         "reference": "Bot/00000000-0000-0000-0000-000000000000",
         "display": "Inbound HL7 Bot"
       }
-    },
-    {
-      "name": "inbound-astm",
-      "endpoint": {
-        "reference": "Endpoint/00000000-0000-0000-0000-000000000000",
-        "display": "Inbound ASTM Endpoint"
-      },
-      "targetReference": {
-        "reference": "Bot/00000000-0000-0000-0000-000000000000",
-        "display": "Inbound ASTM Bot"
-      }
     }
   ]
 }
