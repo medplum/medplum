@@ -334,6 +334,10 @@ describe('App', () => {
     expect(res).toHaveStatus(200);
     const res2 = await request(app).get('/api/');
     expect(res2).toHaveStatus(429);
+    expect(res2.body.issue[0].extension).toContainEqual({
+      url: 'https://medplum.com/fhir/StructureDefinition/rate-limit-reset',
+      valueUnsignedInt: 60,
+    });
     await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
