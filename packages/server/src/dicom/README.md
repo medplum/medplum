@@ -1,13 +1,20 @@
 # Medplum DICOM
 
-Implemented DICOMweb/WADO services:
+Implemented DICOMweb services. This is a subset of the standard — the tables below describe what the
+spec requires, not what is currently built. See `routes.ts` for the authoritative list; every route
+not named here is a `notImplementedStub` that returns `200` with an empty body.
 
-- QIDO-RS: Look up studies, series, images
-- WADO-RS: Retrieve studies, series, images, frames and metadata
-- STOW-RS: Store DICOM instances/images
-- WADO-URI: Web Access to DICOM objects
+| Service | Implemented                                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------------------------- |
+| STOW-RS | `POST /studies`, `POST /studies/{studyUid}`                                                                       |
+| QIDO-RS | `GET /studies` (no query parameter filtering), `GET /studies/{studyUid}/series`                                    |
+| WADO-RS | `GET /studies/{studyUid}/series/{seriesUid}/metadata`, `GET /studies/{studyUid}/series/{seriesUid}/instances/{instanceUid}/frames/{frame}` (single frame only) |
+
+WADO-URI is not implemented.
 
 Also includes OHIF Viewer integration, based on http://dicomcloud.com/docs/ohif-integration/
+
+User-facing documentation lives in `packages/docs/docs/dicom`.
 
 ## QIDO-RS
 
