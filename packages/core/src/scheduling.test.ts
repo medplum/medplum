@@ -3,10 +3,10 @@
 import type { Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
 import {
   clearScheduleParameter,
-  durationToMinutes,
   extractServiceTypeReferences,
   getScheduleParameters,
   getSchedulingTimezone,
+  schedulingDurationToMinutes,
   SchedulingParametersURI,
   serviceTypeIncludesService,
   setScheduleParameter,
@@ -272,25 +272,25 @@ describe('serviceType CodeableConcepts', () => {
   });
 });
 
-describe('durationToMinutes', () => {
+describe('schedulingDurationToMinutes', () => {
   test('converts every unit scheduling accepts', () => {
-    expect(durationToMinutes({ value: 30, unit: 'min' })).toBe(30);
-    expect(durationToMinutes({ value: 1, unit: 'h' })).toBe(60);
-    expect(durationToMinutes({ value: 1, unit: 'd' })).toBe(1440);
-    expect(durationToMinutes({ value: 1, unit: 'wk' })).toBe(10080);
-    expect(durationToMinutes({ value: 0, unit: 'min' })).toBe(0);
+    expect(schedulingDurationToMinutes({ value: 30, unit: 'min' })).toBe(30);
+    expect(schedulingDurationToMinutes({ value: 1, unit: 'h' })).toBe(60);
+    expect(schedulingDurationToMinutes({ value: 1, unit: 'd' })).toBe(1440);
+    expect(schedulingDurationToMinutes({ value: 1, unit: 'wk' })).toBe(10080);
+    expect(schedulingDurationToMinutes({ value: 0, unit: 'min' })).toBe(0);
   });
 
   test('refuses a duration the scheduling operations would refuse', () => {
     // Rejected rather than read as minutes: a unit guessed wrong here and
     // validated there would have the two disagree by hours.
-    expect(durationToMinutes({ value: 30, unit: 's' })).toBeUndefined();
-    expect(durationToMinutes({ value: 1, unit: 'mo' })).toBeUndefined();
+    expect(schedulingDurationToMinutes({ value: 30, unit: 's' })).toBeUndefined();
+    expect(schedulingDurationToMinutes({ value: 1, unit: 'mo' })).toBeUndefined();
     // `unit` is what the operations validate; a UCUM code alone is not enough.
-    expect(durationToMinutes({ value: 1, code: 'h' })).toBeUndefined();
-    expect(durationToMinutes({ value: 1 })).toBeUndefined();
-    expect(durationToMinutes({ unit: 'min' })).toBeUndefined();
-    expect(durationToMinutes({ value: -30, unit: 'min' })).toBeUndefined();
-    expect(durationToMinutes(undefined)).toBeUndefined();
+    expect(schedulingDurationToMinutes({ value: 1, code: 'h' })).toBeUndefined();
+    expect(schedulingDurationToMinutes({ value: 1 })).toBeUndefined();
+    expect(schedulingDurationToMinutes({ unit: 'min' })).toBeUndefined();
+    expect(schedulingDurationToMinutes({ value: -30, unit: 'min' })).toBeUndefined();
+    expect(schedulingDurationToMinutes(undefined)).toBeUndefined();
   });
 });

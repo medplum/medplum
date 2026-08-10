@@ -4,10 +4,10 @@ import type { DayOfWeek, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
-  durationToMinutes,
   isDayOfWeek,
   isDefined,
   OperationOutcomeError,
+  schedulingDurationToMinutes,
   SchedulingParametersURI,
 } from '@medplum/core';
 import type {
@@ -158,7 +158,7 @@ function extensionDurationToMinutes(extension: WithPath<Extension>): number {
     throw new OperationOutcomeError(badRequest('Got duration with negative value', getPath(extension)));
   }
 
-  const minutes = durationToMinutes(extension.valueDuration);
+  const minutes = schedulingDurationToMinutes(extension.valueDuration);
   if (minutes === undefined) {
     throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
   }

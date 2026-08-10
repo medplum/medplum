@@ -299,7 +299,7 @@ const MINUTES_PER_UNIT: Record<string, number | undefined> = {
  * @returns The length in minutes, or undefined when the duration has no value, a
  * negative value, or a unit scheduling does not accept.
  */
-export function durationToMinutes(duration: Duration | undefined): number | undefined {
+export function schedulingDurationToMinutes(duration: Duration | undefined): number | undefined {
   const value = duration?.value;
   if (value === undefined || value < 0) {
     return undefined;
