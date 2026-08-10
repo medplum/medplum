@@ -104,9 +104,7 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       },
       {
         resourceType: 'DicomInstance',
-        filters: [
-          { code: 'sop-instance-uid', operator: Operator.EXACT, value: naturalized.SOPInstanceUID as string },
-        ],
+        filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: naturalized.SOPInstanceUID as string }],
       }
     );
     return instanceResult.resource;
