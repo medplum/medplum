@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
+import type { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions, UpDownCounter } from '@opentelemetry/api';
 import { metrics } from '@opentelemetry/api';
 import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
+import type { WorkerName } from '../config/types';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
@@ -13,8 +14,28 @@ import { getDownloadQueue } from '../workers/download';
 import { getSetAccountsQueue } from '../workers/set-accounts';
 import { getSubscriptionQueue } from '../workers/subscription';
 
-let queueEntries: [string, Queue][] | undefined;
-function getQueueEntries(): [string, Queue][] {
+/**
+ * Metrics recorded once per queue.
+ *
+ * `waitingCount`, `delayedCount` and `activeCount` are gauges the heartbeat reads out of Redis, so
+ * they describe the streams backing the queue as the whole cluster sees them -- the metrics for
+ * backlog and saturation. `inFlightJobs` (an UpDownCounter moved up as a job starts and down as it
+ * settles) and `jobsCompleted` (incremented when a processor returns without throwing) are maintained
+ * by the worker itself and describe a single host, which is what makes per-host throughput derivable
+ * from them.
+ *
+ * The two groups are not expected to agree: `activeCount` includes jobs leased by a host that has
+ * since died and whose lock has not yet expired, and `jobsCompleted` is a BullMQ-level signal, so a
+ * processor that handles a failure internally and returns normally still counts as completed.
+ */
+export type QueueMetric = 'waitingCount' | 'delayedCount' | 'activeCount' | 'inFlightJobs' | 'jobsCompleted';
+
+export function getQueueMetricName(queueName: WorkerName, metric: QueueMetric): string {
+  return `medplum.${queueName}.${metric}`;
+}
+
+let queueEntries: [WorkerName, Queue][] | undefined;
+function getQueueEntries(): [WorkerName, Queue][] {
   if (!queueEntries) {
     if (!(getSubscriptionQueue() && getCronQueue() && getDownloadQueue() && getBatchQueue() && getSetAccountsQueue())) {
       throw new Error('Queues not initialized');
@@ -36,13 +57,14 @@ function getQueueEntries(): [string, Queue][] {
 // This file is used to record metrics.
 
 const hostname = os.hostname();
-const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
+export const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
 let otelHeartbeatListener: (() => Promise<void>) | undefined;
 
 let meter: Meter | undefined = undefined;
 const counters = new Map<string, Counter>();
 const histograms = new Map<string, Histogram>();
 const gauges = new Map<string, Gauge>();
+const upDownCounters = new Map<string, UpDownCounter>();
 
 export type RecordMetricOptions = {
   attributes?: Attributes;
@@ -105,6 +127,23 @@ export function setGauge(name: string, value: number, options?: RecordMetricOpti
   return true;
 }
 
+export function getUpDownCounter(name: string, options?: MetricOptions): UpDownCounter {
+  let result = upDownCounters.get(name);
+  if (!result) {
+    result = getMeter().createUpDownCounter(name, options);
+    upDownCounters.set(name, result);
+  }
+  return result;
+}
+
+export function addToUpDownCounter(name: string, delta: number, options?: RecordMetricOptions): boolean {
+  if (!isOtelMetricsEnabled()) {
+    return false;
+  }
+  getUpDownCounter(name, options?.options).add(delta, options?.attributes);
+  return true;
+}
+
 function isOtelMetricsEnabled(): boolean {
   return !!process.env.OTLP_METRICS_ENDPOINT;
 }
@@ -162,8 +201,9 @@ export function initOtelHeartbeat(): void {
 
     for (const [queueName, queue] of getQueueEntries()) {
       if (queue) {
-        setGauge(`medplum.${queueName}.waitingCount`, await queue.getWaitingCount());
-        setGauge(`medplum.${queueName}.delayedCount`, await queue.getDelayedCount());
+        setGauge(getQueueMetricName(queueName, 'waitingCount'), await queue.getWaitingCount());
+        setGauge(getQueueMetricName(queueName, 'delayedCount'), await queue.getDelayedCount());
+        setGauge(getQueueMetricName(queueName, 'activeCount'), await queue.getActiveCount());
       }
     }
   };

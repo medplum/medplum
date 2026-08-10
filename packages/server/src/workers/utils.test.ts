@@ -2,14 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Subscription } from '@medplum/fhirtypes';
 import type { Job, QueueOptions, Worker } from 'bullmq';
-import { Queue } from 'bullmq';
+import { DelayedError, Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { globalLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { withTestContext } from '../test.setup';
-import { addVerboseQueueLogging, DefaultQueueRegistry, getWorkerBullmqConfig, isJobSuccessful } from './utils';
+import {
+  addVerboseQueueLogging,
+  applyGlobalConcurrency,
+  DefaultQueueRegistry,
+  getWorkerBullmqConfig,
+  isJobSuccessful,
+  trackJobMetrics,
+} from './utils';
 
 describe('worker utils', () => {
   beforeAll(async () => {
@@ -339,6 +348,123 @@ describe('worker utils', () => {
 
       // Restore the spy
       loggerInfoSpy.mockRestore();
+    });
+  });
+
+  describe('trackJobMetrics', () => {
+    const job = { id: 'job-1' } as Job;
+    let inFlightSpy: MockInstance<typeof otelModule.addToUpDownCounter>;
+    let completedSpy: MockInstance<typeof otelModule.incrementCounter>;
+
+    beforeEach(() => {
+      inFlightSpy = vi.spyOn(otelModule, 'addToUpDownCounter');
+      completedSpy = vi.spyOn(otelModule, 'incrementCounter');
+    });
+
+    afterEach(() => {
+      inFlightSpy.mockRestore();
+      completedSpy.mockRestore();
+    });
+
+    function reportedDeltas(workerName: WorkerName): number[] {
+      const metricName = otelModule.getQueueMetricName(workerName, 'inFlightJobs');
+      return inFlightSpy.mock.calls.filter((call) => call[0] === metricName).map((call) => call[1]);
+    }
+
+    function completions(workerName: WorkerName): number {
+      const metricName = otelModule.getQueueMetricName(workerName, 'jobsCompleted');
+      return completedSpy.mock.calls.filter((call) => call[0] === metricName).length;
+    }
+
+    test('increments while the job runs and decrements once it resolves', async () => {
+      const processor = vi.fn(async () => {
+        // Mid-flight: the increment has landed, and neither the decrement nor the completion has.
+        expect(reportedDeltas('batch')).toStrictEqual([1]);
+        expect(completions('batch')).toBe(0);
+        return 'result';
+      });
+
+      await expect(trackJobMetrics('batch', processor)(job)).resolves.toBe('result');
+      expect(reportedDeltas('batch')).toStrictEqual([1, -1]);
+      expect(completions('batch')).toBe(1);
+    });
+
+    test('decrements and rethrows when the job fails, without counting a completion', async () => {
+      const processor = vi.fn().mockRejectedValue(new Error('job blew up'));
+
+      await expect(trackJobMetrics('cron', processor)(job)).rejects.toThrow('job blew up');
+      expect(reportedDeltas('cron')).toStrictEqual([1, -1]);
+      expect(completions('cron')).toBe(0);
+    });
+
+    test('does not count a completion for a job re-queued as delayed', async () => {
+      // moveToDelayedAndThrow throws DelayedError; the attempt that finally runs to the end counts.
+      const processor = vi.fn().mockRejectedValue(new DelayedError('queue is closing'));
+
+      await expect(trackJobMetrics('batch', processor)(job)).rejects.toThrow(DelayedError);
+      expect(reportedDeltas('batch')).toStrictEqual([1, -1]);
+      expect(completions('batch')).toBe(0);
+    });
+
+    test('names both metrics after the worker, matching the other per-queue metrics', async () => {
+      await trackJobMetrics('subscription', async () => undefined)(job);
+
+      const expectedOptions = { attributes: otelModule.BASE_METRIC_OPTIONS.attributes };
+      expect(inFlightSpy).toHaveBeenCalledWith('medplum.subscription.inFlightJobs', 1, expectedOptions);
+      expect(completedSpy).toHaveBeenCalledWith('medplum.subscription.jobsCompleted', expectedOptions);
+    });
+
+    test('forwards all processor arguments and preserves arity', async () => {
+      const processor = vi.fn().mockResolvedValue(undefined);
+      const wrapped = trackJobMetrics('download', processor);
+      const signal = new AbortController().signal;
+
+      // BullMQ reads `processor.length >= 3` to decide whether to supply an abort signal, so the
+      // wrapper must keep all three parameters.
+      expect(wrapped.length).toBe(3);
+
+      await wrapped(job, 'token-1', signal);
+      expect(processor).toHaveBeenCalledWith(job, 'token-1', signal);
+    });
+  });
+
+  describe('applyGlobalConcurrency', () => {
+    test('sets global concurrency when configured', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, { globalConcurrency: 5 });
+      expect(setGlobalConcurrency).toHaveBeenCalledWith(5);
+      expect(removeGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('removes global concurrency when not configured', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, { concurrency: 10 });
+      expect(removeGlobalConcurrency).toHaveBeenCalledTimes(1);
+      expect(setGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('removes global concurrency when config is undefined', async () => {
+      const setGlobalConcurrency = vi.fn().mockResolvedValue(5);
+      const removeGlobalConcurrency = vi.fn().mockResolvedValue(0);
+      const queue = { name: 'TestQueue', setGlobalConcurrency, removeGlobalConcurrency } as unknown as Queue;
+
+      await applyGlobalConcurrency(queue, undefined);
+      expect(removeGlobalConcurrency).toHaveBeenCalledTimes(1);
+      expect(setGlobalConcurrency).not.toHaveBeenCalled();
+    });
+
+    test('rejects when the underlying call fails', async () => {
+      const err = new Error('redis down');
+      const setGlobalConcurrency = vi.fn().mockRejectedValue(err);
+      const queue = { name: 'TestQueue', setGlobalConcurrency } as unknown as Queue;
+
+      await expect(applyGlobalConcurrency(queue, { globalConcurrency: 3 })).rejects.toThrow('redis down');
     });
   });
 

@@ -1144,6 +1144,73 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(location.id);
     }));
 
+  test('Reverse filter by _compartment:_id', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
+      const organizationA = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const organizationB = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [createReference(organizationA), createReference(organizationB)] },
+      });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(organizationA) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(organizationB) });
+
+      const searchResult = await repo.search(
+        parseSearchRequest(`Organization?_has:Patient:_compartment:_id=${patient.id}`)
+      );
+      // Both compartment Organizations returned
+      expect(searchResult.entry?.map((e) => e.resource?.id)).toContainExactly([organizationA.id, organizationB.id]);
+    }));
+
+  test('Forward filter by _compartment.name', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
+
+      // Both Organizations considered, but only one matches
+      const organizationA = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Compartment Chain Org ' + randomUUID(),
+      });
+      const organizationB = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Other Org ' + randomUUID(),
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [createReference(organizationB), createReference(organizationA)] },
+      });
+
+      const searchResult = await repo.search(
+        parseSearchRequest(`Patient?_compartment:Organization.name=${organizationA.name}`)
+      );
+      expect(searchResult.entry?.map((e) => e.resource?.id)).toStrictEqual([patient.id]);
+    }));
+
+  test('Chained filter with _compartment as middle link', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ membership: { admin: true }, withRepo: true });
+      const organization = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: randomUUID(),
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [createReference(organization)] },
+      });
+      const encounter = await repo.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'finished',
+        class: { code: 'test' },
+        subject: createReference(patient),
+      });
+
+      const searchResult = await repo.search(
+        parseSearchRequest(`Encounter?patient._compartment:Organization.name=${organization.name?.substring(0, 8)}`)
+      );
+      expect(searchResult.entry?.map((e) => e.resource?.id)).toStrictEqual([encounter.id]);
+    }));
+
   test('Empty _id', async () =>
     withTestContext(async () => {
       const searchResult1 = await repo.search({
@@ -3727,6 +3794,31 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       });
 
       expect(result2.entry).toHaveLength(1);
+    }));
+
+  test('_filter with UUID value', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Evelyn'] }],
+      });
+
+      // The first UUID has all digits before its first hyphen, which used to be tokenized as a date
+      // literal and truncated. That silently dropped the rest of the expression -- including the
+      // "or" branch that matches the real resource. In the parenthesized form, the UUID also used to
+      // swallow the closing parenthesis.
+      for (const value of [
+        `_id eq 12345678-1234-4123-8123-123456789abc or _id eq ${patient.id}`,
+        `(_id eq 12345678-1234-4123-8123-123456789abc or _id eq ${patient.id})`,
+      ]) {
+        const result = await repo.search({
+          resourceType: 'Patient',
+          filters: [{ code: '_filter', operator: Operator.EQUALS, value }],
+        });
+
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+      }
     }));
 
   test('_filter birthdate eq', () =>

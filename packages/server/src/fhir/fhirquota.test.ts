@@ -139,6 +139,23 @@ describe('FHIR Rate Limits', () => {
     expect(res2.get('ratelimit')).toStrictEqual('"requests";r=98;t=59, "fhirInteractions";r=460;t=59');
   });
 
+  test('Successive blocks do not reset block timer', async () => {
+    config.defaultFhirQuota = 1;
+    config.defaultRateLimit = 100;
+    await initApp(app, config);
+    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+
+    const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
+    expect(res).toHaveStatus(429);
+    expect(res.get('ratelimit')).toStrictEqual('"requests";r=99;t=60, "fhirInteractions";r=0;t=60');
+
+    await sleep(2000);
+
+    const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
+    expect(res2).toHaveStatus(429);
+    expect(res2.get('ratelimit')).toStrictEqual('"requests";r=98;t=58, "fhirInteractions";r=0;t=58');
+  });
+
   test('Respects Project setting override', async () => {
     config.defaultFhirQuota = 1;
     await initApp(app, config);
@@ -164,6 +181,8 @@ describe('FHIR Rate Limits', () => {
       withAccessToken: true,
       withRepo: true,
       withClient: true,
+      // Project fallback must not depend on the user's UserConfiguration override
+      project: { systemSetting: [{ name: 'totalFhirQuota', valueInteger: 10_000 }] },
     });
 
     const userConfig = await repo.createResource<UserConfiguration>({

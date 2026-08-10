@@ -11,6 +11,10 @@ Medplum provides an integration with Twilio to send and receive SMS messages dir
 This integration is available on hosted Medplum only and requires setup by the Medplum team. It is not available for self-hosted deployments. [Contact us](mailto:info@medplum.com?subject=Twilio%20SMS%20Integration) to enable Twilio SMS for your project.
 :::
 
+:::tip[Planning this integration?]
+The [Messaging & Communications Decision Guide](/docs/decision-guides/messaging) walks through requirements questions and FHIR modeling decisions for messaging — thread structure, routing, and external channels — use it alongside these docs.
+:::
+
 ## Overview
 
 The Twilio SMS integration allows you to:

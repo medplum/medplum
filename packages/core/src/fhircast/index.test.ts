@@ -195,7 +195,23 @@ describe('serializeFhircastSubscriptionRequest', () => {
         endpoint: 'wss://abc.com/hub',
       })
     ).toStrictEqual(
-      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+    );
+  });
+
+  // The endpoint names the subscription being cancelled, and the Hub holds the events it was
+  // issued for, so an unsubscribe has no reason to repeat them
+  test('Valid unsubscribe request omits the events', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'unsubscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['Patient-open'],
+        endpoint: 'wss://abc.com/hub',
+      })
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=unsubscribe&hub.topic=abc123&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
     );
   });
 
@@ -722,6 +738,30 @@ describe('FhircastConnection', () => {
       connection.addEventListener('disconnect', handler);
       connection.disconnect();
     }));
+
+  // The Hub denies a subscription it has stopped honoring, so there is nothing left to hold the
+  // socket open for. A denial the Hub could not resolve an endpoint for names no topic, so
+  // `hub.topic` alone does not identify one. Uses its own server, since the mock broadcasts.
+  test('.addEventListener("message") - Denial disconnects', async () => {
+    const deniedServer = new WS('ws://localhost:1235', { jsonProtocol: true });
+    const deniedConnection = new FhircastConnection({
+      topic: 'abc123',
+      mode: 'subscribe',
+      channelType: 'websocket',
+      events: ['Patient-open'],
+      endpoint: 'ws://localhost:1235',
+    } satisfies SubscriptionRequest);
+
+    await new Promise<void>((resolve) => {
+      deniedConnection.addEventListener('connect', () => resolve());
+    });
+    const disconnected = new Promise<FhircastDisconnectEvent>((resolve) => {
+      deniedConnection.addEventListener('disconnect', resolve);
+    });
+
+    deniedServer.send({ 'hub.mode': 'denied', 'hub.topic': '', 'hub.events': '', 'hub.reason': 'invalid endpoint' });
+    await expect(disconnected).resolves.toMatchObject({ type: 'disconnect' });
+  });
 
   test('Invalid SubscriptionRequest in constructor', () => {
     expect(

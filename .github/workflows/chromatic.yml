@@ -50,15 +50,28 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build -- --filter=@medplum/react
+        run: npm run build:all -- --filter=@medplum/storybook
 
       - name: Publish @medplum/react Chromatic
         uses: chromaui/action@94713c544284a14195de3b50ef24301579f1877e # v18.0.1
+        id: publish_chromatic
+        continue-on-error: true
         with:
           projectToken: chpt_429b596edaecafb
-          workingDir: packages/react
-          buildScriptName: storybook
+          workingDir: packages/storybook
+          buildScriptName: build
           autoAcceptChanges: 'main'
           exitOnceUploaded: true
           exitZeroOnChanges: true
           onlyChanged: true
+
+      - name: Persist log
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.publish_chromatic.outcome == 'failure'
+        with:
+          path: 'packages/storybook/build-storybook.log'
+          archive: false
+
+      - name: Retain build status
+        if: steps.publish_chromatic.outcome == 'failure'
+        run: exit 1

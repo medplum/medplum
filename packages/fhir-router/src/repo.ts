@@ -11,6 +11,7 @@ import {
   created,
   deepClone,
   evalFhirPath,
+  fhirpathPatchTypedValue,
   generateId,
   getSearchResourceTypes,
   globalSchema,
@@ -18,10 +19,21 @@ import {
   multipleMatches,
   normalizeOperationOutcome,
   notFound,
+  parseFhirPathPatchParameters,
   preconditionFailed,
   stringify,
+  toTypedValue,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  BundleEntry,
+  OperationOutcome,
+  Parameters,
+  Reference,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
+import { getExtraEntries } from './search-include';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -171,7 +183,8 @@ export abstract class FhirRepository {
   abstract patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[] | Parameters
+    patch: Operation[] | Parameters,
+    options?: UpdateResourceOptions
   ): Promise<WithId<T>>;
 
   /**
@@ -391,7 +404,11 @@ export abstract class FhirRepository {
     );
   }
 
-  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+  async conditionalPatch(
+    search: SearchRequest,
+    patch: Operation[],
+    options?: UpdateResourceOptions
+  ): Promise<WithId<Resource>> {
     // Limit search to optimize DB query
     search.count = 2;
     search.sortRules = undefined;
@@ -406,7 +423,7 @@ export abstract class FhirRepository {
         }
 
         const resource = matches[0];
-        return txRepo.patchResource(resource.resourceType, resource.id, patch);
+        return txRepo.patchResource(resource.resourceType, resource.id, patch, options);
       },
       { serializable: true, resourceTypes: getSearchResourceTypes(search) }
     );
@@ -539,7 +556,8 @@ export class MemoryRepository extends FhirRepository {
   async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[] | Parameters
+    patch: Operation[] | Parameters,
+    options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     const resource = await this.readResource<T>(resourceType, id);
 
@@ -549,8 +567,8 @@ export class MemoryRepository extends FhirRepository {
         if (patchResult.length > 0) {
           throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
         }
-      } else {
-        throw new Error('MemoryRepository does not support FHIRPath Patch');
+      } else if (patch.parameter) {
+        fhirpathPatchTypedValue(toTypedValue(resource), parseFhirPathPatchParameters(patch));
       }
     } catch (err) {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));
@@ -564,7 +582,7 @@ export class MemoryRepository extends FhirRepository {
       delete resource.meta.lastUpdated;
     }
 
-    return this.updateResource(resource);
+    return this.updateResource(resource, options);
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
@@ -586,7 +604,15 @@ export class MemoryRepository extends FhirRepository {
   async readReferences<T extends Resource>(
     references: readonly Reference<T>[]
   ): Promise<(T | OperationOutcomeError)[]> {
-    return Promise.all(references.map((r) => this.readReference<T>(r)));
+    // Unresolvable references are returned as errors rather than rejecting the whole batch,
+    // matching the `(T | Error)[]` contract on FhirRepository.
+    return Promise.all(
+      references.map(async (r) =>
+        this.readReference<T>(r).catch((err) =>
+          err instanceof OperationOutcomeError ? err : new OperationOutcomeError(normalizeOperationOutcome(err))
+        )
+      )
+    );
   }
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
@@ -622,7 +648,10 @@ export class MemoryRepository extends FhirRepository {
         result.push(resource);
       }
     }
-    let entry = result.map((resource) => ({ resource: deepClone(resource) }));
+    let entry = result.map((resource): BundleEntry<WithId<T>> => ({
+      search: { mode: 'match' },
+      resource: deepClone(resource),
+    }));
     for (const sortRule of searchRequest.sortRules ?? EMPTY) {
       entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));
     }
@@ -641,7 +670,15 @@ export class MemoryRepository extends FhirRepository {
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
-    return this.searchSync(searchRequest);
+    const bundle = this.searchSync(searchRequest);
+    if ((searchRequest.include || searchRequest.revInclude) && bundle.entry?.length) {
+      // `total` intentionally continues to reflect only the matched resources.
+      const entries = bundle.entry as BundleEntry[];
+      const resources = entries.map((e) => e.resource as WithId<T>);
+      await getExtraEntries(this, searchRequest, resources, entries);
+      bundle.entry = entries as BundleEntry<WithId<T>>[];
+    }
+    return bundle;
   }
 
   async conditionalCreate<T extends Resource>(

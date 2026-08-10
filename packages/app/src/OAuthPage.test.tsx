@@ -120,5 +120,54 @@ describe('OAuthPage', () => {
     const mockGet = vi.spyOn(medplum, 'get');
     await setup('/oauth?client_id=medplum-cli');
     expect(mockGet).not.toHaveBeenCalled();
+    // The sign in form must still render, even though there is no client info to wait for
+    expect(screen.getByLabelText('Email *')).toBeInTheDocument();
+  });
+
+  async function signIn(user: UserEvent): Promise<void> {
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByLabelText('Password *'), 'password');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+  }
+
+  test('Skip scope selection when showScopeSelection is false', async () => {
+    locationUtils.assign = vi.fn();
+    vi.spyOn(medplum, 'get').mockResolvedValue({ showScopeSelection: false });
+
+    const user = await setup(
+      '/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid+profile&state=abc&nonce=xyz'
+    );
+    await signIn(user);
+
+    // The requested scope is not "openid", so the legacy check would have shown the scope screen
+    await waitFor(() => expect(locationUtils.assign).toHaveBeenCalled());
+    expect(screen.queryByText('Choose scope')).toBeNull();
+  });
+
+  test('Show scope selection when showScopeSelection is true', async () => {
+    locationUtils.assign = vi.fn();
+    vi.spyOn(medplum, 'get').mockResolvedValue({ showScopeSelection: true });
+
+    const user = await setup(
+      '/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid&state=abc&nonce=xyz'
+    );
+    await signIn(user);
+
+    // The requested scope is "openid", so the legacy check would have skipped the scope screen
+    expect(await screen.findByText('Choose scope')).toBeInTheDocument();
+    expect(locationUtils.assign).not.toHaveBeenCalled();
+  });
+
+  test('Fall back to requested scope when showScopeSelection is not configured', async () => {
+    locationUtils.assign = vi.fn();
+    vi.spyOn(medplum, 'get').mockResolvedValue({ welcomeString: 'Test Client' });
+
+    const user = await setup(
+      '/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid+profile&state=abc&nonce=xyz'
+    );
+    await signIn(user);
+
+    expect(await screen.findByText('Choose scope')).toBeInTheDocument();
   });
 });

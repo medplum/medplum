@@ -170,8 +170,8 @@ describe('Database migrations', () => {
     });
 
     const originalInitWorkers = workers.initWorkers;
-    vi.spyOn(workers, 'initWorkers').mockImplementation((config) => {
-      originalInitWorkers(config);
+    vi.spyOn(workers, 'initWorkers').mockImplementation(async (config) => {
+      await originalInitWorkers(config);
       restoreWorkerQueueMocks();
     });
 

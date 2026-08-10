@@ -243,6 +243,7 @@ describe('Stats Request', () => {
       expect(durableQueue.channelDepth).toStrictEqual({});
       expect(durableQueue.countsByState).toStrictEqual({
         queued: 0,
+        delayed: 0,
         claimed: 0,
         inflight: 0,
         processed: 0,

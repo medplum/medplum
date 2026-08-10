@@ -1,0 +1,35 @@
+---
+title: DicomStudy
+sidebar_position: 19
+---
+
+import Link from '@docusaurus/Link';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import definition from '@site/static/data/medplumDefinitions/dicomstudy.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DicomStudy
+
+Definition of a DICOM study, which represents a collection of DICOM images and related metadata.
+
+<Tabs queryString="section">
+  <TabItem value="schema" label="Schema" default>
+
+## Elements
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Elements
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+  </TabItem>
+
+</Tabs>

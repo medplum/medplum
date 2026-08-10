@@ -25,7 +25,6 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
-import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidTableName } from '../fhir/sql';
@@ -516,12 +515,7 @@ superAdminRouter.post(
       .join(', ')});`;
 
     const startTime = Date.now();
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-    await systemRepo.executeRawSql(
-      query,
-      undefined,
-      repoAccess.sqlWriteConfig({ source: 'superAdminRouter.tableSettings' })
-    );
+    await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -571,12 +565,7 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
-      const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-      await systemRepo.executeRawSql(
-        query,
-        undefined,
-        repoAccess.sqlWriteConfig({ source: 'superAdminRouter.vacuum' })
-      );
+      await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

@@ -21,7 +21,7 @@ vi.mock(import('@medplum/react-hooks'), async (importOriginal) => {
   };
 });
 
-const SILENCE_DEBOUNCE_MS = 3000;
+const SILENCE_DEBOUNCE_MS = 500;
 const BOT_IDENTIFIER_STRING = 'https://www.medplum.com/bots|ai-realtime-questionnaire';
 const VOICE_TRANSCRIPT_EXTENSION_URL = 'https://medplum.com/ai-voice-transcript';
 

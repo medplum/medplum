@@ -3,13 +3,14 @@
 import type { WithId } from '@medplum/core';
 import { getExtension, Operator } from '@medplum/core';
 import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
+import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
@@ -259,6 +260,68 @@ export function addVerboseQueueLogging<TDataType>(
   });
 }
 
+/**
+ * Wraps a worker's job processor to report the queue's `inFlightJobs` and `jobsCompleted` metrics.
+ *
+ * Wrapping is necessary because the worker's `active`/`completed`/`failed` events cannot be used: they
+ * do not pair up. BullMQ suppresses `failed` for a job moved to delayed (see
+ * {@link moveToDelayedAndThrow}) and suppresses both terminal events once the connection is closing,
+ * either of which would strand the in-flight count above zero. The `finally` below runs on every exit
+ * path instead.
+ *
+ * A processor that throws counts as neither completed nor in flight, so a job re-queued as delayed is
+ * counted only by the attempt that eventually runs to the end. Both metrics cover a single host; see
+ * `QueueMetric` in `otel/otel.ts` for how they relate to the cluster-wide gauges.
+ * @param workerName - The worker whose jobs are tracked.
+ * @param processor - The worker's job processor.
+ * @returns The processor, wrapped to maintain the queue's job metrics.
+ */
+export function trackJobMetrics<TData, TResult, TName extends string>(
+  workerName: WorkerName,
+  processor: Processor<TData, TResult, TName>
+): Processor<TData, TResult, TName> {
+  const inFlightMetric = getQueueMetricName(workerName, 'inFlightJobs');
+  const completedMetric = getQueueMetricName(workerName, 'jobsCompleted');
+  // All three parameters stay declared and forwarded: BullMQ introspects `processor.length >= 3` to
+  // decide whether to supply an abort signal, so dropping the third would disable cancellation.
+  return async (job, token, signal) => {
+    addToUpDownCounter(inFlightMetric, 1, BASE_METRIC_OPTIONS);
+    try {
+      const result = await processor(job, token, signal);
+      incrementCounter(completedMetric, BASE_METRIC_OPTIONS);
+      return result;
+    } finally {
+      addToUpDownCounter(inFlightMetric, -1, BASE_METRIC_OPTIONS);
+    }
+  };
+}
+
+/**
+ * Applies the configured global concurrency limit to a queue.
+ *
+ * Global concurrency is a queue-level property persisted in Redis, so it must be set imperatively
+ * rather than through queue/worker constructor options. When `globalConcurrency` is configured, the
+ * limit is set; when it is omitted, any previously-set limit is removed so that clearing the config
+ * takes effect on the next startup.
+ *
+ * If the underlying Redis command fails, the error is allowed to propagate: it is unsafe to start
+ * the workers without the configured global concurrency applied, so the caller should let startup
+ * fail rather than run with the wrong limit.
+ * @param queue - The queue to apply the limit to.
+ * @param config - The merged BullMQ config for the queue's worker, if any.
+ */
+export async function applyGlobalConcurrency(
+  queue: Queue,
+  config: Partial<MedplumBullmqConfig> | undefined
+): Promise<void> {
+  const globalConcurrency = config?.globalConcurrency;
+  if (globalConcurrency === undefined) {
+    await queue.removeGlobalConcurrency();
+  } else {
+    await queue.setGlobalConcurrency(globalConcurrency);
+  }
+}
+
 export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<never> {
   if (job.token) {
     const delayMs = 60_000;
@@ -282,6 +345,25 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
 }
 
 /**
+ * Merges the BullMQ server config for a worker, in increasing order of precedence: the global
+ * `bullmq` server config, worker-specific defaults from code, and the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @param config - The server config.
+ * @param workerName - The worker to build the config for.
+ * @param workerDefaults - Worker-specific defaults that supersede the global `bullmq` server
+ * config (including the defaults added by `addDefaults`) but are overridden by the per-worker
+ * `workers.bullmq.<workerName>` server config.
+ * @returns The merged BullMQ config for the worker.
+ */
+export function getMedplumBullmqConfig(
+  config: MedplumServerConfig,
+  workerName: WorkerName,
+  workerDefaults?: Partial<MedplumBullmqConfig>
+): Partial<MedplumBullmqConfig> {
+  return { ...config.bullmq, ...workerDefaults, ...config.workers?.bullmq?.[workerName] };
+}
+
+/**
  * Builds the effective `Worker` options by merging, in increasing order of precedence: the given
  * default queue options (for the shared `connection`), the global `bullmq` server config,
  * worker-specific defaults from code, and the per-worker `workers.bullmq.<workerName>` server
@@ -301,11 +383,10 @@ export function getWorkerBullmqConfig(
   queueOptions: QueueOptions,
   workerDefaults?: Partial<MedplumBullmqConfig>
 ): WorkerOptions {
-  const perWorker = config.workers?.bullmq?.[workerName];
   // `queueOptions.defaultJobOptions` field and potentially others is not a valid `WorkerOptions`
   // property. It rides along as an inert excess key on the returned object (harmless, since `Worker`
   // ignores unrecognized options)
-  return { ...queueOptions, ...config.bullmq, ...workerDefaults, ...perWorker };
+  return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults) };
 }
 
 export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {

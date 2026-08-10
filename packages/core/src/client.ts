@@ -3708,11 +3708,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private dispatchResourceModified(payload: ResourceModifiedEvent): void {
     if (this.listenerCount('resourceModified') > 0) {
-      try {
-        this.dispatchEvent({ type: 'resourceModified', payload });
-      } catch (err) {
-        console.error("[MedplumClient] A 'resourceModified' event listener threw an error ", err);
-      }
+      this.dispatchEvent({ type: 'resourceModified', payload });
     }
   }
 
@@ -4019,10 +4015,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
     } else if (this.basicAuth) {
       this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
-    }
-
-    if (!options.cache) {
-      options.cache = 'no-cache';
     }
 
     if (!options.credentials) {
