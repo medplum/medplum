@@ -7,12 +7,56 @@ import { fetch } from 'undici';
 import { vi } from 'vitest';
 import {
   createSafeConnect,
+  getNormalizedPath,
+  getProjectIdFromUrl,
+  getProjectScopedUrl,
   isAllowedOutboundUrlForQueue,
   isUnsafeHostname,
   isUnsafeIpAddress,
   safeAgent,
   validateOutboundUrl,
 } from './url';
+
+describe('request URL helpers', () => {
+  test.each([
+    ['/fhir/R4/Patient', '/fhir/R4/Patient'],
+    ['/api/fhir/R4/Patient', '/fhir/R4/Patient'],
+    ['/projects/123/fhir/R4/Patient', '/fhir/R4/Patient'],
+    ['/api/projects/123/fhir/R4/Patient?active=true', '/fhir/R4/Patient'],
+    ['/apiary/fhir/R4/Patient', '/apiary/fhir/R4/Patient'],
+  ])('normalizes %s', (url, expected) => {
+    expect(getNormalizedPath(url)).toBe(expected);
+  });
+
+  test.each([
+    ['/projects/123/fhir/R4/Patient', '123'],
+    ['/api/projects/123/fhir/R4/Patient', '123'],
+    ['/fhir/R4/Patient', undefined],
+    ['/api/fhir/R4/Patient', undefined],
+  ])('gets the project ID from %s', (url, expected) => {
+    expect(getProjectIdFromUrl(url)).toBe(expected);
+  });
+
+  test('scopes an internal URL to the request project', () => {
+    expect(
+      getProjectScopedUrl(
+        '/projects/123/.well-known/openid-configuration',
+        'https://example.com/',
+        'https://example.com/oauth2/token'
+      )
+    ).toBe('https://example.com/projects/123/oauth2/token');
+  });
+
+  test('does not scope an external URL', () => {
+    expect(
+      getProjectScopedUrl(
+        '/projects/123/.well-known/openid-configuration',
+        'https://example.com/',
+        'https://identity.example.net/oauth2/token'
+      )
+    ).toBe('https://identity.example.net/oauth2/token');
+  });
+});
 
 describe('validateOutboundUrl', () => {
   test('parses HTTPS URLs', () => {
