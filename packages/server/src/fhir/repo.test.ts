@@ -50,6 +50,7 @@ import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -390,9 +391,8 @@ describe('FHIR Repo', () => {
         layer: 'cache',
         operation: 'read',
         source: 'repo.getCacheEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
       })
     );
   });
@@ -416,9 +416,8 @@ describe('FHIR Repo', () => {
         layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
       })
     );
   });
@@ -444,8 +443,8 @@ describe('FHIR Repo', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'committed',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
         readResourceTypes: expect.toContainExactly(['Patient', 'Project']),
         writeResourceTypes: expect.toContainExactly([]),
       })
@@ -818,7 +817,7 @@ describe('FHIR Repo', () => {
 
       expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
       expect(
-        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+        getShardSystemRepo(PLACEHOLDER_SHARD_ID, undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
       const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
