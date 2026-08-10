@@ -1616,27 +1616,6 @@ export function countBy<T, K extends keyof any>(
 }
 
 /**
- * Groups iterable items by a key function, returning a map of key to array of items.
- * @param items - The items to group.
- * @param keyFn - The function to extract the key from each item.
- * @param acc - Optional accumulator to build on top of.
- * @returns A map of key to array of items.
- */
-export function groupBy<T, K extends keyof any>(
-  items: Iterable<T>,
-  keyFn: (item: T) => K,
-  acc?: Record<K, T[]>
-): Record<K, T[]> {
-  const result = acc ?? ({} as Record<K, T[]>);
-  for (const item of items) {
-    const key = keyFn(item);
-    result[key] ??= [];
-    result[key].push(item);
-  }
-  return result;
-}
-
-/**
  * Returns the escaped HTML string of the input string.
  * @param unsafe - The unsafe HTML string to escape.
  * @returns The escaped HTML string.
