@@ -11,8 +11,39 @@ export function getMonthString(date: Date): string {
 }
 
 export function getStartMonth(): Date {
-  const result = new Date();
-  result.setDate(1);
-  result.setHours(0, 0, 0, 0);
-  return result;
+  return startOfMonth(new Date());
+}
+
+/**
+ * Returns local midnight on the first of a date's month.
+ * @param date - Any date within the month.
+ * @returns The first day of that month.
+ */
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+/**
+ * Returns whether a day falls before another, ignoring the time of day.
+ * @param day - Local midnight of the day in question.
+ * @param limit - The instant the day is measured against.
+ * @returns True when the day ends before the limit.
+ */
+export function isBeforeDay(day: Date, limit: Date): boolean {
+  return day.getTime() < new Date(limit.getFullYear(), limit.getMonth(), limit.getDate()).getTime();
+}
+
+/**
+ * Returns whether two dates fall on the same day in the local timezone.
+ * @param left - The first date.
+ * @param right - The second date, which may be absent.
+ * @returns True when both dates are present and share a calendar day.
+ */
+export function isSameDay(left: Date, right: Date | undefined): boolean {
+  return (
+    !!right &&
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
 }
