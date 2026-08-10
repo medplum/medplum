@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Flex, Group, Modal, Radio, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Box, Flex, Radio, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { Modal } from '../Modal/Modal';
 import { killEvent } from '../utils/dom';
 import { CollapsibleSection } from './CollapsibleSection';
 
@@ -135,19 +135,19 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
           <Text>(none)</Text>
         )}
       </CollapsibleSection>
-      <Modal opened={opened} onClose={close} title="Set Sexual Orientation">
-        <Form onSubmit={handleSubmit}>
-          <Stack>
-            <Radio.Group name="sexualOrientation" label="Sexual Orientation" required>
-              {Object.entries(CodesToText).map(([code, text]) => (
-                <Radio key={code} value={code} label={text} my="xs" />
-              ))}
-            </Radio.Group>
-            <Group justify="flex-end" gap={4} mt="md">
-              <SubmitButton>Save</SubmitButton>
-            </Group>
-          </Stack>
-        </Form>
+      <Modal
+        opened={opened}
+        onClose={close}
+        title="Set Sexual Orientation"
+        size="md"
+        onSubmit={handleSubmit}
+        actions={<SubmitButton>Save</SubmitButton>}
+      >
+        <Radio.Group name="sexualOrientation" label="Sexual Orientation" required>
+          {Object.entries(CodesToText).map(([code, text]) => (
+            <Radio key={code} value={code} label={text} my="xs" />
+          ))}
+        </Radio.Group>
       </Modal>
     </>
   );
