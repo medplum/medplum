@@ -864,7 +864,7 @@ describe('FHIR Repo Transactions', () => {
       createError: () =>
         new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure)),
       succeedsOnRetry: false,
-      expectedCalls: 2,
+      expectedCalls: 3,
       expectedError: 'transaction conflict',
     },
   ])('$name', ({ createError, succeedsOnRetry, expectedCalls, expectedError, expectedResult }) =>
@@ -905,8 +905,8 @@ describe('FHIR Repo Transactions', () => {
       succeedsOnRetry: false,
       catchNestedError: false,
       expectedError: 'transaction conflict',
-      expectedTxCalls: 2,
-      expectedOuterCalls: 2,
+      expectedTxCalls: 3,
+      expectedOuterCalls: 3,
     },
     {
       name: 'Nested transaction does not retry independently',
