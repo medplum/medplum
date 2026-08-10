@@ -5,19 +5,25 @@ import { Box, Button, Group, Pill } from '@mantine/core';
 import { IconExternalLink } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import classes from './AlphaBanner.module.css';
 import { DocsLink } from './DocsLink';
+import classes from './ReleaseStageBanner.module.css';
 
-interface AlphaBannerProps extends BoxProps {
+const STAGE_LABELS = {
+  alpha: 'Alpha',
+  beta: 'Beta',
+} as const;
+
+interface ReleaseStageBannerProps extends BoxProps {
+  stage: keyof typeof STAGE_LABELS;
   children: React.ReactNode;
 }
 
-export function AlphaBanner(props: AlphaBannerProps): JSX.Element {
-  const { children, className, ...boxProps } = props;
+export function ReleaseStageBanner(props: ReleaseStageBannerProps): JSX.Element {
+  const { stage, children, className, ...boxProps } = props;
   return (
-    <Box p="sm" {...boxProps} className={cx(classes.alphaBanner, className)}>
+    <Box p="sm" {...boxProps} className={cx(classes.banner, classes[stage], className)}>
       <Group gap="md">
-        <Pill className={classes.alphaPill}>Alpha</Pill>
+        <Pill className={cx(classes.pill, classes[stage])}>{STAGE_LABELS[stage]}</Pill>
         <span className={classes.content}>{children}</span>
         <Button variant="transparent" component={DocsLink} path="compliance/alpha-beta">
           <IconExternalLink size={20} />

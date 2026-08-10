@@ -91,6 +91,8 @@ export * from './PatientSummary/PharmacyDialog';
 export {
   AllergiesSection,
   DemographicsSection,
+  GoalsSection,
+  ImmunizationsSection,
   InsuranceSection,
   LabsSection,
   MedicationsSection,

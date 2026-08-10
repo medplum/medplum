@@ -32,6 +32,7 @@ import type {
   StructureDefinitionSnapshot,
   SubstanceProtein,
   Timing,
+  User,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
@@ -2030,6 +2031,33 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => validateResource(ra1)).not.toThrow();
+  });
+
+  test('User email constraint: user-1', () => {
+    const validUser: User = {
+      resourceType: 'User',
+      firstName: 'Alice',
+      lastName: 'Smith',
+      email: 'alice@example.com',
+    };
+    expect(() => validateResource(validUser)).not.toThrow();
+
+    const invalidUser: User = {
+      resourceType: 'User',
+      firstName: 'Alice',
+      lastName: 'Smith',
+      email: 'Alice@Example.com',
+    };
+    expect(() => validateResource(invalidUser)).toThrow(
+      new OperationOutcomeError(
+        validationError(
+          'Constraint user-1 not met: Email must be all lowercase',
+          ['User.email'],
+          'invariant',
+          '{"fhirpath":"$this = $this.lower()"}'
+        )
+      )
+    );
   });
 });
 

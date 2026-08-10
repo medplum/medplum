@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Modal, Radio, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Radio, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatCodeableConcept } from '@medplum/core';
 import type { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { Modal } from '../Modal/Modal';
 import { CollapsibleSection } from './CollapsibleSection';
 
 // Smoking Status widget
@@ -107,19 +107,19 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           <Text>(none)</Text>
         )}
       </CollapsibleSection>
-      <Modal opened={opened} onClose={close} title="Set Smoking Status">
-        <Form onSubmit={handleSubmit}>
-          <Stack>
-            <Radio.Group name="smokingStatus" label="Smoking Status" required>
-              {Object.entries(smokingStatusOptions).map(([code, text]) => (
-                <Radio key={code} value={code} label={text} my="xs" />
-              ))}
-            </Radio.Group>
-            <Group justify="flex-end" gap={4} mt="md">
-              <SubmitButton>Save</SubmitButton>
-            </Group>
-          </Stack>
-        </Form>
+      <Modal
+        opened={opened}
+        onClose={close}
+        title="Set Smoking Status"
+        size="md"
+        onSubmit={handleSubmit}
+        actions={<SubmitButton>Save</SubmitButton>}
+      >
+        <Radio.Group name="smokingStatus" label="Smoking Status" required>
+          {Object.entries(smokingStatusOptions).map(([code, text]) => (
+            <Radio key={code} value={code} label={text} my="xs" />
+          ))}
+        </Radio.Group>
       </Modal>
     </>
   );
