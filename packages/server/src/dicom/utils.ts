@@ -392,3 +392,20 @@ export async function writeBuffer(stream: PassThrough, buffer: Buffer): Promise<
     await once(stream, 'drain');
   }
 }
+
+/**
+ * Parses a QIDO-RS paging query parameter (`limit` or `offset`) into a non-negative integer.
+ *
+ * Returns undefined when the parameter is absent or invalid, so the caller falls back to the
+ * server's default page size. The server clamps `count` to its own maximum (1000).
+ *
+ * @param value - The raw query parameter value from the request.
+ * @returns The parsed non-negative integer, or undefined if absent/invalid.
+ */
+export function parseQueryInt(value: unknown): number | undefined {
+  if (!isString(value)) {
+    return undefined;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) || parsed < 0 ? undefined : parsed;
+}

@@ -5,7 +5,7 @@ import type { DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
-import { medplumSeriesToDcmjsSeries, medplumStudyToDcmjsStudy } from './utils';
+import { medplumSeriesToDcmjsSeries, medplumStudyToDcmjsStudy, parseQueryInt } from './utils';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { data } = dcmjs;
@@ -75,21 +75,4 @@ export async function handleSearchSeries(req: Request, res: Response): Promise<v
     .json(
       seriesList.map((series) => DicomMetaDictionary.denaturalizeDataset(medplumSeriesToDcmjsSeries(study, series)))
     );
-}
-
-/**
- * Parses a QIDO-RS paging query parameter (`limit` or `offset`) into a non-negative integer.
- *
- * Returns undefined when the parameter is absent or invalid, so the caller falls back to the
- * server's default page size. The server clamps `count` to its own maximum (1000).
- *
- * @param value - The raw query parameter value from the request.
- * @returns The parsed non-negative integer, or undefined if absent/invalid.
- */
-function parseQueryInt(value: unknown): number | undefined {
-  if (!isString(value)) {
-    return undefined;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) || parsed < 0 ? undefined : parsed;
 }

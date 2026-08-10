@@ -22,6 +22,7 @@ import {
   fhirTimeToDicomTime,
   medplumSeriesToDcmjsSeries,
   medplumStudyToDcmjsStudy,
+  parseQueryInt,
   stringToDicomPersonName,
   updateSeriesAggregates,
   updateStudyAggregates,
@@ -434,4 +435,17 @@ describe('DICOM study aggregates', () => {
       });
       updateResource.mockRestore();
     }));
+});
+
+describe('parseQueryInt', () => {
+  test('parses valid integers', () => {
+    expect(parseQueryInt('123')).toBe(123);
+  });
+
+  test('returns undefined for invalid integers', () => {
+    expect(parseQueryInt('abc')).toBeUndefined();
+    expect(parseQueryInt(undefined)).toBeUndefined();
+    expect(parseQueryInt(null)).toBeUndefined();
+    expect(parseQueryInt(['123', 'abc'])).toBeUndefined();
+  });
 });
