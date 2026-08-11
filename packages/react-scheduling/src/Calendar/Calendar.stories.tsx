@@ -16,3 +16,21 @@ export const Basic = (): JSX.Element => (
     <Calendar slots={[]} appointments={[]} />
   </div>
 );
+
+export const WithAvailabilityOverlay = (): JSX.Element => (
+  <div style={{ height: 600, padding: '1em' }}>
+    <Calendar
+      availableTime={[
+        {
+          daysOfWeek: ['mon', 'tue', 'wed'],
+          availableStartTime: '09:00:00',
+          availableEndTime: '17:00:00',
+        },
+        {
+          daysOfWeek: ['fri'],
+          allDay: true,
+        },
+      ]}
+    />
+  </div>
+);
