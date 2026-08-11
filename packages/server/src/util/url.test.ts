@@ -47,6 +47,16 @@ describe('request URL helpers', () => {
     ).toBe('https://example.com/projects/123/oauth2/token');
   });
 
+  test('scopes an internal URL when the base URL has a path', () => {
+    expect(
+      getProjectScopedUrl(
+        '/api/projects/123/.well-known/openid-configuration',
+        'https://example.com/api/',
+        'https://example.com/api/oauth2/token'
+      )
+    ).toBe('https://example.com/api/projects/123/oauth2/token');
+  });
+
   test('does not scope an external URL', () => {
     expect(
       getProjectScopedUrl(

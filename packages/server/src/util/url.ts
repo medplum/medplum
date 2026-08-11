@@ -64,7 +64,7 @@ export function getProjectScopedUrl(requestUrl: string, baseUrl: string, targetU
   }
 
   const projectBaseUrl = concatUrls(baseUrl, `projects/${projectId}/`);
-  return projectBaseUrl + targetUrl.substring(baseUrl.length);
+  return concatUrls(projectBaseUrl, targetUrl.substring(baseUrl.length));
 }
 
 export function createSafeConnect(connect: buildConnector.connector = connector): buildConnector.connector {
