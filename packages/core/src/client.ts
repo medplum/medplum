@@ -48,6 +48,7 @@ import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
 import type {
   CurrentContext,
+  FhircastConnectionOptions,
   FhircastEventContext,
   FhircastEventName,
   FhircastEventVersionOptional,
@@ -4527,10 +4528,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * @category FHIRcast
    * @param subRequest - The `SubscriptionRequest` to use for connecting.
+   * @param options - Options for the underlying `ReconnectingWebSocket`.
    * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
    */
-  fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
-    return new FhircastConnection(subRequest);
+  fhircastConnect(subRequest: SubscriptionRequest, options?: FhircastConnectionOptions): FhircastConnection {
+    return new FhircastConnection(subRequest, options);
   }
 
   /**
