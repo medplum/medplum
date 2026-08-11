@@ -10,6 +10,7 @@ import type { MedplumServerConfig } from './config/types';
 import { getAuthenticatedContext } from './context';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { sendOutcome } from './fhir/outcomes';
+import { getProjectScopedUrl } from './util/url';
 import { queueBatchProcessing, queueLegacyBatchProcessing } from './workers/batch';
 
 export function asyncBatchHandler(
@@ -49,7 +50,7 @@ export function asyncBatchHandler(
     });
 
     const { baseUrl } = getConfig();
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+    sendOutcome(res, accepted(exec.getContentLocation(getProjectScopedUrl(req.originalUrl, baseUrl))));
   };
 }
 
