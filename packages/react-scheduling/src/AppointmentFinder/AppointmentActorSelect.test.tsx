@@ -73,6 +73,35 @@ function openList(label = 'provider'): void {
 }
 
 describe('AppointmentActorSelect', () => {
+  test('Shows the value the caller passes, following it when the caller changes or empties it', () => {
+    const onChange = vi.fn();
+    // Rendered without the harness, so `value` only ever changes from outside.
+    // An uncontrolled field seeded once — `defaultValue`, which is what
+    // AsyncAutocomplete does — would pass the first assertion and fail the rest.
+    const field = (value: readonly ActorRequirement[]): JSX.Element => (
+      <AppointmentActorSelect group={PROVIDERS} value={value} onChange={onChange} />
+    );
+    const { rerender } = render(field([]));
+
+    expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument();
+
+    // Deep-linking and reschedule both fill in an already-mounted field.
+    rerender(field(toActorRequirements(['schedule-dr-rivera'])));
+    expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument();
+
+    rerender(field(toActorRequirements(['schedule-dr-okafor'])));
+    expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
+    expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument();
+
+    // Changing the service or the site has to be able to clear actors it no
+    // longer offers.
+    rerender(field([]));
+    expect(screen.queryByText('Dr. Tunde Okafor')).not.toBeInTheDocument();
+
+    // Adopting a value is not an edit: only the field's own controls call back.
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   test('Names each actor, both chosen and on offer', async () => {
     setup({ initial: toActorRequirements(['schedule-dr-rivera']) });
 
