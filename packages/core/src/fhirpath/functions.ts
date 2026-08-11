@@ -1869,7 +1869,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns The resource key.
    */
   getResourceKey: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
-    const resource = input[0].value as Resource;
+    const resource = input[0]?.value as Resource;
     if (!resource?.id) {
       return [];
     }
@@ -1896,7 +1896,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns The reference key.
    */
   getReferenceKey: (context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
-    const reference = input[0].value as Reference;
+    const reference = input[0]?.value as Reference;
     if (!reference?.reference) {
       return [];
     }
