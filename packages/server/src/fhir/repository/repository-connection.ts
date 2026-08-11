@@ -23,7 +23,7 @@ import { RepositoryAccessTracker } from './access-tracker';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
-const defaultTransactionAttempts = 2;
+const defaultTransactionAttempts = 3;
 const defaultExpBackoffBaseDelayMs = 50;
 const transactionIsolationLevelPriority: Record<TransactionIsolationLevel, number> = {
   'REPEATABLE READ': 1,
