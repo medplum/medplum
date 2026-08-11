@@ -335,7 +335,7 @@ async function getSearchEntries<T extends Resource>(
       await repo.executeRawSql(
         'SET enable_seqscan = off',
         undefined,
-        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.setSeqScan' })
+        repoAccess.sqlReadConfig(trackedResourceTypes, { source: 'search.getSearchEntries.setSeqScan' })
       );
     }
     rows = await repo.sqlRead<(typeof rows)[number]>(builder, trackedResourceTypes, {
@@ -346,7 +346,7 @@ async function getSearchEntries<T extends Resource>(
       await repo.executeRawSql(
         'RESET enable_seqscan',
         undefined,
-        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.resetSeqScan' })
+        repoAccess.sqlReadConfig(trackedResourceTypes, { source: 'search.getSearchEntries.resetSeqScan' })
       );
     }
   }

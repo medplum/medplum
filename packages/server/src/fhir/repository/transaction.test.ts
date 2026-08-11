@@ -25,6 +25,7 @@ import * as workersModule from '../../workers';
 import type { Repository, SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { RepositoryConnection } from '../repository/repository-connection';
+import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { PostgresError } from '../sql';
 import { repoAccess } from './access-tracker';
@@ -60,7 +61,7 @@ describe('FHIR Repo Transactions', () => {
           expect(txRepo).not.toBe(repo);
           expect(() =>
             // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-            repo.getDatabaseClient(repoAccess.sqlWriteConfig())
+            repo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))
           ).toThrow(TRANSACTION_SCOPE_ERROR);
           // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
           await expect(repo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
@@ -115,8 +116,14 @@ describe('FHIR Repo Transactions', () => {
   test('withTransaction rejects concurrent calls', async () => {
     const cb1 = vi.fn().mockReturnValue('first success');
     const cb2 = vi.fn().mockReturnValue('second success');
-    const promise1 = repo.withTransaction(cb1, { resourceTypes: [], source: 'test.withTransaction.concurrent' });
-    const promise2 = repo.withTransaction(cb2, { resourceTypes: [], source: 'test.withTransaction.concurrent' });
+    const promise1 = repo.withTransaction(cb1, {
+      resourceTypes: 'Patient',
+      source: 'test.withTransaction.concurrent',
+    });
+    const promise2 = repo.withTransaction(cb2, {
+      resourceTypes: 'Patient',
+      source: 'test.withTransaction.concurrent',
+    });
 
     const [result1, result2] = await Promise.allSettled([promise1, promise2]);
     assert(result1.status === 'fulfilled');
@@ -258,7 +265,7 @@ describe('FHIR Repo Transactions', () => {
                 await expectPatientVisible(nestedRepo, patient1?.id);
                 await expectPatientVisible(nestedRepo, patient2?.id);
 
-                const db = nestedRepo.getDatabaseClient(repoAccess.sqlReadConfig());
+                const db = nestedRepo.getDatabaseClient(repoAccess.sqlReadConfig('Patient'));
                 await expect(db.query(`SELECT * FROM "TableDoesNotExist"`)).rejects.toMatchObject({
                   message: 'relation "TableDoesNotExist" does not exist',
                 });
@@ -291,7 +298,7 @@ describe('FHIR Repo Transactions', () => {
             throw new Error('Roll it back!');
           }
         },
-        { resourceTypes: [], source: 'test.postCommit.callback' }
+        { resourceTypes: 'Patient', source: 'test.postCommit.callback' }
       );
 
       if (shouldRollback) {
@@ -370,7 +377,7 @@ describe('FHIR Repo Transactions', () => {
                 });
                 expect(postCommitCb).not.toHaveBeenCalled();
               },
-              { resourceTypes: [], source: 'test.nestedTransaction.postCommit' }
+              { resourceTypes: 'Patient', source: 'test.nestedTransaction.postCommit' }
             );
             expect(postCommitCb).not.toHaveBeenCalled();
             await txRepo.postCommit(async () => {
@@ -378,7 +385,7 @@ describe('FHIR Repo Transactions', () => {
               await txRepo.postCommit(() => postCommitCb('fifth'));
             });
           },
-          { resourceTypes: [], source: 'test.nestedTransaction.postCommit' }
+          { resourceTypes: 'Patient', source: 'test.nestedTransaction.postCommit' }
         );
         expect(postCommitCb.mock.calls.map(([arg]) => arg)).toStrictEqual([
           'first',
@@ -452,17 +459,19 @@ describe('FHIR Repo Transactions', () => {
       await repo.withTransaction(
         async (txRepo) => {
           const releasedRepo = await txRepo.withTransaction(async (nestedRepo) => nestedRepo, {
-            resourceTypes: [],
+            resourceTypes: 'Patient',
             source: 'test.releasedNestedRepo.locked',
           });
 
-          expect(() => releasedRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow(SAVEPOINT_RELEASED_ERROR);
+          expect(() => releasedRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow(
+            SAVEPOINT_RELEASED_ERROR
+          );
           await expect(releasedRepo.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow(
             SAVEPOINT_RELEASED_ERROR
           );
           await expect(
             releasedRepo.withTransaction(async () => undefined, {
-              resourceTypes: [],
+              resourceTypes: 'Patient',
               source: 'test.releasedNestedRepo.locked',
             })
           ).rejects.toThrow(SAVEPOINT_RELEASED_ERROR);
@@ -493,11 +502,11 @@ describe('FHIR Repo Transactions', () => {
               throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
             }
           },
-          { resourceTypes: [], source: 'test.retry.postCommitOnce' }
+          { resourceTypes: 'Patient', source: 'test.retry.postCommitOnce' }
         );
         expect(postCommit).not.toHaveBeenCalled();
       },
-      { resourceTypes: [], source: 'test.retry.postCommitOnce' }
+      { resourceTypes: 'Patient', source: 'test.retry.postCommitOnce' }
     );
     expect(postCommit).toHaveBeenCalledTimes(1);
   });
@@ -513,13 +522,13 @@ describe('FHIR Repo Transactions', () => {
               await nestedRepo.postCommit(postCommit);
               throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
             },
-            { resourceTypes: [], source: 'test.retry.noPostCommitOnRollback' }
+            { resourceTypes: 'Patient', source: 'test.retry.noPostCommitOnRollback' }
           );
         } catch {
           // Ignore error
         }
       },
-      { resourceTypes: [], source: 'test.retry.noPostCommitOnRollback' }
+      { resourceTypes: 'Patient', source: 'test.retry.noPostCommitOnRollback' }
     );
 
     expect(postCommit).toHaveBeenCalledTimes(0);
@@ -535,7 +544,7 @@ describe('FHIR Repo Transactions', () => {
           await txRepo.getSystemRepo().postCommit(callback);
           callsBeforeCommit = callback.mock.calls.length;
         },
-        { resourceTypes: [], source: 'test.getSystemRepo.sharesPostCommit' }
+        { resourceTypes: 'Patient', source: 'test.getSystemRepo.sharesPostCommit' }
       );
 
       expect(callsBeforeCommit).toStrictEqual(0);
@@ -548,12 +557,13 @@ describe('FHIR Repo Transactions', () => {
 
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
           const querySpy = spyOnQuery(client);
           try {
-            await txRepo
-              .getSystemRepo()
-              .withTransaction(async () => undefined, { resourceTypes: [], source: 'test.getSystemRepo.nests' });
+            await txRepo.getSystemRepo().withTransaction(async () => undefined, {
+              resourceTypes: 'Patient',
+              source: 'test.getSystemRepo.nests',
+            });
           } finally {
             queries = querySpy.mock.calls.map(([query]) =>
               typeof query === 'string' ? query : (query as { text: string }).text
@@ -561,7 +571,7 @@ describe('FHIR Repo Transactions', () => {
             querySpy.mockRestore();
           }
         },
-        { resourceTypes: [], source: 'test.getSystemRepo.nests' }
+        { resourceTypes: 'Patient', source: 'test.getSystemRepo.nests' }
       );
       // only a savepoint, no commit
       expect(queries).toStrictEqual(['SAVEPOINT sp2', 'RELEASE SAVEPOINT sp2']);
@@ -880,11 +890,17 @@ describe('FHIR Repo Transactions', () => {
 
       if (expectedError) {
         await expect(
-          repo.withTransaction(txFn, { resourceTypes: [], source: 'test.retry.transactionConflict' })
+          repo.withTransaction(txFn, {
+            resourceTypes: 'Patient',
+            source: 'test.retry.transactionConflict',
+          })
         ).rejects.toThrow(expectedError);
       } else {
         await expect(
-          repo.withTransaction(txFn, { resourceTypes: [], source: 'test.retry.transactionConflict' })
+          repo.withTransaction(txFn, {
+            resourceTypes: 'Patient',
+            source: 'test.retry.transactionConflict',
+          })
         ).resolves.toStrictEqual(expectedResult);
       }
       expect(txFn).toHaveBeenCalledTimes(expectedCalls);
@@ -932,10 +948,16 @@ describe('FHIR Repo Transactions', () => {
         const outerTx = vi.fn(async (txRepo): Promise<boolean> => {
           outerRepos.push(txRepo);
           if (!catchNestedError) {
-            return txRepo.withTransaction(txFn, { resourceTypes: [], source: 'test.retry.nested' });
+            return txRepo.withTransaction(txFn, {
+              resourceTypes: 'Patient',
+              source: 'test.retry.nested',
+            });
           }
           try {
-            await txRepo.withTransaction(txFn, { resourceTypes: [], source: 'test.retry.nested' });
+            await txRepo.withTransaction(txFn, {
+              resourceTypes: 'Patient',
+              source: 'test.retry.nested',
+            });
             return true;
           } catch {
             return false;
@@ -944,11 +966,11 @@ describe('FHIR Repo Transactions', () => {
 
         if (expectedError) {
           await expect(
-            repo.withTransaction(outerTx, { resourceTypes: [], source: 'test.retry.nested' })
+            repo.withTransaction(outerTx, { resourceTypes: 'Patient', source: 'test.retry.nested' })
           ).rejects.toThrow(expectedError);
         } else {
           await expect(
-            repo.withTransaction(outerTx, { resourceTypes: [], source: 'test.retry.nested' })
+            repo.withTransaction(outerTx, { resourceTypes: 'Patient', source: 'test.retry.nested' })
           ).resolves.toStrictEqual(expectedResult);
         }
         expect(txFn).toHaveBeenCalledTimes(expectedTxCalls);
@@ -1030,7 +1052,7 @@ describe('FHIR Repo Transactions', () => {
     await expect(
       repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
           querySpy = spyOnQuery(client).mockImplementation(() => {
             // Simulates a session killed by idle_in_transaction_session_timeout: every query
             // issued on the client — including the ROLLBACK the error handler sends — rejects.
@@ -1044,15 +1066,15 @@ describe('FHIR Repo Transactions', () => {
           });
           await client.query('SELECT 1');
         },
-        { resourceTypes: [], source: 'test.withTransaction.deadBackendRollback' }
+        { resourceTypes: 'Patient', source: 'test.withTransaction.deadBackendRollback' }
       )
     ).rejects.toThrow('terminating connection due to idle-in-transaction timeout');
 
     assert(querySpy);
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
+    expect(connectionOf(repo).transactionDepth).toBe(0);
+    expect(connectionOf(repo).conn).toBeUndefined();
 
     // The rollback failure should be logged, not thrown
     expect(warnSpy).toHaveBeenCalledWith(
@@ -1076,7 +1098,7 @@ describe('FHIR Repo Transactions', () => {
     await expect(
       repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
           querySpy = spyOnQuery(client).mockImplementation(() => {
             const terminationErr = Object.assign(
               new Error('terminating connection due to idle-in-transaction timeout'),
@@ -1086,7 +1108,7 @@ describe('FHIR Repo Transactions', () => {
           });
           await client.query('SELECT 1');
         },
-        // Declaring a special (Project) + other (Patient) type seeds the frame as mixed, so the
+        // Declaring a special (Project) + other (Patient) type seeds the rollup as mixed, so the
         // teardown must still emit the transaction-level log even though ROLLBACK itself fails.
         { resourceTypes: ['Patient', 'Project'], source: 'test.withTransaction.deadBackendMixed' }
       )
@@ -1095,10 +1117,10 @@ describe('FHIR Repo Transactions', () => {
     assert(querySpy);
 
     // Bookkeeping must be fully reset so the repo is safe for future use
-    expect((repo as any).connection.transactionDepth).toBe(0);
-    expect((repo as any).connection.conn).toBeUndefined();
-    // The dead transaction's frame stack must be drained, not leaked
-    expect((repo as any).connection.accessTracker.transactionFrames).toHaveLength(0);
+    expect(connectionOf(repo).transactionDepth).toBe(0);
+    expect(connectionOf(repo).conn).toBeUndefined();
+    // The dead transaction's rollup must be cleared, not leaked into the next transaction
+    expect(connectionOf(repo).accessTracker.rollup).toBeUndefined();
 
     // The mixed-access transaction is surfaced as rolled_back rather than silently dropped
     expect(infoSpy).toHaveBeenCalledWith(
@@ -1106,8 +1128,8 @@ describe('FHIR Repo Transactions', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'rolled_back',
-        specialResourceTypes: ['Project'],
-        otherResourceTypes: ['Patient'],
+        globalResourceTypes: ['Project'],
+        projectResourceTypes: ['Patient'],
       })
     );
 
@@ -1119,33 +1141,35 @@ describe('FHIR Repo Transactions', () => {
 
   test('withStatementTimeout pins connection and discards it after callback', async () => {
     let escapedClient: PgQueryable | undefined;
-    await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {
-      const client = repo.getDatabaseClient(repoAccess.sqlWriteConfig());
+    await repo.withStatementTimeout({ timeoutMs: 0, resourceTypes: 'Patient' }, async () => {
+      const client = repo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
       escapedClient = client;
       await repo.withTransaction(
         async (txRepo) => {
-          expect(txRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
+          expect(txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toBe(client);
         },
-        { resourceTypes: [], source: 'test.withStatementTimeout.pins' }
+        { resourceTypes: 'Patient', source: 'test.withStatementTimeout.pins' }
       );
     });
     assert(escapedClient);
-    expect(repo.getDatabaseClient(repoAccess.sqlWriteConfig())).not.toBe(escapedClient);
+    expect(repo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).not.toBe(escapedClient);
   });
 
   test('withStatementTimeout rejects on borrowed repository connections but succeeds within transactions', async () => {
     const query = vi.fn(async (_sql: string) => ({ rows: [] }));
     const client = { query, release: vi.fn() } as unknown as PoolClient;
     const borrowedClientRepo = createBorrowedRepo(client);
-    await expect(borrowedClientRepo.withStatementTimeout({ timeoutMs: 0 }, async () => undefined)).rejects.toThrow(
-      'Cannot set statement timeout on a borrowed connection'
-    );
+    await expect(
+      borrowedClientRepo.withStatementTimeout({ timeoutMs: 0, resourceTypes: 'Patient' }, async () => undefined)
+    ).rejects.toThrow('Cannot set statement timeout on a borrowed connection');
 
     await borrowedClientRepo.withTransaction(
       async (txRepo) => {
-        await expect(txRepo.withStatementTimeout({ timeoutMs: 0 }, async () => 5)).resolves.toBe(5);
+        await expect(
+          txRepo.withStatementTimeout({ timeoutMs: 0, resourceTypes: 'Patient' }, async () => 5)
+        ).resolves.toBe(5);
       },
-      { resourceTypes: [], source: 'test.withStatementTimeout.rejectsBorrowed' }
+      { resourceTypes: 'Patient', source: 'test.withStatementTimeout.rejectsBorrowed' }
     );
   });
 
@@ -1153,17 +1177,20 @@ describe('FHIR Repo Transactions', () => {
     const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => {});
     let reachedEnd = false;
     try {
-      await repo.withStatementTimeout({ timeoutMs: 0, mode: DatabaseMode.READER }, async () => {
-        // The timeout wrapper pins one physical reader client. A nested transaction
-        // must not silently reuse that reader client for writer work.
-        await expect(
-          repo.withTransaction(async () => undefined, {
-            resourceTypes: [],
-            source: 'test.withStatementTimeout.pinnedReader',
-          })
-        ).rejects.toThrow('reader database connection');
-        reachedEnd = true;
-      });
+      await repo.withStatementTimeout(
+        { timeoutMs: 0, mode: DatabaseMode.READER, resourceTypes: 'Patient' },
+        async () => {
+          // The timeout wrapper pins one physical reader client. A nested transaction
+          // must not silently reuse that reader client for writer work.
+          await expect(
+            repo.withTransaction(async () => undefined, {
+              resourceTypes: 'Patient',
+              source: 'test.withStatementTimeout.pinnedReader',
+            })
+          ).rejects.toThrow('reader database connection');
+          reachedEnd = true;
+        }
+      );
       expect(reachedEnd).toBe(true);
     } finally {
       errorSpy.mockRestore();
@@ -1212,7 +1239,7 @@ describe('FHIR Repo Transactions', () => {
           async () => {
             throw new Error('work failed');
           },
-          { resourceTypes: [], source: 'test.borrowedConnection.noReacquire' }
+          { resourceTypes: 'Patient', source: 'test.borrowedConnection.noReacquire' }
         )
       ).rejects.toThrow('work failed');
 
@@ -1222,7 +1249,7 @@ describe('FHIR Repo Transactions', () => {
 
       await expect(
         borrowedClientRepo.withTransaction(async () => undefined, {
-          resourceTypes: [],
+          resourceTypes: 'Patient',
           source: 'test.borrowedConnection.noReacquire',
         })
       ).rejects.toThrow('Borrowed repository connection is no longer available');
@@ -1245,7 +1272,7 @@ describe('FHIR Repo Transactions', () => {
     try {
       await expect(
         borrowedClientRepo.withTransaction(txnCallback, {
-          resourceTypes: [],
+          resourceTypes: 'Patient',
           source: 'test.withTransaction.beginFails',
         })
       ).rejects.toThrow('begin failed');
@@ -1253,11 +1280,9 @@ describe('FHIR Repo Transactions', () => {
 
       // BEGIN never succeeded, so the in-memory state must not claim an active
       // transaction or have published a transaction scope for one.
-      expect((borrowedClientRepo as any).connection.transactionDepth).toBe(0);
-      expect((borrowedClientRepo as any).connection.currentScope).toBe(
-        (borrowedClientRepo as any).connection.rootScope
-      );
-      expect((borrowedClientRepo as any).connection.hasConnection()).toBe(false);
+      expect(connectionOf(borrowedClientRepo).transactionDepth).toBe(0);
+      expect(connectionOf(borrowedClientRepo).currentScope).toBe(connectionOf(borrowedClientRepo).rootScope);
+      expect(connectionOf(borrowedClientRepo).hasConnection()).toBe(false);
       expect(client.release).not.toHaveBeenCalled();
     } finally {
       errorSpy.mockRestore();
@@ -1276,12 +1301,16 @@ describe('FHIR Repo Transactions', () => {
         await expect(
           txRepo.withTransaction(async () => undefined, {
             serializable: true,
-            resourceTypes: [],
+            resourceTypes: 'Patient',
             source: 'test.withTransaction.rejectsIsolationUpgrade',
           })
         ).rejects.toThrow('Cannot start SERIALIZABLE transaction inside active REPEATABLE READ transaction');
       },
-      { serializable: false, resourceTypes: [], source: 'test.withTransaction.rejectsIsolationUpgrade' }
+      {
+        serializable: false,
+        resourceTypes: 'Patient',
+        source: 'test.withTransaction.rejectsIsolationUpgrade',
+      }
     );
 
     expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'COMMIT']);
@@ -1297,11 +1326,15 @@ describe('FHIR Repo Transactions', () => {
     await borrowedClientRepo.withTransaction(
       async (txRepo) => {
         await txRepo.withTransaction(async () => undefined, {
-          resourceTypes: [],
+          resourceTypes: 'Patient',
           source: 'test.withTransaction.weakerIsolation',
         });
       },
-      { serializable: true, resourceTypes: [], source: 'test.withTransaction.weakerIsolation' }
+      {
+        serializable: true,
+        resourceTypes: 'Patient',
+        source: 'test.withTransaction.weakerIsolation',
+      }
     );
 
     expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
@@ -1321,28 +1354,28 @@ describe('FHIR Repo Transactions', () => {
         // disposing a derived transaction repo does not dispose the main txnRepo
         const derivedTxnRepo = txnRepo.withOverrideConfig({ extendedMode: false });
         derivedTxnRepo[Symbol.dispose]();
-        expect(() => derivedTxnRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
+        expect(() => derivedTxnRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow('Already closed');
 
-        const client = txnRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+        const client = txnRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
         assert(client);
 
         const systemRepo = txnRepo.getSystemRepo();
         const overrideRepo = txnRepo.withOverrideConfig({ extendedMode: false });
 
-        expect(systemRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
-        expect(overrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
+        expect(systemRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toBe(client);
+        expect(overrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toBe(client);
 
         // disposing the main txnRepo does not close derived repos
         txnRepo[Symbol.dispose]();
-        expect(() => txnRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
-        expect(systemRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
-        expect(overrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toBe(client);
+        expect(() => txnRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow('Already closed');
+        expect(systemRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toBe(client);
+        expect(overrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toBe(client);
 
         escapedTxnRepo = txnRepo;
         escapedTxnSystemRepo = systemRepo;
         escapedTxnOverrideRepo = overrideRepo;
       },
-      { resourceTypes: [], source: 'test.derivedTransactionScopedRepos' }
+      { resourceTypes: 'Patient', source: 'test.derivedTransactionScopedRepos' }
     );
 
     assert(escapedTxnRepo);
@@ -1354,9 +1387,11 @@ describe('FHIR Repo Transactions', () => {
     const closedTxnOverrideRepo = escapedTxnOverrideRepo;
 
     // After the transaction commits, both the txnRepo and derived repos are all closed.
-    expect(() => closedTxnRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
-    expect(() => closedTxnSystemRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
-    expect(() => closedTxnOverrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
+    expect(() => closedTxnRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow('Already closed');
+    expect(() => closedTxnSystemRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow('Already closed');
+    expect(() => closedTxnOverrideRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow(
+      'Already closed'
+    );
   });
 
   test('withTransaction rejects a writer client that is not a PoolClient', async () => {
@@ -1370,7 +1405,7 @@ describe('FHIR Repo Transactions', () => {
     try {
       await expect(
         borrowedClientRepo.withTransaction(async () => undefined, {
-          resourceTypes: [],
+          resourceTypes: 'Patient',
           source: 'test.withTransaction.rejectsNonPoolClient',
         })
       ).rejects.toThrow('Transactions require a dedicated PoolClient');
@@ -1412,7 +1447,7 @@ describe('FHIR Repo Transactions', () => {
             async () => {
               await finishFirstNestedTransaction.promise;
             },
-            { resourceTypes: [], source: 'test.concurrentNestedTransaction' }
+            { resourceTypes: 'Patient', source: 'test.concurrentNestedTransaction' }
           );
           await savepointIssued.promise;
 
@@ -1421,7 +1456,7 @@ describe('FHIR Repo Transactions', () => {
           // the new scope is not yet published, so the connection state lock must force it to
           // wait for the first begin, after which it is rejected without issuing any SQL.
           const tx2 = txRepo2.withTransaction(nestedCallback2, {
-            resourceTypes: [],
+            resourceTypes: 'Patient',
             source: 'test.concurrentNestedTransaction',
           });
           allowSavepoint.resolve(undefined);
@@ -1432,7 +1467,7 @@ describe('FHIR Repo Transactions', () => {
           finishFirstNestedTransaction.resolve(undefined);
           await tx1;
         },
-        { resourceTypes: [], source: 'test.concurrentNestedTransaction' }
+        { resourceTypes: 'Patient', source: 'test.concurrentNestedTransaction' }
       );
 
       expect(queries).toStrictEqual([
@@ -1466,11 +1501,14 @@ describe('FHIR Repo Transactions', () => {
             // Pre-commit callbacks are allowed to start their own nested transaction.
             // If the outer commit held connectionStateLock while running callbacks, this nested
             // transaction would wait for the lock while the outer commit waited for the callback.
-            await txRepo.withTransaction(precommit, { resourceTypes: [], source: 'test.preCommit.noDeadlock' });
+            await txRepo.withTransaction(precommit, {
+              resourceTypes: 'Patient',
+              source: 'test.preCommit.noDeadlock',
+            });
           });
           return 'completed';
         },
-        { resourceTypes: [], source: 'test.preCommit.noDeadlock' }
+        { resourceTypes: 'Patient', source: 'test.preCommit.noDeadlock' }
       ),
       new Promise((resolve) => {
         // The broken implementation deadlocks, so the race gives the test a bounded failure mode.
@@ -1500,7 +1538,7 @@ describe('FHIR Repo Transactions', () => {
           });
         });
       },
-      { resourceTypes: [], source: 'test.preCommit.addsAdditional' }
+      { resourceTypes: 'Patient', source: 'test.preCommit.addsAdditional' }
     );
 
     expect(preCommitEntries).toStrictEqual(['first', 'second']);
@@ -1527,7 +1565,7 @@ describe('FHIR Repo Transactions', () => {
             // The parent repo should also be blocked for ordinary repository/database operations, not
             // only for nested withTransaction calls.
             // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
-            repo.getDatabaseClient(repoAccess.sqlWriteConfig());
+            repo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
           } catch (err) {
             parentDatabaseClientError = err;
           }
@@ -1538,7 +1576,7 @@ describe('FHIR Repo Transactions', () => {
             // savepoint release. Only the transaction-scoped repo is allowed to nest in this window.
             // eslint-disable-next-line medplum/no-transaction-callback-invoking-repo -- Verifies parent repo rejection.
             await repo.withTransaction(async () => undefined, {
-              resourceTypes: [],
+              resourceTypes: 'Patient',
               source: 'test.parentRepo.cannotStartDuringPreCommit',
             });
           } catch (err) {
@@ -1546,7 +1584,7 @@ describe('FHIR Repo Transactions', () => {
           }
         });
       },
-      { resourceTypes: [], source: 'test.parentRepo.cannotStartDuringPreCommit' }
+      { resourceTypes: 'Patient', source: 'test.parentRepo.cannotStartDuringPreCommit' }
     );
 
     expect(parentTransactionError).toEqual(expect.any(Error));
@@ -1576,7 +1614,7 @@ describe('FHIR Repo Transactions', () => {
           throw new Error('Transaction failed');
         }
       },
-      { resourceTypes: [], source: 'test.postCommit.handling' }
+      { resourceTypes: 'Patient', source: 'test.postCommit.handling' }
     );
 
     if (mode === 'commit') {
@@ -1602,18 +1640,105 @@ describe('FHIR Repo Transactions', () => {
       let checked = false;
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
           // starting a transaction will have pinned a connection to `txRepo`.
           // so ensure that cloning after that pinning does not propagate the pinned connection
           // to the cloned repository.
           const clonedTxRepo = txRepo.clone();
-          expect(clonedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig())).not.toBe(client);
+          expect(clonedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).not.toBe(client);
           checked = true;
         },
-        { resourceTypes: [], source: 'test.clone.noSharedConnection' }
+        { resourceTypes: 'Patient', source: 'test.clone.noSharedConnection' }
       );
       expect(checked).toBe(true);
     }));
+
+  describe('abandoned transaction levels', () => {
+    test('Rolls back and drops the client when publishing the transaction fails', async () => {
+      const query = vi.fn(async (_sql: string) => ({ rows: [] }));
+      const client = { query, release: vi.fn() } as unknown as PoolClient;
+      const repo = createBorrowedRepo(client);
+      const connection = connectionOf(repo);
+
+      // The one thing between BEGIN succeeding and the scope being published that could realistically
+      // throw. withTransaction never receives a scope for this level, so beginTransaction itself owns
+      // undoing it.
+      vi.spyOn(connection.accessTracker, 'startTransaction').mockImplementation(() => {
+        throw new Error('simulated bookkeeping failure');
+      });
+
+      await expect(
+        repo.withTransaction(async () => undefined, {
+          resourceTypes: 'Patient',
+          source: 'test.abandonedTransaction',
+        })
+      ).rejects.toThrow('simulated bookkeeping failure');
+
+      expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ', 'ROLLBACK']);
+      // The client is dropped rather than handed on mid-transaction, and no state is left behind.
+      expect(connection.hasConnection()).toBe(false);
+      expect(connection.isInTransaction()).toBe(false);
+      expect(connection.transactionIsolationLevel).toBeUndefined();
+      expect(connection.accessTracker.rollup).toBeUndefined();
+    });
+
+    test('Rolls back to the savepoint and keeps the outer client', async () => {
+      const query = vi.fn(async (_sql: string) => ({ rows: [] }));
+      const client = { query, release: vi.fn() } as unknown as PoolClient;
+      const repo = createBorrowedRepo(client);
+      const connection = connectionOf(repo);
+
+      await repo.withTransaction(
+        async () => {
+          expect(query.mock.calls.map(([sql]: [string]) => sql)).toEqual(['BEGIN ISOLATION LEVEL REPEATABLE READ']);
+          query.mockClear();
+          // Nothing in the savepoint window can throw today, so the cleanup is driven directly. The
+          // outer transaction still owns the client, so only the savepoint may be undone.
+          await connection.abandonTransactionLevel(client, 2, true, new Error('simulated failure'));
+
+          expect(query.mock.calls.map(([sql]: [string]) => sql)).toStrictEqual(['ROLLBACK TO SAVEPOINT sp2']);
+          expect(connection.hasConnection()).toBe(true);
+          expect(connection.isInTransaction()).toBe(true);
+        },
+        { resourceTypes: 'Patient', source: 'test.abandonedSavepoint' }
+      );
+    });
+
+    test('Drops the client when the rollback itself fails', async () => {
+      const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
+      const query = vi.fn(async (sql: string) => {
+        if (sql === 'ROLLBACK') {
+          throw new Error('connection is dead');
+        }
+        return { rows: [] };
+      });
+      const client = { query, release: vi.fn() } as unknown as PoolClient;
+      const repo = createBorrowedRepo(client);
+      const connection = connectionOf(repo);
+
+      vi.spyOn(connection.accessTracker, 'startTransaction').mockImplementation(() => {
+        throw new Error('simulated bookkeeping failure');
+      });
+
+      try {
+        await expect(
+          repo.withTransaction(async () => undefined, {
+            resourceTypes: 'Patient',
+            source: 'test.abandonedRollbackFails',
+          })
+        ).rejects.toThrow('simulated bookkeeping failure');
+
+        // The original failure still propagates; the dead session is reported separately.
+        expect(warnSpy).toHaveBeenCalledWith('Error rolling back abandoned transaction level', {
+          rollbackErr: expect.stringContaining('connection is dead'),
+          originalErr: expect.stringContaining('simulated bookkeeping failure'),
+        });
+        expect(connection.hasConnection()).toBe(false);
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+  });
 });
 
 async function expectPatientVisible(repo: Repository, id: string | undefined): Promise<void> {
@@ -1647,6 +1772,21 @@ async function expectPatientSearchCount(repo: Repository, id: string | undefined
   expect(result.entry).toHaveLength(count);
 }
 
+/**
+ * Reaches into a Repository for the RepositoryConnection backing one shard, so tests can assert on
+ * connection-level bookkeeping that has no public accessor.
+ * @param repo - The repository to inspect.
+ * @param shardId - The shard whose connection to return. Defaults to the global shard, which is
+ * where every test project lives.
+ * @returns The RepositoryConnection, or undefined if the repository never reached that shard.
+ */
+function connectionOf(repo: Repository, shardId: string = GLOBAL_SHARD_ID): any {
+  return (repo as any).connections._entries.get(shardId)?.connection;
+}
+
 function createBorrowedRepo(client: PoolClient): Repository {
-  return getShardSystemRepo('test-shard', RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER }));
+  return getShardSystemRepo(
+    PLACEHOLDER_SHARD_ID,
+    RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
+  );
 }

@@ -1578,6 +1578,43 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   return result;
 }
 
+export function sumBy<T>(items: Iterable<T>, fn: (value: T) => number): number {
+  let sum = 0;
+  for (const value of items) {
+    sum += fn(value);
+  }
+  return sum;
+}
+
+export function countWhere<T>(items: Iterable<T>, fn: (value: T) => boolean): number {
+  let count = 0;
+  for (const value of items) {
+    if (fn(value)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Counts iterable elements by a key function, returning a sparse map of key to count.
+ * Matches Lodash `countBy` semantics (no zero-fill for missing keys).
+ * @param items - The items to count.
+ * @param keyFn - The function to extract the key from each item.
+ * @returns A map of key to count for keys that appear at least once.
+ */
+export function countBy<T, K extends keyof any>(
+  items: Iterable<T>,
+  keyFn: (value: T) => K
+): Partial<Record<K, number>> {
+  const result: Partial<Record<K, number>> = {};
+  for (const item of items) {
+    const key = keyFn(item);
+    result[key] = (result[key] ?? 0) + 1;
+  }
+  return result;
+}
+
 /**
  * Returns the escaped HTML string of the input string.
  * @param unsafe - The unsafe HTML string to escape.
