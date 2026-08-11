@@ -45,6 +45,7 @@ const ROOMS: ScheduleCandidateGroup = {
 function Harness(props: {
   group?: ScheduleCandidateGroup;
   initial?: readonly ActorRequirement[];
+  allowAlternatives?: boolean;
   disabled?: boolean;
   onChange?: (value: ActorRequirement[]) => void;
 }): JSX.Element {
@@ -53,6 +54,7 @@ function Harness(props: {
     <AppointmentActorSelect
       group={props.group ?? PROVIDERS}
       value={value}
+      allowAlternatives={props.allowAlternatives}
       disabled={props.disabled}
       onChange={(next) => {
         setValue(next);
@@ -66,7 +68,30 @@ function setup(props: Parameters<typeof Harness>[0] = {}): void {
   render(<Harness {...props} />);
 }
 
-function openList(label = 'provider'): void {
+// Opens the list on one row, which is named after the role it fills.
+function openList(row = 'Provider'): void {
+  act(() => {
+    fireEvent.click(screen.getByRole('textbox', { name: row }));
+  });
+}
+
+// Picks a name from an open list. Options are queried by role, so a chosen
+// name's own pill is not one of them.
+async function pick(name: string): Promise<void> {
+  const option = await screen.findByRole('option', { name });
+  await act(async () => {
+    fireEvent.click(option);
+  });
+}
+
+// Closes the list, leaving only what was chosen in the document.
+function closeList(row = 'Provider'): void {
+  act(() => {
+    fireEvent.blur(screen.getByRole('textbox', { name: row }));
+  });
+}
+
+function addRow(label = 'provider'): void {
   act(() => {
     fireEvent.click(screen.getByRole('button', { name: `Add ${label}` }));
   });
@@ -102,6 +127,17 @@ describe('AppointmentActorSelect', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  test('Offers one empty row before anything is chosen, named after the role', () => {
+    setup();
+
+    expect(screen.getByRole('textbox', { name: 'Provider' })).toBeInTheDocument();
+    // Numbering is what the second row introduces, so a field of one row does
+    // not read as the first of several.
+    expect(screen.queryByRole('textbox', { name: 'Provider 1' })).not.toBeInTheDocument();
+    // Nor is there a row to remove while the field is a single row.
+    expect(screen.queryByRole('button', { name: /^Remove/ })).not.toBeInTheDocument();
+  });
+
   test('Names each actor, both chosen and on offer', async () => {
     setup({ initial: toActorRequirements(['schedule-dr-rivera']) });
 
@@ -109,33 +145,54 @@ describe('AppointmentActorSelect', () => {
 
     openList();
 
-    expect(await screen.findByText('Dr. Tunde Okafor')).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: 'Dr. Tunde Okafor' })).toBeInTheDocument();
     // The name is the whole of what an actor is read by. What they do narrows
     // the list when it is typed, but is not written out beside them.
     expect(screen.queryByText('Anaesthetics')).not.toBeInTheDocument();
   });
 
-  test('Adds an actor as a requirement of its own, keeping the ones already chosen', async () => {
+  test('Joins a second actor as a row of its own, numbering both and writing AND between them', async () => {
     const onChange = vi.fn();
     setup({ initial: toActorRequirements(['schedule-dr-rivera']), onChange });
 
-    openList();
-    const okafor = await screen.findByText('Dr. Tunde Okafor');
-    await act(async () => {
-      fireEvent.click(okafor);
-    });
+    addRow();
+
+    // The row is added empty and joined to the one above it by a word of its
+    // own. Both rows are numbered, but only as an accessible name: the field is
+    // titled once, and nothing draws `Provider 2`.
+    expect(screen.getByRole('textbox', { name: 'Provider 1' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Provider 2' })).toBeInTheDocument();
+    expect(screen.getByText('AND')).toBeInTheDocument();
+    expect(screen.queryByText('Provider 1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Provider 2')).not.toBeInTheDocument();
+
+    openList('Provider 2');
+    await pick('Dr. Tunde Okafor');
 
     // Two requirements, not one requirement of two: both are held, because
     // $find intersects their schedules.
-    expect(onChange).toHaveBeenCalledWith([
+    expect(onChange).toHaveBeenLastCalledWith([
       { scheduleIds: ['schedule-dr-rivera'] },
       { scheduleIds: ['schedule-dr-okafor'] },
     ]);
-    expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
   });
 
-  test('Drops an actor', async () => {
+  test('Will not stack empty rows', () => {
+    setup();
+
+    // Which requirement an empty row stood for would be anyone's guess, so the
+    // row that exists has to be filled before it can be joined to another.
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
+  });
+
+  test('Will not offer a row with nobody left to fill it', () => {
+    setup({ initial: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']) });
+
+    // Both providers are asked for already, and an actor is only asked for once.
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
+  });
+
+  test('Drops a row, and stops numbering when one is left', async () => {
     const onChange = vi.fn();
     setup({ initial: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']), onChange });
 
@@ -145,41 +202,125 @@ describe('AppointmentActorSelect', () => {
 
     expect(onChange).toHaveBeenCalledWith([{ scheduleIds: ['schedule-dr-okafor'] }]);
     expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Provider' })).toBeInTheDocument();
+  });
+
+  test('Leaves an actor off the other rows once it is asked for', async () => {
+    setup({ initial: toActorRequirements(['schedule-dr-rivera']) });
+
+    addRow();
+    openList('Provider 2');
+
+    // Holding one schedule twice would ask for the times it is free from itself.
+    expect(await screen.findByRole('option', { name: 'Dr. Tunde Okafor' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Dr. Maya Rivera' })).not.toBeInTheDocument();
+  });
+
+  test('Takes one actor per row, a later pick replacing the one before it', async () => {
+    const onChange = vi.fn();
+    setup({ onChange });
+
+    openList();
+    await pick('Dr. Maya Rivera');
+    expect(onChange).toHaveBeenLastCalledWith([{ scheduleIds: ['schedule-dr-rivera'] }]);
+
+    openList();
+    await pick('Dr. Tunde Okafor');
+
+    // A row is one actor while alternatives are off, so the second pick stands
+    // in for the first instead of widening the row into a choice.
+    expect(onChange).toHaveBeenLastCalledWith([{ scheduleIds: ['schedule-dr-okafor'] }]);
+    closeList();
+    expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
+    expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument();
+  });
+
+  test('Takes several actors in one row when alternatives are allowed', async () => {
+    const onChange = vi.fn();
+    setup({ allowAlternatives: true, initial: toActorRequirements(['schedule-dr-rivera']), onChange });
+
+    openList();
+    await pick('Dr. Tunde Okafor');
+
+    // One requirement naming both: either would do, and `getActorCombinations`
+    // searches for each of them in turn.
+    expect(onChange).toHaveBeenLastCalledWith([{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }]);
+  });
+
+  test('Reads a row of several names as a choice however the value arrived', () => {
+    // A caller can hand back a requirement naming several actors — a saved
+    // search, or a link — whether or not this field would have built one, so
+    // what the row says follows the value rather than the prop.
+    setup({ initial: [{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }] });
+
+    // `OR` between the names carries this on screen, and is drawn on the chips,
+    // which is all jsdom can see of it: the word itself is generated content.
+    expect(screen.getByText('Dr. Tunde Okafor').closest('.alternativePill')).not.toBeNull();
+    // Nothing says it in the layout, so it has to be said to a screen reader.
+    expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveAccessibleDescription('Any one of these will do.');
   });
 
   test('Searches by what an actor does as well as by name', async () => {
     setup();
 
     openList();
-    expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: 'Dr. Maya Rivera' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Search providers'), { target: { value: 'anaesthetics' } });
+      fireEvent.change(screen.getByRole('textbox', { name: 'Provider' }), { target: { value: 'anaesthetics' } });
     });
 
-    expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
-    expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Dr. Tunde Okafor' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Dr. Maya Rivera' })).not.toBeInTheDocument();
   });
 
-  test('Says when there is nobody left to add', () => {
-    setup({ initial: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']) });
+  test('Says when a search matches nobody', async () => {
+    setup();
 
     openList();
+    await act(async () => {
+      fireEvent.change(screen.getByRole('textbox', { name: 'Provider' }), { target: { value: 'radiology' } });
+    });
 
-    expect(screen.getByText('No provider left to add')).toBeInTheDocument();
+    expect(screen.getByText('No providers found')).toBeInTheDocument();
   });
 
-  test('Says an optional role may be left alone', () => {
-    setup({ group: ROOMS });
+  test('Marks the rows an error is about, saying it only once', () => {
+    render(
+      <AppointmentActorSelect
+        group={PROVIDERS}
+        value={toActorRequirements(['schedule-dr-rivera'])}
+        error="Choose at least one provider"
+        onChange={vi.fn()}
+      />
+    );
+
+    // A message under a field that looks untouched is easy to miss, and leaves a
+    // screen reader with nothing to go on: the row has to report itself invalid.
+    expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveAttribute('aria-invalid', 'true');
+    // The wrapper prints it. A row printing its own copy would say it twice.
+    expect(screen.getAllByText('Choose at least one provider')).toHaveLength(1);
+  });
+
+  test('Marks a role that has to be filled, and says when one may be left alone', () => {
+    setup();
+
+    // The asterisk is the only thing a required role adds, so the row that
+    // stands for the obligation has to carry it for a screen reader too.
+    expect(screen.getByText('*')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveAttribute('aria-required', 'true');
+
+    render(<Harness group={ROOMS} />);
 
     expect(screen.getByText('Optional. Leave empty to search without a room.')).toBeInTheDocument();
-    expect(screen.getByText('No room held')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Room' })).not.toHaveAttribute('aria-required');
   });
 
   test('Takes nothing while disabled', () => {
-    setup({ initial: toActorRequirements(['schedule-dr-rivera']), disabled: true });
+    setup({ initial: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']), disabled: true });
 
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Remove Dr. Maya Rivera' }).disabled).toBe(true);
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Provider 1' }).disabled).toBe(true);
   });
 });

@@ -81,49 +81,86 @@ const ROOMS: ScheduleCandidateGroup = {
  * @param props - The React props.
  * @param props.group - The role and the actors that can fill it.
  * @param props.initial - Requirements chosen before the story opens.
+ * @param props.allowAlternatives - Whether a row may hold a choice of actors.
  * @param props.error - Why the selection is not yet valid.
  * @returns The field.
  */
 function Field(props: {
   readonly group: ScheduleCandidateGroup;
   readonly initial?: readonly ActorRequirement[];
+  readonly allowAlternatives?: boolean;
   readonly error?: string;
 }): JSX.Element {
   const [value, setValue] = useState<readonly ActorRequirement[]>(props.initial ?? []);
   return (
     <Document>
-      <AppointmentActorSelect group={props.group} value={value} error={props.error} onChange={setValue} />
+      <AppointmentActorSelect
+        group={props.group}
+        value={value}
+        allowAlternatives={props.allowAlternatives}
+        error={props.error}
+        onChange={setValue}
+      />
     </Document>
   );
 }
 
 /**
- * A required role with nothing chosen yet.
+ * One empty row on an optional role. Leaving it alone holds no room at all,
+ * rather than looking for whichever one is free.
  *
  * Opening the list and typing searches what an actor *is* as well as what it is
- * called, so "anaes" finds Dr. Kim by specialty rather than by name.
+ * called, so "imaging" finds Exam Room A by what it is for rather than by name.
+ *
+ * Every other story is a required role, so the asterisk that marks one is on
+ * show throughout without a story of its own.
  * @returns The story.
  */
-export const Required = (): JSX.Element => <Field group={PROVIDERS} />;
+export const Basic = (): JSX.Element => <Field group={ROOMS} />;
 
 /**
- * Two providers already chosen. Both attend — `$find` intersects their
- * schedules, so this asks for the times they are *both* free.
+ * Two providers, on a row each. Both attend — `$find` intersects their
+ * schedules, so this asks for the times they are *both* free, which is what the
+ * `AND` between the rows says.
  * @returns The story.
  */
-export const SeveralChosen = (): JSX.Element => (
+export const AAndB = (): JSX.Element => (
   <Field group={PROVIDERS} initial={toActorRequirements([DrChenSchedule.id, DrKimSchedule.id])} />
 );
+AAndB.storyName = 'A and B';
 
 /**
- * An optional role, left empty. The search then holds no room at all, rather
- * than looking for whichever one is free.
+ * Two providers in one row, so either would do. `OR` between the chips is what
+ * separates this from the row above, where both are held.
+ *
+ * Searched as two `$find` requests, one per way of resolving the row, which
+ * `getActorCombinations` enumerates.
  * @returns The story.
  */
-export const Optional = (): JSX.Element => <Field group={ROOMS} />;
+export const AOrB = (): JSX.Element => (
+  <Field group={PROVIDERS} allowAlternatives initial={[{ scheduleIds: [DrChenSchedule.id, DrKimSchedule.id] }]} />
+);
+AOrB.storyName = 'A or B';
 
 /**
- * A required role with nothing chosen, as the form reports it on submit.
+ * A choice and a requirement together: whichever of Chen and Kim is free, plus
+ * Rivera, who is held either way.
+ * @returns The story.
+ */
+export const AOrBAndC = (): JSX.Element => (
+  <Field
+    group={PROVIDERS}
+    allowAlternatives
+    initial={[{ scheduleIds: [DrChenSchedule.id, DrKimSchedule.id] }, { scheduleIds: [DrRiveraSchedule.id] }]}
+  />
+);
+AOrBAndC.storyName = '(A or B) and C';
+
+/**
+ * A required role with nothing chosen, as the form reports it on submit. The
+ * rows the message is about are marked wrong themselves, so the field does not
+ * rely on a line of red text under an untouched-looking control.
  * @returns The story.
  */
 export const WithError = (): JSX.Element => <Field group={PROVIDERS} error="Choose at least one provider" />;
+WithError.storyName = 'With error';
