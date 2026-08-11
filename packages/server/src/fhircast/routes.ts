@@ -292,9 +292,9 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
     return;
   }
   if (!issuedEndpoint) {
-    // Debug rather than warn: the request is honored, and the line exists only to show whether any
+    // Info rather than warn: the request is honored, and the line exists only to show whether any
     // subscriber still depends on the legacy name before it is dropped.
-    getLogger().debug('[FHIRcast]: Unsubscribe request named its endpoint under the deprecated `endpoint` field');
+    getLogger().info('[FHIRcast]: Unsubscribe request named its endpoint under the deprecated `endpoint` field');
   }
 
   const subscription = await getEndpointSubscription(endpoint);
