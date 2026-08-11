@@ -25,11 +25,12 @@ describe('FHIRcast', () => {
 
       const topic = 'abc123';
       const events = ['Patient-open'] as FhircastEventName[];
+      // The Hub only sends `heartbeat` to subscribers that name it, so it is requested by default
       const expectedSubRequest = {
         mode: 'subscribe',
         channelType: 'websocket',
         topic,
-        events,
+        events: ['Patient-open', 'heartbeat'],
       } satisfies PendingSubscriptionRequest;
       const serializedSubRequest = serializeFhircastSubscriptionRequest(expectedSubRequest);
 
@@ -45,6 +46,22 @@ describe('FHIRcast', () => {
       expect(subRequest).toStrictEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
       expect(subRequest.endpoint).toBeDefined();
       expect(subRequest.endpoint?.startsWith('ws')).toBeTruthy();
+      // The caller's array is not mutated; the heartbeat goes onto a copy
+      expect(events).toStrictEqual(['Patient-open']);
+    });
+
+    test('Opting out of the heartbeat', async () => {
+      const fetch = mockFetch(200, { 'hub.channel.endpoint': 'wss://api.medplum.com/ws/fhircast/def456' });
+      const client = new MedplumClient({ fetch });
+
+      const subRequest = await client.fhircastSubscribe('abc123', ['Patient-open'], { heartbeat: false });
+      expect(subRequest.events).toStrictEqual(['Patient-open']);
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhircast/STU3',
+        expect.objectContaining<RequestInit>({
+          body: 'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open',
+        })
+      );
     });
 
     test('Invalid subscription request', async () => {

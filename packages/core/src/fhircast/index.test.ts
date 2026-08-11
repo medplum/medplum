@@ -71,6 +71,16 @@ describe('validateFhircastSubscriptionRequest', () => {
         endpoint: 'wss://abc.com/hub',
       })
     ).toBe(true);
+
+    // `heartbeat` is not publishable, but a subscriber may ask the Hub for it
+    expect(
+      validateFhircastSubscriptionRequest({
+        topic: 'abc123',
+        mode: 'subscribe',
+        channelType: 'websocket',
+        events: ['Patient-open', 'heartbeat'],
+      })
+    ).toBe(true);
   });
 
   test('Invalid subscription requests', () => {
@@ -182,6 +192,19 @@ describe('serializeFhircastSubscriptionRequest', () => {
       })
     ).toStrictEqual(
       'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open%2CPatient-close'
+    );
+  });
+
+  test('Valid subscription request with heartbeat', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'subscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['Patient-open', 'heartbeat'],
+      })
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open%2Cheartbeat'
     );
   });
 

@@ -52,10 +52,13 @@ import type {
   FhircastEventName,
   FhircastEventVersionOptional,
   FhircastEventVersionRequired,
+  FhircastSubscribableEventName,
+  FhircastSubscribeOptions,
   PendingSubscriptionRequest,
   SubscriptionRequest,
 } from './fhircast';
 import {
+  FHIRCAST_HEARTBEAT_EVENT,
   FhircastConnection,
   assertContextVersionOptional,
   createFhircastMessagePayload,
@@ -4453,12 +4456,21 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * Once you have the `SubscriptionRequest` returned from this method, you can call `fhircastConnect(subscriptionRequest)` to connect to the subscription stream.
    *
+   * The Hub delivers `heartbeat` only to subscribers that asked for it, so it is added to the
+   * request unless `options.heartbeat` is `false`. On a quiet topic it is the only traffic on the
+   * socket, which is what keeps an intermediary with an idle timeout from closing the connection.
+   *
    * @category FHIRcast
    * @param topic - The topic to publish to. Usually a UUID.
    * @param events - An array of event names to listen for.
+   * @param options - Options for the subscription.
    * @returns A `Promise` that resolves once the request completes, or rejects if it fails.
    */
-  async fhircastSubscribe(topic: string, events: FhircastEventName[]): Promise<SubscriptionRequest> {
+  async fhircastSubscribe(
+    topic: string,
+    events: FhircastEventName[],
+    options?: FhircastSubscribeOptions
+  ): Promise<SubscriptionRequest> {
     if (!(typeof topic === 'string' && topic !== '')) {
       throw new OperationOutcomeError(validationError('Invalid topic provided. Topic must be a valid string.'));
     }
@@ -4470,11 +4482,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       );
     }
 
+    const subscribedEvents: FhircastSubscribableEventName[] =
+      options?.heartbeat === false ? events : [...events, FHIRCAST_HEARTBEAT_EVENT];
+
     const subRequest = {
       channelType: 'websocket',
       mode: 'subscribe',
       topic,
-      events,
+      events: subscribedEvents,
     } as PendingSubscriptionRequest;
 
     const body = await this.post<{ 'hub.channel.endpoint': string }>(
