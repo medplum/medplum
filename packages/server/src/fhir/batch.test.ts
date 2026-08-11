@@ -1795,9 +1795,9 @@ describe('Batch and Transaction processing', () => {
                   severity: 'error',
                   code: 'structure',
                   details: {
-                    text: 'Invalid additional property "failing"',
+                    text: 'Invalid JSON type: expected string, but got object',
                   },
-                  expression: ['Organization.name.failing'],
+                  expression: ['Organization.name'],
                 },
               ],
             },

@@ -90,7 +90,12 @@ export class SymbolAtom implements Atom {
     if (this.name.startsWith('%')) {
       throw new Error(`Undefined variable ${this.name}`);
     }
-    return input.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
+    return (
+      input
+        .flatMap((e) => this.evalValue(e))
+        // A primitive field with no value but a primitive extension is still a valid element
+        .filter((e) => e?.value !== undefined || e?.primitiveExtension !== undefined) as TypedValue[]
+    );
   }
 
   private getVariable(context: AtomContext): TypedValue | undefined {
@@ -108,7 +113,8 @@ export class SymbolAtom implements Atom {
 
   private evalValue(typedValue: TypedValue): TypedValue[] | TypedValue | undefined {
     const input = typedValue.value;
-    if (!input || typeof input !== 'object') {
+    // A primitive has no children of its own, but its primitive extension carries `id`/`extension`.
+    if ((!input || typeof input !== 'object') && typedValue.primitiveExtension === undefined) {
       return undefined;
     }
 
