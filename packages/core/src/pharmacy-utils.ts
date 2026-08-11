@@ -33,6 +33,8 @@ export interface PharmacySearchParams {
   address?: string;
   phoneOrFax?: string;
   ncpdpID?: string;
+  /** Selected practice location for multi-practice deployments. */
+  organization?: Reference<Organization>;
 }
 
 /**
@@ -42,6 +44,8 @@ export interface AddFavoriteParams {
   patientId: string;
   pharmacy: Organization;
   setAsPrimary: boolean;
+  /** Selected practice location for multi-practice deployments. */
+  organization?: Reference<Organization>;
 }
 
 /**

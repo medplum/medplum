@@ -44,6 +44,14 @@ const TEST_MSG = (controlId: string): Hl7Message =>
       'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M\r'
   );
 
+// Like TEST_MSG but with a caller-chosen MSH-4 (sending facility), so a channel
+// keyed on logicalChannelKey=MSH-4 partitions messages by `facility`.
+const VC_MSG = (controlId: string, facility: string): Hl7Message =>
+  Hl7Message.parse(
+    `MSH|^~\\&|ADT1|${facility}|LABADT|MCM|198808181126|SECURITY|ADT^A01|${controlId}|P|2.5\r` +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M\r'
+  );
+
 let bot: Bot;
 
 describe('Durable queue integration', () => {
@@ -224,6 +232,434 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
+  test('logical channels dispatch concurrently across partitions while each partition stays serial', async () => {
+    // A mock server that records every transmit and only replies on demand, so we
+    // can observe exactly how many messages the pool holds in flight at once.
+    const transmits: { channel: string; callback: string; remote: string; body: string }[] = [];
+    let serverSocket: Client | undefined;
+    mockServer.on('connection', (socket) => {
+      serverSocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })));
+        } else if (command.type === 'agent:transmit:request') {
+          transmits.push(command);
+        }
+      });
+    });
+    const replyTo = (controlId: string): void => {
+      const cmd = transmits.find(
+        (t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString() === controlId
+      );
+      if (!cmd || !serverSocket) {
+        throw new Error(`no in-flight transmit for ${controlId}`);
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      serverSocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: cmd.channel,
+            remote: cmd.remote,
+            callback: cmd.callback,
+            contentType: ContentType.HL7_V2,
+            statusCode: 200,
+            body: ack.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+    };
+
+    // Partition by sending facility (MSH-4); allow two workers so two partitions
+    // can be in flight at once. enhanced=true so each send gets its commit CA at
+    // intake (independent of the deferred Bot reply we control above).
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'vc', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    // Enqueue in order: A1 (facility A), B1 (facility B), A2 (facility A). Each
+    // send resolves on its commit CA, so the rows land queued in this order.
+    const client = new Hl7Client({ host: 'localhost', port });
+    for (const [id, facility] of [
+      ['A1', 'HOSPA'],
+      ['B1', 'HOSPB'],
+      ['A2', 'HOSPA'],
+    ] as const) {
+      await client.sendAndWait(VC_MSG(id, facility), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    }
+
+    // The pool dispatches A1 and B1 concurrently (distinct partitions), but NOT A2
+    // (same partition as the still-in-flight A1). This is stable: with both workers
+    // busy on A1/B1, A2 stays queued, and even once a worker frees it can't dispatch
+    // A2 until A1 settles — so the count can't creep past 2.
+    await waitFor(() => transmits.length >= 2, 3000, 'two concurrent transmits');
+    await sleep(150);
+    expect(transmits.length).toBe(2);
+    const inFlightIds = transmits
+      .map((t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString())
+      .sort();
+    expect(inFlightIds).toEqual(['A1', 'B1']);
+
+    // The partition key is computed and stored at CLAIM time (not intake): the two
+    // in-flight rows now carry their facility partitions end-to-end.
+    expect(queue.findSeenByControlId('vc', 'A1')?.logicalChannelKey).toBe('MSH-4:HOSPA');
+    expect(queue.findSeenByControlId('vc', 'B1')?.logicalChannelKey).toBe('MSH-4:HOSPB');
+
+    // Settle A1; only now does A2 (next in partition HOSPA) become claimable.
+    replyTo('A1');
+    await waitFor(() => transmits.length >= 3, 3000, 'A2 dispatched after A1 settled');
+    expect(Hl7Message.parse(transmits[2].body).getSegment('MSH')?.getField(10)?.toString()).toBe('A2');
+
+    // Drain the rest and confirm all three processed.
+    replyTo('B1');
+    replyTo('A2');
+    await waitForRow(queue, (counts) => counts.processed === 3, 3000);
+    expect(queue.countByState().queued).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('a single logical channel serializes via `delayed` and drains in FIFO order', async () => {
+    const transmits: { channel: string; callback: string; remote: string; body: string }[] = [];
+    let serverSocket: Client | undefined;
+    mockServer.on('connection', (socket) => {
+      serverSocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })));
+        } else if (command.type === 'agent:transmit:request') {
+          transmits.push(command);
+        }
+      });
+    });
+    const replyTo = (controlId: string): void => {
+      const cmd = transmits.find(
+        (t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString() === controlId
+      );
+      if (!cmd || !serverSocket) {
+        throw new Error(`no in-flight transmit for ${controlId}`);
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      serverSocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: cmd.channel,
+            remote: cmd.remote,
+            callback: cmd.callback,
+            contentType: ContentType.HL7_V2,
+            statusCode: 200,
+            body: ack.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+    };
+
+    // All three messages share facility HOSPA → one logical channel. maxWorkers=2
+    // leaves a free worker to claim the followers, which must then park `delayed`
+    // behind the in-flight head rather than dispatch concurrently.
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'vc', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    const client = new Hl7Client({ host: 'localhost', port });
+    for (const id of ['S1', 'S2', 'S3'] as const) {
+      await client.sendAndWait(VC_MSG(id, 'HOSPA'), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    }
+
+    // Only S1 (the partition head) dispatches; the free worker claims S2 and S3 and
+    // parks them `delayed` behind S1 — the in-flight count never exceeds 1.
+    await waitFor(() => transmits.length >= 1, 3000, 'head dispatched');
+    await waitForRow(queue, (counts) => counts.delayed === 2, 3000);
+    await sleep(150);
+    expect(transmits.length).toBe(1);
+    expect(Hl7Message.parse(transmits[0].body).getSegment('MSH')?.getField(10)?.toString()).toBe('S1');
+
+    // Settle S1 → S2 (next in FIFO) wakes and dispatches; S3 stays delayed.
+    replyTo('S1');
+    await waitFor(() => transmits.length >= 2, 3000, 'S2 after S1');
+    expect(Hl7Message.parse(transmits[1].body).getSegment('MSH')?.getField(10)?.toString()).toBe('S2');
+    expect(queue.getChannelDepth('vc').delayed).toBe(1);
+
+    // Settle S2 → S3 wakes and dispatches, preserving order.
+    replyTo('S2');
+    await waitFor(() => transmits.length >= 3, 3000, 'S3 after S2');
+    expect(Hl7Message.parse(transmits[2].body).getSegment('MSH')?.getField(10)?.toString()).toBe('S3');
+
+    replyTo('S3');
+    await waitForRow(queue, (counts) => counts.processed === 3, 3000);
+    expect(queue.countByState().queued).toBe(0);
+    expect(queue.countByState().delayed).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('changing logicalChannelKey under live traffic re-partitions the backlog without loss or reordering', async () => {
+    // The spec change is the one path claim-time keying can't cover on its own, and
+    // it happens on a running channel. Here the change also MERGES partitions
+    // (facility → trigger event, and every message is ADT^A01), which is the
+    // direction that can actually break ordering: rows that were free to run
+    // concurrently must serialize afterwards.
+    const transmits: { channel: string; callback: string; remote: string; body: string }[] = [];
+    let serverSocket: Client | undefined;
+    mockServer.on('connection', (socket) => {
+      serverSocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })));
+        } else if (command.type === 'agent:transmit:request') {
+          transmits.push(command);
+        }
+      });
+    });
+    const idOf = (index: number): string | undefined =>
+      Hl7Message.parse(transmits[index].body).getSegment('MSH')?.getField(10)?.toString();
+    const replyTo = (controlId: string): void => {
+      const cmd = transmits.find(
+        (t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString() === controlId
+      );
+      if (!cmd || !serverSocket) {
+        throw new Error(`no in-flight transmit for ${controlId}`);
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      serverSocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: cmd.channel,
+            remote: cmd.remote,
+            callback: cmd.callback,
+            contentType: ContentType.HL7_V2,
+            statusCode: 200,
+            body: ack.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+    };
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'vc', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    // Build a backlog that actually holds STALE keys, which is what makes the rewrite
+    // load-bearing. A row never claimed carries the default '' — itself a single
+    // partition — so ordering would survive a missing rewrite by luck. A2 is
+    // deliberately parked `delayed` under the OLD key instead.
+    const client = new Hl7Client({ host: 'localhost', port });
+    const send = async (id: string, facility: string): Promise<void> => {
+      await client.sendAndWait(VC_MSG(id, facility), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    };
+    await send('A1', 'HOSPA');
+    await waitFor(() => transmits.length === 1, 3000, 'A1 in flight');
+    await send('A2', 'HOSPA');
+    await waitFor(() => queue.getChannelDepth('vc').delayed === 1, 3000, 'A2 parked behind A1');
+    await send('B1', 'HOSPB');
+    await waitFor(() => transmits.length === 2, 3000, 'B1 in flight on the other partition');
+    // Both workers are now busy, so these two just queue up.
+    await send('A3', 'HOSPA');
+    await send('B2', 'HOSPB');
+    await waitFor(() => queue.getChannelDepth('vc').queued === 2, 3000, 'A3/B2 queued');
+
+    expect(queue.findSeenByControlId('vc', 'A2')?.logicalChannelKey).toBe('MSH-4:HOSPA');
+    expect(queue.findSeenByControlId('vc', 'A2')?.state).toBe('delayed');
+
+    // Re-key by trigger event while A1/B1 are still on the wire. Every message is
+    // ADT^A01, so the two facility partitions MERGE into one.
+    const channel = app.channels.get('vc') as unknown as AgentHl7Channel;
+    const rekeyed = { ...endpoint, address: endpoint.address.replace('MSH-4', 'MSH-9.2') } as Endpoint;
+    await channel.reloadConfig(channel.getDefinition(), rekeyed);
+    await waitFor(
+      () => queue.findSeenByControlId('vc', 'A2')?.logicalChannelKey === 'MSH-9.2:A01',
+      3000,
+      'backlog re-keyed'
+    );
+
+    // A2's stale key is gone and it is un-parked; the un-claimed rows moved too. The
+    // in-flight pair keep the partition they were claimed under and finish there
+    // (the documented transitional window).
+    expect(queue.findSeenByControlId('vc', 'A2')?.state).toBe('queued');
+    for (const id of ['A3', 'B2']) {
+      expect(queue.findSeenByControlId('vc', id)?.logicalChannelKey).toBe('MSH-9.2:A01');
+    }
+    expect(queue.findSeenByControlId('vc', 'A1')?.logicalChannelKey).toBe('MSH-4:HOSPA');
+    expect(queue.findSeenByControlId('vc', 'B1')?.logicalChannelKey).toBe('MSH-4:HOSPB');
+
+    // Intake is never gated on the rewrite: new traffic is still accepted and ACKed.
+    await send('C1', 'HOSPC');
+    expect(queue.findSeenByControlId('vc', 'C1')?.state).toBe('queued');
+
+    // Free a worker. Everything left shares one partition now, so despite maxWorkers=2
+    // the backlog must go out strictly one at a time in arrival order. Without the
+    // rewrite A2 would still be parked under its stale key and A3 would overtake it.
+    replyTo('B1');
+    for (const [index, expectedId] of [
+      [2, 'A2'],
+      [3, 'A3'],
+      [4, 'B2'],
+      [5, 'C1'],
+    ] as const) {
+      await waitFor(() => transmits.length >= index + 1, 3000, `${expectedId} dispatched`);
+      await sleep(100);
+      expect(transmits.length).toBe(index + 1);
+      expect(idOf(index)).toBe(expectedId);
+      replyTo(expectedId);
+    }
+
+    replyTo('A1');
+    await waitForRow(queue, (counts) => counts.processed === 6, 5000);
+    expect(queue.countByState().queued).toBe(0);
+    expect(queue.countByState().delayed).toBe(0);
+
+    await client.close();
+    await app.stop();
+  });
+
+  test('shrinking the pool while a worker is in-flight drains it — its response still lands', async () => {
+    // Regression: a worker spliced out of the pool by a shrink must stay reachable
+    // so its in-flight server response still resolves it (draining, not cancelling).
+    const transmits: { channel: string; callback: string; remote: string; body: string }[] = [];
+    let serverSocket: Client | undefined;
+    mockServer.on('connection', (socket) => {
+      serverSocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION })));
+        } else if (command.type === 'agent:transmit:request') {
+          transmits.push(command);
+        }
+      });
+    });
+    const replyTo = (controlId: string): void => {
+      const cmd = transmits.find(
+        (t) => Hl7Message.parse(t.body).getSegment('MSH')?.getField(10)?.toString() === controlId
+      );
+      if (!cmd || !serverSocket) {
+        throw new Error(`no in-flight transmit for ${controlId}`);
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      serverSocket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: cmd.channel,
+            remote: cmd.remote,
+            callback: cmd.callback,
+            contentType: ContentType.HL7_V2,
+            statusCode: 200,
+            body: ack.toString(),
+          } satisfies AgentTransmitResponse)
+        )
+      );
+    };
+
+    // Two facilities → two partitions, maxWorkers=2 → both dispatch concurrently.
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&logicalChannelKey=MSH-4&maxWorkers=2',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'vc', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const queue = app.getDurableQueue() as DurableQueue;
+
+    const client = new Hl7Client({ host: 'localhost', port });
+    for (const [id, facility] of [
+      ['A1', 'HOSPA'],
+      ['B1', 'HOSPB'],
+    ] as const) {
+      await client.sendAndWait(VC_MSG(id, facility), { returnAck: ReturnAckCategory.FIRST, timeoutMs: 5000 });
+    }
+    await waitFor(() => transmits.length >= 2, 3000, 'both in flight');
+
+    // Shrink to a single worker WHILE both are in flight: the excess worker is moved
+    // to drainingWorkers (still reachable), not cancelled.
+    const channel = app.channels.get('vc') as unknown as AgentHl7Channel;
+    const shrunk = { ...endpoint, address: endpoint.address.replace('maxWorkers=2', 'maxWorkers=1') } as Endpoint;
+    await channel.reloadConfig(channel.getDefinition(), shrunk);
+    expect(channel.workers.length).toBe(1);
+
+    // Reply to BOTH rows. The remaining worker settles its own; the DRAINED worker's
+    // response must still route to it (via allWorkers) and settle — not be dropped
+    // into a spurious `failed`/timeout.
+    replyTo('A1');
+    replyTo('B1');
+    await waitForRow(queue, (counts) => counts.processed === 2, 5000);
+    expect(queue.findSeenByControlId('vc', 'A1')?.state).toBe('processed');
+    expect(queue.findSeenByControlId('vc', 'B1')?.state).toBe('processed');
+
+    await client.close();
+    await app.stop();
+  });
+
   test('server 5xx response marks the row failed (transient, ack not owed)', async () => {
     startMockServer(
       (cmd) =>
@@ -240,7 +676,10 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true',
+      // retryMode=none isolates the terminal classification: a 5xx is a transient
+      // ServerError, so under the guaranteed-retry default the row would sit in
+      // `queued` awaiting a retry. Disabling retry lands it terminally in `failed`.
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -274,7 +713,11 @@ describe('Durable queue integration', () => {
     await app.stop();
   });
 
-  test('server 4xx response marks the row rejected (permanent), never re-dispatched', async () => {
+  // retryMode=normal → normal mode, where a 4xx is a permanent reject.
+  // (Under the guaranteed-retry default a 4xx that lacks a definitive AR/CR ACK is
+  // retried, not rejected — see the retry tests below and the worker's
+  // guaranteed-delivery unit tests.)
+  test('server 4xx response marks the row rejected (permanent) in normal mode, never re-dispatched', async () => {
     let dispatches = 0;
     startMockServer((cmd) => {
       dispatches++;
@@ -291,7 +734,7 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=normal',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -320,6 +763,168 @@ describe('Durable queue integration', () => {
     expect(row?.errorCode).toBe('server-rejected'); // permanent — never retried
     expect(row?.ackOutcome).toBe('not_owed');
     expect(dispatches).toBe(1);
+
+    await client.close();
+    await app.stop();
+  });
+
+  // Auto-retry, end to end, on the transient path. The channel is left on the
+  // guaranteed-retry default (no retryMode param), so a 5xx is a transient
+  // ServerError the worker retries rather than settling — the row stays `queued`
+  // (scheduled for a backoff retry), then drains to `processed` once the server
+  // stops failing. autoRetryBaseDelayMs is kept small so the retry fires promptly
+  // and the test stays fast. This is the positive counterpart to the
+  // terminal-classification tests above: the SAME 5xx that lands `failed` under
+  // retryMode=none is recovered here under the default.
+  test('auto-retry (guaranteed default): a transient 5xx is retried and then succeeds, reaching processed', async () => {
+    let dispatches = 0;
+    startMockServer((cmd) => {
+      dispatches++;
+      // First dispatch fails transiently (5xx); every retry afterwards succeeds.
+      if (dispatches === 1) {
+        return {
+          type: 'agent:transmit:response',
+          channel: cmd.channel,
+          remote: cmd.remote,
+          callback: cmd.callback,
+          contentType: ContentType.TEXT,
+          statusCode: 503,
+          body: 'server temporarily unavailable',
+        } satisfies AgentTransmitResponse;
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      // No retryMode param → the guaranteed-retry default. A small base delay keeps
+      // the backoff retry prompt without a real long sleep.
+      address: 'mllp://0.0.0.0:0?enhanced=true&autoRetryBaseDelayMs=10',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const response = await client.sendAndWait(TEST_MSG('INT_RETRY'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    // Commit ACK minted at intake, independent of the (failing-then-recovering) Bot leg.
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    // The transient failure was retried, not settled terminally: the row drains to
+    // `processed` and the Bot was dispatched more than once (the failed attempt + a
+    // succeeding retry).
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitForRow(queue, (counts) => counts.processed === 1, 5000);
+    expect(dispatches).toBeGreaterThanOrEqual(2);
+    const row = queue.findSeenByControlId('dq-test', 'INT_RETRY');
+    expect(row?.state).toBe('processed');
+    expect(row?.ackOutcome).toBe('delivered');
+    expect(queue.countByState()).toMatchObject({
+      processed: 1,
+      queued: 0,
+      claimed: 0,
+      inflight: 0,
+      failed: 0,
+      rejected: 0,
+      nacked: 0,
+    });
+
+    await client.close();
+    await app.stop();
+  });
+
+  // Companion to the normal-mode 4xx-reject test above, on the guaranteed default:
+  // a 4xx whose body is NOT a definitive upstream reject (no MSA-1 AR/CR) is treated
+  // as ambiguous and RETRIED, not rejected — guaranteed mode keeps trying until a
+  // definitive reject (or success) settles it. Here the server returns 422 once and
+  // then a 200/AA, so the row recovers to `processed` rather than landing `rejected`.
+  test('auto-retry (guaranteed default): a 4xx without a definitive AR/CR ACK is retried, then succeeds', async () => {
+    let dispatches = 0;
+    startMockServer((cmd) => {
+      dispatches++;
+      if (dispatches === 1) {
+        return {
+          type: 'agent:transmit:response',
+          channel: cmd.channel,
+          remote: cmd.remote,
+          callback: cmd.callback,
+          contentType: ContentType.TEXT,
+          statusCode: 422,
+          body: 'transient validation hiccup', // not an HL7 ACK → no MSA-1, ambiguous
+        } satisfies AgentTransmitResponse;
+      }
+      const ack = Hl7Message.parse(cmd.body).buildAck({ ackCode: 'AA' });
+      return {
+        type: 'agent:transmit:response',
+        channel: cmd.channel,
+        remote: cmd.remote,
+        callback: cmd.callback,
+        contentType: ContentType.HL7_V2,
+        statusCode: 200,
+        body: ack.toString(),
+      } satisfies AgentTransmitResponse;
+    });
+
+    const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
+      ...BASE_ENDPOINT,
+      address: 'mllp://0.0.0.0:0?enhanced=true&autoRetryBaseDelayMs=10',
+    });
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Durable Queue Test Agent',
+      status: 'active',
+      channel: [{ name: 'dq-test', endpoint: createReference(endpoint), targetReference: createReference(bot) }],
+      setting: [
+        { name: 'durableQueue', valueBoolean: true },
+        { name: 'queueDbPath', valueString: join(dir, 'queue.sqlite') },
+      ],
+    });
+    const app = new App(medplum, agent.id, LogLevel.WARN);
+    await app.start();
+    const client = new Hl7Client({ host: 'localhost', port });
+
+    const response = await client.sendAndWait(TEST_MSG('INT_4XX_RETRY'), {
+      returnAck: ReturnAckCategory.FIRST,
+      timeoutMs: 5000,
+    });
+    expect(response.getSegment('MSA')?.getField(1)?.toString()).toBe('CA');
+
+    const queue = app.getDurableQueue() as DurableQueue;
+    await waitForRow(queue, (counts) => counts.processed === 1, 5000);
+    // Retried (not rejected) and ultimately delivered — the contrast with the
+    // normal-mode reject test, where the very same 422 settles terminally.
+    expect(dispatches).toBeGreaterThanOrEqual(2);
+    expect(queue.findSeenByControlId('dq-test', 'INT_4XX_RETRY')?.state).toBe('processed');
+    expect(queue.countByState()).toMatchObject({
+      processed: 1,
+      queued: 0,
+      claimed: 0,
+      inflight: 0,
+      failed: 0,
+      rejected: 0,
+      nacked: 0,
+    });
 
     await client.close();
     await app.stop();
@@ -1787,9 +2392,14 @@ describe('Durable queue integration', () => {
     mockServer.on('connection', handler);
 
     const dbPath = join(dir, 'queue.sqlite');
+    // retryMode=none on the leader (A): worker-stopped is an ambiguous code that the
+    // guaranteed-retry default would requeue, so A's in-flight HO_1 would be re-drained
+    // by B instead of settling. Opting A out keeps HO_1 terminally `failed` on stop —
+    // the disposition this test pins (handed off rows succeed; the interrupted row is
+    // parked for review).
     const [endpointA] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true',
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const [endpointB, portB] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
@@ -1920,7 +2530,11 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true',
+      // retryMode=none stamps guaranteed_delivery=0 on the row at intake, so the new
+      // owner's recoverOnStartup marks the ambiguous interrupted row `failed`/`interrupted`
+      // for review. (Under the guaranteed default recovery would instead requeue an
+      // interrupted in-flight row, accepting the duplication risk.)
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
@@ -2013,8 +2627,7 @@ describe('Durable queue integration', () => {
     // release it by hand after the storm, so the timing is deterministic.
     const transmits: string[] = [];
     let firstTransmit:
-      | { socket: Client; command: { channel: string; remote: string; callback: string; body: string } }
-      | undefined;
+      { socket: Client; command: { channel: string; remote: string; callback: string; body: string } } | undefined;
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -2118,7 +2731,11 @@ describe('Durable queue integration', () => {
 
     const [endpoint, port] = await createEndpointWithRandomPort(medplum, {
       ...BASE_ENDPOINT,
-      address: 'mllp://0.0.0.0:0?enhanced=true',
+      // retryMode=none: worker-stopped is an ambiguous code the guaranteed-retry
+      // default would requeue, leaving the row `queued` after stop. Opting out lands
+      // the interrupted in-flight row terminally in `failed` (worker-stopped), which
+      // is the disposition this test pins.
+      address: 'mllp://0.0.0.0:0?enhanced=true&retryMode=none',
     });
     const dbPath = join(dir, 'queue.sqlite');
     const agent = await medplum.createResource<Agent>({

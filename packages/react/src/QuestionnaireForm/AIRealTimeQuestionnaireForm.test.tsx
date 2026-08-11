@@ -4,7 +4,6 @@ import type { Project, Questionnaire, QuestionnaireResponse } from '@medplum/fhi
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, useWhisper } from '@medplum/react-hooks';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router';
 import type { Mock, MockInstance } from 'vitest';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import type { AIRealTimeQuestionnaireFormProps } from './AIRealTimeQuestionnaireForm';
@@ -22,7 +21,7 @@ vi.mock(import('@medplum/react-hooks'), async (importOriginal) => {
   };
 });
 
-const SILENCE_DEBOUNCE_MS = 3000;
+const SILENCE_DEBOUNCE_MS = 500;
 const BOT_IDENTIFIER_STRING = 'https://www.medplum.com/bots|ai-realtime-questionnaire';
 const VOICE_TRANSCRIPT_EXTENSION_URL = 'https://medplum.com/ai-voice-transcript';
 
@@ -99,11 +98,9 @@ async function setup(
 
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <AIRealTimeQuestionnaireForm questionnaire={sampleQuestionnaire} {...props} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <AIRealTimeQuestionnaireForm questionnaire={sampleQuestionnaire} {...props} />
+      </MedplumProvider>
     );
   });
 

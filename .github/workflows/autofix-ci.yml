@@ -14,11 +14,15 @@ permissions:
 jobs:
   autofix:
     runs-on: ubuntu-latest
+    # autofix.ci pushes changes via its own GitHub App, not GITHUB_TOKEN
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Needed for the three-dot diff that decides whether to regenerate the
+          # Decision Guide downloads.
+          fetch-depth: 0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '24'
@@ -27,7 +31,7 @@ jobs:
           package-manager-cache: false
 
       - name: Cache node modules
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         env:
           cache-name: cache-node-modules
         with:
@@ -41,5 +45,33 @@ jobs:
       - run: npm ci
       - run: npm run prettier
       - run: npm run lint:fix
+
+      # The Decision Guide .docx/.pdf downloads are generated from the guides'
+      # markdown, but the production docs site is built and served by Vercel,
+      # whose sandbox can never have pandoc/LibreOffice. So the generated files
+      # are committed, and regenerated here — a runner does have root — whenever
+      # the markdown or the generator itself changes. Output is byte-reproducible
+      # (packages/docs/scripts/lib/docx-reproducible.mjs), so an unrelated PR that
+      # trips this filter re-commits nothing.
+      - name: Detect Decision Guide changes
+        id: guides
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          CHANGED="$(git diff --name-only "$BASE_SHA"...HEAD)"
+          if echo "$CHANGED" | grep -qE '^packages/docs/(docs/decision-guides/|scripts/)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Regenerate Decision Guide downloads
+        if: steps.guides.outputs.changed == 'true'
+        # Poppins must be installed as a system font, or LibreOffice silently
+        # substitutes a fallback when rendering the PDF.
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends pandoc libreoffice zip unzip
+          mkdir -p ~/.fonts
+          cp packages/docs/scripts/assets/fonts/*.ttf ~/.fonts/
+          fc-cache -f
+          npm run build:guides --workspace=@medplum/docs
 
       - uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a # v1.3.4

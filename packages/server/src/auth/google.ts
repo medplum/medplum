@@ -92,14 +92,15 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   }
 
   const claims = result.payload as GoogleCredentialClaims;
+  const email = claims.email.toLowerCase();
 
-  const externalAuth = await isExternalAuth(claims.email);
+  const externalAuth = await isExternalAuth(email);
   if (externalAuth) {
     res.status(200).json(externalAuth);
     return;
   }
 
-  const existingUser = await getUserByEmail(claims.email, projectId);
+  const existingUser = await getUserByEmail(email, projectId);
   if (!existingUser) {
     if (!req.body.createUser) {
       sendOutcome(res, badRequest('User not found'));
@@ -115,14 +116,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
-      email: claims.email,
+      email,
       project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
   }
 
   const login = await tryLogin({
     authMethod: 'google',
-    email: claims.email,
+    email,
     googleCredentials: claims,
     projectId,
     clientId,

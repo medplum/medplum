@@ -17,7 +17,7 @@ import {
 } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
 import type { JSX } from 'react';
-import { useEffect } from 'react';
+import { useNavbarScroll } from '../../hooks/useNavbarScroll';
 import { Card } from '../Card';
 import { BuildDropdown } from './BuildDropdown';
 import { Feature, FeatureGrid } from './FeatureGrid';
@@ -30,19 +30,7 @@ import { StatsBento } from './StatsBento';
 import { TestimonialHeader } from './TestimonialHeader';
 
 export function LandingPage(): JSX.Element {
-  useEffect(() => {
-    const navbar = document.querySelector('.navbar') as HTMLDivElement;
-    function onScroll(): void {
-      if (window.scrollY === 0) {
-        navbar.classList.remove('onScroll');
-      } else {
-        navbar.classList.add('onScroll');
-      }
-    }
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  useNavbarScroll();
 
   return (
     <div className="page">

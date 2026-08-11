@@ -30,7 +30,7 @@ describe('Health check', () => {
     await initApp(app, config);
 
     const res = await request(app).get('/healthcheck');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.redis).toBe(true);
     expect(res.body.redisInstances).toEqual({
       default: true,
@@ -46,7 +46,7 @@ describe('Health check', () => {
     await initApp(app, config);
 
     const res = await request(app).get('/healthcheck');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.redisInstances).toMatchObject({
       default: true,
       cache: true,
@@ -63,7 +63,7 @@ describe('Health check', () => {
     await initApp(app, config);
 
     const res = await request(app).get('/healthcheck');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(setGaugeSpy).toHaveBeenCalledTimes(6);
   });
@@ -76,7 +76,7 @@ describe('Health check', () => {
     await initApp(app, config);
 
     const res = await request(app).get('/healthcheck');
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     expect(setGaugeSpy).toHaveBeenCalledTimes(5);
   });

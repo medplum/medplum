@@ -26,14 +26,38 @@ export const FhirQuotaCost = {
   WRITE: 100,
 } as const;
 
+/**
+ * Resolves the effective per-user FHIR quota for a project membership.
+ * Precedence: UserConfiguration `fhirQuota` option, then project `userFhirQuota`, then server default.
+ * @param project - The project whose system settings may define a default user quota.
+ * @param userConfig - Optional user configuration that may override the quota.
+ * @returns The effective per-user FHIR quota points.
+ */
+export function getUserFhirQuota(
+  project: AuthState['project'] | undefined,
+  userConfig?: Pick<AuthState['userConfig'], 'option'>
+): number {
+  const defaultUserLimit = project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = userConfig?.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  return userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
+}
+
+/**
+ * Resolves the project-wide FHIR quota.
+ * Uses `totalFhirQuota` when set; otherwise project default user quota × 10 (ignores per-user overrides).
+ * @param project - The project whose system settings define the project quota.
+ * @returns The effective project-wide FHIR quota points.
+ */
+export function getProjectFhirQuota(project: AuthState['project'] | undefined): number {
+  const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  return perProjectLimit ?? getUserFhirQuota(project) * 10;
+}
+
 export function getFhirQuotaConfig(authState: AuthState): FhirQuotaConfig {
   const { project, userConfig } = authState;
-  const defaultUserLimit = project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
-  const userSpecificLimit = userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
-  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
-
-  const perProjectLimit = project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
-  const projectLimit = perProjectLimit ?? userLimit * 10;
+  const userLimit = getUserFhirQuota(project, userConfig);
+  // Project fallback uses the project per-user default × 10, not this user's UserConfiguration override.
+  const projectLimit = getProjectFhirQuota(project);
 
   return { userLimit, projectLimit };
 }
@@ -173,13 +197,11 @@ export class FhirRateLimiter {
     const userBlock = blockedUsers.get(this.userKey);
     if (userBlock) {
       if (Date.now() <= userBlock.resetTimestamp) {
-        this.setState(userBlock.result);
         await this.block(points, userBlock.result);
       } else {
         blockedUsers.delete(this.userKey);
       }
     }
-    return undefined;
   }
 
   private trackActiveConsumer(consumedPoints: number): void {
@@ -206,13 +228,25 @@ export class FhirRateLimiter {
    * @throws {OperationOutcomeError} 429 error
    */
   async block(points: number, result: RateLimiterRes): Promise<void> {
-    if (this.enabled) {
-      blockedUsers.set(this.userKey, { result, resetTimestamp: Date.now() + result.msBeforeNext });
-
-      const outcome = deepClone(tooManyRequests);
-      outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
-      throw new OperationOutcomeError(outcome);
+    if (!this.enabled) {
+      return;
     }
+
+    // Maintain existing reset timestamp
+    const resetTimestamp = blockedUsers.get(this.userKey)?.resetTimestamp ?? Date.now() + result.msBeforeNext;
+    const liveResult = new RateLimiterRes(
+      result.remainingPoints,
+      Math.max(0, resetTimestamp - Date.now()),
+      result.consumedPoints,
+      result.isFirstInDuration
+    );
+
+    blockedUsers.set(this.userKey, { result: liveResult, resetTimestamp });
+    this.setState(liveResult);
+
+    const outcome = deepClone(tooManyRequests);
+    outcome.issue[0].diagnostics = JSON.stringify({ ...liveResult, limit: this.limiter.points });
+    throw new OperationOutcomeError(outcome);
   }
 
   async recordRead(num = 1): Promise<void> {

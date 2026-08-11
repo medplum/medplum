@@ -48,10 +48,10 @@ Medplum supports the following first party integrations.
       <td><a href="/docs/auth/external-identity-providers">Entra Auth Setup</a></td>
     </tr>
     <tr>
-      <td><a href="https://www.google.com/recaptcha/about/">Recaptcha</a></td>
+      <td><a href="https://www.google.com/recaptcha/about/">reCAPTCHA</a></td>
       <td>Security</td>
-      <td>Enable recaptcha on patient registration</td>
-      <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Setup recaptcha</a></td>
+      <td>Enable reCAPTCHA on patient registration</td>
+      <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Set up reCAPTCHA</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Clinical Systems (EHR, HIE, Labs)</strong></td>
@@ -100,6 +100,12 @@ Medplum supports the following first party integrations.
       <td>Communications</td>
       <td>Send and receive faxes via FHIR Communication resources</td>
       <td><a href="/docs/integration/efax">eFax Integration</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.twilio.com/">Twilio SMS</a></td>
+      <td>Communications</td>
+      <td>Send and receive SMS messages via FHIR Communication resources</td>
+      <td><a href="/docs/integration/twilio-sms">Twilio SMS Integration</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Billing</strong></td>
@@ -264,7 +270,7 @@ Medplum provides templates and playbooks for common medical integrations.
 
 ## Custom built integrations
 
-Medplum provides building blocks for custom integrations. Some examples are below.
+Medplum provides building blocks for custom integrations. **Any system that exposes an API (REST/FHIR), HL7, or SFTP interface can be connected to Medplum** - you are not limited to a fixed catalog of vendors. Because the integration logic is built with [Bots](/docs/bots) that run on your own project, you own and control it. This makes custom built integrations both flexible and portable. 
 
 <table>
   <thead>
@@ -327,6 +333,21 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td>Create PDF for Superbill</td>
       <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
     </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Consent and E-signature (Bot Webhooks)</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.docusign.com/">DocuSign</a></td>
+      <td>Bot Webhooks</td>
+      <td>Send documents for signature and store completed agreements</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://sign.dropbox.com/">Dropbox Sign</a></td>
+      <td>Bot Webhooks</td>
+      <td>Send documents for signature and store completed agreements</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
+    </tr>
   </tbody>
 </table>
 
@@ -336,7 +357,7 @@ Complex integrations are built by composing [bots](/docs/bots/), [subscriptions]
 
 - [Running on localhost](/docs/contributing/run-the-stack) is useful for testing integrations
 - [CLI](/docs/cli/external-fhir-servers) is commonly used to test connectivity to external FHIR Servers
-- [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
+- [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on GitHub show the code that powers many of the integrations.
 - [Audit and Logging Features](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.
 - [Bot Pull Requests](https://github.com/medplum/medplum/issues?q=label%3Abots) can be good reference material for how integrations work.
 - [Auth Pull Requests](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) can also be good reference material for integration planning and learning.

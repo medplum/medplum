@@ -258,6 +258,10 @@ function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecu
             url: 'token',
             valueUri: config.tokenUrl,
           },
+          {
+            url: 'introspect',
+            valueUri: config.introspectUrl,
+          },
         ],
       },
     ],

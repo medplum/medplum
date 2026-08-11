@@ -40,7 +40,7 @@ describe('$db-invalid-indexes', () => {
       .post('/fhir/R4/$db-invalid-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const params = res.body as Parameters;
     const invalidIndex = params.parameter?.find(
       (p) => p.name === 'invalidIndex' && p.valueString?.startsWith('"CarePlan_replaces_idx"')

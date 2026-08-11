@@ -21,6 +21,7 @@ import { ResourceInput, useMedplum } from '@medplum/react';
 import { SCRIPTSURE_ORDERSET_ID_SYSTEM, useScriptSureOrderSet } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
+import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
 import { OptionalContextFields } from './OrderMedicationPage';
 
@@ -182,6 +183,7 @@ export function OrderSetPreflightSummary(props: Readonly<OrderSetPreflightSummar
 export function OrderSetTabPanel(props: Readonly<OrderSetTabPanelProps>): JSX.Element {
   const { patient, requester, onPatientChange, onRequesterChange, onOrderComplete } = props;
   const medplum = useMedplum();
+  const { selectedOrganization } = useScriptSurePractice();
 
   const [planDefinition, setPlanDefinition] = useState<PlanDefinition | undefined>();
   const [scriptSureIdEscape, setScriptSureIdEscape] = useState<number | undefined>();
@@ -200,6 +202,7 @@ export function OrderSetTabPanel(props: Readonly<OrderSetTabPanelProps>): JSX.El
     patientId: patient?.id,
     planDefinitionId: planDefinitionIdInput,
     scriptSureOrdersetId: planDefinitionIdInput ? undefined : scriptSureIdEscape,
+    organization: selectedOrganization,
   });
 
   const submitDisabled = !patient?.id || !requester || (!planDefinitionIdInput && scriptSureIdEscape === undefined);

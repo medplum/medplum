@@ -41,6 +41,7 @@ export * from './outcomes';
 export * from './patch';
 export * from './pharmacy-utils';
 export * from './readablepromise';
+export * from './scheduling';
 export * from './schema';
 export * from './search/derived';
 export * from './search/details';

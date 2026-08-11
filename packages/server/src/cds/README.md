@@ -89,11 +89,7 @@ For cards that propose changes, the Bot must include the `suggestions` array, wh
               "resource": {
                 "resourceType": "MedicationRequest",
                 "id": "original-resource-id",
-                "dosageInstruction": [
-                  {
-                    /* new dosage details... */
-                  }
-                ]
+                "dosageInstruction": [{/* new dosage details... */}]
               }
             }
           ]

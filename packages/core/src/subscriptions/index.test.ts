@@ -3,7 +3,7 @@
 import type { Bundle, Communication, Parameters, Subscription, SubscriptionChannel } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
 import { WS } from 'vitest-websocket-mock';
-import type { CriteriaState, SubscriptionEventMap } from '.';
+import type { BackgroundJobInteraction, CriteriaState, SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
@@ -932,44 +932,61 @@ describe('SubscriptionManager', () => {
       expect(receivedBundle).toStrictEqual(sentBundle);
     });
 
-    test('should emit `error` event when invalid message comes in over WebSocket', async () => {
-      const originalError = console.error;
-      console.error = vi.fn();
+    test('should warn and ignore WebSocket messages without a SubscriptionStatus', async () => {
+      const originalWarn = console.warn;
+      console.warn = vi.fn();
 
       await wsServer.connected;
 
       const emitter = defaultManager.addCriteria('Communication');
-      const [receivedEvent1, receivedEvent2] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
-        const promises = [];
-        promises.push(
-          new Promise<SubscriptionEventMap['error']>((resolve) => {
-            defaultManager.getMasterEmitter().addEventListener('error', (event) => {
-              resolve(event);
-            });
-          })
-        );
-        promises.push(
-          new Promise<SubscriptionEventMap['error']>((resolve) => {
-            emitter.addEventListener('error', (event) => {
-              resolve(event);
-            });
-          })
-        );
+      const errorListener = vi.fn();
+      defaultManager.getMasterEmitter().addEventListener('error', errorListener);
+      emitter.addEventListener('error', errorListener);
 
-        wsServer.send('invalid_json');
-        Promise.all(promises).then(resolve).catch(reject);
+      // Parseable, but neither a `pong` nor a notification Bundle
+      wsServer.send('invalid_json');
+      // A Bundle with no SubscriptionStatus entry
+      wsServer.send({ resourceType: 'Bundle', type: 'history', entry: [] });
+
+      // The manager should still be alive and processing messages afterwards
+      const timestamp = new Date().toISOString();
+      const heartbeatBundle = {
+        resourceType: 'Bundle',
+        timestamp,
+        type: 'history',
+        entry: [
+          {
+            resource: {
+              resourceType: 'SubscriptionStatus',
+              status: 'active',
+              type: 'heartbeat',
+              subscription: { reference: `Subscription/${MOCK_SUBSCRIPTION_ID}` },
+            },
+          },
+        ],
+      } as Bundle;
+
+      const receivedBundle = await new Promise<Bundle>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('heartbeat', (event) => {
+          resolve(event.payload);
+        });
+        wsServer.send(heartbeatBundle);
       });
 
-      expect(receivedEvent1?.type).toStrictEqual('error');
-      expect(receivedEvent1?.payload).toBeInstanceOf(TypeError);
-      expect(receivedEvent1?.payload?.message).toMatch(/^Cannot read properties of undefined*/);
-
-      expect(receivedEvent2?.type).toStrictEqual('error');
-      expect(receivedEvent2?.payload).toBeInstanceOf(TypeError);
-      expect(receivedEvent2?.payload?.message).toMatch(/^Cannot read properties of undefined*/);
-
-      expect(console.error).toHaveBeenCalledTimes(1);
-      console.error = originalError;
+      expect(receivedBundle).toStrictEqual(heartbeatBundle);
+      expect(console.warn).toHaveBeenCalledTimes(2);
+      expect(console.warn).toHaveBeenNthCalledWith(
+        1,
+        'Received WebSocket message without a SubscriptionStatus resource; ignoring',
+        'invalid_json'
+      );
+      expect(console.warn).toHaveBeenNthCalledWith(
+        2,
+        'Received WebSocket message without a SubscriptionStatus resource; ignoring',
+        { resourceType: 'Bundle', type: 'history', entry: [] }
+      );
+      expect(errorListener).not.toHaveBeenCalled();
+      console.warn = originalWarn;
     });
 
     test('should reconnect after WebSocket disconnects and receive messages', async () => {
@@ -2043,5 +2060,46 @@ describe('resourceMatchesSubscriptionCriteria', () => {
         expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
       }
     });
+  });
+
+  describe('Supported interaction matching logic', () => {
+    const SUPPORTED_INTERACTION_URL = 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction';
+
+    function buildSubscription(interactions: BackgroundJobInteraction[]): Subscription {
+      return {
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'test subscription',
+        criteria: 'Communication',
+        channel: { type: 'rest-hook', endpoint: 'Bot/123' },
+        extension: interactions.map((valueCode) => ({ url: SUPPORTED_INTERACTION_URL, valueCode })),
+      };
+    }
+
+    test.each([
+      // No extension → every interaction is supported (including delete)
+      { interactions: [], received: 'create', expected: true },
+      { interactions: [], received: 'update', expected: true },
+      { interactions: [], received: 'delete', expected: true },
+      // Single extension → only the declared interaction is supported
+      { interactions: ['create'], received: 'create', expected: true },
+      { interactions: ['create'], received: 'update', expected: false },
+      { interactions: ['create'], received: 'delete', expected: false },
+      // Multiple extensions → any declared interaction is supported, others (e.g. delete) are not
+      { interactions: ['create', 'update'], received: 'create', expected: true },
+      { interactions: ['create', 'update'], received: 'update', expected: true },
+      { interactions: ['create', 'update'], received: 'delete', expected: false },
+    ] as { interactions: BackgroundJobInteraction[]; received: BackgroundJobInteraction; expected: boolean }[])(
+      'interactions=$interactions received=$received → $expected',
+      async ({ interactions, received, expected }) => {
+        const matches = await resourceMatchesSubscriptionCriteria({
+          resource: { id: '123', resourceType: 'Communication', status: 'in-progress' },
+          subscription: buildSubscription(interactions),
+          context: { interaction: received },
+          getPreviousResource: async () => undefined,
+        });
+        expect(matches).toStrictEqual(expected);
+      }
+    );
   });
 });

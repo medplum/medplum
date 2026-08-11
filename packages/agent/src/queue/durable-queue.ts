@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { ILogger } from '@medplum/core';
-import { normalizeErrorString } from '@medplum/core';
+import { normalizeErrorString, sleep } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync, SQLInputValue, StatementSync } from 'node:sqlite';
@@ -18,32 +18,49 @@ import {
   FIND_BY_CALLBACK,
   FIND_BY_ID,
   FIND_SEEN_BY_CONTROL_ID,
+  FLIP_DELAYED_FOR_CHANNEL,
   GET_LEASE,
   HEARTBEAT_LEASE,
+  IS_PARTITION_BLOCKED,
   LIST_QUEUED_IDS_FOR_CHANNEL,
   MARK_BOT_FAILED,
+  MARK_DELAYED,
   MARK_PROCESSED,
   MARK_SENT,
   PEEK_LAST_SEQ_NO,
+  RECOMPUTE_SET_KEY,
   RECORD_SERVER_RESPONSE,
   RECOVER_CLAIMED,
+  RECOVER_DELAYED,
   RECOVER_INFLIGHT,
+  RECOVER_INFLIGHT_GUARANTEED,
   RELEASE_LEASE,
   REQUEUE,
+  SCHEDULE_RETRY,
+  SELECT_QUEUED_OR_DELAYED_FOR_RECOMPUTE,
   SET_ACK_OUTCOME,
+  SET_LOGICAL_CHANNEL_KEY,
   TRY_ACQUIRE_LEASE,
+  WAKE_PARTITION,
 } from './queries';
 import { runMigrations } from './schema';
 import type {
   AckOutcome,
+  ClaimedRow,
   EnqueueInput,
   EnqueueRejectedInput,
   EnqueueResult,
   InboundRow,
   MessageState,
+  NackedRow,
   QueueErrorCode,
 } from './types';
-import { AckOutcome as AckOutcomeValues, MessageState as MessageStateValues, QueueLeaseError } from './types';
+import {
+  AckOutcome as AckOutcomeValues,
+  assertRowState,
+  MessageState as MessageStateValues,
+  QueueLeaseError,
+} from './types';
 
 /**
  * Default lease lifetime. Picked to be:
@@ -98,6 +115,8 @@ export type StateCounts = Record<MessageState, number>;
 /** Per-channel queue depth snapshot returned by {@link DurableQueue.getChannelDepths}. */
 export interface ChannelDepth {
   queued: number;
+  /** Parked behind an earlier message in the same logical channel. */
+  delayed: number;
   /** Claimed by a worker but not yet written to the socket. */
   claimed: number;
   /** Written to the socket, awaiting the server response. */
@@ -160,6 +179,15 @@ export class DurableQueue {
   // because open() itself writes (pragmas, migrations, lease).
   private walDirty = true;
 
+  // Claim mutex, held per channel for the duration of a logicalChannelKey rewrite
+  // (recomputeLogicalChannelKeys). Held in memory rather than in the DB because it
+  // guards against this process's own workers, which are the only claimants — a
+  // peer that takes the lease mid-rewrite is stopped by assertNotDemoted instead.
+  // Refcounted, not a flag: back-to-back spec changes can overlap two rewrites on one
+  // channel, and the first to finish must not release the mutex out from under the
+  // second. See isClaimPaused.
+  private readonly repartitioning = new Map<string, number>();
+
   // WAL-checkpoint loop. Runs while the queue is open, INDEPENDENT of the
   // dispatch lease: a follower still accepts intake writes (enqueue runs on any
   // process with the file open), so WAL draining can't be gated on leadership the
@@ -182,9 +210,19 @@ export class DurableQueue {
   private readonly markProcessedStmt: StatementSync;
   private readonly markBotFailedStmt: StatementSync;
   private readonly setAckOutcomeStmt: StatementSync;
+  private readonly scheduleRetryStmt: StatementSync;
+  private readonly setLogicalChannelKeyStmt: StatementSync;
+  private readonly isPartitionBlockedStmt: StatementSync;
+  private readonly markDelayedStmt: StatementSync;
+  private readonly wakePartitionStmt: StatementSync;
+  private readonly flipDelayedForChannelStmt: StatementSync;
+  private readonly selectQueuedOrDelayedForRecomputeStmt: StatementSync;
+  private readonly recomputeSetKeyStmt: StatementSync;
   private readonly requeueStmt: StatementSync;
   private readonly recoverInflightStmt: StatementSync;
+  private readonly recoverInflightGuaranteedStmt: StatementSync;
   private readonly recoverClaimedStmt: StatementSync;
+  private readonly recoverDelayedStmt: StatementSync;
   private readonly listQueuedIdsForChannelStmt: StatementSync;
   private readonly countByStateStmt: StatementSync;
   private readonly channelDepthStmt: StatementSync;
@@ -261,17 +299,38 @@ export class DurableQueue {
 
     this.setAckOutcomeStmt = this.db.prepare(SET_ACK_OUTCOME);
 
+    // Auto-retry transition: a claimed/inflight row goes back to `queued` with a
+    // future next_attempt_at so the channel's FIFO head blocks (and the row is
+    // not re-claimed) until the backoff elapses. See SCHEDULE_RETRY.
+    this.scheduleRetryStmt = this.db.prepare(SCHEDULE_RETRY);
+
+    // Logical channels (claim-time partitioning) — see the like-named methods below.
+    this.setLogicalChannelKeyStmt = this.db.prepare(SET_LOGICAL_CHANNEL_KEY);
+    this.isPartitionBlockedStmt = this.db.prepare(IS_PARTITION_BLOCKED);
+    this.markDelayedStmt = this.db.prepare(MARK_DELAYED);
+    this.wakePartitionStmt = this.db.prepare(WAKE_PARTITION);
+    this.flipDelayedForChannelStmt = this.db.prepare(FLIP_DELAYED_FOR_CHANNEL);
+    this.selectQueuedOrDelayedForRecomputeStmt = this.db.prepare(SELECT_QUEUED_OR_DELAYED_FOR_RECOMPUTE);
+    this.recomputeSetKeyStmt = this.db.prepare(RECOMPUTE_SET_KEY);
+
     this.requeueStmt = this.db.prepare(REQUEUE);
 
-    // Crash recovery splits on whether the request reached the wire:
-    //   recoverInflight — rows left `inflight` are ambiguous (the server may or
-    //     may not have processed them), so they land in `failed` for operator
-    //     review, never `rejected`. The source leg's ack_outcome is left as-is
-    //     (`pending`): we genuinely don't know whether an ACK was owed.
+    // Crash recovery splits three ways on whether the request reached the wire
+    // and the channel's guaranteed-delivery setting:
     //   recoverClaimed — rows left `claimed` provably never reached the server,
-    //     so they return to `queued` for a clean re-dispatch with no duplicate risk.
+    //     so they always return to `queued` for a clean re-dispatch with no
+    //     duplicate risk (regardless of guaranteed delivery).
+    //   recoverInflight — rows left `inflight` on a NORMAL channel are ambiguous
+    //     (the server may or may not have processed them), so they land in
+    //     `failed` for operator review, never silently retried. The source leg's
+    //     ack_outcome is left as-is (`pending`): we don't know whether an ACK was owed.
+    //   recoverInflightGuaranteed — rows left `inflight` on a GUARANTEED channel
+    //     return to `queued` (duplication risk accepted) so the channel keeps
+    //     trying until upstream gives a definitive answer (§4.1).
     this.recoverInflightStmt = this.db.prepare(RECOVER_INFLIGHT);
+    this.recoverInflightGuaranteedStmt = this.db.prepare(RECOVER_INFLIGHT_GUARANTEED);
     this.recoverClaimedStmt = this.db.prepare(RECOVER_CLAIMED);
+    this.recoverDelayedStmt = this.db.prepare(RECOVER_DELAYED);
 
     this.listQueuedIdsForChannelStmt = this.db.prepare(LIST_QUEUED_IDS_FOR_CHANNEL);
 
@@ -512,7 +571,8 @@ export class DurableQueue {
           input.enhancedMode,
           input.callbackId,
           seqNo,
-          input.receivedAt
+          input.receivedAt,
+          input.guaranteedDelivery ? 1 : 0
         );
         return Number(info.lastInsertRowid);
       };
@@ -537,6 +597,12 @@ export class DurableQueue {
       if (!row) {
         throw new Error(`enqueue: inserted row id=${id} could not be re-read`);
       }
+      // The insert (just committed above) is what durably accepted the message —
+      // this re-read only recovers the row for the caller. Don't assert it's
+      // still 'queued': a peer process sharing this DB file may have already
+      // claimed (or, in principle, settled) it between the commit and this
+      // read. That's not a failed intake, so we return whatever state it's in
+      // rather than throwing and having the caller NACK an already-committed message.
       return { kind: 'inserted', row };
     } catch (err) {
       if (isUniqueConstraintError(err) && input.msgControlId) {
@@ -556,7 +622,7 @@ export class DurableQueue {
    * @param input - Fields to persist plus the `lastError`/`errorCode` describing why we rejected.
    * @returns The newly inserted audit row, or null if even the audit insert failed.
    */
-  enqueueRejected(input: EnqueueRejectedInput): InboundRow | null {
+  enqueueRejected(input: EnqueueRejectedInput): NackedRow | null {
     try {
       const info = this.enqueueRejectedStmt.run(
         input.channelName,
@@ -574,7 +640,10 @@ export class DurableQueue {
         input.receivedAt
       );
       this.walDirty = true;
-      return this.getById(Number(info.lastInsertRowid));
+      // ENQUEUE_REJECTED always inserts in the 'nacked' state.
+      const row = this.getById(Number(info.lastInsertRowid));
+      assertRowState(row, MessageStateValues.NACKED);
+      return row;
     } catch (err) {
       this.log.warn(`enqueueRejected failed: ${normalizeErrorString(err)}`);
       return null;
@@ -585,17 +654,26 @@ export class DurableQueue {
    * Atomically claims the next `queued` row for `channelName`, flipping it to
    * `claimed` and bumping `attempt_count`. The row stays `claimed` until
    * {@link markSent} flips it to `inflight` once the request hits the socket.
+   * Honors a retry backoff: a `queued` row whose `next_attempt_at` is still in
+   * the future is not handed out, and because the FIFO head-of-line is preserved
+   * (the predicate is on the outer update, see {@link CLAIM_NEXT}) the whole
+   * channel waits behind it rather than skipping ahead.
    * @param channelName - The channel to claim from.
-   * @param now - Override the timestamp written to `processing_started_at` (for tests).
-   * @returns The claimed row, or `null` if the channel queue is empty.
+   * @param now - Override the timestamp written to `processing_started_at` and
+   *   compared against `next_attempt_at` (for tests).
+   * @returns The claimed row, or `null` if the channel queue is empty or its head is backing off.
    */
-  claimNext(channelName: string, now: number = Date.now()): InboundRow | null {
+  claimNext(channelName: string, now: number = Date.now()): ClaimedRow | null {
     this.assertNotDemoted();
-    const raw = this.claimNextStmt.get(now, channelName) as Record<string, SQLInputValue> | undefined;
+    // Bind `now` twice: once for processing_started_at, once for the
+    // next_attempt_at backoff predicate on the outer update.
+    const raw = this.claimNextStmt.get(now, channelName, now) as Record<string, SQLInputValue> | undefined;
     if (raw) {
       this.walDirty = true;
     }
-    return raw ? rowFromSql(raw) : null;
+    // CLAIM_NEXT sets state='claimed' in the same statement (RETURNING *), so the
+    // decoded row is always a ClaimedRow.
+    return raw ? (rowFromSql(raw) as ClaimedRow) : null;
   }
 
   /**
@@ -658,28 +736,54 @@ export class DurableQueue {
    * source connection had closed). An `undelivered` row is fully processed
    * upstream and must never be re-dispatched; it recovers when the source
    * retransmits and the stored ACK is replayed (see {@link setAckOutcome}).
+   *
+   * Attempt-scoped (see {@link MARK_PROCESSED}): a no-op if `attemptCount`
+   * doesn't match the row's current attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this response answers; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param ackOutcome - Source-leg result: `delivered` or `undelivered`.
    * @param now - Override for `processed_at` (for tests).
+   * @returns True if the row was settled; false if this attempt was superseded.
    */
-  markProcessed(id: number, ackOutcome: AckOutcome, now: number = Date.now()): void {
+  markProcessed(id: number, attemptCount: number, ackOutcome: AckOutcome, now: number = Date.now()): boolean {
     this.assertNotDemoted();
-    this.markProcessedStmt.run(ackOutcome, now, id);
-    this.walDirty = true;
+    const info = this.markProcessedStmt.run(ackOutcome, now, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
    * Terminal Bot-leg transition: the server **rejected** the message itself
    * (permanent 4xx). Retrying can never help — the content must be triaged.
+   *
+   * Attempt-scoped (see {@link MARK_PROCESSED}): a no-op if `attemptCount`
+   * doesn't match the row's current attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this failure answers; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
+   * @returns True if the row was settled; false if this attempt was superseded.
    */
-  markRejected(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+  markRejected(
+    id: number,
+    attemptCount: number,
+    error: string,
+    errorCode: QueueErrorCode,
+    now: number = Date.now()
+  ): boolean {
     this.assertNotDemoted();
-    this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id);
-    this.walDirty = true;
+    const info = this.markBotFailedStmt.run(MessageStateValues.REJECTED, now, error, errorCode, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -688,15 +792,31 @@ export class DurableQueue {
    * operator-review candidate — distinct from a `rejected` message so a future
    * retry policy can re-dispatch `failed` rows without ever touching `rejected`
    * ones (or `processed` + `undelivered` ones, whose Bot leg already succeeded).
+   *
+   * Attempt-scoped (see {@link MARK_PROCESSED}): a no-op if `attemptCount`
+   * doesn't match the row's current attempt.
    * @param id - Row primary key.
+   * @param attemptCount - The attempt this failure answers; must match the
+   *   row's current `attempt_count` for the write to apply.
    * @param error - Human-readable error string, written to `last_error`.
    * @param errorCode - Machine-readable classification, written to `error_code`.
    * @param now - Override for `errored_at` (for tests).
+   * @returns True if the row was settled; false if this attempt was superseded.
    */
-  markFailed(id: number, error: string, errorCode: QueueErrorCode, now: number = Date.now()): void {
+  markFailed(
+    id: number,
+    attemptCount: number,
+    error: string,
+    errorCode: QueueErrorCode,
+    now: number = Date.now()
+  ): boolean {
     this.assertNotDemoted();
-    this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id);
-    this.walDirty = true;
+    const info = this.markBotFailedStmt.run(MessageStateValues.FAILED, now, error, errorCode, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -710,6 +830,46 @@ export class DurableQueue {
   setAckOutcome(id: number, ackOutcome: AckOutcome): void {
     this.setAckOutcomeStmt.run(ackOutcome, id);
     this.walDirty = true;
+  }
+
+  /**
+   * Auto-retry transition: returns a `claimed`/`inflight`/`queued` row to
+   * `queued`, scheduled to become claimable at `nextAttemptAt`. Because the row
+   * keeps its id and claims are ordered by id, it sits at the head of its
+   * channel's FIFO and blocks younger rows until it either succeeds or exhausts
+   * its attempts — preserving per-channel ordering across retries.
+   *
+   * Distinct from {@link markFailed}: a retry stays `queued` (still in flight),
+   * whereas `markFailed` is the terminal landing for a failure the policy is not
+   * retrying. The worker decides which to call by gating the row's
+   * {@link QueueErrorCode} against the retry policy (see worker.ts). Gated by the
+   * dispatch lease like the other settle ops: a demoted process must not
+   * reschedule. Attempt-scoped (see {@link MARK_PROCESSED}): also a no-op if
+   * `attemptCount` doesn't match the row's current attempt — this is what lets
+   * the late-response settle path (`onServerResponse` in worker.ts) call this on
+   * an already-`queued` row without risking clobbering a newer attempt.
+   * @param id - Row primary key.
+   * @param attemptCount - The attempt this decision was made for; must match the
+   *   row's current `attempt_count` for the write to apply.
+   * @param error - Human-readable error string, written to `last_error`.
+   * @param errorCode - Machine-readable classification, written to `error_code`.
+   * @param nextAttemptAt - Earliest timestamp (ms) at which the row may be claimed again.
+   * @returns True if the row was rescheduled; false if this attempt was superseded.
+   */
+  scheduleRetry(
+    id: number,
+    attemptCount: number,
+    error: string,
+    errorCode: QueueErrorCode,
+    nextAttemptAt: number
+  ): boolean {
+    this.assertNotDemoted();
+    const info = this.scheduleRetryStmt.run(error, errorCode, nextAttemptAt, id, attemptCount);
+    if (Number(info.changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -735,23 +895,35 @@ export class DurableQueue {
 
   /**
    * Recovers rows left mid-flight by a previous process, splitting on whether the
-   * request reached the wire. Runs once at startup (§10):
-   * - `inflight` rows are ambiguous (the server may have processed them) → `failed`
-   *   with error code `interrupted`, surfaced for operator review, never silently retried.
-   * - `claimed` rows provably never left the process (`sent_at` is NULL) → returned
-   *   to `queued` for a clean re-dispatch with no duplicate-delivery risk.
+   * request reached the wire and the channel's guaranteed-delivery setting. Runs
+   * once at startup, after acquiring the dispatch lease (§10):
+   * - `claimed` rows provably never left the process (`sent_at` is NULL) → always
+   *   returned to `queued` for a clean re-dispatch with no duplicate-delivery risk.
+   * - `inflight` rows on a NORMAL channel are ambiguous (the server may have
+   *   processed them) → `failed` with error code `interrupted`, surfaced for
+   *   operator review, never silently retried.
+   * - `inflight` rows on a GUARANTEED-delivery channel → returned to `queued`
+   *   (duplication risk accepted) so the channel keeps trying until upstream gives
+   *   a definitive answer (§4.1).
+   * - `delayed` rows were only parked behind an earlier same-partition message and
+   *   never dispatched → returned to `queued` to re-evaluate their partition at the
+   *   next claim (see {@link RECOVER_DELAYED}).
    * @param now - Override for `errored_at` (for tests).
-   * @returns Counts of `claimed` rows requeued and `inflight` rows failed.
+   * @returns Counts of rows promoted to `failed` and returned to `queued`, respectively.
    */
-  recoverOnStartup(now: number = Date.now()): { requeued: number; failed: number } {
-    const failedInfo = this.recoverInflightStmt.run(now);
-    const requeuedInfo = this.recoverClaimedStmt.run();
-    const failed = Number(failedInfo.changes);
-    const requeued = Number(requeuedInfo.changes);
+  recoverOnStartup(now: number = Date.now()): { failed: number; requeued: number } {
+    const failed = Number(this.recoverInflightStmt.run(now).changes);
+    // Every leg here returns a row to `queued`: provably-unsent `claimed` rows
+    // (always safe), guaranteed-delivery `inflight` rows (duplication risk
+    // accepted), and `delayed` rows (never dispatched, just waiting on a peer).
+    const requeued =
+      Number(this.recoverClaimedStmt.run().changes) +
+      Number(this.recoverInflightGuaranteedStmt.run().changes) +
+      Number(this.recoverDelayedStmt.run().changes);
     if (failed > 0 || requeued > 0) {
       this.walDirty = true;
     }
-    return { requeued, failed };
+    return { failed, requeued };
   }
 
   /**
@@ -769,6 +941,7 @@ export class DurableQueue {
   countByState(): StateCounts {
     const counts: StateCounts = {
       queued: 0,
+      delayed: 0,
       claimed: 0,
       inflight: 0,
       processed: 0,
@@ -786,14 +959,21 @@ export class DurableQueue {
   /**
    * @param channelName - The channel to query.
    * @param now - Override for the "now" timestamp used in `oldestQueuedAgeMs`.
-   * @returns Depth snapshot for `channelName` (queued/claimed/inflight counts + oldest queued age).
+   * @returns Depth snapshot for `channelName` (queued/delayed/claimed/inflight counts + oldest queued age).
    */
   getChannelDepth(channelName: string, now: number = Date.now()): ChannelDepth {
     const row = this.channelDepthStmt.get(channelName) as
-      | { queued: number | null; claimed: number | null; inflight: number | null; oldest_queued_at: number | null }
+      | {
+          queued: number | null;
+          delayed: number | null;
+          claimed: number | null;
+          inflight: number | null;
+          oldest_queued_at: number | null;
+        }
       | undefined;
     return {
       queued: row?.queued ?? 0,
+      delayed: row?.delayed ?? 0,
       claimed: row?.claimed ?? 0,
       inflight: row?.inflight ?? 0,
       oldestQueuedAgeMs: row?.oldest_queued_at ? now - row.oldest_queued_at : null,
@@ -1072,8 +1252,7 @@ export class DurableQueue {
    */
   findSeenByControlId(channelName: string, msgControlId: string): InboundRow | null {
     const raw = this.findSeenByControlIdStmt.get(channelName, msgControlId) as
-      | Record<string, SQLInputValue>
-      | undefined;
+      Record<string, SQLInputValue> | undefined;
     return raw ? rowFromSql(raw) : null;
   }
 
@@ -1104,16 +1283,217 @@ export class DurableQueue {
     this.commitSeqNoStmt.run(channelName, seqNo);
     this.walDirty = true;
   }
+
+  /**
+   * Records the freshly-computed logical-channel key on a just-claimed row,
+   * immediately before dispatch. The worker computes the key synchronously right
+   * after {@link claimNext} (no `await` in between, so the row is provably still
+   * `claimed` and owned by this process), then calls this so later same-partition
+   * rows see the partition as occupied. Lease-gated like every dispatch write.
+   * @param id - The claimed row's id.
+   * @param key - The partition key computed from the channel's current spec.
+   */
+  setLogicalChannelKey(id: number, key: string): void {
+    this.assertNotDemoted();
+    if (Number(this.setLogicalChannelKeyStmt.run(key, id).changes) > 0) {
+      this.walDirty = true;
+    }
+  }
+
+  /**
+   * Whether a worker must hold off claiming from `channelName` because its stored
+   * partition keys are mid-rewrite ({@link recomputeLogicalChannelKeys}).
+   *
+   * Claim-time keying compares a row's freshly-computed key against the keys STORED
+   * on earlier rows, so it is only correct while those stored keys all reflect one
+   * spec. Rather than make the rewrite uninterruptible — it has to parse every
+   * queued/delayed message, far too much for one macrotask — it pauses claims for
+   * its duration. Rows simply stay `queued`; the rewrite wakes the pool when it
+   * finishes.
+   * @param channelName - The channel a worker is about to claim from.
+   * @returns True while that channel's partition keys are being rewritten.
+   */
+  isClaimPaused(channelName: string): boolean {
+    return (this.repartitioning.get(channelName) ?? 0) > 0;
+  }
+
+  /**
+   * Whether the logical channel `key` is occupied by a message EARLIER than `id` —
+   * a lower-id row of the same partition still `queued` (backing off), `delayed`,
+   * `claimed`, or `inflight`. The worker calls this right after claiming a row to
+   * decide whether to dispatch it or park it `delayed`. Because the claim always
+   * takes the lowest-id `queued` row, checking only earlier rows is sufficient to
+   * preserve per-partition FIFO. A pure read — not lease-gated.
+   * @param channelName - The physical channel.
+   * @param key - The partition key computed for the claimed row.
+   * @param id - The claimed row's id; only earlier rows can block it.
+   * @returns True if an earlier same-partition message is still in play.
+   */
+  isPartitionBlocked(channelName: string, key: string, id: number): boolean {
+    return this.isPartitionBlockedStmt.get(channelName, key, id) !== undefined;
+  }
+
+  /**
+   * Parks a just-claimed row that lost the partition race: `claimed` → `delayed`,
+   * storing `key` so {@link wakePartition} can promote it later, and undoing the
+   * claim's attempt increment (the row never dispatched, so the attempt doesn't
+   * count). Attempt-scoped and `claimed`-guarded, so a superseded claim no-ops.
+   * Lease-gated like every dispatch write.
+   * @param id - The claimed row's id.
+   * @param attemptCount - The row's `attempt_count` as claimed (post-increment).
+   * @param key - The partition key computed for the row.
+   * @returns True if the row was parked (false if the write was superseded).
+   */
+  markDelayed(id: number, attemptCount: number, key: string): boolean {
+    this.assertNotDemoted();
+    if (Number(this.markDelayedStmt.run(key, id, attemptCount).changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Wakes a partition when its in-flight head settles terminally: promotes the
+   * single lowest-id `delayed` row of `key` back to `queued`, so exactly the next
+   * message in that partition becomes claimable.
+   *
+   * Deliberately NOT lease-gated: a wake is self-correcting (the promoted row
+   * re-checks its partition at its next claim and re-parks if a newer head
+   * appeared), so it must never fail and strand its followers, and running it from
+   * a non-leader is harmless because only the leader claims. No-op when nothing is
+   * parked for `key`.
+   * @param channelName - The physical channel.
+   * @param key - The partition whose next message to release.
+   * @returns True if a delayed row was promoted.
+   */
+  wakePartition(channelName: string, key: string): boolean {
+    if (Number(this.wakePartitionStmt.run(channelName, key).changes) > 0) {
+      this.walDirty = true;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Returns every `delayed` row for a channel to `queued`, so parked followers
+   * re-evaluate their partition at the next claim. A cheap state flip with no
+   * message re-parsing and no stored-key rewrite, used as the fallback when
+   * {@link recomputeLogicalChannelKeys} fails partway through a spec change — no
+   * row is left waiting on a wake that now targets a re-keyed partition.
+   * Self-correcting like {@link wakePartition}, so not lease-gated.
+   * @param channelName - The channel whose parked rows to re-queue.
+   * @returns The number of rows returned to `queued`.
+   */
+  flipDelayedToQueued(channelName: string): number {
+    const changed = Number(this.flipDelayedForChannelStmt.run(channelName).changes);
+    if (changed > 0) {
+      this.walDirty = true;
+    }
+    return changed;
+  }
+
+  /**
+   * Recomputes the stored `logical_channel_key` of every `queued` and `delayed`
+   * row for a channel under the current spec, and un-parks `delayed` → `queued`.
+   * Called ONLY on a `logicalChannelKey` spec change — the one path claim-time
+   * keying can't cover on its own, because rows not actively being claimed keep
+   * their last-stamped key and {@link isPartitionBlocked} trusts stored keys (a
+   * stale key would let a same-new-partition message skip ahead of an older
+   * not-yet-re-claimed one). `claimed`/`inflight` rows are deliberately left alone;
+   * they finish under their current partition.
+   *
+   * Lease-gated (only the dispatching leader needs the refresh) and chunked
+   * (paginated by id, one transaction per batch) so a large backlog doesn't
+   * materialize every `original_message` blob at once. Rows claimed between a
+   * batch's read and write are skipped by the `state IN ('queued','delayed')`
+   * guard on the update.
+   *
+   * Yields the event loop between batches — parsing a whole backlog is far too much
+   * to do in one macrotask — and holds the channel's claim mutex ({@link isClaimPaused})
+   * across those yields. The mutex is what a claim would otherwise violate: a worker
+   * that keyed a row under the new spec and compared it against a half-rewritten set
+   * of stored keys could miss an older same-partition row and dispatch ahead of it.
+   * It is raised before the first `await`, so a caller that fires this off without
+   * awaiting still pauses claims from the moment it calls.
+   *
+   * New intake during the rewrite is safe without any gating: ids are monotonic, so a
+   * row inserted now always lands ahead of the pagination cursor and is keyed under
+   * the new spec when its batch is reached.
+   * @param channelName - The channel whose queued/delayed rows to repartition.
+   * @param compute - Maps a row's original message bytes to its key under the current spec.
+   * @returns The number of rows whose partition was rewritten.
+   */
+  async recomputeLogicalChannelKeys(
+    channelName: string,
+    compute: (originalMessage: Buffer) => string
+  ): Promise<number> {
+    this.assertNotDemoted();
+    const BATCH = 500;
+    let lastId = 0;
+    let changed = 0;
+    this.repartitioning.set(channelName, (this.repartitioning.get(channelName) ?? 0) + 1);
+    try {
+      for (;;) {
+        // Re-checked every batch, not just at entry: the yield below is a window for
+        // a peer to take the lease or for the queue to close under us, and a demoted
+        // process must stop rewriting dispatch state it no longer owns. Whatever is
+        // left keeps its old key and is re-derived at claim time by the new leader.
+        this.assertNotDemoted();
+        if (this.closed) {
+          break;
+        }
+        const rows = this.selectQueuedOrDelayedForRecomputeStmt.all(channelName, lastId, BATCH) as {
+          id: number;
+          original_message: SQLInputValue;
+        }[];
+        if (rows.length === 0) {
+          break;
+        }
+        this.runInTransaction(() => {
+          for (const row of rows) {
+            lastId = row.id;
+            const newKey = compute(toBuffer(row.original_message));
+            changed += Number(this.recomputeSetKeyStmt.run(newKey, row.id).changes);
+          }
+        });
+        if (rows.length < BATCH) {
+          break;
+        }
+        // A whole batch came back, so there is more to do — yield before the next
+        // one. `sleep(0)` rather than the worker's `setImmediate`: this runs once per
+        // 500 rows on a rare path, where a clamped timer's ~1ms is irrelevant.
+        await sleep(0);
+      }
+    } finally {
+      const held = (this.repartitioning.get(channelName) ?? 1) - 1;
+      if (held > 0) {
+        this.repartitioning.set(channelName, held);
+      } else {
+        this.repartitioning.delete(channelName);
+      }
+    }
+    if (changed > 0) {
+      this.walDirty = true;
+    }
+    return changed;
+  }
 }
 
 /**
- * Decodes a raw SQL row into an {@link InboundRow}. Centralized so every read
- * path produces the same shape — adding a column means touching one place.
+ * Decodes a raw SQL row into the {@link InboundRow} union member matching its
+ * `state`. Centralized so every read path produces the same shape — adding a
+ * column means touching one place.
+ *
+ * The state-bound lifecycle columns are read with a non-null cast on the members
+ * whose state provably sets them (e.g. `processed_at` on a `processed` row): the
+ * transition statements in queries.ts guarantee those writes, so we trust the
+ * schema rather than re-checking at every read.
  * @param raw - The raw row object returned by `node:sqlite`.
  * @returns The decoded row.
  */
 function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
-  return {
+  const base = {
     id: raw.id as number,
     channelName: raw.channel_name as string,
     remote: raw.remote as string,
@@ -1123,24 +1503,63 @@ function rowFromSql(raw: Record<string, SQLInputValue>): InboundRow {
     finalizedMessage: toBuffer(raw.finalized_message),
     encoding: (raw.encoding as string | null) ?? null,
     enhancedMode: (raw.enhanced_mode as 'standard' | 'aaMode' | null) ?? null,
-    state: raw.state as MessageState,
     attemptCount: raw.attempt_count as number,
+    logicalChannelKey: (raw.logical_channel_key as string | null) ?? '',
+    guaranteedDelivery: Boolean(raw.guaranteed_delivery),
     callbackId: raw.callback_id as string,
+    seqNo: (raw.seq_no as number | null) ?? null,
+    receivedAt: raw.received_at as number,
+    ackOutcome: (raw.ack_outcome as AckOutcome | null) ?? AckOutcomeValues.PENDING,
+    serverStatusCode: (raw.server_status_code as number | null) ?? null,
     serverResponseBody:
       raw.server_response_body === null || raw.server_response_body === undefined
         ? null
         : toBuffer(raw.server_response_body),
-    serverStatusCode: (raw.server_status_code as number | null) ?? null,
-    ackOutcome: (raw.ack_outcome as AckOutcome | null) ?? AckOutcomeValues.PENDING,
     lastError: (raw.last_error as string | null) ?? null,
     errorCode: (raw.error_code as QueueErrorCode | null) ?? null,
-    seqNo: (raw.seq_no as number | null) ?? null,
-    receivedAt: raw.received_at as number,
-    processingStartedAt: (raw.processing_started_at as number | null) ?? null,
-    sentAt: (raw.sent_at as number | null) ?? null,
-    processedAt: (raw.processed_at as number | null) ?? null,
-    erroredAt: (raw.errored_at as number | null) ?? null,
   };
+
+  const state = raw.state as MessageState;
+  const processingStartedAt = raw.processing_started_at as number;
+  const sentAt = (raw.sent_at as number | null) ?? null;
+
+  switch (state) {
+    case MessageStateValues.QUEUED:
+      return { ...base, state, nextAttemptAt: (raw.next_attempt_at as number | null) ?? null };
+    case MessageStateValues.DELAYED:
+      return { ...base, state };
+    case MessageStateValues.CLAIMED:
+      return { ...base, state, processingStartedAt };
+    case MessageStateValues.INFLIGHT:
+      return { ...base, state, processingStartedAt, sentAt: sentAt as number };
+    case MessageStateValues.PROCESSED:
+      return { ...base, state, processingStartedAt, sentAt: sentAt as number, processedAt: raw.processed_at as number };
+    case MessageStateValues.REJECTED:
+      return {
+        ...base,
+        state,
+        processingStartedAt,
+        sentAt: sentAt as number,
+        erroredAt: raw.errored_at as number,
+        lastError: base.lastError as string,
+        errorCode: base.errorCode as QueueErrorCode,
+      };
+    case MessageStateValues.FAILED:
+      return {
+        ...base,
+        state,
+        processingStartedAt,
+        sentAt,
+        erroredAt: raw.errored_at as number,
+        lastError: base.lastError as string,
+        errorCode: base.errorCode as QueueErrorCode,
+      };
+    case MessageStateValues.NACKED:
+      return { ...base, state, lastError: base.lastError as string, errorCode: base.errorCode as QueueErrorCode };
+    default:
+      state satisfies never;
+      throw new Error(`rowFromSql: unknown row state '${String(state)}' for row id=${base.id}`);
+  }
 }
 
 function toBlob(value: Buffer | string): Buffer {

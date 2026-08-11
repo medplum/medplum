@@ -25,6 +25,7 @@ function handleOAuthConfig(_req: Request, res: Response): void {
     registration_endpoint: config.registerUrl,
     id_token_signing_alg_values_supported: [
       OAuthSigningAlgorithm.ES256,
+      OAuthSigningAlgorithm.ES384,
       OAuthSigningAlgorithm.HS256,
       OAuthSigningAlgorithm.RS256,
     ],

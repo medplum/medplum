@@ -7,7 +7,7 @@ tags: [auth]
 
 By default, all emails sent on behalf of your project use the Medplum server's email provider and sender address. Projects can instead send email through their own SMTP relay (such as SendGrid, Mailgun, or Amazon SES SMTP) so that emails arrive from your own domain.
 
-Project SMTP applies to all project-scoped emails. This includes emails sent via the [`sendEmail`](/docs/sdk/core.medplumclient.sendemail) API and system-generated emails for project-scoped users: user invites, password resets, email verification, and MFA reset notifications. The content of system-generated emails remains controlled by the Medplum server; project SMTP changes the transport and sender address. To customize email content, see [Custom Emails](/docs/user-management/custom-emails).
+Project SMTP applies to all project-scoped emails. This includes emails sent via the [`sendEmail`](/docs/sdk/core.medplumclient.sendemail) API and system-generated emails for project-scoped users: user invites, password resets, email verification, MFA verification codes, and MFA reset notifications. The content of system-generated emails remains controlled by the Medplum server; project SMTP changes the transport and sender address. To customize email content, see [Custom Emails](/docs/user-management/custom-emails), or [`appName`](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps) to white-label MFA emails and the sender display name.
 
 ## Configuration
 
@@ -20,12 +20,14 @@ Project SMTP is configured by a Project Admin using [`Project.secret`](/docs/sel
 | `smtpUsername`        | string  | yes      | SMTP username                                                                             |
 | `smtpPassword`        | string  | yes      | SMTP password                                                                             |
 | `smtpSecure`          | boolean | no       | Use TLS when connecting. If not specified, inferred from `smtpPort === 465`.             |
-| `smtpFromAddress`     | string  | yes      | Default from address for emails sent through this relay                                   |
+| `smtpFromAddress`     | string  | yes      | Default from address for emails sent through this relay. Accepts a display name, as in `"Acme Health" <noreply@acme.com>` |
 | `smtpApprovedSenders` | string  | no       | Comma-separated list of email addresses allowed as the from address                       |
 
 ## From address resolution
 
 When project SMTP is active, emails are sent from `smtpFromAddress` by default. If the caller specifies a from address, it must appear in `smtpApprovedSenders` to be used; otherwise the project's default from address is used instead. The server-level approved sender list is only consulted when sending through the server transport.
+
+If the resolved address has no display name, the project's [`appName`](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps) setting is used as one, so recipients see the project name in their inbox. Put a display name directly in `smtpFromAddress` to override that.
 
 ## Failure behavior
 

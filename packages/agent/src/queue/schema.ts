@@ -46,9 +46,10 @@ export const MIGRATIONS: readonly Migration[] = [
         -- stamped, awaiting response) → processed/rejected/failed, plus the
         -- intake-reject 'nacked'. The claimed/inflight split is what lets crash
         -- recovery tell a provably-unsent row (safe to requeue) from an ambiguous
-        -- in-flight one (must fail for review). The source-leg ACK-delivery outcome
-        -- is tracked independently in ack_outcome
-        -- (pending/delivered/undelivered/not_owed) so the two legs never conflate.
+        -- in-flight one (must fail or, under guaranteed delivery, requeue). A
+        -- retryable failure returns to 'queued' with next_attempt_at set (see
+        -- §4.1). The source-leg ACK-delivery outcome is tracked independently in
+        -- ack_outcome (pending/delivered/undelivered/not_owed) so the legs never conflate.
         state                 TEXT    NOT NULL,
         attempt_count         INTEGER NOT NULL DEFAULT 0,
         callback_id           TEXT    NOT NULL,
@@ -56,6 +57,8 @@ export const MIGRATIONS: readonly Migration[] = [
         server_status_code    INTEGER,
         ack_outcome           TEXT    NOT NULL DEFAULT 'pending',
         last_error            TEXT,
+        -- error_code is the machine-readable failure classification (QueueErrorCode);
+        -- the retry policy gates on it, never on the free-form last_error string.
         error_code            TEXT,
         seq_no                INTEGER,
         received_at           INTEGER NOT NULL,
@@ -122,6 +125,77 @@ export const MIGRATIONS: readonly Migration[] = [
         channel_name TEXT    PRIMARY KEY,
         last_seq_no  INTEGER NOT NULL
       ) STRICT;
+    `,
+  },
+  {
+    // Auto-retry support for the Bot leg. Adds two columns to the existing
+    // inbound_hl7_messages table. SQLite ALTER TABLE ... ADD COLUMN is cheap
+    // even on a populated DB *for these two columns*: it only rewrites the
+    // schema text and leaves existing rows untouched. That's NOT universally
+    // true -- adding a column with a CHECK constraint, or a generated column
+    // with NOT NULL, forces a full-table read/rewrite proportional to row count.
+    // Neither column here does that (next_attempt_at is nullable; the
+    // guaranteed_delivery NOT NULL sits on a plain, non-generated column with a
+    // DEFAULT), so both stay cheap. See
+    // https://www.sqlite.org/lang_altertable.html#altertableaddcolumn.
+    version: 2,
+    sql: `
+      -- next_attempt_at is the earliest time (ms) a retry-scheduled 'queued' row
+      -- may be re-claimed; NULL unless an auto-retry backoff is pending. A
+      -- retryable failure returns the row to 'queued' with this stamped (see §4.1).
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN next_attempt_at INTEGER;
+
+      -- guaranteed_delivery snapshots the channel's guaranteedDelivery setting at
+      -- intake, so recoverOnStartup (which runs before channel policies resolve)
+      -- knows whether to requeue (1) or fail (0) an interrupted inflight row.
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN guaranteed_delivery INTEGER NOT NULL DEFAULT 0;
+    `,
+  },
+  {
+    // Logical channels: partition a physical channel's rows into independent FIFO
+    // sub-queues so a bounded worker pool can process distinct partitions
+    // concurrently while each partition stays strictly serial. A row's partition is
+    // its logical_channel_key, computed at CLAIM time from the channel's
+    // `logicalChannelKey` spec (a set of HL7 field paths); the default '' means one
+    // serialized queue for the whole channel. See logical-channel.ts and the
+    // CLAIM_NEXT / isPartitionBlocked logic.
+    //
+    // This migration also introduces the `delayed` state (a row parked behind an
+    // earlier not-yet-settled message in the same logical channel). A `delayed` row
+    // is still an ACTIVE occupant of its (channel_name, msg_control_id) -- an
+    // inbound retransmit while it waits must dedupe against it, not insert a second
+    // copy -- so the active-duplicate unique index is recreated to include it.
+    // Recreating that index is safe on a populated table: this is the first
+    // migration to introduce `delayed`, so zero rows are in it at apply time and the
+    // widened predicate cannot surface a new uniqueness violation; the DROP + CREATE
+    // runs inside this migration's transaction (see runMigrations), so it's atomic.
+    // The other dup index (idx_inbound_dup_lookup, WHERE state != 'nacked') and the
+    // new claim index (keyed on state) already cover `delayed` without change.
+    // ADD COLUMN stays cheap here for the same reason as the v2 columns: a plain,
+    // non-generated TEXT with a literal DEFAULT rewrites only the schema text.
+    version: 3,
+    sql: `
+      ALTER TABLE inbound_hl7_messages
+        ADD COLUMN logical_channel_key TEXT NOT NULL DEFAULT '';
+
+      -- Serves the worker's post-claim partition check (isPartitionBlocked: is an
+      -- earlier same-key row still queued/delayed/claimed/inflight?) and the wake of
+      -- the next delayed row of a key (wakePartition). Leading (channel_name,
+      -- logical_channel_key, state) resolves both by index seek; the trailing id
+      -- makes the MIN(id) wake a boundary read.
+      CREATE INDEX IF NOT EXISTS idx_inbound_vchannel_claim
+        ON inbound_hl7_messages (channel_name, logical_channel_key, state, id);
+
+      -- Widen the active-duplicate unique index to include 'delayed', so a parked
+      -- row still counts as an active duplicate for intake dedup.
+      DROP INDEX IF EXISTS uq_inbound_dup_active;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_inbound_dup_active
+        ON inbound_hl7_messages (channel_name, msg_control_id)
+        WHERE msg_control_id IS NOT NULL
+          AND state IN ('queued', 'delayed', 'claimed', 'inflight');
     `,
   },
 ];

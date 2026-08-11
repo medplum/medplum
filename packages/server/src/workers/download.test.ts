@@ -28,6 +28,7 @@ describe('Download Worker', () => {
   beforeEach(async () => {
     fetchMock.mockClear();
     getConfig().autoDownloadEnabled = true;
+    getConfig().allowUnsafeOutbound = false;
   });
 
   test('Download external URL', () =>
@@ -59,12 +60,15 @@ describe('Download Worker', () => {
 
         await findAndExecDownloadJob(media, 'create');
 
-        expect(fetchMock).toHaveBeenCalledWith(url, {
-          headers: {
-            'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-            traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
-          },
-        });
+        expect(fetchMock).toHaveBeenCalledWith(
+          url,
+          expect.objectContaining({
+            headers: {
+              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
+              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+            },
+          })
+        );
 
         const updatedMedia = await repo.readResource<Media>('Media', media.id);
         expect(updatedMedia.content?.url).toMatch(/^Binary\//);
@@ -87,7 +91,7 @@ describe('Download Worker', () => {
       await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
     }));
 
-  test('Ignore HTTP URL', () =>
+  test('Ignore HTTP URL by default', () =>
     withTestContext(async () => {
       const media = await repo.createResource<Media>({
         resourceType: 'Media',
@@ -99,6 +103,23 @@ describe('Download Worker', () => {
       });
       expect(media).toBeDefined();
       await expect(findAndExecDownloadJob(media, 'create')).rejects.toThrow('Job not found');
+    }));
+
+  test('Queue HTTP URL when unsafe outbound is allowed', () =>
+    withTestContext(async () => {
+      getConfig().allowUnsafeOutbound = true;
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'http://localhost/download',
+        },
+      });
+      expect(media).toBeDefined();
+      const jobs = await findAndExecDownloadJob(media, 'create');
+      expect(jobs[0].data.url).toBe('http://localhost/download');
     }));
 
   test('Retry on 400', () =>

@@ -53,7 +53,7 @@ describe('SCIM Routes', () => {
     const res = await request(app)
       .get(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const result = res.body;
     expect(result.totalResults).toBeDefined();
@@ -74,18 +74,18 @@ describe('SCIM Routes', () => {
         },
         emails: [{ value: randomUUID() + '@example.com' }],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const readResponse = await request(app)
       .get(`/scim/v2/Users/${res1.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(readResponse.status).toBe(200);
+    expect(readResponse).toHaveStatus(200);
     expect(readResponse.body.id).toBe(res1.body.id);
 
     const searchResponse = await request(app)
       .get(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(searchResponse.status).toBe(200);
+    expect(searchResponse).toHaveStatus(200);
 
     const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
     expect(searchCheck).toBeDefined();
@@ -98,18 +98,18 @@ describe('SCIM Routes', () => {
         ...res1.body,
         externalId: randomUUID(),
       });
-    expect(updateResponse.status).toBe(200);
+    expect(updateResponse).toHaveStatus(200);
     expect(updateResponse.body.externalId).toBeDefined();
 
     const deleteResponse = await request(app)
       .delete(`/scim/v2/Users/${res1.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(deleteResponse.status).toBe(204);
+    expect(deleteResponse).toHaveStatus(204);
 
     const searchResponse2 = await request(app)
       .get(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(searchResponse2.status).toBe(200);
+    expect(searchResponse2).toHaveStatus(200);
 
     const searchCheck2 = searchResponse2.body.Resources.find((user: any) => user.id === res1.body.id);
     expect(searchCheck2).toBeUndefined();
@@ -129,19 +129,19 @@ describe('SCIM Routes', () => {
         },
         emails: [{ value: randomUUID() + '@example.com' }],
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
 
     const readResponse = await request(app)
       .get(`/scim/v2/Users/${res1.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(readResponse.status).toBe(200);
+    expect(readResponse).toHaveStatus(200);
     expect(readResponse.body.id).toBe(res1.body.id);
     expect(readResponse.body.active).toBe(true);
 
     const searchResponse = await request(app)
       .get(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(searchResponse.status).toBe(200);
+    expect(searchResponse).toHaveStatus(200);
 
     const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
     expect(searchCheck).toBeDefined();
@@ -161,7 +161,7 @@ describe('SCIM Routes', () => {
           },
         ],
       });
-    expect(patchResponse.status).toBe(200);
+    expect(patchResponse).toHaveStatus(200);
     expect(patchResponse.body.active).toBe(false);
   });
 
@@ -178,7 +178,7 @@ describe('SCIM Routes', () => {
         },
         emails: [{ value: randomUUID() + '@example.com' }],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect(res.body.userType).toBe('Practitioner');
   });
 
@@ -211,7 +211,7 @@ describe('SCIM Routes', () => {
     const res = await request(app)
       .get(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
 
     const result = res.body;
     expect(result.totalResults).toBeDefined();

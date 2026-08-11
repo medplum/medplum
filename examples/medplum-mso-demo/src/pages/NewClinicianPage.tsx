@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, MultiSelect, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Button, MultiSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
 import type { AccessPolicy, Organization, ProjectMembership } from '@medplum/fhirtypes';
-import { Document, useMedplum } from '@medplum/react';
+import { Document, PasswordInput, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
+import type { SpotlightLinkAction } from '@medplum/react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
@@ -23,6 +24,7 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
+import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
@@ -87,11 +89,40 @@ export function App(): JSX.Element | null {
     setSetupDismissedByUser(true);
   };
 
+  // Each action points at a `/new` route; the destination page opens its own modal from the URL.
+  // `href` both routes the click and makes them real links, so they can be opened in a new tab.
+  const spotlightActions: SpotlightLinkAction[] = [
+    {
+      id: 'action-new-patient-intake',
+      href: '/onboarding',
+      label: 'New Patient Intake',
+      leftSection: <IconUserPlus size={16} color="var(--mantine-color-dimmed)" />,
+    },
+    {
+      id: 'action-new-message',
+      href: '/Communication/new',
+      label: 'New Message',
+      leftSection: <IconMail size={16} color="var(--mantine-color-dimmed)" />,
+    },
+    {
+      id: 'action-new-task',
+      href: '/Task/new',
+      label: 'New Task',
+      leftSection: <IconClipboardCheck size={16} color="var(--mantine-color-dimmed)" />,
+    },
+    {
+      id: 'action-send-fax',
+      href: '/Fax/Communication/new',
+      label: 'Send a Fax',
+      leftSection: <IconPrinter size={16} color="var(--mantine-color-dimmed)" />,
+    },
+  ];
+
   if (medplum.isLoading()) {
     return null;
   }
 
-  return (
+  const appShellContent = (
     <AppShell
       logo={<Logo size={24} />}
       pathname={location.pathname}
@@ -177,6 +208,7 @@ export function App(): JSX.Element | null {
       }
       resourceTypeSearchDisabled={true}
       spotlightPatientsOnly={true}
+      spotlightActions={spotlightActions}
     >
       <Suspense fallback={<Loading />}>
         <Routes>
@@ -210,13 +242,17 @@ export function App(): JSX.Element | null {
                 <Route path="Communication" element={<CommunicationTab />} />
                 <Route path="Communication/:messageId" element={<CommunicationTab />} />
                 <Route path="Task" element={<TasksTab />} />
+                <Route path="Task/new" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
+                <Route path="Task/:taskId/new" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
-                <Route path="ServiceRequest" element={<LabsPage />} />
-                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
+                <Route path="ServiceRequest" element={<LabsPage tab="open" />} />
+                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
+                <Route path="DiagnosticReport" element={<LabsPage tab="completed" />} />
+                <Route path="DiagnosticReport/:diagnosticReportId" element={<LabsPage tab="completed" />} />
                 <Route path="MedicationRequest" element={<MedicationsPage />} />
                 <Route path="MedicationRequest/:medicationRequestId" element={<MedicationsPage />} />
                 <Route path="DocumentReference" element={<DocumentsPage />} />
@@ -235,12 +271,18 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/Communication" element={<MessagesPage />}>
                 <Route index element={<MessagesPage />} />
+                <Route path="new" element={<MessagesPage />} />
                 <Route path=":messageId" element={<MessagesPage />} />
+                <Route path=":messageId/new" element={<MessagesPage />} />
               </Route>
               <Route path="/Task" element={<TasksPage />} />
+              <Route path="/Task/new" element={<TasksPage />} />
               <Route path="/Task/:taskId" element={<TasksPage />} />
+              <Route path="/Task/:taskId/new" element={<TasksPage />} />
               <Route path="/Fax/Communication" element={<FaxPage />} />
+              <Route path="/Fax/Communication/new" element={<FaxPage />} />
               <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
+              <Route path="/Fax/Communication/:faxId/new" element={<FaxPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/Calendar/Schedule" element={<SchedulePage />} />
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
@@ -273,4 +315,6 @@ export function App(): JSX.Element | null {
       </Suspense>
     </AppShell>
   );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
 }

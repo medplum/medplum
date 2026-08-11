@@ -31,7 +31,7 @@ describe('Patient $match Operation', () => {
         resourceType: 'Parameters',
         parameter: [],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Returns 400 when resource is not a Patient', async () => {
@@ -48,7 +48,7 @@ describe('Patient $match Operation', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Returns 400 when Patient has no matchable fields', async () => {
@@ -67,7 +67,7 @@ describe('Patient $match Operation', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Returns 400 when Patient only has gender', async () => {
@@ -87,7 +87,7 @@ describe('Patient $match Operation', () => {
           },
         ],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
   });
 
   test('Returns empty bundle when no patients match', async () => {
@@ -108,7 +108,7 @@ describe('Patient $match Operation', () => {
           },
         ],
       });
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     const bundle = res.body as Bundle;
     expect(bundle.resourceType).toBe('Bundle');
     expect(bundle.type).toBe('searchset');
@@ -129,7 +129,7 @@ describe('Patient $match Operation', () => {
         birthDate: '1980-06-15',
         gender: 'female',
       } satisfies Patient);
-    expect(createRes.status).toBe(201);
+    expect(createRes).toHaveStatus(201);
 
     const matchRes = await request(app)
       .post('/fhir/R4/Patient/$match')
@@ -151,7 +151,7 @@ describe('Patient $match Operation', () => {
         ],
       });
 
-    expect(matchRes.status).toBe(200);
+    expect(matchRes).toHaveStatus(200);
     const bundle = matchRes.body as Bundle<Patient>;
     expect(bundle.type).toBe('searchset');
     expect(bundle.total).toBeGreaterThan(0);
@@ -197,7 +197,7 @@ describe('Patient $match Operation', () => {
         ],
       });
 
-    expect(matchRes.status).toBe(200);
+    expect(matchRes).toHaveStatus(200);
     const bundle = matchRes.body as Bundle<Patient>;
     expect(bundle.total).toBeGreaterThan(0);
     const topEntry = bundle.entry?.[0];
@@ -219,7 +219,7 @@ describe('Patient $match Operation', () => {
         birthDate,
         telecom: [{ system: 'phone', value: phone }],
       } satisfies Patient);
-    expect(createRes.status).toBe(201);
+    expect(createRes).toHaveStatus(201);
 
     const matchRes = await request(app)
       .post('/fhir/R4/Patient/$match')
@@ -240,7 +240,7 @@ describe('Patient $match Operation', () => {
         ],
       });
 
-    expect(matchRes.status).toBe(200);
+    expect(matchRes).toHaveStatus(200);
     const bundle = matchRes.body as Bundle<Patient>;
     expect(bundle.entry?.some((e) => e.resource?.id === createRes.body.id)).toBe(true);
   });
@@ -258,7 +258,7 @@ describe('Patient $match Operation', () => {
         birthDate,
         telecom: [{ system: 'email', value: email }],
       } satisfies Patient);
-    expect(createRes.status).toBe(201);
+    expect(createRes).toHaveStatus(201);
 
     const matchRes = await request(app)
       .post('/fhir/R4/Patient/$match')
@@ -279,7 +279,7 @@ describe('Patient $match Operation', () => {
         ],
       });
 
-    expect(matchRes.status).toBe(200);
+    expect(matchRes).toHaveStatus(200);
     const bundle = matchRes.body as Bundle<Patient>;
     expect(bundle.entry?.some((e) => e.resource?.id === createRes.body.id)).toBe(true);
   });
@@ -314,7 +314,7 @@ describe('Patient $match Operation', () => {
         ],
       });
 
-    expect(matchRes.status).toBe(200);
+    expect(matchRes).toHaveStatus(200);
     const bundle = matchRes.body as Bundle<Patient>;
     // All results must be 'certain' grade
     for (const entry of bundle.entry ?? []) {
@@ -362,7 +362,7 @@ describe('Patient $match Operation', () => {
         ],
       });
 
-    expect(matchRes.status).toBe(200);
+    expect(matchRes).toHaveStatus(200);
     const bundle = matchRes.body as Bundle<Patient>;
     expect((bundle.entry ?? []).length).toBeLessThanOrEqual(2);
   });
@@ -397,7 +397,7 @@ describe('Patient $match Operation', () => {
         birthDate,
         telecom: [{ system: 'phone', value: phone }],
       });
-      expect(created.status).toBe(201);
+      expect(created).toHaveStatus(201);
 
       // First name + DOB + phone uniquely identify the patient (with different phone formatting).
       const res = await cmsMatch({
@@ -407,7 +407,7 @@ describe('Patient $match Operation', () => {
         telecom: [{ system: 'phone', value: phone }],
       });
 
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       const bundle = res.body as Bundle<Patient>;
       expect(bundle.entry).toHaveLength(1);
       const entry = bundle.entry?.[0];
@@ -443,14 +443,14 @@ describe('Patient $match Operation', () => {
         telecom: [{ system: 'phone', value: phone }],
       });
 
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       const bundle = res.body as Bundle<Patient>;
       expect(bundle.entry ?? []).toHaveLength(0);
     });
 
     test('no match when only a single non-discriminating field agrees', async () => {
       const res = await cmsMatch({ resourceType: 'Patient', birthDate: '1973-09-25', name: [{ given: ['Solo'] }] });
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
     });
 
@@ -468,7 +468,7 @@ describe('Patient $match Operation', () => {
         birthDate: '1975-03-22',
       });
 
-      expect(res.status).toBe(200);
+      expect(res).toHaveStatus(200);
       expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
     });
   });

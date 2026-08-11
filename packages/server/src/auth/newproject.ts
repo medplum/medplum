@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest } from '@medplum/core';
-import type { Login, Reference, User } from '@medplum/fhirtypes';
+import { Operator, badRequest, getReferenceString } from '@medplum/core';
+import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
@@ -11,6 +11,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { sendLoginResult } from './utils';
+import { sendWelcomeEmail } from './welcomeemail';
 
 export interface NewProjectRequest {
   readonly loginId: string;
@@ -45,8 +46,24 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
+  // Determine whether this is the user's first project (before creating the new
+  // one) so we only welcome first-time project owners.
+  const existingProject = await systemRepo.searchOne<Project>({
+    resourceType: 'Project',
+    filters: [{ code: 'owner', operator: Operator.EQUALS, value: getReferenceString(user) }],
+  });
+  const isFirstProject = !existingProject;
+
   const projectName = req.body.projectName;
-  const { membership } = await createProject(projectName, user);
+  const { project, membership } = await createProject(projectName, user);
   const updatedLogin = await setLoginMembership(login, membership);
+
+  // Send a welcome email, but only for the user's first project. This is
+  // best-effort: any failure is logged inside sendWelcomeEmail and never blocks
+  // registration.
+  if (isFirstProject) {
+    await sendWelcomeEmail(systemRepo, project, user);
+  }
+
   await sendLoginResult(res, updatedLogin);
 }

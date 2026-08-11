@@ -14,7 +14,6 @@ import {
   Group,
   Image,
   JsonInput,
-  PasswordInput,
   SegmentedControl,
   Stack,
   Table,
@@ -25,7 +24,7 @@ import {
 import type { SmartHealthLinkMode, SmartHealthLinkPayload, WithId } from '@medplum/core';
 import { ContentType, normalizeErrorString, parseSmartHealthLink } from '@medplum/core';
 import type { Parameters, Patient, Resource } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { PasswordInput, useMedplum } from '@medplum/react';
 import { IconCopy, IconLink, IconPlayerPlay, IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';

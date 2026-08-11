@@ -44,9 +44,14 @@ const prefixes = [
   '/admin/',
   '/auth/',
   '/cds-services',
+  '/dicomweb/',
   '/email/',
   '/fhir/',
   '/fhircast/',
+  // The `/api` variant is spelled out because subscribers pointed at the FHIRcast alias
+  // send preflights to `/api/hub` rather than the root-mounted `/hub`.
+  '/hub',
+  '/api/hub',
   '/oauth2/',
   '/keyvalue/',
   '/shl/',

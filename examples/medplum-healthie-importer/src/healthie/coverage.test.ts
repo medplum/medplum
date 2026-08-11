@@ -46,13 +46,12 @@ describe('fetchPolicies', () => {
       },
     ];
 
-    mockFetch.mockImplementationOnce(
-      (): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { user: { policies: mockPolicies } } }),
-          ok: true,
-          status: 200,
-        })
+    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: { user: { policies: mockPolicies } } }),
+        ok: true,
+        status: 200,
+      })
     );
 
     const result = await fetchPolicies(healthieClient, 'patient123');
@@ -60,13 +59,12 @@ describe('fetchPolicies', () => {
   });
 
   test('returns empty array when no policies found', async () => {
-    mockFetch.mockImplementationOnce(
-      (): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { user: { policies: [] } } }),
-          ok: true,
-          status: 200,
-        })
+    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: { user: { policies: [] } } }),
+        ok: true,
+        status: 200,
+      })
     );
 
     const result = await fetchPolicies(healthieClient, 'patient123');
@@ -74,13 +72,12 @@ describe('fetchPolicies', () => {
   });
 
   test('returns empty array when user is null', async () => {
-    mockFetch.mockImplementationOnce(
-      (): Promise<MockResponse> =>
-        Promise.resolve({
-          json: () => Promise.resolve({ data: { user: null } }),
-          ok: true,
-          status: 200,
-        })
+    mockFetch.mockImplementationOnce((): Promise<MockResponse> =>
+      Promise.resolve({
+        json: () => Promise.resolve({ data: { user: null } }),
+        ok: true,
+        status: 200,
+      })
     );
 
     const result = await fetchPolicies(healthieClient, 'patient123');

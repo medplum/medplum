@@ -79,11 +79,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
 
       setSearchResults(results);
     } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: normalizeErrorString(error),
-        color: 'red',
-      });
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
       setSearchResults([]);
     } finally {
       setIsSearching(false);

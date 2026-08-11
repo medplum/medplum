@@ -28,9 +28,9 @@ describe('data warehouse aws destination', () => {
 
   test('buildSourcePredicate queries Iceberg watermark before Postgres attach', async () => {
     vi.restoreAllMocks();
-    const readAll = vi.spyOn(warehouseSql, 'runParameterizedWarehouseSqlReadAll').mockResolvedValue({
-      getRowObjectsJson: () => [{ watermark: '2024-06-01T12:00:00.000Z' }],
-    });
+    const fetchWatermark = vi
+      .spyOn(warehouseSql, 'fetchIcebergWatermark')
+      .mockResolvedValue('2024-06-01T12:00:00.000Z');
 
     const destination = new S3TablesWarehouseDestination(
       'us-east-1',
@@ -38,7 +38,8 @@ describe('data warehouse aws destination', () => {
     );
     const predicate = await destination.buildSourcePredicate(connection, tableSpec, 'default');
 
-    expect(readAll).toHaveBeenCalledTimes(1);
+    expect(fetchWatermark).toHaveBeenCalledTimes(1);
+    expect(fetchWatermark).toHaveBeenCalledWith(connection, 'iceberg_catalog.default.patient_history');
     expect(predicate).toBeDefined();
     const sql = new SqlBuilder();
     sql.appendExpression(predicate as never);
@@ -48,9 +49,7 @@ describe('data warehouse aws destination', () => {
 
   test('buildSourcePredicate omits filter when Iceberg table is empty', async () => {
     vi.restoreAllMocks();
-    vi.spyOn(warehouseSql, 'runParameterizedWarehouseSqlReadAll').mockResolvedValue({
-      getRowObjectsJson: () => [{ watermark: null }],
-    });
+    vi.spyOn(warehouseSql, 'fetchIcebergWatermark').mockResolvedValue(undefined);
 
     const destination = new S3TablesWarehouseDestination(
       'us-east-1',

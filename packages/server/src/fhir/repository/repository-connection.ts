@@ -8,8 +8,18 @@ import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getLogger } from '../../logger';
+import { normalizeShardId } from '../sharding';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
+import type {
+  ExecuteSqlOptions,
+  RepositoryAccessLayer,
+  RepositoryAccessOperation,
+  RepositoryAccessOptions,
+  ResourceTypeInput,
+  TransactionSqlOptions,
+} from './access-tracker';
+import { RepositoryAccessTracker } from './access-tracker';
 import type { TransactionIdleStatus, TransactionIdleTrackerOptions } from './transaction-idle-tracker';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -20,10 +30,10 @@ const transactionIsolationLevelPriority: Record<TransactionIsolationLevel, numbe
   SERIALIZABLE: 2,
 };
 
-export type StatementTimeoutOptions = {
+export interface StatementTimeoutOptions extends RepositoryAccessOptions {
   timeoutMs: number;
   mode?: DatabaseMode;
-};
+}
 
 /**
  * An opaque object representing a scope or token to be presented to a RepositoryConnection
@@ -99,10 +109,23 @@ export class RepositoryConnection implements Disposable {
   private readonly rootScope: RootScope;
   private currentScope: Scope;
 
+  private readonly accessTracker = new RepositoryAccessTracker();
+
+  /**
+   * The shard this connection's PoolClient belongs to, normalized by
+   * {@link normalizeShardId}. A connection is bound to exactly one database for its entire
+   * lifetime, so a `Repository` that spans shards holds one connection per shard. See
+   * `RepositoryConnections`.
+   */
+  readonly shardId: string;
+
   /**
    * Creates a connection that owns any PoolClient it acquires.
+   * @param shardId - The shard whose database this connection talks to. Normalized, so the
+   * placeholder aliases resolve to the global shard.
    */
-  constructor() {
+  constructor(shardId: string) {
+    this.shardId = normalizeShardId(shardId);
     this._mode = RepositoryMode.WRITER;
     this.rootScope = {
       __brand: 'scope',
@@ -117,10 +140,11 @@ export class RepositoryConnection implements Disposable {
    * @param client - Caller-owned database client.
    * @param options - Borrowed client options.
    * @param options.mode - Database mode for the borrowed client.
+   * @param options.shardId - The shard the borrowed client is connected to.
    * @returns Repository connection wrapping the borrowed client.
    */
-  static borrowClient(client: PoolClient, options: { mode: DatabaseMode }): RepositoryConnection {
-    const connection = new RepositoryConnection();
+  static borrowClient(client: PoolClient, options: { mode: DatabaseMode; shardId: string }): RepositoryConnection {
+    const connection = new RepositoryConnection(options.shardId);
     connection.conn = client;
     connection.connMode = options.mode;
     connection.ownsClient = false;
@@ -150,11 +174,21 @@ export class RepositoryConnection implements Disposable {
   }
 
   setMode(mode: RepositoryMode): void {
+    this.assertCanSetMode(mode);
+    this._mode = mode;
+  }
+
+  /**
+   * Throws if this connection cannot adopt `mode`. Split out of {@link setMode} so that a
+   * `Repository` spanning several shards can validate every connection before mutating any of
+   * them, rather than leaving some promoted and some not when one rejects the change.
+   * @param mode - The mode to validate.
+   */
+  assertCanSetMode(mode: RepositoryMode): void {
     this.assertNotClosed();
     if (mode === RepositoryMode.READER && this.connMode === DatabaseMode.WRITER) {
       throw new Error('Cannot set repository mode to reader while using writer database connection');
     }
-    this._mode = mode;
   }
 
   private assertCurrentScope(scope: unknown): Scope {
@@ -226,6 +260,15 @@ export class RepositoryConnection implements Disposable {
     return false;
   }
 
+  recordResourceAccess(
+    layer: RepositoryAccessLayer,
+    operation: RepositoryAccessOperation,
+    resourceTypes: ResourceTypeInput,
+    source: string | undefined
+  ): void {
+    this.accessTracker.recordResourceAccess(layer, operation, resourceTypes, source);
+  }
+
   /**
    * Returns a database client.
    * Use this method when you don't care if you're in a transaction or not.
@@ -234,21 +277,22 @@ export class RepositoryConnection implements Disposable {
    * If in a transaction, then returns the transaction client (PoolClient).
    * Otherwise, returns the pool (Pool).
    * @param scope - The scope of the database client.
-   * @param mode - The database mode.
+   * @param options - SQL execution metadata.
    * @returns The database client.
    */
-  getDatabaseClient(scope: ConnectionScope, mode: DatabaseMode): PgQueryable {
+  getDatabaseClient(scope: ConnectionScope, options: ExecuteSqlOptions): PgQueryable {
+    this.recordResourceAccess('sql', options.operation, options.resourceTypes, options.source);
     this.assertNotClosed();
     this.assertScope(scope);
     if (this.conn) {
       // A held client might be pinned outside a transaction, but it still has one physical
       // database role. Do not let writer work accidentally run on a reader connection.
-      this.assertConnectionMode(mode);
+      this.assertConnectionMode(options.mode);
       return this.conn;
     }
     this.assertCanAcquireConnection();
-    this.promoteRepositoryMode(mode);
-    return getDatabasePool(this._mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
+    this.promoteRepositoryMode(options.mode);
+    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : options.mode);
   }
 
   /**
@@ -286,6 +330,13 @@ export class RepositoryConnection implements Disposable {
     if (this.pinDepth > 0 && !err) {
       return;
     }
+
+    // releasing while a transaction is still active is a no-op when there is no error
+    // since the transaction is still in progress and the connection must be held until it ends
+    if (this.isInTransaction() && !err) {
+      return;
+    }
+
     const releaseErr = err || this.discardOnRelease;
     if (this.ownsClient) {
       const conn = this.conn;
@@ -312,30 +363,42 @@ export class RepositoryConnection implements Disposable {
 
   async withStatementTimeout<TResult>(
     options: StatementTimeoutOptions,
-    callback: (client: PoolClient) => Promise<TResult>
+    callback: () => Promise<TResult>
   ): Promise<TResult> {
-    const client = await this.withConnectionStateLock(async () => {
+    let isLocal = false;
+
+    await this.withConnectionStateLock(async () => {
       this.assertNotClosed();
-      this.assertOwnsClient();
       if (this.isInTransaction()) {
-        throw new Error('Cannot set statement timeout during an active transaction');
+        isLocal = true;
+      } else {
+        // when not in a transaction, don't allow changing the config of a borrowed connection since
+        // that would mean it gets returned to the owner in a different state than it was when borrowed
+        // this may be too restrictive, but hold the line for now
+        this.assertOwnsClient('Cannot set statement timeout on a borrowed connection');
       }
 
       const client = await this.getConnection(options.mode ?? DatabaseMode.WRITER);
 
-      await client.query(`SELECT set_config('statement_timeout', $1, false)`, [String(options.timeoutMs)]);
+      await client.query(`SELECT set_config('statement_timeout', $1, $2)`, [String(options.timeoutMs), isLocal]);
       this.pinDepth++;
-      this.discardOnRelease = true;
-      return client;
+      // A session-level SET (isLocal === false) leaves statement_timeout changed on the physical
+      // connection with no reliable way to restore its prior value, so the connection is dirty and
+      // must be discarded rather than returned to the pool. A transaction-local SET (isLocal === true)
+      // is reverted automatically by Postgres when the transaction ends, leaving the connection clean,
+      // so there is nothing to discard.
+      if (!isLocal) {
+        this.discardOnRelease = true;
+      }
     });
 
     try {
       // invoking the callback must happen outside of the connection state lock to avoid deadlocks
-      return await callback(client);
+      return await callback();
     } finally {
       await this.withConnectionStateLock(async () => {
         this.pinDepth--;
-        if (this.pinDepth === 0) {
+        if (!isLocal && this.pinDepth === 0 && !this.isInTransaction()) {
           this.releaseConnection();
         }
       });
@@ -447,10 +510,10 @@ export class RepositoryConnection implements Disposable {
   async withTransaction<TResult>(
     scope: ConnectionScope,
     callback: (txScope: ConnectionScope) => Promise<TResult>,
-    options?: { serializable?: boolean }
+    options: TransactionSqlOptions
   ): Promise<TResult> {
     this.assertNotClosed();
-    const isolationLevel = options?.serializable ? 'SERIALIZABLE' : 'REPEATABLE READ';
+    const isolationLevel = options.serializable ? 'SERIALIZABLE' : 'REPEATABLE READ';
 
     const config = getConfig();
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
@@ -466,9 +529,10 @@ export class RepositoryConnection implements Disposable {
             thresholdMs: config.idleInTransactionLogThresholdMs ?? -1,
             attempt,
             transactionAttempts,
-            serializable: options?.serializable ?? false,
+            serializable: options.serializable ?? false,
           });
         }
+        this.recordResourceAccess('sql', 'transaction', options.resourceTypes, options.source);
         const result = await callback(txScope);
         await this.commitTransaction(txScope);
         if (attempt > 0) {
@@ -476,7 +540,7 @@ export class RepositoryConnection implements Disposable {
             attempt,
             attemptDurationMs: Date.now() - attemptStartTime,
             transactionAttempts,
-            serializable: options?.serializable ?? false,
+            serializable: options.serializable ?? false,
           });
         }
         return result;
@@ -510,7 +574,7 @@ export class RepositoryConnection implements Disposable {
           attempt,
           attemptDurationMs,
           transactionAttempts,
-          serializable: options?.serializable ?? false,
+          serializable: options.serializable ?? false,
           delayMs,
           baseDelayMs,
         });
@@ -520,7 +584,7 @@ export class RepositoryConnection implements Disposable {
           attempt,
           attemptDurationMs,
           transactionAttempts,
-          serializable: options?.serializable ?? false,
+          serializable: options.serializable ?? false,
         });
       }
     }
@@ -581,28 +645,83 @@ export class RepositoryConnection implements Disposable {
         // different physical connection
         throw new Error('Transactions require a dedicated PoolClient');
       }
+      // Everything from BEGIN onwards is guarded: once Postgres accepts the transaction level, only
+      // this function knows about it until the scope is returned, so any failure in between has to
+      // undo it here. See {@link abandonTransactionLevel}.
+      let begun = false;
       try {
         if (nextDepth === 1) {
           await client.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
         } else {
           await client.query('SAVEPOINT sp' + nextDepth);
         }
-      } catch (err) {
+        begun = true;
+
+        // Publish transaction state only after Postgres confirms BEGIN/SAVEPOINT.
         if (nextDepth === 1) {
-          // If BEGIN itself fails, no transaction exists to roll back. Drop the client
-          // with the original error so pg-pool does not return a questionable session.
-          this.releaseConnection(err instanceof Error ? err : true);
+          this.transactionIsolationLevel = isolationLevel;
+          this.accessTracker.startTransaction();
         }
+        const txScope = createScope(nextDepth === 1 ? 'transaction' : 'savepoint', this.currentScope);
+        // Publishing the scope hands ownership of this level to withTransaction, so it must stay the
+        // last step: the catch below assumes no scope was pushed. Nothing that can throw may follow.
+        this.currentScope = txScope;
+        return { client, scope: txScope };
+      } catch (err) {
+        await this.abandonTransactionLevel(client, nextDepth, begun, err);
         throw err;
       }
-      // Publish transaction state only after Postgres confirms BEGIN/SAVEPOINT.
-      if (nextDepth === 1) {
-        this.transactionIsolationLevel = isolationLevel;
-      }
-      const txScope = createScope(nextDepth === 1 ? 'transaction' : 'savepoint', this.currentScope);
-      this.currentScope = txScope;
-      return { client, scope: txScope };
     });
+  }
+
+  /**
+   * Undoes a transaction level that Postgres accepted but that was never published as a scope.
+   *
+   * `withTransaction` only rolls back levels it was handed a scope for, so a failure between
+   * `BEGIN`/`SAVEPOINT` succeeding and that scope being returned would otherwise leave the level open
+   * with nothing tracking it: a connection that believes it is idle, which on release is handed to the
+   * next borrower still inside a transaction.
+   *
+   * Runs inside the connection-state lock, so it issues the rollback directly rather than calling
+   * {@link rollbackTransaction}, which would deadlock waiting for the same lock.
+   * @param client - The client the level was opened on.
+   * @param nextDepth - Depth of the level being abandoned; 1 is the outermost transaction.
+   * @param begun - Whether Postgres accepted the `BEGIN`/`SAVEPOINT`. When false there is nothing to
+   * roll back, only a client to drop.
+   * @param err - The failure being cleaned up after, used as the release reason.
+   */
+  private async abandonTransactionLevel(
+    client: PoolClient,
+    nextDepth: number,
+    begun: boolean,
+    err: unknown
+  ): Promise<void> {
+    const releaseError = err instanceof Error ? err : true;
+
+    if (begun) {
+      try {
+        await client.query(nextDepth === 1 ? 'ROLLBACK' : 'ROLLBACK TO SAVEPOINT sp' + nextDepth);
+      } catch (rollbackErr) {
+        getLogger().warn('Error rolling back abandoned transaction level', {
+          rollbackErr: normalizeErrorString(rollbackErr),
+          originalErr: normalizeErrorString(err),
+        });
+        // The session is unusable, so drop it even for a savepoint, where an intact outer transaction
+        // would otherwise keep the client.
+        this.releaseConnection(releaseError);
+        return;
+      }
+    }
+
+    if (nextDepth === 1) {
+      this.transactionIsolationLevel = undefined;
+      // No-op unless the tracker was already started; keeps a rollup from leaking into the next
+      // transaction on this connection.
+      this.accessTracker.finishTransaction('rolled_back');
+      // No transaction remains, so drop the client with the original error rather than returning a
+      // questionable session to the pool. A savepoint leaves the outer transaction's client alone.
+      this.releaseConnection(releaseError);
+    }
   }
 
   private async commitTransaction(txScope: Scope): Promise<void> {
@@ -633,6 +752,7 @@ export class RepositoryConnection implements Disposable {
 
         this.transactionIsolationLevel = undefined;
         this.releaseConnection();
+        this.accessTracker.finishTransaction('committed');
       } else {
         assert(this.currentScope.kind === 'savepoint');
         assert(this.currentScope.parent.kind !== 'root');
@@ -692,7 +812,9 @@ export class RepositoryConnection implements Disposable {
           this.currentScope = this.currentScope.parent;
         }
         this.transactionIsolationLevel = undefined;
-
+        // The transaction died as a whole, so the normal commit/rollback path never runs. Emit the
+        // rolled_back record here so a mixed-access transaction is still surfaced on this path.
+        this.accessTracker.finishTransaction('rolled_back');
         // Pass the original triggering error so the client is released with the right root cause.
         this.releaseConnection(error);
         return;
@@ -709,6 +831,7 @@ export class RepositoryConnection implements Disposable {
       if (isOuter) {
         this.transactionIsolationLevel = undefined;
         this.releaseConnection(error);
+        this.accessTracker.finishTransaction('rolled_back');
       }
     });
   }
@@ -742,9 +865,9 @@ export class RepositoryConnection implements Disposable {
     }
   }
 
-  private assertOwnsClient(): void {
+  private assertOwnsClient(errorMessage?: string): void {
     if (!this.ownsClient) {
-      throw new Error('Does not own database client');
+      throw new Error(errorMessage ?? 'Does not own database client');
     }
   }
 

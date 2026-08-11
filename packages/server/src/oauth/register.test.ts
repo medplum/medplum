@@ -29,7 +29,7 @@ describe('OAuth2 register', () => {
 
   test('Missing redirect_uri', async () => {
     const res = await request(app).post('/oauth2/register').type('json').send({});
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Redirect URI is required');
   });
@@ -41,7 +41,7 @@ describe('OAuth2 register', () => {
       .send({
         redirect_uris: ['https://unknown.example.com/callback'],
       });
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid redirect URI');
   });
@@ -53,7 +53,7 @@ describe('OAuth2 register', () => {
       .send({
         redirect_uris: ['https://example.com/callback'],
       });
-    expect(res.status).toBe(201);
+    expect(res).toHaveStatus(201);
     expect(res.body.client_id).toBe('example');
     expect(res.body.client_secret).toBeUndefined();
     expect(res.body.client_id_issued_at).toBeDefined();

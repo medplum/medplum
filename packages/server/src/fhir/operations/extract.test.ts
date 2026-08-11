@@ -370,7 +370,7 @@ describe('QuestionnaireResponse/$extract', () => {
       .get(`/fhir/R4/QuestionnaireResponse/${response.id}/$extract`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
@@ -474,7 +474,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
@@ -572,7 +572,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
@@ -597,7 +597,7 @@ describe('QuestionnaireResponse/$extract', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'questionnaire', resource: questionnaire }],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -619,7 +619,7 @@ describe('QuestionnaireResponse/$extract', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'questionnaire-response', resource: { ...response, questionnaire: undefined } }],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -644,7 +644,7 @@ describe('QuestionnaireResponse/$extract', () => {
           },
         ],
       } satisfies Parameters);
-    expect(res2.status).toBe(400);
+    expect(res2).toHaveStatus(400);
     expect(res2.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -692,7 +692,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: response },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -734,7 +734,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: response },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
@@ -772,7 +772,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: response },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -807,7 +807,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: response },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [
@@ -849,7 +849,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: response },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
@@ -861,7 +861,7 @@ describe('QuestionnaireResponse/$extract', () => {
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(batch);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const patient = await repo.readResource<Patient>('Patient', id);
     expect(patient.gender).toBe('unknown');
@@ -954,7 +954,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: r },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 
@@ -968,7 +968,7 @@ describe('QuestionnaireResponse/$extract', () => {
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(batch);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
     const result = res2.body as Bundle;
     expect(result.entry?.map((e) => e.response?.status)).toStrictEqual(['201']);
   });
@@ -1081,7 +1081,7 @@ describe('QuestionnaireResponse/$extract', () => {
           { name: 'questionnaire-response', resource: response },
         ],
       } satisfies Parameters);
-    expect(res.status).toBe(200);
+    expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toBe('Bundle');
     const batch = res.body as Bundle;
 

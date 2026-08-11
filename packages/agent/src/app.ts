@@ -60,7 +60,8 @@ import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { DurableQueue } from './queue/durable-queue';
 import { RetentionSweeper } from './queue/retention';
-import type { ChannelQueueWorker } from './queue/worker';
+import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
+import { isRetryMode, parseDispatchCallback } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
@@ -145,6 +146,13 @@ export class App {
   private config: Agent | undefined;
   private lastHeartbeatSentTime: number = -1;
   private durableQueue: DurableQueue | undefined;
+  // Agent-wide channelRetryMode / channelAutoRetry* settings; fields left undefined
+  // fall through to DEFAULT_RETRY_POLICY when channels resolve their per-channel policy.
+  private channelRetrySettings: AgentRetryDefaults = {};
+  // Agent-wide logical-channel defaults; an endpoint URL param overrides each when
+  // a channel resolves its config. Undefined = not set (falls through to the default).
+  private channelMaxWorkers: number | undefined;
+  private channelLogicalChannelKey: string | undefined;
   private retentionSweeper: RetentionSweeper | undefined;
   // Whether this process owns the `medplum-agent` PID, i.e. it is the sole agent that should
   // touch the data plane. A normally-started agent is primary from the outset (main.ts creates
@@ -407,9 +415,9 @@ export class App {
             this.notLiveHeartbeats = 0;
             this.outstandingHeartbeats = 0;
             this.startWebSocketWorker();
-            // Wake the channel queue workers — their loops idle (without
-            // claiming rows) while the connection is down.
-            this.forEachChannelWorker((worker) => worker.notify());
+            // Wake each channel's dispatcher — they idle (without claiming rows)
+            // while the connection is down.
+            this.notifyChannelDispatchers();
             this.log.info('Successfully connected to Medplum server');
             break;
           case 'agent:heartbeat:request':
@@ -562,6 +570,25 @@ export class App {
       (setting) => setting.name === 'queueSweepIntervalSecs'
     )?.valueInteger;
 
+    // Agent-wide auto-retry defaults. Channels layer their endpoint URL params
+    // (retryMode, autoRetryBaseDelayMs, ...) over these when resolving their
+    // RetryPolicy in configureHl7ServerAndConnections.
+    this.channelRetrySettings = {
+      mode: this.parseChannelRetryModeSetting(agent),
+      baseDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBaseDelayMs')?.valueInteger,
+      maxDelayMs: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxDelayMs')?.valueInteger,
+      maxAttempts: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryMaxAttempts')?.valueInteger,
+      backoffMultiplier: agent?.setting?.find((setting) => setting.name === 'channelAutoRetryBackoffMultiplier')
+        ?.valueDecimal,
+    };
+
+    // Agent-wide logical-channel defaults; channels layer their endpoint URL
+    // params (maxWorkers, logicalChannelKey) over these when resolving config.
+    this.channelMaxWorkers = agent?.setting?.find((setting) => setting.name === 'channelMaxWorkers')?.valueInteger;
+    this.channelLogicalChannelKey = agent?.setting?.find(
+      (setting) => setting.name === 'channelLogicalChannelKey'
+    )?.valueString;
+
     // If the keepAlive setting changed, we need to reset the pools we have
     if (this.keepAlive !== keepAlive) {
       const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
@@ -700,12 +727,12 @@ export class App {
    * Called by the {@link DurableQueue} dispatch-lease loop the first time we take the lease.
    *
    * This is the single point that runs `recoverOnStartup` and spins up the
-   * channel workers. Both depend on us being the only writer — running them at
-   * raw queue-open time would race with any peer that still holds the lease.
+   * channel worker pools. Both depend on us being the only writer — running them
+   * at raw queue-open time would race with any peer that still holds the lease.
    *
    * Re-entrancy: if we lose and regain the lease later, this fires again. The
    * recovery sweep is idempotent (no `claimed`/`inflight` rows means no work), and
-   * `maybeStartWorker` is a no-op if the worker is already running.
+   * `maybeStartWorkers` only tops the pool back up to `maxWorkers`.
    */
   private onBecameQueueLeader(): void {
     const queue = this.durableQueue;
@@ -771,6 +798,42 @@ export class App {
    */
   getDurableQueue(): DurableQueue | undefined {
     return this.durableQueue;
+  }
+
+  /** @returns The agent-wide channelRetryMode / channelAutoRetry* settings, used as per-channel policy defaults. */
+  getChannelRetrySettings(): AgentRetryDefaults {
+    return this.channelRetrySettings;
+  }
+
+  /** @returns The agent-wide `channelMaxWorkers` setting (per-channel worker-pool default), or undefined when unset. */
+  getChannelMaxWorkers(): number | undefined {
+    return this.channelMaxWorkers;
+  }
+
+  /** @returns The agent-wide `channelLogicalChannelKey` spec (per-channel partition default), or undefined when unset. */
+  getChannelLogicalChannelKey(): string | undefined {
+    return this.channelLogicalChannelKey;
+  }
+
+  /**
+   * Reads and validates the agent-wide `channelRetryMode` setting.
+   * @param agent - The agent config being applied.
+   * @returns The configured {@link RetryMode}, or undefined when unset (falls
+   *   through to the endpoint param / built-in default) or invalid (warns).
+   */
+  private parseChannelRetryModeSetting(agent: Agent | undefined): AgentRetryDefaults['mode'] {
+    const rawMode = agent?.setting?.find((setting) => setting.name === 'channelRetryMode')?.valueString;
+    if (rawMode === undefined) {
+      return undefined;
+    }
+    const normalized = rawMode.toLowerCase();
+    if (isRetryMode(normalized)) {
+      return normalized;
+    }
+    this.log.warn(
+      `Invalid channelRetryMode setting '${rawMode}'; expected 'none', 'normal', or 'guaranteed'. Ignoring.`
+    );
+    return undefined;
   }
 
   getStats(): AgentStats {
@@ -1207,18 +1270,18 @@ export class App {
       return false;
     }
     const channel = this.channels.get(response.channel);
-    if (!(channel instanceof AgentHl7Channel) || !channel.worker) {
+    if (!(channel instanceof AgentHl7Channel)) {
       return false;
     }
-    // This channel is owned end-to-end by its durable-queue worker: when the
-    // queue is on, inbound messages never use the legacy in-memory path, so
-    // their responses must not either. Consume the response here unconditionally.
-    // If the worker has no matching in-flight row — e.g. a late response that
-    // arrived after the response timeout already errored/requeued the row, or
-    // after a requeue/worker stop cleared the pending dispatch — onServerResponse
-    // logs and drops it. Returning true regardless prevents it from falling
-    // through to addToHl7Queue, which would re-send a stale ACK to the source.
-    channel.worker.onServerResponse(response);
+    // When the durable queue is on, an HL7 channel is owned end-to-end by its
+    // worker pool: inbound messages never use the legacy in-memory path, so their
+    // responses must not either. Consume the response unconditionally, WITHOUT
+    // testing the pool size — an empty pool (workers stepped down on a lease loss)
+    // would otherwise let a late response fall through to addToHl7Queue and re-send
+    // a stale ACK to the source. routeServerResponse hands it to the worker owning
+    // the callback, and logs and drops it when none does (a row that already
+    // settled/requeued, or an empty pool with no owner at all).
+    channel.routeServerResponse(response);
     return true;
   }
 
@@ -1255,9 +1318,29 @@ export class App {
   }
 
   /**
-   * Invokes `fn` for every channel that currently has a durable-queue worker running.
+   * Wakes every channel's dispatcher, collecting failures so one throwing channel
+   * can't stop the rest from being notified.
+   */
+  private notifyChannelDispatchers(): void {
+    const errors: Error[] = [];
+    for (const channel of this.channels.values()) {
+      if (channel instanceof AgentHl7Channel) {
+        try {
+          channel.notifyWorkers();
+        } catch (err) {
+          errors.push(err as Error);
+        }
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to notify dispatchers for ${errors.length} channel(s)`, { cause: errors });
+    }
+  }
+
+  /**
+   * Invokes `fn` for every durable-queue dispatch slot across every channel's pool.
    *
-   * Collects any failures so one worker throwing can't stop `fn` from reaching the
+   * Collects any failures so one slot throwing can't stop `fn` from reaching the
    * rest, then surfaces them together as an aggregate error with the collected
    * errors as its `cause`.
    * @param fn - Callback applied to each running {@link ChannelQueueWorker}.
@@ -1265,11 +1348,15 @@ export class App {
   private forEachChannelWorker(fn: (worker: ChannelQueueWorker) => void): void {
     const errors: Error[] = [];
     for (const channel of this.channels.values()) {
-      if (channel instanceof AgentHl7Channel && channel.worker) {
-        try {
-          fn(channel.worker);
-        } catch (err) {
-          errors.push(err as Error);
+      if (channel instanceof AgentHl7Channel) {
+        // allWorkers, not workers: a worker still draining after a pool shrink can
+        // own an in-flight dispatch, so it must also see disconnect/notify events.
+        for (const worker of channel.allWorkers) {
+          try {
+            fn(worker);
+          } catch (err) {
+            errors.push(err as Error);
+          }
         }
       }
     }
@@ -1666,11 +1753,19 @@ export class App {
     // marker can never leave bytes on the wire recorded as `claimed`, since we
     // never reach the send. Keyed by callback; a no-op for legacy (non-durable)
     // sends and for any non-transmit frame, which just send.
-    const callback = message.type === 'agent:transmit:request' ? message.callback : undefined;
-    if (callback && this.durableQueue) {
+    //
+    // `message.callback` is the WIRE-level callback — for a durable dispatch it's
+    // `{callbackId}#{attempt}` (see buildDispatchCallback in queue/worker.ts), not
+    // the row's stable `callback_id` column, so it must be unwrapped before
+    // `markSent` (which is keyed by `callback_id`) can find the row. A legacy
+    // (non-durable) transmit's plain callback never reaches here — `durableQueue`
+    // is only set when every channel is using the durable path.
+    const wireCallback = message.type === 'agent:transmit:request' ? message.callback : undefined;
+    const callbackId = wireCallback ? (parseDispatchCallback(wireCallback)?.callbackId ?? wireCallback) : undefined;
+    if (callbackId && this.durableQueue) {
       const durableQueue = this.durableQueue;
       durableQueue.runInTransaction(() => {
-        durableQueue.markSent(callback);
+        durableQueue.markSent(callbackId);
         ws.send(payload);
       });
     } else {

@@ -21,7 +21,6 @@ import type {
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, render, screen, userEvent } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
@@ -116,11 +115,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders canonical', async () => {
-    await setup(
-      <MemoryRouter>
-        <ResourcePropertyDisplay propertyType={PropertyType.canonical} value="Patient/123" />
-      </MemoryRouter>
-    );
+    await setup(<ResourcePropertyDisplay propertyType={PropertyType.canonical} value="Patient/123" />);
 
     const el = screen.getByText('Patient/123');
     expect(el).toBeInTheDocument();
@@ -425,13 +420,11 @@ describe('ResourcePropertyDisplay', () => {
     };
 
     await setup(
-      <MemoryRouter>
-        <ResourcePropertyDisplay
-          property={{ ...baseProperty, type: [{ code: 'Reference' }] }}
-          propertyType={PropertyType.Reference}
-          value={value}
-        />
-      </MemoryRouter>
+      <ResourcePropertyDisplay
+        property={{ ...baseProperty, type: [{ code: 'Reference' }] }}
+        propertyType={PropertyType.Reference}
+        value={value}
+      />
     );
 
     expect(screen.getByText(value.display as string)).toBeInTheDocument();

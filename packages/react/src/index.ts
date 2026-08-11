@@ -72,12 +72,14 @@ export * from './Loading/Loading';
 export * from './Logo/Logo';
 export * from './MeasureReportDisplay/MeasureReportDisplay';
 export * from './MedplumLink/MedplumLink';
+export * from './Modal/Modal';
 export * from './MoneyDisplay/MoneyDisplay';
 export * from './MoneyInput/MoneyInput';
 export * from './NoteDisplay/NoteDisplay';
 export * from './NotificationIcon/NotificationIcon';
 export * from './OperationOutcomeAlert/OperationOutcomeAlert';
 export * from './Panel/Panel';
+export * from './PasswordInput/PasswordInput';
 export * from './PatientAccountsForm/PatientAccountsForm';
 export * from './PatientExportForm/PatientExportForm';
 export * from './PatientHeader/PatientHeader';
@@ -89,6 +91,8 @@ export * from './PatientSummary/PharmacyDialog';
 export {
   AllergiesSection,
   DemographicsSection,
+  GoalsSection,
+  ImmunizationsSection,
   InsuranceSection,
   LabsSection,
   MedicationsSection,
@@ -151,6 +155,7 @@ export * from './SmartAppLaunchLink/SmartAppLaunchLink';
 export * from './StatusBadge/StatusBadge';
 export * from './Timeline/Timeline';
 export * from './TimingInput/TimingInput';
+export * from './UnavailableNote/UnavailableNote';
 export * from './utils/app';
 export * from './utils/date';
 export * from './utils/dom';

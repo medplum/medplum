@@ -4,18 +4,13 @@ import type { Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
 import { ReferenceDisplay } from './ReferenceDisplay';
 
 const medplum = new MockClient();
 
 function setup(ui: ReactElement): void {
-  render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>{ui}</MedplumProvider>
-    </MemoryRouter>
-  );
+  render(<MedplumProvider medplum={medplum}>{ui}</MedplumProvider>);
 }
 
 describe('ReferenceDisplay', () => {

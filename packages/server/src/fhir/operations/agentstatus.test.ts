@@ -32,7 +32,7 @@ describe('Agent Status', () => {
         name: 'Test Agent',
         status: 'active',
       });
-    expect(res1.status).toBe(201);
+    expect(res1).toHaveStatus(201);
     agent = res1.body as Agent;
   });
 
@@ -44,7 +44,7 @@ describe('Agent Status', () => {
     const res1 = await request(app)
       .get(`/fhir/R4/Agent/${agent.id}/$status`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res1.status).toBe(200);
+    expect(res1).toHaveStatus(200);
 
     const parameters1 = res1.body as Parameters;
     expect(parameters1.resourceType).toBe('Parameters');
@@ -67,7 +67,7 @@ describe('Agent Status', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/Agent/${agent.id}/$status`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
+    expect(res2).toHaveStatus(200);
 
     const parameters2 = res2.body as Parameters;
     expect(parameters2.resourceType).toBe('Parameters');
@@ -91,7 +91,7 @@ describe('Agent Status', () => {
     const res = await request(app)
       .get(`/fhir/R4/Agent/${agent.id}/$status`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
@@ -121,7 +121,7 @@ describe('Agent Status', () => {
       .get('/fhir/R4/Agent/$status')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res).toHaveStatus(400);
 
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',

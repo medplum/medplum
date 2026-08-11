@@ -8,6 +8,7 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
+import { useNewInUrl } from '../../hooks/useNewInUrl';
 import { normalizeTaskSearch } from '../../utils/task-search';
 import classes from '../tasks/TasksPage.module.css';
 
@@ -18,6 +19,13 @@ export function TasksTab(): JSX.Element {
   const profile = useMedplumProfile();
   const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
   const patientRef = `Patient/${patientId}`;
+
+  const basePath = taskId ? `/Patient/${patientId}/Task/${taskId}` : `/Patient/${patientId}/Task`;
+  const {
+    isNew: isNewTask,
+    openNew: onNewTaskOpen,
+    closeNew: onNewTaskClose,
+  } = useNewInUrl(basePath, parsedSearch ? formatSearchQuery(parsedSearch) : '');
 
   useEffect(() => {
     const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search, {
@@ -31,22 +39,25 @@ export function TasksTab(): JSX.Element {
     });
 
     if (needsNavigation) {
-      navigate(`/Patient/${patientId}/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
+      navigate(`${isNewTask ? `${basePath}/new` : basePath}${formatSearchQuery(normalizedSearch)}`)?.catch(
+        console.error
+      );
     } else {
       setParsedSearch(normalizedSearch);
     }
-  }, [location, navigate, patientId, patientRef]);
+  }, [location, navigate, patientRef, isNewTask, basePath]);
 
   if (!parsedSearch) {
     return <Loading />;
   }
 
   const onNew = (task: Task): void => {
-    navigate(getTaskUri(task))?.catch(console.error);
+    navigate(`/Patient/${patientId}/Task/${task.id}${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
 
+  // Preserve the /new suffix so auto-selecting a task keeps the new task modal open.
   const getTaskUri = (task: Task): string => {
-    return `/Patient/${patientId}/Task/${task.id}${formatSearchQuery(parsedSearch)}`;
+    return `/Patient/${patientId}/Task/${task.id}${isNewTask ? '/new' : ''}${formatSearchQuery(parsedSearch)}`;
   };
 
   const onDelete = (_: Task): void => {
@@ -54,7 +65,8 @@ export function TasksTab(): JSX.Element {
   };
 
   const onChange = (search: SearchRequest): void => {
-    navigate(`/Patient/${patientId}/Task${formatSearchQuery(search)}`)?.catch(console.error);
+    // Keep the selected task open when the list search changes (pagination, filters)
+    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
   const myTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner' && f.code !== 'patient') || [];
@@ -103,6 +115,9 @@ export function TasksTab(): JSX.Element {
         onNew={onNew}
         onChange={onChange}
         getTaskUri={getTaskUri}
+        newTaskOpened={isNewTask}
+        onNewTaskOpen={onNewTaskOpen}
+        onNewTaskClose={onNewTaskClose}
         myTasksUri={
           myTasksQuery ? `/Patient/${patientId}/Task?${myTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
         }

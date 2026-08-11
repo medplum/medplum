@@ -7,3 +7,4 @@
 **/ccda/testdata/**/*
 **/mock/src/mocks/**/*.json
 **/packages/definitions/src/fhir/**/*
+packages/server/binary/**/*

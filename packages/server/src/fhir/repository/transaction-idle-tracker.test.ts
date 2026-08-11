@@ -8,6 +8,8 @@ import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import * as otelModule from '../../otel/otel';
 import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { repoAccess } from './access-tracker';
 import { RepositoryConnection } from './repository-connection';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
 
@@ -39,17 +41,20 @@ describe('TransactionIdleTracker', () => {
         release: vi.fn(),
       } as unknown as PoolClient;
       const repo = getShardSystemRepo(
-        'test-shard',
-        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+        PLACEHOLDER_SHARD_ID,
+        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
       );
       const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
       const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
       try {
-        await repo.withTransaction(async (txRepo) => {
-          const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-          await client.query('SELECT 1');
-        });
+        await repo.withTransaction(
+          async (txRepo) => {
+            const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
+            await client.query('SELECT 1');
+          },
+          { resourceTypes: 'Patient' }
+        );
 
         expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
           'BEGIN ISOLATION LEVEL REPEATABLE READ',
@@ -84,19 +89,22 @@ describe('TransactionIdleTracker', () => {
       release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      PLACEHOLDER_SHARD_ID,
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
-      await repo.withTransaction(async (txRepo) => {
-        const client = txRepo.getDatabaseClient(DatabaseMode.WRITER);
-        await new Promise<void>((resolve, reject) => {
-          client.query('SELECT 1', (err) => (err ? reject(err) : resolve()));
-        });
-      });
+      await repo.withTransaction(
+        async (txRepo) => {
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
+          await new Promise<void>((resolve, reject) => {
+            client.query('SELECT 1', (err) => (err ? reject(err) : resolve()));
+          });
+        },
+        { resourceTypes: 'Patient' }
+      );
 
       expect(client.query).toBe(query);
       expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
@@ -119,18 +127,21 @@ describe('TransactionIdleTracker', () => {
       release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      PLACEHOLDER_SHARD_ID,
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
       await expect(
-        repo.withTransaction(async () => {
-          now += 10;
-          throw new Error('work failed');
-        })
+        repo.withTransaction(
+          async () => {
+            now += 10;
+            throw new Error('work failed');
+          },
+          { resourceTypes: 'Patient' }
+        )
       ).rejects.toThrow('work failed');
 
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(TransactionIdleTracker.OTEL_TOTAL_METRIC_NAME, 10, {
@@ -174,22 +185,28 @@ describe('TransactionIdleTracker', () => {
       release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      PLACEHOLDER_SHARD_ID,
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
 
     try {
-      await repo.withTransaction(async (txRepo) => {
-        now += 30;
-        await txRepo.withTransaction(async (nestedTxRepo) => {
-          now += 20;
-          const client = nestedTxRepo.getDatabaseClient(DatabaseMode.WRITER);
-          await client.query('SELECT 1');
-        });
-        now += 10;
-      });
+      await repo.withTransaction(
+        async (txRepo) => {
+          now += 30;
+          await txRepo.withTransaction(
+            async (nestedTxRepo) => {
+              now += 20;
+              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
+              await client.query('SELECT 1');
+            },
+            { resourceTypes: 'Patient' }
+          );
+          now += 10;
+        },
+        { resourceTypes: 'Patient' }
+      );
 
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
       expect(warnSpy).not.toHaveBeenCalledWith(TransactionIdleTracker.LOG_HIGH_IDLE_TIME_MSG, expect.anything());
@@ -197,15 +214,21 @@ describe('TransactionIdleTracker', () => {
       now = 0;
       query.mockClear();
 
-      await repo.withTransaction(async (txRepo) => {
-        now += 20;
-        await txRepo.withTransaction(async (nestedTxRepo) => {
-          const client = nestedTxRepo.getDatabaseClient(DatabaseMode.WRITER);
-          now += 5;
-          await client.query('SELECT 1');
-        });
-        now += 50;
-      });
+      await repo.withTransaction(
+        async (txRepo) => {
+          now += 20;
+          await txRepo.withTransaction(
+            async (nestedTxRepo) => {
+              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
+              now += 5;
+              await client.query('SELECT 1');
+            },
+            { resourceTypes: 'Patient' }
+          );
+          now += 50;
+        },
+        { resourceTypes: 'Patient' }
+      );
 
       expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
         'BEGIN ISOLATION LEVEL REPEATABLE READ',

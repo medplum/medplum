@@ -304,6 +304,7 @@ describe('Bundle tests', () => {
           source: 'https://example.com/source',
           tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
           versionId: '55555555-5555-5555-5555-555555555555',
+          deleted: false,
         },
         active: true,
       };
@@ -317,6 +318,7 @@ describe('Bundle tests', () => {
       const removedKeys = ['project', 'versionId', 'lastUpdated', 'compartment', 'author'];
       for (const key of Object.keys(getDataType('Meta').elements)) {
         // make sure every possible element is defined in the test
+        expect(meta).toMatchObject({ [key]: expect.anything() });
         expect((meta as any)[key]).toBeDefined();
 
         if (removedKeys.includes(key)) {

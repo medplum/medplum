@@ -83,9 +83,9 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'scriptsure', url: 'scriptsure', label: 'ScriptSure' },
   {
-    id: 'labs',
-    url: 'ServiceRequest',
-    label: 'Labs',
+    id: 'orders',
+    url: 'DiagnosticReport',
+    label: 'Orders',
   },
   {
     id: 'devices',

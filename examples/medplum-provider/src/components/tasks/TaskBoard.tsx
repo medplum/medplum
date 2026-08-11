@@ -1,32 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Center,
-  Divider,
-  Flex,
-  Group,
-  Pagination,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
-import type { SearchRequest } from '@medplum/core';
+import { ActionIcon, Flex, Text, Tooltip } from '@mantine/core';
+import type { SearchRequest, WithId } from '@medplum/core';
 import { Operator, parseSearchRequest } from '@medplum/core';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { ListWithDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useControllableDisclosure } from '../../hooks/useControllableDisclosure';
 import { showErrorNotification } from '../../utils/notifications';
 import { NewTaskModal } from './NewTaskModal';
-import classes from './TaskBoard.module.css';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { TaskFilterMenu } from './TaskFilterMenu';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
@@ -48,6 +33,9 @@ interface FilterState {
  * @property getTaskUri - The function to call to get the URI of a task.
  * @property myTasksUri - The URI for the my tasks search request.
  * @property allTasksUri - The URI for the all tasks search request.
+ * @property newTaskOpened - Controlled open state for the new task modal. When provided, use `onNewTaskOpen` and `onNewTaskClose` to update it.
+ * @property onNewTaskOpen - Called when the user clicks the new task button. Required when `newTaskOpened` is provided.
+ * @property onNewTaskClose - Called when the new task modal is closed. Required when `newTaskOpened` is provided.
  * @returns The TaskBoard component.
  */
 interface TaskBoardProps {
@@ -59,6 +47,9 @@ interface TaskBoardProps {
   getTaskUri: (task: Task) => string;
   myTasksUri: string;
   allTasksUri: string;
+  newTaskOpened?: boolean;
+  onNewTaskOpen?: () => void;
+  onNewTaskClose?: () => void;
 }
 
 export function TaskBoard({
@@ -70,21 +61,36 @@ export function TaskBoard({
   getTaskUri,
   myTasksUri,
   allTasksUri,
+  newTaskOpened,
+  onNewTaskOpen,
+  onNewTaskClose,
 }: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
+  const [tasks, setTasks] = useState<WithId<Task>[]>([]);
+  const [selectedTask, setSelectedTask] = useState<WithId<Task> | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [memoizedQuery, setMemoizedQuery] = useState(query);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const [newTaskModalOpened, setNewTaskModalOpened] = useState(false);
+  const [newTaskModalOpened, { open: openNewTaskModal, close: closeNewTaskModal }] = useControllableDisclosure({
+    opened: newTaskOpened,
+    onOpen: onNewTaskOpen,
+    onClose: onNewTaskClose,
+  });
   const [total, setTotal] = useState<number | undefined>(undefined);
   const requestIdRef = useRef(0);
-  const fetchingRef = useRef(false);
 
   const [filters, setFilters] = useState<FilterState>({
     performerType: undefined,
   });
+
+  // Adjust state during render (useResourceBoard pattern) so a new query shows the
+  // skeleton on that same render — the auto-select effect never acts on the previous
+  // query's tasks (e.g. selecting the old tab's first task).
+  if (query !== memoizedQuery) {
+    setMemoizedQuery(query);
+    setLoading(true);
+  }
 
   // Parse pagination and status filters from query
   const searchParams = useMemo(() => new URLSearchParams(query), [query]);
@@ -104,27 +110,19 @@ export function TaskBoard({
   );
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    if (fetchingRef.current) {
-      return;
-    }
-    fetchingRef.current = true;
     const currentRequestId = ++requestIdRef.current;
 
     try {
-      const bundle = await medplum.search('Task', query, { cache: 'no-cache' });
+      const tasks = await medplum.searchResources('Task', memoizedQuery, { cache: 'no-cache' });
 
       if (currentRequestId !== requestIdRef.current) {
         return;
       }
 
-      let results: Task[] = [];
+      let results = [...tasks];
 
-      if (bundle.entry) {
-        results = bundle.entry.map((entry) => entry.resource as Task).filter((r): r is Task => r !== undefined);
-      }
-
-      if (bundle.total !== undefined) {
-        setTotal(bundle.total);
+      if (tasks.bundle.total !== undefined) {
+        setTotal(tasks.bundle.total);
       }
 
       const allPerformerTypes = results.flatMap((task) => task.performerType || []);
@@ -142,34 +140,20 @@ export function TaskBoard({
         throw error;
       }
     } finally {
-      fetchingRef.current = false;
-    }
-  }, [medplum, filters.performerType, query]);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchTasks()
-      .catch(showErrorNotification)
-      .finally(() => setLoading(false));
-  }, [fetchTasks]);
-
-  // Auto-select first task when list loads and no task is selected, or when selected task is not in list
-  useEffect(() => {
-    if (!loading && tasks.length > 0) {
-      const selectedTaskInList = selectedTaskId && tasks.some((task) => task.id === selectedTaskId);
-      if (!selectedTaskInList) {
-        const firstTask = tasks[0];
-        if (firstTask?.id) {
-          navigate(getTaskUri(firstTask))?.catch(console.error);
-        }
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
       }
     }
-  }, [loading, tasks, selectedTaskId, navigate, getTaskUri]);
+  }, [medplum, filters.performerType, memoizedQuery]);
+
+  useEffect(() => {
+    fetchTasks().catch(showErrorNotification);
+  }, [fetchTasks]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
       if (selectedTaskId) {
-        const task = tasks.find((task: Task) => task.id === selectedTaskId);
+        const task = tasks.find((task) => task.id === selectedTaskId);
         if (task) {
           setSelectedTask(task);
         } else {
@@ -234,104 +218,61 @@ export function TaskBoard({
     setFilters((prev) => ({ ...prev, performerType: undefined }));
   };
 
-  return (
-    <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md">
-                <Tabs
-                  value={isMyTasks ? 'my' : 'all'}
-                  onChange={(value) => {
-                    navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
-                  }}
-                  variant="unstyled"
-                  className="pill-tabs"
-                >
-                  <Tabs.List>
-                    <Tabs.Tab value="my">My Tasks</Tabs.Tab>
-                    <Tabs.Tab value="all">All Tasks</Tabs.Tab>
-                  </Tabs.List>
-                </Tabs>
+  const tabs = [
+    { value: 'my', label: 'My Tasks', uri: myTasksUri },
+    { value: 'all', label: 'All Tasks', uri: allTasksUri },
+  ];
 
-                <Group gap="xs">
-                  <TaskFilterMenu
-                    statuses={selectedStatuses}
-                    priorities={selectedPriorities}
-                    performerType={filters.performerType}
-                    performerTypes={performerTypes}
-                    onFilterChange={handleFilterChange}
-                    onClearAllFilters={handleClearAllFilters}
-                  />
-                  <Tooltip label="New Task" position="bottom" openDelay={500}>
-                    <ActionIcon
-                      radius="xl"
-                      variant="filled"
-                      color="blue"
-                      size={32}
-                      onClick={() => setNewTaskModalOpened(true)}
-                    >
-                      <IconPlus size={16} />
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
-              </Flex>
-            </Paper>
-
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <ScrollArea style={{ flex: 1 }} id="task-list-scrollarea">
-                {loading && <TaskListSkeleton />}
-                {!loading && tasks.length === 0 && <EmptyTasksState />}
-                {!loading &&
-                  tasks.length > 0 &&
-                  tasks.map((task, index) => (
-                    <React.Fragment key={task.id}>
-                      <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri} />
-                      {index < tasks.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-              </ScrollArea>
-              {!loading && total !== undefined && total > itemsPerPage && (
-                <Box p="md">
-                  <Center>
-                    <Pagination
-                      value={currentPage}
-                      total={Math.ceil(total / itemsPerPage)}
-                      onChange={(page) => {
-                        const offset = (page - 1) * itemsPerPage;
-                        onChange({
-                          ...currentSearch,
-                          offset,
-                        });
-                      }}
-                      size="sm"
-                      siblings={1}
-                      boundaries={1}
-                    />
-                  </Center>
-                </Box>
-              )}
-            </Paper>
-          </Flex>
-        </Box>
-
-        {selectedTask ? (
-          <TaskDetailPanel task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
-        ) : (
-          <Flex direction="column" h="100%" style={{ flex: 1 }}>
-            <TaskSelectEmpty />
-          </Flex>
-        )}
-      </Flex>
-
-      <NewTaskModal
-        opened={newTaskModalOpened}
-        onClose={() => setNewTaskModalOpened(false)}
-        onTaskCreated={handleNewTaskCreated}
+  const headerActions = (
+    <>
+      <TaskFilterMenu
+        statuses={selectedStatuses}
+        priorities={selectedPriorities}
+        performerType={filters.performerType}
+        performerTypes={performerTypes}
+        onFilterChange={handleFilterChange}
+        onClearAllFilters={handleClearAllFilters}
       />
-    </Box>
+      <Tooltip label="New Task" position="bottom" openDelay={500}>
+        <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openNewTaskModal}>
+          <IconPlus size={16} />
+        </ActionIcon>
+      </Tooltip>
+    </>
+  );
+
+  const selectedKey = selectedTask?.id ?? selectedTaskId;
+
+  return (
+    <>
+      <ListWithDetailPane<WithId<Task>>
+        items={tasks}
+        loading={loading}
+        selectedKey={selectedKey}
+        onSelectFirst={(task) => navigate(getTaskUri(task), { replace: true })?.catch(console.error)}
+        renderItem={(task) => <TaskListItem task={task} getTaskUri={getTaskUri} />}
+        emptyList={<EmptyTasksState />}
+        tabs={tabs}
+        activeTab={isMyTasks ? 'my' : 'all'}
+        headerActions={headerActions}
+        selected={selectedTask}
+        renderDetail={(task) => (
+          <TaskDetailPanel task={task} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
+        )}
+        emptyDetail={<TaskSelectEmpty />}
+        refresh={fetchTasks}
+        page={currentPage}
+        pageCount={total !== undefined ? Math.ceil(total / itemsPerPage) : 0}
+        onPageChange={(page) => {
+          onChange({
+            ...currentSearch,
+            offset: (page - 1) * itemsPerPage,
+          });
+        }}
+      />
+
+      <NewTaskModal opened={newTaskModalOpened} onClose={closeNewTaskModal} onTaskCreated={handleNewTaskCreated} />
+    </>
   );
 }
 
@@ -342,32 +283,6 @@ function EmptyTasksState(): JSX.Element {
         No tasks available.
       </Text>
     </Flex>
-  );
-}
-
-const SKELETON_WIDTHS = [
-  ['85%', '60%', '72%'],
-  ['70%', '80%', '55%'],
-  ['92%', '50%', '65%'],
-  ['78%', '68%', '58%'],
-  ['88%', '45%', '75%'],
-  ['74%', '70%', '62%'],
-];
-
-function TaskListSkeleton(): JSX.Element {
-  return (
-    <Stack gap="md" p="md">
-      {SKELETON_WIDTHS.map((widths, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={widths[0]} />
-            <Skeleton height={14} width={widths[1]} />
-            <Skeleton height={14} width={widths[2]} />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
   );
 }
 

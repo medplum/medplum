@@ -64,6 +64,15 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
 }
 
 /**
+ * Returns true if email sending is configured on this server (SMTP or AWS SES).
+ * @returns True if email is configured.
+ */
+export function isEmailConfigured(): boolean {
+  const config = getConfig();
+  return !!(config.smtp || config.emailProvider === 'awsses');
+}
+
+/**
  * Returns the from address to use.
  * If the user specified a from address, it must be an approved sender.
  * When project SMTP is active, approval is validated only against the project's approved sender list,
@@ -92,6 +101,39 @@ export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpC
   }
 
   return defaultFrom;
+}
+
+/**
+ * Returns the app name that a project has configured for user-facing content, or
+ * undefined if the project has not been white-labeled. Controlled by the
+ * `appName` project setting. Used for the email sender display name below, and
+ * by MFA for email content and the authenticator app issuer.
+ * @param project - The project to read the setting from.
+ * @returns The configured app name, or undefined if unset or blank.
+ */
+export function getProjectAppName(project: Project | undefined): string | undefined {
+  return project?.setting?.find((s) => s.name === 'appName')?.valueString?.trim() || undefined;
+}
+
+/**
+ * Adds a display name to a from address so recipients see the project's app name in
+ * their inbox list rather than a bare address. Returns nodemailer's object form
+ * so it handles header quoting and encoding of the name.
+ *
+ * Only used when the project sends through its own SMTP relay: a display name
+ * that disagrees with the sender domain is a phishing signal that mail clients
+ * flag, so a project's app name is never attached to the server's own sender.
+ * Addresses that already carry a display name are left alone, letting a project
+ * override this by putting one in `smtpFromAddress`.
+ * @param fromAddress - The resolved from address.
+ * @param appName - The project's app name, if it has one.
+ * @returns The from address, with a display name when one applies.
+ */
+export function applyFromDisplayName(fromAddress: string, appName: string | undefined): string | Address {
+  if (!appName || fromAddress.includes('<')) {
+    return fromAddress;
+  }
+  return { name: appName, address: fromAddress };
 }
 
 /**
