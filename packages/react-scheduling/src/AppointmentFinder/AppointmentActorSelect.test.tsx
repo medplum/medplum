@@ -47,6 +47,7 @@ function Harness(props: {
   initial?: readonly ActorRequirement[];
   allowAlternatives?: boolean;
   disabled?: boolean;
+  error?: string;
   onChange?: (value: ActorRequirement[]) => void;
 }): JSX.Element {
   const [value, setValue] = useState<readonly ActorRequirement[]>(props.initial ?? []);
@@ -56,6 +57,7 @@ function Harness(props: {
       value={value}
       allowAlternatives={props.allowAlternatives}
       disabled={props.disabled}
+      error={props.error}
       onChange={(next) => {
         setValue(next);
         props.onChange?.(next);
@@ -85,16 +87,27 @@ async function pick(name: string): Promise<void> {
 }
 
 // Closes the list, leaving only what was chosen in the document.
-function closeList(row = 'Provider'): void {
+function closeList(): void {
   act(() => {
-    fireEvent.blur(screen.getByRole('textbox', { name: row }));
+    fireEvent.blur(screen.getByRole('textbox', { name: 'Provider' }));
   });
 }
 
-function addRow(label = 'provider'): void {
-  act(() => {
-    fireEvent.click(screen.getByRole('button', { name: `Add ${label}` }));
+// Narrows an open list by typing into the row it belongs to.
+async function search(text: string): Promise<void> {
+  await act(async () => {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Provider' }), { target: { value: text } });
   });
+}
+
+function addRow(): void {
+  act(() => {
+    fireEvent.click(screen.getByRole('button', { name: 'Add provider' }));
+  });
+}
+
+function expectCannotAdd(): void {
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
 }
 
 describe('AppointmentActorSelect', () => {
@@ -182,14 +195,14 @@ describe('AppointmentActorSelect', () => {
 
     // Which requirement an empty row stood for would be anyone's guess, so the
     // row that exists has to be filled before it can be joined to another.
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
+    expectCannotAdd();
   });
 
   test('Will not offer a row with nobody left to fill it', () => {
     setup({ initial: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']) });
 
     // Both providers are asked for already, and an actor is only asked for once.
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
+    expectCannotAdd();
   });
 
   test('Drops a row, and stops numbering when one is left', async () => {
@@ -253,10 +266,11 @@ describe('AppointmentActorSelect', () => {
     // what the row says follows the value rather than the prop.
     setup({ initial: [{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }] });
 
-    // `OR` between the names carries this on screen, and is drawn on the chips,
-    // which is all jsdom can see of it: the word itself is generated content.
+    // On screen the choice is the `OR` between the names, drawn on the chips —
+    // which is all jsdom can see of it, the word itself being generated content.
     expect(screen.getByText('Dr. Tunde Okafor').closest('.alternativePill')).not.toBeNull();
-    // Nothing says it in the layout, so it has to be said to a screen reader.
+    // Generated content is not dependably announced, so the choice is stated
+    // again somewhere a screen reader is certain to reach it.
     expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveAccessibleDescription('Any one of these will do.');
   });
 
@@ -266,9 +280,7 @@ describe('AppointmentActorSelect', () => {
     openList();
     expect(await screen.findByRole('option', { name: 'Dr. Maya Rivera' })).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.change(screen.getByRole('textbox', { name: 'Provider' }), { target: { value: 'anaesthetics' } });
-    });
+    await search('anaesthetics');
 
     expect(screen.getByRole('option', { name: 'Dr. Tunde Okafor' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Dr. Maya Rivera' })).not.toBeInTheDocument();
@@ -278,22 +290,13 @@ describe('AppointmentActorSelect', () => {
     setup();
 
     openList();
-    await act(async () => {
-      fireEvent.change(screen.getByRole('textbox', { name: 'Provider' }), { target: { value: 'radiology' } });
-    });
+    await search('radiology');
 
     expect(screen.getByText('No providers found')).toBeInTheDocument();
   });
 
   test('Marks the rows an error is about, saying it only once', () => {
-    render(
-      <AppointmentActorSelect
-        group={PROVIDERS}
-        value={toActorRequirements(['schedule-dr-rivera'])}
-        error="Choose at least one provider"
-        onChange={vi.fn()}
-      />
-    );
+    setup({ initial: toActorRequirements(['schedule-dr-rivera']), error: 'Choose at least one provider' });
 
     // A message under a field that looks untouched is easy to miss, and leaves a
     // screen reader with nothing to go on: the row has to report itself invalid.
@@ -302,15 +305,17 @@ describe('AppointmentActorSelect', () => {
     expect(screen.getAllByText('Choose at least one provider')).toHaveLength(1);
   });
 
-  test('Marks a role that has to be filled, and says when one may be left alone', () => {
+  test('Marks a role that has to be filled', () => {
     setup();
 
     // The asterisk is the only thing a required role adds, so the row that
     // stands for the obligation has to carry it for a screen reader too.
     expect(screen.getByText('*')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveAttribute('aria-required', 'true');
+  });
 
-    render(<Harness group={ROOMS} />);
+  test('Says when a role may be left alone', () => {
+    setup({ group: ROOMS });
 
     expect(screen.getByText('Optional. Leave empty to search without a room.')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Room' })).not.toHaveAttribute('aria-required');
@@ -319,7 +324,7 @@ describe('AppointmentActorSelect', () => {
   test('Takes nothing while disabled', () => {
     setup({ initial: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']), disabled: true });
 
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Add provider' }).disabled).toBe(true);
+    expectCannotAdd();
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Remove Dr. Maya Rivera' }).disabled).toBe(true);
     expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Provider 1' }).disabled).toBe(true);
   });

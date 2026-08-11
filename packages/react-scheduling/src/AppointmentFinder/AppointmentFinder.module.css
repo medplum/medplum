@@ -5,11 +5,9 @@
 }
 
 /* `AND` between two rows and `OR` between two chips are the field's two
-   operators, so they are lettered together: each has to read as the counterpart
-   of the other rather than as a label. Size and colour come from Mantine props
-   on the `AND`, which is a real element; only what a prop cannot say is here. */
+   operators */
 .joiner,
-.alternativePill:not(:first-child)::before {
+.alternativePill + .alternativePill::before {
   letter-spacing: 0.03em;
 }
 
@@ -18,27 +16,21 @@
    alternatives means. It sits in the gap rather than inside a chip, so widen the
    gap for every chip that carries one. MultiSelect renders its own pills, so
    this is reached through `classNames.pill` rather than as a child element. */
-.alternativePill {
-  position: relative;
-
+.alternativePill + .alternativePill {
   /* Room for the word, on top of the gap Pill.Group already leaves. */
   --or-gap: var(--mantine-spacing-xl);
-}
 
-.alternativePill:not(:first-child) {
+  position: relative;
   margin-inline-start: var(--or-gap);
 }
 
-.alternativePill:not(:first-child)::before {
+.alternativePill + .alternativePill::before {
   content: 'OR';
   position: absolute;
   inset-inline-end: 100%;
   top: 0;
   bottom: 0;
-  /* Pill.Group's own gap sits outside this margin, so the box has to span both
-     for the word to land halfway between the chips rather than crowding the one
-     on its right. */
-  width: calc(var(--or-gap) + var(--pg-gap, 8px));
+  width: calc(var(--or-gap) + var(--pg-gap));
   display: flex;
   align-items: center;
   justify-content: center;

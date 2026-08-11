@@ -112,8 +112,7 @@ function Field(props: {
  * Opening the list and typing searches what an actor *is* as well as what it is
  * called, so "imaging" finds Exam Room A by what it is for rather than by name.
  *
- * Every other story is a required role, so the asterisk that marks one is on
- * show throughout without a story of its own.
+ * The only optional role here; every other story fills a required one.
  * @returns The story.
  */
 export const Basic = (): JSX.Element => <Field group={ROOMS} />;
@@ -130,8 +129,8 @@ export const AAndB = (): JSX.Element => (
 AAndB.storyName = 'A and B';
 
 /**
- * Two providers in one row, so either would do. `OR` between the chips is what
- * separates this from the row above, where both are held.
+ * Two providers in one row, so either would do. `OR` between the chips is all
+ * that separates this from `A and B`, where both are held.
  *
  * Searched as two `$find` requests, one per way of resolving the row, which
  * `getActorCombinations` enumerates.
