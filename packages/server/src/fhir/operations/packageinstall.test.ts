@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, resolveId } from '@medplum/core';
 import type {
   Binary,
+  Bot,
   Bundle,
   Extension,
   OperationOutcome,
@@ -449,7 +450,10 @@ describe('PackageRelease $install', () => {
     expect(res).toHaveStatus(404);
   });
 
-  function setupBotBundle(identifier: string): Bundle {
+  // A minimal Stage 1 Bundle: one customer-side proxy Bot, which doubles as the
+  // probe for whether Stage 1 re-ran (see countBots). The setup bot is no longer
+  // part of the Bundle — it is published into the impl project instead.
+  function stage1Bundle(identifier: string): Bundle {
     return {
       resourceType: 'Bundle',
       meta: { project: project.id },
@@ -458,7 +462,7 @@ describe('PackageRelease $install', () => {
         {
           resource: {
             resourceType: 'Bot',
-            name: `Setup Bot ${identifier}`,
+            name: `Proxy Bot ${identifier}`,
             runtimeVersion: 'awslambda',
             identifier: [{ system: 'https://www.medplum.com/bots', value: identifier }],
           },
@@ -466,6 +470,33 @@ describe('PackageRelease $install', () => {
         },
       ],
     };
+  }
+
+  // Creates an impl project holding a published, version-tagged setup bot, which
+  // is how a real publisher ships a post-install hook.
+  async function publishImplProjectWithSetupBot(
+    setupBotIdentifier: string
+  ): Promise<{ implProject: WithId<Project>; setupBot: WithId<Bot> }> {
+    const systemRepo = getGlobalSystemRepo();
+    const implProject = await withTestContext(() =>
+      systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'impl-' + randomUUID(),
+        features: ['bots'],
+      })
+    );
+    const setupBot = await withTestContext(() =>
+      systemRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        meta: { project: implProject.id },
+        name: `Setup Bot ${setupBotIdentifier}`,
+        runtimeVersion: 'awslambda',
+        // Runs as the installing project admin so it can write into their project.
+        runAsUser: true,
+        identifier: [{ system: 'https://www.medplum.com/bots', value: setupBotIdentifier }],
+      })
+    );
+    return { implProject, setupBot };
   }
 
   async function publishRelease(
@@ -520,9 +551,7 @@ describe('PackageRelease $install', () => {
   }
 
   test('Stage 2 setupBot returns credentials and links impl project', async () => {
-    const implProject = await withTestContext(() =>
-      getGlobalSystemRepo().createResource<Project>({ resourceType: 'Project', name: 'impl-' + randomUUID() })
-    );
+    const { implProject, setupBot } = await publishImplProjectWithSetupBot('test-setup-a');
     const creds: OperationOutcome = {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'information', code: 'informational', details: { text: 'client_id=abc;client_secret=xyz' } }],
@@ -531,7 +560,7 @@ describe('PackageRelease $install', () => {
       .spyOn(botExecute, 'executeBot')
       .mockResolvedValue({ success: true, logResult: '', returnValue: creds });
 
-    const release = await publishRelease(setupBotBundle('test-setup-a'), {
+    const release = await publishRelease(stage1Bundle('test-proxy-a'), {
       setupBot: 'test-setup-a',
       implProject: implProject.id,
       version: '10.0.0',
@@ -548,9 +577,18 @@ describe('PackageRelease $install', () => {
 
     // setupBot invoked once with the installation + settings
     expect(execSpy).toHaveBeenCalledTimes(1);
-    const input = execSpy.mock.calls[0][0].input as { installation: PackageInstallation; settings: unknown };
+    const call = execSpy.mock.calls[0][0];
+    const input = call.input as { installation: PackageInstallation; settings: unknown };
     expect(input.installation.resourceType).toBe('PackageInstallation');
     expect(input.settings).toBeDefined();
+
+    // The bot that ran is the published impl-project bot, not a customer-side copy.
+    expect(call.bot.id).toStrictEqual(setupBot.id);
+    expect(call.bot.meta?.project).toStrictEqual(implProject.id);
+
+    // runAsUser: true, so it executes as the installing admin and writes into
+    // the customer project rather than as a non-admin bot membership.
+    expect(resolveId(call.runAs.project)).toStrictEqual(project.id);
 
     // impl project linked
     const updatedProject = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
@@ -570,8 +608,10 @@ describe('PackageRelease $install', () => {
       .mockResolvedValueOnce({ success: false, logResult: 'kaboom' })
       .mockResolvedValue({ success: true, logResult: '', returnValue: creds });
 
-    const release = await publishRelease(setupBotBundle('test-setup-b'), {
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-b');
+    const release = await publishRelease(stage1Bundle('test-proxy-b'), {
       setupBot: 'test-setup-b',
+      implProject: implProject.id,
       version: '11.0.0',
     });
 
@@ -589,7 +629,7 @@ describe('PackageRelease $install', () => {
     expect(installations[0].extension?.find((e) => e.url === PackageInstallationErrorPhaseUrl)?.valueCode).toBe(
       'setup-bot'
     );
-    expect(await countBots('test-setup-b')).toBe(1);
+    expect(await countBots('test-proxy-b')).toBe(1);
 
     // Re-invoke: Stage 1 is skipped (committed), setupBot re-runs and succeeds
     const res2 = await request(app)
@@ -600,7 +640,7 @@ describe('PackageRelease $install', () => {
     expect(res2.status).toBe(200);
 
     // Still only one bot — Stage 1 did not run a second time
-    expect(await countBots('test-setup-b')).toBe(1);
+    expect(await countBots('test-proxy-b')).toBe(1);
 
     installations = await searchInstallations('11.0.0');
     expect(installations).toHaveLength(1);
@@ -617,8 +657,10 @@ describe('PackageRelease $install', () => {
       .spyOn(botExecute, 'executeBot')
       .mockResolvedValue({ success: true, logResult: '', returnValue: creds });
 
-    const release = await publishRelease(setupBotBundle('test-setup-c'), {
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-c');
+    const release = await publishRelease(stage1Bundle('test-proxy-c'), {
       setupBot: 'test-setup-c',
+      implProject: implProject.id,
       version: '12.0.0',
     });
 
@@ -638,7 +680,7 @@ describe('PackageRelease $install', () => {
 
     // No-op short-circuits before Stage 2, so the bot ran only once
     expect(execSpy).toHaveBeenCalledTimes(1);
-    expect(await countBots('test-setup-c')).toBe(1);
+    expect(await countBots('test-proxy-c')).toBe(1);
 
     const installations = await searchInstallations('12.0.0');
     expect(installations).toHaveLength(1);
@@ -648,8 +690,68 @@ describe('PackageRelease $install', () => {
     ).toBeDefined();
   });
 
+  test('setupBot declared without an impl project is rejected', async () => {
+    const execSpy = vi.spyOn(botExecute, 'executeBot');
+
+    const release = await publishRelease(stage1Bundle('test-proxy-e'), {
+      setupBot: 'test-setup-e',
+      version: '20.0.0',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).not.toBe(200);
+    expect(res.body.issue[0].details.text).toContain('no impl project');
+    expect(execSpy).not.toHaveBeenCalled();
+
+    const installations = await searchInstallations('20.0.0');
+    expect(installations[0].status).toBe('error');
+    expect(installations[0].extension?.find((e) => e.url === PackageInstallationErrorPhaseUrl)?.valueCode).toBe(
+      'setup-bot'
+    );
+  });
+
+  test('A customer-project bot cannot impersonate the published setupBot', async () => {
+    const { implProject, setupBot } = await publishImplProjectWithSetupBot('test-setup-f');
+    const execSpy = vi
+      .spyOn(botExecute, 'executeBot')
+      .mockResolvedValue({ success: true, logResult: '', returnValue: undefined });
+
+    // A bot in the *calling* project sharing the setup bot's identifier. Resolution
+    // is scoped to the impl project, so this must be ignored rather than preferred.
+    const impostor = await withTestContext(() =>
+      getGlobalSystemRepo().createResource<Bot>({
+        resourceType: 'Bot',
+        meta: { project: project.id },
+        name: 'Impostor',
+        runtimeVersion: 'awslambda',
+        identifier: [{ system: 'https://www.medplum.com/bots', value: 'test-setup-f' }],
+      })
+    );
+
+    const release = await publishRelease(stage1Bundle('test-proxy-f'), {
+      setupBot: 'test-setup-f',
+      implProject: implProject.id,
+      version: '21.0.0',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).toBe(200);
+
+    expect(execSpy).toHaveBeenCalledTimes(1);
+    expect(execSpy.mock.calls[0][0].bot.id).toStrictEqual(setupBot.id);
+    expect(execSpy.mock.calls[0][0].bot.id).not.toStrictEqual(impostor.id);
+  });
+
   test('Concurrent in-flight install returns 409', async () => {
-    const release = await publishRelease(setupBotBundle('test-setup-d'), { version: '13.0.0' });
+    const release = await publishRelease(stage1Bundle('test-proxy-d'), { version: '13.0.0' });
 
     // Pre-existing in-progress record (recent), simulating another caller in flight
     await withTestContext(() =>

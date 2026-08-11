@@ -15,6 +15,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
+  resolveId,
 } from '@medplum/core';
 import type { FhirRepository, FhirRequest, FhirResponse, FhirRouter } from '@medplum/fhir-router';
 import { processBatch } from '@medplum/fhir-router';
@@ -41,7 +42,6 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
-import { deployBot } from './deploy';
 
 /**
  * Canonical `meta.tag` system applied by the install Bundle to every resource it
@@ -52,9 +52,17 @@ export const PackageInstallTagSystem = 'https://medplum.com/package-install';
 
 /**
  * Extension declared on a `PackageRelease` naming the Stage 2 setupBot by its
- * canonical Bot `identifier` value. The bot itself ships inside the Stage 1
- * Bundle, so it only exists in the calling project after Stage 1 commits; the
- * handler resolves it by this identifier and invokes it.
+ * version-tagged Bot `identifier` value.
+ *
+ * The setupBot is an ordinary impl bot: published once into the shared impl
+ * project rather than copied into every customer project by the install Bundle.
+ * It runs with `runAsUser: true`, so it executes as the project admin who
+ * invoked `$install` and writes into their project — which is what it needs, as
+ * its job is to populate `Project.secret` from the install answers, and a bot's
+ * own membership is not a project admin. Because it is version-tagged, an
+ * upgrade picks up the new hook without a per-customer redeploy.
+ *
+ * Requires {@link PackageReleaseImplProjectUrl} to also be declared.
  */
 export const PackageReleaseSetupBotUrl = 'https://medplum.com/fhir/StructureDefinition/packageRelease-setup-bot';
 
@@ -344,23 +352,35 @@ async function runStage2(
     return undefined;
   }
 
-  // The setupBot ships inside the Stage 1 Bundle, so it lives in the calling project.
-  const userBot = await ctx.repo.searchOne<Bot>({
-    resourceType: 'Bot',
-    filters: [{ code: 'identifier', operator: Operator.EXACT, value: setupBotIdentifier }],
-  });
-  if (!userBot) {
-    throw new OperationOutcomeError(badRequest(`Setup bot not found: ${setupBotIdentifier}`));
+  // The setupBot is a version-tagged impl bot in the shared impl project, so the
+  // release must name that project. It is deliberately not resolved through the
+  // caller: `RepositoryContext.projects` is snapshotted from `Project.link` when
+  // the request's Repository is built, so the link this handler just appended is
+  // not visible to `ctx.repo` until a later request. Scoping a system search to
+  // the declared impl project is deterministic on the first install instead.
+  const implProjectId = resolveId(
+    getReleaseExtensionValue(packageRelease, PackageReleaseImplProjectUrl) as Reference<Project> | undefined
+  );
+  if (!implProjectId) {
+    throw new OperationOutcomeError(
+      badRequest(`Release declares setup bot "${setupBotIdentifier}" but no impl project to resolve it from`)
+    );
   }
 
-  // Read as system to load extended metadata (mirrors the $execute operation).
-  let bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
-
-  // Marketplace setup bots ship inline `code` in the install Bundle; vmcontext
-  // execution requires `executableCode` pointing at a Binary (same as $deploy).
-  if (!bot.executableCode?.url && bot.code) {
-    await deployBot(ctx.repo, bot, bot.code, 'post-install.js');
-    bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+  // Reading as system is bounded to the one bot this release names, and the
+  // caller already proved access to the release itself (same rationale as
+  // reading the install Bundle Binary above).
+  const bot = await ctx.systemRepo.searchOne<Bot>({
+    resourceType: 'Bot',
+    filters: [
+      { code: 'identifier', operator: Operator.EXACT, value: setupBotIdentifier },
+      { code: '_project', operator: Operator.EQUALS, value: implProjectId },
+    ],
+  });
+  if (!bot) {
+    throw new OperationOutcomeError(
+      badRequest(`Setup bot not found in impl project: ${setupBotIdentifier}. Was the package published?`)
+    );
   }
 
   const result = await executeBot({
