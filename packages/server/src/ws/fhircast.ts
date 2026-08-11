@@ -52,6 +52,9 @@ export function initFhircastHeartbeat(): void {
         },
       };
 
+      // Published to every live topic; each socket then drops it unless that subscriber asked for
+      // `heartbeat`. Which subscribers those are is knowledge local to the instance holding their
+      // sockets, so it cannot be decided here.
       for (const projectAndTopic of topicRefCountMap.keys()) {
         publish(
           projectAndTopic,
@@ -82,11 +85,11 @@ export function stopFhircastHeartbeat(): void {
   }
 }
 
-// Events delivered to every subscriber regardless of the events they subscribed to: `heartbeat`
-// keeps the connection alive, and `syncerror` reports a context change the subscriber may have
-// caused, so a subscriber can't opt out of hearing about its own failures.
+// The one event delivered to every subscriber regardless of what it subscribed to: `syncerror`
+// reports a context change the subscriber may have caused, so a subscriber can't opt out of hearing
+// about its own failures. Every other event, `heartbeat` included, has to be asked for.
 // Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-Events.html
-const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
+const UNCONDITIONAL_EVENT = 'syncerror';
 
 /**
  * Decides what a subscriber should be sent from a message published to its topic.
@@ -122,7 +125,7 @@ function messageForSubscriber(
   const eventName = channelMessage.payload.event?.['hub.event'];
   if (typeof eventName === 'string') {
     const normalizedEventName = eventName.toLowerCase();
-    if (!UNCONDITIONAL_EVENTS.has(normalizedEventName) && !subscribedEvents.has(normalizedEventName)) {
+    if (normalizedEventName !== UNCONDITIONAL_EVENT && !subscribedEvents.has(normalizedEventName)) {
       return undefined;
     }
   }

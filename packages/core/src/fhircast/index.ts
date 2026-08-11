@@ -54,6 +54,21 @@ export function assertContextVersionOptional(event: string): asserts event is Fh
 
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceEventName = Exclude<FhircastEventName, 'syncerror'>;
+
+/**
+ * The Hub's keepalive event.
+ *
+ * Deliberately not a member of `FHIRCAST_EVENT_NAMES`, which is the set of events a client can
+ * publish: the Hub generates `heartbeat` itself, and its payload carries a `period` rather than a
+ * context. A subscriber can still name it in `hub.events` to ask to receive it.
+ * Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-3-1-heartbeat.html
+ */
+export const FHIRCAST_HEARTBEAT_EVENT = 'heartbeat';
+
+/**
+ * An event a subscriber can name in `hub.events`: everything publishable, plus the Hub's `heartbeat`.
+ */
+export type FhircastSubscribableEventName = FhircastEventName | typeof FHIRCAST_HEARTBEAT_EVENT;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
 export type FhircastAnchorResourceType = 'Patient' | 'ImagingStudy' | 'Encounter' | 'DiagnosticReport';
 
@@ -144,9 +159,22 @@ export function isFhircastResourceType(resourceType: FhircastResourceType): bool
 export type SubscriptionRequest = {
   channelType: 'websocket';
   mode: 'subscribe' | 'unsubscribe';
-  events: FhircastEventName[];
+  events: FhircastSubscribableEventName[];
   topic: string;
   endpoint: string;
+};
+
+/**
+ * Options for `MedplumClient.fhircastSubscribe`.
+ */
+export type FhircastSubscribeOptions = {
+  /**
+   * Whether to subscribe to the Hub's `heartbeat`. Defaults to `true`.
+   *
+   * On an otherwise idle topic the heartbeat is the only traffic on the socket, so opting out leaves
+   * nothing to stop an intermediary with an idle timeout from closing the connection.
+   */
+  heartbeat?: boolean;
 };
 
 export type FhircastPatientContext = { key: 'patient'; resource: Patient };
@@ -337,7 +365,7 @@ export function validateFhircastSubscriptionRequest(
     return false;
   }
   for (const event of events) {
-    if (!FHIRCAST_EVENT_NAMES[event]) {
+    if (event !== FHIRCAST_HEARTBEAT_EVENT && !FHIRCAST_EVENT_NAMES[event]) {
       return false;
     }
   }
@@ -583,8 +611,11 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
         }
 
         const fhircastMessage = message as unknown as FhircastMessagePayload;
-        // Don't bubble up heartbeats, they are just noise
-        if (fhircastMessage.event['hub.event'] === ('heartbeat' as unknown as FhircastEventName)) {
+        // `heartbeat` keeps the socket alive rather than carrying context, so it stops here instead
+        // of reaching listeners. Read as a `string` because it is not one of the publishable event
+        // names `FhircastMessagePayload` is typed against.
+        const eventName: string = fhircastMessage.event['hub.event'];
+        if (eventName === FHIRCAST_HEARTBEAT_EVENT) {
           return;
         }
         this.dispatchEvent({ type: 'message', payload: fhircastMessage });

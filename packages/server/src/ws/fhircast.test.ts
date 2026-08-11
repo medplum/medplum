@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhircastMessagePayload, WithId } from '@medplum/core';
+import type { FhircastMessagePayload, FhircastSubscribableEventName, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -173,6 +173,53 @@ describe('FHIRcast WebSocket', () => {
             expect(obj.event['hub.topic']).toBe(topic);
             expect(obj.event['hub.event']).toBe('syncerror');
             expect(obj.event.context[0].key).toBe('operationoutcome');
+          })
+          .sendJson({ id: generateId(), status: 200 })
+          .close()
+          .expectClosed();
+      }));
+
+    // A `syncerror` reports a context change the subscriber may itself have caused, so unlike every
+    // other event it reaches a subscriber that never named it
+    test('Send `syncerror` to a subscriber that did not subscribe to it', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        const pathname = new URL(res1.body['hub.channel.endpoint']).pathname;
+
+        await request(server)
+          .ws(pathname)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .exec(async () => {
+            const res2 = await request(server)
+              .post(`/fhircast/STU3/${topic}`)
+              .set('Content-Type', ContentType.JSON)
+              .set('Authorization', 'Bearer ' + accessToken)
+              .send(
+                createFhircastMessagePayload(topic, 'syncerror', [
+                  { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
+                ])
+              );
+            expect(res2).toHaveStatus(202);
+          })
+          .expectJson((obj: FhircastMessagePayload<'syncerror'>) => {
+            expect(obj.event['hub.event']).toBe('syncerror');
           })
           .sendJson({ id: generateId(), status: 200 })
           .close()
@@ -1162,7 +1209,7 @@ describe('FHIRcast WebSocket', () => {
               mode: 'subscribe',
               channelType: 'websocket',
               topic,
-              events: ['Patient-open'],
+              events: ['Patient-open', 'heartbeat'],
             })
           );
 
@@ -1205,7 +1252,7 @@ describe('FHIRcast WebSocket', () => {
               mode: 'subscribe',
               channelType: 'websocket',
               topic,
-              events: ['Patient-open'],
+              events: ['Patient-open', 'heartbeat'],
             })
           );
 
@@ -1265,6 +1312,66 @@ describe('FHIRcast WebSocket', () => {
               .expectClosed();
           })
           .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
+
+    // The heartbeat is published to the whole topic, so the only thing keeping it from a subscriber
+    // that did not ask for it is the per-socket event filter
+    test('Only the subscriber that asked for a heartbeat gets one', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const subscribe = async (events: FhircastSubscribableEventName[]): Promise<string> => {
+          const res = await request(server)
+            .post('/fhircast/STU3')
+            .set('Content-Type', ContentType.FORM_URL_ENCODED)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send(serializeFhircastSubscriptionRequest({ mode: 'subscribe', channelType: 'websocket', topic, events }));
+          return new URL(res.body['hub.channel.endpoint']).pathname;
+        };
+
+        const quietPathname = await subscribe(['Patient-open']);
+        const heartbeatPathname = await subscribe(['Patient-open', 'heartbeat']);
+
+        await request(server)
+          .ws(quietPathname)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .exec(async () => {
+            await request(server)
+              .ws(heartbeatPathname)
+              .expectJson((obj) => {
+                expect(obj['hub.topic']).toBe(topic);
+              })
+              .expectJson((obj) => {
+                expect(obj.event['hub.event']).toBe('heartbeat');
+              })
+              .expectJson((obj) => {
+                expect(obj.event['hub.event']).toBe('heartbeat');
+              })
+              .close()
+              .expectClosed();
+
+            const res = await request(server)
+              .post(`/fhircast/STU3/${topic}`)
+              .set('Content-Type', ContentType.JSON)
+              .set('Authorization', 'Bearer ' + accessToken)
+              .send(
+                createFhircastMessagePayload(topic, 'Patient-open', [
+                  { key: 'patient', resource: { resourceType: 'Patient', id: randomUUID() } },
+                ])
+              );
+            expect(res).toHaveStatus(202);
+          })
+          // Several heartbeat ticks have gone by. This subscriber saw none of them, so the first
+          // message after the confirmation is the event it did subscribe to.
+          .expectJson((obj) => {
+            expect(obj.event['hub.event']).toBe('Patient-open');
+          })
+          .sendJson({ id: generateId(), status: 200 })
           .close()
           .expectClosed();
       }));
