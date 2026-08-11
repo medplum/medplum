@@ -7,6 +7,7 @@ import type {
   Bundle,
   Extension,
   OperationOutcome,
+  Package,
   PackageInstallation,
   PackageRelease,
   Project,

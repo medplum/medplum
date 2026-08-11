@@ -391,8 +391,7 @@ async function linkImplProject(
   packageRelease: PackageRelease
 ): Promise<void> {
   const implProjectRef = getReleaseExtensionValue(packageRelease, PackageReleaseImplProjectUrl) as
-    | Reference<Project>
-    | undefined;
+    Reference<Project> | undefined;
   if (!implProjectRef?.reference) {
     return;
   }
