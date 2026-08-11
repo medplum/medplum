@@ -183,7 +183,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
     return [...appointmentsToEvents(appointments), ...slotsToEvents(filteredSlots)];
   }, [props.appointments, props.slots]);
 
-  const businessHours = props.availableTime?.map(availableTimeToBusinessHoursEntry).flat();
+  const businessHours = props.availableTime?.flatMap(availableTimeToBusinessHoursEntry);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, props.className)}>
