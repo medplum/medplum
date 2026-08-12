@@ -210,7 +210,7 @@ describe('Auth middleware', () => {
     expect(res).toHaveStatus(401);
   });
 
-  test.skip('ID token rejected as access token', async () => {
+  test('ID token rejected as access token', async () => {
     const { client, login, accessToken } = await createTestProject({ withClient: true, withAccessToken: true });
 
     // Control: the access token for this login works
@@ -234,7 +234,7 @@ describe('Auth middleware', () => {
     expect(res2).toHaveStatus(401);
   });
 
-  test.skip('Refresh token rejected as access token', async () => {
+  test('Refresh token rejected as access token', async () => {
     const { client, login } = await createTestProject({ withClient: true, withAccessToken: true });
 
     const refreshToken = await generateRefreshToken({

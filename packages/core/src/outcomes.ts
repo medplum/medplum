@@ -562,7 +562,7 @@ export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): str
 }
 
 export type IssueSeverity = 'error' | 'fatal' | 'warning' | 'information';
-export type IssueType = 'structure' | 'invariant' | 'processing';
+export type IssueType = 'structure' | 'invariant' | 'processing' | 'required';
 
 export function createOperationOutcomeIssue(
   severity: IssueSeverity,

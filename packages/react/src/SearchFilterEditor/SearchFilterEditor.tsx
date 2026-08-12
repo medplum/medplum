@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Group, Modal, NativeSelect } from '@mantine/core';
+import { ActionIcon, Group, NativeSelect } from '@mantine/core';
 import type { Filter, SearchRequest } from '@medplum/core';
 import { Operator, deepClone, getSearchParameters } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
@@ -8,8 +8,8 @@ import { IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
-import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { Modal } from '../Modal/Modal';
 import {
   addFilter,
   buildSearchParamFieldLabel,
@@ -51,52 +51,50 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   return (
     <Modal
       title="Filters"
-      closeButtonProps={{ 'aria-label': 'Close' }}
       size={900}
       opened={props.visible}
       onClose={props.onCancel}
-    >
-      <Form onSubmit={() => props.onOk(searchRef.current)}>
-        <div>
-          <table>
-            <colgroup>
-              <col style={{ width: 200 }} />
-              <col style={{ width: 200 }} />
-              <col style={{ width: 380 }} />
-              <col style={{ width: 40 }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Operation</th>
-                <th>Value</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filters.map((filter: Filter, index: number) => (
-                <FilterRowInput
-                  id={`filter-${index}-row`}
-                  key={`filter-${index}-row`}
-                  resourceType={resourceType}
-                  searchParams={searchParams}
-                  value={filter}
-                  onChange={(newFilter: Filter) => {
-                    const newFilters = [...filters];
-                    newFilters[index] = newFilter;
-                    setSearch(setFilters(searchRef.current, newFilters));
-                  }}
-                  onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
-                />
-              ))}
-            </tbody>
-          </table>
-          <ArrayAddButton propertyDisplayName="Filter" onClick={() => onAddFilter({} as Filter)} />
-        </div>
-        <Group justify="flex-end" mt="xl">
+      onSubmit={() => props.onOk(searchRef.current)}
+      actions={
+        <Group justify="flex-end">
           <SubmitButton>OK</SubmitButton>
         </Group>
-      </Form>
+      }
+    >
+      <table>
+        <colgroup>
+          <col style={{ width: 200 }} />
+          <col style={{ width: 200 }} />
+          <col style={{ width: 380 }} />
+          <col style={{ width: 40 }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Operation</th>
+            <th>Value</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {filters.map((filter: Filter, index: number) => (
+            <FilterRowInput
+              id={`filter-${index}-row`}
+              key={`filter-${index}-row`}
+              resourceType={resourceType}
+              searchParams={searchParams}
+              value={filter}
+              onChange={(newFilter: Filter) => {
+                const newFilters = [...filters];
+                newFilters[index] = newFilter;
+                setSearch(setFilters(searchRef.current, newFilters));
+              }}
+              onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
+            />
+          ))}
+        </tbody>
+      </table>
+      <ArrayAddButton propertyDisplayName="Filter" onClick={() => onAddFilter({} as Filter)} />
     </Modal>
   );
 }

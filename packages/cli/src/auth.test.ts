@@ -11,7 +11,15 @@ import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-vi.mock('node:child_process');
+vi.mock('node:child_process', () => {
+  const execMockFn = vi.fn();
+  return {
+    default: {
+      exec: execMockFn,
+    },
+    exec: execMockFn,
+  };
+});
 vi.mock('node:http');
 vi.mock('./util/client');
 vi.mock('node:fs', () => {
@@ -108,6 +116,72 @@ describe('CLI auth', () => {
     expect(res3.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
     expect(res3.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
     expect(medplum.getActiveLogin()).toBeDefined();
+  });
+
+  test('Login with default scope includes offline_access', async () => {
+    (cp.exec as unknown as Mock).mockImplementation(
+      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
+    (http.createServer as unknown as Mock).mockReturnValue({
+      listen: () => ({
+        close: () => undefined,
+      }),
+    });
+
+    // Start the login without specifying scope
+    await main(['node', 'index.js', 'login']);
+
+    // Verify exec was called with a browser open command
+    expect(cp.exec).toHaveBeenCalled();
+    const capturedCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
+
+    // Extract and verify the URL from the command
+    const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
+    expect(urlMatch).toBeDefined();
+    expect(urlMatch).not.toBeNull();
+    if (!urlMatch) {
+      throw new Error('URL not found in command');
+    }
+    const url = new URL(urlMatch[1]);
+    expect(url.searchParams.get('scope')).toBe('openid offline_access');
+  });
+
+  test('Login with custom scope', async () => {
+    (cp.exec as unknown as Mock).mockImplementation(
+      (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
+    (http.createServer as unknown as Mock).mockReturnValue({
+      listen: () => ({
+        close: () => undefined,
+      }),
+    });
+
+    // Start the login with custom scope
+    await main(['node', 'index.js', 'login', '--scope', 'openid profile']);
+
+    // Verify exec was called with a browser open command
+    expect(cp.exec).toHaveBeenCalled();
+    const capturedCommand = (cp.exec as unknown as Mock).mock.calls[0][0] as string;
+
+    // Extract and verify the URL from the command
+    const urlMatch = capturedCommand.match(/(https?:\/\/[^\s'"]+)/);
+    expect(urlMatch).toBeDefined();
+    expect(urlMatch).not.toBeNull();
+    if (!urlMatch) {
+      throw new Error('URL not found in command');
+    }
+    const url = new URL(urlMatch[1]);
+    expect(url.searchParams.get('scope')).toBe('openid profile');
   });
 
   test('Login unsupported auth type', async () => {

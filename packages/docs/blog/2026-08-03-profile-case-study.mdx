@@ -1,0 +1,81 @@
+---
+slug: profile-case-study
+title: "Profile Health: Genetic Intelligence for Longevity Medicine"
+authors: mandi
+tags: [case-study, ai, genomics, questionnaires, terminology, integration]
+---
+
+{/*
+Narrative is Mandi Bateman's redraft (Google Doc, Jul 31 2026) — she repositioned the piece from
+"AI-native functional medicine" to "genetic intelligence," so keep the genome-first framing on any
+future edit. Medplum docs links were re-applied on top of her text; her wording is otherwise verbatim.
+- Cleared for publication: Mandi signed off Jul 31 2026 ("you're all good to post on Monday").
+- Bylined to Mandi (CEO, Profile Health) per her redraft, not to Medplum.
+- The pull-quote below is VERBATIM from the recorded demo (Mandi Bateman + Quinton Poncelet, on camera).
+- Video is Profile's own screen recording ("Actionable Genomics for Clinicians"), rehosted on Medplum's
+  YouTube with Mandi's permission (https://youtu.be/nC96NbgYFS8).
+- Sourced from the recorded demo (video1922571888.mp4) plus Fathom/Granola recordings, Jun 2025 – Jan 2026.
+*/}
+
+# Profile Health: Genetic Intelligence for Longevity Medicine
+
+[Profile Health](https://profilehealth.com/) is building **genetic intelligence for longevity and functional medicine** — the concierge, naturopathic, and longevity practices that treat chronic, whole-person conditions rather than single episodes of care. Their thesis is simple: the most valuable signal in medicine — a patient's whole **genome**, enriched with a lifetime of their clinical records — sits scattered, unread, and never makes it into the exam room. Profile fuses the two and hands the result to the physician, so care can get ahead of disease instead of reacting to it.
+
+{/* truncate */}
+
+The insight that shapes the product: a **genetic report** sent straight to a patient changes almost nothing, while the same intelligence in a trusted doctor's hands changes everything. So Profile shifts the burden of gathering and interpreting a patient's genome and history off the clinician — largely before the visit — and puts a synthesized, genome-plus-record view in front of the physician, turning hours of manual review into minutes and surfacing risk years before symptoms.
+
+Profile chose to build on Medplum rather than adopt a legacy EHR because their model doesn't fit the episodic, form-driven mold. They needed a data layer they own — one that could hold a 50GB+ whole genome alongside hundreds of pages of longitudinal history, genetics, environmental exposure, and functional-medicine reasoning — and feed all of it to their intelligence engine.
+
+{/* Actionable Genomics for Clinicians — Profile Health */}
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/nC96NbgYFS8" title="Actionable Genomics for Clinicians from Profile Health" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+
+{/* TODO: add Profile Health brand image — ![Profile Health](/img/blog/profile-brand.jpg) */}
+
+## Problem
+
+Functional and longevity medicine is chronic and complex. A new patient often arrives with ten or twelve overlapping complaints — "everybody's tired" — where the real question is *why*: is the root cause metabolic, genetic, environmental, or immunological? Untangling that traditionally means a sprawling intake (Profile's own starting point was effectively a 26-page questionnaire) followed by a physician spending most of a first visit re-asking the same questions by hand. As Profile's clinical lead put it, that is "the rookie practitioner taught in med school to ask every question under the sun — and now your 45-minute visit is up and there's no time to address the plan."
+
+The signal that most changes the answer — the patient's genome — is the hardest to use. Whole-genome data is thousands of times richer than the consumer chips most tools read, but no conventional EHR unifies it with a longitudinal clinical record, so it stays a PDF no one acts on. And when genetics *does* reach a patient directly, it rarely changes anything: most people do nothing with a direct-to-consumer result. The value only appears when the genome is fused with the record and delivered to a clinician who can act on it — yet most physicians, while eager to use genomics, have never been trained to.
+
+The rest of the clinical signal is just as scattered: prior records pulled from a health information exchange, uploaded labs and photos of a patient's supplements and medications, raw genetic data, and environmental context tied to where the patient has lived. Because these are cash-pay clinics chasing durable outcomes, the platform has to *reason* over that whole picture — not just store it.
+
+Finally, Profile needed to be a real EHR. Connecting to an HIE triggers reciprocity obligations that require **ONC certification** — a bar most early-stage startups can't clear on their own.
+
+## Solution
+
+Profile built their platform on Medplum's FHIR-native data store, using it as both the system of record and the substrate their intelligence layer reasons over. Two products sit on top:
+
+- **A dynamic, conversational [intake](/docs/intake)** that replaces the static questionnaire and captures the *phenotype* — the lifetime of history that gives the genome meaning. Patients answer by voice or text, starting open-ended ("what are your top three concerns, and what are your goals?"), and an LLM decides what to ask next, narrowing toward the likely root cause instead of marching through every question. Profile encodes clinical frameworks (a functional-medicine "terrain" model) as structured [questionnaires](/docs/questionnaires) and [value sets](/docs/terminology) in Medplum, then lets the model select and weight questions against them.
+- **A provider dashboard ("Dr. Dash")** that turns the genome into a clinical decision. It synthesizes a patient's full picture into one concise view: whole-genome analysis from raw sequence data, polygenic risk scores for preventative care, pharmacogenomics for drug–gene interactions, and clinically significant variants — layered against 400+ pages of history and sorted into functional-medicine "terrain" buckets with red-flag color coding, plus a per-patient chat over the record. The genomic intelligence is Profile's moat: risk scoring is ancestry-aware (most polygenic scores break on non-European genomes; Profile's don't) and grounded in curated clinical databases — not an LLM guessing, which Profile deliberately keeps out of the clinical decision itself.
+
+Key capabilities the Profile team built on Medplum:
+
+- **[ONC-certified](/docs/compliance) hosting out of the box:** Because Medplum's hosted offering is already ONC-certified, Profile inherited certification and cleared its HIE reciprocity requirement without running a de-novo certification — with a documented path to break out to self-hosted enterprise later as they scale.
+- **HIE / prior-records ingestion:** Integration with a health information exchange (via KNO2) pulls a patient's existing records into the timeline at intake, so the intelligence layer and the physician start with real history rather than a blank form.
+- **[Bots](/docs/bots) and [FHIR data](/docs/fhir-datastore) as the intelligence substrate:** Uploaded [labs](/docs/labs-imaging), [medications](/docs/medications) and supplements, biometric verification and consent, and a compute-intensive whole-genome pipeline all resolve into structured FHIR that the dashboard and intake can act on.
+- **LLM access to FHIR:** Profile worked directly with Medplum on the emerging AI surface — evaluating the [Model Context Protocol server](/docs/ai/mcp) for LLM-driven FHIR queries and SQL-on-FHIR for paring FHIR JSON down to fit LLM token budgets — feeding real production requirements back into Medplum's roadmap.
+
+> "Like Medplum — I mean, we're so grateful. It's been instrumental in our progress. To have an API-first EHR layer — everything that we're doing revolves around reading and writing, so having access to that layer has really allowed us to move with the speed that we have."
+>
+> — Mandi Bateman (CEO) & Quinton Poncelet (Chief AI Officer), Profile Health
+
+## What's Next
+
+On the roadmap:
+
+1. **Mobile intake:** A patient app to bring the conversational intake to the phone.
+2. **Production genetics pipeline:** Hardening the whole-genome analysis (polygenic risk scores, pharmacogenomics, clinical variants) from local compute into scalable cloud infrastructure.
+3. **AI co-pilot for the visit:** Extending decision support from summarization into drafting assessments and plan suggestions the physician can review and refine.
+4. **Broader EHR integration:** Connecting adjacent systems (e.g. the CHARM EHR API) so Profile fits into clinics' existing workflows.
+
+## Conclusion
+
+Profile Health shows what genetic intelligence looks like when the data layer is built for it: intake that reasons instead of interrogates, a dashboard that fuses a whole genome with a lifetime of history into one view, and a clinician who finally has the signal to change the course of disease before it starts — rather than a patient left to inherit their parents' outcomes. Owning that data structure on Medplum — with ONC certification and HIE connectivity already handled — is what freed Profile to spend its energy on the intelligence layer itself. Medplum is proud to be the foundation for Profile's next phase of growth.
+
+## References
+
+[Profile Health](https://profilehealth.com/) · [Medplum Intake](/docs/intake) · [Medplum Questionnaires](/docs/questionnaires) · [Medplum MCP / AI](/docs/ai/mcp) · [Medplum Bots](/docs/bots)

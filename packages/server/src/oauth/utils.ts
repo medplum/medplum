@@ -56,7 +56,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { safeFetch } from '../util/url';
+import { getProjectScopedUrl, safeFetch } from '../util/url';
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -608,6 +608,7 @@ export async function getAuthTokens(
   options?: {
     accessLifetime?: string;
     refreshLifetime?: string;
+    issuer?: string;
   }
 ): Promise<TokenResult> {
   assert.equal(getReferenceString(user), login.user?.reference);
@@ -626,16 +627,19 @@ export async function getAuthTokens(
     });
   }
 
-  const idToken = await generateIdToken({
-    client_id: clientId,
-    login_id: login.id,
-    fhirUser: profile.reference,
-    email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
-    aud: clientId,
-    sub: user.id,
-    nonce: login.nonce as string,
-    auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
-  });
+  const idToken = await generateIdToken(
+    {
+      client_id: clientId,
+      login_id: login.id,
+      fhirUser: profile.reference,
+      email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
+      aud: clientId,
+      sub: user.id,
+      nonce: login.nonce as string,
+      auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
+    },
+    options?.issuer
+  );
 
   const accessToken = await generateAccessToken(
     {
@@ -647,7 +651,7 @@ export async function getAuthTokens(
       profile: profile.reference as string,
       email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     },
-    { lifetime: options?.accessLifetime }
+    { lifetime: options?.accessLifetime, issuer: options?.issuer }
   );
 
   const refreshToken = login.refreshSecret
@@ -657,7 +661,8 @@ export async function getAuthTokens(
           login_id: login.id,
           refresh_secret: login.refreshSecret,
         },
-        options?.refreshLifetime
+        options?.refreshLifetime,
+        options?.issuer
       )
     : undefined;
 
@@ -1008,12 +1013,23 @@ export async function getLoginForAccessToken(
 
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
-    verifyResult = await verifyJwt(accessToken);
+    const config = getConfig();
+    const expectedIssuer = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+    verifyResult = await verifyJwt(accessToken, expectedIssuer);
   } catch {
     return undefined;
   }
 
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
+
+  // A valid signature only proves that this server minted the token, not that it minted an access token.
+  // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
+  // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
+  const config = getConfig();
+  const expectedAudience = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+  if (claims.aud !== expectedAudience || claims.refresh_secret !== undefined) {
+    return undefined;
+  }
 
   let login = undefined;
   try {

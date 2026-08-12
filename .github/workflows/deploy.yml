@@ -97,3 +97,4 @@ jobs:
           MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'
           RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          STORYBOOK_BUCKET: ${{ vars.STORYBOOK_BUCKET }}

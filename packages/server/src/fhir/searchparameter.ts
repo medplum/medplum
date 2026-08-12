@@ -189,6 +189,11 @@ function buildSearchParameterImplementation(
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {
+  // `_compartment` is a synthetic reference param stored in `compartments`;
+  // this is a custom Medplum search parameter and not one defined in FHIR
+  if (code === '_compartment') {
+    return 'compartments';
+  }
   // hyphen is common in SearchParameter.code
   // colon is used in Medplum "derived" search parameters, see deriveIdentifierSearchParameter
   return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');

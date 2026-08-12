@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { createReference, generateId } from '@medplum/core';
+import { createReference, generateId, toServiceTypeCodeableConcepts } from '@medplum/core';
 import type { HealthcareService, Practitioner, Project, Schedule } from '@medplum/fhirtypes';
-import { toCodeableReferenceLike } from '../../../util/servicetype';
 import { withPath } from '../../../util/withpath';
 import { getHealthcareServiceSchedulingParameters, getScheduleSchedulingParameters } from './scheduling-parameters';
 
@@ -319,7 +318,7 @@ describe('getScheduleSchedulingParameters', () => {
   const baseSchedule = {
     resourceType: 'Schedule',
     actor: [createReference(practitioner)],
-    serviceType: toCodeableReferenceLike(baseService),
+    serviceType: toServiceTypeCodeableConcepts(baseService),
   } satisfies Schedule;
 
   test('with no extension', () => {

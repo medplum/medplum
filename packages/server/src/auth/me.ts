@@ -26,6 +26,7 @@ interface UserSession {
   remoteAddress: string;
   browser?: string;
   os?: string;
+  project?: Reference;
 }
 
 interface UserSecurity {
@@ -202,6 +203,7 @@ async function getSessions(systemRepo: SystemRepository, user: WithId<User>): Pr
       remoteAddress: login.remoteAddress as string,
       browser: browser?.getBrowser()?.name,
       os: browser?.getOS()?.name,
+      project: login.project,
     });
   }
   return result;

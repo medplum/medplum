@@ -25,6 +25,7 @@ import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { HeaderDropdown } from './HeaderDropdown';
 import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
+import type { SpotlightLinkAction } from './Spotlight';
 import { Spotlight } from './Spotlight';
 
 export interface NavbarLink {
@@ -59,6 +60,7 @@ export interface NavbarProps {
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
   readonly patientsOnly?: boolean;
+  readonly spotlightActions?: SpotlightLinkAction[];
   readonly userMenuEnabled?: boolean;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
@@ -123,7 +125,9 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </Tooltip>
               </Box>
             )}
-            {props.spotlightEnabled && <Spotlight patientsOnly={props.patientsOnly} />}
+            {props.spotlightEnabled && (
+              <Spotlight patientsOnly={props.patientsOnly} staticActions={props.spotlightActions} />
+            )}
             {!props.resourceTypeSearchDisabled && (
               <MantineAppShell.Section mb="sm">
                 <ResourceTypeInput

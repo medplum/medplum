@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { FhirFilterExpression, Filter, IncludeTarget, SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { FhirFilterExpression, Filter, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -8,7 +8,6 @@ import {
   DEFAULT_SEARCH_COUNT,
   deriveIdentifierSearchParameter,
   EMPTY,
-  evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
   FhirFilterNegation,
@@ -16,35 +15,25 @@ import {
   forbidden,
   formatSearchQuery,
   getDataType,
-  getReferenceString,
   getSearchParameter,
   invalidSearchOperator,
-  isResource,
   isUUID,
   OperationOutcomeError,
   Operator,
   parseFhirPath,
   parseFilterParameter,
   parseParameter,
-  PropertyType,
   SearchParameterType,
   serverError,
   splitN,
   splitSearchOnComma,
   subsetResource,
   toPeriod,
-  toTypedValue,
   validateResourceType,
 } from '@medplum/core';
-import type {
-  Bundle,
-  BundleEntry,
-  BundleLink,
-  Reference,
-  Resource,
-  ResourceType,
-  SearchParameter,
-} from '@medplum/fhirtypes';
+import type { IncludeOptions } from '@medplum/fhir-router';
+import { getExtraEntries } from '@medplum/fhir-router';
+import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
 import { clamp } from './operations/utils/parameters';
@@ -84,8 +73,6 @@ const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
  * is relevant primarily to the deprecated v1 cursor format, but is enforced for v2 cursors as well.
  */
 export const minCursorBasedSearchPageSize = 20;
-
-const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
 
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
@@ -348,7 +335,7 @@ async function getSearchEntries<T extends Resource>(
       await repo.executeRawSql(
         'SET enable_seqscan = off',
         undefined,
-        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.setSeqScan' })
+        repoAccess.sqlReadConfig(trackedResourceTypes, { source: 'search.getSearchEntries.setSeqScan' })
       );
     }
     rows = await repo.sqlRead<(typeof rows)[number]>(builder, trackedResourceTypes, {
@@ -359,7 +346,7 @@ async function getSearchEntries<T extends Resource>(
       await repo.executeRawSql(
         'RESET enable_seqscan',
         undefined,
-        repoAccess.sqlReadConfig({ source: 'search.getSearchEntries.resetSeqScan' })
+        repoAccess.sqlReadConfig(trackedResourceTypes, { source: 'search.getSearchEntries.resetSeqScan' })
       );
     }
   }
@@ -391,7 +378,7 @@ async function getSearchEntries<T extends Resource>(
   }));
 
   if (searchRequest.include || searchRequest.revInclude) {
-    await getExtraEntries(repo, searchRequest, resources, entries);
+    await getExtraEntries(repo, searchRequest, resources, entries, getIncludeOptions(repo));
   }
 
   for (const entry of entries) {
@@ -498,188 +485,31 @@ function removeResourceFields(resource: Resource, repo: Repository, searchReques
 }
 
 /**
- * Gets the extra search entries for the _include and _revinclude parameters.
- * @param repo - The FHIR repository.
- * @param searchRequest - The original search request.
- * @param resources - The resources returned by the original search.
- * @param entries - The output bundle entries.
- */
-async function getExtraEntries<T extends Resource>(
-  repo: Repository,
-  searchRequest: SearchRequest<T>,
-  resources: T[],
-  entries: BundleEntry[]
-): Promise<void> {
-  let base: Resource[] = resources;
-  let iterateOnly = false;
-  const seen = new Set<string>(resources.map((r) => `${r.resourceType}/${r.id}`));
-  let depth = 0;
-
-  while (base.length > 0) {
-    // Circuit breaker / load limit
-    if (depth >= 5 || entries.length > maxSearchResults) {
-      throw new Error(`Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`);
-    }
-
-    const includes = flatMapFilter(searchRequest.include, (p) =>
-      !iterateOnly || p.modifier === Operator.ITERATE ? getSearchIncludeEntries(repo, p, base) : undefined
-    );
-    const revincludes = flatMapFilter(searchRequest.revInclude, (p) =>
-      !iterateOnly || p.modifier === Operator.ITERATE ? getSearchRevIncludeEntries(repo, p, base) : undefined
-    );
-
-    const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
-    base = [];
-    for (const entry of includedResources) {
-      const resource = entry.resource as Resource;
-      base.push(resource);
-
-      const ref = `${resource.resourceType}/${resource.id}`;
-      if (!seen.has(ref)) {
-        entries.push(entry);
-      }
-      seen.add(ref);
-    }
-
-    iterateOnly = true; // Only consider :iterate params on iterations after the first
-    depth++;
-  }
-}
-
-/**
- * Returns bundle entries for the resources that are included in the search result.
+ * Builds the server-specific behavior for the shared `_include` / `_revinclude` implementation.
  *
- * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
- * @param repo - The repository.
- * @param include - The include parameter.
- * @param resources - The base search result resources.
- * @returns The bundle entries for the included resources.
+ * The include logic itself lives in `@medplum/fhir-router` so that it is shared with
+ * `MemoryRepository`. Only two things are server-specific: how a `fullUrl` is built, and how
+ * the sub-searches are executed.
+ * @param repo - The FHIR repository.
+ * @returns The include options for this repository.
  */
-async function getSearchIncludeEntries(
-  repo: Repository,
-  include: IncludeTarget,
-  resources: Resource[]
-): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code, targetType } = include;
-  const searchParam = getSearchParameter(resourceType, code);
-  if (!searchParam) {
-    throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
-  }
-
-  const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
-  const references: Reference[] = [];
-  const canonicalReferences: string[] = [];
-  for (const result of fhirPathResult) {
-    if (result.type === PropertyType.Reference) {
-      references.push(result.value);
-    } else if (canonicalReferenceTypes.includes(result.type)) {
-      canonicalReferences.push(result.value);
-    }
-  }
-
-  // `_include=ResourceType:code:targetType` restricts the include to references of
-  // `targetType`; without the suffix every referenced resource type is returned.
-  const targetReferences = targetType
-    ? references.filter((reference) => reference.reference?.startsWith(targetType + '/'))
-    : references;
-
-  const includedResources = (await repo.readReferences(targetReferences)).filter((v) =>
-    isResource(v)
-  ) as WithId<Resource>[];
-  const canonicalTargets = targetType ? searchParam.target?.filter((t) => t === targetType) : searchParam.target;
-  if (canonicalTargets?.length && canonicalReferences.length > 0) {
-    const canonicalSearches = canonicalTargets.map((resourceType) => {
-      const searchRequest = {
-        resourceType: resourceType,
-        filters: [
-          {
-            code: 'url',
-            operator: Operator.EQUALS,
-            value: canonicalReferences.join(','),
-          },
-        ],
-        count: DEFAULT_MAX_SEARCH_COUNT,
-        offset: 0,
-      };
+function getIncludeOptions(repo: Repository): IncludeOptions {
+  return {
+    fullUrl: getFullUrl,
+    // Run sub-searches through the query pipeline directly rather than re-entering
+    // `Repository.search()`, which would additionally build bundle links for every sub-search.
+    executeSearch: async (searchRequest: SearchRequest): Promise<WithId<Resource>[]> => {
       const trackedResourceTypes = new Set<ResourceType>();
       const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
-      return getSearchEntries(repo, searchRequest, query, trackedResourceTypes);
-    });
-
-    const searchResults = await Promise.all(canonicalSearches);
-    for (const result of searchResults) {
-      for (const entry of result.entry) {
-        includedResources.push(entry.resource as WithId<Resource>);
-      }
-    }
-  }
-
-  return includedResources.map((resource) => ({
-    fullUrl: getFullUrl(resource.resourceType, resource.id),
-    search: { mode: 'include' },
-    resource,
-  }));
-}
-
-/**
- * Returns bundle entries for the resources that are reverse included in the search result.
- *
- * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
- * @param repo - The repository.
- * @param revInclude - The revInclude parameter.
- * @param resources - The base search result resources.
- * @returns The bundle entries for the reverse included resources.
- */
-async function getSearchRevIncludeEntries(
-  repo: Repository,
-  revInclude: IncludeTarget,
-  resources: Resource[]
-): Promise<BundleEntry[]> {
-  const { resourceType, searchParam: code, targetType } = revInclude;
-  const searchParam = getSearchParameter(resourceType, code);
-  if (!searchParam) {
-    throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
-  }
-
-  // `_revinclude=ResourceType:code:targetType` restricts the reverse include to
-  // base resources of `targetType`. Build the references in a single pass,
-  // filtering to the target type as we go.
-  const isCanonical =
-    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL;
-  const references: string[] = [];
-  for (const resource of resources) {
-    if (targetType && resource.resourceType !== targetType) {
-      continue;
-    }
-    if (isCanonical) {
-      const canonicalUrl = getCanonicalUrl(resource);
-      if (canonicalUrl) {
-        references.push(canonicalUrl);
-      }
-    } else {
-      const reference = getReferenceString(resource);
-      if (reference) {
-        references.push(reference);
-      }
-    }
-  }
-  if (references.length === 0) {
-    return [];
-  }
-  const searchRequest = {
-    resourceType: resourceType as ResourceType,
-    filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],
-    count: DEFAULT_MAX_SEARCH_COUNT,
-    offset: 0,
+      const result = await getSearchEntries(
+        repo,
+        searchRequest as SearchRequestWithCountAndOffset,
+        query,
+        trackedResourceTypes
+      );
+      return result.entry.map((entry) => entry.resource as WithId<Resource>);
+    },
   };
-
-  const trackedResourceTypes = new Set<ResourceType>();
-  const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
-  const entries = (await getSearchEntries(repo, searchRequest, query, trackedResourceTypes)).entry;
-  for (const entry of entries) {
-    entry.search = { mode: 'include' };
-  }
-  return entries;
 }
 
 /**
@@ -1035,12 +865,18 @@ export function buildSearchExpression(
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
-  trackedResourceTypes?: TrackedResourceTypes,
-  table: string = resourceType
+  trackedResourceTypes?: TrackedResourceTypes
 ): Expression | undefined {
   const expressions: Expression[] = [];
   for (const filter of searchRequest.filters ?? EMPTY) {
-    const expr = buildSearchFilterExpression(repo, selectQuery, resourceType, table, filter, trackedResourceTypes);
+    const expr = buildSearchFilterExpression(
+      repo,
+      selectQuery,
+      resourceType,
+      resourceType,
+      filter,
+      trackedResourceTypes
+    );
     expressions.push(expr);
   }
   if (expressions.length === 0) {
@@ -1080,7 +916,7 @@ function buildSearchFilterExpression(
 
   if (isChainedSearchFilter(filter)) {
     const chain = parseChainedParameter(resourceType, filter);
-    return buildChainedSearch(repo, selectQuery, resourceType, table, chain, trackedResourceTypes);
+    return buildChainedSearch(repo, selectQuery, resourceType, chain, trackedResourceTypes);
   }
 
   const specialParamExpression = trySpecialSearchParameter(
@@ -1782,7 +1618,6 @@ function buildChainedSearch(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
-  table: string,
   param: ChainedSearchParameter,
   trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
@@ -1805,13 +1640,13 @@ function buildChainedSearch(
       repo,
       selectQuery,
       resourceType as ResourceType,
-      table,
+      resourceType,
       { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
       trackedResourceTypes
     );
   }
 
-  return buildChainedSearchUsingReferenceTable(repo, table, param, trackedResourceTypes);
+  return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);
 }
 
 /**
@@ -1820,14 +1655,14 @@ function buildChainedSearch(
  * However, reference tables were only populated after Medplum version 2.2.0.
  * Self-hosted servers need to run a full re-index before this technique can be used.
  * @param repo - The repository.
- * @param table - The table name or alias holding the rows the chain starts from.
+ * @param selectQuery - The select query builder.
  * @param param - The chained search parameter.
  * @param trackedResourceTypes - Resource types involved in the logical query.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
-  table: string,
+  selectQuery: SelectQuery,
   param: ChainedSearchParameter,
   trackedResourceTypes?: TrackedResourceTypes
 ): Expression {
@@ -1837,29 +1672,37 @@ function buildChainedSearchUsingReferenceTable(
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
   let innerQuery: SelectQuery;
-  if (link.implementation.type === SearchParameterType.CANONICAL) {
-    innerQuery = new SelectQuery(currentTable).whereExpr(getCanonicalJoinCondition(table, link, currentTable));
+  if (link.code === '_compartment') {
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      getCompartmentJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+    );
+  } else if (link.implementation.type === SearchParameterType.CANONICAL) {
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      getCanonicalJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+    );
   } else {
-    innerQuery = new SelectQuery(currentTable).whereExpr(lookupTableJoinCondition(table, link, currentTable));
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      lookupTableJoinCondition(selectQuery.effectiveTableName, link, currentTable)
+    );
     currentTable = linkLiteralReference(innerQuery, currentTable, link);
   }
-  // Filter each link target exactly as the outer query filters its own resource type, so the
-  // chain only traverses resources the caller can read. Without this the subquery can match
-  // rows from other projects, or rows excluded by the caller's access policy.
-  repo.addSecurityFilters(innerQuery, link.targetType, AccessPolicyInteraction.SEARCH, currentTable);
 
   // Add joins to inner query for all subsequent chain links
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
     validateSearchResourceType(repo, link.targetType as ResourceType);
-    if (link.implementation.type === SearchParameterType.CANONICAL) {
+    if (link.code === '_compartment') {
+      // Compartment search is joined directly to the target table as a special case
+      const nextTable = innerQuery.getNextJoinAlias();
+      const join = getCompartmentJoinCondition(currentTable, link, nextTable);
+      innerQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
+      currentTable = nextTable;
+    } else if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
       const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
       currentTable = linkLiteralReference(innerQuery, lookupTable, link);
     }
-    // Every hop is traversed, so every hop is filtered, not just the terminal one.
-    repo.addSecurityFilters(innerQuery, link.targetType, AccessPolicyInteraction.SEARCH, currentTable);
   }
 
   // Add terminal conditions on final target table, and return EXISTS() over subquery
@@ -1890,6 +1733,19 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
   const join = getCanonicalJoinCondition(currentTable, link, nextTable);
   selectQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
   return nextTable;
+}
+
+/**
+ * Constructs the condition to join on the `_compartment` search parameter.
+ * @param currentTable - The "current" resource table (the outer query table for the first link).
+ * @param link - The current link of the chained search.
+ * @param nextTable - The resource table joined for this link.
+ * @returns The join expression.
+ */
+function getCompartmentJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+  const holder = link.direction === Direction.FORWARD ? currentTable : nextTable;
+  const otherEnd = link.direction === Direction.FORWARD ? nextTable : currentTable;
+  return new Condition(new Column(otherEnd, 'id'), 'IN_SUBQUERY', new Column(holder, link.implementation.columnName));
 }
 
 /**
@@ -1953,7 +1809,8 @@ function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
-  if (link.implementation.type === SearchParameterType.CANONICAL) {
+  if (link.implementation.type === SearchParameterType.CANONICAL || link.code === '_compartment') {
+    // Compartment and canonical links join the far resource table directly
     return link.targetType;
   } else if (link.direction === Direction.FORWARD) {
     return `${link.originType}_References`;
@@ -2080,8 +1937,4 @@ function splitChainedSearch(chain: string): string[] {
     }
   }
   return params;
-}
-
-function getCanonicalUrl(resource: Resource): string | undefined {
-  return 'url' in resource ? resource.url : undefined;
 }
