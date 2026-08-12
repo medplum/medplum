@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bot, Cron, Project, Reference, Resource, Timing } from '@medplum/fhirtypes';
+import type { Bot, Cron, Project, ProjectMembership, Resource, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
@@ -232,7 +232,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
 
   let bot: WithId<Bot>;
-  let profile: Reference;
+  let runAs: WithId<ProjectMembership> | undefined;
   let input: unknown;
 
   if (job.data.resourceType === 'Cron') {
@@ -243,23 +243,29 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 
     bot = await systemRepo.readReference<Bot>(cron.targetReference);
 
-    // `onBehalfOf` names the identity the bot runs as, so it decides which access policy applies.
-    // Resolving it against the Cron's own project keeps a Cron from borrowing a membership
-    // elsewhere, and the bot must live in that project for the same reason.
+    // `onBehalfOf` is the membership the bot runs as, so it decides which access policy applies.
+    // Both it and the bot are confined to the Cron's own project; otherwise a Cron could name a
+    // membership elsewhere and run with its privileges.
+    const projectRef = `Project/${cron.meta?.project}`;
     if (bot.meta?.project !== cron.meta?.project) {
       throw new Error('Cron target bot belongs to a different project');
     }
 
-    profile = cron.onBehalfOf ?? createReference(bot);
+    if (cron.onBehalfOf) {
+      runAs = await systemRepo.readReference<ProjectMembership>(cron.onBehalfOf);
+      if (runAs.project?.reference !== projectRef) {
+        throw new Error('Cron onBehalfOf membership belongs to a different project');
+      }
+    } else {
+      runAs = await findProjectMembership(cron.meta?.project as string, createReference(bot));
+    }
+
     input = cron.parameters ?? cron;
   } else {
     bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
-    profile = createReference(bot);
+    runAs = await findProjectMembership(bot.meta?.project as string, createReference(bot));
     input = bot;
   }
-
-  const project = bot.meta?.project as string;
-  const runAs = await findProjectMembership(project, profile);
 
   if (!runAs) {
     throw new Error('Could not find project membership for bot');

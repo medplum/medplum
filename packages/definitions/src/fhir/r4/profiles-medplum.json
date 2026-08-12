@@ -10742,8 +10742,8 @@
           {
             "id" : "Cron.onBehalfOf",
             "path" : "Cron.onBehalfOf",
-            "short" : "The profile on whose behalf the job runs",
-            "definition" : "The profile resource whose identity and access policy the scheduled job assumes when it runs. If absent, the job runs as the target Bot itself.",
+            "short" : "The membership on whose behalf the job runs",
+            "definition" : "The project membership whose identity and access policy the scheduled job assumes when it runs. If absent, the job runs as the target Bot's own membership.",
             "min" : 0,
             "max" : "1",
             "base" : {
@@ -10753,9 +10753,7 @@
             },
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ClientApplication",
-              "http://hl7.org/fhir/StructureDefinition/Patient",
-              "http://hl7.org/fhir/StructureDefinition/Practitioner"]
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ProjectMembership"]
             }]
           },
           {

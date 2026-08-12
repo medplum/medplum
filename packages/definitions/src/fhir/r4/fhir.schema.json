@@ -65716,7 +65716,7 @@
           "type": "array"
         },
         "onBehalfOf": {
-          "description": "The profile resource whose identity and access policy the scheduled job assumes when it runs. If absent, the job runs as the target Bot itself.",
+          "description": "The project membership whose identity and access policy the scheduled job assumes when it runs. If absent, the job runs as the target Bot\u0027s own membership.",
           "$ref": "#/definitions/Reference"
         },
         "parameters": {

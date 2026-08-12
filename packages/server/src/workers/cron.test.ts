@@ -386,7 +386,7 @@ describe('Cron resource', () => {
   test('execBot runs the target bot as onBehalfOf with the Cron parameters', () =>
     withTestContext(async () => {
       const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-      await systemRepo.createResource<ProjectMembership>({
+      const membership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),
         user: { reference: 'User/' + randomUUID() },
@@ -402,7 +402,7 @@ describe('Cron resource', () => {
         resourceType: 'Cron',
         cronString: '* * * * *',
         targetReference: createReference(bot),
-        onBehalfOf: createReference(practitioner),
+        onBehalfOf: createReference(membership),
         parameters,
       });
 
@@ -413,9 +413,32 @@ describe('Cron resource', () => {
       expect(executeBotSpy).toHaveBeenCalledTimes(1);
       const args = executeBotSpy.mock.calls[0][0];
       expect(args.bot.id).toStrictEqual(bot.id);
+      expect(args.runAs.id).toStrictEqual(membership.id);
       expect(args.runAs.profile).toMatchObject(createReference(practitioner));
       expect(args.input).toMatchObject(parameters);
       executeBotSpy.mockRestore();
+    }));
+
+  test('execBot rejects an onBehalfOf membership in another project', () =>
+    withTestContext(async () => {
+      const other = await createTestProject({ withClient: true, project: { features: ['cron'] } });
+      const otherMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(other.project),
+        user: { reference: 'User/' + randomUUID() },
+        profile: createReference(other.client),
+      });
+
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(bot),
+        onBehalfOf: createReference(otherMembership),
+      });
+
+      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
+        'Cron onBehalfOf membership belongs to a different project'
+      );
     }));
 
   test('execBot rejects a target bot in another project', () =>

@@ -2398,7 +2398,7 @@
         "name": "on-behalf-of",
         "status": "draft",
         "publisher": "Medplum",
-        "description": "The profile on whose behalf the cron job runs",
+        "description": "The project membership on whose behalf the cron job runs",
         "code": "on-behalf-of",
         "base": ["Cron"],
         "type": "reference",

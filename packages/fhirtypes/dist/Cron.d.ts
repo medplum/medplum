@@ -6,13 +6,11 @@
  */
 
 import type { Bot } from './Bot.d.ts';
-import type { ClientApplication } from './ClientApplication.d.ts';
 import type { Extension } from './Extension.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
 import type { Parameters } from './Parameters.d.ts';
-import type { Patient } from './Patient.d.ts';
-import type { Practitioner } from './Practitioner.d.ts';
+import type { ProjectMembership } from './ProjectMembership.d.ts';
 import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 
@@ -98,11 +96,11 @@ export interface Cron {
   modifierExtension?: Extension[];
 
   /**
-   * The profile resource whose identity and access policy the scheduled
-   * job assumes when it runs. If absent, the job runs as the target Bot
-   * itself.
+   * The project membership whose identity and access policy the scheduled
+   * job assumes when it runs. If absent, the job runs as the target Bot's
+   * own membership.
    */
-  onBehalfOf?: Reference<ClientApplication | Patient | Practitioner>;
+  onBehalfOf?: Reference<ProjectMembership>;
 
   /**
    * Parameters passed to the target as input each time the scheduled job
