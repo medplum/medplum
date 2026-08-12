@@ -4,37 +4,8 @@
   row-gap: var(--mantine-spacing-xs);
 }
 
-/* `AND` between two rows and `OR` between two chips are the field's two
-   operators */
-.joiner,
-.alternativePill + .alternativePill::before {
+/* `AND` between two rows, spaced out so it reads as an operator rather than as
+   a word in the label above it */
+.joiner {
   letter-spacing: 0.03em;
-}
-
-/* `OR` between the names in one requirement, because a row of bare chips reads
-   as a list of people who are all coming — the opposite of what a row of
-   alternatives means. It sits in the gap rather than inside a chip, so widen the
-   gap for every chip that carries one. MultiSelect renders its own pills, so
-   this is reached through `classNames.pill` rather than as a child element. */
-.alternativePill + .alternativePill {
-  /* Room for the word, on top of the gap Pill.Group already leaves. */
-  --or-gap: var(--mantine-spacing-xl);
-
-  position: relative;
-  margin-inline-start: var(--or-gap);
-}
-
-.alternativePill + .alternativePill::before {
-  content: 'OR';
-  position: absolute;
-  inset-inline-end: 100%;
-  top: 0;
-  bottom: 0;
-  width: calc(var(--or-gap) + var(--pg-gap));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  color: var(--mantine-color-dimmed);
-  font-size: var(--mantine-font-size-xs);
 }

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Coding } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Schedule } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { DrOkaforSchedule, DrRiveraSchedule, ExamRoomASchedule } from '../stories/scheduling';
@@ -9,24 +10,14 @@ import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { ActorRequirement, ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
 import { toActorRequirements } from './AppointmentFinder.schedules';
 
-const SURGERY: Coding = { system: 'http://snomed.info/sct', code: '394609007', display: 'Surgery' };
-const ANAESTHETICS: Coding = { system: 'http://snomed.info/sct', code: '394577000', display: 'Anaesthetics' };
-const DOCTOR: Coding = { system: 'http://example.org/roles', code: 'doctor', display: 'Doctor' };
-
-function candidate(schedule: typeof DrRiveraSchedule, display: string, qualifiers: Coding[] = []): ScheduleCandidate {
-  return {
-    schedule,
-    actor: schedule.actor[0],
-    actorType: 'PractitionerRole',
-    role: 'provider',
-    actorDisplay: display,
-    qualifiers,
-    actorResource: undefined,
-  };
+// The name goes on the Schedule's own actor, which is where the field reads it
+// from now that a candidate holds nothing but what a search fetched.
+function candidate(schedule: WithId<Schedule>, display: string): ScheduleCandidate {
+  return { schedule: { ...schedule, actor: [{ ...schedule.actor[0], display }] }, actorResource: undefined };
 }
 
-const RIVERA = candidate(DrRiveraSchedule, 'Dr. Maya Rivera', [DOCTOR, SURGERY]);
-const OKAFOR = candidate(DrOkaforSchedule, 'Dr. Tunde Okafor', [DOCTOR, ANAESTHETICS]);
+const RIVERA = candidate(DrRiveraSchedule, 'Dr. Maya Rivera');
+const OKAFOR = candidate(DrOkaforSchedule, 'Dr. Tunde Okafor');
 
 const PROVIDERS: ScheduleCandidateGroup = {
   role: 'provider',
@@ -39,13 +30,12 @@ const ROOMS: ScheduleCandidateGroup = {
   role: 'room',
   label: 'Room',
   required: false,
-  candidates: [{ ...candidate(ExamRoomASchedule, 'Exam Room A'), actorType: 'Location', role: 'room' }],
+  candidates: [candidate(ExamRoomASchedule, 'Exam Room A')],
 };
 
 function Harness(props: {
   group?: ScheduleCandidateGroup;
   initial?: readonly ActorRequirement[];
-  allowAlternatives?: boolean;
   disabled?: boolean;
   error?: string;
   onChange?: (value: ActorRequirement[]) => void;
@@ -55,7 +45,6 @@ function Harness(props: {
     <AppointmentActorSelect
       group={props.group ?? PROVIDERS}
       value={value}
-      allowAlternatives={props.allowAlternatives}
       disabled={props.disabled}
       error={props.error}
       onChange={(next) => {
@@ -159,9 +148,6 @@ describe('AppointmentActorSelect', () => {
     openList();
 
     expect(await screen.findByRole('option', { name: 'Dr. Tunde Okafor' })).toBeInTheDocument();
-    // The name is the whole of what an actor is read by. What they do narrows
-    // the list when it is typed, but is not written out beside them.
-    expect(screen.queryByText('Anaesthetics')).not.toBeInTheDocument();
   });
 
   test('Joins a second actor as a row of its own, numbering both and writing AND between them', async () => {
@@ -240,47 +226,21 @@ describe('AppointmentActorSelect', () => {
     openList();
     await pick('Dr. Tunde Okafor');
 
-    // A row is one actor while alternatives are off, so the second pick stands
-    // in for the first instead of widening the row into a choice.
+    // A row is one actor, so the second pick stands in for the first rather
+    // than joining it.
     expect(onChange).toHaveBeenLastCalledWith([{ scheduleIds: ['schedule-dr-okafor'] }]);
     closeList();
     expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument();
     expect(screen.queryByText('Dr. Maya Rivera')).not.toBeInTheDocument();
   });
 
-  test('Takes several actors in one row when alternatives are allowed', async () => {
-    const onChange = vi.fn();
-    setup({ allowAlternatives: true, initial: toActorRequirements(['schedule-dr-rivera']), onChange });
-
-    openList();
-    await pick('Dr. Tunde Okafor');
-
-    // One requirement naming both: either would do, and `getActorCombinations`
-    // searches for each of them in turn.
-    expect(onChange).toHaveBeenLastCalledWith([{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }]);
-  });
-
-  test('Reads a row of several names as a choice however the value arrived', () => {
-    // A caller can hand back a requirement naming several actors — a saved
-    // search, or a link — whether or not this field would have built one, so
-    // what the row says follows the value rather than the prop.
-    setup({ initial: [{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }] });
-
-    // On screen the choice is the `OR` between the names, drawn on the chips —
-    // which is all jsdom can see of it, the word itself being generated content.
-    expect(screen.getByText('Dr. Tunde Okafor').closest('.alternativePill')).not.toBeNull();
-    // Generated content is not dependably announced, so the choice is stated
-    // again somewhere a screen reader is certain to reach it.
-    expect(screen.getByRole('textbox', { name: 'Provider' })).toHaveAccessibleDescription('Any one of these will do.');
-  });
-
-  test('Searches by what an actor does as well as by name', async () => {
+  test('Narrows a row by name as it is typed into', async () => {
     setup();
 
     openList();
     expect(await screen.findByRole('option', { name: 'Dr. Maya Rivera' })).toBeInTheDocument();
 
-    await search('anaesthetics');
+    await search('okafor');
 
     expect(screen.getByRole('option', { name: 'Dr. Tunde Okafor' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Dr. Maya Rivera' })).not.toBeInTheDocument();

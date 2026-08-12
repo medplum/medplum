@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ComboboxItem, OptionsFilter } from '@mantine/core';
-import { ActionIcon, Button, Group, Input, MultiSelect, Stack, Text, VisuallyHidden } from '@mantine/core';
+import { ActionIcon, Button, Group, Input, MultiSelect, Stack, Text } from '@mantine/core';
 import { IconMinus, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment } from 'react';
 import classes from './AppointmentFinder.module.css';
 import type { ActorRequirement, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
-import { candidateMatchesQuery, getRequirementLabel, getSelectedCandidates } from './AppointmentFinder.schedules';
+import { getCandidateDisplay, getRequirementLabel, getSelectedCandidates } from './AppointmentFinder.schedules';
 
 /**
  * A row that has been added but not filled.
@@ -23,15 +22,6 @@ export interface AppointmentActorSelectProps {
   /** The actors this role needs, one requirement per row, all of which attend. */
   readonly value: readonly ActorRequirement[];
   readonly onChange: (requirements: ActorRequirement[]) => void;
-  /**
-   * Whether one row may name several actors, any one of which would do.
-   *
-   * Off, a row is a single actor and a second pick replaces the first, which is
-   * the only shape the form offers today. On, a row becomes a choice — the state
-   * it produces is the same either way, and `getActorCombinations` already
-   * searches every way of resolving it.
-   */
-  readonly allowAlternatives?: boolean;
   readonly error?: string;
   readonly disabled?: boolean;
 }
@@ -40,23 +30,21 @@ export interface AppointmentActorSelectProps {
  * Chooses the actors an appointment is held on for one role.
  *
  * Every requirement is a row of its own, with `AND` written between one row and
- * the next. The joiner is text rather than a control, so there is nothing to flip
- * while only `AND` is supported, and it is lettered like the `OR` between
- * alternatives so the two read as a pair.
+ * the next. The joiner is text rather than a control, so there is nothing to
+ * flip while only `AND` is supported.
  *
  * Rows are requirements, so everything chosen attends: `$find` intersects their
  * schedules, and adding a row narrows the times offered to the ones that actor
- * is also free for. Alternatives *within* a row widen the search instead, and
- * are gated behind `allowAlternatives`.
+ * is also free for. A row names one actor — `ActorRequirement` can carry several
+ * as a choice between them, which `getActorCombinations` searches, but nothing
+ * offers a way to build one yet.
  *
  * @param props - The React props.
  * @returns The field for one role.
  */
 export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.Element {
-  const { group, value, onChange, allowAlternatives, error, disabled } = props;
+  const { group, value, onChange, error, disabled } = props;
   const label = group.label.toLowerCase();
-
-  const candidatesById = new Map(group.candidates.map((candidate) => [candidate.schedule.id, candidate]));
 
   // Rows are the requirements themselves, so an empty field is one empty row:
   // there is no separate notion of a row that exists but holds nothing.
@@ -67,20 +55,12 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
   const chosen = new Set(getSelectedCandidates(group, { [group.role]: rows }).map((c) => c.schedule.id));
   // Stacking empty rows would leave the requirements they stand for ambiguous,
   // so a row has to be filled before it can be joined to another.
-  const canAdd = rows[rows.length - 1].scheduleIds.length > 0 && chosen.size < group.candidates.length;
-
-  // Narrows a row's list by what an actor does as well as by name, as it is
-  // typed into. Mantine's own filter only matches the name.
-  const filter: OptionsFilter = ({ options, search }) =>
-    (options as ComboboxItem[]).filter((option) => {
-      const candidate = candidatesById.get(option.value);
-      return !!candidate && candidateMatchesQuery(candidate, search);
-    });
+  const canAdd = !!rows.at(-1)?.scheduleIds.length && chosen.size < group.candidates.length;
 
   function setRow(index: number, scheduleIds: string[]): void {
     // Mantine appends what was picked, so keeping the last of them is what makes
-    // a row without alternatives behave as a single select.
-    const ids = allowAlternatives ? scheduleIds : scheduleIds.slice(-1);
+    // a row behave as a single select.
+    const ids = scheduleIds.slice(-1);
     onChange(rows.map((requirement, i) => (i === index ? { scheduleIds: ids } : requirement)));
   }
 
@@ -97,7 +77,6 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
         {rows.map((requirement, index) => {
           const ids = requirement.scheduleIds;
           const rowLabel = rows.length > 1 ? `${group.label} ${index + 1}` : group.label;
-          const isChoice = ids.length > 1;
 
           return (
             // Keyed by position, which is what a row is: `Provider 2` names the
@@ -115,21 +94,18 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
                   miw={0}
                   aria-label={rowLabel}
                   aria-required={group.required && index === 0 ? true : undefined}
-                  classNames={{ pill: classes.alternativePill }}
-                  description={isChoice ? <VisuallyHidden>Any one of these will do.</VisuallyHidden> : undefined}
                   styles={{ wrapper: { marginBlock: 0 } }}
                   error={!!error}
                   placeholder={ids.length === 0 ? `Search ${label}s` : undefined}
                   data={group.candidates
                     .filter((candidate) => !chosen.has(candidate.schedule.id) || ids.includes(candidate.schedule.id))
-                    .map((candidate) => ({ value: candidate.schedule.id, label: candidate.actorDisplay }))}
+                    .map((candidate) => ({ value: candidate.schedule.id, label: getCandidateDisplay(candidate) }))}
                   value={[...ids]}
                   disabled={disabled}
                   searchable
                   // The names on offer are only in the document while the list
                   // is open, so a name in the field means it was chosen.
                   comboboxProps={{ keepMounted: false }}
-                  filter={filter}
                   nothingFoundMessage={`No ${label}s found`}
                   maxDropdownHeight={240}
                   onChange={(ids) => setRow(index, ids)}

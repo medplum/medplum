@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Coding, Schedule } from '@medplum/fhirtypes';
+import type { Schedule } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -15,7 +15,7 @@ import {
   ExamRoomBSchedule,
 } from '../stories/scheduling';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
-import { ROLE_LABELS, getSchedulingRole, isSchedulingActorType } from './AppointmentFinder.roles';
+import { ROLE_LABELS, isSchedulingActorType } from './AppointmentFinder.roles';
 import type { ActorRequirement, ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
 import { toActorRequirements } from './AppointmentFinder.schedules';
 
@@ -24,37 +24,23 @@ export default {
   component: AppointmentActorSelect,
 } as Meta;
 
-const SURGEON: Coding = { system: 'http://snomed.info/sct', code: '304292004', display: 'Surgeon' };
-const ANAESTHETICS: Coding = { system: 'http://snomed.info/sct', code: '394577000', display: 'Anaesthetics' };
-const IMAGING: Coding = { system: 'http://snomed.info/sct', code: '82918005', display: 'Imaging room' };
-
 /**
  * Builds a candidate from a fixture Schedule, the way `searchEligibleSchedules`
  * would have.
  *
- * The role and actor type are derived from the Schedule's own actor rather than
- * passed in, so a story cannot describe a room as a provider.
+ * The name is written onto the Schedule's own actor rather than held beside it,
+ * so `getCandidateDisplay` reads it back the way it reads a real one.
  *
  * @param schedule - The fixture Schedule the actor is booked through.
  * @param display - The actor's name, as the Schedule records it.
- * @param qualifiers - Codings saying what kind of thing the actor is.
  * @returns The candidate.
  */
-function candidate(schedule: WithId<Schedule>, display: string, qualifiers: Coding[] = []): ScheduleCandidate {
+function candidate(schedule: WithId<Schedule>, display: string): ScheduleCandidate {
   const actor = schedule.actor[0];
-  const actorType = actor.reference?.split('/')[0];
-  if (!isSchedulingActorType(actorType)) {
+  if (!isSchedulingActorType(actor.reference?.split('/')[0])) {
     throw new Error(`${schedule.id} is not held on a schedulable actor`);
   }
-  return {
-    schedule,
-    actor,
-    actorType,
-    role: getSchedulingRole(actorType),
-    actorDisplay: display,
-    qualifiers,
-    actorResource: undefined,
-  };
+  return { schedule: { ...schedule, actor: [{ ...actor, display }] }, actorResource: undefined };
 }
 
 const PROVIDERS: ScheduleCandidateGroup = {
@@ -64,8 +50,8 @@ const PROVIDERS: ScheduleCandidateGroup = {
   candidates: [
     candidate(DrRiveraSchedule, 'Dr. Maya Rivera'),
     candidate(DrOkaforSchedule, 'Dr. Tunde Okafor'),
-    candidate(DrChenSchedule, 'Dr. Wei Chen', [SURGEON]),
-    candidate(DrKimSchedule, 'Dr. James Kim', [ANAESTHETICS]),
+    candidate(DrChenSchedule, 'Dr. Wei Chen'),
+    candidate(DrKimSchedule, 'Dr. James Kim'),
   ],
 };
 
@@ -73,7 +59,7 @@ const ROOMS: ScheduleCandidateGroup = {
   role: 'room',
   label: ROLE_LABELS.room,
   required: false,
-  candidates: [candidate(ExamRoomASchedule, 'Exam Room A', [IMAGING]), candidate(ExamRoomBSchedule, 'Exam Room B')],
+  candidates: [candidate(ExamRoomASchedule, 'Exam Room A'), candidate(ExamRoomBSchedule, 'Exam Room B')],
 };
 
 /**
@@ -81,26 +67,18 @@ const ROOMS: ScheduleCandidateGroup = {
  * @param props - The React props.
  * @param props.group - The role and the actors that can fill it.
  * @param props.initial - Requirements chosen before the story opens.
- * @param props.allowAlternatives - Whether a row may hold a choice of actors.
  * @param props.error - Why the selection is not yet valid.
  * @returns The field.
  */
 function Field(props: {
   readonly group: ScheduleCandidateGroup;
   readonly initial?: readonly ActorRequirement[];
-  readonly allowAlternatives?: boolean;
   readonly error?: string;
 }): JSX.Element {
   const [value, setValue] = useState<readonly ActorRequirement[]>(props.initial ?? []);
   return (
     <Document>
-      <AppointmentActorSelect
-        group={props.group}
-        value={value}
-        allowAlternatives={props.allowAlternatives}
-        error={props.error}
-        onChange={setValue}
-      />
+      <AppointmentActorSelect group={props.group} value={value} error={props.error} onChange={setValue} />
     </Document>
   );
 }
@@ -108,9 +86,6 @@ function Field(props: {
 /**
  * One empty row on an optional role. Leaving it alone holds no room at all,
  * rather than looking for whichever one is free.
- *
- * Opening the list and typing searches what an actor *is* as well as what it is
- * called, so "imaging" finds Exam Room A by what it is for rather than by name.
  *
  * The only optional role here; every other story fills a required one.
  * @returns The story.
@@ -127,33 +102,6 @@ export const AAndB = (): JSX.Element => (
   <Field group={PROVIDERS} initial={toActorRequirements([DrChenSchedule.id, DrKimSchedule.id])} />
 );
 AAndB.storyName = 'A and B';
-
-/**
- * Two providers in one row, so either would do. `OR` between the chips is all
- * that separates this from `A and B`, where both are held.
- *
- * Searched as two `$find` requests, one per way of resolving the row, which
- * `getActorCombinations` enumerates.
- * @returns The story.
- */
-export const AOrB = (): JSX.Element => (
-  <Field group={PROVIDERS} allowAlternatives initial={[{ scheduleIds: [DrChenSchedule.id, DrKimSchedule.id] }]} />
-);
-AOrB.storyName = 'A or B';
-
-/**
- * A choice and a requirement together: whichever of Chen and Kim is free, plus
- * Rivera, who is held either way.
- * @returns The story.
- */
-export const AOrBAndC = (): JSX.Element => (
-  <Field
-    group={PROVIDERS}
-    allowAlternatives
-    initial={[{ scheduleIds: [DrChenSchedule.id, DrKimSchedule.id] }, { scheduleIds: [DrRiveraSchedule.id] }]}
-  />
-);
-AOrBAndC.storyName = '(A or B) and C';
 
 /**
  * A required role with nothing chosen, as the form reports it on submit. The
