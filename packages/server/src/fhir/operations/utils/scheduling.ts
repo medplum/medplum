@@ -315,6 +315,25 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
   return result;
 }
 
+type CapacityEvent = { time: number; capacity: number; entering: boolean };
+
+// Builds the sorted start/end events for a sweep over `slots`' booked (non-free, non-error) time.
+function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
+  const events: CapacityEvent[] = [];
+  for (const slot of slots) {
+    if (slot.status === 'free' || slot.status === 'entered-in-error') {
+      continue;
+    }
+
+    const capacity = getSlotCapacity(slot);
+    events.push(
+      { time: new Date(slot.start).valueOf(), capacity, entering: true },
+      { time: new Date(slot.end).valueOf(), capacity, entering: false }
+    );
+  }
+  return events.sort((a, b) => a.time - b.time);
+}
+
 /**
  * Returns the sub-intervals where a prospective booking of capacity `candidateCapacity`
  * cannot be placed among `slots`. A time `t` is excluded if the number of slots covering it
@@ -335,20 +354,8 @@ export function intervalsExceedingCapacity(slots: Slot[], candidateCapacity: num
   // Sweep the booking start/end instants in time order. `open` holds the capacities
   // of the slots covering the current segment — pushed as each booking starts,
   // removed as it ends.
+  const events = buildCapacityEvents(slots);
   const open: number[] = [];
-  const events: { time: number; capacity: number; entering: boolean }[] = [];
-  for (const slot of slots) {
-    if (slot.status === 'free' || slot.status === 'entered-in-error') {
-      continue;
-    }
-
-    const start = new Date(slot.start).valueOf();
-    const end = new Date(slot.end).valueOf();
-    const capacity = getSlotCapacity(slot);
-    events.push({ time: start, capacity, entering: true });
-    events.push({ time: end, capacity, entering: false });
-  }
-  events.sort((a, b) => a.time - b.time);
 
   const result: Interval[] = [];
   let blockedStart: number | undefined;
@@ -369,12 +376,7 @@ export function intervalsExceedingCapacity(slots: Slot[], candidateCapacity: num
 
     // Blocked when the concurrent count has reached the strictest applicable limit:
     // the candidate's own capacity and every covering booking's capacity.
-    let limit = candidateCapacity;
-    for (const capacity of open) {
-      if (capacity < limit) {
-        limit = capacity;
-      }
-    }
+    const limit = Math.min(candidateCapacity, ...open);
     const blocked = open.length >= limit;
     if (blocked && blockedStart === undefined) {
       blockedStart = time;
