@@ -40,11 +40,21 @@ botCreateCommand
   .arguments('<botName> <projectId> <sourceFile> <distFile>')
   .description('Creating a bot')
   .option('--runtime-version <runtimeVersion>', 'Runtime version (awslambda, vmcontext)')
-  .option('--no-write-config', 'Do not write bot to config')
+  .option('--no-write-config', 'Do not write bot to config', true)
+  .option('--file <file>', 'Specifies the config file to write the bot to')
   .action(async (botName, projectId, sourceFile, distFile, options) => {
     const medplum = await createMedplumClient(options);
 
-    await createBot(medplum, botName, projectId, sourceFile, distFile, options.runtimeVersion, !!options.writeConfig);
+    await createBot(
+      medplum,
+      botName,
+      projectId,
+      sourceFile,
+      distFile,
+      options.runtimeVersion,
+      !!options.writeConfig,
+      options.file
+    );
   });
 
 export async function botWrapper(medplum: MedplumClient, botName: string, deploy = false): Promise<void> {
