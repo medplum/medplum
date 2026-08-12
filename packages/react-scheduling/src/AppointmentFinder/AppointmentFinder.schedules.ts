@@ -18,11 +18,6 @@ const REQUIRED_ROLES: ReadonlySet<SchedulingRole> = new Set(['provider']);
 /**
  * A Schedule that can be booked for a service, paired with the actor it belongs
  * to.
- *
- * Only what a search had to fetch is held. The role an actor fills and the name
- * it goes by are read back off the Schedule by `getCandidateRole` and
- * `getCandidateDisplay`, so there is one account of each rather than a copy
- * taken when the candidate was built.
  */
 export interface ScheduleCandidate {
   readonly schedule: WithId<Schedule>;
@@ -35,12 +30,13 @@ export interface ScheduleCandidate {
  *
  * `$find` rejects a schedule with more than one, and `searchEligibleSchedules`
  * drops those before they become candidates, so a candidate always has exactly
- * this one.
+ * this one — which is why callers outside this module read the actor straight
+ * off `candidate.schedule` rather than through here.
  *
  * @param candidate - The candidate to read.
  * @returns Its schedule's only actor.
  */
-export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
+function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
   return candidate.schedule.actor[0];
 }
 
