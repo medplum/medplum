@@ -27,12 +27,6 @@ export interface ScheduleCandidate {
 
 /**
  * Returns the actor a candidate's schedule is held on.
- *
- * `$find` rejects a schedule with more than one, and `searchEligibleSchedules`
- * drops those before they become candidates, so a candidate always has exactly
- * this one — which is why callers outside this module read the actor straight
- * off `candidate.schedule` rather than through here.
- *
  * @param candidate - The candidate to read.
  * @returns Its schedule's only actor.
  */
@@ -52,11 +46,6 @@ export function getCandidateRole(candidate: ScheduleCandidate): SchedulingRole |
 
 /**
  * Names a candidate's actor, for use in plain-text option lists.
- *
- * The Schedule's own display is preferred over the actor resource's name: it is
- * always present, and it is what the site chose to call the actor in this
- * context.
- *
  * @param candidate - The candidate to name.
  * @returns The name to show.
  */
@@ -81,15 +70,7 @@ export interface ScheduleCandidateGroup {
 
 /**
  * What an appointment is being asked for: the schedules chosen, per role.
- *
- * Everything named attends. `$find` intersects the schedules in one request, so
- * a whole selection is one request for the times all of those actors are free —
- * which is why naming a second provider narrows the times offered rather than
- * widening them.
- *
- * Asking for a *choice* between actors is a request per way of resolving it,
- * with no cursor to page the answers together. That is a larger question than
- * this shape shipped to answer, so it is left to the field that introduces it.
+ * Everything named attends.
  */
 export type ActorSelections = Partial<Record<SchedulingRole, readonly string[]>>;
 
@@ -101,13 +82,6 @@ export interface SearchEligibleSchedulesOptions {
 
 /**
  * Finds the Schedules that can be booked for a HealthcareService.
- *
- * No search parameter indexes the `service-type-reference` extension that
- * actually links a Schedule to a service, so this searches on the service type
- * codings the two share and then confirms the link client-side. A service with
- * no codings at all cannot be narrowed that way, so its schedules are read and
- * filtered instead.
- *
  * @param medplum - The Medplum client.
  * @param service - The HealthcareService being booked.
  * @param options - Abort signal and page size.
