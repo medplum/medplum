@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Coding, Device, HealthcareService, Location, PractitionerRole, Schedule } from '@medplum/fhirtypes';
+import type { Device, HealthcareService, Location, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   DrChenRole,
@@ -16,16 +16,14 @@ import {
   Ultrasound1Schedule,
   UltrasoundImagingService,
 } from '../stories/scheduling';
-import { getSchedulingRole } from './AppointmentFinder.roles';
 import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
 import {
   MAX_ACTOR_COMBINATIONS,
-  candidateMatchesQuery,
   countActorCombinations,
-  filterCandidatesByClinic,
+  filterCandidatesByLocation,
   getActorCombinations,
-  getActorQualifiers,
-  getQualifierLabels,
+  getCandidateDisplay,
+  getCandidateRole,
   getRequirementLabel,
   getSelectedCandidates,
   getSelectionError,
@@ -67,12 +65,12 @@ describe('searchEligibleSchedules', () => {
       'schedule-ultrasound-1',
       'schedule-ultrasound-2',
     ]);
-    expect(candidates.map((candidate) => candidate.role)).toContain('provider');
-    expect(candidates.map((candidate) => candidate.role)).toContain('room');
-    expect(candidates.map((candidate) => candidate.role)).toContain('device');
-    expect(candidates.find((candidate) => candidate.schedule.id === 'schedule-dr-rivera')?.actorDisplay).toBe(
-      'Dr. Maya Rivera'
-    );
+    expect(candidates.map(getCandidateRole)).toContain('provider');
+    expect(candidates.map(getCandidateRole)).toContain('room');
+    expect(candidates.map(getCandidateRole)).toContain('device');
+
+    const rivera = candidates.find((candidate) => candidate.schedule.id === 'schedule-dr-rivera');
+    expect(rivera && getCandidateDisplay(rivera)).toBe('Dr. Maya Rivera');
   });
 
   test('Rejects a schedule whose serviceType does not reference the service', async () => {
@@ -102,7 +100,7 @@ describe('searchEligibleSchedules', () => {
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
     const candidate = candidates.find((entry) => entry.schedule.id === bare.id);
 
-    expect(candidate?.actorDisplay).toBe('Dr. Tunde Okafor');
+    expect(candidate && getCandidateDisplay(candidate)).toBe('Dr. Tunde Okafor');
     expect(candidate?.actorResource?.id).toBe('dr-okafor');
   });
 
@@ -131,16 +129,16 @@ describe('searchEligibleSchedules', () => {
   });
 });
 
-describe('filterCandidatesByClinic', () => {
+describe('filterCandidatesByLocation', () => {
   test('Keeps the rooms at the clinic, however deep, and drops the rest', async () => {
     const medplum = await setupClient();
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     // Exam Room A is directly inside the clinic and Exam Room B is a floor
     // below it; the satellite site's room is somewhere else entirely.
-    expect(roomsOf(kept)).toStrictEqual(['Exam Room A', 'Exam Room B']);
+    expect(roomsOf(kept).sort()).toStrictEqual(['Exam Room A', 'Exam Room B']);
     // Providers and devices are not sited this way, so they are untouched.
     expect(kept).toHaveLength(6);
   });
@@ -149,7 +147,7 @@ describe('filterCandidatesByClinic', () => {
     const medplum = await setupClient();
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, SatelliteClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, SatelliteClinic);
 
     expect(roomsOf(kept)).toStrictEqual(['Satellite Exam Room']);
   });
@@ -158,7 +156,7 @@ describe('filterCandidatesByClinic', () => {
     const medplum = await setupClient();
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    expect(await filterCandidatesByClinic(medplum, candidates, undefined)).toHaveLength(candidates.length);
+    expect(await filterCandidatesByLocation(medplum, candidates, undefined)).toHaveLength(candidates.length);
   });
 
   test('Keeps a room whose ancestry cannot be read', async () => {
@@ -170,7 +168,7 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     // Hiding a room the user may be entitled to book is worse than showing one
     // that cannot be placed.
@@ -181,7 +179,7 @@ describe('filterCandidatesByClinic', () => {
     const medplum = await setupClient();
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, SatelliteClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, SatelliteClinic);
 
     expect(providersOf(kept).sort()).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
@@ -200,7 +198,7 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(providersOf(kept).sort()).toStrictEqual(['Dr. James Kim', 'Dr. Maria Martinez', 'Dr. Wei Chen']);
   });
@@ -223,7 +221,7 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (NY)');
   });
@@ -245,11 +243,11 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (OR 3)');
     // Still measured against the site being booked: OR 3 is not at the satellite.
-    const atSatellite = await filterCandidatesByClinic(medplum, candidates, SatelliteClinic);
+    const atSatellite = await filterCandidatesByLocation(medplum, candidates, SatelliteClinic);
     expect(providersOf(atSatellite)).not.toContain('Dr. Wei Chen (OR 3)');
   });
 
@@ -270,7 +268,7 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (unknown site)');
   });
@@ -289,7 +287,7 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (unsited)');
   });
@@ -308,22 +306,26 @@ describe('filterCandidatesByClinic', () => {
     });
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByClinic(medplum, candidates, MainClinic);
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(devicesOf(kept).sort()).toStrictEqual(['Ultrasound 1 (Main Campus)', 'Ultrasound 2 (Main Campus)']);
   });
 });
 
+function namesOfRole(candidates: readonly ScheduleCandidate[], role: string): string[] {
+  return candidates.filter((candidate) => getCandidateRole(candidate) === role).map(getCandidateDisplay);
+}
+
 function roomsOf(candidates: readonly ScheduleCandidate[]): string[] {
-  return candidates.filter((candidate) => candidate.role === 'room').map((candidate) => candidate.actorDisplay);
+  return namesOfRole(candidates, 'room');
 }
 
 function providersOf(candidates: readonly ScheduleCandidate[]): string[] {
-  return candidates.filter((candidate) => candidate.role === 'provider').map((candidate) => candidate.actorDisplay);
+  return namesOfRole(candidates, 'provider');
 }
 
 function devicesOf(candidates: readonly ScheduleCandidate[]): string[] {
-  return candidates.filter((candidate) => candidate.role === 'device').map((candidate) => candidate.actorDisplay);
+  return namesOfRole(candidates, 'device');
 }
 
 describe('groupCandidatesByRole', () => {
@@ -355,25 +357,40 @@ describe('groupCandidatesByRole', () => {
     expect(groups[0].candidates).toHaveLength(2);
   });
 
+  test('Sorts each role by name, which is the order its field lists them in', () => {
+    const groups = groupCandidatesByRole([
+      candidateOf(DrOkaforSchedule, 'Practitioner', 'Dr. Tunde Okafor'),
+      candidateOf(Ultrasound1Schedule, 'Device', 'Ultrasound 1'),
+      candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera'),
+    ]);
+
+    expect(groups[0].candidates.map(getCandidateDisplay)).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
+  });
+
   test('Omits roles with no schedules', () => {
     expect(groupCandidatesByRole([])).toStrictEqual([]);
   });
 });
 
+/**
+ * Builds a candidate the way a search would have, on a schedule of the given
+ * actor type.
+ *
+ * The actor is written onto the Schedule rather than held beside it, because
+ * that is where a candidate's role and name are now read back from.
+ *
+ * @param schedule - The Schedule to rewrite the actor of.
+ * @param actorType - The resource type to hold the schedule on.
+ * @param actorDisplay - The actor's name, as the Schedule records it.
+ * @returns The candidate.
+ */
 function candidateOf(
   schedule: WithId<Schedule>,
   actorType: 'Practitioner' | 'PractitionerRole' | 'Location' | 'Device',
-  actorDisplay: string,
-  qualifiers: Coding[] = []
+  actorDisplay: string
 ): ScheduleCandidate {
-  const role = getSchedulingRole(actorType);
   return {
-    schedule,
-    actor: { reference: `${actorType}/${schedule.id}`, display: actorDisplay },
-    actorType,
-    role,
-    actorDisplay,
-    qualifiers,
+    schedule: { ...schedule, actor: [{ reference: `${actorType}/${schedule.id}`, display: actorDisplay }] },
     actorResource: undefined,
   };
 }
@@ -565,56 +582,29 @@ describe('selections', () => {
   });
 });
 
-describe('qualifiers', () => {
-  const SURGERY: Coding = { system: 'http://snomed.info/sct', code: '394609007', display: 'Surgery' };
-  const ANAESTHETICS: Coding = { system: 'http://snomed.info/sct', code: '394577000', display: 'Anaesthetics' };
+describe('candidate fields', () => {
+  test('Names an actor by the Schedule display, then the resource, then the reference', () => {
+    const named = candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera');
+    expect(getCandidateDisplay(named)).toBe('Dr. Maya Rivera');
 
-  test('Reads the role and specialty a PractitionerRole holds', () => {
+    // A Schedule that does not name its actor falls back to the resource the
+    // search included, and to the bare reference when it included none.
+    const bare: ScheduleCandidate = {
+      schedule: { ...DrRiveraSchedule, actor: [{ reference: 'Practitioner/dr-rivera' }] },
+      actorResource: { resourceType: 'Practitioner', id: 'dr-rivera', name: [{ given: ['Maya'], family: 'Rivera' }] },
+    };
+    expect(getCandidateDisplay(bare)).toBe('Maya Rivera');
+    expect(getCandidateDisplay({ ...bare, actorResource: undefined })).toBe('Practitioner/dr-rivera');
+  });
+
+  test('Reads the role from the actor type, and says nothing for a type nothing books', () => {
+    expect(getCandidateRole(candidateOf(DrRiveraSchedule, 'PractitionerRole', 'Dr. Maya Rivera'))).toBe('provider');
+    expect(getCandidateRole(candidateOf(Ultrasound1Schedule, 'Device', 'Ultrasound 1'))).toBe('device');
     expect(
-      getActorQualifiers({
-        resourceType: 'PractitionerRole',
-        id: 'role-1',
-        code: [{ coding: [{ system: 'http://example.org/roles', code: 'doctor', display: 'Doctor' }] }],
-        specialty: [{ coding: [SURGERY] }],
+      getCandidateRole({
+        schedule: { ...DrRiveraSchedule, actor: [{ reference: 'Patient/example' }] },
+        actorResource: undefined,
       })
-    ).toStrictEqual([{ system: 'http://example.org/roles', code: 'doctor', display: 'Doctor' }, SURGERY]);
-  });
-
-  test('Reads the type of a room and of a device', () => {
-    expect(getActorQualifiers({ resourceType: 'Location', id: 'or-3', type: [{ coding: [{ code: 'OR' }] }] })).toEqual([
-      { code: 'OR' },
-    ]);
-    expect(
-      getActorQualifiers({ resourceType: 'Device', id: 'ultrasound-1', type: { coding: [{ code: 'ultrasound' }] } })
-    ).toEqual([{ code: 'ultrasound' }]);
-  });
-
-  test('A plain Practitioner says nothing about what it does', () => {
-    // Nothing in R4 tells a surgeon from an anesthesiologist here, so there is
-    // nothing to narrow a list of them by.
-    expect(getActorQualifiers({ resourceType: 'Practitioner', id: 'dr-rivera' })).toStrictEqual([]);
-    expect(getActorQualifiers(undefined)).toStrictEqual([]);
-  });
-
-  test('Names what an actor is, for matching what is typed', () => {
-    const okafor = candidateOf(DrOkaforSchedule, 'PractitionerRole', 'Dr. Tunde Okafor', [SURGERY, ANAESTHETICS]);
-
-    expect(getQualifierLabels(okafor)).toStrictEqual(['Surgery', 'Anaesthetics']);
-    // An actor with nothing to say about itself is shown as just its name.
-    expect(getQualifierLabels(candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera'))).toStrictEqual([]);
-  });
-
-  test('Falls back to the code when a qualifier has no display', () => {
-    const candidate = candidateOf(DrRiveraSchedule, 'Location', 'Operating Room 3', [{ code: 'OR' }]);
-    expect(getQualifierLabels(candidate)).toStrictEqual(['OR']);
-  });
-
-  test('Searches what an actor does as well as what it is called', () => {
-    const rivera = candidateOf(DrRiveraSchedule, 'PractitionerRole', 'Dr. Maya Rivera', [SURGERY]);
-
-    expect(candidateMatchesQuery(rivera, 'rivera')).toBe(true);
-    expect(candidateMatchesQuery(rivera, 'surg')).toBe(true);
-    expect(candidateMatchesQuery(rivera, 'anaes')).toBe(false);
-    expect(candidateMatchesQuery(rivera, '  ')).toBe(true);
+    ).toBeUndefined();
   });
 });

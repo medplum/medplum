@@ -8,13 +8,14 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { SatelliteClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
 import { act, render, screen, waitFor } from '../test-utils/render';
+import { getCandidateDisplay } from './AppointmentFinder.schedules';
 import { useEligibleSchedules } from './useEligibleSchedules';
 
 const medplum = new MockClient();
 
 interface HarnessProps {
   readonly service?: WithId<HealthcareService>;
-  readonly clinic?: WithId<Location>;
+  readonly location?: WithId<Location>;
 }
 
 const medplumWrapper = ({ children }: { children: ReactNode }): JSX.Element => (
@@ -22,14 +23,17 @@ const medplumWrapper = ({ children }: { children: ReactNode }): JSX.Element => (
 );
 
 function Harness(props: HarnessProps): JSX.Element {
-  const { candidates, groups, excludedByClinic, loading, error } = useEligibleSchedules(props.service, props.clinic);
+  const { candidates, groups, excludedByLocation, loading, error } = useEligibleSchedules(
+    props.service,
+    props.location
+  );
   return (
     <div>
       <div data-testid="loading">{loading ? 'loading' : 'idle'}</div>
       <div data-testid="error">{error?.message ?? ''}</div>
-      <div data-testid="excluded">{excludedByClinic}</div>
+      <div data-testid="excluded">{excludedByLocation}</div>
       <div data-testid="roles">{groups.map((group) => group.role).join(',')}</div>
-      <div data-testid="actors">{candidates.map((candidate) => candidate.actorDisplay).join(',')}</div>
+      <div data-testid="actors">{candidates.map(getCandidateDisplay).join(',')}</div>
     </div>
   );
 }
@@ -61,7 +65,7 @@ describe('useEligibleSchedules', () => {
   });
 
   test('Leaves out actors sited at another clinic, and says how many', async () => {
-    setup({ service: UltrasoundImagingService, clinic: SatelliteClinic });
+    setup({ service: UltrasoundImagingService, location: SatelliteClinic });
     await settle();
 
     const kept = screen.getByTestId('actors').textContent ?? '';
