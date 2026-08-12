@@ -12,6 +12,7 @@ import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { getProjectScopedUrl } from '../../../util/url';
 import { CancelledError } from '../../../workers/utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
@@ -187,5 +188,5 @@ export async function sendAsyncResponse(
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);
-  sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  sendOutcome(res, accepted(exec.getContentLocation(getProjectScopedUrl(req.originalUrl, baseUrl))));
 }

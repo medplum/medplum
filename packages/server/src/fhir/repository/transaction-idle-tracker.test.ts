@@ -257,7 +257,7 @@ describe('TransactionIdleTracker', () => {
           serializable: false,
           status: 'committed',
           thresholdMs: 50,
-          transactionAttempts: 2,
+          transactionAttempts: 3,
           transactionDurationMs: 100,
         })
       );
