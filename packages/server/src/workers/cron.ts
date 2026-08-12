@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
+import type { Bot, Cron, Project, Reference, Resource, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
@@ -28,10 +28,15 @@ const MAX_BOTS_PER_PAGE = 500;
  * Cron job
  */
 
-export interface CronJobData {
-  readonly resourceType: string;
-  readonly botId: string;
-}
+export type CronJobData =
+  | {
+      readonly resourceType: 'Bot';
+      readonly botId: string;
+    }
+  | {
+      readonly resourceType: 'Cron';
+      readonly cronId: string;
+    };
 
 const queueName = 'CronQueue';
 
@@ -65,7 +70,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
 /**
  * Updates the Cron job for the given resource.
  * Only applies changes if the effective cron string has changed.
- * @param resource - The resource that was created or updated.
+ * @param resource - The resource that was created, updated, or deleted.
  * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
  */
@@ -80,13 +85,20 @@ export async function addCronJobs(
     return;
   }
 
-  if (resource.resourceType !== 'Bot') {
-    // For now we have only the bot to execute on a timed job
+  if (!isSchedulable(resource)) {
     return;
   }
 
   const logger = getLogger();
-  const bot = resource;
+  const schedulerId = getSchedulerId(resource);
+
+  if (context.interaction === 'delete') {
+    // A deleted resource can never run again, so drop its schedule without consulting
+    // project features -- those may have been turned off since the job was registered.
+    logger.info('Removing cron job for deleted resource', { schedulerId });
+    await queue.removeJobScheduler(schedulerId);
+    return;
+  }
 
   // Adding a new feature for project that allows users to add a cron
   const project = context?.project;
@@ -95,9 +107,9 @@ export async function addCronJobs(
     return;
   }
 
-  const oldCronStr = getCronStringForBot(previousVersion as Bot);
-  const newCronStr = getCronStringForBot(bot);
-  logger.debug('Cron job for bot', { botId: bot.id, oldCronStr, newCronStr });
+  const oldCronStr = isSchedulable(previousVersion) ? getCronString(previousVersion) : undefined;
+  const newCronStr = getCronString(resource);
+  logger.debug('Cron job for resource', { schedulerId, oldCronStr, newCronStr });
 
   if (oldCronStr === newCronStr) {
     // No change in cron job
@@ -105,23 +117,56 @@ export async function addCronJobs(
   }
 
   if (newCronStr) {
-    logger.info('Upsert cron job for bot', { botId: bot.id });
+    logger.info('Upsert cron job for resource', { schedulerId });
     await queue.upsertJobScheduler(
-      bot.id,
+      schedulerId,
       {
         pattern: newCronStr,
       },
       {
-        data: {
-          resourceType: bot.resourceType,
-          botId: bot.id,
-        },
+        data: buildJobData(resource),
       }
     );
   } else {
-    logger.info('Removing cron job for bot', { botId: bot.id });
-    await queue.removeJobScheduler(bot.id);
+    logger.info('Removing cron job for resource', { schedulerId });
+    await queue.removeJobScheduler(schedulerId);
   }
+}
+
+function isSchedulable(resource: Resource | undefined): resource is WithId<Bot> | WithId<Cron> {
+  return (resource?.resourceType === 'Bot' || resource?.resourceType === 'Cron') && resource.id !== undefined;
+}
+
+/**
+ * Returns the BullMQ job scheduler key for a schedulable resource.
+ *
+ * Bot keys are the bare resource id, which is what already-registered schedulers use; changing
+ * that would orphan every existing job. `Cron` keys are namespaced so the two types can never
+ * address each other's schedulers.
+ * @param resource - The schedulable resource.
+ * @returns The scheduler key.
+ */
+function getSchedulerId(resource: WithId<Bot> | WithId<Cron>): string {
+  return resource.resourceType === 'Cron' ? `Cron/${resource.id}` : resource.id;
+}
+
+function buildJobData(resource: WithId<Bot> | WithId<Cron>): CronJobData {
+  return resource.resourceType === 'Cron'
+    ? { resourceType: 'Cron', cronId: resource.id }
+    : { resourceType: 'Bot', botId: resource.id };
+}
+
+function getCronString(resource: Bot | Cron): string | undefined {
+  return resource.resourceType === 'Cron' ? getCronStringForCron(resource) : getCronStringForBot(resource);
+}
+
+function getCronStringForCron(cron: Cron): string | undefined {
+  if (cron.cronString && isValidCron(cron.cronString)) {
+    return cron.cronString;
+  }
+
+  // Otherwise, this is not a valid cron job
+  return undefined;
 }
 
 function getCronStringForBot(bot: Bot | undefined): string | undefined {
@@ -185,15 +230,42 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
-  const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
+
+  let bot: WithId<Bot>;
+  let profile: Reference;
+  let input: unknown;
+
+  if (job.data.resourceType === 'Cron') {
+    const cron = await systemRepo.readResource<Cron>('Cron', job.data.cronId);
+    if (!cron.targetReference) {
+      throw new Error('Could not find target for cron job');
+    }
+
+    bot = await systemRepo.readReference<Bot>(cron.targetReference);
+
+    // `onBehalfOf` names the identity the bot runs as, so it decides which access policy applies.
+    // Resolving it against the Cron's own project keeps a Cron from borrowing a membership
+    // elsewhere, and the bot must live in that project for the same reason.
+    if (bot.meta?.project !== cron.meta?.project) {
+      throw new Error('Cron target bot belongs to a different project');
+    }
+
+    profile = cron.onBehalfOf ?? createReference(bot);
+    input = cron.parameters ?? cron;
+  } else {
+    bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
+    profile = createReference(bot);
+    input = bot;
+  }
+
   const project = bot.meta?.project as string;
-  const runAs = await findProjectMembership(project, createReference(bot));
+  const runAs = await findProjectMembership(project, profile);
 
   if (!runAs) {
     throw new Error('Could not find project membership for bot');
   }
 
-  await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON });
+  await executeBot({ bot, runAs, input, contentType: ContentType.FHIR_JSON });
 }
 
 export async function removeBullMQJobByKey(botId: string): Promise<void> {
@@ -219,6 +291,19 @@ export async function reloadCronBots(): Promise<void> {
           // We pass `undefined` as previous version to make sure that the latest cron string is used
           const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
           await addCronJobs(bot, undefined, { project, interaction: 'update' });
+        }
+      },
+      { delayBetweenPagesMs: 1000 }
+    );
+
+    // `obliterate` above cleared Cron schedules too, so they have to be re-registered here or
+    // every Cron resource silently stops running after a reload.
+    await systemRepo.processAllResources<Cron>(
+      { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
+      async (cron) => {
+        if (cron.cronString) {
+          const project = await systemRepo.readResource<Project>('Project', cron.meta?.project as string);
+          await addCronJobs(cron, undefined, { project, interaction: 'update' });
         }
       },
       { delayBetweenPagesMs: 1000 }

@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
+import type { AuditEvent, Bot, Cron, Parameters, Practitioner, Project, ProjectMembership } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
+import * as executeModule from '../bots/execute';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
@@ -239,6 +240,211 @@ describe('Cron Worker', () => {
       await execBot(job);
       const bundle = await botRepo.search<AuditEvent>({ resourceType: 'AuditEvent' });
       expect(bundle.entry?.length).toStrictEqual(1);
+    }));
+
+  test('Deleting a bot removes its job', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'bot-1',
+        cronString: '* * * * *',
+      });
+      await findAndExecDispatchJob(bot, 'create');
+
+      queue.removeJobScheduler.mockClear();
+      await botRepo.deleteResource('Bot', bot.id);
+      await findAndExecDispatchJob(bot, 'delete');
+      expect(queue.removeJobScheduler).toHaveBeenCalledWith(bot.id);
+    }));
+});
+
+describe('Cron resource', () => {
+  let project: Project;
+  let repo: Repository;
+  let systemRepo: SystemRepository;
+  let bot: Bot;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initAppServices(config);
+
+    const details = await createTestProject({ withClient: true, project: { features: ['cron'] } });
+    project = details.project;
+    repo = new Repository({
+      extendedMode: true,
+      projects: [details.project],
+      author: createReference(details.client),
+    });
+    systemRepo = repo.getSystemRepo();
+
+    bot = await withTestContext(() => repo.createResource<Bot>({ resourceType: 'Bot', name: 'cron-target' }));
+    await withTestContext(() =>
+      systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(bot),
+        profile: createReference(bot),
+      })
+    );
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Creating a Cron with a cronString adds a job', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      queue.upsertJobScheduler.mockClear();
+
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(bot),
+      });
+      await findAndExecDispatchJob(cron, 'create');
+
+      // Namespaced so a Cron can never address a Bot's scheduler
+      expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+        `Cron/${cron.id}`,
+        { pattern: '* * * * *' },
+        { data: { resourceType: 'Cron', cronId: cron.id } }
+      );
+    }));
+
+  test('An invalid cronString adds no job', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      queue.upsertJobScheduler.mockClear();
+
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: 'not a cron expression',
+        targetReference: createReference(bot),
+      });
+      await findAndExecDispatchJob(cron, 'create');
+      expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
+    }));
+
+  test('Removing the cronString removes the job', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(bot),
+      });
+      await findAndExecDispatchJob(cron, 'create');
+
+      queue.removeJobScheduler.mockClear();
+      await repo.updateResource<Cron>({
+        resourceType: 'Cron',
+        id: cron.id,
+        targetReference: createReference(bot),
+      });
+      await findAndExecDispatchJob(cron, 'update');
+      expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
+    }));
+
+  test('Deleting a Cron removes the job', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(bot),
+      });
+      await findAndExecDispatchJob(cron, 'create');
+
+      queue.removeJobScheduler.mockClear();
+      await repo.deleteResource('Cron', cron.id);
+      await findAndExecDispatchJob(cron, 'delete');
+      expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
+    }));
+
+  test('No job without the cron project feature', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      queue.upsertJobScheduler.mockClear();
+
+      const plain = await createTestProject({ withClient: true, project: { features: [] } });
+      const plainRepo = new Repository({
+        extendedMode: true,
+        projects: [plain.project],
+        author: createReference(plain.client),
+      });
+
+      const cron = await plainRepo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+      });
+      await findAndExecDispatchJob(cron, 'create');
+      expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
+    }));
+
+  test('execBot runs the target bot as onBehalfOf with the Cron parameters', () =>
+    withTestContext(async () => {
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: { reference: 'User/' + randomUUID() },
+        profile: createReference(practitioner),
+      });
+
+      const parameters: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'greeting', valueString: 'hello' }],
+      };
+
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(bot),
+        onBehalfOf: createReference(practitioner),
+        parameters,
+      });
+
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      expect(executeBotSpy).toHaveBeenCalledTimes(1);
+      const args = executeBotSpy.mock.calls[0][0];
+      expect(args.bot.id).toStrictEqual(bot.id);
+      expect(args.runAs.profile).toMatchObject(createReference(practitioner));
+      expect(args.input).toMatchObject(parameters);
+      executeBotSpy.mockRestore();
+    }));
+
+  test('execBot rejects a target bot in another project', () =>
+    withTestContext(async () => {
+      const other = await createTestProject({ withClient: true, project: { features: ['cron'] } });
+      const otherRepo = new Repository({
+        extendedMode: true,
+        projects: [other.project],
+        author: createReference(other.client),
+      });
+      const otherBot = await otherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'other-project-bot' });
+
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(otherBot),
+      });
+
+      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
+        'Cron target bot belongs to a different project'
+      );
+    }));
+
+  test('execBot rejects a Cron with no target', () =>
+    withTestContext(async () => {
+      const cron = await repo.createResource<Cron>({ resourceType: 'Cron', cronString: '* * * * *' });
+      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
+        'Could not find target for cron job'
+      );
     }));
 });
 
