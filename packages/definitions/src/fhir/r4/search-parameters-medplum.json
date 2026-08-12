@@ -2419,7 +2419,7 @@
         "code": "target",
         "base": ["Cron"],
         "type": "reference",
-        "expression": "Cron.target.ofType(Reference)"
+        "expression": "Cron.targetReference"
       }
     }
   ]

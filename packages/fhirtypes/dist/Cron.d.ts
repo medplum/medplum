@@ -115,5 +115,5 @@ export interface Cron {
   /**
    * The target invoked each time the scheduled job runs.
    */
-  targetReference?: Reference<Bot>;
+  targetReference: Reference<Bot>;
 }

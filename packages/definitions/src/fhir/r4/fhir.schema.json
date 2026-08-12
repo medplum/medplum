@@ -65735,7 +65735,8 @@
       "additionalProperties": false,
       "required": [
         "resourceType",
-        "onBehalfOf"
+        "onBehalfOf",
+        "targetReference"
       ]
     }
   }

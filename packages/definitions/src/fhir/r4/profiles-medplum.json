@@ -10619,6 +10619,12 @@
                 "severity" : "error",
                 "human" : "A cron job resolves its identity by reading onBehalfOf, so a logical reference is not enough.",
                 "expression" : "onBehalfOf.reference.exists()"
+              },
+              {
+                "key" : "cron-2",
+                "severity" : "error",
+                "human" : "A cron job resolves its target by reading targetReference, so a logical reference is not enough.",
+                "expression" : "targetReference.reference.exists()"
               }
             ]
           },
@@ -10797,15 +10803,15 @@
             }]
           },
           {
-            "id" : "Cron.target[x]",
-            "path" : "Cron.target[x]",
+            "id" : "Cron.targetReference",
+            "path" : "Cron.targetReference",
             "short" : "The target invoked by the scheduled job",
             "definition" : "The target invoked each time the scheduled job runs.",
-            "min" : 0,
+            "min" : 1,
             "max" : "1",
             "base" : {
-              "path" : "Cron.target[x]",
-              "min" : 0,
+              "path" : "Cron.targetReference",
+              "min" : 1,
               "max" : "1"
             },
             "type" : [{

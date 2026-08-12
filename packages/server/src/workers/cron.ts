@@ -237,10 +237,6 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 
   if (job.data.resourceType === 'Cron') {
     const cron = await systemRepo.readResource<Cron>('Cron', job.data.cronId);
-    if (!cron.targetReference) {
-      throw new Error('Could not find target for cron job');
-    }
-
     bot = await systemRepo.readReference<Bot>(cron.targetReference);
 
     // `onBehalfOf` is the membership the bot runs as, so it decides which access policy applies.

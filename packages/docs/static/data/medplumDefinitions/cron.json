@@ -216,7 +216,7 @@
       "inherited": false
     },
     {
-      "name": "target[x]",
+      "name": "targetReference",
       "depth": 1,
       "types": [
         {
@@ -230,8 +230,8 @@
           "documentLocation": "medplum"
         }
       ],
-      "path": "Cron.target[x]",
-      "min": 0,
+      "path": "Cron.targetReference",
+      "min": 1,
       "max": "1",
       "short": "The target invoked by the scheduled job",
       "definition": "The target invoked each time the scheduled job runs.",
@@ -250,7 +250,7 @@
       "name": "target",
       "type": "reference",
       "description": "The Bot invoked by the cron job",
-      "expression": "Cron.target.ofType(Reference)"
+      "expression": "Cron.targetReference"
     }
   ]
 }

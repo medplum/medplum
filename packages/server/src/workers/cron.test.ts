@@ -296,29 +296,35 @@ describe('Cron resource', () => {
     await shutdownApp();
   });
 
-  test('onBehalfOf is required', () =>
-    withTestContext(async () => {
-      await expect(
-        repo.createResource<Cron>({
-          resourceType: 'Cron',
-          cronString: '* * * * *',
-          targetReference: createReference(bot),
-        } as Cron)
-      ).rejects.toThrow('Missing required property');
-    }));
+  // Both references are built inside the callbacks: `test.each` rows are evaluated at collection
+  // time, before `beforeAll` has assigned them.
+  function validCron(): Cron {
+    return {
+      resourceType: 'Cron',
+      cronString: '* * * * *',
+      onBehalfOf: createReference(botMembership),
+      targetReference: createReference(bot),
+    };
+  }
 
-  test('onBehalfOf must be a literal reference', () =>
+  test.each(['onBehalfOf', 'targetReference'])('%s is required', (field) =>
     withTestContext(async () => {
-      // A logical reference names nothing the job can resolve an identity from
-      await expect(
-        repo.createResource<Cron>({
-          resourceType: 'Cron',
-          onBehalfOf: { display: 'Some membership' },
-          cronString: '* * * * *',
-          targetReference: createReference(bot),
-        })
-      ).rejects.toThrow('Constraint cron-1 not met');
-    }));
+      const { [field as 'onBehalfOf']: _omitted, ...withoutField } = validCron();
+      await expect(repo.createResource<Cron>(withoutField as Cron)).rejects.toThrow('Missing required property');
+    })
+  );
+
+  test.each([
+    ['cron-1', 'onBehalfOf'],
+    ['cron-2', 'targetReference'],
+  ])('Constraint %s rejects a logical reference', (key, field) =>
+    withTestContext(async () => {
+      // A logical reference names nothing the job can resolve
+      await expect(repo.createResource<Cron>({ ...validCron(), [field]: { display: 'Logical only' } })).rejects.toThrow(
+        `Constraint ${key} not met`
+      );
+    })
+  );
 
   test('Creating a Cron with a cronString adds a job', () =>
     withTestContext(async () => {
@@ -410,6 +416,7 @@ describe('Cron resource', () => {
       const cron = await plainRepo.createResource<Cron>({
         resourceType: 'Cron',
         onBehalfOf: createReference(botMembership),
+        targetReference: createReference(bot),
         cronString: '* * * * *',
       });
       await findAndExecDispatchJob(cron, 'create');
@@ -449,6 +456,24 @@ describe('Cron resource', () => {
       expect(args.runAs.id).toStrictEqual(membership.id);
       expect(args.runAs.profile).toMatchObject(createReference(practitioner));
       expect(args.input).toMatchObject(parameters);
+      executeBotSpy.mockRestore();
+    }));
+
+  test('execBot passes the Cron itself when it has no parameters', () =>
+    withTestContext(async () => {
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        targetReference: createReference(bot),
+        onBehalfOf: createReference(botMembership),
+      });
+
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      const args = executeBotSpy.mock.calls[0][0];
+      expect(args.input).toMatchObject({ resourceType: 'Cron', id: cron.id });
       executeBotSpy.mockRestore();
     }));
 
@@ -493,18 +518,6 @@ describe('Cron resource', () => {
 
       await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
         'Cron target bot belongs to a different project'
-      );
-    }));
-
-  test('execBot rejects a Cron with no target', () =>
-    withTestContext(async () => {
-      const cron = await repo.createResource<Cron>({
-        resourceType: 'Cron',
-        onBehalfOf: createReference(botMembership),
-        cronString: '* * * * *',
-      });
-      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
-        'Could not find target for cron job'
       );
     }));
 });
