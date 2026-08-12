@@ -91,11 +91,12 @@ export async function addCronJobs(
 
   const logger = getLogger();
   const schedulerId = getSchedulerId(resource);
+  const resourceIds = getResourceIds(resource);
 
   if (context.interaction === 'delete') {
     // A deleted resource can never run again, so drop its schedule without consulting
     // project features -- those may have been turned off since the job was registered.
-    logger.info('Removing cron job for deleted resource', { schedulerId });
+    logger.info('Removing cron job for deleted resource', { schedulerId, ...resourceIds });
     await queue.removeJobScheduler(schedulerId);
     return;
   }
@@ -109,7 +110,7 @@ export async function addCronJobs(
 
   const oldCronStr = isSchedulable(previousVersion) ? getCronString(previousVersion) : undefined;
   const newCronStr = getCronString(resource);
-  logger.debug('Cron job for resource', { schedulerId, oldCronStr, newCronStr });
+  logger.debug('Cron job for resource', { schedulerId, ...resourceIds, oldCronStr, newCronStr });
 
   if (oldCronStr === newCronStr) {
     // No change in cron job
@@ -117,7 +118,7 @@ export async function addCronJobs(
   }
 
   if (newCronStr) {
-    logger.info('Upsert cron job for resource', { schedulerId });
+    logger.info('Upsert cron job for resource', { schedulerId, ...resourceIds });
     await queue.upsertJobScheduler(
       schedulerId,
       {
@@ -128,7 +129,7 @@ export async function addCronJobs(
       }
     );
   } else {
-    logger.info('Removing cron job for resource', { schedulerId });
+    logger.info('Removing cron job for resource', { schedulerId, ...resourceIds });
     await queue.removeJobScheduler(schedulerId);
   }
 }
@@ -148,6 +149,10 @@ function isSchedulable(resource: Resource | undefined): resource is WithId<Bot> 
  */
 function getSchedulerId(resource: WithId<Bot> | WithId<Cron>): string {
   return resource.resourceType === 'Cron' ? `Cron/${resource.id}` : resource.id;
+}
+
+function getResourceIds(resource: WithId<Bot> | WithId<Cron>): { botId?: string; cronId?: string } {
+  return resource.resourceType === 'Cron' ? { cronId: resource.id } : { botId: resource.id };
 }
 
 function buildJobData(resource: WithId<Bot> | WithId<Cron>): CronJobData {
