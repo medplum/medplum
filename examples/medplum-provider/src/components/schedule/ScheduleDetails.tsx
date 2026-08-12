@@ -8,7 +8,7 @@ import type { Appointment, HealthcareService, Practitioner, Schedule, Slot } fro
 import { useMedplum, useResourceModified } from '@medplum/react';
 import { Calendar, getEffectiveAvailability } from '@medplum/react-scheduling';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
@@ -16,7 +16,6 @@ import { useSchedulingResources } from '../../hooks/useSchedulingResources';
 import type { Range } from '../../types/scheduling';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './ScheduleDetails.module.css';
 
@@ -129,8 +128,6 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [medplum, navigate, handleSelectAppointment]
   );
 
-  const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
-
   return (
     <>
       <div className={classes.container}>
@@ -141,7 +138,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
               onSelectInterval={handleSelectInterval}
               onSelectAppointment={handleSelectAppointment}
               onSelectSlot={handleSelectSlot}
-              slots={mergedSlots}
+              slots={slots}
               appointments={appointments ?? []}
               onRangeChange={setRange}
               onDoubleClickAppointment={handleDoubleClickAppointment}
