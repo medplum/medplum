@@ -251,13 +251,9 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
       throw new Error('Cron target bot belongs to a different project');
     }
 
-    if (cron.onBehalfOf) {
-      runAs = await systemRepo.readReference<ProjectMembership>(cron.onBehalfOf);
-      if (runAs.project?.reference !== projectRef) {
-        throw new Error('Cron onBehalfOf membership belongs to a different project');
-      }
-    } else {
-      runAs = await findProjectMembership(cron.meta?.project as string, createReference(bot));
+    runAs = await systemRepo.readReference<ProjectMembership>(cron.onBehalfOf);
+    if (runAs.project?.reference !== projectRef) {
+      throw new Error('Cron onBehalfOf membership belongs to a different project');
     }
 
     input = cron.parameters ?? cron;

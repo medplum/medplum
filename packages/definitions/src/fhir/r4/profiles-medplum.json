@@ -10612,7 +10612,15 @@
               "path" : "Cron",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "cron-1",
+                "severity" : "error",
+                "human" : "A cron job resolves its identity by reading onBehalfOf, so a logical reference is not enough.",
+                "expression" : "onBehalfOf.reference.exists()"
+              }
+            ]
           },
           {
             "id" : "Cron.id",
@@ -10743,12 +10751,12 @@
             "id" : "Cron.onBehalfOf",
             "path" : "Cron.onBehalfOf",
             "short" : "The membership on whose behalf the job runs",
-            "definition" : "The project membership whose identity and access policy the scheduled job assumes when it runs. If absent, the job runs as the target Bot's own membership.",
-            "min" : 0,
+            "definition" : "The project membership whose identity and access policy the scheduled job assumes when it runs.",
+            "min" : 1,
             "max" : "1",
             "base" : {
               "path" : "Cron.onBehalfOf",
-              "min" : 0,
+              "min" : 1,
               "max" : "1"
             },
             "type" : [{

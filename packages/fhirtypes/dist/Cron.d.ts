@@ -97,10 +97,9 @@ export interface Cron {
 
   /**
    * The project membership whose identity and access policy the scheduled
-   * job assumes when it runs. If absent, the job runs as the target Bot's
-   * own membership.
+   * job assumes when it runs.
    */
-  onBehalfOf?: Reference<ProjectMembership>;
+  onBehalfOf: Reference<ProjectMembership>;
 
   /**
    * Parameters passed to the target as input each time the scheduled job

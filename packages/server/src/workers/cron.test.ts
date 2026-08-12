@@ -264,6 +264,7 @@ describe('Cron resource', () => {
   let repo: Repository;
   let systemRepo: SystemRepository;
   let bot: Bot;
+  let botMembership: ProjectMembership;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -273,13 +274,15 @@ describe('Cron resource', () => {
     project = details.project;
     repo = new Repository({
       extendedMode: true,
+      // Constraints are only enforced in strict mode; the loose path logs them and moves on
+      strictMode: true,
       projects: [details.project],
       author: createReference(details.client),
     });
     systemRepo = repo.getSystemRepo();
 
     bot = await withTestContext(() => repo.createResource<Bot>({ resourceType: 'Bot', name: 'cron-target' }));
-    await withTestContext(() =>
+    botMembership = await withTestContext(() =>
       systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),
@@ -293,6 +296,30 @@ describe('Cron resource', () => {
     await shutdownApp();
   });
 
+  test('onBehalfOf is required', () =>
+    withTestContext(async () => {
+      await expect(
+        repo.createResource<Cron>({
+          resourceType: 'Cron',
+          cronString: '* * * * *',
+          targetReference: createReference(bot),
+        } as Cron)
+      ).rejects.toThrow('Missing required property');
+    }));
+
+  test('onBehalfOf must be a literal reference', () =>
+    withTestContext(async () => {
+      // A logical reference names nothing the job can resolve an identity from
+      await expect(
+        repo.createResource<Cron>({
+          resourceType: 'Cron',
+          onBehalfOf: { display: 'Some membership' },
+          cronString: '* * * * *',
+          targetReference: createReference(bot),
+        })
+      ).rejects.toThrow('Constraint cron-1 not met');
+    }));
+
   test('Creating a Cron with a cronString adds a job', () =>
     withTestContext(async () => {
       const queue = getCronQueue() as any;
@@ -300,6 +327,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(bot),
       });
@@ -320,6 +348,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         cronString: 'not a cron expression',
         targetReference: createReference(bot),
       });
@@ -332,6 +361,7 @@ describe('Cron resource', () => {
       const queue = getCronQueue() as any;
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(bot),
       });
@@ -340,6 +370,7 @@ describe('Cron resource', () => {
       queue.removeJobScheduler.mockClear();
       await repo.updateResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         id: cron.id,
         targetReference: createReference(bot),
       });
@@ -352,6 +383,7 @@ describe('Cron resource', () => {
       const queue = getCronQueue() as any;
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(bot),
       });
@@ -377,6 +409,7 @@ describe('Cron resource', () => {
 
       const cron = await plainRepo.createResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
       });
       await findAndExecDispatchJob(cron, 'create');
@@ -453,6 +486,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(otherBot),
       });
@@ -464,7 +498,11 @@ describe('Cron resource', () => {
 
   test('execBot rejects a Cron with no target', () =>
     withTestContext(async () => {
-      const cron = await repo.createResource<Cron>({ resourceType: 'Cron', cronString: '* * * * *' });
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        onBehalfOf: createReference(botMembership),
+        cronString: '* * * * *',
+      });
       await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
         'Could not find target for cron job'
       );
