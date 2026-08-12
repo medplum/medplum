@@ -17,12 +17,7 @@ const theme = {};
 export function render(ui: ReactNode, wrapper?: ({ children }: { children: ReactNode }) => JSX.Element): RenderResult {
   return testingLibraryRender(ui, {
     wrapper: ({ children }: { children: ReactNode }) => (
-      // `env="test"` stops Popover from hiding a dropdown whose target measures
-      // 0×0, which everything does in jsdom: without it an opened list is in the
-      // document but `display: none`, so queries by role cannot see it.
-      <MantineProvider theme={theme} env="test">
-        {wrapper ? wrapper({ children }) : children}
-      </MantineProvider>
+      <MantineProvider theme={theme}>{wrapper ? wrapper({ children }) : children}</MantineProvider>
     ),
   });
 }

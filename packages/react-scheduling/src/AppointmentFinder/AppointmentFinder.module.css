@@ -3,9 +3,3 @@
 .timeGrid {
   row-gap: var(--mantine-spacing-xs);
 }
-
-/* `AND` between two rows, spaced out so it reads as an operator rather than as
-   a word in the label above it */
-.joiner {
-  letter-spacing: 0.03em;
-}
