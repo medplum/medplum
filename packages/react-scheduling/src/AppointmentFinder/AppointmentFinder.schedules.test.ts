@@ -417,8 +417,8 @@ describe('groupCandidatesByRole', () => {
  * Builds a candidate the way a search would have, on a schedule of the given
  * actor type.
  *
- * The actor is written onto the Schedule rather than held beside it, because
- * that is where a candidate's role and name are now read back from.
+ * A candidate's role and name are read from its Schedule's actor, which is why
+ * the actor is written there and `actorResource` left unset.
  *
  * @param schedule - The Schedule to rewrite the actor of.
  * @param actorType - The resource type to hold the schedule on.

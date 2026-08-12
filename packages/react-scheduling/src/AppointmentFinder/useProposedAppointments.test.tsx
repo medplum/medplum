@@ -196,8 +196,6 @@ describe('useProposedAppointments', () => {
     const found = '2026-08-10T15:00:00.000Z';
     vi.spyOn(medplum, 'get').mockImplementationOnce(
       () => new ReadablePromise(Promise.resolve(offered(WITH_RIVERA, found) as never))
-      // The second combination is left pending, so the render under test is the
-      // one between asking and being answered.
     );
 
     const { rerender } = render(<Harness combinations={[WITH_RIVERA]} />, medplumWrapper);
