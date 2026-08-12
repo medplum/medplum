@@ -6,7 +6,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { UltrasoundImagingService, buildFindBundle, buildProposedAppointment } from '../stories/scheduling';
-import { render, screen, waitFor } from '../test-utils/render';
+import { act, render, screen, waitFor } from '../test-utils/render';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
 import { getActorsKey } from './AppointmentFinder.times';
@@ -228,6 +228,38 @@ describe('useProposedAppointments', () => {
     // to the question now being asked.
     expect(screen.getByTestId('times')).toHaveTextContent('');
     expect(screen.getByTestId('requests')).toHaveTextContent('0');
+  });
+
+  test('Ignores times from a search the actors have already moved on from', async () => {
+    const stale = '2026-08-10T15:00:00.000Z';
+    const current = '2026-08-10T09:00:00.000Z';
+    let answerFirstSearch = (): void => {};
+    vi.spyOn(medplum, 'get').mockImplementationOnce(
+      () =>
+        new ReadablePromise(
+          new Promise<never>((resolve) => {
+            answerFirstSearch = () => resolve(offered(WITH_RIVERA, stale) as never);
+          })
+        )
+    );
+
+    const { rerender } = render(<Harness combinations={[WITH_RIVERA]} />, medplumWrapper);
+    vi.spyOn(medplum, 'get').mockImplementation(
+      () => new ReadablePromise(Promise.resolve(offered(WITH_OKAFOR, current) as never))
+    );
+    rerender(<Harness combinations={[WITH_OKAFOR]} />);
+    await settle();
+
+    // Rivera's times answer a question nobody is asking any more. Landing them
+    // would both show times held on the wrong actors and strand the hook, whose
+    // state would be keyed to a search no render asks for.
+    await act(async () => {
+      answerFirstSearch();
+    });
+
+    expect(screen.getByTestId('times')).toHaveTextContent(current);
+    expect(screen.getByTestId('times').textContent).not.toContain(stale);
+    expect(screen.getByTestId('loading')).toHaveTextContent('idle');
   });
 
   test('Searches again only when the actors searched for change', async () => {

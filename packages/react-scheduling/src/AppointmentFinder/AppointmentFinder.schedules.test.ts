@@ -114,6 +114,21 @@ describe('searchEligibleSchedules', () => {
     expect(candidates).toHaveLength(7);
   });
 
+  test('Rejects a schedule held on something that cannot be booked', async () => {
+    const medplum = await setupClient();
+    // `$find` books against practitioners, rooms and devices. A schedule held on
+    // anything else has no role to be chosen under, so it is not offered.
+    await medplum.createResource<Schedule>({
+      ...DrRiveraSchedule,
+      id: undefined,
+      actor: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+    });
+
+    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+
+    expect(candidates).toHaveLength(7);
+  });
+
   test('Falls back to reading schedules when the service has no codings', async () => {
     const medplum = await setupClient();
     const untyped: WithId<HealthcareService> = { ...UltrasoundImagingService, type: undefined };
@@ -169,6 +184,36 @@ describe('filterCandidatesByLocation', () => {
     // Hiding a room the user may be entitled to book is worse than showing one
     // that cannot be placed.
     expect(roomsOf(kept)).toContain('Room 9');
+  });
+
+  test('Keeps a room buried deeper than the chain is walked', async () => {
+    // The walk stops after MAX_LOCATION_DEPTH hops. A room the location sits
+    // above but further up than that is unverifiable, not proven to be
+    // elsewhere, so the same leniency applies as to one that cannot be read.
+    const medplum = await setupClient();
+    for (const [id, parent] of [
+      ['wing-a', 'main-clinic'],
+      ['wing-b', 'wing-a'],
+      ['wing-c', 'wing-b'],
+      ['deep-room', 'wing-c'],
+    ]) {
+      await medplum.createResource<Location>({
+        resourceType: 'Location',
+        id,
+        name: id,
+        partOf: { reference: `Location/${parent}` },
+      });
+    }
+    await medplum.createResource<Schedule>({
+      ...DrRiveraSchedule,
+      id: undefined,
+      actor: [{ reference: 'Location/deep-room', display: 'Deep Room' }],
+    });
+    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+
+    expect(roomsOf(kept)).toContain('Deep Room');
   });
 
   test('Keeps plain Practitioners, which say nothing about where they work', async () => {

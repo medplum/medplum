@@ -6,7 +6,13 @@ import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { SatelliteClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
+import {
+  DrRiveraSchedule,
+  SatelliteClinic,
+  SchedulingFixtures,
+  UltrasoundImagingService,
+  WalkInService,
+} from '../stories/scheduling';
 import { act, render, screen, waitFor } from '../test-utils/render';
 import { getCandidateDisplay } from './AppointmentFinder.schedules';
 import { useEligibleSchedules } from './useEligibleSchedules';
@@ -123,6 +129,38 @@ describe('useEligibleSchedules', () => {
 
     // These drive the form's fields, so leaving them up would offer actors that
     // can be chosen for a service they are not bookable for.
+    expect(screen.getByTestId('actors')).toHaveTextContent('');
+    expect(screen.getByTestId('roles')).toHaveTextContent('');
+    search.mockRestore();
+  });
+
+  test('Ignores a result from a load the chosen service has already moved on from', async () => {
+    let answerFirstSearch = (): void => {};
+    const pending = new ReadablePromise(
+      new Promise<never>((resolve) => {
+        answerFirstSearch = () =>
+          resolve({
+            resourceType: 'Bundle',
+            type: 'searchset',
+            entry: [{ resource: DrRiveraSchedule, search: { mode: 'match' } }],
+          } as never);
+      })
+    );
+    const search = vi.spyOn(medplum, 'search').mockReturnValueOnce(pending);
+
+    const { rerender } = render(<Harness service={UltrasoundImagingService} />, medplumWrapper);
+    rerender(<Harness service={WalkInService} />);
+    await settle();
+
+    // The first service's search answers only after the choice moved on. Landing
+    // it would stamp the state with the question it answers rather than the one
+    // being asked, which reads as permanently stale: the spinner would stay up
+    // with nothing in flight left to take it down.
+    await act(async () => {
+      answerFirstSearch();
+    });
+
+    expect(screen.getByTestId('loading')).toHaveTextContent('idle');
     expect(screen.getByTestId('actors')).toHaveTextContent('');
     expect(screen.getByTestId('roles')).toHaveTextContent('');
     search.mockRestore();
