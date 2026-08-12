@@ -445,7 +445,11 @@ export function getSelectionError(
   return undefined;
 }
 
-/** One way of holding an appointment: one actor for every role it needs. */
+/**
+ * One way of holding an appointment: a set of actors whose schedules `$find`
+ * intersects in a single request. A role contributes as many actors as were
+ * chosen for it, since everything chosen attends.
+ */
 export interface ActorCombination {
   /** Matches `getActorGroupKey` of the appointments offered for these actors. */
   readonly key: string;

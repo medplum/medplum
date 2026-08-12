@@ -81,9 +81,6 @@ export function useEligibleSchedules(
     return () => controller.abort();
   }, [medplum, service, locationReference, asked]);
 
-  // Unlike the times a search offers, these drive the form's own fields. Actors
-  // from the service last asked about would be selectable against the one being
-  // asked about now, so they are withheld rather than left up while loading.
   const candidates = stale ? NOTHING_LOADED.candidates : loaded.candidates;
   const groups = useMemo(() => groupCandidatesByRole(candidates), [candidates]);
 
