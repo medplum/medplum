@@ -11,6 +11,7 @@ import type {
 import {
   append,
   badRequest,
+  conflict,
   EMPTY,
   generateId,
   getWebSocketUrl,
@@ -34,6 +35,7 @@ import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import {
   cleanupContextForResource,
+  compareAndSetTopicCurrentContext,
   deleteEndpointSubscription,
   extractAnchorResourceType,
   extractEndpoint,
@@ -278,10 +280,21 @@ async function handleUnsubscribeRequest(req: Request, res: Response, topic: stri
   // Subscribers echo back the `hub.channel.endpoint` they were issued, which is what identifies the
   // subscription to cancel. Several subscribers can share a topic, so an unsubscribe the Hub cannot
   // address is not actionable: honoring it would mean denying every one of them.
-  const endpoint = extractEndpoint(req.body['hub.channel.endpoint']);
+  //
+  // `@medplum/core` before 5.1.29 sent it under a bare `endpoint` instead, so that name is honored
+  // when the issued one is absent. Such a client holds a valid endpoint and only names it
+  // differently; without this it could never cancel, and its subscription would sit until the lease
+  // ran out. The endpoint is still resolved to a subscription the caller owns either way.
+  const issuedEndpoint = extractEndpoint(req.body['hub.channel.endpoint']);
+  const endpoint = issuedEndpoint ?? extractEndpoint(req.body.endpoint);
   if (!endpoint) {
     sendOutcome(res, badRequest('Missing endpoint'));
     return;
+  }
+  if (!issuedEndpoint) {
+    // Info rather than warn: the request is honored, and the line exists only to show whether any
+    // subscriber still depends on the legacy name before it is dropped.
+    getLogger().info('[FHIRcast]: Unsubscribe request named its endpoint under the deprecated `endpoint` field');
   }
 
   const subscription = await getEndpointSubscription(endpoint);
@@ -444,7 +457,19 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   event['context.priorVersionId'] = priorVersionId;
   currentContext['context.versionId'] = event['context.versionId'] = generateId();
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html
-  await setTopicCurrentContext(projectId, event['hub.topic'], currentContext);
+  // The version was checked above, but only a conditional write keeps it true: another update to
+  // this topic may have landed while this one was being applied, and it would be the version this
+  // event names as its prior.
+  const applied = await compareAndSetTopicCurrentContext(projectId, event['hub.topic'], priorVersionId, currentContext);
+  if (!applied) {
+    sendOutcome(
+      res,
+      conflict(
+        `Context for this topic changed while the update was being applied, it is no longer at version '${priorVersionId}'`
+      )
+    );
+    return;
+  }
   await finalizeContextChangeRequest(res, projectId, req.body);
 }
 

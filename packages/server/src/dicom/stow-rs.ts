@@ -85,22 +85,29 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
       instanceNumber = '1'; // Default to "1" if InstanceNumber is missing or invalid, as it is a required field in DICOM
     }
 
-    return repo.createResource<DicomInstance>({
-      resourceType: 'DicomInstance',
-      study: createReference(studyResult.resource),
-      series: createReference(seriesResult.resource),
-      raw: createReference(binary),
-      metadata: JSON.stringify(dict),
-      sopClassUid: naturalized.SOPClassUID as string,
-      sopInstanceUid: naturalized.SOPInstanceUID as string,
-      instanceAvailability: naturalized.InstanceAvailability as string,
-      timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
-      instanceNumber: instanceNumber,
-      rows: naturalized.Rows as number,
-      columns: naturalized.Columns as number,
-      bitsAllocated: naturalized.BitsAllocated as number,
-      numberOfFrames: naturalized.NumberOfFrames as number,
-    });
+    const instanceResult = await repo.conditionalCreate<DicomInstance>(
+      {
+        resourceType: 'DicomInstance',
+        study: createReference(studyResult.resource),
+        series: createReference(seriesResult.resource),
+        raw: createReference(binary),
+        metadata: JSON.stringify(dict),
+        sopClassUid: naturalized.SOPClassUID as string,
+        sopInstanceUid: naturalized.SOPInstanceUID as string,
+        instanceAvailability: naturalized.InstanceAvailability as string,
+        timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
+        instanceNumber: instanceNumber,
+        rows: naturalized.Rows as number,
+        columns: naturalized.Columns as number,
+        bitsAllocated: naturalized.BitsAllocated as number,
+        numberOfFrames: naturalized.NumberOfFrames as number,
+      },
+      {
+        resourceType: 'DicomInstance',
+        filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: naturalized.SOPInstanceUID as string }],
+      }
+    );
+    return instanceResult.resource;
   }
 
   /**

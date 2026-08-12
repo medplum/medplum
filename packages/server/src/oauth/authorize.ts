@@ -7,6 +7,7 @@ import { URL } from 'node:url';
 import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { getProjectScopedUrl } from '../util/url';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -223,7 +224,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
 
   let verifyResult;
   try {
-    verifyResult = await verifyJwt(idTokenHint);
+    verifyResult = await verifyJwt(idTokenHint, getProjectScopedUrl(req.originalUrl, getConfig().issuer));
   } catch (err: any) {
     getLogger().debug('Error verifying id_token_hint', err);
     return undefined;

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
-import { importConceptMap } from '../operations/conceptmapimport';
+import { importConceptMapResource } from '../operations/conceptmapimport';
 import type { PgQueryable } from '../sql';
 import { Column, Condition, Conjunction } from '../sql';
 import { LookupTable } from './lookuptable';
@@ -42,7 +42,7 @@ export class ConceptMappingTable extends LookupTable {
         if (!create) {
           await this.deleteValuesForResource(client, resource);
         }
-        await importConceptMap(client, resource);
+        await importConceptMapResource(client, resource);
       }
     }
   }

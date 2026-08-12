@@ -410,6 +410,53 @@ describe('DICOM Routes', () => {
     expect(storedSeries[0]['00201209'].Value).toStrictEqual(['3']);
   });
 
+  test('Re-uploading an instance does not create a duplicate', async () => {
+    const studyInstanceUid = '1.2.826.0.1.3680043.10.543.30';
+    const seriesInstanceUid = '1.2.826.0.1.3680043.10.543.31';
+    const sopInstanceUid = '1.2.826.0.1.3680043.10.543.32';
+
+    async function upload(): Promise<SuperAgentResponse> {
+      const boundary = `medplum-${Date.now()}`;
+      const contentType = `multipart/related; type=application/dicom; boundary=${boundary}`;
+      const body = Buffer.concat([
+        Buffer.from(`--${boundary}\r\nContent-Type: application/dicom\r\n\r\n`),
+        createDicomBuffer({ sopInstanceUid, studyInstanceUid, seriesInstanceUid }),
+        Buffer.from(`\r\n--${boundary}--\r\n`),
+      ]);
+      return request(app)
+        .post(`/dicomweb/studies`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', contentType)
+        .send(body);
+    }
+
+    // Store the same SOP instance twice, in two separate requests
+    expect(await upload()).toHaveStatus(200);
+    expect(await upload()).toHaveStatus(200);
+
+    // The conditional create resolved the existing instance the second time, so the study and series
+    // still count a single instance rather than two. NumberOfStudyRelatedInstances (0020,1208) and
+    // NumberOfSeriesRelatedInstances (0020,1209) are recomputed from the stored DicomInstance rows,
+    // so a duplicate would show here as '2'.
+    const studies = await request(app)
+      .get(`/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(studies).toHaveStatus(200);
+    const stored = (studies.body as Record<string, { Value?: unknown[] }>[]).filter(
+      (study) => study['0020000D']?.Value?.[0] === studyInstanceUid
+    );
+    expect(stored).toHaveLength(1);
+    expect(stored[0]['00201208'].Value).toStrictEqual(['1']);
+
+    const series = await request(app)
+      .get(`/dicomweb/studies/${studyInstanceUid}/series`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(series).toHaveStatus(200);
+    const storedSeries = series.body as Record<string, { Value?: unknown[] }>[];
+    expect(storedSeries).toHaveLength(1);
+    expect(storedSeries[0]['00201209'].Value).toStrictEqual(['1']);
+  });
+
   test('Direct handler validation errors', async () => {
     await handleSearchSeries({ params: {} } as Request, createMockResponse(400, { error: 'Invalid study UID' }));
     await handleRetrieveSeriesMetadata(

@@ -24,19 +24,24 @@
 #   - Optional free-text details after a space following the handle
 #     (e.g. a reason for denouncement).
 alexanderxlin
+amcgivern prior contributions
 andystoneman
 codyebberson
 deam65
+dillonstreator prior contributions
 everett-williams
 filupnot
 finnbergquist
 ianplunkett
+jdjkelly prior contributions
+kevinwadeshaw
 maddyli
 mattlong
 mattwiller
 medplumbot
 noahsilas
 oleg-mp
+rahul1 prior contributions
 reshmakh
 techdavidy
 thatonebro

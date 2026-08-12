@@ -62097,7 +62097,7 @@
           "$ref": "#/definitions/string"
         },
         "email": {
-          "description": "The email address that uniquely identifies the user.",
+          "description": "The email address that uniquely identifies the user. Must be all lowercase.",
           "$ref": "#/definitions/string"
         },
         "emailVerified": {

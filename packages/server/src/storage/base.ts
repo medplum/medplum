@@ -41,8 +41,21 @@ abstract class BaseBinaryStorage implements BinaryStorage {
   }
 
   getKey(binary: Binary): string {
-    return 'binary/' + binary.id + '/' + binary.meta?.versionId;
+    return getBinaryStorageKey(binary.id, binary.meta?.versionId);
   }
+}
+
+/**
+ * Returns the storage key for one version of a Binary resource.
+ *
+ * Every version of a Binary is stored as its own object, so callers that operate on a Binary's
+ * stored objects need one key per versionId.
+ * @param id - The Binary resource ID.
+ * @param versionId - The Binary version ID.
+ * @returns The storage key.
+ */
+export function getBinaryStorageKey(id: string | undefined, versionId: string | undefined): string {
+  return 'binary/' + id + '/' + versionId;
 }
 
 export { BaseBinaryStorage };
