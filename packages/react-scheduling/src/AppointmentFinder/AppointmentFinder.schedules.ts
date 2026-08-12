@@ -84,40 +84,18 @@ export interface ScheduleCandidateGroup {
 }
 
 /**
- * One actor an appointment needs, and the schedules that could supply it.
+ * What an appointment is being asked for: the schedules chosen, per role.
  *
- * Any *one* of the schedules fills the requirement, so naming several asks for a
- * choice between them. Naming several requirements asks for all of them at once:
- * a surgeon and an anesthesiologist are two requirements, while "whichever
- * surgeon is free" is one requirement naming both.
+ * Everything named attends. `$find` intersects the schedules in one request, so
+ * a whole selection is one request for the times all of those actors are free —
+ * which is why naming a second provider narrows the times offered rather than
+ * widening them.
  *
- * Both are needed within a single role, which is why the choice is modelled here
- * rather than as a mode the role is in.
+ * Asking for a *choice* between actors is a request per way of resolving it,
+ * with no cursor to page the answers together. That is a larger question than
+ * this shape shipped to answer, so it is left to the field that introduces it.
  */
-export interface ActorRequirement {
-  readonly scheduleIds: readonly string[];
-}
-
-/**
- * What an appointment is being asked for, as requirements per role.
- *
- * `$find` only intersects the schedules in one request, so it can answer one
- * candidate per requirement. A choice between candidates is therefore a request
- * per combination of them, which `getActorCombinations` enumerates.
- */
-export type ActorSelections = Partial<Record<SchedulingRole, readonly ActorRequirement[]>>;
-
-/**
- * Builds requirements for actors that all attend, one each.
- *
- * The shape every selection has while a choice between actors is unbuilt.
- *
- * @param scheduleIds - The schedules chosen.
- * @returns One single-candidate requirement per schedule.
- */
-export function toActorRequirements(scheduleIds: readonly string[]): ActorRequirement[] {
-  return scheduleIds.map((scheduleId) => ({ scheduleIds: [scheduleId] }));
-}
+export type ActorSelections = Partial<Record<SchedulingRole, readonly string[]>>;
 
 export interface SearchEligibleSchedulesOptions {
   readonly signal?: AbortSignal;
@@ -424,94 +402,18 @@ export function groupCandidatesByRole(candidates: readonly ScheduleCandidate[]):
 }
 
 /**
- * Returns the candidates that could fill one requirement.
+ * Returns the candidates chosen for one role.
  *
- * Ids matching nothing on offer are dropped, so a stale selection leaves a
- * requirement narrower rather than unfillable.
+ * Ids matching nothing on offer are dropped, so a selection that has gone stale
+ * narrows the search rather than emptying it.
  *
- * @param group - The role's candidates.
- * @param requirement - The requirement to resolve.
- * @returns The candidates that could fill it, in the order they are offered.
- */
-export function getRequirementCandidates(
-  group: ScheduleCandidateGroup,
-  requirement: ActorRequirement
-): ScheduleCandidate[] {
-  return group.candidates.filter((candidate) => requirement.scheduleIds.includes(candidate.schedule.id));
-}
-
-/**
- * Names the actor a requirement asks for.
- *
- * A requirement offering a choice reads out its alternatives, so one line says
- * either who is wanted or who would do.
- *
- * @param group - The role's candidates.
- * @param requirement - The requirement to describe.
- * @returns The name, or an empty string when nothing on offer can fill it.
- */
-export function getRequirementLabel(group: ScheduleCandidateGroup, requirement: ActorRequirement): string {
-  return getRequirementCandidates(group, requirement).map(getCandidateDisplay).join(' or ');
-}
-
-/**
- * Returns every candidate chosen for one role, across all of its requirements.
  * @param group - The role's candidates.
  * @param selections - What has been chosen.
  * @returns The chosen candidates, in the order they are offered.
  */
 export function getSelectedCandidates(group: ScheduleCandidateGroup, selections: ActorSelections): ScheduleCandidate[] {
-  const chosen = new Set((selections[group.role] ?? []).flatMap((requirement) => requirement.scheduleIds));
+  const chosen = new Set(selections[group.role] ?? []);
   return group.candidates.filter((candidate) => chosen.has(candidate.schedule.id));
-}
-
-/**
- * Resolves every requirement to the candidates that could fill it.
- *
- * Requirements nothing on offer can fill drop out, matching a role left empty:
- * a selection that has gone stale narrows the search rather than emptying it.
- *
- * @param groups - The roles offered by the form.
- * @param selections - What has been chosen.
- * @returns One entry per fillable requirement, in role order.
- */
-function resolveRequirements(
-  groups: readonly ScheduleCandidateGroup[],
-  selections: ActorSelections
-): ScheduleCandidate[][] {
-  const resolved: ScheduleCandidate[][] = [];
-  for (const group of groups) {
-    for (const requirement of selections[group.role] ?? []) {
-      const candidates = getRequirementCandidates(group, requirement);
-      if (candidates.length > 0) {
-        resolved.push(candidates);
-      }
-    }
-  }
-  return resolved;
-}
-
-function countCombinations(resolved: readonly ScheduleCandidate[][]): number {
-  return resolved.reduce((total, candidates) => total * candidates.length, resolved.length > 0 ? 1 : 0);
-}
-
-/**
- * The most requests one search will fan out to.
- *
- * `$find` takes no cursor, so each combination costs a request whose results
- * cannot be paged together with the others. A choice wide enough to pass this is
- * better narrowed than answered slowly.
- */
-export const MAX_ACTOR_COMBINATIONS = 12;
-
-/**
- * Counts the requests the current selections would take, without building them.
- * @param groups - The roles offered by the form.
- * @param selections - What has been chosen.
- * @returns The number of actor combinations, or 0 when nothing is chosen.
- */
-export function countActorCombinations(groups: readonly ScheduleCandidateGroup[], selections: ActorSelections): number {
-  return countCombinations(resolveRequirements(groups, selections));
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
@@ -535,19 +437,15 @@ export function getSelectionError(
   if (missing) {
     return `Choose at least one ${missing.label.toLowerCase()}`;
   }
-  const combinations = countActorCombinations(groups, selections);
-  if (combinations === 0) {
+  if (groups.every((group) => getSelectedCandidates(group, selections).length === 0)) {
     // Every role optional and none chosen would search the service's whole
     // availability without holding anybody's calendar.
     return `Choose at least one ${groups[0].label.toLowerCase()}`;
   }
-  if (combinations > MAX_ACTOR_COMBINATIONS) {
-    return `That is ${combinations} sets of actors to search for. Narrow it to ${MAX_ACTOR_COMBINATIONS} or fewer.`;
-  }
   return undefined;
 }
 
-/** One way of holding an appointment: a single actor for every requirement. */
+/** One way of holding an appointment: one actor for every role it needs. */
 export interface ActorCombination {
   /** Matches `getActorGroupKey` of the appointments offered for these actors. */
   readonly key: string;
@@ -557,38 +455,29 @@ export interface ActorCombination {
 }
 
 /**
- * Enumerates the sets of actors an appointment could be held on.
+ * Builds the sets of actors an appointment could be held on.
  *
  * One combination is one `$find` request: the schedules within it are
- * intersected, so its times are the times all of those actors are free, and the
- * times found for different combinations are alternatives to offer side by side.
- * Naming the actors is also how a request for a time outside the offered ones
- * says whose calendars it is for.
+ * intersected, so its times are the times all of those actors are free. Naming
+ * the actors is also how a request for a time outside the offered ones says
+ * whose calendars it is for.
  *
- * Selections naming a single candidate per requirement — every selection the
- * form makes today — produce exactly one combination, and so one request.
+ * Everything chosen attends, so today this is always a single combination
+ * holding every chosen actor. A choice *between* actors would be a combination
+ * each, which is why this returns a list and `useProposedAppointments` unions
+ * across one.
  *
  * @param groups - The roles offered by the form.
  * @param selections - What has been chosen.
- * @returns One combination per way of filling every requirement, in role order.
- *   Empty when nothing is chosen, and when there are more than
- *   `MAX_ACTOR_COMBINATIONS` of them — which `getSelectionError` refuses before
- *   a search gets this far.
+ * @returns One combination holding every chosen actor, in role order, or an
+ *   empty list when nothing is chosen.
  */
 export function getActorCombinations(
   groups: readonly ScheduleCandidateGroup[],
   selections: ActorSelections
 ): ActorCombination[] {
-  const resolved = resolveRequirements(groups, selections);
-  if (resolved.length === 0 || countCombinations(resolved) > MAX_ACTOR_COMBINATIONS) {
-    return [];
-  }
-
-  let combinations: ScheduleCandidate[][] = [[]];
-  for (const candidates of resolved) {
-    combinations = combinations.flatMap((partial) => candidates.map((candidate) => [...partial, candidate]));
-  }
-  return combinations.map(toActorCombination);
+  const chosen = groups.flatMap((group) => getSelectedCandidates(group, selections));
+  return chosen.length > 0 ? [toActorCombination(chosen)] : [];
 }
 
 function toActorCombination(candidates: readonly ScheduleCandidate[]): ActorCombination {

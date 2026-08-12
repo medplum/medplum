@@ -45,7 +45,7 @@ export interface UseProposedAppointmentsResult {
  * `$find` intersects the schedules in one request, so it answers for one set of
  * actors at a time. A choice between actors is therefore a request per
  * combination, run together and unioned here — which is why this takes a list
- * even though the form only ever produces one combination today.
+ * even though nothing produces more than one combination today.
  *
  * @param options - The service, actor combinations, days, and page size.
  * @returns The times offered, plus load and error state.

@@ -18,18 +18,14 @@ import {
 } from '../stories/scheduling';
 import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
 import {
-  MAX_ACTOR_COMBINATIONS,
-  countActorCombinations,
   filterCandidatesByLocation,
   getActorCombinations,
   getCandidateDisplay,
   getCandidateRole,
-  getRequirementLabel,
   getSelectedCandidates,
   getSelectionError,
   groupCandidatesByRole,
   searchEligibleSchedules,
-  toActorRequirements,
 } from './AppointmentFinder.schedules';
 import { getActorsKey } from './AppointmentFinder.times';
 
@@ -428,12 +424,7 @@ describe('selections', () => {
 
   test('One chosen actor per role is one request', () => {
     expect(
-      schedulesOf(
-        getActorCombinations(groups, {
-          provider: toActorRequirements(['schedule-dr-okafor']),
-          device: toActorRequirements(['schedule-ultrasound-1']),
-        })
-      )
+      schedulesOf(getActorCombinations(groups, { provider: ['schedule-dr-okafor'], device: ['schedule-ultrasound-1'] }))
     ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1']]);
   });
 
@@ -443,105 +434,46 @@ describe('selections', () => {
     expect(
       schedulesOf(
         getActorCombinations(groups, {
-          provider: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']),
-          device: toActorRequirements(['schedule-ultrasound-1']),
+          provider: ['schedule-dr-rivera', 'schedule-dr-okafor'],
+          device: ['schedule-ultrasound-1'],
         })
       )
     ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1']]);
   });
 
-  test('A requirement naming several actors is a request each', () => {
-    // The other half of the model: `$find` cannot be asked for a choice, so
-    // "either provider, with the ultrasound" is two searches to offer side by
-    // side. Nothing builds this selection yet — the form only ever names one
-    // candidate per requirement — but the shape it fans out to is fixed here.
-    const combinations = getActorCombinations(groups, {
-      provider: [{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }],
-      device: toActorRequirements(['schedule-ultrasound-1']),
-    });
-
-    expect(schedulesOf(combinations)).toStrictEqual([
-      ['Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1'],
-      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1'],
-    ]);
-    expect(combinations.map((combination) => combination.label)).toStrictEqual([
-      'Dr. Maya Rivera · Ultrasound 1',
-      'Dr. Tunde Okafor · Ultrasound 1',
-    ]);
-  });
-
-  test('Requirements multiply across roles', () => {
-    expect(
-      countActorCombinations(groups, {
-        provider: [{ scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] }],
-        device: [{ scheduleIds: ['schedule-ultrasound-1'] }],
-      })
-    ).toBe(2);
-    // Two requirements in the one role: both attend, and each is a choice.
-    expect(
-      countActorCombinations(groups, {
-        provider: [
-          { scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] },
-          { scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] },
-        ],
-      })
-    ).toBe(4);
-  });
-
-  test('Refuses a choice too wide to search', () => {
-    // Thirteen either-or requirements is 2^13 requests, with no cursor to page
-    // their results together.
-    const selections = {
-      provider: Array.from({ length: 13 }, () => ({
-        scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'],
-      })),
-    };
-
-    expect(countActorCombinations(groups, selections)).toBe(8192);
-    expect(getSelectionError(groups, selections)).toBe(
-      `That is 8192 sets of actors to search for. Narrow it to ${MAX_ACTOR_COMBINATIONS} or fewer.`
-    );
-    // Building the product is the cost the refusal exists to avoid, so the
-    // builder stops at the same line rather than trusting its caller to.
-    expect(getActorCombinations(groups, selections)).toStrictEqual([]);
-  });
-
   test('An optional role left empty drops out of the search', () => {
     // Holding a device nobody asked for would narrow the search to the times
     // that device happens to be free.
-    expect(
-      schedulesOf(getActorCombinations(groups, { provider: toActorRequirements(['schedule-dr-rivera']), device: [] }))
-    ).toStrictEqual([['Schedule/schedule-dr-rivera']]);
+    expect(schedulesOf(getActorCombinations(groups, { provider: ['schedule-dr-rivera'], device: [] }))).toStrictEqual([
+      ['Schedule/schedule-dr-rivera'],
+    ]);
   });
 
   test('A required role left empty stops the search', () => {
-    const selections = { device: toActorRequirements(['schedule-ultrasound-1']) };
+    const selections = { device: ['schedule-ultrasound-1'] };
 
     expect(schedulesOf(getActorCombinations(groups, selections))).toStrictEqual([['Schedule/schedule-ultrasound-1']]);
     expect(getSelectionError(groups, selections)).toBe('Choose at least one provider');
   });
 
   test('A selection matching nothing counts as no selection', () => {
-    const selections = { provider: toActorRequirements(['schedule-gone']) };
+    // A stale id narrows the search rather than voiding it, so one that matches
+    // nothing on offer leaves the role empty.
+    const selections = { provider: ['schedule-gone'] };
 
     expect(getSelectedCandidates(PROVIDERS, selections)).toStrictEqual([]);
     expect(getActorCombinations(groups, selections)).toStrictEqual([]);
     expect(getSelectionError(groups, selections)).toBe('Choose at least one provider');
   });
 
-  test('A requirement keeps the candidates it can still be filled by', () => {
-    // Half a choice going stale narrows it rather than voiding it.
-    expect(getRequirementLabel(PROVIDERS, { scheduleIds: ['schedule-gone', 'schedule-dr-okafor'] })).toBe(
-      'Dr. Tunde Okafor'
-    );
-    expect(getRequirementLabel(PROVIDERS, { scheduleIds: ['schedule-gone'] })).toBe('');
-    expect(getRequirementLabel(PROVIDERS, { scheduleIds: ['schedule-dr-rivera', 'schedule-dr-okafor'] })).toBe(
-      'Dr. Maya Rivera or Dr. Tunde Okafor'
-    );
+  test('Keeps the ids that are still on offer when others have gone stale', () => {
+    expect(
+      getSelectedCandidates(PROVIDERS, { provider: ['schedule-gone', 'schedule-dr-okafor'] }).map(getCandidateDisplay)
+    ).toStrictEqual(['Dr. Tunde Okafor']);
   });
 
   test('Accepts a search once a provider is chosen', () => {
-    expect(getSelectionError(groups, { provider: toActorRequirements(['schedule-dr-rivera']) })).toBeUndefined();
+    expect(getSelectionError(groups, { provider: ['schedule-dr-rivera'] })).toBeUndefined();
   });
 
   test('Reports a service with nothing to book against', () => {
@@ -550,13 +482,13 @@ describe('selections', () => {
 
   test('Asks for something to be chosen when every role is optional', () => {
     expect(getSelectionError([DEVICES], {})).toBe('Choose at least one device');
-    expect(getSelectionError([DEVICES], { device: toActorRequirements(['schedule-ultrasound-1']) })).toBeUndefined();
+    expect(getSelectionError([DEVICES], { device: ['schedule-ultrasound-1'] })).toBeUndefined();
   });
 
   test('Names everyone the appointment would be held on', () => {
     const [combination] = getActorCombinations(groups, {
-      provider: toActorRequirements(['schedule-dr-rivera', 'schedule-dr-okafor']),
-      device: toActorRequirements(['schedule-ultrasound-1']),
+      provider: ['schedule-dr-rivera', 'schedule-dr-okafor'],
+      device: ['schedule-ultrasound-1'],
     });
 
     expect(combination.label).toBe('Dr. Maya Rivera · Dr. Tunde Okafor · Ultrasound 1');
