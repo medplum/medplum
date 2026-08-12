@@ -350,6 +350,11 @@ function applyProjectAdminAccessPolicy(
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
       },
       {
+        // A Cron names the membership it runs as, so authoring one confers that identity
+        resourceType: 'Cron',
+        criteria: `Cron?_project=${resolveId(membership.project)}`,
+      },
+      {
         resourceType: 'Package',
         readonly: true,
       },

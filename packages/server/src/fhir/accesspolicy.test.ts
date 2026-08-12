@@ -14,8 +14,10 @@ import type {
   AccessPolicy,
   AccessPolicyResource,
   Binary,
+  Bot,
   ClientApplication,
   Condition,
+  Cron,
   Device,
   Login,
   Observation,
@@ -2065,6 +2067,42 @@ describe('AccessPolicy', () => {
       // Creating a new Project should fail
       await expect(repo.createResource({ resourceType: 'Project', name: 'Test Project' })).rejects.toThrow('Forbidden');
     }));
+
+  test.each([true, false])('Cron is admin-only (admin=%s)', (admin) =>
+    withTestContext(async () => {
+      const { project, login, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        project: { features: ['cron'] },
+        membership: { admin },
+        // A wildcard policy must not reach an admin resource type
+        accessPolicy: { resource: [{ resourceType: '*' }] },
+      });
+      const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
+
+      const bot = await systemRepo.createResource<Bot>({ resourceType: 'Bot', name: 'cron-target' });
+      const botMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const cron: Cron = {
+        resourceType: 'Cron',
+        cronString: '* * * * *',
+        onBehalfOf: createReference(botMembership),
+        targetReference: createReference(bot),
+      };
+
+      if (admin) {
+        const created = await repo.createResource<Cron>(cron);
+        expect(created.id).toBeDefined();
+      } else {
+        await expect(repo.createResource<Cron>(cron)).rejects.toThrow('Forbidden');
+      }
+    })
+  );
 
   test('Project admin can modify meta.account', () =>
     withTestContext(async () => {
