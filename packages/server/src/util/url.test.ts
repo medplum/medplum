@@ -190,7 +190,7 @@ describe('createSafeConnect', () => {
 
 describe('safeAgent', () => {
   test('requires HTTPS', async () => {
-    await expect(fetch('http://example.com/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+    await expect(fetch('https://example.com/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
   });
 
   test('blocks localhost fetches before opening a socket', async () => {

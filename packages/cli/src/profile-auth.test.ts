@@ -198,12 +198,7 @@ function mockFetch(
   });
 }
 
-const testPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
-MIIEpgIBAAKCAQEA3e9c5RfJuzNoTMmHAeTn3tcMxK5nPt+AmDMaMkEr+XA4+du8
-puQ1eUrvttq9kMp5pF/pvXxi9LhXqsg1VeYBGTiiDox1201ei7LDyOiXdHCyF7Fz
-zi3jXWpl8tl1XSLnv2jak0l7gZAxltL6G3VHpHXg68ACLflfGiW4nSpqp0XX/bQY
-6PKQ2HYydAvrKDwCO9bceTBW4QmxLtaEZyHduLfm+sBLpK48KElptBaHXl3cGAZA
-ntPn0ue0vj1m34/1CBzuPIOw7Qw6WXxIFifkzDFfr7quAJatN2cbgOu1DDnbPEcH
+const testPrivateKey = process.env.TEST_PRIVATE_KEY || 'REPLACE_WITH_TEST_PRIVATE_KEY'
 e4HTwUyKjrrJxePHa/E4NO+jKi+ttuldxNAI/QIDAQABAoIBAQCCIuJo33sGD03g
 gOduf+hK7fTpu46E+o+wL37z6u07NcfjEyta/UQx3HQV18wChAeyEB/CYZaxAws8
 9Gr59IW+YUv9lfVh48tFxUwymdh9ibuUUxSh2JyS4VnofgTo2RflUDmi1hrazU+W
