@@ -36,6 +36,7 @@ import { getExtraEntries } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
+import { recordHistogramValue } from '../otel/otel';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
@@ -221,10 +222,17 @@ export async function searchByReferenceImpl<T extends Resource>(
  * @param searchRequest - The search request.
  */
 function validateSearchFilterCount(searchRequest: SearchRequest): void {
-  const maxParams = getConfig().maxSearchFilters;
-  const count = searchRequest.filters?.length;
-  if (maxParams !== undefined && count !== undefined && count > maxParams) {
-    throw new OperationOutcomeError(badRequest(`Search filter count exceeds maximum (got ${count}, max ${maxParams})`));
+  const count = searchRequest.filters?.length ?? 0;
+  // Record the number of filters to inform setting `maxSearchFilters`
+  recordHistogramValue('medplum.fhir.search.filters', count, {
+    attributes: { resourceType: searchRequest.resourceType },
+  });
+
+  const maxFilters = getConfig().maxSearchFilters;
+  if (count > getConfig().maxSearchFilters) {
+    throw new OperationOutcomeError(
+      badRequest(`Search parameter count exceeds maximum (got ${count}, max ${maxFilters})`)
+    );
   }
 }
 
@@ -385,11 +393,13 @@ async function getSearchEntries<T extends Resource>(
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
   }
-  const entries = resources.map((resource): BundleEntry<WithId<T>> => ({
-    fullUrl: getFullUrl(resource.resourceType, resource.id),
-    search: { mode: 'match' },
-    resource,
-  }));
+  const entries = resources.map(
+    (resource): BundleEntry<WithId<T>> => ({
+      fullUrl: getFullUrl(resource.resourceType, resource.id),
+      search: { mode: 'match' },
+      resource,
+    })
+  );
 
   if (searchRequest.include || searchRequest.revInclude) {
     await getExtraEntries(repo, searchRequest, resources, entries, getIncludeOptions(repo));

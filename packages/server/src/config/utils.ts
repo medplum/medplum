@@ -33,6 +33,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.shutdownTimeoutMilliseconds ??= 30_000;
   config.accurateCountThreshold ??= 1_000_000;
   config.maxSearchOffset ??= 10_000;
+  config.maxSearchFilters ??= Number.POSITIVE_INFINITY;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
@@ -102,6 +103,7 @@ type DefaultConfigKeys =
   | 'shutdownTimeoutMilliseconds'
   | 'accurateCountThreshold'
   | 'maxSearchOffset'
+  | 'maxSearchFilters'
   | 'base64BinaryMaxBytes'
   | 'inlineAttachmentsMaxTotalBytes'
   | 'defaultBotRuntimeVersion'
