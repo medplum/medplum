@@ -212,12 +212,17 @@ export async function filterCandidatesByLocation(
 
   const resolved = new Map<string, Location | undefined>();
   // The sites the location sits inside, so a role licensed for a whole state
-  // covers the sites within it.
-  const ancestry = await getLocationAncestry(medplum, locationReference, resolved, options);
+  // covers the sites within it. Only PractitionerRole candidates ask for it, and
+  // walking it costs a read per level, so it is left until one does.
+  let ancestry: Promise<ReadonlySet<string>> | undefined;
+  const getAncestry = async (): Promise<ReadonlySet<string>> => {
+    ancestry ??= getLocationAncestry(medplum, locationReference, resolved, options);
+    return ancestry;
+  };
   const keep: ScheduleCandidate[] = [];
 
   for (const candidate of candidates) {
-    if (await isCandidateAtLocation(medplum, candidate, locationReference, ancestry, resolved, options)) {
+    if (await isCandidateAtLocation(medplum, candidate, locationReference, getAncestry, resolved, options)) {
       keep.push(candidate);
     }
   }
@@ -229,7 +234,7 @@ async function isCandidateAtLocation(
   medplum: MedplumClient,
   candidate: ScheduleCandidate,
   locationReference: string,
-  ancestry: ReadonlySet<string>,
+  getAncestry: () => Promise<ReadonlySet<string>>,
   resolved: Map<string, Location | undefined>,
   options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
@@ -250,6 +255,7 @@ async function isCandidateAtLocation(
     return isWithinLocation(medplum, actor.location?.reference, locationReference, resolved, options);
   }
   if (actor?.resourceType === 'PractitionerRole' && actor.location?.length) {
+    const ancestry = await getAncestry();
     for (const roleLocation of actor.location) {
       // A role's location counts whether the chosen location sits inside it or
       // it sits inside the chosen location.
