@@ -965,7 +965,7 @@ function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: Identity
   };
 }
 
-async function verifyExternalToken(idp: IdentityProvider, token: string, issuer: string): Promise<void> {
+async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
   if (!idp.jwksUrl) {
     if (!idp.userInfoUrl) {
       throw new OperationOutcomeError(badRequest('Missing user info URL - check your identity provider configuration'));
@@ -973,8 +973,11 @@ async function verifyExternalToken(idp: IdentityProvider, token: string, issuer:
     await getExternalUserInfo(idp.userInfoUrl, token, idp);
     return;
   }
+  if (!idp.issuer) {
+    throw new OperationOutcomeError(badRequest('Missing issuer - check your identity provider configuration'));
+  }
   const jwks = createRemoteJWKSet(new URL(idp.jwksUrl), { [customFetch]: safeFetch });
-  await jwtVerify(token, jwks, { issuer, audience: idp.audience });
+  await jwtVerify(token, jwks, { issuer: idp.issuer, audience: idp.audience });
 }
 
 interface ValidationAssertion {
@@ -1282,7 +1285,7 @@ async function tryExternalAuthLogin(
 
   // Verify the token against the external IDP.
   try {
-    await verifyExternalToken(idp, accessToken, claims.iss as string);
+    await verifyExternalToken(idp, accessToken);
   } catch (err: any) {
     getLogger().warn('Failed to verify external token', err);
     return undefined;
