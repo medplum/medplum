@@ -1,6 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { OperationOutcomeError, badRequest } from '@medplum/core';
+
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
+
+/**
+ * The maximum length, in characters, of the query string portion of a request URL.
+ *
+ * Node rejects oversized request lines on real HTTP requests, so this mainly bounds URLs that
+ * arrive inside a request body, such as batch entry URLs.
+ */
+export const MAX_QUERY_STRING_LENGTH = 70_000;
 
 export type PathSegment = { value: string; param?: boolean };
 
@@ -28,6 +38,11 @@ export class Router<Handler, Metadata> {
   find(method: HttpMethod, pathStr: string): RouteResult<Handler, Metadata> | undefined {
     const queryStart = pathStr.indexOf('?');
     const hasQuery = queryStart > -1;
+    if (hasQuery && pathStr.length - queryStart - 1 > MAX_QUERY_STRING_LENGTH) {
+      throw new OperationOutcomeError(
+        badRequest(`Query string exceeds maximum length of ${MAX_QUERY_STRING_LENGTH} characters`)
+      );
+    }
     const path = pathStr
       .substring(0, hasQuery ? queryStart : pathStr.length)
       .split('/')

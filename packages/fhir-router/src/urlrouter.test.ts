@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Router } from './urlrouter';
+import { MAX_QUERY_STRING_LENGTH, Router } from './urlrouter';
 
 test('Simple routes', () => {
   const router = new Router();
@@ -58,16 +58,38 @@ describe('Query string', () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 
+  test('Accepts a query string at the maximum length', () => {
+    const query = 'a=' + 'x'.repeat(MAX_QUERY_STRING_LENGTH - 2);
+    expect(query.length).toBe(MAX_QUERY_STRING_LENGTH);
+    expect(router.find('GET', `/foo?${query}`)?.query).toBeDefined();
+  });
+
+  test('Rejects a query string over the maximum length', () => {
+    const query = 'a=' + 'x'.repeat(MAX_QUERY_STRING_LENGTH - 1);
+    expect(query.length).toBe(MAX_QUERY_STRING_LENGTH + 1);
+    expect(() => router.find('GET', `/foo?${query}`)).toThrow(
+      `Query string exceeds maximum length of ${MAX_QUERY_STRING_LENGTH} characters`
+    );
+  });
+
+  test('Long path with no query string is allowed', () => {
+    const longRouter = new Router();
+    longRouter.add('GET', '/:id', () => 'get');
+    expect(longRouter.find('GET', '/' + 'x'.repeat(MAX_QUERY_STRING_LENGTH + 100))).toBeDefined();
+  });
+
   test('Many duplicate params parse in linear time', () => {
-    const count = 10000;
-    const path = '/foo?' + Array.from({ length: count }, (_, i) => `identifier=val${i}`).join('&');
+    // Kept under MAX_QUERY_STRING_LENGTH so this exercises parsing rather than the length guard.
+    const count = 8000;
+    const queryString = Array.from({ length: count }, (_, i) => `i=${i}`).join('&');
+    expect(queryString.length).toBeLessThan(MAX_QUERY_STRING_LENGTH);
 
     const start = process.hrtime.bigint();
-    const query = router.find('GET', path)?.query;
+    const query = router.find('GET', `/foo?${queryString}`)?.query;
     const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
 
-    expect((query?.identifier as string[]).length).toBe(count);
-    // Guards against a quadratic regression: an O(n^2) parse takes ~700ms for this input.
+    expect((query?.i as string[]).length).toBe(count);
+    // Guards against a quadratic regression: an O(n^2) parse takes several hundred ms here.
     expect(elapsedMs).toBeLessThan(250);
   });
 });
