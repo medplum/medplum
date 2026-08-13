@@ -351,6 +351,18 @@ export function intervalsExceedingCapacity(slots: Slot[], candidateCapacity: num
     throw new Error(`Invalid capacity; must be at least 1, got ${candidateCapacity}`);
   }
 
+  // Optimization for common case: if we are searching at capacity 1 (no overbooking), every
+  // busy slot blocks its full time
+  if (candidateCapacity === 1) {
+    const result: Interval[] = [];
+    for (const slot of slots) {
+      if (slot.status !== 'free' && slot.status !== 'entered-in-error') {
+        result.push({ start: new Date(slot.start), end: new Date(slot.end) });
+      }
+    }
+    return normalizeIntervals(result);
+  }
+
   // Sweep the booking start/end instants in time order. `open` holds the capacities
   // of the slots covering the current segment — pushed as each booking starts,
   // removed as it ends.
