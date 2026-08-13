@@ -100,7 +100,9 @@ export async function searchEligibleSchedules(
     searches.map(async (criteria) =>
       medplum.search(
         'Schedule',
-        { ...criteria, _count: count, _include: 'Schedule:actor' },
+        // `active:not=false` rather than `active=true`, so a schedule that
+        // leaves `active` unset still counts as bookable.
+        { ...criteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
         { signal: options?.signal }
       )
     )
