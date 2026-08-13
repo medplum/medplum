@@ -66,14 +66,16 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
     const controller = new AbortController();
     const requests = urlsKey.split(URL_SEPARATOR);
 
-    Promise.all(requests.map(async (url) => request(medplum, url, controller.signal)))
+    Promise.allSettled(
+      requests.map(async (url) => medplum.get<Bundle<Appointment>>(url, { signal: controller.signal }))
+    )
       .then((results) => {
         if (controller.signal.aborted) {
           return;
         }
-        const failure = results.find(isFailure);
+        const failure = results.find((result) => result.status === 'rejected');
         setAnswered(
-          failure && results.every(isFailure)
+          failure && results.every((result) => result.status === 'rejected')
             ? { key: urlsKey, appointments: [], error: toError(failure.reason) }
             : { key: urlsKey, appointments: collectAppointments(results), error: undefined }
         );
@@ -112,27 +114,6 @@ function toError(reason: unknown): Error {
   return isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason });
 }
 
-/** One combination's result: its times, or why it has none. */
-type FindResult = FindSuccess | FindFailure;
-interface FindSuccess {
-  readonly bundle: Bundle<Appointment>;
-}
-interface FindFailure {
-  readonly reason: unknown;
-}
-
-function isFailure(result: FindResult): result is FindFailure {
-  return 'reason' in result;
-}
-
-async function request(medplum: MedplumClient, url: string, signal: AbortSignal): Promise<FindResult> {
-  try {
-    return { bundle: await medplum.get<Bundle<Appointment>>(url, { signal }) };
-  } catch (reason) {
-    return { reason };
-  }
-}
-
 function buildFindUrl(
   medplum: MedplumClient,
   service: WithId<HealthcareService>,
@@ -159,13 +140,13 @@ function buildFindUrl(
  * @param results - What each combination returned.
  * @returns The times offered, deduplicated and sorted.
  */
-function collectAppointments(results: readonly FindResult[]): Appointment[] {
+function collectAppointments(results: readonly PromiseSettledResult<Bundle<Appointment>>[]): Appointment[] {
   const found = new Map<string, Appointment>();
   for (const result of results) {
-    if (isFailure(result)) {
+    if (result.status === 'rejected') {
       continue;
     }
-    for (const appointment of (result.bundle.entry ?? []).map((entry) => entry.resource).filter(isDefined)) {
+    for (const appointment of (result.value.entry ?? []).map((entry) => entry.resource).filter(isDefined)) {
       const key = getAppointmentKey(appointment);
       if (!found.has(key)) {
         found.set(key, appointment);
