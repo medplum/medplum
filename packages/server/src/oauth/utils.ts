@@ -1016,18 +1016,17 @@ export async function getLoginForAccessToken(
   accessToken: string
 ): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
-  const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
-  if (externalAuthState) {
-    const repo = await getRepoForLogin(externalAuthState);
-    return { authState: externalAuthState, repo };
-  }
-
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     const config = getConfig();
     const expectedIssuer = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
     verifyResult = await verifyJwt(accessToken, expectedIssuer);
   } catch {
+    const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
+    if (externalAuthState) {
+      const repo = await getRepoForLogin(externalAuthState);
+      return { authState: externalAuthState, repo };
+    }
     return undefined;
   }
 
@@ -1391,7 +1390,7 @@ async function tryExternalAuthLogin(
  * Ambiguous configurations fail closed.
  *
  * @param projectId - Project ID from the request URL.
- * @param issuer - Verified external token issuer.
+ * @param issuer - Issuer presented by the external token.
  * @returns The matching client application, or undefined unless exactly one client matches.
  */
 async function getExternalBearerClient(
@@ -1401,18 +1400,20 @@ async function getExternalBearerClient(
   const projectRepo = await getProjectSystemRepo(projectId);
   const clients = await projectRepo.searchResources<ClientApplication>({
     resourceType: 'ClientApplication',
-    filters: [{ code: '_project', operator: Operator.EQUALS, value: projectId }],
-    count: 1000,
+    filters: [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      { code: 'identity-provider-issuer', operator: Operator.EXACT, value: issuer },
+    ],
+    count: 2,
   });
-  const matchingClients = clients.filter((client) => client.identityProvider?.issuer === issuer);
-  if (matchingClients.length !== 1) {
-    if (matchingClients.length > 1) {
+  if (clients.length !== 1) {
+    if (clients.length > 1) {
       getLogger().warn('Multiple ClientApplications found for external auth issuer in project', { issuer, projectId });
     }
     return undefined;
   }
 
-  return matchingClients[0];
+  return clients[0];
 }
 
 /**
