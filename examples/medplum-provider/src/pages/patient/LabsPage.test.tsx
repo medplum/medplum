@@ -271,17 +271,12 @@ describe('LabsPage', () => {
   });
 
   test('switches to the revoked tab', async () => {
-    medplum.searchResources = vi
-      .fn()
-      .mockImplementation((resourceType: string, query: string) =>
-        Promise.resolve(
-          resourceType === 'DiagnosticReport'
-            ? [completedReport]
-            : query.includes('status=revoked')
-              ? [revokedOrder]
-              : []
-        )
-      );
+    medplum.searchResources = vi.fn().mockImplementation((resourceType: string, query: string) => {
+      if (resourceType === 'DiagnosticReport') {
+        return Promise.resolve([completedReport]);
+      }
+      return Promise.resolve(query.includes('status=revoked') ? [revokedOrder] : []);
+    });
     setup();
 
     // Starts on the Completed tab.
