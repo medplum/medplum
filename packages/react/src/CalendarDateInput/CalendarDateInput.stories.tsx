@@ -6,6 +6,7 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { Document } from '../Document/Document';
 import { withMockedDate } from '../stories/decorators';
+import type { DateRange } from './CalendarDateInput';
 import { CalendarDateInput } from './CalendarDateInput';
 
 export default {
@@ -126,6 +127,46 @@ export const CallerOwnedMonth = (): JSX.Element => {
     </Document>
   );
 };
+
+/**
+ * A span of days, swept out by holding shift. Click a day to start again from
+ * it, then shift-click a second day to reach across to it.
+ * @returns The story.
+ */
+export const DayRange = (): JSX.Element => {
+  const [selected, setSelected] = useState<Date | DateRange>();
+  return (
+    <Document>
+      <Text size="sm" c="dimmed" mb="md">
+        {describeSelection(selected)}
+      </Text>
+      <CalendarDateInput
+        availableDates={weekdaysOfMonth()}
+        selected={selected}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={(date: Date) => console.log(date)}
+        onChangeSelected={setSelected}
+        onClick={(date: Date) => console.log('Clicked ' + date)}
+      />
+    </Document>
+  );
+};
+
+/**
+ * Names the current selection for the story's caption.
+ * @param selected - The current selection, which may be absent.
+ * @returns A sentence naming the day or the span.
+ */
+function describeSelection(selected: Date | DateRange | undefined): string {
+  if (!selected) {
+    return 'Shift-click a second day to reach across to it.';
+  }
+  if (selected instanceof Date) {
+    return selected.toLocaleDateString();
+  }
+  return `${selected.start.toLocaleDateString()} — ${selected.end.toLocaleDateString()}`;
+}
 
 /**
  * Returns every weekday of a month.

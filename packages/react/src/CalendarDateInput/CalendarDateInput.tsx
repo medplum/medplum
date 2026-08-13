@@ -2,17 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group } from '@mantine/core';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, MouseEvent } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarDateInput.module.css';
-import { getMonthString, getStartMonth, isBeforeDay, isSameDay, startOfMonth } from './CalendarDateInput.utils';
+import type { DateRange } from './CalendarDateInput.utils';
+import {
+  getMonthString,
+  getRangeAnchor,
+  getStartMonth,
+  isBeforeDay,
+  isSameDay,
+  isSelectedDay,
+  isWithinDateRange,
+  startOfMonth,
+  toDateRange,
+} from './CalendarDateInput.utils';
+
+export type { DateRange } from './CalendarDateInput.utils';
 
 export interface CalendarDateInputProps {
   readonly availableDates: Date[];
   readonly onChangeMonth: (date: Date) => void;
   readonly onClick: (date: Date) => void;
+  /**
+   * Called with the selection a click leaves behind, for callers holding
+   * `selected`. A plain click reports the day on its own; a shift-click reports
+   * the range swept from the current selection when `allowDateRange` is set.
+   */
+  readonly onChangeSelected?: (selected: Date | DateRange) => void;
   readonly month?: Date;
-  readonly selected?: Date;
+  readonly selected?: Date | DateRange;
+  /** Lets shift-click sweep a range of days out from the selected one. */
+  readonly allowDateRange?: boolean;
   readonly allowUnavailableDates?: boolean;
   readonly earliestDate?: Date;
 }
@@ -25,7 +46,8 @@ interface CalendarCell {
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
-  const { onChangeMonth, onClick, selected, allowUnavailableDates, earliestDate } = props;
+  const { onChangeMonth, onClick, onChangeSelected, selected, allowDateRange, allowUnavailableDates, earliestDate } =
+    props;
   const [uncontrolledMonth, setUncontrolledMonth] = useState<Date>(getStartMonth);
   const shownMonth = props.month ?? uncontrolledMonth;
   const year = shownMonth.getFullYear();
@@ -43,6 +65,15 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
 
   function isDayDisabled(day: CalendarCell): boolean {
     return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
+  }
+
+  function handleDayClick(date: Date, event: MouseEvent<HTMLButtonElement>): void {
+    onClick(date);
+    if (!onChangeSelected) {
+      return;
+    }
+    const anchor = allowDateRange && event.shiftKey ? getRangeAnchor(selected) : undefined;
+    onChangeSelected(anchor ? toDateRange(anchor, date) : date);
   }
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
@@ -80,24 +111,29 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
         <tbody>
           {grid.map((week, weekIndex) => (
             <tr key={'week-' + weekIndex}>
-              {week.map((day, dayIndex) => (
-                <td key={'day-' + dayIndex}>
-                  {day && (
-                    <Button
-                      variant="light"
-                      className={cx(
-                        day.available && classes.available,
-                        isSameDay(day.date, selected) && classes.selected
-                      )}
-                      aria-pressed={selected ? isSameDay(day.date, selected) : undefined}
-                      disabled={isDayDisabled(day)}
-                      onClick={() => onClick(day.date)}
-                    >
-                      {day.date.getDate()}
-                    </Button>
-                  )}
-                </td>
-              ))}
+              {week.map((day, dayIndex) => {
+                const picked = !!day && isSelectedDay(day.date, selected);
+                const spanned = !!day && isWithinDateRange(day.date, selected);
+                return (
+                  <td key={'day-' + dayIndex}>
+                    {day && (
+                      <Button
+                        variant="light"
+                        className={cx(
+                          day.available && classes.available,
+                          spanned && classes.withinRange,
+                          picked && classes.selected
+                        )}
+                        aria-pressed={selected ? picked || spanned : undefined}
+                        disabled={isDayDisabled(day)}
+                        onClick={(event) => handleDayClick(day.date, event)}
+                      >
+                        {day.date.getDate()}
+                      </Button>
+                    )}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

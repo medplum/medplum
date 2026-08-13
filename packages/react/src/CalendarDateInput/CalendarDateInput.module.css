@@ -57,6 +57,13 @@
     font-weight: normal;
   }
 
+  & td button.withinRange:not(:disabled),
+  & td button.withinRange:not(:disabled):hover {
+    background-color: var(--mantine-primary-color-light);
+    color: var(--mantine-primary-color-filled);
+    font-weight: 500;
+  }
+
   & td button.selected:not(:disabled),
   & td button.selected:not(:disabled):hover {
     background-color: var(--mantine-primary-color-filled);

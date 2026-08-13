@@ -80,4 +80,25 @@ describe('CalendarInput', () => {
     const result = onClick.mock.calls[0][0];
     expect(result.getDate()).toBe(15);
   });
+
+  test('Hands the calendar props through to it', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarInput
+        slots={[]}
+        month={month}
+        selected={new Date(2026, 6, 10)}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '14' }), { shiftKey: true });
+
+    expect(onChangeSelected).toHaveBeenCalledWith({ start: new Date(2026, 6, 10), end: new Date(2026, 6, 14) });
+  });
 });

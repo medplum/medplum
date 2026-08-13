@@ -260,6 +260,180 @@ describe('CalendarDateInput', () => {
 
     expect(screen.getByRole('button', { name: 'Previous month' })).toBeEnabled();
   });
+
+  test('Shift-click sweeps a range out from the selected day', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '14' }), { shiftKey: true });
+
+    expect(onChangeSelected).toHaveBeenCalledWith({ start: dayOf(month, 10), end: dayOf(month, 14) });
+  });
+
+  test('Shift-click back past the anchor still reads earliest day first', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '3' }), { shiftKey: true });
+
+    // A range is a span of days, not a record of which end was clicked first.
+    expect(onChangeSelected).toHaveBeenCalledWith({ start: dayOf(month, 3), end: dayOf(month, 10) });
+  });
+
+  test('Sweeping again measures from where the range began', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={{ start: dayOf(month, 10), end: dayOf(month, 14) }}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '20' }), { shiftKey: true });
+
+    expect(onChangeSelected).toHaveBeenCalledWith({ start: dayOf(month, 10), end: dayOf(month, 20) });
+  });
+
+  test('A plain click drops the range and starts again from one day', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={{ start: dayOf(month, 10), end: dayOf(month, 14) }}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '20' }));
+
+    expect(onChangeSelected).toHaveBeenCalledWith(dayOf(month, 20));
+  });
+
+  test('Shift-click picks a single day when ranges are not allowed', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '14' }), { shiftKey: true });
+
+    expect(onChangeSelected).toHaveBeenCalledWith(dayOf(month, 14));
+  });
+
+  test('Shift-click with nothing selected yet has no day to measure from', () => {
+    const month = new Date(2026, 6, 1);
+    const onChangeSelected = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={onChangeSelected}
+        onClick={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '14' }), { shiftKey: true });
+
+    expect(onChangeSelected).toHaveBeenCalledWith(dayOf(month, 14));
+  });
+
+  test('Marks both ends of a range and the days it spans', () => {
+    const month = new Date(2026, 6, 1);
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={{ start: dayOf(month, 10), end: dayOf(month, 13) }}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: '10' }).className).toContain('selected');
+    expect(screen.getByRole('button', { name: '13' }).className).toContain('selected');
+    expect(screen.getByRole('button', { name: '11' }).className).toContain('withinRange');
+    expect(screen.getByRole('button', { name: '11' }).className).not.toContain('selected');
+    expect(screen.getByRole('button', { name: '9' }).className).not.toContain('withinRange');
+    expect(screen.getByRole('button', { name: '14' }).className).not.toContain('withinRange');
+
+    // The days between count as pressed too, not just the two ends.
+    expect(screen.getByRole('button', { name: '10' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '11' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '13' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '14' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('A range reported to onClick is the day clicked, not the span', () => {
+    const month = new Date(2026, 6, 1);
+    const onClick = vi.fn();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        allowDateRange
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onChangeSelected={vi.fn()}
+        onClick={onClick}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '14' }), { shiftKey: true });
+
+    expect(onClick).toHaveBeenCalledWith(dayOf(month, 14));
+  });
 });
 
 /**
