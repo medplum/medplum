@@ -87,9 +87,10 @@ describe('ClaimSubmittedPanel', () => {
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
 
-  test('shows Submitted status badge when the ClaimResponse has no source claim status', () => {
+  test('shows no status badge when the ClaimResponse has no source claim status', () => {
     setup();
-    expect(screen.getByText('Submitted')).toBeInTheDocument();
+    expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+    expect(screen.queryByText('Submitted')).not.toBeInTheDocument();
   });
 
   test('shows the Candid status from the source-claim-status extension when present', () => {
@@ -133,7 +134,7 @@ describe('ClaimSubmittedPanel', () => {
     await deployCandidBot();
     const { identifier: _identifier, ...nonCandid } = baseClaimResponse;
     setup(nonCandid);
-    await waitFor(() => expect(screen.getByText('Submitted')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Claim Status:')).toBeInTheDocument());
     expect(medplum.executeBot).not.toHaveBeenCalled();
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
@@ -142,7 +143,7 @@ describe('ClaimSubmittedPanel', () => {
     await deployCandidBot(undefined);
     setup();
     // Give the bot lookup/execution a chance to resolve before asserting absence.
-    await waitFor(() => expect(screen.getByText('Submitted')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Claim Status:')).toBeInTheDocument());
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
 

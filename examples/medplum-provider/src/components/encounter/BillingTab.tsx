@@ -25,7 +25,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
-import { isCandidClaimResponse, refreshCandidClaimResponse } from '../../utils/candid';
+import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
@@ -114,20 +114,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     setClaimResponseLoading(true);
     try {
-      const searchClaimResponse = (): Promise<WithId<ClaimResponse> | undefined> =>
-        medplum.searchOne('ClaimResponse', { request: getReferenceString(claim) }, { cache: 'no-cache' });
-      let result = await searchClaimResponse();
-      if (result && isCandidClaimResponse(result)) {
-        // Candid claims are refreshed on load: the get-encounter bot pulls the latest claim state
-        // from Candid onto the ClaimResponse. If the refresh fails, fall back to the stale response.
-        try {
-          if (await refreshCandidClaimResponse(medplum, result)) {
-            result = (await searchClaimResponse()) ?? result;
-          }
-        } catch (err) {
-          showErrorNotification(err);
-        }
+      // Candid claims are refreshed on load: the claim carries the Candid encounter id, so the
+      // get-encounter bot can pull the latest state onto the stored ClaimResponse
+      try {
+        await refreshCandidClaimResponse(medplum, claim);
+      } catch (err) {
+        showErrorNotification(err);
       }
+      const result = await medplum.searchOne(
+        'ClaimResponse',
+        { request: getReferenceString(claim) },
+        { cache: 'no-cache' }
+      );
       setClaimResponse(result ?? null);
     } finally {
       setClaimResponseLoading(false);

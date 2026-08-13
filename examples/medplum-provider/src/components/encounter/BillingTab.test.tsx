@@ -1001,18 +1001,25 @@ describe('BillingTab', () => {
 
     const candidClaimUrl = 'https://app-staging.joincandidhealth.com/claims/candid-encounter-123';
 
+    // A claim that has been submitted to Candid: the submit operation writes the Candid encounter
+    // id back onto the Claim, which is what triggers the refresh on load.
+    const candidClaim: WithId<Claim> = {
+      ...mockClaim,
+      identifier: [{ system: 'https://candidhealth.com/encounter-id', value: 'candid-encounter-123' }],
+    };
+
     // The Candid card requires BillingTab to find an existing Claim (searchOne), its ClaimResponse
     // (searchOne), and the deployed bots (searchOne on Bot, dispatched by identifier). BillingTab
-    // executes get-encounter to refresh a Candid ClaimResponse on load, and ClaimSubmittedPanel
-    // executes the URL bot to resolve the portal URL, so stub executeBot per bot.
+    // executes get-encounter with the Claim's Candid encounter id before fetching the ClaimResponse,
+    // and ClaimSubmittedPanel executes the URL bot to resolve the portal URL, so stub executeBot per bot.
     const mockSearchOneWithClaimResponse = (
       claimResponse: WithId<ClaimResponse>,
-      options?: { getEncountersDeployed?: boolean; refreshedClaimResponse?: WithId<ClaimResponse> }
+      options?: { claim?: WithId<Claim>; getEncounterDeployed?: boolean; refreshedClaimResponse?: WithId<ClaimResponse> }
     ): void => {
       let currentClaimResponse = claimResponse;
       vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string, query?: Record<string, string>) => {
         if (resourceType === 'Claim') {
-          return Promise.resolve(mockClaim);
+          return Promise.resolve(options?.claim ?? mockClaim);
         }
         if (resourceType === 'Bot') {
           const identifier = String(query?.identifier ?? '');
@@ -1020,7 +1027,7 @@ describe('BillingTab', () => {
             return Promise.resolve(candidUrlBot);
           }
           if (identifier.endsWith('get-encounter')) {
-            return Promise.resolve(options?.getEncountersDeployed ? getEncountersBot : undefined);
+            return Promise.resolve(options?.getEncounterDeployed ? getEncountersBot : undefined);
           }
           return Promise.resolve(undefined);
         }
@@ -1048,12 +1055,22 @@ describe('BillingTab', () => {
     });
 
     test('displays status badge and submission date from ClaimResponse', async () => {
-      mockSearchOneWithClaimResponse(candidClaimResponse);
+      mockSearchOneWithClaimResponse({
+        ...candidClaimResponse,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+            valueCodeableConcept: {
+              coding: [{ system: 'https://candidhealth.com/claim-status', code: 'waiting_for_provider' }],
+            },
+          },
+        ],
+      });
 
       await setup();
 
       await waitFor(() => {
-        expect(screen.getByText('Submitted')).toBeInTheDocument();
+        expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
         expect(screen.getByText(/Submitted on/)).toBeInTheDocument();
       });
     });
@@ -1076,11 +1093,16 @@ describe('BillingTab', () => {
       };
 
       mockSearchResources({ Coverage: [mockCoverage] });
-      mockSearchOneWithClaimResponse(candidClaimResponse, { getEncountersDeployed: true, refreshedClaimResponse });
+      mockSearchOneWithClaimResponse(candidClaimResponse, {
+        claim: candidClaim,
+        getEncounterDeployed: true,
+        refreshedClaimResponse,
+      });
 
       await setup();
 
-      // The bot ran with the Candid encounter ID as input, and the refetched (refreshed) total is shown.
+      // The bot ran with the claim's Candid encounter ID as input, and the (already refreshed)
+      // ClaimResponse was fetched once.
       await waitFor(() => {
         expect(medplum.executeBot).toHaveBeenCalledWith(
           'get-encounter-bot',
@@ -1089,13 +1111,16 @@ describe('BillingTab', () => {
         );
         expect(screen.getByText('$150')).toBeInTheDocument();
       });
+      const claimResponseSearches = vi.mocked(medplum.searchOne).mock.calls.filter((c) => c[0] === 'ClaimResponse');
+      expect(claimResponseSearches).toHaveLength(1);
     });
 
-    test('does not run get-encounter when the ClaimResponse is not from Candid', async () => {
+    test('does not run get-encounter when the claim was not submitted to Candid', async () => {
       const nonCandidClaimResponse: WithId<ClaimResponse> = { ...candidClaimResponse, identifier: [] };
 
       mockSearchResources({ Coverage: [mockCoverage] });
-      mockSearchOneWithClaimResponse(nonCandidClaimResponse, { getEncountersDeployed: true });
+      // The claim (default mockClaim) has no Candid encounter id, so there is nothing to refresh.
+      mockSearchOneWithClaimResponse(nonCandidClaimResponse, { getEncounterDeployed: true });
 
       await setup();
 
@@ -1108,7 +1133,7 @@ describe('BillingTab', () => {
 
     test('skips the refresh when the get-encounter bot is not deployed', async () => {
       mockSearchResources({ Coverage: [mockCoverage] });
-      mockSearchOneWithClaimResponse(candidClaimResponse);
+      mockSearchOneWithClaimResponse(candidClaimResponse, { claim: candidClaim });
 
       await setup();
 

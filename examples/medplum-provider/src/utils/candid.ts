@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { ClaimResponse } from '@medplum/fhirtypes';
+import type { Claim, ClaimResponse } from '@medplum/fhirtypes';
 
 // Identifier system shared by the deployed Candid Health integration bots. The bots are looked up
 // by identifier so nothing renders (or runs) in projects where they are not deployed.
@@ -34,8 +34,9 @@ export const SOURCE_CLAIM_STATUS_EXTENSION_URL = 'https://medplum.com/fhir/Struc
 // System of the Candid claim status codes (e.g. `waiting_for_provider`, `finalized_paid`).
 export const CANDID_CLAIM_STATUS_SYSTEM = 'https://candidhealth.com/claim-status';
 
-export function getCandidEncounterId(claimResponse: ClaimResponse): string | undefined {
-  return claimResponse.identifier?.find((id) => id.system === CANDID_ENCOUNTER_ID_SYSTEM)?.value;
+// The submit operation writes the Candid encounter id onto both the Claim and its ClaimResponse.
+export function getCandidEncounterId(resource: Claim | ClaimResponse): string | undefined {
+  return resource.identifier?.find((id) => id.system === CANDID_ENCOUNTER_ID_SYSTEM)?.value;
 }
 
 export function getCandidClaimStatus(claimResponse: ClaimResponse): string | undefined {
@@ -45,19 +46,20 @@ export function getCandidClaimStatus(claimResponse: ClaimResponse): string | und
 }
 
 /**
- * Executes the Candid `get-encounter` bot, which refreshes the given ClaimResponse with the
- * latest claim state from Candid Health. The bot takes the Candid encounter ID as input.
- * No-op when the bot is not deployed in the project or the ClaimResponse has no encounter ID.
+ * Executes the Candid `get-encounter` bot, which refreshes the stored ClaimResponse with the
+ * latest claim state from Candid Health. The bot takes the Candid encounter ID as input, which
+ * can come from either the Claim or its ClaimResponse (the submit operation writes it onto both).
+ * No-op when the resource has no Candid encounter ID or the bot is not deployed in the project.
  *
  * @param medplum - The Medplum client.
- * @param claimResponse - The Candid ClaimResponse to refresh.
- * @returns True when the bot ran (the caller should refetch the ClaimResponse), false otherwise.
+ * @param resource - The Claim or ClaimResponse carrying the Candid encounter-id identifier.
+ * @returns True when the bot ran, false otherwise.
  */
 export async function refreshCandidClaimResponse(
   medplum: MedplumClient,
-  claimResponse: ClaimResponse
+  resource: Claim | ClaimResponse
 ): Promise<boolean> {
-  const encounterId = getCandidEncounterId(claimResponse);
+  const encounterId = getCandidEncounterId(resource);
   if (!encounterId) {
     return false;
   }
