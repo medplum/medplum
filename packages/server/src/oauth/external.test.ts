@@ -402,6 +402,48 @@ describe('External auth', () => {
     );
   });
 
+  test('JWKS verification enforces configured audience', async () => {
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+    const jwksUrl = 'https://external-auth.example.com/.well-known/audience-jwks.json';
+
+    await withExternalAuthProviders(
+      [
+        {
+          issuer: 'https://external-auth.example.com',
+          identityProvider: {
+            issuer: 'https://external-auth.example.com',
+            audience: 'medplum-client',
+            jwksUrl,
+          },
+        },
+      ],
+      async () => {
+        fetchMock.mockImplementation(() => mockFetchJson({ keys: [publicJwk] }));
+
+        const createJwt = (audience: string) =>
+          new SignJWT({ nonce: randomUUID() })
+            .setProtectedHeader({ alg: 'ES256' })
+            .setIssuer('https://external-auth.example.com')
+            .setAudience(audience)
+            .setSubject(externalSub)
+            .setIssuedAt()
+            .setExpirationTime('2h')
+            .sign(keyPair.privateKey);
+
+        const rejected = await request(app)
+          .get('/oauth2/userinfo')
+          .set('Authorization', 'Bearer ' + (await createJwt('other-client')));
+        expect(rejected).toHaveStatus(401);
+
+        const accepted = await request(app)
+          .get('/oauth2/userinfo')
+          .set('Authorization', 'Bearer ' + (await createJwt('medplum-client')));
+        expect(accepted).toHaveStatus(200);
+      }
+    );
+  });
+
   test('Sub claim with caching', async () => {
     fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
 

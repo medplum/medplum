@@ -16,6 +16,11 @@ export interface IdentityProvider {
   issuer?: string;
 
   /**
+   * Expected audience for tokens issued by the external Identity Provider.
+   */
+  audience?: string;
+
+  /**
    * Remote URL for the external Identity Provider JWKS endpoint.
    */
   jwksUrl?: string;

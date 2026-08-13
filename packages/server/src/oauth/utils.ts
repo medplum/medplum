@@ -974,7 +974,7 @@ async function verifyExternalToken(idp: IdentityProvider, token: string, issuer:
     return;
   }
   const jwks = createRemoteJWKSet(new URL(idp.jwksUrl), { [customFetch]: safeFetch });
-  await jwtVerify(token, jwks, { issuer });
+  await jwtVerify(token, jwks, { issuer, audience: idp.audience });
 }
 
 interface ValidationAssertion {

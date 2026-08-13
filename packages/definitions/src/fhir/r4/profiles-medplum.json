@@ -5787,6 +5787,21 @@
             }
           },
           {
+            "id" : "IdentityProvider.audience",
+            "path" : "IdentityProvider.audience",
+            "definition" : "Expected audience for tokens issued by the external Identity Provider.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base" : {
+              "path" : "IdentityProvider.audience",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "IdentityProvider.jwksUrl",
             "path" : "IdentityProvider.jwksUrl",
             "definition" : "Remote URL for the external Identity Provider JWKS endpoint.",

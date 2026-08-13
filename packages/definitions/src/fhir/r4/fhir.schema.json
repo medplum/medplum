@@ -62928,6 +62928,10 @@
           "description": "Issuer URL for the external Identity Provider.",
           "$ref": "#/definitions/string"
         },
+        "audience": {
+          "description": "Expected audience for tokens issued by the external Identity Provider.",
+          "$ref": "#/definitions/string"
+        },
         "jwksUrl": {
           "description": "Remote URL for the external Identity Provider JWKS endpoint.",
           "$ref": "#/definitions/string"
