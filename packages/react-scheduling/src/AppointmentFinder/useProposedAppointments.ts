@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getReferenceString, isDefined, normalizeErrorString } from '@medplum/core';
+import { getReferenceString, isDefined, isError, normalizeErrorString } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
@@ -107,7 +107,9 @@ interface SearchState {
 const NOTHING_ASKED: SearchState = { key: '', appointments: [], error: undefined };
 
 function toError(reason: unknown): Error {
-  return new Error(normalizeErrorString(reason), { cause: reason });
+  // Passed through when it already is one: rewrapping would flatten an
+  // `OperationOutcomeError` and lose its `outcome`.
+  return isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason });
 }
 
 /** One combination's result: its times, or why it has none. */

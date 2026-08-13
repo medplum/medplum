@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { getReferenceString, isError, normalizeErrorString } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
@@ -73,7 +73,9 @@ export function useEligibleSchedules(
             key: asked,
             candidates: [],
             excludedByLocation: 0,
-            error: new Error(normalizeErrorString(reason), { cause: reason }),
+            // Passed through when it already is one: rewrapping would flatten
+            // an `OperationOutcomeError` and lose its `outcome`.
+            error: isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason }),
           });
         }
       });
