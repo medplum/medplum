@@ -421,7 +421,7 @@ describe('External auth', () => {
       async () => {
         fetchMock.mockImplementation(() => mockFetchJson({ keys: [publicJwk] }));
 
-        const createJwt = (audience: string) =>
+        const createJwt = (audience: string): Promise<string> =>
           new SignJWT({ nonce: randomUUID() })
             .setProtectedHeader({ alg: 'ES256' })
             .setIssuer('https://external-auth.example.com')
