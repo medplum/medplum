@@ -128,7 +128,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           showErrorNotification(err);
         }
       }
-      console.log('ClaimResponse', result);
       setClaimResponse(result ?? null);
     } finally {
       setClaimResponseLoading(false);
