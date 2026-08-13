@@ -23,6 +23,7 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import { arrayify } from './array';
+import { HL7_V2_0203 } from './constants';
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatDateTime, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
@@ -439,6 +440,40 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   const array = Array.isArray(identifiers) ? identifiers : [identifiers];
   for (const identifier of array) {
     if (identifier.system === system) {
+      return identifier.value;
+    }
+  }
+  return undefined;
+}
+
+/** The HL7 v2 Table 0203 coding for a medical record number. */
+export const MRN_IDENTIFIER_TYPE: Coding = { system: HL7_V2_0203, code: 'MR' };
+
+/**
+ * Returns the resource identifier for the given identifier type.
+ *
+ * Whereas {@link getIdentifier} matches on `Identifier.system`, i.e. who assigned the identifier,
+ * this matches on `Identifier.type`, i.e. what kind of identifier it is. For example,
+ * {@link MRN_IDENTIFIER_TYPE} finds the medical record number no matter which organization issued it.
+ *
+ * Both the system and the code of the type coding must match. Matching on code alone would be
+ * ambiguous, because the same code means different things in different code systems.
+ *
+ * If multiple identifiers exist with the same type, the first one is returned.
+ *
+ * If the type is not found, then returns undefined.
+ * @param resource - The resource to check.
+ * @param type - The identifier type coding, such as {@link MRN_IDENTIFIER_TYPE}.
+ * @returns The identifier value if found; otherwise undefined.
+ */
+export function getIdentifierByType(resource: Resource, type: Coding): string | undefined {
+  const identifiers = (resource as any).identifier;
+  if (!identifiers || !isCoding(type) || !type.system) {
+    return undefined;
+  }
+  const array = Array.isArray(identifiers) ? identifiers : [identifiers];
+  for (const identifier of array) {
+    if (identifier.type && getCodeBySystem(identifier.type, type.system) === type.code) {
       return identifier.value;
     }
   }
