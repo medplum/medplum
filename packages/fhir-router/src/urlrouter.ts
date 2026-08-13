@@ -86,10 +86,17 @@ function parseQueryString(path: string): Record<string, string | string[]> {
   const url = new URL(path, 'https://example.com/');
   const queryParams = Object.create(null);
 
-  const raw = url.searchParams;
-  for (const param of raw.keys()) {
-    const values = raw.getAll(param);
-    queryParams[param] = values.length === 1 ? values[0] : values;
+  // Not `keys()` + `getAll()`: `keys()` yields one entry per name/value pair, so `getAll()`
+  // rescans every pair for each repeat, which is quadratic on duplicated params.
+  for (const [name, value] of url.searchParams) {
+    const existing = queryParams[name];
+    if (existing === undefined) {
+      queryParams[name] = value;
+    } else if (Array.isArray(existing)) {
+      existing.push(value);
+    } else {
+      queryParams[name] = [existing, value];
+    }
   }
 
   return queryParams;
