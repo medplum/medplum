@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
+import { isCandidClaimResponse, refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
@@ -113,11 +114,21 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     setClaimResponseLoading(true);
     try {
-      const result = await medplum.searchOne(
-        'ClaimResponse',
-        { request: getReferenceString(claim) },
-        { cache: 'no-cache' }
-      );
+      const searchClaimResponse = (): Promise<WithId<ClaimResponse> | undefined> =>
+        medplum.searchOne('ClaimResponse', { request: getReferenceString(claim) }, { cache: 'no-cache' });
+      let result = await searchClaimResponse();
+      if (result && isCandidClaimResponse(result)) {
+        // Candid claims are refreshed on load: the get-encounter bot pulls the latest claim state
+        // from Candid onto the ClaimResponse. If the refresh fails, fall back to the stale response.
+        try {
+          if (await refreshCandidClaimResponse(medplum, result)) {
+            result = (await searchClaimResponse()) ?? result;
+          }
+        } catch (err) {
+          showErrorNotification(err);
+        }
+      }
+      console.log('ClaimResponse', result);
       setClaimResponse(result ?? null);
     } finally {
       setClaimResponseLoading(false);

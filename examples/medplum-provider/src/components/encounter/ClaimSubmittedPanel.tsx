@@ -7,18 +7,8 @@ import { useMedplum, useResource, useSearchOne } from '@medplum/react';
 import { IconExternalLink } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { CANDID_CLAIM_URL_BOT_IDENTIFIER, getCandidClaimStatus, isCandidClaimResponse } from '../../utils/candid';
 import { showErrorNotification } from '../../utils/notifications';
-
-// Identifier of the deployed bot that resolves a Candid Health claim portal URL.
-// The URL itself lives in the bot's secrets, so it is never hardcoded here.
-const CANDID_CLAIM_URL_BOT_IDENTIFIER = {
-  system: 'https://medplum.com/integrations/candid-health',
-  value: 'get-candid-claim-portal-url',
-};
-
-// Identifier the send-to-candid bot writes onto the ClaimResponse; its presence marks the
-// claim as a Candid claim and is what the URL bot reads to build the portal link.
-const CANDID_ENCOUNTER_ID_SYSTEM = 'https://candidhealth.com/encounter-id';
 
 interface GetCandidClaimUrlOutput {
   encounterId: string;
@@ -42,14 +32,12 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
   const [candidUrlLoading, setCandidUrlLoading] = useState(false);
 
   const botId = candidUrlBot?.id;
-  const isCandidClaimResponse = claimResponseResource?.identifier?.some(
-    (id) => id.system === CANDID_ENCOUNTER_ID_SYSTEM
-  );
+  const isCandidClaim = claimResponseResource && isCandidClaimResponse(claimResponseResource);
 
   useEffect(() => {
     let active = true;
 
-    if (!botId || !claimResponseResource || !isCandidClaimResponse) {
+    if (!botId || !claimResponseResource || !isCandidClaim) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCandidClaimUrl(undefined);
       setCandidUrlLoading(false);
@@ -86,13 +74,16 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
     return () => {
       active = false;
     };
-  }, [botId, claimResponseResource, isCandidClaimResponse, medplum]);
+  }, [botId, claimResponseResource, isCandidClaim, medplum]);
 
   if (!claimResponseResource) {
     return null;
   }
 
-  const status = 'Submitted';
+  // The get-encounter bot writes the latest Candid claim status (e.g. `waiting_for_provider`) into
+  // the source-claim-status extension; until the first refresh lands the response only reflects
+  // the submission.
+  const status = getCandidClaimStatus(claimResponseResource) ?? 'Submitted';
   const createdAt = claimResponseResource.created;
   const claimAmount = claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
 

@@ -87,9 +87,25 @@ describe('ClaimSubmittedPanel', () => {
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
 
-  test('shows Submitted status badge', () => {
+  test('shows Submitted status badge when the ClaimResponse has no source claim status', () => {
     setup();
     expect(screen.getByText('Submitted')).toBeInTheDocument();
+  });
+
+  test('shows the Candid status from the source-claim-status extension when present', () => {
+    setup({
+      ...baseClaimResponse,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+          valueCodeableConcept: {
+            coding: [{ system: 'https://candidhealth.com/claim-status', code: 'waiting_for_provider' }],
+          },
+        },
+      ],
+    });
+    expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
+    expect(screen.queryByText('Submitted')).not.toBeInTheDocument();
   });
 
   test('shows submission date when created is provided', () => {
