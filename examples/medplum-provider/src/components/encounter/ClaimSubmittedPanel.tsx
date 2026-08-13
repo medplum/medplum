@@ -80,10 +80,7 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
     return null;
   }
 
-  // The get-encounter bot writes the latest Candid claim status (e.g. `waiting_for_provider`) into
-  // the source-claim-status extension; until the first refresh lands the response only reflects
-  // the submission.
-  const status = getCandidClaimStatus(claimResponseResource) ?? 'Submitted';
+  const status: string | undefined = getCandidClaimStatus(claimResponseResource);
   const createdAt = claimResponseResource.created;
   const claimAmount = claimResponseResource.total?.reduce((sum, total) => sum + (total.amount?.value ?? 0), 0) ?? 0;
 
