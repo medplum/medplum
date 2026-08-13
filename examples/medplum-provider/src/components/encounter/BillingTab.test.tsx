@@ -1014,7 +1014,11 @@ describe('BillingTab', () => {
     // and ClaimSubmittedPanel executes the URL bot to resolve the portal URL, so stub executeBot per bot.
     const mockSearchOneWithClaimResponse = (
       claimResponse: WithId<ClaimResponse>,
-      options?: { claim?: WithId<Claim>; getEncounterDeployed?: boolean; refreshedClaimResponse?: WithId<ClaimResponse> }
+      options?: {
+        claim?: WithId<Claim>;
+        getEncounterDeployed?: boolean;
+        refreshedClaimResponse?: WithId<ClaimResponse>;
+      }
     ): void => {
       let currentClaimResponse = claimResponse;
       vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string, query?: Record<string, string>) => {
