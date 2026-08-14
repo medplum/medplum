@@ -221,13 +221,7 @@ async function isCandidateAtLocation(
   const actor = candidate.actorResource;
 
   if (getCandidateRole(candidate) === 'room') {
-    return isWithinLocation(
-      medplum,
-      getCandidateActor(candidate).reference,
-      locationReference,
-      options,
-      actor as Location | undefined
-    );
+    return isWithinLocation(medplum, getCandidateActor(candidate).reference, locationReference, options);
   }
 
   if (actor?.resourceType === 'Device') {
@@ -257,28 +251,25 @@ async function isCandidateAtLocation(
  * @param reference - The Location to start from, or undefined to say nothing.
  * @param locationReference - The Location being looked for.
  * @param options - Abort signal.
- * @param included - The starting Location, when a search already returned it.
  * @returns Whether the target is at or above the Location, or unknowable.
  */
 async function isWithinLocation(
   medplum: MedplumClient,
   reference: string | undefined,
   locationReference: string,
-  options: FilterCandidatesOptions | undefined,
-  included?: Location
+  options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
   if (!reference) {
     return true;
   }
 
   let current: string = reference;
-  let resource = included;
 
   for (let depth = 0; depth < MAX_LOCATION_DEPTH; depth++) {
     if (current === locationReference) {
       return true;
     }
-    const location = resource ?? (await readLocation(medplum, current, options));
+    const location = await readLocation(medplum, current, options);
     if (!location) {
       return true;
     }
@@ -288,7 +279,6 @@ async function isWithinLocation(
       return false;
     }
     current = parent;
-    resource = undefined;
   }
 
   // Deeper than we look. Treat it as unverifiable rather than excluded.
