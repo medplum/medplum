@@ -193,6 +193,10 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .where('code', 'IN', code);
 }
 
+export function canonicalCodingId(tableName: string): Column {
+  return new Column(undefined, `COALESCE("${tableName}"."synonymOf", "${tableName}"."id")`, true);
+}
+
 export function addPropertyFilter(
   query: SelectQuery,
   condition: ValueSetComposeIncludeFilter,
@@ -201,7 +205,7 @@ export function addPropertyFilter(
   const multiValue = condition.op.endsWith('in');
   const values = multiValue ? condition.value.split(',') : condition.value;
   const whereClauses = [
-    new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+    new Condition(canonicalCodingId(query.effectiveTableName), '=', new Column('Coding_Property', 'coding')),
     new Condition(new Column('Coding_Property', 'property'), '=', property.id),
   ];
   if (condition.op !== 'exists') {
