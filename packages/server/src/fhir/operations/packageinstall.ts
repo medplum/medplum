@@ -51,8 +51,8 @@ import { readStreamToString } from '../../util/streams';
 export const PackageInstallTagSystem = 'https://medplum.com/package-install';
 
 /**
- * Extension declared on a `PackageRelease` naming the Stage 2 setupBot by its
- * version-tagged Bot `identifier` value.
+ * Extension declared on a `PackageRelease` naming the setupBot run in the
+ * imperative setup phase, by its version-tagged Bot `identifier` value.
  *
  * The setupBot is an ordinary impl bot: published once into the shared impl
  * project rather than copied into every customer project by the install Bundle.
@@ -112,9 +112,9 @@ function getReleaseExtensionValue(release: PackageRelease, url: string): ReturnT
 }
 
 /** Where an `$install` failed, recorded so a re-invoke can resume from the right point. */
-type InstallErrorPhase = 'stage-1' | 'setup-bot';
+type InstallErrorPhase = 'install-bundle' | 'setup-bot';
 
-/** Settings derived from the optional Stage 1 `Parameters` body, keyed by Questionnaire linkId. */
+/** Settings derived from the optional install-bundle `Parameters` body, keyed by Questionnaire linkId. */
 type InstallSettings = Record<string, boolean | number | string>;
 
 /**
@@ -125,10 +125,11 @@ type InstallSettings = Record<string, boolean | number | string>;
  * `PackageInstallation` for the package and resumes from where the prior attempt
  * stopped (RFC §`$install` state-aware behavior).
  *
- * Stage 1 (declarative): apply the PackageRelease Bundle into the calling project
- * via `processBatch`. Stage 2 (imperative, Tier 3): invoke the declared setupBot
- * with the `PackageInstallation` + validated settings; the setupBot writes
- * `Project.secret` and returns one-shot credentials in an OperationOutcome.
+ * Install-bundle phase (declarative): apply the PackageRelease Bundle into the
+ * calling project via `processBatch`. Setup-bot phase (imperative, Tier 3): invoke
+ * the declared setupBot with the `PackageInstallation` + validated settings; the
+ * setupBot writes `Project.secret` and returns one-shot credentials in an
+ * OperationOutcome.
  *
  * Endpoint: [fhir base]/PackageRelease/[id]/$install
  * @param req - The FHIR request.
@@ -153,7 +154,7 @@ export async function packageInstallHandler(
   // it (see catalogResourceTypes / Project.exportedResourceType).
   const packageRelease = await repo.readResource<PackageRelease>('PackageRelease', id);
 
-  // Load the install Bundle (Stage 1 content) and validate the optional settings
+  // Load the install Bundle (install-bundle phase content) and validate the optional settings
   // body against the bundled config Questionnaire *before* mutating any state.
   // The Bundle is stored as a Binary, which cannot be exported cross-project, so it
   // is read via systemRepo now that the caller has proven access to the release.
@@ -178,7 +179,7 @@ export async function packageInstallHandler(
   if ('respond' in decision) {
     return decision.respond;
   }
-  const skipStage1 = decision.skipStage1;
+  const skipInstallBundle = decision.skipInstallBundle;
 
   // Mark the record `installing` for the duration of this attempt.
   let installation = await upsertInstalling(
@@ -190,27 +191,28 @@ export async function packageInstallHandler(
     configHash
   );
 
-  let phase: InstallErrorPhase = skipStage1 ? 'setup-bot' : 'stage-1';
-  let stage1Result: Bundle | undefined;
+  let phase: InstallErrorPhase = skipInstallBundle ? 'setup-bot' : 'install-bundle';
+  let installBundleResult: Bundle | undefined;
   try {
-    if (!skipStage1) {
-      stage1Result = await runStage1(req, repo, router, bundle, packageRelease);
+    if (!skipInstallBundle) {
+      installBundleResult = await applyInstallBundle(req, repo, router, bundle, packageRelease);
       phase = 'setup-bot';
     }
 
     // Link the shared impl project (Ticket 0b: handler-side, idempotent) before
-    // Stage 2 runs, so the setupBot can resolve impl resources through the link.
+    // the setup-bot phase runs, so the setupBot can resolve impl resources through
+    // the link.
     await linkImplProject(systemRepo, project, packageRelease);
 
-    const stage2Result = await runStage2(ctx, packageRelease, installation, settings);
+    const setupBotResult = await runSetupBot(ctx, packageRelease, installation, settings);
 
     installation = await systemRepo.updateResource<PackageInstallation>(
       clearErrorState({ ...installation, status: 'installed' })
     );
 
     // Prefer the setupBot's one-shot-credentials outcome; otherwise fall back to
-    // the Stage 1 batch response (legacy behavior) or the installation record.
-    return [allOk, stage2Result ?? stage1Result ?? installation];
+    // the install-bundle batch response (legacy behavior) or the installation record.
+    return [allOk, setupBotResult ?? installBundleResult ?? installation];
   } catch (err) {
     getLogger().error('Package install failed', { err, phase });
     const outcome = normalizeOperationOutcome(err);
@@ -222,8 +224,9 @@ export async function packageInstallHandler(
 }
 
 // The outcome of idempotent reconciliation: either respond immediately (no-op or
-// 409), or proceed with an install attempt (optionally skipping the committed Stage 1).
-type ReconcileDecision = { respond: FhirResponse } | { skipStage1: boolean };
+// 409), or proceed with an install attempt (optionally skipping the committed
+// install bundle).
+type ReconcileDecision = { respond: FhirResponse } | { skipInstallBundle: boolean };
 
 // Decides how a re-invoke should proceed based on the existing PackageInstallation
 // state (RFC §`$install` state-aware behavior).
@@ -232,22 +235,22 @@ type ReconcileDecision = { respond: FhirResponse } | { skipStage1: boolean };
 // version, so the record for an installed v1 is what a caller installing v2 hits.
 // Reconciliation is about recovering or reconfiguring *this* install; moving between
 // versions is `$upgrade`'s job, since it also has to run declared migrations and
-// rewrite what Stage 1 already wrote.
+// rewrite what the install bundle already wrote.
 function planReconciliation(
   existing: WithId<PackageInstallation> | undefined,
   configHash: string,
   version: string
 ): ReconcileDecision {
   if (!existing) {
-    return { skipStage1: false };
+    return { skipInstallBundle: false };
   }
   const sameVersion = existing.version === version;
   switch (existing.status) {
     case 'installed':
       if (!sameVersion) {
         // Neither branch below is safe across versions: the config hash could match
-        // and return `allOk` having applied nothing, and skipping Stage 1 would leave
-        // the record relabelled to a version whose Bundle never ran.
+        // and return `allOk` having applied nothing, and skipping the install bundle
+        // would leave the record relabelled to a version whose Bundle never ran.
         return {
           respond: [
             conflict(
@@ -258,29 +261,29 @@ function planReconciliation(
         };
       }
       // No-op when nothing changed; otherwise refresh via the idempotent setupBot,
-      // skipping the already-committed Stage 1.
+      // skipping the already-committed install bundle.
       return getExtensionValue(existing, PackageInstallationConfigHashUrl) === configHash
         ? { respond: [allOk, existing] }
-        : { skipStage1: true };
+        : { skipInstallBundle: true };
     case 'installing':
       // A recent record means another caller is in flight; a stale one crashed
-      // mid-install and must redo Stage 1.
+      // mid-install and must redo the install bundle.
       return isRecentlyActive(existing)
         ? { respond: [conflict('Package installation already in progress', 'in-progress')] }
-        : { skipStage1: false };
+        : { skipInstallBundle: false };
     case 'error':
-      // Stage 1 runs in a transaction, so a Stage 1 failure committed nothing —
-      // only resume past Stage 1 when the prior failure was in the setupBot, and
-      // only for the same version: whatever Stage 1 committed belongs to the old
-      // one. A failed install must stay recoverable by a newer release, because
-      // `PackageInstallation` is read-only to project admins and they have no way
-      // to clear it themselves.
+      // The install bundle runs in a transaction, so a failure there committed
+      // nothing — only resume past it when the prior failure was in the setupBot,
+      // and only for the same version: whatever the install bundle committed belongs
+      // to the old one. A failed install must stay recoverable by a newer release,
+      // because `PackageInstallation` is read-only to project admins and they have no
+      // way to clear it themselves.
       return {
-        skipStage1: sameVersion && getExtensionValue(existing, PackageInstallationErrorPhaseUrl) === 'setup-bot',
+        skipInstallBundle: sameVersion && getExtensionValue(existing, PackageInstallationErrorPhaseUrl) === 'setup-bot',
       };
     default:
       // 'requested' or unknown → full install from scratch.
-      return { skipStage1: false };
+      return { skipInstallBundle: false };
   }
 }
 
@@ -292,8 +295,8 @@ async function readPackageBundle(repo: FhirRepository, packageRelease: PackageRe
   return JSON.parse(json) as Bundle;
 }
 
-// Stage 1: apply the declarative Bundle into the calling project.
-async function runStage1(
+// Install-bundle phase: apply the declarative Bundle into the calling project.
+async function applyInstallBundle(
   req: FhirRequest,
   repo: FhirRepository,
   router: FhirRouter,
@@ -368,10 +371,10 @@ async function resolveConditionalEntries(repo: FhirRepository, bundle: Bundle): 
   return { ...bundle, entry: entries };
 }
 
-// Stage 2: invoke the declared setupBot, passing the PackageInstallation and the
-// validated settings. Returns the bot's OperationOutcome (one-shot credentials),
+// Setup-bot phase: invoke the declared setupBot, passing the PackageInstallation and
+// the validated settings. Returns the bot's OperationOutcome (one-shot credentials),
 // or undefined when the package declares no setupBot.
-async function runStage2(
+async function runSetupBot(
   ctx: AuthenticatedRequestContext,
   packageRelease: PackageRelease,
   installation: WithId<PackageInstallation>,

@@ -450,10 +450,10 @@ describe('PackageRelease $install', () => {
     expect(res).toHaveStatus(404);
   });
 
-  // A minimal Stage 1 Bundle: one customer-side proxy Bot, which doubles as the
-  // probe for whether Stage 1 re-ran (see countBots). The setup bot is no longer
-  // part of the Bundle — it is published into the impl project instead.
-  function stage1Bundle(identifier: string): Bundle {
+  // A minimal install Bundle: one customer-side proxy Bot, which doubles as the
+  // probe for whether the install bundle re-ran (see countBots). The setup bot is no
+  // longer part of the Bundle — it is published into the impl project instead.
+  function installBundle(identifier: string): Bundle {
     return {
       resourceType: 'Bundle',
       meta: { project: project.id },
@@ -551,7 +551,7 @@ describe('PackageRelease $install', () => {
     return res.body.entry?.length ?? 0;
   }
 
-  test('Stage 2 setupBot returns credentials and links impl project', async () => {
+  test('Setup-bot phase returns credentials and links impl project', async () => {
     const { implProject, setupBot } = await publishImplProjectWithSetupBot('test-setup-a');
     const creds: OperationOutcome = {
       resourceType: 'OperationOutcome',
@@ -561,7 +561,7 @@ describe('PackageRelease $install', () => {
       .spyOn(botExecute, 'executeBot')
       .mockResolvedValue({ success: true, logResult: '', returnValue: creds });
 
-    const release = await publishRelease(stage1Bundle('test-proxy-a'), {
+    const release = await publishRelease(installBundle('test-proxy-a'), {
       setupBot: 'test-setup-a',
       implProject: implProject.id,
       version: '10.0.0',
@@ -600,7 +600,7 @@ describe('PackageRelease $install', () => {
     expect(installations[0].status).toBe('installed');
   });
 
-  test('setupBot failure records errorPhase and re-invoke skips Stage 1', async () => {
+  test('setupBot failure records errorPhase and re-invoke skips the install bundle', async () => {
     const creds: OperationOutcome = {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'information', code: 'informational', details: { text: 'ok' } }],
@@ -610,7 +610,7 @@ describe('PackageRelease $install', () => {
       .mockResolvedValue({ success: true, logResult: '', returnValue: creds });
 
     const { implProject } = await publishImplProjectWithSetupBot('test-setup-b');
-    const release = await publishRelease(stage1Bundle('test-proxy-b'), {
+    const release = await publishRelease(installBundle('test-proxy-b'), {
       setupBot: 'test-setup-b',
       implProject: implProject.id,
       version: '11.0.0',
@@ -632,7 +632,7 @@ describe('PackageRelease $install', () => {
     );
     expect(await countBots('test-proxy-b')).toBe(1);
 
-    // Re-invoke: Stage 1 is skipped (committed), setupBot re-runs and succeeds
+    // Re-invoke: the install bundle is skipped (committed), setupBot re-runs and succeeds
     const res2 = await request(app)
       .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -640,7 +640,7 @@ describe('PackageRelease $install', () => {
       .send({});
     expect(res2.status).toBe(200);
 
-    // Still only one bot — Stage 1 did not run a second time
+    // Still only one bot — the install bundle did not run a second time
     expect(await countBots('test-proxy-b')).toBe(1);
 
     installations = await searchInstallations('11.0.0');
@@ -659,7 +659,7 @@ describe('PackageRelease $install', () => {
       .mockResolvedValue({ success: true, logResult: '', returnValue: creds });
 
     const { implProject } = await publishImplProjectWithSetupBot('test-setup-c');
-    const release = await publishRelease(stage1Bundle('test-proxy-c'), {
+    const release = await publishRelease(installBundle('test-proxy-c'), {
       setupBot: 'test-setup-c',
       implProject: implProject.id,
       version: '12.0.0',
@@ -679,7 +679,7 @@ describe('PackageRelease $install', () => {
       .send({});
     expect(res2.status).toBe(200);
 
-    // No-op short-circuits before Stage 2, so the bot ran only once
+    // No-op short-circuits before the setup-bot phase, so the bot ran only once
     expect(execSpy).toHaveBeenCalledTimes(1);
     expect(await countBots('test-proxy-c')).toBe(1);
 
@@ -694,7 +694,7 @@ describe('PackageRelease $install', () => {
   test('setupBot declared without an impl project is rejected', async () => {
     const execSpy = vi.spyOn(botExecute, 'executeBot');
 
-    const release = await publishRelease(stage1Bundle('test-proxy-e'), {
+    const release = await publishRelease(installBundle('test-proxy-e'), {
       setupBot: 'test-setup-e',
       version: '20.0.0',
     });
@@ -733,7 +733,7 @@ describe('PackageRelease $install', () => {
       })
     );
 
-    const release = await publishRelease(stage1Bundle('test-proxy-f'), {
+    const release = await publishRelease(installBundle('test-proxy-f'), {
       setupBot: 'test-setup-f',
       implProject: implProject.id,
       version: '21.0.0',
@@ -756,7 +756,7 @@ describe('PackageRelease $install', () => {
     const { implProject } = await publishImplProjectWithSetupBot('test-setup-v1');
     vi.spyOn(botExecute, 'executeBot').mockResolvedValue({ success: true, logResult: '', returnValue: undefined });
 
-    const v1 = await publishRelease(stage1Bundle('test-proxy-v1'), {
+    const v1 = await publishRelease(installBundle('test-proxy-v1'), {
       packageRef,
       setupBot: 'test-setup-v1',
       implProject: implProject.id,
@@ -771,7 +771,7 @@ describe('PackageRelease $install', () => {
 
     // Same package, new version, identical (empty) settings — so the config hash
     // matches and the old code would have returned allOk having applied nothing.
-    const v2 = await publishRelease(stage1Bundle('test-proxy-v2'), {
+    const v2 = await publishRelease(installBundle('test-proxy-v2'), {
       packageRef,
       setupBot: 'test-setup-v1',
       implProject: implProject.id,
@@ -800,7 +800,7 @@ describe('PackageRelease $install', () => {
       .mockResolvedValueOnce({ success: false, logResult: 'kaboom' })
       .mockResolvedValue({ success: true, logResult: '', returnValue: undefined });
 
-    const v1 = await publishRelease(stage1Bundle('test-proxy-r1'), {
+    const v1 = await publishRelease(installBundle('test-proxy-r1'), {
       packageRef,
       setupBot: 'test-setup-recover',
       implProject: implProject.id,
@@ -817,11 +817,12 @@ describe('PackageRelease $install', () => {
         ?.valueCode
     ).toBe('setup-bot');
 
-    // The prior failure was in the setupBot, which normally means Stage 1 is skipped.
-    // Across versions it must not be, because what Stage 1 committed belongs to v1 —
+    // The prior failure was in the setupBot, which normally means the install bundle
+    // is skipped. Across versions it must not be, because what the install bundle
+    // committed belongs to v1 —
     // and project admins cannot clear a PackageInstallation themselves, so refusing
     // here would wedge them permanently.
-    const v2 = await publishRelease(stage1Bundle('test-proxy-r2'), {
+    const v2 = await publishRelease(installBundle('test-proxy-r2'), {
       packageRef,
       setupBot: 'test-setup-recover',
       implProject: implProject.id,
@@ -834,7 +835,7 @@ describe('PackageRelease $install', () => {
       .send({});
     expect(res2.status).toBe(200);
 
-    // Stage 1 ran for the new version.
+    // The install bundle ran for the new version.
     expect(await countBots('test-proxy-r2')).toBe(1);
     const installations = await searchInstallations('33.0.0');
     expect(installations).toHaveLength(1);
@@ -845,7 +846,7 @@ describe('PackageRelease $install', () => {
     const { implProject } = await publishImplProjectWithSetupBot('test-setup-noimpersonate', { runAsUser: false });
     const execSpy = vi.spyOn(botExecute, 'executeBot');
 
-    const release = await publishRelease(stage1Bundle('test-proxy-g'), {
+    const release = await publishRelease(installBundle('test-proxy-g'), {
       setupBot: 'test-setup-noimpersonate',
       implProject: implProject.id,
       version: '34.0.0',
@@ -864,7 +865,7 @@ describe('PackageRelease $install', () => {
   });
 
   test('Concurrent in-flight install returns 409', async () => {
-    const release = await publishRelease(stage1Bundle('test-proxy-d'), { version: '13.0.0' });
+    const release = await publishRelease(installBundle('test-proxy-d'), { version: '13.0.0' });
 
     // Pre-existing in-progress record (recent), simulating another caller in flight
     await withTestContext(() =>
