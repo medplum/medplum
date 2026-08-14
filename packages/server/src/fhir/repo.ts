@@ -1075,9 +1075,13 @@ export class Repository extends FhirRepository implements Disposable {
       }
     }
 
-    let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
-      ...this.restoreReadonlyFields(validatedResource, existing),
-    });
+    // replaceConditionalReferences rewrites nested references in place, so it needs a resource
+    // that shares no structure with validatedResource or the cached existing resource.
+    let updated = await rewriteAttachments(
+      RewriteMode.REFERENCE,
+      this,
+      deepClone(this.restoreReadonlyFields(validatedResource, existing))
+    );
     updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta: Meta = {

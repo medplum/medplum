@@ -18,15 +18,16 @@ import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
 
-export type LabTab = 'open' | 'completed';
+export type LabTab = 'open' | 'completed' | 'revoked';
 type LabItem = WithId<ServiceRequest> | WithId<DiagnosticReport>;
 
 // The "Completed" tab lists finalized results; the "Open" tab lists orders that
-// have not yet resolved into a result.
+// have not yet resolved into a result; the "Revoked" tab lists revoked orders.
 const COMPLETED_RESOURCE_TYPE = 'DiagnosticReport';
 const OPEN_RESOURCE_TYPE = 'ServiceRequest';
 const COMPLETED_REPORT_STATUS = 'final';
 const OPEN_ORDER_STATUS = 'active,draft,on-hold';
+const REVOKED_ORDER_STATUS = 'revoked';
 const DEFAULT_SORT_RULES: SortRule[] = [{ code: '_lastUpdated', descending: true }];
 const DEFAULT_COUNT = 20;
 
@@ -35,11 +36,25 @@ export interface LabsPageProps {
 }
 
 export function LabsPage(props: LabsPageProps): JSX.Element {
-  const { tab: activeTab } = props;
+  const { tab } = props;
   const { patientId, serviceRequestId, diagnosticReportId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const medplum = useMedplum();
+
+  // The "Revoked" tab shares the ServiceRequest route with the "Open" tab, so
+  // it is identified by the URL's status filter rather than by the route.
+  const activeTab: LabTab = useMemo(() => {
+    if (tab !== 'completed') {
+      const status = parseSearchRequest(`${OPEN_RESOURCE_TYPE}${location.search}`).filters?.find(
+        (filter) => filter.code === 'status'
+      )?.value;
+      if (status === REVOKED_ORDER_STATUS) {
+        return 'revoked';
+      }
+    }
+    return tab;
+  }, [tab, location.search]);
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
@@ -80,7 +95,7 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
         ...(search.filters ?? []),
         { code: 'subject', operator: Operator.EQUALS, value: patientReference },
       ];
-      if (activeTab === 'open') {
+      if (activeTab !== 'completed') {
         // A lab order is a top-level ServiceRequest plus one child ServiceRequest
         // per test (basedOn the parent), all sharing a requisition. Listing only
         // top-level requests shows each order once, and keeps the server total
@@ -128,9 +143,13 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
       addDefaultLabSearchValues(parseSearchRequest(COMPLETED_RESOURCE_TYPE), 'completed')
     );
     const openQuery = formatSearchQuery(addDefaultLabSearchValues(parseSearchRequest(OPEN_RESOURCE_TYPE), 'open'));
+    const revokedQuery = formatSearchQuery(
+      addDefaultLabSearchValues(parseSearchRequest(OPEN_RESOURCE_TYPE), 'revoked')
+    );
     return [
       { value: 'completed', label: 'Completed', uri: `/Patient/${patientId}/DiagnosticReport${completedQuery}` },
       { value: 'open', label: 'Open', uri: `/Patient/${patientId}/ServiceRequest${openQuery}` },
+      { value: 'revoked', label: 'Revoked', uri: `/Patient/${patientId}/ServiceRequest${revokedQuery}` },
     ];
   }, [patientId]);
 
@@ -202,7 +221,9 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
             />
           )
         }
-        renderDetail={(item) => <LabDetailPane item={item} />}
+        renderDetail={(item, ctx) => (
+          <LabDetailPane item={item} onOrderChange={() => ctx.refresh().catch(showErrorNotification)} />
+        )}
       />
 
       {/* New Order Modal */}
@@ -229,7 +250,14 @@ export function LabsPage(props: LabsPageProps): JSX.Element {
 function addDefaultLabSearchValues(search: SearchRequest, tab: LabTab): SearchRequest {
   const filters = search.filters ?? [];
   const hasStatus = filters.some((filter) => filter.code === 'status');
-  const defaultStatus = tab === 'completed' ? COMPLETED_REPORT_STATUS : OPEN_ORDER_STATUS;
+  let defaultStatus: string;
+  if (tab === 'completed') {
+    defaultStatus = COMPLETED_REPORT_STATUS;
+  } else if (tab === 'revoked') {
+    defaultStatus = REVOKED_ORDER_STATUS;
+  } else {
+    defaultStatus = OPEN_ORDER_STATUS;
+  }
   return {
     ...search,
     filters: hasStatus ? filters : [...filters, { code: 'status', operator: Operator.EQUALS, value: defaultStatus }],
