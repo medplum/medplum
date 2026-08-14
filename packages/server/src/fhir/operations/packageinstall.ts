@@ -174,7 +174,7 @@ export async function packageInstallHandler(
       })
     : undefined;
 
-  const decision = planReconciliation(existing, configHash);
+  const decision = planReconciliation(existing, configHash, packageRelease.version);
   if ('respond' in decision) {
     return decision.respond;
   }
@@ -227,12 +227,36 @@ type ReconcileDecision = { respond: FhirResponse } | { skipStage1: boolean };
 
 // Decides how a re-invoke should proceed based on the existing PackageInstallation
 // state (RFC §`$install` state-aware behavior).
-function planReconciliation(existing: WithId<PackageInstallation> | undefined, configHash: string): ReconcileDecision {
+//
+// The version matters as much as the state. `existing` is found by package, not by
+// version, so the record for an installed v1 is what a caller installing v2 hits.
+// Reconciliation is about recovering or reconfiguring *this* install; moving between
+// versions is `$upgrade`'s job, since it also has to run declared migrations and
+// rewrite what Stage 1 already wrote.
+function planReconciliation(
+  existing: WithId<PackageInstallation> | undefined,
+  configHash: string,
+  version: string
+): ReconcileDecision {
   if (!existing) {
     return { skipStage1: false };
   }
+  const sameVersion = existing.version === version;
   switch (existing.status) {
     case 'installed':
+      if (!sameVersion) {
+        // Neither branch below is safe across versions: the config hash could match
+        // and return `allOk` having applied nothing, and skipping Stage 1 would leave
+        // the record relabelled to a version whose Bundle never ran.
+        return {
+          respond: [
+            conflict(
+              `Package is already installed at version ${existing.version}; installing ${version} is an upgrade, not an install`,
+              'version-mismatch'
+            ),
+          ],
+        };
+      }
       // No-op when nothing changed; otherwise refresh via the idempotent setupBot,
       // skipping the already-committed Stage 1.
       return getExtensionValue(existing, PackageInstallationConfigHashUrl) === configHash
@@ -246,8 +270,14 @@ function planReconciliation(existing: WithId<PackageInstallation> | undefined, c
         : { skipStage1: false };
     case 'error':
       // Stage 1 runs in a transaction, so a Stage 1 failure committed nothing —
-      // only resume past Stage 1 when the prior failure was in the setupBot.
-      return { skipStage1: getExtensionValue(existing, PackageInstallationErrorPhaseUrl) === 'setup-bot' };
+      // only resume past Stage 1 when the prior failure was in the setupBot, and
+      // only for the same version: whatever Stage 1 committed belongs to the old
+      // one. A failed install must stay recoverable by a newer release, because
+      // `PackageInstallation` is read-only to project admins and they have no way
+      // to clear it themselves.
+      return {
+        skipStage1: sameVersion && getExtensionValue(existing, PackageInstallationErrorPhaseUrl) === 'setup-bot',
+      };
     default:
       // 'requested' or unknown → full install from scratch.
       return { skipStage1: false };
@@ -383,6 +413,19 @@ async function runStage2(
     );
   }
 
+  // Enforced here rather than assumed, because it is what makes the elevation above
+  // correct and it is published from another repo. Without it
+  // `getBotProjectMembership` falls through to the bot's own membership in the impl
+  // project, so the hook would run non-admin and write the customer's settings into
+  // the shared impl project — visible to every other install of this package.
+  if (!bot.runAsUser) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Setup bot "${setupBotIdentifier}" must be published with runAsUser: true, otherwise it runs as the impl project rather than the installing project`
+      )
+    );
+  }
+
   const result = await executeBot({
     bot,
     runAs: await getBotProjectMembership(ctx, bot),
@@ -502,7 +545,10 @@ function setExtension(
   return next;
 }
 
-// Parses the optional `Parameters` request body into a flat settings map.
+// Parses the optional `Parameters` request body into a flat settings map. Each
+// `parameter.name` is matched against a `Questionnaire.item.linkId` by the
+// validation below, so a caller must send the linkId as the parameter name; a value
+// sent under any other name reads as absent.
 function parseSettings(body: unknown): InstallSettings {
   const settings: InstallSettings = {};
   if (!isResource<Parameters>(body, 'Parameters')) {

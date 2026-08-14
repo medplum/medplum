@@ -475,7 +475,8 @@ describe('PackageRelease $install', () => {
   // Creates an impl project holding a published, version-tagged setup bot, which
   // is how a real publisher ships a post-install hook.
   async function publishImplProjectWithSetupBot(
-    setupBotIdentifier: string
+    setupBotIdentifier: string,
+    options?: { runAsUser?: boolean }
   ): Promise<{ implProject: WithId<Project>; setupBot: WithId<Bot> }> {
     const systemRepo = getGlobalSystemRepo();
     const implProject = await withTestContext(() =>
@@ -492,7 +493,7 @@ describe('PackageRelease $install', () => {
         name: `Setup Bot ${setupBotIdentifier}`,
         runtimeVersion: 'awslambda',
         // Runs as the installing project admin so it can write into their project.
-        runAsUser: true,
+        runAsUser: options?.runAsUser ?? true,
         identifier: [{ system: 'https://www.medplum.com/bots', value: setupBotIdentifier }],
       })
     );
@@ -501,7 +502,7 @@ describe('PackageRelease $install', () => {
 
   async function publishRelease(
     bundle: Bundle,
-    options?: { version?: string; setupBot?: string; implProject?: string }
+    options?: { version?: string; setupBot?: string; implProject?: string; packageRef?: string }
   ): Promise<WithId<PackageRelease>> {
     const systemRepo = getGlobalSystemRepo();
     const binary = await withTestContext(() =>
@@ -525,7 +526,7 @@ describe('PackageRelease $install', () => {
       systemRepo.createResource<PackageRelease>({
         resourceType: 'PackageRelease',
         meta: { project: project.id },
-        package: { reference: 'Package/' + randomUUID() },
+        package: { reference: options?.packageRef ?? 'Package/' + randomUUID() },
         version: options?.version ?? '1.0.0',
         content: { contentType: ContentType.FHIR_JSON, url: `Binary/${binary.id}` },
         extension: extension.length > 0 ? extension : undefined,
@@ -748,6 +749,118 @@ describe('PackageRelease $install', () => {
     expect(execSpy).toHaveBeenCalledTimes(1);
     expect(execSpy.mock.calls[0][0].bot.id).toStrictEqual(setupBot.id);
     expect(execSpy.mock.calls[0][0].bot.id).not.toStrictEqual(impostor.id);
+  });
+
+  test('Installing a different version over an installed package is refused, not silently skipped', async () => {
+    const packageRef = 'Package/' + randomUUID();
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-v1');
+    vi.spyOn(botExecute, 'executeBot').mockResolvedValue({ success: true, logResult: '', returnValue: undefined });
+
+    const v1 = await publishRelease(stage1Bundle('test-proxy-v1'), {
+      packageRef,
+      setupBot: 'test-setup-v1',
+      implProject: implProject.id,
+      version: '30.0.0',
+    });
+    const res1 = await request(app)
+      .post(`/fhir/R4/PackageRelease/${v1.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res1.status).toBe(200);
+
+    // Same package, new version, identical (empty) settings — so the config hash
+    // matches and the old code would have returned allOk having applied nothing.
+    const v2 = await publishRelease(stage1Bundle('test-proxy-v2'), {
+      packageRef,
+      setupBot: 'test-setup-v1',
+      implProject: implProject.id,
+      version: '31.0.0',
+    });
+    const res2 = await request(app)
+      .post(`/fhir/R4/PackageRelease/${v2.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res2.status).toBe(409);
+    expect(res2.body.issue[0].details.text).toContain('upgrade');
+
+    // v2's Bundle was not applied, and the record still describes v1.
+    expect(await countBots('test-proxy-v2')).toBe(0);
+    expect(await searchInstallations('31.0.0')).toHaveLength(0);
+    const installations = await searchInstallations('30.0.0');
+    expect(installations).toHaveLength(1);
+    expect(installations[0].status).toBe('installed');
+  });
+
+  test('A failed install can still be recovered by a newer release', async () => {
+    const packageRef = 'Package/' + randomUUID();
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-recover');
+    vi.spyOn(botExecute, 'executeBot')
+      .mockResolvedValueOnce({ success: false, logResult: 'kaboom' })
+      .mockResolvedValue({ success: true, logResult: '', returnValue: undefined });
+
+    const v1 = await publishRelease(stage1Bundle('test-proxy-r1'), {
+      packageRef,
+      setupBot: 'test-setup-recover',
+      implProject: implProject.id,
+      version: '32.0.0',
+    });
+    const res1 = await request(app)
+      .post(`/fhir/R4/PackageRelease/${v1.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res1.status).not.toBe(200);
+    expect(
+      (await searchInstallations('32.0.0'))[0].extension?.find((e) => e.url === PackageInstallationErrorPhaseUrl)
+        ?.valueCode
+    ).toBe('setup-bot');
+
+    // The prior failure was in the setupBot, which normally means Stage 1 is skipped.
+    // Across versions it must not be, because what Stage 1 committed belongs to v1 —
+    // and project admins cannot clear a PackageInstallation themselves, so refusing
+    // here would wedge them permanently.
+    const v2 = await publishRelease(stage1Bundle('test-proxy-r2'), {
+      packageRef,
+      setupBot: 'test-setup-recover',
+      implProject: implProject.id,
+      version: '33.0.0',
+    });
+    const res2 = await request(app)
+      .post(`/fhir/R4/PackageRelease/${v2.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res2.status).toBe(200);
+
+    // Stage 1 ran for the new version.
+    expect(await countBots('test-proxy-r2')).toBe(1);
+    const installations = await searchInstallations('33.0.0');
+    expect(installations).toHaveLength(1);
+    expect(installations[0].status).toBe('installed');
+  });
+
+  test('A setup bot published without runAsUser is refused', async () => {
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-noimpersonate', { runAsUser: false });
+    const execSpy = vi.spyOn(botExecute, 'executeBot');
+
+    const release = await publishRelease(stage1Bundle('test-proxy-g'), {
+      setupBot: 'test-setup-noimpersonate',
+      implProject: implProject.id,
+      version: '34.0.0',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).not.toBe(200);
+    expect(res.body.issue[0].details.text).toContain('runAsUser');
+
+    // Refused before execution, so it never ran with the impl project's privileges.
+    expect(execSpy).not.toHaveBeenCalled();
   });
 
   test('Concurrent in-flight install returns 409', async () => {
