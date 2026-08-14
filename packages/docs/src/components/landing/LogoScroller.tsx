@@ -16,6 +16,8 @@ function Logos(): JSX.Element {
   return (
     <>
       <img src="/img/logos/ro.svg" width={49} height={28} alt="Ro" />
+      <img src="/img/logos/everself.svg" width={140} height={28} alt="Everself" />
+      <img src="/img/logos/profile-health.svg" width={113} height={40} alt="Profile Health" />
       <img src="/img/logos/rad-ai.svg" width={128} height={38} alt="Rad AI" />
       <img src="/img/logos/summer-health.svg" width={208} height={22} alt="Summer Health" />
       <img src="/img/logos/flexpa.svg" width={120} height={40} alt="Flexpa" />
@@ -25,7 +27,6 @@ function Logos(): JSX.Element {
       <img src="/img/logos/seen-health.svg" width={116} height={38} alt="Seen Health" />
       <img src="/img/logos/quilted-health.svg" width={75} height={86} alt="Quilted Health" />
       <img src="/img/logos/cdc.svg" width={65} height={51} alt="CDC" />
-      <img src="/img/logos/remo.svg" width={87} height={24} alt="Remo" />
       <img src="/img/logos/imagine.svg" width={119} height={51} alt="Imagine Pediatrics" />
     </>
   );
