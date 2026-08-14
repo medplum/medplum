@@ -1147,6 +1147,63 @@ describe('Expand', () => {
     });
   });
 
+  describe('Diacritic and Unicode normalization handling in filter', () => {
+    // Displays carry French diacritics so accent- and normalization-insensitive matching can be
+    // exercised end-to-end through the ILIKE-based text filter.
+    const diacriticCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'FR100', display: 'Système' },
+        { code: 'FR200', display: 'Artère' },
+        { code: 'FR300', display: 'Élevé' },
+      ],
+    };
+    const diacriticValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: diacriticCodeSystem.url }] },
+    };
+
+    beforeAll(async () => {
+      for (const resource of [diacriticCodeSystem, diacriticValueSet]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+      }
+    });
+
+    test('Filter without accents matches display containing accented characters', async () => {
+      // A francophone user typing quickly commonly drops diacritics ("systeme" for "Système").
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${diacriticValueSet.url}&filter=systeme`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: diacriticCodeSystem.url, code: 'FR100', display: 'Système' },
+      ]);
+    });
+
+    test('Filter in NFD normalization form matches display stored in NFC form', async () => {
+      // Some input methods/browsers emit decomposed Unicode (base letter + combining accent) rather
+      // than the precomposed form the CodeSystem is stored in; both must resolve to the same match.
+      const decomposedFilter = 'levé'.normalize('NFD');
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${diacriticValueSet.url}&filter=${encodeURIComponent(decomposedFilter)}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: diacriticCodeSystem.url, code: 'FR300', display: 'Élevé' },
+      ]);
+    });
+  });
+
   describe('Cost-based parent-filter strategy', () => {
     const system = 'http://example.com/CodeSystem/' + randomUUID();
     const codeSystem: CodeSystem = {
