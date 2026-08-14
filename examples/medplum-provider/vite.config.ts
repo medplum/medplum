@@ -46,5 +46,13 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',
+    server: {
+      deps: {
+        // react-router v8 is ESM-only, so Vitest externalizes it and its export
+        // namespace is frozen. Inlining routes it through Vite's transform,
+        // which restores `vi.spyOn(reactRouter, ...)` in tests.
+        inline: ['react-router'],
+      },
+    },
   },
 });

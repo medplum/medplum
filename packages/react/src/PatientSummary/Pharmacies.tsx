@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Flex, Group, Loader, Modal, Text } from '@mantine/core';
+import { Box, Flex, Group, Loader, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatAddress, getReferenceString, OperationOutcomeError } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { ComponentType, JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Modal } from '../Modal/Modal';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import type { LoadState } from '../utils/loadState';
 import { CollapsibleSection } from './CollapsibleSection';

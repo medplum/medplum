@@ -23,7 +23,7 @@ export function CommunicationTab(): JSX.Element {
   const { normalizedSearch, parsedSearch } = useMemo(() => {
     const entries = Array.from(params.entries());
     const patientRef = patient ? getReferenceString(patient) : undefined;
-    if (patientRef) {
+    if (patientRef && !params.has('patient')) {
       entries.push(['patient', patientRef]);
     }
     const searchWithPatient = new URLSearchParams(entries).toString();

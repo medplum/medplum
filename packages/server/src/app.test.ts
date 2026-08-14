@@ -12,6 +12,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { getProjectSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
+import { generateAccessToken } from './oauth/keys';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
@@ -48,6 +49,52 @@ describe('App', () => {
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.each(['/projects/00000000-0000-0000-0000-000000000000/', '/api/projects/00000000-0000-0000-0000-000000000000/'])(
+    'Use project-scoped mount %s',
+    async (path) => {
+      const app = express();
+      const config = await loadTestConfig();
+      await initApp(app, config);
+      const res = await request(app).get(path);
+      expect(res).toHaveStatus(200);
+      expect(await shutdownApp()).toBeUndefined();
+    }
+  );
+
+  test('Enforce project scope on authenticated requests', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const { client, login, project } = await createTestProject({ withAccessToken: true, withClient: true });
+    const getAccessToken = (issuer: string): Promise<string> =>
+      generateAccessToken(
+        {
+          login_id: login.id,
+          sub: client.id,
+          username: client.id,
+          client_id: client.id,
+          profile: `${client.resourceType}/${client.id}`,
+          scope: login.scope as string,
+        },
+        { issuer }
+      );
+
+    const accessToken = await getAccessToken(`${config.issuer}projects/${project.id}/`);
+
+    const matching = await request(app)
+      .get(`/projects/${project.id}/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(matching).toHaveStatus(200);
+
+    const otherProjectId = '00000000-0000-0000-0000-000000000000';
+    const mismatchedAccessToken = await getAccessToken(`${config.issuer}projects/${otherProjectId}/`);
+    const mismatched = await request(app)
+      .get(`/projects/${otherProjectId}/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + mismatchedAccessToken);
+    expect(mismatched).toHaveStatus(403);
     expect(await shutdownApp()).toBeUndefined();
   });
 

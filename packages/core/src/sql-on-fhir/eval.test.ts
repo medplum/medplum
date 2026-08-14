@@ -81,4 +81,19 @@ describe('SQL on FHIR', () => {
     writeFileSync(__dirname + '/test_report.json', JSON.stringify(report, null, 2) + '\n', 'utf8');
     console.log(`Passed ${passedCount} of ${totalCount} tests`);
   });
+
+  test('column is null when its path resolves to nothing', () => {
+    const view: ViewDefinition = {
+      resource: 'MedicationRequest',
+      status: 'active',
+      select: [{ column: [{ name: 'med', path: 'medication.ofType(Reference).getReferenceKey(Medication)' }] }],
+    };
+    const resources = [
+      { resourceType: 'MedicationRequest', id: 'a', medicationReference: { reference: 'Medication/m1' } },
+      { resourceType: 'MedicationRequest', id: 'b', medicationCodeableConcept: { text: 'aspirin' } },
+      { resourceType: 'MedicationRequest', id: 'c', medicationReference: { reference: 'Medication/m3' } },
+    ] as Resource[];
+
+    expect(evalSqlOnFhir(view, resources)).toStrictEqual([{ med: 'm1' }, { med: null }, { med: 'm3' }]);
+  });
 });

@@ -12,13 +12,14 @@ import timeGridPlugin from '@fullcalendar/react/timegrid';
 import { Button, Group, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { assertNever, EMPTY, getReferenceString } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { DateTimeRange } from '../types';
 import classes from './Calendar.module.css';
+import { availableTimeToBusinessHoursEntry } from './Calendar.utils';
 
 type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type: 'slot'; slot: Slot };
 
@@ -68,6 +69,7 @@ export interface CalendarProps {
   onDoubleClickAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
+  availableTime?: HealthcareServiceAvailableTime[];
 }
 
 export function Calendar(props: CalendarProps): JSX.Element {
@@ -105,12 +107,19 @@ export function Calendar(props: CalendarProps): JSX.Element {
     onDoubleClickRef.current = onDoubleClickAppointment;
   }, [onDoubleClickAppointment]);
 
-  const handleDblClick = useCallback((e: Event) => {
-    const ext = eventDataRef.current.get(e.currentTarget as Element);
-    if (ext?.type === 'appointment') {
-      onDoubleClickRef.current?.(ext.appointment);
-    }
-  }, []);
+  const handleDblClick = useCallback(
+    (e: Event) => {
+      const ext = eventDataRef.current.get(e.currentTarget as Element);
+      if (ext?.type === 'appointment') {
+        onDoubleClickRef.current?.(ext.appointment);
+
+        // The first click started a timer for `handleSelectEvent`; cancel that pending
+        // event since we are emitting the double-click instead.
+        handleSelectEventDebounced.cancel();
+      }
+    },
+    [handleSelectEventDebounced]
+  );
 
   const events = useMemo(() => {
     const appointments = props.appointments ?? [];
@@ -142,6 +151,8 @@ export function Calendar(props: CalendarProps): JSX.Element {
 
     return [...appointmentsToEvents(appointments), ...slotsToEvents(filteredSlots)];
   }, [props.appointments, props.slots]);
+
+  const businessHours = props.availableTime?.flatMap(availableTimeToBusinessHoursEntry);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, props.className)}>
@@ -219,6 +230,8 @@ export function Calendar(props: CalendarProps): JSX.Element {
             info.el.addEventListener('dblclick', handleDblClick);
           }
         }}
+        businessHours={businessHours}
+        nonBusinessHoursClass={classes.nonBusinessHours}
       />
     </div>
   );
