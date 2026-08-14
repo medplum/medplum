@@ -193,8 +193,7 @@ export async function filterCandidatesByLocation(
   }
 
   // The sites the location sits inside, so a role licensed for a whole state
-  // covers the sites within it. Only PractitionerRole candidates ask for it, and
-  // walking it costs a read per level, so it is left until one does.
+  // covers the sites within it.
   let ancestry: Promise<ReadonlySet<string>> | undefined;
   const getAncestry = async (): Promise<ReadonlySet<string>> => {
     ancestry ??= getLocationAncestry(medplum, locationReference, options);
@@ -329,8 +328,6 @@ async function readLocation(
  * rooms asks about both, and one booked against providers alone asks only about
  * them. Nothing has to be configured per service to make that happen.
  *
- * Each group is sorted by name, which is the order its field lists them in.
- *
  * @param candidates - Candidates to group.
  * @returns One group per role present, in `SCHEDULING_ROLES` order.
  */
@@ -347,10 +344,6 @@ export function groupCandidatesByRole(candidates: readonly ScheduleCandidate[]):
 
 /**
  * Returns the candidates chosen for one role.
- *
- * Ids matching nothing on offer are dropped, so a selection that has gone stale
- * narrows the search rather than emptying it.
- *
  * @param group - The role's candidates.
  * @param selections - What has been chosen.
  * @returns The chosen candidates, in the order they are offered.
@@ -406,14 +399,7 @@ export interface ActorCombination {
  * Builds the sets of actors an appointment could be held on.
  *
  * One combination is one `$find` request: the schedules within it are
- * intersected, so its times are the times all of those actors are free. Naming
- * the actors is also how a request for a time outside the offered ones says
- * whose calendars it is for.
- *
- * Everything chosen attends, so today this is always a single combination
- * holding every chosen actor. A choice *between* actors would be a combination
- * each, which is why this returns a list and `useProposedAppointments` unions
- * across one.
+ * intersected, so its times are the times all of those actors are free.
  *
  * @param groups - The roles offered by the form.
  * @param selections - What has been chosen.
