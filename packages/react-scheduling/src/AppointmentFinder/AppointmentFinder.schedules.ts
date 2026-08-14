@@ -192,19 +192,18 @@ export async function filterCandidatesByLocation(
     return [...candidates];
   }
 
-  const resolved = new Map<string, Location | undefined>();
   // The sites the location sits inside, so a role licensed for a whole state
   // covers the sites within it. Only PractitionerRole candidates ask for it, and
   // walking it costs a read per level, so it is left until one does.
   let ancestry: Promise<ReadonlySet<string>> | undefined;
   const getAncestry = async (): Promise<ReadonlySet<string>> => {
-    ancestry ??= getLocationAncestry(medplum, locationReference, resolved, options);
+    ancestry ??= getLocationAncestry(medplum, locationReference, options);
     return ancestry;
   };
   const keep: ScheduleCandidate[] = [];
 
   for (const candidate of candidates) {
-    if (await isCandidateAtLocation(medplum, candidate, locationReference, getAncestry, resolved, options)) {
+    if (await isCandidateAtLocation(medplum, candidate, locationReference, getAncestry, options)) {
       keep.push(candidate);
     }
   }
@@ -217,7 +216,6 @@ async function isCandidateAtLocation(
   candidate: ScheduleCandidate,
   locationReference: string,
   getAncestry: () => Promise<ReadonlySet<string>>,
-  resolved: Map<string, Location | undefined>,
   options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
   const actor = candidate.actorResource;
@@ -227,14 +225,13 @@ async function isCandidateAtLocation(
       medplum,
       getCandidateActor(candidate).reference,
       locationReference,
-      resolved,
       options,
       actor as Location | undefined
     );
   }
 
   if (actor?.resourceType === 'Device') {
-    return isWithinLocation(medplum, actor.location?.reference, locationReference, resolved, options);
+    return isWithinLocation(medplum, actor.location?.reference, locationReference, options);
   }
   if (actor?.resourceType === 'PractitionerRole' && actor.location?.length) {
     const ancestry = await getAncestry();
@@ -244,7 +241,7 @@ async function isCandidateAtLocation(
       if (roleLocation.reference && ancestry.has(roleLocation.reference)) {
         return true;
       }
-      if (await isWithinLocation(medplum, roleLocation.reference, locationReference, resolved, options)) {
+      if (await isWithinLocation(medplum, roleLocation.reference, locationReference, options)) {
         return true;
       }
     }
@@ -259,7 +256,6 @@ async function isCandidateAtLocation(
  * @param medplum - The Medplum client.
  * @param reference - The Location to start from, or undefined to say nothing.
  * @param locationReference - The Location being looked for.
- * @param resolved - Locations already read, to save reading them again.
  * @param options - Abort signal.
  * @param included - The starting Location, when a search already returned it.
  * @returns Whether the target is at or above the Location, or unknowable.
@@ -268,7 +264,6 @@ async function isWithinLocation(
   medplum: MedplumClient,
   reference: string | undefined,
   locationReference: string,
-  resolved: Map<string, Location | undefined>,
   options: FilterCandidatesOptions | undefined,
   included?: Location
 ): Promise<boolean> {
@@ -283,7 +278,7 @@ async function isWithinLocation(
     if (current === locationReference) {
       return true;
     }
-    const location = resource ?? (await readLocation(medplum, current, resolved, options));
+    const location = resource ?? (await readLocation(medplum, current, options));
     if (!location) {
       return true;
     }
@@ -303,7 +298,6 @@ async function isWithinLocation(
 async function getLocationAncestry(
   medplum: MedplumClient,
   locationReference: string,
-  resolved: Map<string, Location | undefined>,
   options: FilterCandidatesOptions | undefined
 ): Promise<Set<string>> {
   const ancestry = new Set<string>();
@@ -311,31 +305,31 @@ async function getLocationAncestry(
 
   for (let depth = 0; depth < MAX_LOCATION_DEPTH && reference; depth++) {
     ancestry.add(reference);
-    const location = await readLocation(medplum, reference, resolved, options);
+    const location = await readLocation(medplum, reference, options);
     reference = location?.partOf?.reference;
   }
 
   return ancestry;
 }
 
+/**
+ * Reads a Location, or reports that it cannot be read.
+ * @param medplum - The Medplum client.
+ * @param reference - The Location to read.
+ * @param options - Abort signal.
+ * @returns The Location, or undefined when it cannot be read.
+ */
 async function readLocation(
   medplum: MedplumClient,
   reference: string,
-  resolved: Map<string, Location | undefined>,
   options: FilterCandidatesOptions | undefined
 ): Promise<Location | undefined> {
-  if (resolved.has(reference)) {
-    return resolved.get(reference);
-  }
-  let location: Location | undefined;
   try {
-    location = await medplum.readReference<Location>({ reference }, { signal: options?.signal });
+    return await medplum.readReference<Location>({ reference }, { signal: options?.signal });
   } catch {
     // Unreadable, so its ancestry is unknown.
-    location = undefined;
+    return undefined;
   }
-  resolved.set(reference, location);
-  return location;
 }
 
 /**
