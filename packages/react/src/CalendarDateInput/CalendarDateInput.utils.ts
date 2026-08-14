@@ -34,6 +34,16 @@ export function isBeforeDay(day: Date, limit: Date): boolean {
 }
 
 /**
+ * Puts the ends of a range in order.
+ * @param from - The day the range began on.
+ * @param to - The day it has reached.
+ * @returns The earlier day as the start.
+ */
+export function sortEnds(from: Date, to: Date): { start: Date; end: Date } {
+  return from <= to ? { start: from, end: to } : { start: to, end: from };
+}
+
+/**
  * Returns whether two dates fall on the same day in the local timezone.
  * @param left - The first date.
  * @param right - The second date, which may be absent.

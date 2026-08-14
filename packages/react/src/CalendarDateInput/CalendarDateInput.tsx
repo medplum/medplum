@@ -3,9 +3,17 @@
 import { Button, Group } from '@mantine/core';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import classes from './CalendarDateInput.module.css';
-import { getMonthString, getStartMonth, isBeforeDay, isSameDay, startOfMonth } from './CalendarDateInput.utils';
+import {
+  getMonthString,
+  getStartMonth,
+  isBeforeDay,
+  isSameDay,
+  sortEnds,
+  startOfMonth,
+} from './CalendarDateInput.utils';
+import { useDayRangeDrag } from './useDayRangeDrag';
 
 export interface CalendarDateInputProps {
   readonly availableDates: Date[];
@@ -35,10 +43,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   const month = useMemo(() => new Date(year, monthIndex, 1), [year, monthIndex]);
   const atEarliestMonth = !!earliestDate && month <= startOfMonth(earliestDate);
 
-  const [dragFrom, setDragFrom] = useState<Date>();
-  const [dragTo, setDragTo] = useState<Date>();
-  // Set when a drag has just ended, to swallow the click that follows it.
-  const dragged = useRef(false);
+  const drag = useDayRangeDrag(onSelectRange);
 
   function moveMonth(delta: number): void {
     const newMonth = new Date(month.getFullYear(), month.getMonth() + delta, 1);
@@ -52,29 +57,9 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
     return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
   }
 
-  // Released anywhere, because a drag that ends off the calendar is still a drag
-  // the user finished, and one left hanging would follow the pointer around.
-  useEffect(() => {
-    if (!dragFrom) {
-      return undefined;
-    }
-    function finish(): void {
-      if (dragFrom && dragTo && !isSameDay(dragFrom, dragTo)) {
-        dragged.current = true;
-        const { start, end } = sortEnds(dragFrom, dragTo);
-        onSelectRange?.(start, end);
-      }
-      setDragFrom(undefined);
-      setDragTo(undefined);
-    }
-    window.addEventListener('pointerup', finish);
-    return () => window.removeEventListener('pointerup', finish);
-  }, [dragFrom, dragTo, onSelectRange]);
-
   // A drag in progress is drawn as the range it would ask for, so that what is
   // being dragged out looks like what releasing will leave behind.
-  const dragging = dragFrom && dragTo ? sortEnds(dragFrom, dragTo) : undefined;
-  const range = dragging ?? props.range;
+  const range = drag.range ?? props.range;
   // Both ends of a range are chosen days; a single day stands alone.
   const selected = range ? undefined : props.selected;
 
@@ -139,30 +124,14 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
                       )}
                       aria-pressed={selected || range ? isChosen(day.date, range, selected) : undefined}
                       disabled={isDayDisabled(day)}
-                      onPointerDown={() => {
-                        // A press begins a fresh gesture, so any drag still
-                        // waiting to have its click swallowed is spent. A drag
-                        // across days is released as a click on the row or table
-                        // its ends share, never on a day, so the handler below
-                        // cannot be relied on to clear this.
-                        dragged.current = false;
-                        if (onSelectRange) {
-                          setDragFrom(day.date);
-                          setDragTo(day.date);
-                        }
-                      }}
+                      onPointerDown={() => drag.begin(day.date)}
                       // Over rather than enter, which React only reports by way of
                       // this same event anyway.
-                      onPointerOver={() => {
-                        if (dragFrom) {
-                          setDragTo(day.date);
-                        }
-                      }}
+                      onPointerOver={() => drag.extend(day.date)}
                       onClick={(event) => {
                         // A drag that crossed days has already asked for them, and
                         // the browser reports the release as a click as well.
-                        if (dragged.current) {
-                          dragged.current = false;
+                        if (drag.consumeClick()) {
                           return;
                         }
                         const anchor = props.selected ?? props.range?.start;
@@ -185,21 +154,6 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
       </table>
     </div>
   );
-}
-
-/**
- * Puts the ends of a drag in order.
- *
- * Dragging backwards is as natural as forwards — a scheduler working back from a
- * deadline starts at the far end — so the ends are sorted rather than the drag
- * being refused.
- *
- * @param from - The day the drag began on.
- * @param to - The day it has reached.
- * @returns The earlier day as the start.
- */
-function sortEnds(from: Date, to: Date): { start: Date; end: Date } {
-  return from <= to ? { start: from, end: to } : { start: to, end: from };
 }
 
 type DayRange = CalendarDateInputProps['range'];
