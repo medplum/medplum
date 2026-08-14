@@ -109,6 +109,48 @@ describe('ClaimSubmittedPanel', () => {
     expect(screen.queryByText('Submitted')).not.toBeInTheDocument();
   });
 
+  test('shows a short label derived from the X12 status category for a Stedi claim', () => {
+    setup({
+      ...baseClaimResponse,
+      identifier: [{ system: 'https://www.stedi.com/claims', value: '01M00V1PM9V1WXN77YRMD00MZ2' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'https://codesystem.x12.org/external/507',
+                code: 'A1',
+                display: 'Acknowledgement/Receipt - The claim/encounter has been received.',
+              },
+              { system: 'https://codesystem.x12.org/external/508', code: '16' },
+            ],
+          },
+        },
+      ],
+    });
+    expect(screen.getByText('Received')).toBeInTheDocument();
+  });
+
+  test('prefers the Candid status when both status codings are present', () => {
+    setup({
+      ...baseClaimResponse,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+          valueCodeableConcept: {
+            coding: [
+              { system: 'https://candidhealth.com/claim-status', code: 'paid' },
+              { system: 'https://codesystem.x12.org/external/507', code: 'A1' },
+            ],
+          },
+        },
+      ],
+    });
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.queryByText('Received')).not.toBeInTheDocument();
+  });
+
   test('shows submission date when created is provided', () => {
     setup({ ...baseClaimResponse, created: '2026-03-02T21:32:57.748Z' });
     expect(screen.getByText(/Submitted on/)).toBeInTheDocument();
