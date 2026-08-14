@@ -209,14 +209,36 @@ function parseSearchImpl<T extends Resource = Resource>(
     resourceType,
   };
 
+  const seenFilters = new Set<string>();
   for (const [key, value] of query) {
-    parseKeyValue(searchRequest, key, value);
+    parseKeyValue(searchRequest, seenFilters, key, value);
   }
 
   return searchRequest;
 }
 
-function parseKeyValue(searchRequest: SearchRequest, key: string, value: string): void {
+/**
+ * Appends a filter to the search request, skipping exact duplicates.
+ *
+ * Repeated occurrences of a search parameter are ANDed together, so a filter identical to one
+ * already present cannot change the result set. Deduping here limits the blast radius of degenerate
+ * queries, e.g. same parameter repeated thousands of times, from reaching the SQL builder as well as
+ * the serialized query string in search response links and the AuditEvent query, each of which scales
+ * with the filter count.
+ * @param searchRequest - The search request being built.
+ * @param seen - Keys of the filters already added. Mutated as filters are appended.
+ * @param filter - The filter to add.
+ */
+function appendFilter(searchRequest: SearchRequest, seen: Set<string>, filter: Filter): void {
+  // NUL separated so that values containing the separator cannot forge another filter's key.
+  const key = `${filter.code}\0${filter.operator}\0${filter.value}`;
+  if (!seen.has(key)) {
+    seen.add(key);
+    searchRequest.filters = append(searchRequest.filters, filter);
+  }
+}
+
+function parseKeyValue(searchRequest: SearchRequest, seenFilters: Set<string>, key: string, value: string): void {
   let code: string;
   let modifier: string;
 
@@ -236,7 +258,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
   }
 
   if (code === '_has' || key.includes('.')) {
-    searchRequest.filters = append(searchRequest.filters, { code: key, operator: Operator.EQUALS, value });
+    appendFilter(searchRequest, seenFilters, { code: key, operator: Operator.EQUALS, value });
     return;
   }
 
@@ -308,9 +330,9 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     default: {
       const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
       if (param) {
-        searchRequest.filters = append(searchRequest.filters, parseParameter(param, Operator.EQUALS, modifier, value));
+        appendFilter(searchRequest, seenFilters, parseParameter(param, Operator.EQUALS, modifier, value));
       } else {
-        searchRequest.filters = append(searchRequest.filters, parseUnknownParameter(code, modifier, value));
+        appendFilter(searchRequest, seenFilters, parseUnknownParameter(code, modifier, value));
       }
     }
   }
