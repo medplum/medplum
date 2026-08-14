@@ -57,10 +57,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
     return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
   }
 
-  // A drag in progress is drawn as the range it would ask for, so that what is
-  // being dragged out looks like what releasing will leave behind.
   const range = drag.range ?? props.range;
-  // Both ends of a range are chosen days; a single day stands alone.
   const selected = range ? undefined : props.selected;
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
@@ -125,8 +122,6 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
                       aria-pressed={selected || range ? isChosen(day.date, range, selected) : undefined}
                       disabled={isDayDisabled(day)}
                       onPointerDown={() => drag.begin(day.date)}
-                      // Over rather than enter, which React only reports by way of
-                      // this same event anyway.
                       onPointerOver={() => drag.extend(day.date)}
                       onClick={(event) => {
                         // A drag that crossed days has already asked for them, and
@@ -160,10 +155,6 @@ type DayRange = CalendarDateInputProps['range'];
 
 /**
  * Returns whether a day is one of the two a range is anchored on.
- *
- * The ends are drawn as chosen days and the days between them as a band, so
- * this is what tells one from the other.
- *
  * @param date - Local midnight of the day in question.
  * @param range - The stretch of days asked for, if there is one.
  * @param selected - The single day chosen, if there is one.
@@ -175,11 +166,6 @@ function isRangeEnd(date: Date, range: DayRange, selected: Date | undefined): bo
 
 /**
  * Returns whether a day is part of what has been chosen.
- *
- * Every day of a range counts, not just its ends: three days asked for are three
- * days chosen, and a reader told that the middle one is not selected would be
- * told something untrue.
- *
  * @param date - Local midnight of the day in question.
  * @param range - The stretch of days asked for, if there is one.
  * @param selected - The single day chosen, if there is one.
