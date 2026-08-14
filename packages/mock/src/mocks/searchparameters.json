@@ -37,6 +37,24 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "HealthcareService-location",
+    "name": "location",
+    "code": "location",
+    "base": ["HealthcareService"],
+    "type": "reference",
+    "expression": "HealthcareService.location"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "HealthcareService-name",
+    "name": "name",
+    "code": "name",
+    "base": ["HealthcareService"],
+    "type": "string",
+    "expression": "HealthcareService.name"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Measure-url",
     "name": "url",
     "code": "url",

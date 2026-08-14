@@ -38,6 +38,8 @@ const config: Config = {
     faster: true,
   },
 
+  clientModules: ['./src/clientModules/gtagDevShim.ts'],
+
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
@@ -131,9 +133,9 @@ const config: Config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        // Only enable Google Analytics for production builds. In dev (`docusaurus start`)
-        // the gtag.js script is never injected, but the plugin's route-change hook still
-        // calls `window.gtag`, throwing "window.gtag is not a function" on navigation.
+        // Only enable Google Analytics for production builds. The plugin disables itself outside
+        // production anyway; this keeps the tracking ID out of dev entirely. See
+        // src/clientModules/gtagDevShim.ts for why that is not sufficient on its own.
         gtag:
           process.env.NODE_ENV === 'production'
             ? {
