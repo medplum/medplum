@@ -128,6 +128,75 @@ describe('CalendarDateInput', () => {
     expect(screen.getByRole('button', { name: '11' }).className).not.toContain('available');
   });
 
+  test('Bands a range across the days it covers, marking both ends as chosen', () => {
+    const month = getStartMonth();
+
+    render(
+      <CalendarDateInput
+        availableDates={[dayOf(month, 10)]}
+        month={month}
+        range={{ start: dayOf(month, 10), end: dayOf(month, 12) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: '10' }).className).toContain('selected');
+    expect(screen.getByRole('button', { name: '12' }).className).toContain('selected');
+    // The days between the ends are in the range without having been picked.
+    expect(screen.getByRole('button', { name: '11' }).className).not.toContain('selected');
+    expect(cellOf('11').className).toContain('inRange');
+    expect(cellOf('13').className).not.toContain('inRange');
+    // A day with times keeps saying so inside the band.
+    expect(screen.getByRole('button', { name: '10' }).className).toContain('available');
+  });
+
+  test('Rounds the band off where the range ends', () => {
+    // A month whose weekdays are known, so that the mid-range day is not also the
+    // end of its week: July 2026 opens on a Wednesday, putting the 13th to the
+    // 15th from Monday to Wednesday.
+    const month = new Date(2026, 6, 1);
+
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        range={{ start: dayOf(month, 13), end: dayOf(month, 15) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    expect(cellOf('13').className).toContain('rangeOpens');
+    expect(cellOf('15').className).toContain('rangeCloses');
+    expect(cellOf('14').className).not.toContain('rangeOpens');
+    expect(cellOf('14').className).not.toContain('rangeCloses');
+  });
+
+  test('Squares the band off where a range carries on into the next week', () => {
+    const month = new Date(2026, 6, 1);
+
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        range={{ start: dayOf(month, 16), end: dayOf(month, 21) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    // The 18th is a Saturday and the 19th the Sunday after it, so the band has to
+    // close at the end of one row and open again at the start of the next.
+    expect(cellOf('18').className).toContain('rangeCloses');
+    expect(cellOf('19').className).toContain('rangeOpens');
+    expect(cellOf('18').className).not.toContain('rangeOpens');
+    expect(cellOf('19').className).not.toContain('rangeCloses');
+  });
+
   test('Days before the earliest cannot be picked, even where empty days can', async () => {
     const month = new Date(2026, 6, 1);
     render(
@@ -200,6 +269,226 @@ describe('CalendarDateInput', () => {
     expect(onClick.mock.calls[0][0].getDate()).toBe(4);
   });
 
+  test('Dragging across days asks for the range they cover', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await drag(10, 11, 12);
+
+    // Drawn as the range it would ask for, so that what is being dragged out
+    // looks like what letting go will leave behind.
+    expect(cellOf('11').className).toContain('inRange');
+    expect(screen.getByRole('button', { name: '12' }).className).toContain('selected');
+
+    await release();
+
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 10), dayOf(month, 12));
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  test('Dragging backwards asks for the same range', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await drag(12, 10);
+    await release();
+
+    // Someone working back from a deadline drags the other way round.
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 10), dayOf(month, 12));
+  });
+
+  test('A press and release on one day is a click, not a range', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await drag(10);
+    await release();
+    await click(10);
+
+    expect(onSelectRange).not.toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalledWith(dayOf(month, 10));
+  });
+
+  test('The click that ends a drag is not also a day being picked', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await drag(10, 12);
+    await release();
+    // A release reported as a click on the day it landed on would otherwise throw
+    // the range away and ask for that one day instead.
+    await click(12);
+
+    expect(onSelectRange).toHaveBeenCalledTimes(1);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  test('A day picked after a drag is still picked', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await drag(10, 12);
+    await release();
+
+    // A drag across days is released as a click on the row or table the two ends
+    // share rather than on either day, so nothing swallowed it on the way past.
+    // The next day pressed must not be swallowed in its place.
+    await pressDay(20);
+
+    expect(onSelectRange).toHaveBeenCalledTimes(1);
+    expect(onClick).toHaveBeenCalledWith(dayOf(month, 20));
+  });
+
+  test('Shift-clicking a second day asks for the range up to it', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    // Dragging needs a pointer that hovers, so shift is what leaves a range within
+    // reach of a touchscreen or a keyboard.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '12' }), { shiftKey: true });
+    });
+
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 10), dayOf(month, 12));
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  test('Shift-clicking an earlier day asks for the range back to it', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        range={{ start: dayOf(month, 10), end: dayOf(month, 12) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '8' }), { shiftKey: true });
+    });
+
+    // Measured from where the range began, so widening it backwards works the same
+    // way as dragging backwards does.
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 8), dayOf(month, 10));
+  });
+
+  test('Shift-clicking with no day picked yet is just a click', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '12' }), { shiftKey: true });
+    });
+
+    // There is no other end for the range to run to.
+    expect(onSelectRange).not.toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalledWith(dayOf(month, 12));
+  });
+
+  test('Ignores dragging when the caller takes no ranges', async () => {
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+      />
+    );
+
+    await drag(10, 12);
+    expect(cellOf('11').className).not.toContain('inRange');
+    await release();
+    await click(12);
+
+    // Nothing is marked on the way, and the release is just a click.
+    expect(onClick).toHaveBeenCalledWith(dayOf(month, 12));
+  });
+
   test('Leaves days unpressed when nothing is selected', () => {
     const available = getStartMonth();
     available.setDate(10);
@@ -207,6 +496,28 @@ describe('CalendarDateInput', () => {
     render(<CalendarDateInput availableDates={[available]} onChangeMonth={vi.fn()} onClick={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: '10' })).not.toHaveAttribute('aria-pressed');
+  });
+
+  test('Reports every day of a range as chosen', async () => {
+    const month = new Date(2026, 0, 1);
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        range={{ start: dayOf(month, 10), end: dayOf(month, 12) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={vi.fn()}
+      />
+    );
+
+    // Three days asked for are three days chosen. Reading the middle one back as
+    // unpressed would say the range has a hole in it.
+    for (const date of ['10', '11', '12']) {
+      expect(screen.getByRole('button', { name: date })).toHaveAttribute('aria-pressed', 'true');
+    }
+    expect(screen.getByRole('button', { name: '13' })).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('Pages a month at a time from a month named by its last day', async () => {
@@ -270,4 +581,71 @@ describe('CalendarDateInput', () => {
  */
 function dayOf(month: Date, date: number): Date {
   return new Date(month.getFullYear(), month.getMonth(), date);
+}
+
+/**
+ * Returns the cell a day sits in, which is what carries the range band.
+ * @param date - The day of the shown month.
+ * @returns The day's table cell.
+ */
+function cellOf(date: string): HTMLElement {
+  const cell = screen.getByRole('button', { name: date }).closest('td');
+  if (!cell) {
+    throw new Error(`Day ${date} is not in a cell`);
+  }
+  return cell;
+}
+
+/**
+ * Presses the first day and travels over the rest.
+ *
+ * One gesture per act, because the days the drag has reached are read back out of
+ * state on the next render, and a whole drag inside one act would leave every
+ * step looking at where the pointer was when it started.
+ *
+ * @param dates - The days of the shown month the pointer passes over, in order.
+ */
+async function drag(...dates: number[]): Promise<void> {
+  for (const [index, date] of dates.entries()) {
+    const day = screen.getByRole('button', { name: String(date) });
+    await act(async () => {
+      if (index === 0) {
+        fireEvent.pointerDown(day);
+      }
+      fireEvent.pointerOver(day);
+    });
+  }
+}
+
+/**
+ * Lets go, wherever the pointer has ended up.
+ */
+async function release(): Promise<void> {
+  await act(async () => {
+    fireEvent.pointerUp(window);
+  });
+}
+
+/**
+ * Clicks a day of the shown month.
+ * @param date - The day to click.
+ */
+async function click(date: number): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: String(date) }));
+  });
+}
+
+/**
+ * Picks a day the way a mouse does: press, release, then the click that follows.
+ *
+ * The press matters, because it is what tells the calendar a fresh gesture has
+ * begun. `click` on its own is the keyboard's route in.
+ *
+ * @param date - The day to pick.
+ */
+async function pressDay(date: number): Promise<void> {
+  await drag(date);
+  await release();
+  await click(date);
 }
