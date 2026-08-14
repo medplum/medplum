@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString, isError, normalizeErrorString } from '@medplum/core';
-import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import type { HealthcareService, Location, OperationOutcome, Reference } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
 import {
@@ -35,24 +35,31 @@ export interface UseEligibleSchedulesResult {
  * @returns The candidate schedules and their groups, plus load and error state.
  */
 export function useEligibleSchedules(
-  service: WithId<HealthcareService> | undefined,
+  service: Reference<HealthcareService> | WithId<HealthcareService> | undefined,
   location?: Reference<Location> | WithId<Location>
 ): UseEligibleSchedulesResult {
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState<EligibleState>(NOTHING_LOADED);
+  const [serviceOutcome, setServiceOutcome] = useState<OperationOutcome>();
+
+  const resolvedService = useResource<HealthcareService>(service, setServiceOutcome);
+  const serviceError = useMemo(
+    () => (serviceOutcome && !resolvedService ? new Error(normalizeErrorString(serviceOutcome)) : undefined),
+    [serviceOutcome, resolvedService]
+  );
 
   const locationReference = location && getReferenceString(location);
-  const asked = service ? `${getReferenceString(service)}|${locationReference ?? ''}` : '';
+  const asked = resolvedService ? `${getReferenceString(resolvedService)}|${locationReference ?? ''}` : '';
   const stale = loaded.key !== asked;
 
   useEffect(() => {
-    if (!service) {
+    if (!resolvedService) {
       return undefined;
     }
 
     const controller = new AbortController();
 
-    searchEligibleSchedules(medplum, service, { signal: controller.signal })
+    searchEligibleSchedules(medplum, resolvedService, { signal: controller.signal })
       .then(async (found) => {
         const kept = await filterCandidatesByLocation(
           medplum,
@@ -73,15 +80,13 @@ export function useEligibleSchedules(
             key: asked,
             candidates: [],
             excludedByLocation: 0,
-            // Passed through when it already is one: rewrapping would flatten
-            // an `OperationOutcomeError` and lose its `outcome`.
             error: isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason }),
           });
         }
       });
 
     return () => controller.abort();
-  }, [medplum, service, locationReference, asked]);
+  }, [medplum, resolvedService, locationReference, asked]);
 
   const candidates = stale ? NOTHING_LOADED.candidates : loaded.candidates;
   const groups = useMemo(() => groupCandidatesByRole(candidates), [candidates]);
@@ -90,8 +95,8 @@ export function useEligibleSchedules(
     candidates,
     groups,
     excludedByLocation: stale ? 0 : loaded.excludedByLocation,
-    loading: !!service && stale,
-    error: stale ? undefined : loaded.error,
+    loading: (!!service && !resolvedService && !serviceError) || (!!resolvedService && stale),
+    error: serviceError ?? (stale ? undefined : loaded.error),
   };
 }
 

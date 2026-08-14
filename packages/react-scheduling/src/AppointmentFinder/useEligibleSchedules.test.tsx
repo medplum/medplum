@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ReadablePromise } from '@medplum/core';
-import type { HealthcareService, Location } from '@medplum/fhirtypes';
+import { ReadablePromise, getReferenceString } from '@medplum/core';
+import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -20,7 +20,7 @@ import { useEligibleSchedules } from './useEligibleSchedules';
 const medplum = new MockClient();
 
 interface HarnessProps {
-  readonly service?: WithId<HealthcareService>;
+  readonly service?: Reference<HealthcareService> | WithId<HealthcareService>;
   readonly location?: WithId<Location>;
 }
 
@@ -77,6 +77,23 @@ describe('useEligibleSchedules', () => {
     const kept = screen.getByTestId('actors').textContent ?? '';
     expect(kept).not.toContain('Exam Room A');
     expect(Number(screen.getByTestId('excluded').textContent)).toBeGreaterThan(0);
+  });
+
+  test('Reads a service given only as a reference', async () => {
+    setup({ service: { reference: getReferenceString(UltrasoundImagingService) } });
+    await settle();
+
+    expect(screen.getByTestId('roles')).toHaveTextContent('provider,room,device');
+    expect(screen.getByTestId('error')).toHaveTextContent('');
+  });
+
+  test('Reports a service reference that cannot be read', async () => {
+    setup({ service: { reference: 'HealthcareService/missing' } });
+
+    // Staying on the spinner would leave the form waiting on a service that is
+    // never going to arrive.
+    await waitFor(() => expect(screen.getByTestId('error')).not.toHaveTextContent(''));
+    expect(screen.getByTestId('loading')).toHaveTextContent('idle');
   });
 
   test('Loads nothing without a service', async () => {

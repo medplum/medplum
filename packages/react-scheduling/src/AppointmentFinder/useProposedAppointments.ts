@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString, isDefined, isError, normalizeErrorString } from '@medplum/core';
-import type { Appointment, Bundle, HealthcareService } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import type { ActorCombination } from './AppointmentFinder.schedules';
@@ -20,7 +20,8 @@ const DEFAULT_COUNT = 20;
 const URL_SEPARATOR = '\n';
 
 export interface UseProposedAppointmentsOptions {
-  readonly service: WithId<HealthcareService> | undefined;
+  /** The service being booked, as a reference or the resource itself. */
+  readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
   /** The sets of actors to search for, from `getActorCombinations`. */
   readonly combinations: readonly ActorCombination[];
   /** The days to search. Both ends are needed; `$find` refuses an open range. */
@@ -50,9 +51,10 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
   const [answered, setAnswered] = useState<SearchState>(NOTHING_ASKED);
 
   const { start, end } = range;
+  const serviceReference = service && getReferenceString(service);
   const urls =
-    service && start && end
-      ? combinations.map((combination) => buildFindUrl(medplum, service, combination, start, end, count))
+    serviceReference && start && end
+      ? combinations.map((combination) => buildFindUrl(medplum, serviceReference, combination, start, end, count))
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
 
@@ -109,14 +111,12 @@ interface SearchState {
 const NOTHING_ASKED: SearchState = { key: '', appointments: [], error: undefined };
 
 function toError(reason: unknown): Error {
-  // Passed through when it already is one: rewrapping would flatten an
-  // `OperationOutcomeError` and lose its `outcome`.
   return isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason });
 }
 
 function buildFindUrl(
   medplum: MedplumClient,
-  service: WithId<HealthcareService>,
+  serviceReference: string,
   combination: ActorCombination,
   start: Date,
   end: Date,
@@ -125,7 +125,7 @@ function buildFindUrl(
   const url = medplum.fhirUrl('Appointment', '$find');
   url.searchParams.set('start', start.toISOString());
   url.searchParams.set('end', end.toISOString());
-  url.searchParams.set('service-type-reference', getReferenceString(service));
+  url.searchParams.set('service-type-reference', serviceReference);
   for (const schedule of combination.schedules) {
     if (schedule.reference) {
       url.searchParams.append('schedule', schedule.reference);

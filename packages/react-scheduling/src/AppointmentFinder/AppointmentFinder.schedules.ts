@@ -100,8 +100,6 @@ export async function searchEligibleSchedules(
     searches.map(async (criteria) =>
       medplum.search(
         'Schedule',
-        // `active:not=false` rather than `active=true`, so a schedule that
-        // leaves `active` unset still counts as bookable.
         { ...criteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
         { signal: options?.signal }
       )
@@ -173,25 +171,9 @@ export interface FilterCandidatesOptions {
 /**
  * Narrows candidates to the ones available at one location.
  *
- * Each role says where it is in its own way. A room is a Location `partOf` the
- * site holding it, so it counts when the chosen location is somewhere above it —
- * directly, or through a floor or wing in between. A device says where it is
- * kept in `Device.location`. A practitioner says where they may work in
- * `PractitionerRole.location`, which is also where licensure by state or
- * jurisdiction lives, so a role counts when any of its locations is the chosen
- * one, a site that one sits inside, or somewhere inside it in turn.
- *
  * A candidate that says nothing about where it is, or whose ancestry cannot be
  * read, is kept: hiding something the caller may be entitled to book is worse
- * than offering something at the wrong site, which the names themselves tend to
- * make obvious. A plain Practitioner actor carries no location at all, so it is
- * always kept.
- *
- * Sites are matched through `Location.partOf`. A licensure model that instead
- * marks jurisdictions with identifiers has no chain to follow, so the roles it
- * describes are only kept when the location is named on them directly. Deciding
- * who may be booked from licensure belongs upstream of this, in the schedules
- * the caller offers at all.
+ * than offering something at the wrong site.
  *
  * @param medplum - The Medplum client.
  * @param candidates - Candidates to narrow.

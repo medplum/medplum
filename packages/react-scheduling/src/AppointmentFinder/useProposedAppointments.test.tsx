@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -55,9 +56,14 @@ const medplumWrapper = ({ children }: { children: ReactNode }): JSX.Element => (
   <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
 );
 
-function Harness(props: { readonly combinations: readonly ActorCombination[] }): JSX.Element {
+interface HarnessProps {
+  readonly combinations: readonly ActorCombination[];
+  readonly service?: Reference<HealthcareService> | WithId<HealthcareService>;
+}
+
+function Harness(props: HarnessProps): JSX.Element {
   const { appointments, requestCount, loading, error } = useProposedAppointments({
-    service: UltrasoundImagingService,
+    service: props.service ?? UltrasoundImagingService,
     combinations: props.combinations,
     range: RANGE,
   });
@@ -74,8 +80,8 @@ function Harness(props: { readonly combinations: readonly ActorCombination[] }):
   );
 }
 
-function setup(combinations: readonly ActorCombination[]): void {
-  render(<Harness combinations={combinations} />, medplumWrapper);
+function setup(combinations: readonly ActorCombination[], service?: HarnessProps['service']): void {
+  render(<Harness combinations={combinations} service={service} />, medplumWrapper);
 }
 
 async function settle(): Promise<void> {
@@ -117,6 +123,20 @@ describe('useProposedAppointments', () => {
     expect(url.searchParams.getAll('schedule')).toStrictEqual(['Schedule/dr-rivera']);
     expect(url.searchParams.get('service-type-reference')).toBe(`HealthcareService/${UltrasoundImagingService.id}`);
     expect(url.searchParams.get('start')).toBe(RANGE.start?.toISOString());
+  });
+
+  test('Names a service given only as a reference, without reading it', async () => {
+    const get = respond({ 'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T15:00:00.000Z') });
+    const readResource = vi.spyOn(medplum, 'readResource');
+
+    setup([WITH_RIVERA], { reference: `HealthcareService/${UltrasoundImagingService.id}` });
+    await settle();
+
+    // `$find` is asked for the service by reference, so a caller holding only a
+    // reference costs nothing extra.
+    const url = new URL(get.mock.calls[0][0].toString());
+    expect(url.searchParams.get('service-type-reference')).toBe(`HealthcareService/${UltrasoundImagingService.id}`);
+    expect(readResource).not.toHaveBeenCalled();
   });
 
   test('Offers what several sets of actors found, as one list in time order', async () => {
