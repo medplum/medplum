@@ -34,6 +34,9 @@ export interface ListWithDetailPaneDetailContext {
  * @param emptyList - Shown when the list is empty. Default: dimmed "No items found".
  * @param skeleton - Shown while loading. Default: built-in skeleton rows.
  * @param listWidth - Sidebar width in pixels. Default 350.
+ * @param listVisible - Whether the list sidebar is shown. Default true. When false the sidebar collapses
+ * (animated) and is removed from the accessibility tree. Controlled — consumers render their own toggle
+ * buttons (typically a collapse icon in `headerActions` and an expand icon somewhere in the detail pane).
  * @param headerActions - Right-aligned slot in the sidebar header row: action buttons, filter popovers.
  * @param selected - The resolved selected item, or undefined when nothing is selected.
  * @param renderDetail - Renders the detail pane for the selected item.
@@ -56,6 +59,7 @@ export interface ListWithDetailPanePropsBase<T extends { id?: string } = Resourc
   readonly emptyList?: ReactNode;
   readonly skeleton?: ReactNode;
   readonly listWidth?: number;
+  readonly listVisible?: boolean;
   readonly headerActions?: ReactNode;
   readonly selected: T | undefined;
   readonly renderDetail: (selected: T, ctx: ListWithDetailPaneDetailContext) => ReactNode;
@@ -119,6 +123,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     emptyList,
     skeleton,
     listWidth = DEFAULT_LIST_WIDTH,
+    listVisible = true,
     headerText,
     tabs,
     activeTab,
@@ -180,7 +185,13 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
 
   return (
     <Flex direction="row" h="100%" w="100%" className={classes.container}>
-      <Flex direction="column" w={listWidth} h="100%" className={classes.shell}>
+      <Flex
+        direction="column"
+        w={listVisible ? listWidth : 0}
+        h="100%"
+        className={cx(classes.shell, !listVisible && classes.shellHidden)}
+        aria-hidden={!listVisible || undefined}
+      >
         {(tabs || headerActions || headerText) && (
           <>
             <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
