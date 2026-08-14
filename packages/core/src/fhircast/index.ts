@@ -14,6 +14,12 @@ import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { isReference } from '../types';
+import type {
+  IReconnectingWebSocket,
+  IReconnectingWebSocketCtor,
+  Options as ReconnectingWebSocketOptions,
+} from '../websockets/reconnecting-websocket';
+import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
 // We currently try to satisfy both STU2 and STU3. Where STU3 removes a resource / key from STU2, we leave it in as a valid key but don't require it.
 
@@ -293,11 +299,17 @@ export function serializeFhircastSubscriptionRequest(
     'hub.channel.type': channelType,
     'hub.mode': mode,
     'hub.topic': topic,
-    'hub.events': events.join(','),
   } as Record<string, string>;
 
+  if (mode === 'subscribe') {
+    // An unsubscribe cancels an endpoint, and the Hub already holds the events it was issued for
+    formattedSubRequest['hub.events'] = events.join(',');
+  }
+
   if (isCompletedSubscriptionRequest(subscriptionRequest)) {
-    formattedSubRequest.endpoint = subscriptionRequest.endpoint;
+    // Named for the field the Hub issued the endpoint under, which is what identifies the
+    // subscription being cancelled back to it
+    formattedSubRequest['hub.channel.endpoint'] = subscriptionRequest.endpoint;
   }
   return new URLSearchParams(formattedSubRequest).toString();
 }
@@ -531,6 +543,11 @@ export type FhircastSubscriptionEventMap = {
   disconnect: FhircastDisconnectEvent;
 };
 
+export type FhircastConnectionOptions = ReconnectingWebSocketOptions & {
+  /** An alternate `ReconnectingWebSocket` implementation to open the connection with. */
+  ReconnectingWebSocket?: IReconnectingWebSocketCtor;
+};
+
 /**
  * A class representing a `FHIRcast` connection.
  *
@@ -539,17 +556,22 @@ export type FhircastSubscriptionEventMap = {
  * 2. `message` - Contains a `payload` field containing a `FHIRcast` message payload exactly as it comes in over WebSockets.
  * 3. `disconnect` - An event to signal when a WebSocket connection has been closed. Fired as soon as a WebSocket emits `close`.
  *
- * To close the connection, call `connection.disconnect()` and listen to the `disconnect` event to know when the connection has been disconnected.
+ * The underlying socket reconnects on its own, so `disconnect` followed by `connect` is the normal
+ * shape of a dropped connection rather than the end of the session. A subscription endpoint stays
+ * valid for the lease the Hub granted it, so reconnecting resubscribes without a new `hub.subscribe`
+ * request. Two things end a connection for good: calling `connection.disconnect()`, and the Hub
+ * denying the subscription — after either, `connect` will not fire again.
  */
 export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEventMap> {
   readonly subRequest: SubscriptionRequest;
-  private readonly websocket: WebSocket;
+  private readonly websocket: IReconnectingWebSocket;
 
   /**
    * Creates a new `FhircastConnection`.
    * @param subRequest - The subscription request to initialize the connection from.
+   * @param options - Options for the underlying `ReconnectingWebSocket`.
    */
-  constructor(subRequest: SubscriptionRequest) {
+  constructor(subRequest: SubscriptionRequest, options?: FhircastConnectionOptions) {
     super();
     this.subRequest = subRequest;
     if (!subRequest.endpoint) {
@@ -558,37 +580,50 @@ export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEve
     if (!validateFhircastSubscriptionRequest(subRequest)) {
       throw new OperationOutcomeError(validationError('Subscription request failed validation.'));
     }
-    const websocket = new WebSocket(subRequest.endpoint);
+
+    const { ReconnectingWebSocket: WebSocketCtor = ReconnectingWebSocket, ...websocketOptions } = options ?? {};
+    const websocket = new WebSocketCtor(subRequest.endpoint, undefined, websocketOptions);
+
+    // Listeners are bound to the `ReconnectingWebSocket` rather than to a particular socket, so they
+    // are attached once here and survive every reconnect. Binding them from within `open` would
+    // stack up a duplicate set of listeners each time the connection came back.
     websocket.addEventListener('open', () => {
       this.dispatchEvent({ type: 'connect' });
-
-      websocket.addEventListener('message', (event: MessageEvent) => {
-        const message = JSON.parse(event.data) as Record<string, string | object>;
-
-        // This is a check for `subscription request confirmations`, we just discard these for now
-        if (message['hub.topic']) {
-          return;
-        }
-
-        const fhircastMessage = message as unknown as FhircastMessagePayload;
-        // Don't bubble up heartbeats, they are just noise
-        if (fhircastMessage.event['hub.event'] === ('heartbeat' as unknown as FhircastEventName)) {
-          return;
-        }
-        this.dispatchEvent({ type: 'message', payload: fhircastMessage });
-
-        websocket.send(
-          JSON.stringify({
-            id: message?.id,
-            timestamp: new Date().toISOString(),
-          })
-        );
-      });
-
-      websocket.addEventListener('close', () => {
-        this.dispatchEvent({ type: 'disconnect' });
-      });
     });
+
+    websocket.addEventListener('message', (event: MessageEvent) => {
+      const message = JSON.parse(event.data) as Record<string, string | object>;
+
+      // The Hub's control messages carry no `event`, so there is nothing for a listener to
+      // receive. A denial ends the subscription, so disconnect for good rather than reconnecting to
+      // an endpoint the Hub just said it will not serve. A denial the Hub could not resolve an
+      // endpoint for names no topic, so `hub.topic` alone does not identify one.
+      if (!message.event) {
+        if (message['hub.mode'] === 'denied') {
+          this.disconnect();
+        }
+        return;
+      }
+
+      const fhircastMessage = message as unknown as FhircastMessagePayload;
+      // Don't bubble up heartbeats, they are just noise
+      if (fhircastMessage.event['hub.event'] === ('heartbeat' as unknown as FhircastEventName)) {
+        return;
+      }
+      this.dispatchEvent({ type: 'message', payload: fhircastMessage });
+
+      websocket.send(
+        JSON.stringify({
+          id: message?.id,
+          timestamp: new Date().toISOString(),
+        })
+      );
+    });
+
+    websocket.addEventListener('close', () => {
+      this.dispatchEvent({ type: 'disconnect' });
+    });
+
     this.websocket = websocket;
   }
 

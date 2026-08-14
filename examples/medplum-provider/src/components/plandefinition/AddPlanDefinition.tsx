@@ -5,8 +5,8 @@ import {
   Button,
   Card,
   Grid,
+  Group,
   Loader,
-  Modal,
   Paper,
   ScrollArea,
   Stack,
@@ -17,7 +17,7 @@ import {
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { PlanDefinition } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { Modal, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -144,113 +144,102 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
         onClose={handleClose}
         title="Add Care Template"
         size="75%"
-        styles={{
-          title: {
-            fontSize: '1.2rem',
-            fontWeight: 600,
-          },
-          body: {
-            padding: '0',
-            height: '80vh',
-          },
-        }}
-      >
-        <Stack h="100%" justify="space-between" gap={0}>
-          <Box flex={1} miw={0}>
-            <Grid p="md">
-              <Grid.Col span={6} pr="md">
-                <Box>
-                  <Title order={5} mb="xs">
-                    Select care template
-                  </Title>
-                  <Text size="sm" c="dimmed" mb="md">
-                    Care templates are predefined sets of actions that can be applied to encounters.
-                  </Text>
-
-                  <TextInput
-                    placeholder="Search by name"
-                    mb="md"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.currentTarget.value)}
-                    rightSection={isLoading ? <Loader size={16} /> : null}
-                    styles={{
-                      input: {
-                        '&:focus': {
-                          borderColor: '#228be6',
-                        },
-                      },
-                    }}
-                  />
-
-                  <ScrollArea style={{ height: 'calc(80vh - 250px)' }} type="scroll">
-                    {planDefinitions.length > 0 &&
-                      planDefinitions.map((plan) => (
-                        <Card
-                          key={plan.id}
-                          p="md"
-                          mb="xs"
-                          className={cx(classes.planDefinition, {
-                            [classes.selected]: selectedPlanDefinition?.id === plan.id,
-                          })}
-                          onClick={() => setSelectedPlanDefinition(plan)}
-                        >
-                          <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
-                            {plan.name}
-                          </Text>
-                          <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
-                            {plan.subtitle}
-                          </Text>
-                        </Card>
-                      ))}
-
-                    {planDefinitions.length === 0 && !isLoading && (
-                      <Paper className={classes.notFound} h={40}>
-                        <Text>Nothing found! Try searching for another name of the care plan.</Text>
-                      </Paper>
-                    )}
-                  </ScrollArea>
-                </Box>
-              </Grid.Col>
-
-              <Grid.Col span={6}>
-                <Paper withBorder className={classes.preview}>
-                  <ScrollArea style={{ height: 'calc(80vh - 110px)' }} type="scroll">
-                    <Stack gap="sm" px="md" pt="md">
-                      <Title order={5}>Preview</Title>
-                      {selectedPlanDefinition ? (
-                        <>
-                          <Stack gap={0} p={0}>
-                            <Text fz="md" fw={500}>
-                              {selectedPlanDefinition.name}
-                            </Text>
-                            <Text fw={500} c="dimmed">
-                              {selectedPlanDefinition.subtitle}
-                            </Text>
-                          </Stack>
-
-                          <Stack gap="xs" pb="md">
-                            {selectedPlanDefinition.action?.map((action, index) => (
-                              <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
-                                <Text fw={500}>{action.title}</Text>
-                                {action.description && <Text c="dimmed">{action.description}</Text>}
-                              </Card>
-                            ))}
-                          </Stack>
-                        </>
-                      ) : (
-                        <Text c="dimmed">Select a template to see preview.</Text>
-                      )}
-                    </Stack>
-                  </ScrollArea>
-                </Paper>
-              </Grid.Col>
-            </Grid>
-          </Box>
-
-          <Box className={classes.footer} h={70} p="md">
+        padding="md"
+        bodyHeight="80vh"
+        actions={
+          <Group justify="flex-end">
             <Button onClick={handleApplyPlanDefinition}>Add care template</Button>
-          </Box>
-        </Stack>
+          </Group>
+        }
+      >
+        <Grid>
+          <Grid.Col span={6} pr="md">
+            <Box>
+              <Title order={5} mb="xs">
+                Select care template
+              </Title>
+              <Text size="sm" c="dimmed" mb="md">
+                Care templates are predefined sets of actions that can be applied to encounters.
+              </Text>
+
+              <TextInput
+                placeholder="Search by name"
+                mb="md"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                rightSection={isLoading ? <Loader size={16} /> : null}
+                styles={{
+                  input: {
+                    '&:focus': {
+                      borderColor: '#228be6',
+                    },
+                  },
+                }}
+              />
+
+              <ScrollArea style={{ height: 'calc(80vh - 250px)' }} type="scroll">
+                {planDefinitions.length > 0 &&
+                  planDefinitions.map((plan) => (
+                    <Card
+                      key={plan.id}
+                      p="md"
+                      mb="xs"
+                      className={cx(classes.planDefinition, {
+                        [classes.selected]: selectedPlanDefinition?.id === plan.id,
+                      })}
+                      onClick={() => setSelectedPlanDefinition(plan)}
+                    >
+                      <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
+                        {plan.name}
+                      </Text>
+                      <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
+                        {plan.subtitle}
+                      </Text>
+                    </Card>
+                  ))}
+
+                {planDefinitions.length === 0 && !isLoading && (
+                  <Paper className={classes.notFound} h={40}>
+                    <Text>Nothing found! Try searching for another name of the care plan.</Text>
+                  </Paper>
+                )}
+              </ScrollArea>
+            </Box>
+          </Grid.Col>
+
+          <Grid.Col span={6}>
+            <Paper withBorder className={classes.preview}>
+              <ScrollArea style={{ height: 'calc(80vh - 110px)' }} type="scroll">
+                <Stack gap="sm" px="md" pt="md">
+                  <Title order={5}>Preview</Title>
+                  {selectedPlanDefinition ? (
+                    <>
+                      <Stack gap={0} p={0}>
+                        <Text fz="md" fw={500}>
+                          {selectedPlanDefinition.name}
+                        </Text>
+                        <Text fw={500} c="dimmed">
+                          {selectedPlanDefinition.subtitle}
+                        </Text>
+                      </Stack>
+
+                      <Stack gap="xs" pb="md">
+                        {selectedPlanDefinition.action?.map((action, index) => (
+                          <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
+                            <Text fw={500}>{action.title}</Text>
+                            {action.description && <Text c="dimmed">{action.description}</Text>}
+                          </Card>
+                        ))}
+                      </Stack>
+                    </>
+                  ) : (
+                    <Text c="dimmed">Select a template to see preview.</Text>
+                  )}
+                </Stack>
+              </ScrollArea>
+            </Paper>
+          </Grid.Col>
+        </Grid>
       </Modal>
     </>
   );

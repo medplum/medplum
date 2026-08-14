@@ -175,7 +175,11 @@ export function parseSearchRequest<T extends Resource = Resource>(
   // First, we convert the URLSearchParams to an array of key-value pairs
   const queryArray: [string, string][] = [];
   if (searchParams) {
-    queryArray.push(...searchParams.entries());
+    // Not `push(...entries)`: spreading applies each entry as a separate argument,
+    // which overflows the stack on very large queries.
+    for (const entry of searchParams) {
+      queryArray.push(entry);
+    }
   }
 
   // Next, we merge in the query object

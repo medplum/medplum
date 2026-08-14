@@ -18,11 +18,13 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Box className={classes.root}>
-      <Group justify="space-between" className={classes.header}>
-        <Group gap={8}>
+    <Box className={classes.root} py="xs">
+      <Group justify="space-between" align="center" wrap="nowrap" className={classes.header}>
+        <Group gap={8} wrap="nowrap">
           <ActionIcon
             variant="subtle"
+            color="gray"
+            radius="xl"
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? `Show ${title.toLowerCase()}` : `Hide ${title.toLowerCase()}`}
             className={classes.chevron}
@@ -42,6 +44,7 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
             aria-label="Add item"
             className={classes.addButton}
             variant="subtle"
+            radius="xl"
             onClick={(e) => {
               killEvent(e);
               onAdd();

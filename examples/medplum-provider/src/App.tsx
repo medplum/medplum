@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
+import type { SpotlightLinkAction } from '@medplum/react';
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
@@ -11,7 +13,6 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
-  IconQrcode,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -62,7 +63,9 @@ import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
 import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
+import { SmartLogo } from './pages/smart/SmartLogo';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 
@@ -83,10 +86,48 @@ export function App(): JSX.Element | null {
   const membership = medplum.getProjectMembership();
   const hasScriptSure = hasScriptSureIdentifier(membership);
 
+  const [shlOpened, shlHandlers] = useDisclosure(false);
+
   const handleDismissSetup = (): void => {
     localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
     setSetupDismissedByUser(true);
   };
+
+  // Actions with an `href` point at a `/new` route; the destination page opens its own modal from
+  // the URL. `href` both routes the click and makes them real links, so they can be opened in a new
+  // tab. Actions without one open a modal in place via `onClick`.
+  const spotlightActions: SpotlightLinkAction[] = [
+    {
+      id: 'action-import-shl',
+      label: 'Import from SMART Health Link or Card',
+      leftSection: <SmartLogo size={16} color="var(--mantine-color-dimmed)" />,
+      onClick: shlHandlers.open,
+    },
+    {
+      id: 'action-new-patient-intake',
+      href: '/onboarding',
+      label: 'New Patient Intake',
+      leftSection: <IconUserPlus size={16} color="var(--mantine-color-dimmed)" />,
+    },
+    {
+      id: 'action-new-message',
+      href: '/Communication/new',
+      label: 'New Message',
+      leftSection: <IconMail size={16} color="var(--mantine-color-dimmed)" />,
+    },
+    {
+      id: 'action-new-task',
+      href: '/Task/new',
+      label: 'New Task',
+      leftSection: <IconClipboardCheck size={16} color="var(--mantine-color-dimmed)" />,
+    },
+    {
+      id: 'action-send-fax',
+      href: '/Fax/Communication/new',
+      label: 'Send a Fax',
+      leftSection: <IconPrinter size={16} color="var(--mantine-color-dimmed)" />,
+    },
+  ];
 
   if (medplum.isLoading()) {
     return null;
@@ -170,7 +211,6 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
-                  { icon: <IconQrcode />, label: 'SMART Health Link', href: '/smart-health-link' },
                 ],
               },
             ]
@@ -178,6 +218,7 @@ export function App(): JSX.Element | null {
       }
       resourceTypeSearchDisabled={true}
       spotlightPatientsOnly={true}
+      spotlightActions={spotlightActions}
     >
       <Suspense fallback={<Loading />}>
         <Routes>
@@ -285,5 +326,12 @@ export function App(): JSX.Element | null {
     </AppShell>
   );
 
-  return hasScriptSure ? <ScriptSurePracticeProvider>{appShellContent}</ScriptSurePracticeProvider> : appShellContent;
+  const content = (
+    <>
+      {appShellContent}
+      <SmartHealthLinkImportModal opened={shlOpened} onClose={shlHandlers.close} />
+    </>
+  );
+
+  return hasScriptSure ? <ScriptSurePracticeProvider>{content}</ScriptSurePracticeProvider> : content;
 }

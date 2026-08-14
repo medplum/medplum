@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { sleep } from '@medplum/core';
+import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent } from '../test-utils/render';
 import type { DateTimeRange } from '../types';
@@ -49,6 +50,7 @@ describe('Calendar', () => {
   const setup = ({
     slots = [],
     appointments = [],
+    availableTime,
     onSelectInterval,
     onSelectSlot,
     onSelectAppointment,
@@ -57,6 +59,7 @@ describe('Calendar', () => {
   }: {
     slots?: Slot[];
     appointments?: Appointment[];
+    availableTime?: HealthcareServiceAvailableTime[];
     onSelectInterval?: () => void;
     onSelectSlot?: (slot: Slot) => void;
     onSelectAppointment?: (appointment: Appointment) => void;
@@ -67,6 +70,7 @@ describe('Calendar', () => {
       <Calendar
         slots={slots}
         appointments={appointments}
+        availableTime={availableTime}
         onSelectInterval={onSelectInterval}
         onSelectSlot={onSelectSlot}
         onSelectAppointment={onSelectAppointment}
@@ -75,6 +79,11 @@ describe('Calendar', () => {
       />
     );
   };
+
+  // Week view always lays out columns Sun..Sat regardless of which week is showing,
+  // so day-of-week behavior can be asserted by position without depending on "today".
+  const getWeekGridCells = (container: HTMLElement): Element[] =>
+    Array.from(container.querySelectorAll('[role="gridcell"][data-date]'));
 
   describe('CalendarToolbar', () => {
     test('renders toolbar with navigation buttons', async () => {
@@ -331,6 +340,24 @@ describe('Calendar', () => {
       await expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
     });
 
+    test('double-clicking an appointment does not also fire onSelectAppointment', async () => {
+      const onSelectAppointment = vi.fn();
+      const onDoubleClickAppointment = vi.fn();
+      const appointment = createAppointment();
+      setup({ appointments: [appointment], onSelectAppointment, onDoubleClickAppointment });
+
+      await userEvent.dblClick(screen.getByText(/John Doe/));
+      expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+
+      // With onDoubleClickAppointment set, the single-click select is
+      // debounced (100ms) so the double-click handler can cancel it before it
+      // fires. Wait past the debounce window to confirm the pending select
+      // was cancelled, not merely delayed.
+      await sleep(150);
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+    });
+
     test('filters out entered-in-error slots', async () => {
       const slot = createSlot({ status: 'entered-in-error' });
       setup({ slots: [slot] });
@@ -457,6 +484,85 @@ describe('Calendar', () => {
       // Switch to month view
       await userEvent.click(screen.getByText('Month'));
       expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
+    });
+  });
+
+  describe('availableTime prop', () => {
+    test('renders no non-business-hours overlay when availableTime is not provided', async () => {
+      const { container } = setup();
+
+      expect(container.querySelectorAll('.nonBusinessHours')).toHaveLength(0);
+    });
+
+    test('highlights days outside availableTime, and both sides of the day for partial availability', async () => {
+      const { container } = setup({
+        availableTime: [{ daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
+      });
+
+      const cells = getWeekGridCells(container);
+      expect(cells).toHaveLength(7);
+
+      // DayIndexer order is [sun, mon, tue, wed, thu, fri, sat]
+      const overlayCountsByDay = cells.map((cell) => cell.querySelectorAll('.nonBusinessHours').length);
+
+      // Monday has business hours in the middle of the day, so it is bounded by
+      // a non-business overlay both before 9am and after 5pm.
+      expect(overlayCountsByDay[1]).toBe(2);
+
+      // Every other day of the week has no availableTime entry at all, so the
+      // entire day is a single non-business overlay.
+      expect(overlayCountsByDay[0]).toBe(1);
+      expect(overlayCountsByDay[2]).toBe(1);
+      expect(overlayCountsByDay[3]).toBe(1);
+      expect(overlayCountsByDay[4]).toBe(1);
+      expect(overlayCountsByDay[5]).toBe(1);
+      expect(overlayCountsByDay[6]).toBe(1);
+    });
+
+    test('does not highlight a day marked allDay', async () => {
+      const { container } = setup({
+        availableTime: [{ daysOfWeek: ['fri'], allDay: true }],
+      });
+
+      const cells = getWeekGridCells(container);
+      const overlayCountsByDay = cells.map((cell) => cell.querySelectorAll('.nonBusinessHours').length);
+
+      // Friday is available all day, so it has no non-business overlay.
+      expect(overlayCountsByDay[5]).toBe(0);
+
+      // The rest of the week is still fully non-business.
+      expect(overlayCountsByDay[0]).toBe(1);
+      expect(overlayCountsByDay[1]).toBe(1);
+      expect(overlayCountsByDay[2]).toBe(1);
+      expect(overlayCountsByDay[3]).toBe(1);
+      expect(overlayCountsByDay[4]).toBe(1);
+      expect(overlayCountsByDay[6]).toBe(1);
+    });
+
+    test('combines multiple availableTime entries across days', async () => {
+      const { container } = setup({
+        availableTime: [
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
+          },
+          { daysOfWeek: ['sat'], allDay: true },
+        ],
+      });
+
+      const cells = getWeekGridCells(container);
+      const overlayCountsByDay = cells.map((cell) => cell.querySelectorAll('.nonBusinessHours').length);
+
+      expect(overlayCountsByDay).toEqual([
+        1, // sun: not covered, fully non-business
+        2, // mon: bounded before/after business hours
+        2, // tue
+        2, // wed
+        2, // thu
+        2, // fri
+        0, // sat: allDay
+      ]);
     });
   });
 });

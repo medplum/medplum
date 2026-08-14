@@ -28,6 +28,8 @@ import {
   codeableConceptMatchesToken,
   codingMatchesToken,
   concatUrls,
+  countBy,
+  countWhere,
   createReference,
   deepClone,
   deepEquals,
@@ -44,6 +46,7 @@ import {
   getDateProperty,
   getDisplayString,
   getExtension,
+  getExtensions,
   getExtensionValue,
   getIdentifier,
   getImageSrc,
@@ -78,6 +81,7 @@ import {
   sortStringArray,
   splitN,
   stringify,
+  sumBy,
   trimTrailingEmptyElements,
 } from './utils';
 
@@ -744,6 +748,48 @@ describe('Core Utils', () => {
 
     expect(getExtension(resource, 'http://example.com')).toBe(resource.extension?.[0]);
     expect(getExtension(resource, 'http://example.com', 'key1')).toBe(resource.extension?.[0]?.extension?.[0]);
+  });
+
+  test('Get repeating extension objects', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        { url: 'http://example.com/basic', valueString: 'abcde' },
+        {
+          url: 'http://example.com/complex',
+          extension: [
+            { url: 'key1', valueCode: 'foo' },
+            { url: 'key2', valueString: 'other' },
+            { url: 'key1', valueCode: 'bar' },
+          ],
+        },
+        {
+          url: 'http://example.com/complex',
+          extension: [{ url: 'key1', valueCode: 'baz' }],
+        },
+      ],
+    };
+
+    // Every match at one level.
+    expect(getExtensions(resource, 'http://example.com/complex')).toHaveLength(2);
+
+    // Repeats are gathered across every matching parent, not just the first. The getExtension call below is
+    // the deliberate contrast: given the same urls it reads one of the three, which is what this exists to fix.
+    expect(getExtensions(resource, ['http://example.com/complex', 'key1']).map((e) => e.valueCode)).toStrictEqual([
+      'foo',
+      'bar',
+      'baz',
+    ]);
+    expect(getExtension(resource, 'http://example.com/complex', 'key1')).toHaveProperty('valueCode', 'foo');
+
+    expect(getExtensions(resource, 'http://example.com/basic')).toStrictEqual([resource.extension?.[0]]);
+    expect(getExtensions(resource, 'http://example.com/missing')).toStrictEqual([]);
+    expect(getExtensions(resource, ['http://example.com/basic', 'nope'])).toStrictEqual([]);
+    // No URL to match, and inputs that hold no extensions at all.
+    expect(getExtensions(resource, [])).toStrictEqual([]);
+    expect(getExtensions(undefined, 'http://example.com/basic')).toStrictEqual([]);
+    const noExtensions: Patient = { resourceType: 'Patient' };
+    expect(getExtensions(noExtensions, 'http://example.com/basic')).toStrictEqual([]);
   });
 
   test('Stringify', () => {
@@ -1874,5 +1920,47 @@ describe('assertNever', () => {
 
     expect(handle('a')).toBe(1);
     expect(handle('b')).toBe(2);
+  });
+});
+
+describe('sumBy', () => {
+  test('sums numbers', () => {
+    expect(sumBy([1, 2, 3], (x) => x)).toBe(6);
+  });
+
+  test('empty iterable is zero', () => {
+    expect(sumBy([], (x) => x)).toBe(0);
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(sumBy(new Set([1, 2, 3]), (x) => x)).toBe(6);
+  });
+});
+
+describe('countWhere', () => {
+  test('counts matching elements', () => {
+    expect(countWhere([1, 2, 3], (x) => x > 1)).toBe(2);
+  });
+
+  test('empty iterable is zero', () => {
+    expect(countWhere([], () => true)).toBe(0);
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(countWhere(new Set([1, 2, 3]), (x) => x > 1)).toBe(2);
+  });
+});
+
+describe('countBy', () => {
+  test('counts elements by key without zero-fill', () => {
+    expect(countBy(['a', 'b', 'a'], (x) => x)).toEqual({ a: 2, b: 1 });
+  });
+
+  test('empty iterable is empty map', () => {
+    expect(countBy([], (x) => x)).toEqual({});
+  });
+
+  test('accepts non-array iterables', () => {
+    expect(countBy(new Set(['a', 'b', 'a']), (x) => x)).toEqual({ a: 1, b: 1 });
   });
 });

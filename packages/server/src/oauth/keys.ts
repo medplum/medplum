@@ -233,10 +233,11 @@ export function generateSecret(size: number): string {
 /**
  * Generates an ID token JWT.
  * @param claims - The ID token claims.
+ * @param tokenIssuer - Optional issuer override.
  * @returns A well-formed JWT that can be used as an ID token.
  */
-export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
-  return generateJwt('1h', claims);
+export function generateIdToken(claims: MedplumIdTokenClaims, tokenIssuer?: string): Promise<string> {
+  return generateJwt('1h', claims, tokenIssuer);
 }
 
 /**
@@ -245,35 +246,46 @@ export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
  * @param options - Optional parameters.
  * @param options.additionalClaims - Any additional custom claims.
  * @param options.lifetime - Access token duration.
+ * @param options.issuer - Optional issuer override.
  * @returns A well-formed JWT that can be used as an access token.
  */
 export function generateAccessToken(
   claims: MedplumAccessTokenClaims,
-  options?: { additionalClaims?: Record<string, string | number>; lifetime?: string }
+  options?: { additionalClaims?: Record<string, string | number>; lifetime?: string; issuer?: string }
 ): Promise<string> {
   const duration = options?.lifetime ?? DEFAULT_ACCESS_LIFETIME;
-  return generateJwt(duration, { aud: issuer, ...claims, ...options?.additionalClaims });
+  return generateJwt(
+    duration,
+    { aud: options?.issuer ?? issuer, ...claims, ...options?.additionalClaims },
+    options?.issuer
+  );
 }
 
 /**
  * Generates a refresh token JWT.
  * @param claims - The refresh token claims.
  * @param lifetime - The refresh token duration.
+ * @param tokenIssuer - Optional issuer override.
  * @returns A well-formed JWT that can be used as a refresh token.
  */
-export function generateRefreshToken(claims: MedplumRefreshTokenClaims, lifetime?: string): Promise<string> {
+export function generateRefreshToken(
+  claims: MedplumRefreshTokenClaims,
+  lifetime?: string,
+  tokenIssuer?: string
+): Promise<string> {
   const duration = lifetime ?? DEFAULT_REFRESH_LIFETIME;
-  return generateJwt(duration, { aud: issuer, ...claims });
+  return generateJwt(duration, { aud: tokenIssuer ?? issuer, ...claims }, tokenIssuer);
 }
 
 /**
  * Generates a JWT.
  * @param exp - Expiration time resolved to a time span.
  * @param claims - The key/value pairs to include in the payload section.
+ * @param tokenIssuer - Issuer for the generated token.
  * @returns Promise to generate and sign the JWT.
  */
-async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
-  if (!jsonWebKey || !defaultSigningKey || !issuer) {
+async function generateJwt(exp: string, claims: JWTPayload, tokenIssuer = issuer): Promise<string> {
+  if (!jsonWebKey || !defaultSigningKey || !tokenIssuer) {
     throw new Error('Signing key not initialized');
   }
 
@@ -291,7 +303,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
     .setJti(randomUUID())
     .setIssuedAt()
     .setNotBefore(new Date())
-    .setIssuer(issuer)
+    .setIssuer(tokenIssuer)
     .setAudience(claims.aud ?? (claims.client_id as string))
     .setExpirationTime(exp)
     .sign(defaultSigningKey);
@@ -300,15 +312,19 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
 /**
  * Decodes and verifies a JWT.
  * @param token - The jwt token / bearer token.
+ * @param expectedIssuer - Issuer expected in the token.
  * @returns Returns the decoded claims on success.
  */
-export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
-  if (!issuer) {
+export async function verifyJwt(
+  token: string,
+  expectedIssuer = issuer
+): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
+  if (!expectedIssuer) {
     throw new Error('Signing key not initialized');
   }
 
   const verifyOptions: JWTVerifyOptions = {
-    issuer,
+    issuer: expectedIssuer,
     algorithms: [OAuthSigningAlgorithm.ES256, OAuthSigningAlgorithm.ES384, OAuthSigningAlgorithm.RS256],
   };
 
