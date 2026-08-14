@@ -63,4 +63,22 @@
     color: var(--mantine-color-white);
     font-weight: 500;
   }
+
+  /* The days of a range, banded across the weeks they span so that the stretch
+     reads as one answer rather than as a fortnight of separate marks. Drawn on
+     the cell rather than the day, which leaves the circles to say which days of
+     it have times. */
+  & td.inRange {
+    background-color: var(--mantine-primary-color-light);
+  }
+
+  & td.rangeOpens {
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+  }
+
+  & td.rangeCloses {
+    border-top-right-radius: 999px;
+    border-bottom-right-radius: 999px;
+  }
 }
