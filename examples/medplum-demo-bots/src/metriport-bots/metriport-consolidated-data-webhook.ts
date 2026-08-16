@@ -59,7 +59,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
           try {
             const metriportPatientId = input.patients[0].patientId;
-            console.log('Processing consolidated data for patient:', '****');
+            console.log('Processing consolidated data for patient:', metriportPatientId);
             // Fetch the actual data from the URL
             const response = await fetch(docRef.content[0].attachment.url);
             // This is a searchset bundle
