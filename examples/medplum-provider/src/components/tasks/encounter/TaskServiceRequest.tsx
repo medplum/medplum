@@ -101,25 +101,27 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           </Group>
         )}
 
+        {diagnosticReport && task.for && (
+          <>
+            <DiagnosticReportDisplay value={diagnosticReport} />
+            <Group>
+              <Button
+                component="a"
+                target="_blank"
+                href={`/${task.for.reference}/DiagnosticReport/${diagnosticReport.id}`}
+              >
+                View Report
+              </Button>
+            </Group>
+          </>
+        )}
+
         {isLabServiceRequest &&
           task.for &&
+          !diagnosticReport &&
           labServiceRequest?.status !== 'draft' &&
           labServiceRequest?.status !== 'on-hold' &&
-          labServiceRequest?.id &&
-          (diagnosticReport ? (
-            <>
-              <DiagnosticReportDisplay value={diagnosticReport} />
-              <Group>
-                <Button
-                  component="a"
-                  target="_blank"
-                  href={`/${task.for.reference}/DiagnosticReport/${diagnosticReport.id}`}
-                >
-                  View Report
-                </Button>
-              </Group>
-            </>
-          ) : (
+          labServiceRequest?.id && (
             <>
               <Text> ✅ Order Sent | Requisition: {labServiceRequest?.requisition?.value} </Text>
               <Group>
@@ -132,7 +134,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
                 </Button>
               </Group>
             </>
-          ))}
+          )}
       </Stack>
 
       <Modal
