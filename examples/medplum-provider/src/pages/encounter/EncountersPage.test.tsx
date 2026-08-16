@@ -34,10 +34,7 @@ describe('EncountersPage', () => {
     notifications.cleanQueue();
   });
 
-  async function createVisit(
-    subject: WithId<Patient>,
-    props?: Partial<Encounter>
-  ): Promise<WithId<Encounter>> {
+  async function createVisit(subject: WithId<Patient>, props?: Partial<Encounter>): Promise<WithId<Encounter>> {
     return medplum.createResource<Encounter>({
       resourceType: 'Encounter',
       status: 'in-progress',
@@ -128,5 +125,4 @@ describe('EncountersPage', () => {
     expect(await screen.findByText('Office Visit')).toBeInTheDocument();
     expect(screen.getByText('Task Modal')).toBeInTheDocument();
   });
-
 });
