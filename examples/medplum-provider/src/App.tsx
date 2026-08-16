@@ -29,8 +29,8 @@ import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
-import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
+import { EncountersPage } from './pages/encounter/EncountersPage';
 import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
@@ -245,7 +245,8 @@ export function App(): JSX.Element | null {
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
-                <Route path="Encounter/:encounterId" element={<EncounterChartPage />}>
+                <Route path="Encounter" element={<EncountersPage />} />
+                <Route path="Encounter/:encounterId" element={<EncountersPage />}>
                   <Route path="Task/:taskId" element={<TaskDetailsModal />} />
                 </Route>
                 <Route path="edit" element={<EditTab />} />

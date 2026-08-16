@@ -257,6 +257,56 @@ describe('encounter utils', () => {
         })
       );
     });
+
+    test('sets the encounter type from the PlanDefinition title', async () => {
+      const appointment: Appointment = {
+        resourceType: 'Appointment',
+        id: 'appt-1',
+        status: 'booked',
+        participant: [],
+      };
+      const createResourceSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => ({
+        ...resource,
+        id: `${resource.resourceType}-1`,
+      }));
+      vi.spyOn(medplum, 'post').mockResolvedValue({});
+      vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
+
+      const planDefinition: PlanDefinition = {
+        resourceType: 'PlanDefinition',
+        id: 'plan-1',
+        status: 'active',
+        title: 'Annual Wellness Visit',
+      };
+      await createEncounter(medplum, classification, patient, planDefinition, appointment, practitioner);
+
+      expect(createResourceSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Encounter',
+          type: [{ text: 'Annual Wellness Visit' }],
+        })
+      );
+    });
+
+    test('leaves type unset without a PlanDefinition', async () => {
+      const appointment: Appointment = {
+        resourceType: 'Appointment',
+        id: 'appt-1',
+        status: 'booked',
+        participant: [],
+      };
+      const createResourceSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => ({
+        ...resource,
+        id: `${resource.resourceType}-1`,
+      }));
+      vi.spyOn(medplum, 'post').mockResolvedValue({});
+      vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
+
+      await createEncounter(medplum, classification, patient, undefined, appointment, practitioner);
+
+      const encounterCall = createResourceSpy.mock.calls.find(([r]) => r.resourceType === 'Encounter');
+      expect((encounterCall?.[0] as Encounter | undefined)?.type).toBeUndefined();
+    });
   });
 
   describe('updateEncounterStatus', () => {

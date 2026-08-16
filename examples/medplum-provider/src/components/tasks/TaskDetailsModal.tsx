@@ -8,7 +8,7 @@ import { CodeInput, DateTimeInput, Loading, Modal, ResourceInput, useMedplum, us
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './TaskDetailsModal.module.css';
 
@@ -17,6 +17,7 @@ export const TaskDetailsModal = (): JSX.Element => {
   const patient = usePatient();
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const location = useLocation();
   const author = useMedplumProfile();
   const [task, setTask] = useState<Task | undefined>(undefined);
   const [isOpened, setIsOpened] = useState(true);
@@ -90,7 +91,8 @@ export const TaskDetailsModal = (): JSX.Element => {
         message: 'Task updated',
       });
       setTask(updatedTask);
-      navigate(`/Patient/${patientId}/Encounter/${encounterId}`)?.catch(console.error);
+      // Keep the search query so the visits list retains its pagination/sort.
+      navigate(`/Patient/${patientId}/Encounter/${encounterId}${location.search}`)?.catch(console.error);
     } catch {
       notifications.show({
         color: 'red',
@@ -100,10 +102,6 @@ export const TaskDetailsModal = (): JSX.Element => {
       });
     }
   };
-
-  if (!task) {
-    return <Loading />;
-  }
 
   return (
     <Modal
@@ -118,77 +116,81 @@ export const TaskDetailsModal = (): JSX.Element => {
       bodyHeight="60vh"
       actions={
         <Group justify="flex-end">
-          <Button variant="filled" onClick={handleOnSubmit}>
+          <Button variant="filled" onClick={handleOnSubmit} disabled={!task}>
             Save Changes
           </Button>
         </Group>
       }
     >
-      <Grid h="100%">
-        <Grid.Col span={6} pr="lg">
-          <Stack gap="sm">
-            <Card p="md" radius="md" className={classes.taskDetails}>
-              <Stack gap="sm">
-                {task?.description && <Text>{task.description}</Text>}
-                {patient?.name && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Text>View Patient</Text>
-                    <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
-                      {formatHumanName(patient.name?.[0])}
-                    </Button>
-                  </div>
-                )}
-              </Stack>
-            </Card>
+      {!task ? (
+        <Loading />
+      ) : (
+        <Grid h="100%">
+          <Grid.Col span={6} pr="lg">
+            <Stack gap="sm">
+              <Card p="md" radius="md" className={classes.taskDetails}>
+                <Stack gap="sm">
+                  {task?.description && <Text>{task.description}</Text>}
+                  {patient?.name && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Text>View Patient</Text>
+                      <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
+                        {formatHumanName(patient.name?.[0])}
+                      </Button>
+                    </div>
+                  )}
+                </Stack>
+              </Card>
 
-            <ResourceInput<Practitioner>
-              name="practitioner"
-              resourceType="Practitioner"
-              label="Assigned to"
-              defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-              onChange={(value) => {
-                setPractitioner(value);
-              }}
-            />
-
-            <DateTimeInput
-              name="Due Date"
-              placeholder="End"
-              label="Due Date"
-              defaultValue={dueDate}
-              onChange={setDueDate}
-            />
-
-            {task?.status && (
-              <CodeInput
-                name="status"
-                label="Status"
-                binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
-                maxValues={1}
-                defaultValue={status}
+              <ResourceInput<Practitioner>
+                name="practitioner"
+                resourceType="Practitioner"
+                label="Assigned to"
+                defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
                 onChange={(value) => {
-                  if (value) {
-                    setStatus(value as typeof status);
-                  }
+                  setPractitioner(value);
                 }}
               />
-            )}
-          </Stack>
-        </Grid.Col>
 
-        <Grid.Col span={6} pr="md">
-          <Stack gap="sm">
-            <Text>Note</Text>
-            <Text c="dimmed">Optional free form details about this task</Text>
-            <Textarea
-              placeholder="Add note to this task"
-              minRows={3}
-              value={note}
-              onChange={(event) => setNote(event.currentTarget.value)}
-            />
-          </Stack>
-        </Grid.Col>
-      </Grid>
+              <DateTimeInput
+                name="Due Date"
+                placeholder="End"
+                label="Due Date"
+                defaultValue={dueDate}
+                onChange={setDueDate}
+              />
+
+              {task?.status && (
+                <CodeInput
+                  name="status"
+                  label="Status"
+                  binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
+                  maxValues={1}
+                  defaultValue={status}
+                  onChange={(value) => {
+                    if (value) {
+                      setStatus(value as typeof status);
+                    }
+                  }}
+                />
+              )}
+            </Stack>
+          </Grid.Col>
+
+          <Grid.Col span={6} pr="md">
+            <Stack gap="sm">
+              <Text>Note</Text>
+              <Text c="dimmed">Optional free form details about this task</Text>
+              <Textarea
+                placeholder="Add note to this task"
+                minRows={3}
+                value={note}
+                onChange={(event) => setNote(event.currentTarget.value)}
+              />
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      )}
     </Modal>
   );
 };
