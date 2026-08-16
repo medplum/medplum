@@ -5,6 +5,7 @@ import {
   badRequest,
   getExtension,
   isOperationOutcome,
+  isResource,
   normalizeOperationOutcome,
   Operator,
 } from '@medplum/core';
@@ -95,6 +96,10 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
 
   if (isOperationOutcome(result)) {
     return [result];
+  }
+
+  if (isResource(result.returnValue, 'Parameters')) {
+    return [allOk, result.returnValue];
   }
 
   if (!result.success) {
