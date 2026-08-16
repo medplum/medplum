@@ -98,13 +98,13 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
     return [result];
   }
 
-  if (isResource(result.returnValue, 'Parameters')) {
-    return [allOk, result.returnValue];
-  }
-
   if (!result.success) {
     // On error, the return value is the OperationOutcome
     return [badRequest(result.logResult), result.returnValue];
+  }
+
+  if (isResource(result.returnValue, 'Parameters')) {
+    return [allOk, result.returnValue];
   }
 
   try {
