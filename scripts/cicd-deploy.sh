@@ -114,6 +114,11 @@ if [[ "$FILES_CHANGED" =~ packages/react/ ]]; then
   DEPLOY_STORYBOOK=true
 fi
 
+if [[ "$FILES_CHANGED" =~ packages/react-hooks ]]; then
+  DEPLOY_APP=true
+  DEPLOY_STORYBOOK=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/react-scheduling ]]; then
   DEPLOY_STORYBOOK=true
 fi

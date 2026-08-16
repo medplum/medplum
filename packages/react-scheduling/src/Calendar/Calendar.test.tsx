@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { sleep } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent } from '../test-utils/render';
@@ -337,6 +338,24 @@ describe('Calendar', () => {
 
       await userEvent.dblClick(screen.getByText(/John Doe/));
       await expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
+    });
+
+    test('double-clicking an appointment does not also fire onSelectAppointment', async () => {
+      const onSelectAppointment = vi.fn();
+      const onDoubleClickAppointment = vi.fn();
+      const appointment = createAppointment();
+      setup({ appointments: [appointment], onSelectAppointment, onDoubleClickAppointment });
+
+      await userEvent.dblClick(screen.getByText(/John Doe/));
+      expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+
+      // With onDoubleClickAppointment set, the single-click select is
+      // debounced (100ms) so the double-click handler can cancel it before it
+      // fires. Wait past the debounce window to confirm the pending select
+      // was cancelled, not merely delayed.
+      await sleep(150);
+      expect(onSelectAppointment).not.toHaveBeenCalled();
     });
 
     test('filters out entered-in-error slots', async () => {

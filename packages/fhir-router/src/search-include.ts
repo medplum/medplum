@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { IncludeTarget, SearchRequest, WithId } from '@medplum/core';
+import type { FhirPathAtom, IncludeTarget, SearchRequest, WithId } from '@medplum/core';
 import {
   DEFAULT_MAX_SEARCH_COUNT,
+  LRUCache,
   OperationOutcomeError,
   Operator,
   PropertyType,
@@ -18,6 +19,8 @@ import {
 } from '@medplum/core';
 import type { BundleEntry, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { FhirRepository } from './repo';
+
+const includeExprCache = new LRUCache<FhirPathAtom>(1000);
 
 /**
  * The default maximum depth of `_include:iterate` / `_revinclude:iterate` recursion.
@@ -141,7 +144,12 @@ export async function getSearchIncludeEntries(
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
+  const fhirPathResult = evalFhirPathTyped(
+    searchParam.expression as string,
+    resources.map(toTypedValue),
+    undefined,
+    includeExprCache
+  );
   const references: Reference[] = [];
   const canonicalReferences: string[] = [];
   for (const result of fhirPathResult) {

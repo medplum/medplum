@@ -348,7 +348,12 @@ export class FhirRouter extends EventTarget {
     if (req.pathname) {
       throw new OperationOutcomeError(badRequest('FhirRequest must specify url instead of pathname'));
     }
-    const result = this.find(req.method, url);
+    let result: ReturnType<typeof this.find>;
+    try {
+      result = this.find(req.method, url);
+    } catch (err) {
+      return [normalizeOperationOutcome(err)];
+    }
     if (!result) {
       return [notFound];
     }

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react-scheduling",
-  "version": "5.1.29",
+  "version": "5.1.30",
   "description": "Medplum Scheduling React Components",
   "keywords": [
     "medplum",
@@ -69,9 +69,12 @@
     "@fullcalendar/react": "7.0.2",
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
-    "@medplum/core": "5.1.29",
-    "@medplum/fhirtypes": "5.1.29",
-    "@medplum/react": "5.1.29",
+    "@medplum/core": "5.1.30",
+    "@medplum/definitions": "5.1.30",
+    "@medplum/fhirtypes": "5.1.30",
+    "@medplum/mock": "5.1.30",
+    "@medplum/react": "5.1.30",
+    "@medplum/react-hooks": "5.1.30",
     "@tabler/icons-react": "3.46.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.0",
@@ -90,8 +93,10 @@
   "peerDependencies": {
     "@mantine/core": "^8.0.0",
     "@mantine/hooks": "^8.0.0",
-    "@medplum/core": "5.1.29",
-    "@medplum/fhirtypes": "5.1.29",
+    "@medplum/core": "5.1.30",
+    "@medplum/fhirtypes": "5.1.30",
+    "@medplum/react": "5.1.30",
+    "@medplum/react-hooks": "5.1.30",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },

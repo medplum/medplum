@@ -3,6 +3,8 @@
 import type { SearchParameter } from '@medplum/fhirtypes';
 import { DotAtom, FhirPathAtom, SymbolAtom } from '../fhirpath/atoms';
 
+const derivedIdentifierCache = new WeakMap<SearchParameter, SearchParameter>();
+
 /**
  * Derives an "identifier" search parameter from a reference search parameter.
  *
@@ -17,13 +19,19 @@ import { DotAtom, FhirPathAtom, SymbolAtom } from '../fhirpath/atoms';
  * @returns The derived "identifier" search parameter.
  */
 export function deriveIdentifierSearchParameter(inputParam: SearchParameter): SearchParameter {
-  return {
-    resourceType: 'SearchParameter',
-    code: inputParam.code + ':identifier',
-    base: inputParam.base,
-    type: 'token',
-    expression: `(${inputParam.expression}).identifier`,
-  } as SearchParameter;
+  // Callers must treat the result as read-only: it is shared by every caller for a given input.
+  let result = derivedIdentifierCache.get(inputParam);
+  if (!result) {
+    result = {
+      resourceType: 'SearchParameter',
+      code: inputParam.code + ':identifier',
+      base: inputParam.base,
+      type: 'token',
+      expression: `(${inputParam.expression}).identifier`,
+    } as SearchParameter;
+    derivedIdentifierCache.set(inputParam, result);
+  }
+  return result;
 }
 
 export function getInnerDerivedIdentifierExpression(expression: string): string | undefined {
