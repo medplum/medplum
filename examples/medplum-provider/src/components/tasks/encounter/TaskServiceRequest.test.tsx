@@ -425,6 +425,30 @@ describe('TaskServiceRequest', () => {
     expect(screen.queryByRole('link', { name: 'View in Labs' })).not.toBeInTheDocument();
   });
 
+  test('keeps order sent message when the only report is cancelled', async () => {
+    const activeServiceRequest: ServiceRequest = {
+      ...mockServiceRequest,
+      status: 'active',
+      requisition: { value: 'REQ-12345' },
+    };
+    vi.spyOn(medplum, 'readReference').mockResolvedValue(activeServiceRequest as WithId<ServiceRequest>);
+    await medplum.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'cancelled',
+      code: { text: 'Complete Blood Count' },
+      basedOn: [{ reference: 'ServiceRequest/service-request-123' }],
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+    });
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText(/✅ Order Sent/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Diagnostic Report')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'View Report' })).not.toBeInTheDocument();
+  });
+
   test('handles task without encounter reference', async () => {
     const taskWithoutEncounter = {
       ...mockTask,

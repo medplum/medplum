@@ -70,6 +70,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
       }
       const report = await medplum.searchOne('DiagnosticReport', {
         'based-on': `ServiceRequest/${labServiceRequest.id}`,
+        'status:not': 'cancelled,entered-in-error',
         _sort: '-_lastUpdated',
       });
       setDiagnosticReport(report);
