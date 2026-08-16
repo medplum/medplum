@@ -7,6 +7,8 @@ export type * from './types';
 export * from './AppointmentFinder/AppointmentDayTimes';
 export * from './AppointmentFinder/AppointmentFinder.roles';
 export * from './AppointmentFinder/AppointmentFinder.times';
+export * from './AppointmentFinder/AppointmentOptionRow';
+export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';

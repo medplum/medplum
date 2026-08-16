@@ -82,6 +82,42 @@ describe('Search parser', () => {
     });
   });
 
+  test('Collapse duplicate filters', () => {
+    // Repeated params are ANDed, so an identical repeat cannot change the result set.
+    expect(parseSearchRequest('Patient?name=Homer&name=Homer&name=Homer')).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Homer' }],
+    });
+
+    // Chained and _has filters take a separate code path, and collapse the same way.
+    expect(
+      parseSearchRequest('Observation?_has:AuditEvent:entity:user=X&_has:AuditEvent:entity:user=X')
+    ).toMatchObject<SearchRequest>({
+      resourceType: 'Observation',
+      filters: [{ code: '_has:AuditEvent:entity:user', operator: Operator.EQUALS, value: 'X' }],
+    });
+  });
+
+  test('Preserve distinct filters sharing a code', () => {
+    // Same code, different value: both are needed, since together they mean name=Homer AND name=Marge.
+    expect(parseSearchRequest('Patient?name=Homer&name=Marge&name=Homer')).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      filters: [
+        { code: 'name', operator: Operator.EQUALS, value: 'Homer' },
+        { code: 'name', operator: Operator.EQUALS, value: 'Marge' },
+      ],
+    });
+
+    // Same code and value, different operator.
+    expect(parseSearchRequest('Patient?name=Homer&name:contains=Homer')).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      filters: [
+        { code: 'name', operator: Operator.EQUALS, value: 'Homer' },
+        { code: 'name', operator: Operator.CONTAINS, value: 'Homer' },
+      ],
+    });
+  });
+
   test('Parse count and offset', () => {
     expect(parseSearchRequest('Patient', { _count: '5', _offset: '10' })).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
