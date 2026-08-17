@@ -24,7 +24,7 @@
     height: auto;
     aspect-ratio: 1;
     margin: 0 auto;
-    color: var(--mantine-color-gray-6);
+    color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-2));
     font-size: 16px;
     font-weight: normal;
     text-align: center;
@@ -36,24 +36,24 @@
   }
 
   & td button:hover {
-    background-color: var(--mantine-color-gray-1);
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
   }
 
   & td button.available {
-    background-color: var(--mantine-color-gray-2);
+    background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
     color: var(--mantine-color-text);
     font-weight: 500;
   }
 
   & td button.available:hover {
-    background-color: var(--mantine-color-gray-3);
+    background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3));
   }
 
   & td button:disabled,
   & td button:disabled:hover {
     background-color: transparent;
     cursor: default;
-    color: var(--mantine-color-gray-4);
+    color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4));
     font-weight: normal;
   }
 
@@ -77,4 +77,10 @@
     border-top-right-radius: 999px;
     border-bottom-right-radius: 999px;
   }
+}
+
+/* A finger dragging out a range must not scroll the page out from under it.
+   Only calendars that take ranges give up the scroll. */
+.table.selectsRanges td button {
+  touch-action: none;
 }
