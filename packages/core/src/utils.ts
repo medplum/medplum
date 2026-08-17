@@ -472,12 +472,9 @@ export function getIdentifierByType(resource: Resource, type: Coding): string | 
     return undefined;
   }
   const array = Array.isArray(identifiers) ? identifiers : [identifiers];
-  for (const identifier of array) {
-    if (identifier.type && getCodeBySystem(identifier.type, type.system) === type.code) {
-      return identifier.value;
-    }
-  }
-  return undefined;
+  return array.find((identifier: Identifier) =>
+    identifier.type?.coding?.some((coding) => coding.system === type.system && coding.code === type.code)
+  )?.value;
 }
 
 export interface SetIdentifierOptions {

@@ -663,6 +663,9 @@ describe('Core Utils', () => {
     expect(getIdentifierByType(typed([{ system: 'http://example.com/other', code: 'MR' }], 'y'), type)).toBeUndefined();
     expect(getIdentifierByType(typed([{ code: 'MR' }], 'y'), type)).toBeUndefined();
 
+    // Multiple codings from the same system: any of them can match
+    expect(getIdentifierByType(typed([{ system: type.system, code: 'DL' }, type], 'y'), type)).toStrictEqual('y');
+
     // Identifier with no type at all
     expect(
       getIdentifierByType({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] }, type)
