@@ -126,6 +126,17 @@ The example below seeds all three Communications. The bodies are thin but functi
 
 <MedplumCodeBlock language="ts" selectBlocks="seedSystemPromptsTs">{ExampleCode}</MedplumCodeBlock>
 
+### Default Prompts And Overrides
+
+If Spaces has been set up in your project, default base prompts are already in place for all three bots, so you don't need to author all three Communication resources yourself before Spaces works.
+
+Because of this, a search for a prompt Communication by identifier can return two matches: the default base prompt, and, once you've created one, your own override with the same identifier. The bots resolve this with a preference rule rather than assuming a single match: they search by identifier, then prefer whichever result's `meta.project` equals the current project, falling back to the most recently updated match if no override exists.
+
+In practice:
+
+- With no override, the default base prompt is used automatically.
+- Once you create a Communication with the same identifier, it takes over immediately for your users–you don't need to edit or delete the default one. 
+
 ## Conversation Data Model
 
 Each conversation in Spaces is a small tree of [`Communication`](/docs/api/fhir/resources/communication) resources. Splitting the thread header from each turn keeps the agent loop recoverable mid-iteration and lets the history sidebar list conversations with a single search.
@@ -257,7 +268,9 @@ Voice input is transcription-only (speech to text). Spaces does not support text
 
 ## Customizing System Prompts
 
-Spaces' behavior – when it calls FHIR, how it phrases summaries, which chart types it reaches for – is determined almost entirely by the three system-prompt Communications, not by the bot code (the bots are thin wrappers around `$ai`). To change behavior, edit `payload[0].contentString` on the relevant Communication. The next user message picks up the new prompt without a bot redeploy.
+Spaces' behavior – when it calls FHIR, how it phrases summaries, which chart types it reaches for – is determined almost entirely by the three system-prompt Communications, not by the bot code (the bots are thin wrappers around `$ai`). The next user message picks up a changed prompt immediately, without a bot redeploy.
+
+Do not edit the default base prompts in place (see [Default Prompts And Overrides](#default-prompts-and-overrides) above). Instead, create your own Communication with the same identifier. The bots prefer whichever match's `meta.project` equals the current project, so your copy takes over automatically, with no redeploy needed.
 
 <MedplumCodeBlock language="ts" selectBlocks="updateSystemPromptTs">{ExampleCode}</MedplumCodeBlock>
 
