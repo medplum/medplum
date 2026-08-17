@@ -36,9 +36,9 @@ import {
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
-import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { showErrorNotification } from '../../utils/notifications';
 import { WORKFLOWS } from '../../workflow/dependencies';
 import { WorkflowGate } from '../../workflow/WorkflowGate';
