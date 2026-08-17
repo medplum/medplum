@@ -32,5 +32,11 @@ export default defineConfig({
       '!packages/app/vite.config.ts',
       'examples/*/vite{,st}.config.ts',
     ],
+    coverage: {
+      provider: 'v8',
+      // Each package blob already carries its own untested files, so do not re-scan them here.
+      all: false,
+      reporter: ['lcov', 'text-summary'],
+    },
   },
 });

@@ -31,6 +31,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: '@medplum/react',
     globals: true,
     environment: 'jsdom',
     environmentOptions: {
