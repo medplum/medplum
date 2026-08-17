@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Group, Input, Loader, Stack, Title } from '@mantine/core';
-import { EMPTY, getExtensionValue } from '@medplum/core';
+import { EMPTY, getExtensionValue, SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '@medplum/core';
 import type {
   Coding,
   Extension,
@@ -17,9 +17,8 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { AlphaBanner } from '../../components/AlphaBanner';
+import { ReleaseStageBanner } from '../../components/ReleaseStageBanner';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 
 interface HealthcareServiceSchedulingFormProps {
   readonly service: HealthcareService;
@@ -76,7 +75,9 @@ function HealthcareServiceSchedulingForm({ service }: HealthcareServiceSchedulin
     <Form onSubmit={handleSubmit}>
       <Stack gap="md">
         <Title order={2}>{service.name} - Scheduling Configuration</Title>
-        <AlphaBanner bdrs="md">Medplum Scheduling is in an Alpha period and is subject to change.</AlphaBanner>
+        <ReleaseStageBanner stage="beta" bdrs="md">
+          Medplum Scheduling is in a Beta period and is subject to change.
+        </ReleaseStageBanner>
         <CodingInput
           name="encounterClass"
           label="Encounter Class"

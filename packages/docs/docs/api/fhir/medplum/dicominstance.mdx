@@ -1,0 +1,35 @@
+---
+title: DicomInstance
+sidebar_position: 21
+---
+
+import Link from '@docusaurus/Link';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import definition from '@site/static/data/medplumDefinitions/dicominstance.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DicomInstance
+
+Definition of a DICOM instance, which represents a single DICOM image and related metadata that are part of a DICOM series.
+
+<Tabs queryString="section">
+  <TabItem value="schema" label="Schema" default>
+
+## Elements
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Elements
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+  </TabItem>
+
+</Tabs>

@@ -4,6 +4,20 @@ import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
 import { themes as prismThemes } from 'prism-react-renderer';
 
+/**
+ * Algolia DocSearch credentials for docs search + Ask AI side panel.
+ *
+ * Search appId / apiKey / indexName are public (search-only key; safe to commit).
+ * askAiAssistantId comes from Algolia Dashboard → DocSearch → Ask AI.
+ */
+const ALGOLIA = {
+  appId: '6A1DXS603N',
+  // Public search-only API key (safe to commit)
+  apiKey: '06bafd15f5a637275ed20297927355f9',
+  indexName: 'medplum',
+  askAiAssistantId: 'c8e02cae-c0cf-4dd1-bba6-344a75826944',
+} as const;
+
 const config: Config = {
   title: 'Medplum',
   tagline: 'Fast and easy healthcare dev',
@@ -23,6 +37,8 @@ const config: Config = {
     v4: true,
     faster: true,
   },
+
+  clientModules: ['./src/clientModules/gtagDevShim.ts'],
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -117,9 +133,9 @@ const config: Config = {
         theme: {
           customCss: './src/css/custom.css',
         },
-        // Only enable Google Analytics for production builds. In dev (`docusaurus start`)
-        // the gtag.js script is never injected, but the plugin's route-change hook still
-        // calls `window.gtag`, throwing "window.gtag is not a function" on navigation.
+        // Only enable Google Analytics for production builds. The plugin disables itself outside
+        // production anyway; this keeps the tracking ID out of dev entirely. See
+        // src/clientModules/gtagDevShim.ts for why that is not sufficient on its own.
         gtag:
           process.env.NODE_ENV === 'production'
             ? {
@@ -290,24 +306,20 @@ const config: Config = {
     },
     image: 'img/medplum-og-cover-image.png',
     algolia: {
-      // The application ID provided by Algolia
-      appId: '6A1DXS603N',
-
-      // Public API key: it is safe to commit it
-      apiKey: '75b991071ef4ef1145d63c0a4d0d4665',
-
-      indexName: 'medplum',
-
-      // Optional: see doc section below
+      appId: ALGOLIA.appId,
+      apiKey: ALGOLIA.apiKey,
+      indexName: ALGOLIA.indexName,
       contextualSearch: true,
-
-      // Optional: Algolia search parameters
       searchParameters: {},
-
-      // Optional: path for search page that enabled by default (`false` to disable it)
       searchPagePath: 'search',
-
-      //... other Algolia params
+      // Enables the Ask AI side panel when an assistant ID is configured
+      ...(ALGOLIA.askAiAssistantId
+        ? {
+            askAi: {
+              assistantId: ALGOLIA.askAiAssistantId,
+            },
+          }
+        : {}),
     },
   } satisfies Preset.ThemeConfig,
   markdown: {

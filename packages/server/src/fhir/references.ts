@@ -32,7 +32,12 @@ import type { Repository } from './repo';
  * a criteria that requires Project.id matches the admin's ProjectMembership.project
  * reference which will always fail for linked projects.
  */
-const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project', 'ProjectMembership.user'];
+const SYSTEM_REFERENCE_PATHS = [
+  'Project.owner',
+  'Project.link.project',
+  'ProjectMembership.user',
+  'ProjectMembership.invitedBy',
+];
 
 async function validateReferences(
   repo: Repository,
@@ -181,6 +186,11 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
   return resource;
 }
 
+/**
+ * Returns the distinct resource types named by a set of references.
+ * @param references - The references to inspect.
+ * @returns The resource types, with unparseable references skipped.
+ */
 export function getResourceTypesFromReferences(references: Iterable<Reference>): ResourceType[] {
   const resourceTypes = new Set<ResourceType>();
   for (const reference of references) {

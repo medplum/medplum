@@ -58,7 +58,16 @@ The supported options that can be specified by a Super Admin in `Project.systemS
 
 ## Multi-factor authentication
 
+Set the `mfaRequired` key in `Project.setting` to `valueBoolean: true` to require MFA for all existing and new users who
+sign in to the Project with a username and password. Users who have not enrolled will be required to enroll during their
+next password login. This project-wide requirement takes precedence over an individual user's `User.mfaRequired` value;
+setting the user value to `false` does not create an exception. See
+[Requiring MFA for all Project users](/docs/auth/mfa#requiring-mfa-for-all-project-users) for configuration examples and
+details.
+
 The MFA methods users in a Project can enroll in are controlled by the `allowedMfaMethods` key in `Project.setting`, a comma-delimited list of `totp` and/or `email`. When unset, only authenticator-app (TOTP) MFA is offered. See [Configuring allowed MFA methods](/docs/auth/mfa#configuring-allowed-mfa-methods) for details and examples, including how to enable email-based MFA.
+
+The `appName` key in `Project.setting` white-labels the MFA content Medplum generates: emailed verification codes and the authenticator app entries created by enrollment QR codes. When unset, both name Medplum. See [Branding MFA emails and authenticator apps](/docs/auth/mfa#branding-mfa-emails-and-authenticator-apps).
 
 ## Project SMTP
 

@@ -6,6 +6,7 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
+  extractServiceTypeReferences,
   getExtensionValue,
   getReferenceString,
   isDefined,
@@ -13,6 +14,7 @@ import {
   OperationOutcomeError,
   Operator,
   resolveId,
+  TimezoneExtensionURI,
 } from '@medplum/core';
 import type {
   Appointment,
@@ -29,7 +31,6 @@ import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
 import type { LayeredDict } from '../../../util/layereddict';
-import { extractReferencesFromCodeableReferenceLike } from '../../../util/servicetype';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
 import type { Repository } from '../../repo';
@@ -127,7 +128,7 @@ function hasMatchingServiceType(slot: Slot, concepts: readonly CodeableConcept[]
   return false;
 }
 
-export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
+export { TimezoneExtensionURI };
 
 /**
  * Given a Resource, try to identify a relevant time zone from its extensions.
@@ -613,7 +614,7 @@ export async function validateProposedAppointment(
   ]
 > {
   const { contained, ...appointment } = proposedAppointment;
-  const serviceRefs = extractReferencesFromCodeableReferenceLike(appointment.serviceType);
+  const serviceRefs = extractServiceTypeReferences(appointment.serviceType);
   if (serviceRefs.length === 0) {
     throw new OperationOutcomeError(
       badRequest('Appointment has no service reference', 'Parameters.appointment.serviceType')

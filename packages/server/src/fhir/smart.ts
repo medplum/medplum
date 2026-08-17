@@ -21,6 +21,7 @@ import type { Request, Response } from 'express';
 import qs from 'node:querystring';
 import { getConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
+import { getProjectScopedUrl } from '../util/url';
 import type { PopulatedAccessPolicy } from './accesspolicy';
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
@@ -36,25 +37,25 @@ export interface SmartScope {
  * Handles requests for the SMART configuration.
  * See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
  * See: https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
- * @param _req - The HTTP request.
+ * @param req - The HTTP request.
  * @param res - The HTTP response.
  */
-export function smartConfigurationHandler(_req: Request, res: Response): void {
+export function smartConfigurationHandler(req: Request, res: Response): void {
   const config = getConfig();
   res
     .status(200)
     .contentType(ContentType.JSON)
     .json({
-      issuer: config.issuer,
-      jwks_uri: config.jwksUrl,
-      authorization_endpoint: config.authorizeUrl,
+      issuer: getProjectScopedUrl(req.originalUrl, config.issuer),
+      jwks_uri: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.jwksUrl),
+      authorization_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.authorizeUrl),
       grant_types_supported: [
         OAuthGrantType.ClientCredentials,
         OAuthGrantType.AuthorizationCode,
         OAuthGrantType.RefreshToken,
         OAuthGrantType.TokenExchange,
       ],
-      token_endpoint: config.tokenUrl,
+      token_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.tokenUrl),
       token_endpoint_auth_methods_supported: [
         OAuthTokenAuthMethod.ClientSecretBasic,
         OAuthTokenAuthMethod.ClientSecretPost,
@@ -76,7 +77,7 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
         'online_access',
       ],
       response_types_supported: ['code'],
-      introspection_endpoint: config.introspectUrl,
+      introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
       capabilities: [
         'authorize-post',
         'permission-v1',

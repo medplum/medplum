@@ -248,4 +248,16 @@ export interface ClientApplicationSignInForm {
    * Logo for the Log In Form.
    */
   logo?: Attachment;
+
+  /**
+   * Whether the Log In Form prompts the user to select OAuth and SMART
+   * scopes. When set, this value is authoritative. When unset, the scope
+   * selection screen is shown if the authorization request asks for any
+   * scope other than &quot;openid&quot;. Setting this to false suppresses the prompt
+   * and grants the client the full scope that it requested. Note that
+   * granular scope selection is required for patient-facing apps under ONC
+   * 170.315(g)(10), so this should only be disabled for provider-facing or
+   * trusted first-party clients.
+   */
+  showScopeSelection?: boolean;
 }

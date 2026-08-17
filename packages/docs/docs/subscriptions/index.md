@@ -18,3 +18,4 @@ Subscriptions are event-driven notifications, like webhooks, and are commonly us
 - [Resending Webhooks](/docs/api/fhir/operations/resend) describes the `$resend` operation for manually triggering webhooks
 - [Subscription Extensions](/docs/subscriptions/subscription-extensions) describes advanced subscription features that allow more fine-grained control and security
 - [WebSocket Subscriptions](/docs/react/use-subscription) describes WebSocket subscriptions and usage of them via the React `useSubscription` hook
+- [Server-Scoped Subscriptions](/docs/subscriptions/server-scoped-subscriptions) describes the self-hosted feature that lets a super admin create a single Subscription that fires across every project on the server

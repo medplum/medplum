@@ -23,6 +23,7 @@ import type {
   Resource,
 } from '@medplum/fhirtypes';
 import { arrayify } from './array';
+import { HL7_V2_0203 } from './constants';
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatDateTime, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
@@ -445,6 +446,37 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   return undefined;
 }
 
+/** The HL7 v2 Table 0203 coding for a medical record number. */
+export const MRN_IDENTIFIER_TYPE: Coding = { system: HL7_V2_0203, code: 'MR' };
+
+/**
+ * Returns the resource identifier for the given identifier type.
+ *
+ * Whereas {@link getIdentifier} matches on `Identifier.system`, i.e. who assigned the identifier,
+ * this matches on `Identifier.type`, i.e. what kind of identifier it is. For example,
+ * {@link MRN_IDENTIFIER_TYPE} finds the medical record number no matter which organization issued it.
+ *
+ * Both the system and the code of the type coding must match. Matching on code alone would be
+ * ambiguous, because the same code means different things in different code systems.
+ *
+ * If multiple identifiers exist with the same type, the first one is returned.
+ *
+ * If the type is not found, then returns undefined.
+ * @param resource - The resource to check.
+ * @param type - The identifier type coding, such as {@link MRN_IDENTIFIER_TYPE}.
+ * @returns The identifier value if found; otherwise undefined.
+ */
+export function getIdentifierByType(resource: Resource, type: Coding): string | undefined {
+  const identifiers = (resource as any).identifier;
+  if (!identifiers || !isCoding(type) || !type.system) {
+    return undefined;
+  }
+  const array = Array.isArray(identifiers) ? identifiers : [identifiers];
+  return array.find((identifier: Identifier) =>
+    identifier.type?.coding?.some((coding) => coding.system === type.system && coding.code === type.code)
+  )?.value;
+}
+
 export interface SetIdentifierOptions {
   /** IdentifierUse code. See {@link https://build.fhir.org/valueset-identifier-use.html} */
   use?: Identifier['use'];
@@ -527,6 +559,35 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
   }
 
   return curr;
+}
+
+/**
+ * Anything that can carry FHIR extensions: resources such as `Patient`, data types such as
+ * `CodeableConcept`, and extensions themselves. Structural, so any of those is accepted, while a
+ * type that cannot hold extensions, `Binary` being the notable example, is rejected.
+ */
+export interface Extensible {
+  extension?: Extension[];
+}
+
+/**
+ * Returns every extension reachable by the given extension URLs.
+ *
+ * Like `getExtension`, but does not stop at the first match: extensions that repeat under one URL are
+ * all returned, at every level. Use it for extensions defined with a cardinality above one, where
+ * `getExtension` would silently read only the first.
+ * @param extensible - The base resource, data type, or extension. Anything that may hold an `extension` array.
+ * @param urlOrUrls - One extension URL, or an array of them where each entry represents descending a level in a nested extension.
+ * @returns Every matching extension, in document order. Empty if none match or no URL is given.
+ */
+export function getExtensions(extensible: Extensible | undefined, urlOrUrls: string | string[]): Extension[] {
+  const [url, ...rest] = arrayify(urlOrUrls);
+  if (!url) {
+    return [];
+  }
+
+  const matches = extensible?.extension?.filter((e) => e.url === url) ?? [];
+  return rest.length > 0 ? matches.flatMap((match) => getExtensions(match, rest)) : matches;
 }
 
 /**
@@ -1549,6 +1610,43 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   return result;
 }
 
+export function sumBy<T>(items: Iterable<T>, fn: (value: T) => number): number {
+  let sum = 0;
+  for (const value of items) {
+    sum += fn(value);
+  }
+  return sum;
+}
+
+export function countWhere<T>(items: Iterable<T>, fn: (value: T) => boolean): number {
+  let count = 0;
+  for (const value of items) {
+    if (fn(value)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Counts iterable elements by a key function, returning a sparse map of key to count.
+ * Matches Lodash `countBy` semantics (no zero-fill for missing keys).
+ * @param items - The items to count.
+ * @param keyFn - The function to extract the key from each item.
+ * @returns A map of key to count for keys that appear at least once.
+ */
+export function countBy<T, K extends keyof any>(
+  items: Iterable<T>,
+  keyFn: (value: T) => K
+): Partial<Record<K, number>> {
+  const result: Partial<Record<K, number>> = {};
+  for (const item of items) {
+    const key = keyFn(item);
+    result[key] = (result[key] ?? 0) + 1;
+  }
+  return result;
+}
+
 /**
  * Returns the escaped HTML string of the input string.
  * @param unsafe - The unsafe HTML string to escape.
@@ -1580,6 +1678,26 @@ export function escapeHtml(unsafe: string): string {
  */
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
+}
+
+/**
+ * Checks that a value has type `never`. Useful for ensuring exhaustive
+ * matches.
+ *
+ * @example
+ * ```typescript
+ *   type MyUnion = 'a' | 'b' | 'c'
+ *   function f(arg: MyUnion) {
+ *     if (arg === 'a') { return 1; }
+ *     if (arg === 'b') { return 2; }
+ *     assertNever(arg); // Type error: 'c' is unhandled
+ *   }
+ * ```
+ *
+ * @param value - The value that should never be present
+ */
+export function assertNever(value: never): never {
+  throw new Error(`Unexpected value: ${JSON.stringify(value)}`);
 }
 
 /** Constant empty array. */

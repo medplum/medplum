@@ -48,6 +48,7 @@ import { isBrowserEnvironment, locationUtils } from './environment';
 import { TypedEventTarget } from './eventtarget';
 import type {
   CurrentContext,
+  FhircastConnectionOptions,
   FhircastEventContext,
   FhircastEventName,
   FhircastEventVersionOptional,
@@ -3708,11 +3709,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private dispatchResourceModified(payload: ResourceModifiedEvent): void {
     if (this.listenerCount('resourceModified') > 0) {
-      try {
-        this.dispatchEvent({ type: 'resourceModified', payload });
-      } catch (err) {
-        console.error("[MedplumClient] A 'resourceModified' event listener threw an error ", err);
-      }
+      this.dispatchEvent({ type: 'resourceModified', payload });
     }
   }
 
@@ -4019,10 +4016,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
     } else if (this.basicAuth) {
       this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
-    }
-
-    if (!options.cache) {
-      options.cache = 'no-cache';
     }
 
     if (!options.credentials) {
@@ -4535,10 +4528,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    *
    * @category FHIRcast
    * @param subRequest - The `SubscriptionRequest` to use for connecting.
+   * @param options - Options for the underlying `ReconnectingWebSocket`.
    * @returns A `FhircastConnection` which emits lifecycle events for the `FHIRcast` WebSocket connection.
    */
-  fhircastConnect(subRequest: SubscriptionRequest): FhircastConnection {
-    return new FhircastConnection(subRequest);
+  fhircastConnect(subRequest: SubscriptionRequest, options?: FhircastConnectionOptions): FhircastConnection {
+    return new FhircastConnection(subRequest, options);
   }
 
   /**

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { cleanNotifications, Notifications } from '@mantine/notifications';
 import type {
   MedicationCartManageResponse,
   MedicationCheckoutRequest,
@@ -143,6 +143,9 @@ function draftMr(id: string, text: string): WithId<MedicationRequest> {
 
 describe('MedicationsPage', () => {
   beforeEach(async () => {
+    // Mantine notifications use a module-level store that outlives each render,
+    // so reset it between tests to avoid one test's toasts leaking into the next.
+    cleanNotifications();
     vi.clearAllMocks();
     checkoutMock.mockReset();
     removeFromCartMock.mockReset();
@@ -189,6 +192,19 @@ describe('MedicationsPage', () => {
     expect(params).toContain('status=draft');
   });
 
+  test('medication row links preserve the current tab filter', async () => {
+    const medplum = new MockClient();
+    const draft = draftMr('mr-draft-link', 'Aspirin 81 mg tablet');
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, [draft]));
+
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest?status=draft`, medplum);
+
+    expect(await screen.findByRole('link', { name: /Aspirin 81 mg tablet/i })).toHaveAttribute(
+      'href',
+      `/Patient/${HomerSimpson.id}/MedicationRequest/${draft.id}?status=draft`
+    );
+  });
+
   test('Tab change updates the URL and triggers a per-status search', async () => {
     const medplum = new MockClient();
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
@@ -208,6 +224,53 @@ describe('MedicationsPage', () => {
       const calls = searchSpy.mock.calls.map((c) => paramsString(c[1]));
       expect(calls.some((p) => p.includes('status=draft'))).toBe(true);
     });
+  });
+
+  test('selected medication details stay full and current when the list tab changes', async () => {
+    const medplum = new MockClient();
+    const projectedListRow: WithId<MedicationRequest> = {
+      resourceType: 'MedicationRequest',
+      id: 'mr-selected',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: `Patient/${HomerSimpson.id}` },
+      medicationCodeableConcept: { text: 'Diovan 80 mg tablet' },
+    };
+    const fullMedicationRequest: WithId<MedicationRequest> = {
+      ...projectedListRow,
+      note: [{ text: 'Full current detail' }],
+      identifier: [{ system: 'https://scriptsure.com/prescription-id', value: '12345' }],
+    };
+    const search = vi.spyOn(medplum, 'search') as unknown as ReturnType<typeof vi.fn>;
+    search.mockImplementation(async (_resourceType, params) =>
+      paramsString(params).includes('status=draft') ? emptyMrBundle(0) : emptyMrBundle(1, [projectedListRow])
+    );
+    const realRead = medplum.readResource.bind(medplum);
+    const readResource = vi.spyOn(medplum, 'readResource').mockImplementation((async (
+      resourceType: string,
+      id: string,
+      options?: unknown
+    ) => {
+      if (resourceType === 'MedicationRequest' && id === fullMedicationRequest.id) {
+        return fullMedicationRequest;
+      }
+      return realRead(resourceType as 'Patient', id, options as undefined);
+    }) as typeof medplum.readResource);
+    const handle = await setup(`/Patient/${HomerSimpson.id}/MedicationRequest/${fullMedicationRequest.id}`, medplum);
+
+    expect(await screen.findByText('Full current detail')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Draft'));
+
+    await waitFor(() => {
+      expect(handle.location.current?.search).toContain('status=draft');
+      expect(screen.getByText('Full current detail')).toBeInTheDocument();
+    });
+    expect(
+      readResource.mock.calls.filter(
+        ([resourceType, id]) => resourceType === 'MedicationRequest' && id === fullMedicationRequest.id
+      )
+    ).toHaveLength(2);
   });
 
   test('Pagination control changes the URL _offset and re-queries', async () => {
@@ -274,6 +337,41 @@ describe('MedicationsPage', () => {
     });
   });
 
+  test('Dismisses the DoseSpot sync toast when navigating away before sync finishes', async () => {
+    const medplum = new MockClient();
+    vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(0));
+    vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createDoseSpotMembership());
+    // Keep the first sync bot pending so the loading toast stays open while we unmount.
+    vi.spyOn(medplum, 'executeBot').mockReturnValue(new Promise<Record<string, never>>(() => {}));
+
+    let unmount: () => void = () => {};
+    await act(async () => {
+      const view = render(
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]} initialIndex={0}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route path="/Patient/:patientId/MedicationRequest" element={<MedicationsPage />} />
+              </Routes>
+            </MantineProvider>
+          </MemoryRouter>
+        </MedplumProvider>
+      );
+      unmount = view.unmount;
+    });
+
+    expect(await screen.findByText('Syncing with DoseSpot')).toBeInTheDocument();
+
+    await act(async () => {
+      unmount();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Syncing with DoseSpot')).not.toBeInTheDocument();
+    });
+  });
+
   test('Re-opening a pending order from the details panel opens the full chart/queue iframe (issue #9300)', async () => {
     const medplum = new MockClient();
     const draftOrder: WithId<MedicationRequest> = {
@@ -288,6 +386,17 @@ describe('MedicationsPage', () => {
     };
     vi.spyOn(medplum, 'search').mockResolvedValue(emptyMrBundle(1, [draftOrder]));
     vi.spyOn(medplum, 'getProjectMembership').mockReturnValue(createScriptSureMembership());
+    const realRead = medplum.readResource.bind(medplum);
+    vi.spyOn(medplum, 'readResource').mockImplementation((async (
+      resourceType: string,
+      id: string,
+      options?: unknown
+    ) => {
+      if (resourceType === 'MedicationRequest' && id === draftOrder.id) {
+        return draftOrder;
+      }
+      return realRead(resourceType as 'Patient', id, options as undefined);
+    }) as typeof medplum.readResource);
     const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({
       url: 'https://ssu.scriptsure.com/chart/253312/prescriptions?sessiontoken=abc',
     });

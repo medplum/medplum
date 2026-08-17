@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { systemResourceProjectId } from '../constants';
 import type { Expression } from '../fhir/sql';
 import {
   Column,
   Condition,
   Conjunction,
+  Constant,
   InsertQuery,
   Parameter,
   SelectQuery,
@@ -176,8 +178,12 @@ export function buildInsertIntoSelectQuery(
 }
 
 /**
- * Constructs a SQL `SELECT` query from a Medplum history Postgres table and extracts the project_id.
- * using the DuckDB's JSON functionality.  This minimizes the load on the source database.
+ * Constructs a SQL `SELECT` query from a Medplum history Postgres table and extracts the project_id
+ * using DuckDB's JSON functionality. This minimizes the load on the source database.
+ *
+ * When `meta.project` is absent from history JSON (protected resources, server-scoped User/Subscription,
+ * system-repo creates, delete tombstones, legacy rows), falls back to {@link systemResourceProjectId}
+ * to match main-table `projectId` and `_project:missing` search semantics.
  *
  * @param sourceHistoryTable - Postgres table identifier exactly as stored (e.g. `Patient_History`).
  * @param sourcePredicate - Optional SQL boolean expression (joined with `AND` after non-empty content filter).
@@ -201,14 +207,23 @@ export function buildSelectFromHistoryTableQuery(
     inner.whereExpr(sourcePredicate);
   }
 
-  const projectIdExpression = `json_extract_string("src"."content"::JSON, '${PROJECT_ID_JSON_PATH}')`;
+  // DuckDB JSON extract + COALESCE; SelectQuery columns are Column-only, so render SqlFunction then attach alias.
+  const projectIdExpr = new SqlFunction('COALESCE', [
+    new SqlFunction('json_extract_string', [
+      new Constant('"src"."content"::JSON'),
+      new Constant(`'${PROJECT_ID_JSON_PATH}'`),
+    ]),
+    new Constant(`'${systemResourceProjectId}'`),
+  ]);
+  const projectIdSql = new SqlBuilder();
+  projectIdSql.appendExpression(projectIdExpr);
 
   return new SelectQuery('src', inner)
     .column('id')
     .column('version_id')
     .column('content')
     .column('last_updated')
-    .raw(`${projectIdExpression} AS project_id`);
+    .column(new Column(undefined, projectIdSql.toString(), true, 'project_id'));
 }
 
 export function buildProjectedSelectFromHistoryTable(

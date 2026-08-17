@@ -4,6 +4,7 @@ import type { FhircastMessagePayload, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
+  createFhircastMessagePayload,
   createReference,
   generateId,
   getReferenceString,
@@ -108,6 +109,327 @@ describe('FHIRcast WebSocket', () => {
             expect(obj.event['hub.event']).toBe('Patient-open');
           })
           .sendJson({ ok: true })
+          .close()
+          .expectClosed();
+      }));
+
+    // `DiagnosticReport-select` and `syncerror` establish no context of their own, so the hub only relays them
+    test('Send `DiagnosticReport-select` and `syncerror` to subscriber', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['DiagnosticReport-select', 'syncerror'],
+            })
+          );
+
+        const pathname = new URL(res1.body['hub.channel.endpoint']).pathname;
+
+        const publishEvent = async (payload: FhircastMessagePayload): Promise<void> => {
+          const res = await request(server)
+            .post(`/fhircast/STU3/${topic}`)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send(payload);
+          expect(res).toHaveStatus(202);
+        };
+
+        await request(server)
+          .ws(pathname)
+          .expectJson((obj) => {
+            // Connection verification message
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .exec(async () => {
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'DiagnosticReport-select', [
+                { key: 'report', reference: { reference: `DiagnosticReport/${generateId()}` } },
+                { key: 'select', reference: { reference: `Observation/${generateId()}` } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload<'DiagnosticReport-select'>) => {
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('DiagnosticReport-select');
+            expect(obj.event.context).toHaveLength(2);
+          })
+          .sendJson({ id: generateId(), status: 200 })
+          .exec(async () => {
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'syncerror', [
+                { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload<'syncerror'>) => {
+            expect(obj.event['hub.topic']).toBe(topic);
+            expect(obj.event['hub.event']).toBe('syncerror');
+            expect(obj.event.context[0].key).toBe('operationoutcome');
+          })
+          .sendJson({ id: generateId(), status: 200 })
+          .close()
+          .expectClosed();
+      }));
+
+    // The confirmation must carry the subscriber's event list, and only the fields STU3 defines
+    // Source: https://github.com/medplum/medplum/issues/6788
+    test('STU3 connection verification is the four fields STU3 defines', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open', 'Patient-close'],
+            })
+          );
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson({
+            'hub.mode': 'subscribe',
+            'hub.topic': topic,
+            'hub.events': 'Patient-open,Patient-close',
+            'hub.lease_seconds': 3600,
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    // STU3 dropped `hub.callback` and friends, but STU2 clients still expect them
+    test('STU2 connection verification keeps the fields STU3 dropped', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/fhircast/STU2')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open', 'Patient-close'],
+            })
+          );
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson({
+            'hub.callback': '',
+            'hub.channel': '',
+            'hub.events': 'Patient-open,Patient-close',
+            'hub.lease_seconds': 3600,
+            'hub.mode': 'subscribe',
+            'hub.secret': '',
+            'hub.subscriber': '',
+            'hub.topic': topic,
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    // Form-encoded requests commonly carry whitespace after the comma; the confirmation is always
+    // the bare comma-separated list the spec calls for
+    test('Whitespace in `hub.events` is absent from the confirmation', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'subscribe',
+            'hub.topic': topic,
+            'hub.events': 'Patient-open, Patient-close',
+          });
+        expect(res).toHaveStatus(202);
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson({
+            'hub.mode': 'subscribe',
+            'hub.topic': topic,
+            'hub.events': 'Patient-open,Patient-close',
+            'hub.lease_seconds': 3600,
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    // The `/api/hub` alias serves STU3, so subscriptions made through it are confirmed as STU3
+    test('Hub alias connection verification is STU3 shaped', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/api/hub')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson({
+            'hub.mode': 'subscribe',
+            'hub.topic': topic,
+            'hub.events': 'Patient-open',
+            'hub.lease_seconds': 3600,
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    test('Only events this subscriber asked for are delivered', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['ImagingStudy-open'],
+            })
+          );
+
+        const publishEvent = async (payload: FhircastMessagePayload): Promise<void> => {
+          const publishRes = await request(server)
+            .post(`/fhircast/STU3/${topic}`)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send(payload);
+          expect(publishRes).toHaveStatus(202);
+        };
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson((obj) => {
+            expect(obj['hub.events']).toBe('ImagingStudy-open');
+          })
+          .exec(async () => {
+            // Published to the same topic, but this subscriber never asked for it
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'Patient-open', [
+                { key: 'patient', resource: { resourceType: 'Patient', id: generateId() } },
+              ])
+            );
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'ImagingStudy-open', [
+                {
+                  key: 'study',
+                  resource: {
+                    resourceType: 'ImagingStudy',
+                    id: generateId(),
+                    status: 'available',
+                    subject: { reference: `Patient/${generateId()}` },
+                  },
+                },
+              ])
+            );
+            // `syncerror` reaches every subscriber, subscribed to or not
+            await publishEvent(
+              createFhircastMessagePayload(topic, 'syncerror', [
+                { key: 'operationoutcome', resource: { ...badRequest('Something went wrong'), id: generateId() } },
+              ])
+            );
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('ImagingStudy-open');
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('syncerror');
+          })
+          .close()
+          .expectClosed();
+      }));
+
+    // A subscriber that asked in one casing still receives events published in another
+    test('Event names are matched case-insensitively', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+
+        const res = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            'hub.channel.type': 'websocket',
+            'hub.mode': 'subscribe',
+            'hub.topic': topic,
+            'hub.events': 'patient-open',
+          });
+        expect(res).toHaveStatus(202);
+
+        const publishEvent = async (eventName: string, payload: object): Promise<void> => {
+          const publishRes = await request(server)
+            .post(`/fhircast/STU3/${topic}`)
+            .set('Content-Type', ContentType.JSON)
+            .set('Authorization', 'Bearer ' + accessToken)
+            .send({
+              timestamp: new Date().toISOString(),
+              id: randomUUID(),
+              event: { 'hub.topic': topic, 'hub.event': eventName, context: [payload] },
+            });
+          expect(publishRes).toHaveStatus(202);
+        };
+
+        await request(server)
+          .ws(new URL(res.body['hub.channel.endpoint']).pathname)
+          .expectJson((obj) => {
+            // The confirmation echoes back the casing the subscriber asked with
+            expect(obj['hub.events']).toBe('patient-open');
+          })
+          .exec(async () => {
+            // Never asked for, whatever the casing
+            await publishEvent('PATIENT-CLOSE', {
+              key: 'patient',
+              resource: { resourceType: 'Patient', id: generateId() },
+            });
+            await publishEvent('Patient-open', {
+              key: 'patient',
+              resource: { resourceType: 'Patient', id: generateId() },
+            });
+            await publishEvent('SyncError', {
+              key: 'operationoutcome',
+              resource: { ...badRequest('Something went wrong'), id: generateId() },
+            });
+          })
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('Patient-open');
+          })
+          // `syncerror` reaches every subscriber, in any casing
+          .expectJson((obj: FhircastMessagePayload) => {
+            expect(obj.event['hub.event']).toBe('SyncError');
+          })
           .close()
           .expectClosed();
       }));
@@ -758,6 +1080,33 @@ describe('FHIRcast WebSocket', () => {
           .expectClosed();
       }));
 
+    // A subscriber is free to append its own query string to the endpoint URL it was handed
+    test('Connect with a query string on the endpoint', () =>
+      withTestContext(async () => {
+        const topic = randomUUID();
+        const res = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        await request(server)
+          .ws(`${new URL(res.body['hub.channel.endpoint']).pathname}?token=xyz`)
+          .expectJson((obj) => {
+            expect(obj['hub.mode']).toBe('subscribe');
+            expect(obj['hub.topic']).toBe(topic);
+          })
+          .close()
+          .expectClosed();
+      }));
+
     test('Invalid endpoint', () =>
       withTestContext(async () => {
         const globalLoggerErrorSpy = vi.spyOn(globalLogger, 'error');
@@ -772,7 +1121,7 @@ describe('FHIRcast WebSocket', () => {
           })
           .exec(() => {
             expect(globalLoggerErrorSpy).toHaveBeenCalledWith(
-              expect.stringMatching(/^\[FHIRcast\]: No topic associated with the endpoint '/)
+              expect.stringMatching(/^\[FHIRcast\]: No subscription associated with the endpoint '/)
             );
           })
           .expectClosed();
@@ -926,7 +1275,11 @@ describe('FHIRcast WebSocket', () => {
       withTestContext(async () => {
         const subscribeError = new Error('Connection is closed.');
         const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
-          get: vi.fn().mockResolvedValue('project-id:my-topic'),
+          get: vi
+            .fn()
+            .mockResolvedValue(
+              JSON.stringify({ projectId: 'project-id', topic: 'my-topic', events: ['Patient-open'], version: 'STU3' })
+            ),
         } as any);
         const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
           status: 'ready',
@@ -955,7 +1308,11 @@ describe('FHIRcast WebSocket', () => {
     test('Logs and ignores a client message that is not valid JSON', () =>
       withTestContext(async () => {
         const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
-          get: vi.fn().mockResolvedValue('project-id:my-topic'),
+          get: vi
+            .fn()
+            .mockResolvedValue(
+              JSON.stringify({ projectId: 'project-id', topic: 'my-topic', events: ['Patient-open'], version: 'STU3' })
+            ),
         } as any);
         const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
           subscribe: vi.fn().mockResolvedValue(undefined),
@@ -981,6 +1338,52 @@ describe('FHIRcast WebSocket', () => {
           expect(errorSpy).toHaveBeenCalledWith('[FHIRcast]: Failed to parse client message', {
             err: expect.any(SyntaxError),
           });
+        } finally {
+          cacheSpy.mockRestore();
+          subscriberSpy.mockRestore();
+          errorSpy.mockRestore();
+        }
+      }));
+
+    test('Logs and drops a topic message that is not a channel message', () =>
+      withTestContext(async () => {
+        const cacheSpy = vi.spyOn(redis, 'getCacheRedis').mockReturnValue({
+          get: vi.fn().mockResolvedValue(
+            JSON.stringify({
+              projectId: 'project-id',
+              topic: 'my-topic',
+              events: ['Patient-open'],
+              version: 'STU3',
+            })
+          ),
+        } as any);
+        const redisHandlers: Record<string, (...args: any[]) => any> = {};
+        const subscriberSpy = vi.spyOn(redis, 'getPubSubRedisSubscriber').mockReturnValue({
+          subscribe: vi.fn().mockResolvedValue(undefined),
+          on: vi.fn((event: string, cb: (...args: any[]) => any) => {
+            redisHandlers[event] = cb;
+          }),
+          disconnect: vi.fn(),
+        } as any);
+        const errorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => undefined);
+
+        const socket = { on: vi.fn(), send: vi.fn(), close: vi.fn() } as unknown as WebSocket;
+        const req = { url: '/ws/fhircast/some-endpoint' } as IncomingMessage;
+
+        try {
+          await handleFhircastConnection(socket, req);
+          // Ignore the connection verification the socket was just sent
+          vi.mocked(socket.send).mockClear();
+
+          // Nothing reaches a subscriber unless it arrives wrapped in a payload
+          redisHandlers.message('project-id:my-topic', '{ not valid json');
+          redisHandlers.message('project-id:my-topic', JSON.stringify({ target: 'some-endpoint' }));
+
+          expect(socket.send).not.toHaveBeenCalled();
+          expect(errorSpy).toHaveBeenCalledWith(
+            '[FHIRcast]: Discarding a message published to a topic without a payload'
+          );
+          expect(errorSpy).toHaveBeenCalledTimes(2);
         } finally {
           cacheSpy.mockRestore();
           subscriberSpy.mockRestore();
