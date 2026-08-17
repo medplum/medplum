@@ -39,8 +39,18 @@ export function useDayRangeDrag(onSelectRange?: (start: Date, end: Date) => void
       setFrom(undefined);
       setTo(undefined);
     }
+    // A drag the browser takes over, to scroll or to hand to another gesture,
+    // never reaches a day to ask for.
+    function abandon(): void {
+      setFrom(undefined);
+      setTo(undefined);
+    }
     window.addEventListener('pointerup', finish);
-    return () => window.removeEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', abandon);
+    return () => {
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', abandon);
+    };
   }, [from, to, onSelectRange]);
 
   return {

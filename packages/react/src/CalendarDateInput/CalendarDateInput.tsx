@@ -11,6 +11,7 @@ import {
   isBeforeDay,
   isSameDay,
   sortEnds,
+  startOfDay,
   startOfMonth,
 } from './CalendarDateInput.utils';
 import { useDayRangeDrag } from './useDayRangeDrag';
@@ -57,7 +58,9 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
     return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
   }
 
-  const range = drag.range ?? props.range;
+  // The grid holds local midnights, so a range whose ends carry a time of day
+  // would otherwise open a band its own start day sat outside of.
+  const range = toDays(drag.range ?? props.range);
   const selected = range ? undefined : props.selected;
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
@@ -80,7 +83,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
           </Button>
         </Group>
       </Group>
-      <table className={classes.table}>
+      <table className={cx(classes.table, onSelectRange && classes.selectsRanges)}>
         <thead>
           <tr>
             <th>SUN</th>
@@ -121,7 +124,15 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
                       )}
                       aria-pressed={selected || range ? isChosen(day.date, range, selected) : undefined}
                       disabled={isDayDisabled(day)}
-                      onPointerDown={() => drag.begin(day.date)}
+                      onPointerDown={(event) => {
+                        // A touchscreen captures the pointer to the day the
+                        // finger landed on, leaving the days it crosses from
+                        // there never hearing about the drag.
+                        if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                          event.currentTarget.releasePointerCapture(event.pointerId);
+                        }
+                        drag.begin(day.date);
+                      }}
                       onPointerOver={() => drag.extend(day.date)}
                       onClick={(event) => {
                         // A drag that crossed days has already asked for them, and
@@ -152,6 +163,15 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
 }
 
 type DayRange = CalendarDateInputProps['range'];
+
+/**
+ * Pulls the ends of a range back to the days they fall on.
+ * @param range - The stretch of days asked for, if there is one.
+ * @returns The same range at day granularity.
+ */
+function toDays(range: DayRange): DayRange {
+  return range && { start: startOfDay(range.start), end: startOfDay(range.end) };
+}
 
 /**
  * Returns whether a day is one of the two a range is anchored on.
