@@ -24,13 +24,22 @@ export function startOfMonth(date: Date): Date {
 }
 
 /**
+ * Returns local midnight of the day a date falls on.
+ * @param date - Any instant within the day.
+ * @returns The day it falls on, at midnight.
+ */
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
  * Returns whether a day falls before another, ignoring the time of day.
  * @param day - Local midnight of the day in question.
  * @param limit - The instant the day is measured against.
  * @returns True when the day ends before the limit.
  */
 export function isBeforeDay(day: Date, limit: Date): boolean {
-  return day.getTime() < new Date(limit.getFullYear(), limit.getMonth(), limit.getDate()).getTime();
+  return day.getTime() < startOfDay(limit).getTime();
 }
 
 /**

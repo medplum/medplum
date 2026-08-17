@@ -152,6 +152,33 @@ describe('CalendarDateInput', () => {
     expect(screen.getByRole('button', { name: '10' }).className).toContain('available');
   });
 
+  test('Bands a range whose ends carry a time of day', () => {
+    const month = getStartMonth();
+    const start = dayOf(month, 10);
+    start.setHours(9, 30);
+    const end = dayOf(month, 12);
+    end.setHours(17, 0);
+
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        range={{ start, end }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    // A caller handing over the ends of a booking gives instants, not days. The
+    // 10th would otherwise be drawn as an end of a band it did not belong to.
+    expect(cellOf('10').className).toContain('inRange');
+    expect(cellOf('11').className).toContain('inRange');
+    expect(cellOf('12').className).toContain('inRange');
+    expect(cellOf('13').className).not.toContain('inRange');
+    expect(screen.getByRole('button', { name: '11' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('Rounds the band off where the range ends', () => {
     // A month whose weekdays are known, so that the mid-range day is not also the
     // end of its week: July 2026 opens on a Wednesday, putting the 13th to the
@@ -465,6 +492,57 @@ describe('CalendarDateInput', () => {
     // There is no other end for the range to run to.
     expect(onSelectRange).not.toHaveBeenCalled();
     expect(onClick).toHaveBeenCalledWith(dayOf(month, 12));
+  });
+
+  test('A drag begun by a finger takes the pointer back off the day it landed on', async () => {
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={vi.fn()}
+      />
+    );
+
+    const day = screen.getByRole('button', { name: '10' });
+    const releasePointerCapture = vi.fn();
+    Object.assign(day, { hasPointerCapture: () => true, releasePointerCapture });
+
+    await act(async () => {
+      fireEvent.pointerDown(day, { pointerId: 7 });
+    });
+
+    // A touchscreen captures the pointer to this day on its own. Kept, the
+    // capture would leave a finger dragging across the month stuck here.
+    expect(releasePointerCapture).toHaveBeenCalledWith(7);
+  });
+
+  test('A drag the browser takes over asks for nothing', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await drag(10, 12);
+    await act(async () => {
+      fireEvent.pointerCancel(window);
+    });
+
+    // A scroll or a second finger cancels the gesture, which is not the same as
+    // letting go on the 12th.
+    expect(onSelectRange).not.toHaveBeenCalled();
+    expect(cellOf('11').className).not.toContain('inRange');
   });
 
   test('Ignores dragging when the caller takes no ranges', async () => {
