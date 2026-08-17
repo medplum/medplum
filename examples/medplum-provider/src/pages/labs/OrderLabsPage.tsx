@@ -40,6 +40,7 @@ import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
 import { showErrorNotification } from '../../utils/notifications';
+import { WORKFLOWS } from '../../workflow/dependencies';
 import { WorkflowGate } from '../../workflow/WorkflowGate';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
@@ -64,7 +65,7 @@ export interface OrderLabsPageProps {
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
   return (
-    <WorkflowGate workflow="order-labs">
+    <WorkflowGate workflow={WORKFLOWS['order-labs']}>
       <OrderLabsPageContent {...props} />
     </WorkflowGate>
   );

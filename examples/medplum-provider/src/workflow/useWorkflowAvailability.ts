@@ -3,7 +3,7 @@
 import type { MedplumClient } from '@medplum/core';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import type { WorkflowDefinition, WorkflowDependency, WorkflowId } from './dependencies';
+import type { WorkflowDefinition, WorkflowDependency } from './dependencies';
 import { WORKFLOWS } from './dependencies';
 
 /**
@@ -46,7 +46,7 @@ export interface WorkflowAvailability {
 }
 
 /**
- * Probes whether every hard dependency of `workflowId` is present in the current project.
+ * Probes whether every hard dependency of `workflow` is present in the current project.
  *
  * Only project admins are probed. For anyone else an empty `Bot` search is ambiguous — an
  * `AccessPolicy` that hides `Bot` looks exactly like an unlinked integration — and wrongly blocking
@@ -55,24 +55,25 @@ export interface WorkflowAvailability {
  *
  * Recovery after an admin links a missing project happens on the next mount / page refresh; there
  * is no live subscription. See issue #9824.
- * @param workflowId - The workflow whose dependencies to probe.
+ * @param workflow - The workflow whose dependencies to probe. Must be a stable reference — pass a
+ * {@link WORKFLOWS} entry.
  * @returns The workflow's availability and which dependencies (if any) are missing.
  */
-export function useWorkflowAvailability(workflowId: WorkflowId): WorkflowAvailability {
+export function useWorkflowAvailability(workflow: WorkflowDefinition): WorkflowAvailability {
   const medplum = useMedplum();
   const enabled = medplum.isProjectAdmin();
   const [state, setState] = useState<{
-    workflowId: WorkflowId;
+    workflow: WorkflowDefinition;
     enabled: boolean;
     loading: boolean;
     missing: WorkflowDependency[];
-  }>(() => ({ workflowId, enabled, loading: enabled, missing: [] }));
+  }>(() => ({ workflow, enabled, loading: enabled, missing: [] }));
 
   // When the workflow (or the user's admin status) changes, reset to "probing" during render so a
   // stale verdict is never shown. This is React's recommended alternative to resetting state with a
   // synchronous setState in an effect.
-  if (state.workflowId !== workflowId || state.enabled !== enabled) {
-    setState({ workflowId, enabled, loading: enabled, missing: [] });
+  if (state.workflow !== workflow || state.enabled !== enabled) {
+    setState({ workflow, enabled, loading: enabled, missing: [] });
   }
 
   useEffect(() => {
@@ -82,10 +83,10 @@ export function useWorkflowAvailability(workflowId: WorkflowId): WorkflowAvailab
 
     let cancelled = false;
     // `findMissingDependencies` settles every probe itself and never rejects.
-    findMissingDependencies(medplum, WORKFLOWS[workflowId].dependencies)
+    findMissingDependencies(medplum, workflow.dependencies)
       .then((missing) => {
         if (!cancelled) {
-          setState({ workflowId, enabled, loading: false, missing });
+          setState({ workflow, enabled, loading: false, missing });
         }
       })
       .catch(console.error);
@@ -93,7 +94,7 @@ export function useWorkflowAvailability(workflowId: WorkflowId): WorkflowAvailab
     return () => {
       cancelled = true;
     };
-  }, [medplum, workflowId, enabled]);
+  }, [medplum, workflow, enabled]);
 
   return {
     loading: state.loading,

@@ -7,6 +7,7 @@ import { MedplumProvider } from '@medplum/react';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { render, screen } from '../test-utils/render';
+import { WORKFLOWS } from './dependencies';
 import { WorkflowGate } from './WorkflowGate';
 
 const HG_BOT: WithId<Bot> = { resourceType: 'Bot', id: 'hg-bot' };
@@ -26,7 +27,7 @@ describe('WorkflowGate', () => {
   function renderGate(): void {
     render(
       <MedplumProvider medplum={medplum}>
-        <WorkflowGate workflow="order-labs">
+        <WorkflowGate workflow={WORKFLOWS['order-labs']}>
           <div>Lab ordering form</div>
         </WorkflowGate>
       </MedplumProvider>

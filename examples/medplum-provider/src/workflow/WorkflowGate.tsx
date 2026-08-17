@@ -5,12 +5,12 @@ import { Loading } from '@medplum/react';
 import { IconPlugConnectedX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 import { UnavailableNotice } from '../components/UnavailableNotice';
-import type { WorkflowDependency, WorkflowId } from './dependencies';
-import { WORKFLOWS } from './dependencies';
+import type { WorkflowDefinition, WorkflowDependency } from './dependencies';
 import { useWorkflowAvailability } from './useWorkflowAvailability';
 
 export interface WorkflowGateProps {
-  readonly workflow: WorkflowId;
+  /** The workflow being gated — a `WORKFLOWS` entry, e.g. `WORKFLOWS['order-labs']`. */
+  readonly workflow: WorkflowDefinition;
   readonly children: ReactNode;
   /** Rendered while dependencies are being probed. Defaults to `<Loading />`. */
   readonly loadingFallback?: ReactNode;
@@ -31,7 +31,7 @@ export function WorkflowGate(props: WorkflowGateProps): JSX.Element {
   if (available) {
     return <>{children}</>;
   }
-  return <MissingDependenciesNotice workflowLabel={WORKFLOWS[workflow].label} missing={missing} />;
+  return <MissingDependenciesNotice workflowLabel={workflow.label} missing={missing} />;
 }
 
 export interface MissingDependenciesNoticeProps {

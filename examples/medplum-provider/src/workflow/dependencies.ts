@@ -28,6 +28,12 @@ export interface WorkflowDefinition {
  * The hard dependencies for each gated Provider workflow. A workflow is *blocked* when any of its
  * dependencies are missing; blocked workflows show guidance instead of letting the user in.
  *
+ * Entries are passed by reference to the gate at the call site — `<WorkflowGate
+ * workflow={WORKFLOWS['order-labs']}>` — so a reader there can jump straight to the definition.
+ * They live in this one manifest (rather than inline at each gate) so the Get Started page can list
+ * every missing dependency up front. Each entry is a module constant and therefore a stable
+ * reference, which is what {@link useWorkflowAvailability} keys its probe on.
+ *
  * Only *core* workflows belong here — capabilities a user expects as a baseline part of the app and
  * would be confused to find broken (e.g. ordering labs). The missing dependency is surfaced upfront
  * (the Get Started banner) and gated in-context. Optional, integration-only features — a capability
@@ -52,5 +58,3 @@ export const WORKFLOWS = {
     ],
   },
 } as const satisfies Record<string, WorkflowDefinition>;
-
-export type WorkflowId = keyof typeof WORKFLOWS;
