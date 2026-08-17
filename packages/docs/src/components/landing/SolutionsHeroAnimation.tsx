@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { JSX } from 'react';
+import type { CSSProperties, JSX } from 'react';
 import { useInView } from 'react-intersection-observer';
 import styles from './SolutionsHeroAnimation.module.css';
 
 interface Logo {
   src: string;
   alt: string;
-  /** Let a small/portrait logo fill more of its tile than the default caps. */
-  fill?: boolean;
+  /** Multiplier on the default size caps, for art that sits small in its frame or
+   * whose portrait aspect leaves the landscape tile underfilled. Above ~1.19 the
+   * logo starts eating into the face's padding, which is intentional headroom. */
+  scale?: number;
 }
 
 const PLACEHOLDER = 'placeholder' as const;
@@ -38,12 +40,12 @@ const TILES: { front: Logo; back: Face }[] = [
     back: { src: '/img/logos/flexpa.svg', alt: 'Flexpa' },
   },
   {
-    front: { src: '/img/logos/quilted-health.png', alt: 'Quilted Health' },
-    back: { src: '/img/logos/pictionhealth.png', alt: 'Pictionhealth' },
+    front: { src: '/img/logos/pictionhealth.png', alt: 'Pictionhealth' },
+    back: { src: '/img/logos/medimind.svg', alt: 'MediMind' },
   },
   {
     front: { src: '/img/logos/ultralight.svg', alt: 'Ultralight' },
-    back: { src: '/img/logos/remo.svg', alt: 'Remo' },
+    back: { src: '/img/logos/profile-health.svg', alt: 'Profile Health' },
   },
   {
     front: { src: '/img/logos/rad-ai.svg', alt: 'Rad AI' },
@@ -55,7 +57,7 @@ const TILES: { front: Logo; back: Face }[] = [
   },
   {
     front: { src: '/img/logos/vanna.svg', alt: 'Vanna' },
-    back: PLACEHOLDER,
+    back: { src: '/img/logos/quilted-health.svg', alt: 'Quilted Health', scale: 1.45 },
   },
   {
     front: { src: '/img/logos/imagine.svg', alt: 'Imagine Pediatrics' },
@@ -72,16 +74,23 @@ function Face({ face }: { face: Face }): JSX.Element {
       src={face.src}
       alt={face.alt}
       className={styles.logo}
-      style={face.fill ? { maxWidth: '94%', maxHeight: '94%' } : undefined}
+      style={face.scale ? { maxWidth: `${100 * face.scale}%`, maxHeight: `${84 * face.scale}%` } : undefined}
       loading="eager"
     />
   );
 }
 
-// Must match the `flip` keyframe's `animation: flip 20s` in the .module.css.
-const FLIP_DURATION_S = 20;
+// One full lap = both halves of the wave: every tile flips to its back face one
+// at a time, all of them hold on the back, then every tile flips home again in
+// the same order. The `flip` keyframes put the turn home at the 50% mark, so a
+// tile's two flips sit exactly half a lap apart no matter how long the lap is.
+const FLIP_PERIOD_S = 30;
 // How soon the first flip happens after tiles pop in.
 const START_DELAY_S = 0.5;
+// Gap between neighbouring tiles' flips. Each half-lap has to fit all N flips
+// with room to spare, so the last tile lands before the first one turns back:
+// the +2 buys that margin (~2s here) instead of finishing exactly on the beat.
+const STAGGER_S = FLIP_PERIOD_S / (2 * TILES.length + 2);
 
 export function SolutionsHeroAnimation(): JSX.Element {
   const { ref, inView } = useInView({ triggerOnce: true, rootMargin: '0px 0px -10% 0px' });
@@ -93,7 +102,14 @@ export function SolutionsHeroAnimation(): JSX.Element {
           <div key={i} className={styles.tile} style={{ animationDelay: `${i * 60}ms` }}>
             <div
               className={styles.tileInner}
-              style={{ animationDelay: `${START_DELAY_S + i * (FLIP_DURATION_S / TILES.length)}s` }}
+              style={
+                {
+                  animationDelay: `${START_DELAY_S + i * STAGGER_S}s`,
+                  // Drives the CSS animation's duration, so the period and the
+                  // stagger derived from it can't drift apart.
+                  '--flip-period': `${FLIP_PERIOD_S}s`,
+                } as CSSProperties
+              }
             >
               <div className={styles.face}>
                 <Face face={tile.front} />

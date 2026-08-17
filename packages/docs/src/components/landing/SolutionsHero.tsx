@@ -4,6 +4,7 @@ import Link from '@docusaurus/Link';
 import { IconArrowRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { SOLUTIONS_HERO } from '../../data/solutions-content';
+import { BuildDropdown } from './BuildDropdown';
 import styles from './SolutionsHero.module.css';
 import { SolutionsHeroAnimation } from './SolutionsHeroAnimation';
 
@@ -18,9 +19,7 @@ export function SolutionsHero(): JSX.Element {
             <Link to={SOLUTIONS_HERO.primaryCta.href} className={styles.purpleButton}>
               {SOLUTIONS_HERO.primaryCta.label} <IconArrowRight size={16} />
             </Link>
-            <Link to={SOLUTIONS_HERO.secondaryCta.href} className={styles.whiteButton}>
-              {SOLUTIONS_HERO.secondaryCta.label}
-            </Link>
+            <BuildDropdown label={SOLUTIONS_HERO.secondaryCta.label} triggerClassName={styles.whiteButton} />
           </div>
         </div>
         <div className={styles.visual}>

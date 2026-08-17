@@ -42,8 +42,10 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
 }
 
+/* Period comes from the component (--flip-period) so it stays tied to the
+   per-tile stagger derived from it; the fallback just mirrors today's value. */
 .in .tileInner {
-  animation: flip 20s ease-in-out infinite;
+  animation: flip var(--flip-period, 30s) ease-in-out infinite;
 }
 
 .face {
@@ -91,27 +93,32 @@
   }
 }
 
-/* Two-phase wave, not a continuous flutter: every tile flips to its back face
-   early in its own (delayed) 20s lap and STAYS there — combined with the
-   per-tile stagger in the component (20s / tile count), tiles flip to the
-   back one at a time, left-to-right/top-to-bottom. Only once the last tile
-   has flipped (and briefly held) does the same sweep run again to flip every
-   tile back to front, in the same order. A short front-facing pause closes
-   the loop before it repeats. The 95% flip-back start is calculated to land
-   safely after the last tile's flip-out completes — don't move it without
-   re-checking that gap (see the component's FLIP_DURATION_S/TILE stagger). */
+/* Two-phase wave, not a continuous flutter. A tile turns to its back face at the
+   start of its own (delayed) lap, HOLDS there for half the lap, turns home at
+   the 50% mark, and holds on the front for the rest. Because every tile runs
+   these same keyframes offset by one stagger step (see the component), the two
+   turns read as two separate sweeps across the grid in reading order: all nine
+   flip away one by one, the grid rests on its back faces, then all nine flip
+   home one by one.
+
+   The half-lap hold is what keeps the sweeps from overlapping — the turn home
+   must not begin until the last tile has finished turning away. That holds as
+   long as (tiles - 1) * stagger stays under half the period, which the
+   component's STAGGER_S formula guarantees. Duration is set inline there, not
+   here, so the two can't drift apart. */
 @keyframes flip {
-  0%,
-  1% {
+  0% {
     transform: rotateY(0deg);
   }
   3% {
     transform: rotateY(180deg);
   }
-  95% {
+  50% {
     transform: rotateY(180deg);
   }
-  97%,
+  53% {
+    transform: rotateY(360deg);
+  }
   100% {
     transform: rotateY(360deg);
   }

@@ -69,7 +69,8 @@ export const SOLUTIONS_HERO = {
   headline: 'Built on Medplum',
   sub: "From custom EHRs to payer platforms, leading healthcare organizations use Medplum to launch products faster. Explore what they've built — and what you could build next.",
   primaryCta: { label: 'Book a Demo', href: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a' },
-  secondaryCta: { label: 'Read Case Studies', href: '/case-studies' },
+  /* Renders as the BuildDropdown trigger (CLI/repo/docs menu), not a plain link — so label only, no href. */
+  secondaryCta: { label: 'Start Building' },
 };
 
 export const SOLUTIONS_CTA = {
@@ -78,6 +79,37 @@ export const SOLUTIONS_CTA = {
   primaryCta: { label: 'Book a Demo', href: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a' },
   secondaryCta: { label: 'Contact Us', href: 'mailto:hello@medplum.com' },
 };
+
+export interface MoreCaseStudy {
+  name: string;
+  logoSrc: string;
+  url: string;
+  /** True when `url` points off medplum.com, so the link opens in a new tab. */
+  external?: boolean;
+}
+
+/**
+ * Customers with a published case study who are NOT featured in a category
+ * section above — the sections cover the rest. Shown as a logo strip in the
+ * closing CTA so every case study still has a route off this page.
+ * When a customer graduates into a category section, remove them here.
+ */
+export const SOLUTIONS_MORE_CASE_STUDIES: MoreCaseStudy[] = [
+  { name: 'Ro Diagnostics', logoSrc: '/img/blog/ro-logo.png', url: '/blog/ro-case-study' },
+  { name: 'MediMind', logoSrc: '/img/blog/medimind-icon.png', url: '/blog/medimind-case-study' },
+  { name: 'Profile Health', logoSrc: '/img/blog/profile-logo.png', url: '/blog/profile-case-study' },
+  { name: 'Chamber Cardio', logoSrc: '/img/blog/chamber-cardio-logo.jpeg', url: '/blog/chamber-cardio-case-study' },
+  { name: 'Flexpa', logoSrc: '/img/blog/flexpa-logo.png', url: '/blog/flexpa-case-study' },
+  { name: 'Titan Intake', logoSrc: '/img/blog/titan-logo.jpeg', url: '/blog/titan-case-study' },
+  {
+    name: 'Rewind',
+    logoSrc: '/img/blog/rewind-logo.png',
+    url: 'https://www.vintasoftware.com/work/rewind',
+    external: true,
+  },
+];
+
+export const SOLUTIONS_MORE_CASE_STUDIES_HEADING = 'More customer stories';
 
 export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
   {
@@ -148,16 +180,9 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoScale: 2.25,
         valueStatement:
           'Summer Health built a custom pediatric EHR and patient portal on Medplum in just 16 weeks, giving parents 24/7 SMS-based access to pediatricians with AI-assisted encounter documentation and full family and caregiver access controls.',
+        screenshotSrc: '/img/solutions/summer-health-screenshot.webp',
+        screenshotAlt: 'Summer Health pediatric care app',
         caseStudyUrl: '/blog/summer-case-study',
-      },
-      {
-        id: 'quilted-health',
-        name: 'Quilted Health',
-        logoSrc: '/img/logos/quilted-health.png',
-        logoHasName: true,
-        logoScale: 1.35,
-        valueStatement:
-          'Quilted Health runs patient engagement for its maternity care centers on Medplum — appointment reminders, in-portal messaging, and SMS notifications that keep patients connected to their care team between visits.',
       },
     ],
   },
@@ -206,8 +231,15 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         name: 'Color',
         logoSrc: '/img/logos/color.svg',
         logoHasName: true,
+        videoSrc: '/img/solutions/color-clip.mp4',
+        screenshotAlt: 'Color Virtual Cancer Clinic walkthrough',
         valueStatement:
-          "Color built its Virtual Cancer Clinic on Medplum, screening and managing hundreds of thousands of covered lives for employers and health plans, with automated care pathways that schedule each patient's next screening as soon as the prior one is complete.",
+          "Color's Virtual Cancer Clinic serves nearly 200 employers, health plans and unions, providing full spectrum cancer care to their populations, from screening and early detection, through treatment and survivorship. To provide gold standard cancer care at this scale, Color utilizes Medplum to power a nationwide service platform that includes automated care pathways for record coordination, medical assessments, appointment scheduling, management of screening results and, crucially, follow up for 100% of Color patients.",
+        quote: {
+          text: 'Medplum frees us to focus on designing the best possible care experience for our patients, on top of a certified EHR that adapts to our needs seamlessly, without having to build it ourselves. From one unified patient record, our clinic manages entire populations across every stage of cancer care, while keeping care deeply personal for each individual.',
+          attribution: 'Sarah Lynn',
+          title: 'Group Product Manager, Color',
+        },
       },
       {
         id: 'vanna',

@@ -143,4 +143,10 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  /* The Start Building trigger is a <button> inside BuildDropdown's wrapper, not a
+     direct flex child, so stretching .cta doesn't reach it. */
+  .cta .whiteButton {
+    width: 100%;
+  }
 }
