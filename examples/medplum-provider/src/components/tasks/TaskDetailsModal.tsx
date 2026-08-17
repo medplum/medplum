@@ -2,47 +2,61 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Grid, Group, Stack, Text, Textarea } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
-import type { Practitioner, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, Loading, Modal, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { WithId } from '@medplum/core';
+import { createReference, formatHumanName } from '@medplum/core';
+import type { Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import {
+  CodeInput,
+  DateTimeInput,
+  Loading,
+  Modal,
+  ResourceInput,
+  useMedplum,
+  useMedplumProfile,
+  useResource,
+} from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
+import { showErrorNotification } from '../../utils/notifications';
 import classes from './TaskDetailsModal.module.css';
 
-export const TaskDetailsModal = (): JSX.Element => {
-  const { patientId, encounterId, taskId } = useParams();
+export interface TaskDetailsModalProps {
+  /** The task to display and edit. */
+  task: WithId<Task> | Reference<Task>;
+  /** Called with the saved task after a successful update. */
+  onUpdateTask?: (task: WithId<Task>) => void;
+}
+
+export const TaskDetailsModal = (props: TaskDetailsModalProps): JSX.Element => {
+  const { task: taskProp, onUpdateTask } = props;
+  const { patientId, encounterId } = useParams();
   const patient = usePatient();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
   const author = useMedplumProfile();
-  const [task, setTask] = useState<Task | undefined>(undefined);
-  const [isOpened, setIsOpened] = useState(true);
+  const taskResource = useResource(taskProp, showErrorNotification);
+  const [task, setTask] = useState<WithId<Task> | undefined>(undefined);
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [status, setStatus] = useState<Task['status'] | undefined>();
   const [note, setNote] = useState('');
 
-  useEffect(() => {
-    const fetchTask = async (): Promise<void> => {
-      const task = await medplum.readResource('Task', taskId as string);
-      setStatus(task.status);
-      setTask(task);
-      setDueDate(task.restriction?.period?.end);
-    };
+  // Closing returns to the encounter, keeping the search query so the visits list retains its pagination/sort.
+  const handleClose = (): void => {
+    navigate(`/Patient/${patientId}/Encounter/${encounterId}${location.search}`)?.catch(console.error);
+  };
 
-    fetchTask().catch((err) => {
-      notifications.show({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-  }, [medplum, taskId]);
+  useEffect(() => {
+    if (taskResource) {
+      setTask(taskResource);
+      setStatus(taskResource.status);
+      setDueDate(taskResource.restriction?.period?.end);
+    }
+  }, [taskResource]);
 
   const handleOnSubmit = async (): Promise<void> => {
     if (!task) {
@@ -84,15 +98,15 @@ export const TaskDetailsModal = (): JSX.Element => {
     }
 
     try {
-      await medplum.updateResource(updatedTask);
+      const savedTask = await medplum.updateResource(updatedTask);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Task updated',
       });
-      setTask(updatedTask);
-      // Keep the search query so the visits list retains its pagination/sort.
-      navigate(`/Patient/${patientId}/Encounter/${encounterId}${location.search}`)?.catch(console.error);
+      setTask(savedTask);
+      onUpdateTask?.(savedTask);
+      handleClose();
     } catch {
       notifications.show({
         color: 'red',
@@ -105,11 +119,8 @@ export const TaskDetailsModal = (): JSX.Element => {
 
   return (
     <Modal
-      opened={isOpened}
-      onClose={() => {
-        navigate(-1)?.catch(console.error);
-        setIsOpened(false);
-      }}
+      opened
+      onClose={handleClose}
       size="xl"
       title={task?.code?.text}
       padding="md"

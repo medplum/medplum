@@ -7,7 +7,7 @@ import type { Encounter } from '@medplum/fhirtypes';
 import { ResourceBoard } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { EncounterChart } from '../../components/encounter/EncounterChart';
 import { showErrorNotification } from '../../utils/notifications';
 import { EncounterListItem } from './EncounterListItem';
@@ -20,7 +20,11 @@ const ENCOUNTER_LIST_FIELDS = ['_lastUpdated', 'period', 'status', 'type', 'part
 export function EncountersPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const { patientId, encounterId } = useParams() as { patientId: string; encounterId?: string };
+  const { patientId, encounterId, taskId } = useParams() as {
+    patientId: string;
+    encounterId?: string;
+    taskId?: string;
+  };
 
   // The URL is the source of truth for the search. The patient filter is always rebuilt from
   // the route path, never trusted from the query string.
@@ -75,45 +79,43 @@ export function EncountersPage(): JSX.Element {
   );
 
   return (
-    <>
-      <ResourceBoard<Encounter>
-        search={search}
-        selectedId={encounterId}
-        resolveSelected={resolveSelected}
-        headerText="Visits"
-        renderItem={(encounter) => (
-          <EncounterListItem
-            encounter={encounter}
-            selectedEncounterId={encounterId}
-            getItemUri={(e) => encounterUri(e.id)}
+    <ResourceBoard<Encounter>
+      search={search}
+      selectedId={encounterId}
+      resolveSelected={resolveSelected}
+      headerText="Visits"
+      renderItem={(encounter) => (
+        <EncounterListItem
+          encounter={encounter}
+          selectedEncounterId={encounterId}
+          getItemUri={(e) => encounterUri(e.id)}
+        />
+      )}
+      emptyList={
+        <Box h="100%" p="lg">
+          <Text c="dimmed" fw={500}>
+            No visits.
+          </Text>
+        </Box>
+      }
+      renderDetail={(encounter) => (
+        <Box key={encounter.id} flex={1} miw={0} h="100%" style={{ overflow: 'auto' }}>
+          <EncounterChart
+            encounter={{ reference: `Encounter/${encounter.id}` }}
+            task={taskId ? { reference: `Task/${taskId}` } : undefined}
           />
-        )}
-        emptyList={
-          <Box h="100%" p="lg">
-            <Text c="dimmed" fw={500}>
-              No visits.
-            </Text>
-          </Box>
-        }
-        // List items are _fields-subsetted; pass a reference so the chart loads the full encounter.
-        // Keyed by encounter so the chart remounts per visit instead of mixing hook state across selections.
-        renderDetail={(encounter) => (
-          <Box key={encounter.id} flex={1} miw={0} h="100%" style={{ overflow: 'auto' }}>
-            <EncounterChart encounter={{ reference: `Encounter/${encounter.id}` }} />
-          </Box>
-        )}
-        emptyDetail={
-          <Box flex={1} h="100%" p="lg">
-            <Text c="dimmed">Select a visit to view its chart.</Text>
-          </Box>
-        }
-        onSelectFirst={(encounter) => navigate(encounterUri(encounter.id), { replace: true })?.catch(console.error)}
-        onChange={(s) => {
-          navigate(`${location.pathname}${formatSearchQuery(s)}`)?.catch(console.error);
-        }}
-        onError={showErrorNotification}
-      />
-      <Outlet />
-    </>
+        </Box>
+      )}
+      emptyDetail={
+        <Box flex={1} h="100%" p="lg">
+          <Text c="dimmed">Select a visit to view its chart.</Text>
+        </Box>
+      }
+      onSelectFirst={(encounter) => navigate(encounterUri(encounter.id), { replace: true })?.catch(console.error)}
+      onChange={(s) => {
+        navigate(`${location.pathname}${formatSearchQuery(s)}`)?.catch(console.error);
+      }}
+      onError={showErrorNotification}
+    />
   );
 }

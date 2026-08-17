@@ -4,10 +4,11 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Encounter, Patient, Practitioner } from '@medplum/fhirtypes';
+import type { Encounter, Patient, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EncountersPage } from './EncountersPage';
@@ -55,9 +56,7 @@ describe('EncountersPage', () => {
             <Notifications />
             <Routes>
               <Route path="/Patient/:patientId/Encounter" element={<EncountersPage />} />
-              <Route path="/Patient/:patientId/Encounter/:encounterId" element={<EncountersPage />}>
-                <Route path="Task/:taskId" element={<div>Task Modal</div>} />
-              </Route>
+              <Route path="/Patient/:patientId/Encounter/:encounterId/Task?/:taskId?" element={<EncountersPage />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -115,14 +114,50 @@ describe('EncountersPage', () => {
     expect(await screen.findByText('No visits.')).toBeInTheDocument();
   });
 
-  test('Keeps a nested task route open through the search-normalization redirect', async () => {
+  test('Keeps the task modal open through the search-normalization redirect', async () => {
     const encounter = await createVisit(patient);
+    const task = await medplum.createResource<Task>({
+      resourceType: 'Task',
+      status: 'in-progress',
+      intent: 'order',
+      code: { text: 'Review Labs' },
+      for: createReference(patient),
+      encounter: createReference(encounter),
+    });
     // No query string, mimicking a relative navigation from the task panel.
-    renderAt(`/Patient/${patient.id}/Encounter/${encounter.id}/Task/some-task`);
+    renderAt(`/Patient/${patient.id}/Encounter/${encounter.id}/Task/${task.id}`);
 
-    expect(await screen.findByText('Task Modal')).toBeInTheDocument();
+    // The modal title renders the task code as a heading.
+    expect(await screen.findByRole('heading', { name: 'Review Labs' })).toBeInTheDocument();
     // Wait for the list to load after the redirect pins the normalized query.
-    expect(await screen.findByText('Office Visit')).toBeInTheDocument();
-    expect(screen.getByText('Task Modal')).toBeInTheDocument();
+    // 'Office Visit' appears in both the list row and the chart header.
+    expect((await screen.findAllByText('Office Visit')).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Review Labs' })).toBeInTheDocument();
+  });
+
+  test('Reflects a task saved in the modal on the chart task list', async () => {
+    const user = userEvent.setup();
+    const encounter = await createVisit(patient);
+    const task = await medplum.createResource<Task>({
+      resourceType: 'Task',
+      status: 'in-progress',
+      intent: 'order',
+      code: { text: 'Review Labs' },
+      for: createReference(patient),
+      encounter: createReference(encounter),
+    });
+    vi.spyOn(medplum, 'updateResource').mockResolvedValue({ ...task, status: 'completed' });
+    renderAt(`/Patient/${patient.id}/Encounter/${encounter.id}/Task/${task.id}`);
+
+    expect(await screen.findByRole('heading', { name: 'Review Labs' })).toBeInTheDocument();
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument();
+
+    await user.click(await screen.findByText('Save Changes'));
+
+    // The modal closes and the chart's task badge shows the saved status.
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Review Labs' })).not.toBeInTheDocument();
+    });
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
   });
 });
