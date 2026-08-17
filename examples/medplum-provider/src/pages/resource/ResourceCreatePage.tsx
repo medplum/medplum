@@ -103,16 +103,19 @@ export function ResourceCreatePage(): JSX.Element {
     return <Loading />;
   }
 
+  const isProjectAdmin = medplum.isProjectAdmin();
   const missingProfileMessage = profileUrl && (
     <UnavailableNotice
       icon={<IconFileAlert size={48} color="var(--mantine-color-gray-5)" aria-hidden />}
       title={`${resourceType} creation is unavailable`}
+      description={
+        isProjectAdmin
+          ? `Creating a ${resourceType} requires a FHIR profile that is not installed in this project:`
+          : `${resourceType} creation is not set up yet. Contact your administrator to enable it.`
+      }
     >
-      {medplum.isProjectAdmin() ? (
+      {isProjectAdmin && (
         <>
-          <Text size="sm" c="dimmed">
-            Creating a {resourceType} requires a FHIR profile that is not installed in this project:
-          </Text>
           <List spacing={4} size="sm" withPadding>
             <List.Item>
               <Code>{profileUrl}</Code>
@@ -126,10 +129,6 @@ export function ResourceCreatePage(): JSX.Element {
             .
           </Text>
         </>
-      ) : (
-        <Text size="sm" c="dimmed">
-          {resourceType} creation is not set up yet. Contact your administrator to enable it.
-        </Text>
       )}
     </UnavailableNotice>
   );

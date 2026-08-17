@@ -65,11 +65,10 @@ export function MissingDependenciesNotice(props: MissingDependenciesNoticeProps)
     <UnavailableNotice
       icon={<IconPlugConnectedX size={48} color="var(--mantine-color-gray-5)" aria-hidden />}
       title={`${workflowLabel} is unavailable`}
+      description={`This workflow depends on the following ${
+        plural ? 'integrations that are' : 'integration that is'
+      } not linked to your project:`}
     >
-      <Text size="sm" c="dimmed">
-        This workflow depends on the following {plural ? 'integrations that are' : 'integration that is'} not linked to
-        your project:
-      </Text>
       {dependencyList}
       <Text size="sm" c="dimmed">
         Link the required {plural ? 'projects' : 'project'} to enable this workflow.
