@@ -11,6 +11,7 @@ export * from './AppointmentFinder/AppointmentOptionRow';
 export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
+export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
 
 // Helpers the components are built on, usable without them
