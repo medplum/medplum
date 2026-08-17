@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
+import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
@@ -113,6 +114,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     setClaimResponseLoading(true);
     try {
+      // Candid claims are refreshed on load: the claim carries the Candid encounter id, so the
+      // get-encounter bot can pull the latest state onto the stored ClaimResponse
+      try {
+        await refreshCandidClaimResponse(medplum, claim);
+      } catch (err) {
+        showErrorNotification(err);
+      }
       const result = await medplum.searchOne(
         'ClaimResponse',
         { request: getReferenceString(claim) },
