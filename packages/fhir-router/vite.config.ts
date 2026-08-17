@@ -8,6 +8,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/fhir-router',
     globals: true,
     environment: 'jsdom',
     testTimeout: 120_000,
