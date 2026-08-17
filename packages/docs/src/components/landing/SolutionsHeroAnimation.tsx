@@ -29,7 +29,7 @@ type Face = Logo | typeof PLACEHOLDER;
 const TILES: { front: Logo; back: Face }[] = [
   {
     front: { src: '/img/logos/develo.png', alt: 'Develo' },
-    back: { src: '/img/logos/tia.svg', alt: 'Tia' },
+    back: PLACEHOLDER,
   },
   {
     front: { src: '/img/logos/everselflogo.png', alt: 'Everself' },
@@ -60,7 +60,7 @@ const TILES: { front: Logo; back: Face }[] = [
     back: { src: '/img/logos/quilted-health.svg', alt: 'Quilted Health', scale: 1.45 },
   },
   {
-    front: { src: '/img/logos/imagine.svg', alt: 'Imagine Pediatrics' },
+    front: { src: '/img/logos/tia.svg', alt: 'Tia' },
     back: PLACEHOLDER,
   },
 ];

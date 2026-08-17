@@ -261,15 +261,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     imageSrc: '/img/solutions/care-management.webp',
     customers: [
       {
-        id: 'imagine-pediatrics',
-        name: 'Imagine Pediatrics',
-        logoSrc: '/img/logos/imagine.svg',
-        logoHasName: true,
-        logoScale: 2.2,
-        valueStatement:
-          'Imagine Pediatrics runs multidisciplinary care coordination for medically complex children on Medplum, using structured intake and clinical documentation across a rapidly growing patient population.',
-      },
-      {
         id: 'tia',
         name: 'Tia',
         logoSrc: '/img/logos/tia.svg',
