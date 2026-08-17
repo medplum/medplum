@@ -27,6 +27,9 @@
     "trailingComma": "es5"
   },
   "overrides": {
+    "@microsoft/api-documenter": {
+      "js-yaml": "4.3.1"
+    },
     "adm-zip": "0.6.0",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
