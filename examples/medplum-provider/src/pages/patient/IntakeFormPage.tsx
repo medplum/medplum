@@ -205,7 +205,7 @@ const defaultQuestionnaire: Questionnaire = {
           extension: [
             {
               url: 'http://hl7.org/fhir/StructureDefinition/regex',
-              valueString: '^\\+?[0-9()\\-.\\s]{7,20}$',
+              valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
             },
             {
               url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',
@@ -274,7 +274,7 @@ const defaultQuestionnaire: Questionnaire = {
           extension: [
             {
               url: 'http://hl7.org/fhir/StructureDefinition/regex',
-              valueString: '^\\+?[0-9()\\-.\\s]{7,20}$',
+              valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
             },
             {
               url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',

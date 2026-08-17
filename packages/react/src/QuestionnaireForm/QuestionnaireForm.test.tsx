@@ -3376,7 +3376,7 @@ describe('QuestionnaireForm', () => {
           extension: [
             {
               url: 'http://hl7.org/fhir/StructureDefinition/regex',
-              valueString: '^\\+?[0-9()\\-.\\s]{7,20}$',
+              valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
             },
             {
               url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',
@@ -3391,7 +3391,7 @@ describe('QuestionnaireForm', () => {
       await setup({ questionnaire: phoneQuestionnaire, onSubmit: vi.fn() });
 
       const input = screen.getByLabelText<HTMLInputElement>('Phone');
-      expect(input.pattern).toBe('^\\+?[0-9()\\-.\\s]{7,20}$');
+      expect(input.pattern).toBe('^\\+?[0-9\\(\\)\\-.\\s]{7,20}$');
       expect(input.placeholder).toBe('(xxx) xxx-xxxx');
     });
 
