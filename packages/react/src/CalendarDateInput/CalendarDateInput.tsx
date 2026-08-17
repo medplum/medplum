@@ -58,8 +58,6 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
     return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
   }
 
-  // The grid holds local midnights, so a range whose ends carry a time of day
-  // would otherwise open a band its own start day sat outside of.
   const range = toDays(drag.range ?? props.range);
   const selected = range ? undefined : props.selected;
 
@@ -107,9 +105,6 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
                       day.date >= range.start &&
                       day.date <= range.end && [
                         classes.inRange,
-                        // The band is drawn per row, so it is rounded off where the
-                        // range ends and squared where it carries on to the next
-                        // week.
                         (isSameDay(day.date, range.start) || dayIndex === 0) && classes.rangeOpens,
                         (isSameDay(day.date, range.end) || dayIndex === week.length - 1) && classes.rangeCloses,
                       ]
@@ -125,9 +120,6 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
                       aria-pressed={selected || range ? isChosen(day.date, range, selected) : undefined}
                       disabled={isDayDisabled(day)}
                       onPointerDown={(event) => {
-                        // A touchscreen captures the pointer to the day the
-                        // finger landed on, leaving the days it crosses from
-                        // there never hearing about the drag.
                         if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
                           event.currentTarget.releasePointerCapture(event.pointerId);
                         }
