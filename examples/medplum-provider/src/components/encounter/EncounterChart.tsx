@@ -13,6 +13,7 @@ import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
+import { TaskDetailsModal } from '../tasks/TaskDetailsModal';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
 import { EncounterHeader } from './EncounterHeader';
@@ -32,10 +33,11 @@ const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
 
 export interface EncounterChartProps {
   encounter: WithId<Encounter> | Reference<Encounter>;
+  task?: WithId<Task> | Reference<Task>;
 }
 
 export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
-  const { encounter: encounterProp } = props;
+  const { encounter: encounterProp, task: taskProp } = props;
   const medplum = useMedplum();
 
   const [activeTab, setActiveTab] = useState('notes');
@@ -268,6 +270,9 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           )}
         </Box>
       </Stack>
+      {taskProp && (
+        <TaskDetailsModal key={getReferenceString(taskProp)} task={taskProp} onUpdateTask={updateTaskList} />
+      )}
     </>
   );
 };
