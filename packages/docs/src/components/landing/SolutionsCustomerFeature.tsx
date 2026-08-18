@@ -5,7 +5,7 @@ import { IconArrowRight, IconPhoto } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import type { CustomerFeature } from '../../data/solutions-content';
 import styles from './SolutionsCustomerFeature.module.css';
-import { SolutionsPayerIllustration } from './SolutionsPayerIllustration';
+import { SolutionsLifeSciencesIllustration } from './SolutionsLifeSciencesIllustration';
 import { TestimonialHeader } from './TestimonialHeader';
 
 export interface SolutionsCustomerFeatureProps {
@@ -54,7 +54,7 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
           <span />
         </div>
         {customer.illustrativeMockup ? (
-          <SolutionsPayerIllustration />
+          <SolutionsLifeSciencesIllustration />
         ) : customer.videoSrc ? (
           <video
             className={styles.screenshot}

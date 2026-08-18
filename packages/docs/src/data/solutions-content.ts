@@ -59,7 +59,6 @@ export interface SolutionCategory {
   tagline: string;
   description: string;
   icon: string;
-  imageSrc?: string;
   learnMoreUrl?: string;
   customers: CustomerFeature[];
   accelerator?: AcceleratorCallout;
@@ -99,7 +98,6 @@ export const SOLUTIONS_MORE_CASE_STUDIES: MoreCaseStudy[] = [
   { name: 'MediMind', logoSrc: '/img/blog/medimind-icon.png', url: '/blog/medimind-case-study' },
   { name: 'Profile Health', logoSrc: '/img/blog/profile-logo.png', url: '/blog/profile-case-study' },
   { name: 'Chamber Cardio', logoSrc: '/img/blog/chamber-cardio-logo.jpeg', url: '/blog/chamber-cardio-case-study' },
-  { name: 'Flexpa', logoSrc: '/img/blog/flexpa-logo.png', url: '/blog/flexpa-case-study' },
   { name: 'Titan Intake', logoSrc: '/img/blog/titan-logo.jpeg', url: '/blog/titan-case-study' },
   {
     name: 'Rewind',
@@ -119,7 +117,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     description:
       'Teams replace legacy systems or launch new ones with EHRs designed around their own workflows — pediatrics, cardiology, virtual-first care, and beyond. Complete control over the clinical experience, without building the plumbing.',
     icon: 'IconHeartRateMonitor',
-    imageSrc: '/img/solutions/custom-ehr.webp',
     learnMoreUrl: '/solutions/custom-ehr',
     customers: [
       {
@@ -132,23 +129,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         valueStatement:
           'Develo built a full-featured pediatric EHR and CRM on Medplum — scheduling, charting, billing, and family engagement in one FHIR-native system, with AI-assisted documentation designed around how independent pediatric practices actually work.',
         caseStudyUrl: '/blog/develo-case-study',
-      },
-      {
-        id: 'everself',
-        name: 'Everself',
-        logoSrc: '/img/logos/everselflogo.png',
-        logoHasName: true,
-        logoScale: 1.6,
-        screenshotSrc: '/img/solutions/everself-screenshot.png',
-        screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
-        valueStatement:
-          'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs, unifying scheduling, charting, messaging, labs, and device data across multiple sites into a single patient record — with a triaged inbox that helps a lean care team manage a growing patient panel.',
-        quote: {
-          text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
-          attribution: 'Petch Jirapinyo',
-          title: 'CEO, Everself',
-        },
-        caseStudyUrl: '/blog/everself-case-study',
       },
     ],
     accelerator: {
@@ -165,7 +145,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     description:
       'Portals, onboarding, messaging, and scheduling that patients actually use — fully connected to the clinical record behind the scenes, so nothing falls through the cracks.',
     icon: 'IconUserHeart',
-    imageSrc: '/img/solutions/patient-engagement.webp',
     learnMoreUrl: '/solutions/patient-portal',
     customers: [
       {
@@ -193,7 +172,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     description:
       'Ambient scribes and clinical agents whose output lands directly in the chart as structured data — not in a silo. Build AI that reads context, takes action, and stays auditable.',
     icon: 'IconFileTextSpark',
-    imageSrc: '/img/solutions/scribe-agents.webp',
     customers: [
       {
         id: 'ultralight',
@@ -224,7 +202,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     description:
       'Registries, screening programs, and analytics that help organizations track cohorts, close care gaps, and report with confidence — on data that stays current as care happens.',
     icon: 'IconChartHistogram',
-    imageSrc: '/img/solutions/population-health.webp',
     customers: [
       {
         id: 'color',
@@ -241,14 +218,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
           title: 'Group Product Manager, Color',
         },
       },
-      {
-        id: 'vanna',
-        name: 'Vanna',
-        logoSrc: '/img/logos/vanna.svg',
-        logoHasName: true,
-        valueStatement:
-          'Vanna delivers value-based care to a population living with serious mental illness, using Medplum to power care coordination between community coaches and members, detect gaps in care, and track outcomes by cohort under payer value-based contracts.',
-      },
     ],
   },
   {
@@ -258,15 +227,23 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     description:
       'Task management, scheduling, and care plans that keep clinical teams aligned — one queue, one record, no duplicate data entry across disconnected tools.',
     icon: 'IconFirstAidKit',
-    imageSrc: '/img/solutions/care-management.webp',
     customers: [
       {
-        id: 'tia',
-        name: 'Tia',
-        logoSrc: '/img/logos/tia.svg',
+        id: 'everself',
+        name: 'Everself',
+        logoSrc: '/img/logos/everselflogo.png',
         logoHasName: true,
+        logoScale: 1.6,
+        screenshotSrc: '/img/solutions/everself-screenshot.png',
+        screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
         valueStatement:
-          "Tia runs its own network of multi-disciplinary clinics — primary care, gynecology, mental health, and metabolic and skin health — on a custom EHR it's building on Medplum, unifying its care teams' documentation and prescribing workflows on a single platform.",
+          'Everself coordinates care across its outpatient weight-loss sites on Medplum, giving a lean care team a single triaged inbox and one shared record for scheduling, messaging, labs, and device data — so a growing patient panel runs off one queue instead of a separate set of tools per site.',
+        quote: {
+          text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
+          attribution: 'Petch Jirapinyo',
+          title: 'CEO, Everself',
+        },
+        caseStudyUrl: '/blog/everself-case-study',
       },
     ],
   },
@@ -277,7 +254,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     description:
       'Charge capture, claims, and payments built on the same record as the clinical work — so revenue operations stop chasing missing data and start closing the loop.',
     icon: 'IconReceiptDollar',
-    imageSrc: '/img/solutions/rcm.webp',
     customers: [
       {
         id: 'pictionhealth',
@@ -291,19 +267,42 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
     ],
   },
   {
-    id: 'payer-solutions',
-    title: 'Payer Solutions',
-    tagline: 'Modern infrastructure for plans and risk-bearing organizations.',
+    id: 'payer-interoperability',
+    title: 'Payer Interoperability',
+    tagline: 'The data layer between plans, providers, and the apps patients choose.',
     description:
-      'Utilization management, member data, and provider collaboration on a platform built for interoperability from the start — ready for the standards payers are required to meet.',
-    icon: 'IconBuildingBank',
+      'Claims, coverage, and patient-access data on a FHIR-native platform built for the CMS rules that govern them — and the same foundation for the plan side: utilization management, member data, and provider collaboration.',
+    icon: 'IconExchange',
     customers: [
       {
-        id: 'payer-solutions-illustrative',
+        id: 'flexpa',
+        name: 'Flexpa',
+        logoSrc: '/img/logos/flexpa.svg',
+        logoHasName: true,
+        logoScale: 1.8,
+        screenshotSrc: '/img/solutions/flexpa-screenshot.png',
+        screenshotAlt: 'Flexpa Link health plan picker, covering 200+ US payers',
+        valueStatement:
+          'Flexpa connects applications to claims data with patient consent, aggregating the Patient Access APIs that CMS requires of 200+ payers into one normalized FHIR dataset — with Medplum as the self-hosted, multi-tenant FHIR store and API behind it.',
+        caseStudyUrl: '/blog/flexpa-case-study',
+      },
+    ],
+  },
+  {
+    id: 'life-sciences',
+    title: 'Life Sciences',
+    tagline: 'Research infrastructure on the same record as care.',
+    description:
+      'Trial recruitment, consent, and longitudinal data capture on a FHIR-native platform — so research cohorts draw on real clinical data instead of a parallel system built to duplicate it.',
+    icon: 'IconFlask',
+    learnMoreUrl: '/solutions/life-sciences',
+    customers: [
+      {
+        id: 'life-sciences-illustrative',
         name: 'Illustrative example',
         illustrativeMockup: true,
         valueStatement:
-          "No customer has built this yet — here's what a payer solution on Medplum could look like: utilization management, member eligibility, and provider data management, all on FHIR from day one.",
+          "No customer has built this on Medplum yet — here's what it could look like: trial eligibility screening against the clinical record, e-consent, and longitudinal outcome capture, all on FHIR from day one.",
         isPlaceholder: true,
         placeholderCta: { label: 'Partner with us to build this', url: 'mailto:hello@medplum.com' },
       },

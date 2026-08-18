@@ -17,11 +17,12 @@ const PLACEHOLDER = 'placeholder' as const;
 type Face = Logo | typeof PLACEHOLDER;
 
 // Each tile holds at most two faces and flips once from front to back, then back
-// again, on a slow cadence. Fronts are always customers actually featured below
-// on the page (solutions-content.ts), so the hero matches what the page
-// highlights; backs fill in with other real Medplum customers not otherwise
-// featured on /solutions. Thirty Madison is deliberately excluded from this set
-// (a customer that's since moved off Medplum shouldn't be shown as a logo here).
+// again, on a slow cadence. Fronts lead with the customers featured below on the
+// page (solutions-content.ts) so the hero matches what the page highlights; the
+// featured set is currently smaller than the nine fronts a 3x3 grid needs, so
+// the remainder are other real Medplum customers, as are the backs. Thirty
+// Madison is deliberately excluded from this set (a customer that's since moved
+// off Medplum shouldn't be shown as a logo here).
 //
 // Tile order below is also flip order: the 3-column grid lays these out
 // left-to-right/top-to-bottom, and the per-tile animationDelay below increases
@@ -29,7 +30,9 @@ type Face = Logo | typeof PLACEHOLDER;
 const TILES: { front: Logo; back: Face }[] = [
   {
     front: { src: '/img/logos/develo.png', alt: 'Develo' },
-    back: PLACEHOLDER,
+    // The file carries a lot of internal whitespace around a two-line lockup, so
+    // it renders small against its neighbours at the default caps.
+    back: { src: '/img/logos/chamber-cardio.jpg', alt: 'Chamber Cardio', scale: 1.15 },
   },
   {
     front: { src: '/img/logos/everselflogo.png', alt: 'Everself' },
@@ -37,11 +40,11 @@ const TILES: { front: Logo; back: Face }[] = [
   },
   {
     front: { src: '/img/logos/summer-health.svg', alt: 'Summer Health' },
-    back: { src: '/img/logos/flexpa.svg', alt: 'Flexpa' },
+    back: { src: '/img/logos/ro.svg', alt: 'Ro' },
   },
   {
     front: { src: '/img/logos/pictionhealth.png', alt: 'Pictionhealth' },
-    back: { src: '/img/logos/medimind.svg', alt: 'MediMind' },
+    back: { src: '/img/logos/tia.svg', alt: 'Tia' },
   },
   {
     front: { src: '/img/logos/ultralight.svg', alt: 'Ultralight' },
@@ -49,19 +52,19 @@ const TILES: { front: Logo; back: Face }[] = [
   },
   {
     front: { src: '/img/logos/rad-ai.svg', alt: 'Rad AI' },
-    back: { src: '/img/logos/ro.svg', alt: 'Ro' },
+    back: { src: '/img/logos/imagine.svg', alt: 'Imagine Pediatrics' },
   },
   {
     front: { src: '/img/logos/color.svg', alt: 'Color' },
     back: { src: '/img/logos/seen-health.svg', alt: 'Seen Health' },
   },
   {
-    front: { src: '/img/logos/vanna.svg', alt: 'Vanna' },
+    front: { src: '/img/logos/flexpa.svg', alt: 'Flexpa' },
     back: { src: '/img/logos/quilted-health.svg', alt: 'Quilted Health', scale: 1.45 },
   },
   {
-    front: { src: '/img/logos/tia.svg', alt: 'Tia' },
-    back: PLACEHOLDER,
+    front: { src: '/img/logos/medimind.svg', alt: 'MediMind' },
+    back: { src: '/img/logos/titan-intake.png', alt: 'Titan Intake' },
   },
 ];
 
