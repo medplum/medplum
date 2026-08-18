@@ -20,7 +20,6 @@ export const migration: CustomPostDeployMigration = {
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.idempotentCreateIndex(client, results, 'Coding_system_displayUnaccentTrgm_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_displayUnaccentTrgm_idx" ON "Coding" USING gin ("system", medplum_unaccent(display) gin_trgm_ops)`);
-  await fns.query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS "Coding_display_idx"`);
   await normalizeDisplayToNfc(client, results);
 }
 
