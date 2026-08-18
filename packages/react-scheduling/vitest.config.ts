@@ -28,6 +28,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/react-scheduling',
     globals: true,
     environment: 'jsdom',
     environmentOptions: {
