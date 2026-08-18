@@ -1,14 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type {
-  Device,
-  HealthcareService,
-  Location,
-  Practitioner,
-  PractitionerRole,
-  Schedule,
-} from '@medplum/fhirtypes';
+import type { Device, HealthcareService, Location, Practitioner, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   DrChenRole,
@@ -23,16 +16,16 @@ import {
   Ultrasound1Schedule,
   UltrasoundImagingService,
 } from '../stories/scheduling';
-import type { ScheduleCandidate, ScheduleCandidateGroup } from './AppointmentFinder.schedules';
+import { stubChainedActorSearch } from '../test-utils/chainedActorSearch';
+import type { SchedulingRole } from './AppointmentFinder.roles';
+import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import {
-  filterCandidatesByLocation,
   getActorCombinations,
   getCandidateDisplay,
   getCandidateRole,
   getSelectedCandidates,
   getSelectionError,
-  groupCandidatesByRole,
-  searchEligibleSchedules,
+  searchScheduleCandidates,
 } from './AppointmentFinder.schedules';
 import { getActorsKey } from './AppointmentFinder.times';
 
@@ -41,7 +34,41 @@ async function setupClient(): Promise<MockClient> {
   for (const resource of SchedulingFixtures) {
     await medplum.createResource(resource);
   }
+  stubChainedActorSearch(medplum);
   return medplum;
+}
+
+/**
+ * The query one search was sent, as the field's own code wrote it.
+ * @param medplum - The stubbed client.
+ * @param index - Which search to read. Defaults to the first.
+ * @returns The search criteria.
+ */
+function querySentTo(medplum: MockClient, index = 0): Record<string, string> {
+  return vi.mocked(medplum.search).mock.calls[index][1] as Record<string, string>;
+}
+
+/**
+ * Runs the search the way a field does, for one role.
+ * @param medplum - The client to search with.
+ * @param service - The service being booked.
+ * @param role - The role whose actors to offer.
+ * @param options - How the field was left when it searched.
+ * @param options.query - The text typed into the field.
+ * @param options.location - The site being booked at.
+ * @returns The candidates the field would list.
+ */
+async function candidatesFor(
+  medplum: MockClient,
+  service: WithId<HealthcareService>,
+  role: SchedulingRole,
+  options?: { query?: string; location?: WithId<Location> }
+): Promise<ScheduleCandidate[]> {
+  return searchScheduleCandidates(medplum, service, {
+    role,
+    query: options?.query ?? '',
+    location: options?.location,
+  });
 }
 
 // Adds the surgical service, whose providers hold a Practitioner carrying the
@@ -84,27 +111,73 @@ async function addSitedSurgeon(medplum: MockClient, display: string, locations?:
   });
 }
 
-describe('searchEligibleSchedules', () => {
-  test('Finds schedules linked to the service and names their actors', async () => {
+describe('searchScheduleCandidates', () => {
+  test('Asks the server for the schedules of a named actor of the role’s type', async () => {
     const medplum = await setupClient();
 
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+    await candidatesFor(medplum, UltrasoundImagingService, 'provider', { query: 'riv' });
 
-    expect(candidates.map((candidate) => candidate.schedule.id).sort()).toStrictEqual([
-      'schedule-dr-okafor',
-      'schedule-dr-rivera',
-      'schedule-exam-room-a',
-      'schedule-exam-room-b',
-      'schedule-satellite-room',
-      'schedule-ultrasound-1',
-      'schedule-ultrasound-2',
+    // One request per service type code, each narrowed to the role's actor type
+    // and to the name typed, so how many schedules the practice has configured
+    // never decides how many of them can be reached.
+    expect(medplum.search).toHaveBeenCalledTimes(1);
+    expect(querySentTo(medplum)).toMatchObject({
+      'service-type': expect.stringContaining('|'),
+      'actor:Practitioner.active:not': 'false',
+      'actor:Practitioner.name': 'riv',
+      'active:not': 'false',
+      _include: 'Schedule:actor',
+      _count: '25',
+    });
+  });
+
+  test('Leaves the name out when nothing has been typed, but still asks by role', async () => {
+    // The unfiltered query is what tells a field whether the service has anybody
+    // for its role at all, so it has to stay scoped to that role's actor type.
+    const medplum = await setupClient();
+
+    await candidatesFor(medplum, UltrasoundImagingService, 'room');
+
+    expect(querySentTo(medplum)).toMatchObject({ 'actor:Location.status:not': 'inactive' });
+    expect(querySentTo(medplum)).not.toHaveProperty('actor:Location.name');
+  });
+
+  test('Searches a device by the name a device is found under', async () => {
+    // A Device has no `name`; `device-name` reaches its deviceName and its type.
+    const medplum = await setupClient();
+
+    await candidatesFor(medplum, UltrasoundImagingService, 'device', { query: 'ultra' });
+
+    expect(querySentTo(medplum)).toMatchObject({
+      'actor:Device.status:not': 'inactive',
+      'actor:Device.device-name': 'ultra',
+    });
+  });
+
+  test('Offers only the schedules of the role that was asked for', async () => {
+    const medplum = await setupClient();
+
+    expect(providersOf(await candidatesFor(medplum, UltrasoundImagingService, 'provider'))).toStrictEqual([
+      'Dr. Maya Rivera',
+      'Dr. Tunde Okafor',
     ]);
-    expect(candidates.map(getCandidateRole)).toContain('provider');
-    expect(candidates.map(getCandidateRole)).toContain('room');
-    expect(candidates.map(getCandidateRole)).toContain('device');
+    expect(roomsOf(await candidatesFor(medplum, UltrasoundImagingService, 'room'))).toStrictEqual([
+      'Exam Room A',
+      'Exam Room B',
+      'Satellite Exam Room',
+    ]);
+    expect(devicesOf(await candidatesFor(medplum, UltrasoundImagingService, 'device'))).toStrictEqual([
+      'Ultrasound 1 (Main Campus)',
+      'Ultrasound 2 (Main Campus)',
+    ]);
+  });
 
-    const rivera = candidates.find((candidate) => candidate.schedule.id === 'schedule-dr-rivera');
-    expect(rivera && getCandidateDisplay(rivera)).toBe('Dr. Maya Rivera');
+  test('Narrows to the actors whose name matches what was typed', async () => {
+    const medplum = await setupClient();
+
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'provider', { query: 'riv' });
+
+    expect(candidates.map(getCandidateDisplay)).toStrictEqual(['Dr. Maya Rivera']);
   });
 
   test('Rejects a schedule whose serviceType does not reference the service', async () => {
@@ -117,9 +190,9 @@ describe('searchEligibleSchedules', () => {
       serviceType: [{ coding: DrRiveraSchedule.serviceType?.[0].coding }],
     });
 
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'provider');
 
-    expect(candidates).toHaveLength(7);
+    expect(candidates).toHaveLength(2);
     expect(candidates.every((candidate) => candidate.schedule.serviceType?.[0].extension?.length)).toBe(true);
   });
 
@@ -131,7 +204,7 @@ describe('searchEligibleSchedules', () => {
       actor: [{ reference: 'Practitioner/dr-okafor' }],
     });
 
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'provider');
     const candidate = candidates.find((entry) => entry.schedule.id === bare.id);
 
     expect(candidate && getCandidateDisplay(candidate)).toBe('Dr. Tunde Okafor');
@@ -147,9 +220,7 @@ describe('searchEligibleSchedules', () => {
       actor: [{ reference: 'Practitioner/dr-rivera' }, { reference: 'Device/ultrasound-1' }],
     });
 
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
-
-    expect(candidates).toHaveLength(7);
+    expect(await candidatesFor(medplum, UltrasoundImagingService, 'provider')).toHaveLength(2);
   });
 
   test('Rejects a schedule held on a PractitionerRole', async () => {
@@ -163,10 +234,9 @@ describe('searchEligibleSchedules', () => {
       actor: [{ reference: 'PractitionerRole/role-dr-rivera', display: 'Dr. Maya Rivera - Radiology' }],
     });
 
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+    const candidates = await candidatesFor(medplum, UltrasoundImagingService, 'provider');
 
-    expect(candidates).toHaveLength(7);
-    expect(providersOf(candidates).sort()).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
+    expect(providersOf(candidates)).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
 
   test('Rejects a schedule held on something that cannot be booked', async () => {
@@ -179,50 +249,56 @@ describe('searchEligibleSchedules', () => {
       actor: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
     });
 
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
-
-    expect(candidates).toHaveLength(7);
+    expect(await candidatesFor(medplum, UltrasoundImagingService, 'provider')).toHaveLength(2);
   });
 
   test('Falls back to reading schedules when the service has no codings', async () => {
     const medplum = await setupClient();
     const untyped: WithId<HealthcareService> = { ...UltrasoundImagingService, type: undefined };
 
-    const candidates = await searchEligibleSchedules(medplum, untyped);
-
     // The link is still checked, so only the service's own schedules come back.
-    expect(candidates).toHaveLength(7);
+    expect(await candidatesFor(medplum, untyped, 'provider')).toHaveLength(2);
+  });
+
+  test('Lists actors by name, which is the order a field offers them in', async () => {
+    const medplum = await setupClient();
+    await medplum.createResource<Schedule>({
+      ...DrRiveraSchedule,
+      id: undefined,
+      actor: [{ reference: 'Practitioner/dr-rivera', display: 'Dr. Aaron Abbot' }],
+    });
+
+    expect(providersOf(await candidatesFor(medplum, UltrasoundImagingService, 'provider'))).toStrictEqual([
+      'Dr. Aaron Abbot',
+      'Dr. Maya Rivera',
+      'Dr. Tunde Okafor',
+    ]);
   });
 });
 
-describe('filterCandidatesByLocation', () => {
+describe('narrowing to a location', () => {
   test('Keeps the rooms at the clinic, however deep, and drops the rest', async () => {
     const medplum = await setupClient();
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: MainClinic });
 
     // Exam Room A is directly inside the clinic and Exam Room B is a floor
     // below it; the satellite site's room is somewhere else entirely.
-    expect(roomsOf(kept).sort()).toStrictEqual(['Exam Room A', 'Exam Room B']);
-    // Providers and devices are not sited this way, so they are untouched.
-    expect(kept).toHaveLength(6);
+    expect(roomsOf(kept)).toStrictEqual(['Exam Room A', 'Exam Room B']);
   });
 
   test('Keeps only the other site’s room when booking there', async () => {
     const medplum = await setupClient();
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, SatelliteClinic);
+    const kept = await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: SatelliteClinic });
 
     expect(roomsOf(kept)).toStrictEqual(['Satellite Exam Room']);
   });
 
   test('Keeps every room when no clinic was chosen', async () => {
     const medplum = await setupClient();
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    expect(await filterCandidatesByLocation(medplum, candidates, undefined)).toHaveLength(candidates.length);
+    expect(await candidatesFor(medplum, UltrasoundImagingService, 'room')).toHaveLength(3);
   });
 
   test('Keeps a room whose ancestry cannot be read', async () => {
@@ -232,9 +308,8 @@ describe('filterCandidatesByLocation', () => {
       id: undefined,
       actor: [{ reference: 'Location/deleted-room', display: 'Room 9' }],
     });
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: MainClinic });
 
     // Hiding a room the user may be entitled to book is worse than showing one
     // that cannot be placed.
@@ -264,30 +339,27 @@ describe('filterCandidatesByLocation', () => {
       id: undefined,
       actor: [{ reference: 'Location/deep-room', display: 'Deep Room' }],
     });
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: MainClinic });
 
     expect(roomsOf(kept)).toContain('Deep Room');
   });
 
   test('Keeps plain Practitioners, which say nothing about where they work', async () => {
     const medplum = await setupClient();
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, SatelliteClinic);
+    const kept = await candidatesFor(medplum, UltrasoundImagingService, 'provider', { location: SatelliteClinic });
 
-    expect(providersOf(kept).sort()).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
+    expect(providersOf(kept)).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
 
   test('Drops a practitioner whose role is licensed at another site', async () => {
     const medplum = await setupSurgicalClient();
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (Satellite)', ['Location/satellite-clinic']);
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
-    expect(providersOf(kept).sort()).toStrictEqual(['Dr. James Kim', 'Dr. Maria Martinez', 'Dr. Wei Chen']);
+    expect(providersOf(kept)).toStrictEqual(['Dr. James Kim', 'Dr. Maria Martinez', 'Dr. Wei Chen']);
   });
 
   test('Keeps a practitioner licensed for a region the clinic sits inside', async () => {
@@ -297,9 +369,8 @@ describe('filterCandidatesByLocation', () => {
     await medplum.updateResource<Location>({ ...MainClinic, partOf: { reference: 'Location/state-ny' } });
     await medplum.createResource<Location>({ resourceType: 'Location', id: 'state-ny', name: 'New York' });
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (NY)', ['Location/state-ny']);
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (NY)');
   });
@@ -310,13 +381,12 @@ describe('filterCandidatesByLocation', () => {
     // has to be too.
     const medplum = await setupSurgicalClient();
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (OR 3)', ['Location/or-3']);
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (OR 3)');
     // Still measured against the site being booked: OR 3 is not at the satellite.
-    const atSatellite = await filterCandidatesByLocation(medplum, candidates, SatelliteClinic);
+    const atSatellite = await candidatesFor(medplum, SurgeryService, 'provider', { location: SatelliteClinic });
     expect(providersOf(atSatellite)).not.toContain('Dr. Wei Chen (OR 3)');
   });
 
@@ -326,9 +396,8 @@ describe('filterCandidatesByLocation', () => {
     // the list of providers.
     const medplum = await setupSurgicalClient();
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (unknown site)', ['Location/deleted-site']);
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (unknown site)');
   });
@@ -336,9 +405,8 @@ describe('filterCandidatesByLocation', () => {
   test('Keeps a practitioner whose role names no location at all', async () => {
     const medplum = await setupSurgicalClient();
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (unsited)');
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (unsited)');
   });
@@ -355,9 +423,8 @@ describe('filterCandidatesByLocation', () => {
       id: undefined,
       actor: [{ reference: `Practitioner/${roleless.id}`, display: 'Dr. Ada Byron' }],
     });
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     expect(providersOf(kept)).toContain('Dr. Ada Byron');
   });
@@ -387,9 +454,8 @@ describe('filterCandidatesByLocation', () => {
       id: undefined,
       actor: [{ reference: `Practitioner/${practitioner.id}`, display: 'Dr. Wei Chen (moved)' }],
     });
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     expect(providersOf(kept)).not.toContain('Dr. Wei Chen (moved)');
   });
@@ -402,10 +468,9 @@ describe('filterCandidatesByLocation', () => {
     for (const name of ['A', 'B', 'C', 'D']) {
       await addSitedSurgeon(medplum, `Dr. Theatre ${name}`, ['Location/or-3']);
     }
-    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
     const searchResources = vi.spyOn(medplum, 'searchResources');
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
     // All four sit in a theatre inside the clinic, so all four survive.
     expect(providersOf(kept).filter((name) => name.startsWith('Dr. Theatre'))).toHaveLength(4);
@@ -424,11 +489,10 @@ describe('filterCandidatesByLocation', () => {
       id: undefined,
       actor: [{ reference: `Device/${elsewhere.id}`, display: 'Ultrasound 3 (Satellite)' }],
     });
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
-    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+    const kept = await candidatesFor(medplum, UltrasoundImagingService, 'device', { location: MainClinic });
 
-    expect(devicesOf(kept).sort()).toStrictEqual(['Ultrasound 1 (Main Campus)', 'Ultrasound 2 (Main Campus)']);
+    expect(devicesOf(kept)).toStrictEqual(['Ultrasound 1 (Main Campus)', 'Ultrasound 2 (Main Campus)']);
   });
 });
 
@@ -447,50 +511,6 @@ function providersOf(candidates: readonly ScheduleCandidate[]): string[] {
 function devicesOf(candidates: readonly ScheduleCandidate[]): string[] {
   return namesOfRole(candidates, 'device');
 }
-
-describe('groupCandidatesByRole', () => {
-  test('Produces one group per role present, in a stable order', async () => {
-    const medplum = await setupClient();
-    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
-
-    const groups = groupCandidatesByRole(candidates);
-
-    expect(groups.map((group) => group.role)).toStrictEqual(['provider', 'room', 'device']);
-    expect(groups.map((group) => group.label)).toStrictEqual(['Provider', 'Room', 'Device']);
-    expect(groups.map((group) => group.candidates.length)).toStrictEqual([2, 3, 2]);
-  });
-
-  test('Asks for a provider, but leaves rooms and devices optional', async () => {
-    const medplum = await setupClient();
-    const groups = groupCandidatesByRole(await searchEligibleSchedules(medplum, UltrasoundImagingService));
-
-    expect(groups.map((group) => group.required)).toStrictEqual([true, false, false]);
-  });
-
-  test('Collects practitioners and the roles they hold into one question', () => {
-    const groups = groupCandidatesByRole([
-      candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera'),
-      candidateOf(DrOkaforSchedule, 'PractitionerRole', 'Dr. Tunde Okafor - Urology'),
-    ]);
-
-    expect(groups).toHaveLength(1);
-    expect(groups[0].candidates).toHaveLength(2);
-  });
-
-  test('Sorts each role by name, which is the order its field lists them in', () => {
-    const groups = groupCandidatesByRole([
-      candidateOf(DrOkaforSchedule, 'Practitioner', 'Dr. Tunde Okafor'),
-      candidateOf(Ultrasound1Schedule, 'Device', 'Ultrasound 1'),
-      candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera'),
-    ]);
-
-    expect(groups[0].candidates.map(getCandidateDisplay)).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
-  });
-
-  test('Omits roles with no schedules', () => {
-    expect(groupCandidatesByRole([])).toStrictEqual([]);
-  });
-});
 
 /**
  * Builds a candidate the way a search would have, on a schedule of the given
@@ -516,24 +536,9 @@ function candidateOf(
 }
 
 describe('selections', () => {
-  const PROVIDERS: ScheduleCandidateGroup = {
-    role: 'provider',
-    label: 'Provider',
-    required: true,
-    candidates: [
-      candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera'),
-      candidateOf(DrOkaforSchedule, 'Practitioner', 'Dr. Tunde Okafor'),
-    ],
-  };
-
-  const DEVICES: ScheduleCandidateGroup = {
-    role: 'device',
-    label: 'Device',
-    required: false,
-    candidates: [candidateOf(Ultrasound1Schedule, 'Device', 'Ultrasound 1')],
-  };
-
-  const groups = [PROVIDERS, DEVICES];
+  const RIVERA = candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera');
+  const OKAFOR = candidateOf(DrOkaforSchedule, 'Practitioner', 'Dr. Tunde Okafor');
+  const ULTRASOUND = candidateOf(Ultrasound1Schedule, 'Device', 'Ultrasound 1');
 
   /**
    * The schedules each combination would be searched with.
@@ -547,73 +552,48 @@ describe('selections', () => {
   }
 
   test('One chosen actor per role is one request', () => {
-    expect(
-      schedulesOf(getActorCombinations(groups, { provider: ['schedule-dr-okafor'], device: ['schedule-ultrasound-1'] }))
-    ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1']]);
+    expect(schedulesOf(getActorCombinations({ provider: [OKAFOR], device: [ULTRASOUND] }))).toStrictEqual([
+      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-ultrasound-1'],
+    ]);
   });
 
   test('Several actors that all attend stay in the same request', () => {
     // `$find` intersects them, so two providers and a device is one request for
     // the times all three are free — not a choice between them.
-    expect(
-      schedulesOf(
-        getActorCombinations(groups, {
-          provider: ['schedule-dr-rivera', 'schedule-dr-okafor'],
-          device: ['schedule-ultrasound-1'],
-        })
-      )
-    ).toStrictEqual([['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1']]);
+    expect(schedulesOf(getActorCombinations({ provider: [RIVERA, OKAFOR], device: [ULTRASOUND] }))).toStrictEqual([
+      ['Schedule/schedule-dr-okafor', 'Schedule/schedule-dr-rivera', 'Schedule/schedule-ultrasound-1'],
+    ]);
   });
 
   test('An optional role left empty drops out of the search', () => {
     // Holding a device nobody asked for would narrow the search to the times
     // that device happens to be free.
-    expect(schedulesOf(getActorCombinations(groups, { provider: ['schedule-dr-rivera'], device: [] }))).toStrictEqual([
+    expect(schedulesOf(getActorCombinations({ provider: [RIVERA], device: [] }))).toStrictEqual([
       ['Schedule/schedule-dr-rivera'],
     ]);
   });
 
   test('A required role left empty stops the search', () => {
-    const selections = { device: ['schedule-ultrasound-1'] };
+    const selections: ActorSelections = { device: [ULTRASOUND] };
 
-    expect(schedulesOf(getActorCombinations(groups, selections))).toStrictEqual([['Schedule/schedule-ultrasound-1']]);
-    expect(getSelectionError(groups, selections)).toBe('Choose at least one provider');
+    // The combination is still buildable — it is the caller that must not run it.
+    expect(schedulesOf(getActorCombinations(selections))).toStrictEqual([['Schedule/schedule-ultrasound-1']]);
+    expect(getSelectionError(selections)).toBe('Choose at least one provider');
   });
 
-  test('A selection matching nothing counts as no selection', () => {
-    // A stale id narrows the search rather than voiding it, so one that matches
-    // nothing on offer leaves the role empty.
-    const selections = { provider: ['schedule-gone'] };
-
-    expect(getSelectedCandidates(PROVIDERS, selections)).toStrictEqual([]);
-    expect(getActorCombinations(groups, selections)).toStrictEqual([]);
-    expect(getSelectionError(groups, selections)).toBe('Choose at least one provider');
-  });
-
-  test('Keeps the ids that are still on offer when others have gone stale', () => {
+  test('Collects what was chosen across roles, in the order they are asked about', () => {
     expect(
-      getSelectedCandidates(PROVIDERS, { provider: ['schedule-gone', 'schedule-dr-okafor'] }).map(getCandidateDisplay)
-    ).toStrictEqual(['Dr. Tunde Okafor']);
+      getSelectedCandidates({ device: [ULTRASOUND], provider: [RIVERA, OKAFOR] }).map(getCandidateDisplay)
+    ).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor', 'Ultrasound 1']);
   });
 
   test('Accepts a search once a provider is chosen', () => {
-    expect(getSelectionError(groups, { provider: ['schedule-dr-rivera'] })).toBeUndefined();
-  });
-
-  test('Reports a service with nothing to book against', () => {
-    expect(getSelectionError([], {})).toBe('No schedules are configured for this service.');
-  });
-
-  test('Asks for something to be chosen when every role is optional', () => {
-    expect(getSelectionError([DEVICES], {})).toBe('Choose at least one device');
-    expect(getSelectionError([DEVICES], { device: ['schedule-ultrasound-1'] })).toBeUndefined();
+    expect(getSelectionError({ provider: [RIVERA] })).toBeUndefined();
+    expect(getSelectionError({})).toBe('Choose at least one provider');
   });
 
   test('Names everyone the appointment would be held on', () => {
-    const [combination] = getActorCombinations(groups, {
-      provider: ['schedule-dr-rivera', 'schedule-dr-okafor'],
-      device: ['schedule-ultrasound-1'],
-    });
+    const [combination] = getActorCombinations({ provider: [RIVERA, OKAFOR], device: [ULTRASOUND] });
 
     expect(combination.label).toBe('Dr. Maya Rivera · Dr. Tunde Okafor · Ultrasound 1');
     expect(combination.actors.map((actor) => actor.reference)).toStrictEqual([
@@ -634,7 +614,7 @@ describe('selections', () => {
   });
 
   test('Nothing chosen is nothing to hold a requested time on', () => {
-    expect(getActorCombinations(groups, {})).toStrictEqual([]);
+    expect(getActorCombinations({})).toStrictEqual([]);
   });
 });
 

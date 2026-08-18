@@ -4,6 +4,7 @@
 export type * from './types';
 
 // Export all components
+export * from './AppointmentFinder/AppointmentActorSelect';
 export * from './AppointmentFinder/AppointmentDayTimes';
 export * from './AppointmentFinder/AppointmentFinder.roles';
 export * from './AppointmentFinder/AppointmentFinder.schedules';
@@ -15,7 +16,6 @@ export * from './Calendar/Calendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
 
 // Hooks that load what the components display
-export * from './AppointmentFinder/useEligibleSchedules';
 export * from './AppointmentFinder/useProposedAppointments';
 
 // Helpers the components are built on, usable without them

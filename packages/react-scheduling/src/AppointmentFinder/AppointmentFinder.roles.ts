@@ -84,3 +84,20 @@ export function getActorRoleLabel(actor: Reference): string | undefined {
   const actorType = actor.reference?.split('/')[0];
   return isSchedulingActorType(actorType) ? ROLE_LABELS[getSchedulingRole(actorType)] : undefined;
 }
+
+/**
+ * Roles that must be filled before a search can run.
+ *
+ * Rooms and devices are left optional: a service may have room schedules
+ * configured without every booking needing to hold one.
+ */
+const REQUIRED_ROLES: ReadonlySet<SchedulingRole> = new Set(['provider']);
+
+/**
+ * Reports whether a role has to be filled.
+ * @param role - The role being filled.
+ * @returns Whether a search can run without it.
+ */
+export function isRoleRequired(role: SchedulingRole): boolean {
+  return REQUIRED_ROLES.has(role);
+}

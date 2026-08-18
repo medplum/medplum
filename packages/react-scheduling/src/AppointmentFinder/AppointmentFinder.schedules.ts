@@ -9,17 +9,10 @@ import {
   SCHEDULING_ROLES,
   getSchedulingRole,
   isBookableActorType,
+  isRoleRequired,
   isSchedulingActorType,
 } from './AppointmentFinder.roles';
 import { getActorsKey } from './AppointmentFinder.times';
-
-/**
- * Roles that must be chosen before a search can run.
- *
- * Rooms and devices are left optional: a service may have room schedules
- * configured without every booking needing to hold one.
- */
-const REQUIRED_ROLES: ReadonlySet<SchedulingRole> = new Set(['provider']);
 
 /**
  * A Schedule that can be booked for a service, paired with the actor it belongs
@@ -65,41 +58,74 @@ export function getCandidateDisplay(candidate: ScheduleCandidate): string {
   );
 }
 
-/** Candidates that fill the same role, offered together as one question. */
-export interface ScheduleCandidateGroup {
-  readonly role: SchedulingRole;
-  readonly label: string;
-  /** Whether a search can run without one of these being chosen. */
-  readonly required: boolean;
-  readonly candidates: readonly ScheduleCandidate[];
-}
-
 /**
  * What an appointment is being asked for: the schedules chosen, per role.
  * Everything named attends.
  */
-export type ActorSelections = Partial<Record<SchedulingRole, readonly string[]>>;
+export type ActorSelections = Partial<Record<SchedulingRole, readonly ScheduleCandidate[]>>;
 
-export interface SearchEligibleSchedulesOptions {
+export interface SearchScheduleCandidatesOptions {
+  /** Which of the service's actors to offer. */
+  readonly role: SchedulingRole;
+  /** What the user typed. Empty offers whatever the role has, unfiltered by name. */
+  readonly query: string;
+  /** The site being booked at. Actors sited elsewhere are left out. */
+  readonly location?: Reference<Location> | WithId<Location>;
   readonly signal?: AbortSignal;
-  /** Maximum schedules to consider per service type code. Defaults to 100. */
+  /** Maximum schedules to consider per service type code. Defaults to 25. */
   readonly count?: number;
 }
 
+/** How many schedules one search offers, per service type code. */
+const DEFAULT_COUNT = 25;
+
 /**
- * Finds the Schedules that can be booked for a HealthcareService, based on the
- * service's `type` codes and the schedules' `serviceType` codes.
+ * The chained filters that scope a Schedule search to one role's actors.
+ * @param role - The role whose actors to offer.
+ * @param query - What the user typed, or empty to match any name.
+ * @returns The `actor:` criteria to search with.
+ */
+function getActorCriteria(role: SchedulingRole, query: string): Record<string, string> {
+  switch (role) {
+    case 'provider':
+      return {
+        'actor:Practitioner.active:not': 'false',
+        ...(query ? { 'actor:Practitioner.name': query } : undefined),
+      };
+    case 'room':
+      return {
+        'actor:Location.status:not': 'inactive',
+        ...(query ? { 'actor:Location.name': query } : undefined),
+      };
+    case 'device':
+      return {
+        'actor:Device.status:not': 'inactive',
+        ...(query ? { 'actor:Device.device-name': query } : undefined),
+      };
+    default: {
+      // Should be unreachable, but here in case.
+      const unhandled: never = role;
+      throw new Error(`Unhandled scheduling role: ${String(unhandled)}`);
+    }
+  }
+}
+
+/**
+ * Finds the Schedules that can be booked for one role of a HealthcareService,
+ * narrowed to the actors whose name matches what was typed.
  * @param medplum - The Medplum client.
  * @param service - The HealthcareService being booked.
- * @param options - Abort signal and page size.
- * @returns Every schedule bookable for the service, each with its actor.
+ * @param options - The role, the text typed, the site, an abort signal, and a page size.
+ * @returns The matching schedules, each with its actor, by display name.
  */
-export async function searchEligibleSchedules(
+export async function searchScheduleCandidates(
   medplum: MedplumClient,
   service: WithId<HealthcareService>,
-  options?: SearchEligibleSchedulesOptions
+  options: SearchScheduleCandidatesOptions
 ): Promise<ScheduleCandidate[]> {
-  const count = (options?.count ?? 100).toString();
+  const count = (options.count ?? DEFAULT_COUNT).toString();
+  const actorCriteria = getActorCriteria(options.role, options.query);
+
   const tokens = getServiceTypeTokens(service);
   const searches = tokens.length > 0 ? tokens.map((token) => ({ 'service-type': token })) : [{}];
 
@@ -107,8 +133,8 @@ export async function searchEligibleSchedules(
     searches.map(async (criteria) =>
       medplum.search(
         'Schedule',
-        { ...criteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
-        { signal: options?.signal }
+        { ...criteria, ...actorCriteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
+        { signal: options.signal }
       )
     )
   );
@@ -132,9 +158,13 @@ export async function searchEligibleSchedules(
     }
   }
 
-  return [...schedules.values()]
+  const found = [...schedules.values()]
     .map((schedule) => toScheduleCandidate(schedule, service, actorsByReference))
     .filter(isDefined);
+
+  // Filter by location
+  const kept = await filterCandidatesByLocation(medplum, found, options.location, { signal: options.signal });
+  return kept.sort((left, right) => getCandidateDisplay(left).localeCompare(getCandidateDisplay(right)));
 }
 
 function getServiceTypeTokens(service: HealthcareService): string[] {
@@ -407,35 +437,12 @@ async function readLocation(
 }
 
 /**
- * Groups candidates into one question per role present.
- *
- * The result drives the booking form: a service booked against providers and
- * rooms asks about both, and one booked against providers alone asks only about
- * them. Nothing has to be configured per service to make that happen.
- *
- * @param candidates - Candidates to group.
- * @returns One group per role present, in `SCHEDULING_ROLES` order.
- */
-export function groupCandidatesByRole(candidates: readonly ScheduleCandidate[]): ScheduleCandidateGroup[] {
-  return SCHEDULING_ROLES.map((role) => ({
-    role,
-    label: ROLE_LABELS[role],
-    required: REQUIRED_ROLES.has(role),
-    candidates: candidates
-      .filter((candidate) => getCandidateRole(candidate) === role)
-      .sort((left, right) => getCandidateDisplay(left).localeCompare(getCandidateDisplay(right))),
-  })).filter((group) => group.candidates.length > 0);
-}
-
-/**
- * Returns the candidates chosen for one role.
- * @param group - The role's candidates.
+ * Returns everything chosen, across roles.
  * @param selections - What has been chosen.
- * @returns The chosen candidates, in the order they are offered.
+ * @returns The chosen candidates, in `SCHEDULING_ROLES` order.
  */
-export function getSelectedCandidates(group: ScheduleCandidateGroup, selections: ActorSelections): ScheduleCandidate[] {
-  const chosen = new Set(selections[group.role] ?? []);
-  return group.candidates.filter((candidate) => chosen.has(candidate.schedule.id));
+export function getSelectedCandidates(selections: ActorSelections): ScheduleCandidate[] {
+  return SCHEDULING_ROLES.flatMap((role) => selections[role] ?? []);
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
@@ -444,27 +451,12 @@ function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> 
 
 /**
  * Reports why the current selections cannot be searched, if they cannot.
- * @param groups - The roles offered by the form.
  * @param selections - What has been chosen.
  * @returns A message to show the user, or undefined when the search can run.
  */
-export function getSelectionError(
-  groups: readonly ScheduleCandidateGroup[],
-  selections: ActorSelections
-): string | undefined {
-  if (groups.length === 0) {
-    return 'No schedules are configured for this service.';
-  }
-  const missing = groups.find((group) => group.required && getSelectedCandidates(group, selections).length === 0);
-  if (missing) {
-    return `Choose at least one ${missing.label.toLowerCase()}`;
-  }
-  if (groups.every((group) => getSelectedCandidates(group, selections).length === 0)) {
-    // Every role optional and none chosen would search the service's whole
-    // availability without holding anybody's calendar.
-    return `Choose at least one ${groups[0].label.toLowerCase()}`;
-  }
-  return undefined;
+export function getSelectionError(selections: ActorSelections): string | undefined {
+  const missing = SCHEDULING_ROLES.find((role) => isRoleRequired(role) && (selections[role] ?? []).length === 0);
+  return missing ? `Choose at least one ${ROLE_LABELS[missing].toLowerCase()}` : undefined;
 }
 
 /**
@@ -486,16 +478,12 @@ export interface ActorCombination {
  * One combination is one `$find` request: the schedules within it are
  * intersected, so its times are the times all of those actors are free.
  *
- * @param groups - The roles offered by the form.
  * @param selections - What has been chosen.
  * @returns One combination holding every chosen actor, in role order, or an
  *   empty list when nothing is chosen.
  */
-export function getActorCombinations(
-  groups: readonly ScheduleCandidateGroup[],
-  selections: ActorSelections
-): ActorCombination[] {
-  const chosen = groups.flatMap((group) => getSelectedCandidates(group, selections));
+export function getActorCombinations(selections: ActorSelections): ActorCombination[] {
+  const chosen = getSelectedCandidates(selections);
   return chosen.length > 0 ? [toActorCombination(chosen)] : [];
 }
 
