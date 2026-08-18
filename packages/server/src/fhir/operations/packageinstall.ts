@@ -11,6 +11,7 @@ import {
   getReferenceString,
   isOk,
   isResource,
+  normalizeErrorString,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
@@ -29,6 +30,7 @@ import type {
   PackageRelease,
   Parameters,
   Project,
+  ProjectMembership,
   Questionnaire,
   QuestionnaireItem,
   Reference,
@@ -42,6 +44,8 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
+import { findProjectMembership } from '../../workers/utils';
+import { deployBot } from './deploy';
 
 /**
  * Canonical `meta.tag` system applied by the install Bundle to every resource it
@@ -126,10 +130,11 @@ type InstallSettings = Record<string, boolean | number | string>;
  * stopped (RFC §`$install` state-aware behavior).
  *
  * Install-bundle phase (declarative): apply the PackageRelease Bundle into the
- * calling project via `processBatch`. Setup-bot phase (imperative, Tier 3): invoke
- * the declared setupBot with the `PackageInstallation` + validated settings; the
- * setupBot writes `Project.secret` and returns one-shot credentials in an
- * OperationOutcome.
+ * calling project via `processBatch`, then commission the bots it wrote — a
+ * Bundle can describe a Bot row but cannot give it a membership or a deployed
+ * function. Setup-bot phase (imperative, Tier 3): invoke the declared setupBot
+ * with the `PackageInstallation` + validated settings; the setupBot writes
+ * `Project.secret` and returns one-shot credentials in an OperationOutcome.
  *
  * Endpoint: [fhir base]/PackageRelease/[id]/$install
  * @param req - The FHIR request.
@@ -196,6 +201,7 @@ export async function packageInstallHandler(
   try {
     if (!skipInstallBundle) {
       installBundleResult = await applyInstallBundle(req, repo, router, bundle, packageRelease);
+      await commissionInstalledBots(ctx, installBundleResult);
       phase = 'setup-bot';
     }
 
@@ -272,11 +278,13 @@ function planReconciliation(
         ? { respond: [conflict('Package installation already in progress', 'in-progress')] }
         : { skipInstallBundle: false };
     case 'error':
-      // The install bundle runs in a transaction, so a failure there committed
-      // nothing — only resume past it when the prior failure was in the setupBot,
-      // and only for the same version: whatever the install bundle committed belongs
-      // to the old one. A failed install must stay recoverable by a newer release,
-      // because `PackageInstallation` is read-only to project admins and they have no
+      // An `install-bundle` failure is either the Bundle transaction, which
+      // committed nothing, or bot commissioning after it, which is idempotent —
+      // so redoing the install-bundle phase is correct either way. Only resume
+      // past it when the prior failure was in the setupBot, and only for the
+      // same version: whatever the install bundle committed belongs to the old
+      // one. A failed install must stay recoverable by a newer release, because
+      // `PackageInstallation` is read-only to project admins and they have no
       // way to clear it themselves.
       return {
         skipInstallBundle: sameVersion && getExtensionValue(existing, PackageInstallationErrorPhaseUrl) === 'setup-bot',
@@ -369,6 +377,87 @@ async function resolveConditionalEntries(repo: FhirRepository, bundle: Bundle): 
     }
   }
   return { ...bundle, entry: entries };
+}
+
+/**
+ * Commissions every Bot the install Bundle just wrote: gives it a
+ * `ProjectMembership` to execute under, and deploys its code to the bot runtime.
+ *
+ * A Bundle can only describe resources, so an installed Bot arrives as a row
+ * carrying `code` and nothing else. `Bot/$init` performs both of these steps for
+ * an interactively created bot, and an installed bot had nobody to perform them:
+ * `$install` reported success while every proxy it wrote was unexecutable, the
+ * runtime failing with "function not found" on first call. That is the whole gap
+ * between "the install Bundle applied" and "the package works", so it belongs in
+ * the operation rather than in each package's setup hook.
+ *
+ * Runs after the install-bundle phase commits, and is idempotent for the same
+ * reasons that phase is: the membership is created only when absent, and a
+ * deploy overwrites whatever the last one left. A re-installed Bundle in fact
+ * *requires* the redeploy, since its conditional `PUT` replaces the Bot row and
+ * drops the `executableCode` the previous deploy attached.
+ * @param ctx - The authenticated request context of the installing admin.
+ * @param installBundleResult - The install-bundle batch response, whose entries carry the written resources.
+ */
+async function commissionInstalledBots(ctx: AuthenticatedRequestContext, installBundleResult: Bundle): Promise<void> {
+  for (const entry of installBundleResult.entry ?? []) {
+    const written = entry.resource;
+    if (!isResource(written, 'Bot') || !written.id) {
+      continue;
+    }
+
+    // Re-read as system: `deployBot` resolves the bot's project from `meta.project`
+    // to check the `bots` feature, and a project admin's own read does not
+    // necessarily carry it (same rationale as `Bot/$init`).
+    const bot = await ctx.systemRepo.readResource<Bot>('Bot', written.id);
+    await ensureBotMembership(ctx, bot);
+
+    if (!bot.code) {
+      // Nothing to deploy. A Bundle entry with no `code` is a declaration the
+      // package expects to be satisfied some other way, not a broken bot.
+      continue;
+    }
+
+    try {
+      const { warnings } = await deployBot(ctx.repo, bot, bot.code, 'index.js');
+      for (const warning of warnings) {
+        getLogger().warn('Package install deployed a bot with warnings', {
+          bot: getReferenceString(bot),
+          warning,
+        });
+      }
+    } catch (err) {
+      // Named, because the generic deploy errors ("Bots not enabled") give no
+      // indication of which bot or that an install was what tripped over it.
+      throw new OperationOutcomeError(
+        badRequest(`Could not deploy installed bot ${getReferenceString(bot)}: ${normalizeErrorString(err)}`)
+      );
+    }
+  }
+}
+
+/**
+ * Creates the installed bot's `ProjectMembership` if it does not have one.
+ *
+ * Without it a `runAsUser: false` bot — every webhook proxy — has no identity to
+ * execute under, and a cron- or subscription-triggered bot cannot be dispatched
+ * at all. Created unconditionally, matching `Bot/$init`, so that a package
+ * flipping a bot to `runAsUser: false` in a later release does not need one.
+ * @param ctx - The authenticated request context of the installing admin.
+ * @param bot - The installed bot.
+ */
+async function ensureBotMembership(ctx: AuthenticatedRequestContext, bot: WithId<Bot>): Promise<void> {
+  const profile = createReference(bot);
+  if (await findProjectMembership(ctx.project.id, profile)) {
+    return;
+  }
+  await ctx.systemRepo.createResource<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    meta: { project: ctx.project.id },
+    project: createReference(ctx.project),
+    user: profile,
+    profile,
+  });
 }
 
 // Setup-bot phase: invoke the declared setupBot, passing the PackageInstallation and

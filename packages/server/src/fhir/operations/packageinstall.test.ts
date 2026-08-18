@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, resolveId } from '@medplum/core';
+import { ContentType, createReference, Operator, resolveId } from '@medplum/core';
 import type {
   Binary,
   Bot,
@@ -12,6 +12,7 @@ import type {
   PackageInstallation,
   PackageRelease,
   Project,
+  ProjectMembership,
   Questionnaire,
 } from '@medplum/fhirtypes';
 import express from 'express';
@@ -189,6 +190,139 @@ describe('PackageRelease $install', () => {
     expect(installations.length).toBe(1);
     expect(installations[0].status).toBe('installed');
     expect(installations[0].version).toBe('1.0.0');
+  });
+
+  test('An installed bot is deployed and given a membership', async () => {
+    const systemRepo = getGlobalSystemRepo();
+    const identifierSystem = 'https://example.com/' + randomUUID();
+
+    // A Bundle can only describe the Bot row. Everything that makes a bot
+    // callable -- a membership to run as, and code deployed to the runtime -- has
+    // to be done by the operation, or the install reports success and the first
+    // call fails with the runtime's "function not found".
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Bot',
+            identifier: [{ system: identifierSystem, value: 'proxy' }],
+            name: 'Installed Proxy',
+            runAsUser: true,
+            code: 'exports.handler = async () => undefined;',
+          },
+          request: {
+            method: 'PUT',
+            url: `Bot?identifier=${encodeURIComponent(identifierSystem)}|proxy`,
+          },
+        },
+      ],
+    };
+
+    const binary = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        meta: { project: project.id },
+        contentType: ContentType.FHIR_JSON,
+      })
+    );
+    const packageRelease = await withTestContext(() =>
+      systemRepo.createResource<PackageRelease>({
+        resourceType: 'PackageRelease',
+        meta: { project: project.id },
+        package: { reference: 'Package/' + randomUUID() },
+        version: '4.0.0',
+        content: { contentType: ContentType.FHIR_JSON, url: `Binary/${binary.id}` },
+      })
+    );
+    vi.spyOn(storage, 'getBinaryStorage').mockImplementation(
+      () => new MockBinaryStorage(JSON.stringify(bundle)) as unknown as BinaryStorage
+    );
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res).toHaveStatus(200);
+
+    const found = await request(app)
+      .get(`/fhir/R4/Bot?identifier=${encodeURIComponent(identifierSystem + '|proxy')}`)
+      .set('Authorization', 'Bearer ' + adminAccessToken);
+    expect(found.body.entry).toHaveLength(1);
+    const installedBot = found.body.entry[0].resource as WithId<Bot>;
+
+    // The deploy attached executable code, which is what the runtime needs.
+    expect(installedBot.executableCode?.url).toBeDefined();
+
+    const membership = await withTestContext(() =>
+      systemRepo.searchOne<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        filters: [{ code: 'profile', operator: Operator.EQUALS, value: `Bot/${installedBot.id}` }],
+      })
+    );
+    expect(membership).toBeDefined();
+  });
+
+  test('An installed bot that cannot be deployed fails the install', async () => {
+    const systemRepo = getGlobalSystemRepo();
+
+    // No `bots` feature, so the package cannot work in this project at all. The
+    // install has to say so rather than record `installed` over a dead bot.
+    const botlessProject = await createTestProject({
+      withAccessToken: true,
+      project: { features: [] },
+      membership: { admin: true },
+    });
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Bot',
+            name: 'Undeployable Proxy',
+            code: 'exports.handler = async () => undefined;',
+          },
+          request: { method: 'POST', url: 'Bot' },
+        },
+      ],
+    };
+
+    const binary = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        meta: { project: botlessProject.project.id },
+        contentType: ContentType.FHIR_JSON,
+      })
+    );
+    const packageRelease = await withTestContext(() =>
+      systemRepo.createResource<PackageRelease>({
+        resourceType: 'PackageRelease',
+        meta: { project: botlessProject.project.id },
+        package: { reference: 'Package/' + randomUUID() },
+        version: '4.1.0',
+        content: { contentType: ContentType.FHIR_JSON, url: `Binary/${binary.id}` },
+      })
+    );
+    vi.spyOn(storage, 'getBinaryStorage').mockImplementation(
+      () => new MockBinaryStorage(JSON.stringify(bundle)) as unknown as BinaryStorage
+    );
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${packageRelease.id}/$install`)
+      .set('Authorization', 'Bearer ' + botlessProject.accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).not.toBe(200);
+    expect(res.body.issue[0].details.text).toMatch(/Could not deploy installed bot Bot\/.*Bots not enabled/);
+
+    const installations = await request(app)
+      .get(`/fhir/R4/PackageInstallation?version=${packageRelease.version}`)
+      .set('Authorization', 'Bearer ' + botlessProject.accessToken);
+    expect(installations.body.entry.map((e: any) => e.resource.status)).toStrictEqual(['error']);
   });
 
   test('Install Bundle of conditional upserts is not limited by the serializable entry cap', async () => {
