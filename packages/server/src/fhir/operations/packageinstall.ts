@@ -394,7 +394,7 @@ async function resolveConditionalEntries(repo: FhirRepository, bundle: Bundle): 
  * Runs after the install-bundle phase commits, and is idempotent for the same
  * reasons that phase is: the membership is created only when absent, and a
  * deploy overwrites whatever the last one left. A re-installed Bundle in fact
- * *requires* the redeploy, since its conditional `PUT` replaces the Bot row and
+ * requires* the redeploy, since its conditional `PUT` replaces the Bot row and
  * drops the `executableCode` the previous deploy attached.
  * @param ctx - The authenticated request context of the installing admin.
  * @param installBundleResult - The install-bundle batch response, whose entries carry the written resources.
