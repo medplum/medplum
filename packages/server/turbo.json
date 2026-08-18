@@ -4,13 +4,13 @@
   "tasks": {
     "test:seed": {
       "dependsOn": ["build"],
-      "outputs": ["coverage/**"],
+      "outputs": ["coverage/**", ".vitest-reports/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"],
       "env": ["SHOULD_RUN_SEED_TEST", "POSTGRES_HOST", "POSTGRES_PORT"]
     },
     "test": {
       "dependsOn": ["test:seed"],
-      "outputs": ["coverage/**"],
+      "outputs": ["coverage/**", ".vitest-reports/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"],
       "env": ["POSTGRES_HOST", "POSTGRES_PORT", "SERVER_TEST_CACHE_KEY"]
     }

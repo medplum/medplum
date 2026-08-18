@@ -3,7 +3,7 @@
   "globalEnv": ["NODE_VERSION", "MEDPLUM_GIT_SHORTHASH"],
   "tasks": {
     "clean": {
-      "outputs": ["build/**", "dist/**", "coverage/**"]
+      "outputs": ["build/**", "dist/**", "coverage/**", ".vitest-reports/**"]
     },
     "build": {
       "dependsOn": ["^build"],
