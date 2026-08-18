@@ -257,6 +257,8 @@ describe('ConditionList', () => {
       id: 'condition-b',
       code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I10', display: 'Essential hypertension' }] },
     };
+    await medplum.createResource(conditionA);
+    await medplum.createResource(conditionB);
 
     const encounter: WithId<Encounter> = {
       ...mockEncounter,
@@ -266,15 +268,14 @@ describe('ConditionList', () => {
       ],
     };
 
-    vi.spyOn(medplum, 'readReference').mockImplementation(async (ref) =>
-      ref.reference === 'Condition/condition-a' ? (conditionA as any) : (conditionB as any)
-    );
-
     const setConditions = vi.fn();
     setup({ encounter, setConditions });
 
     await waitFor(() => {
-      expect(setConditions).toHaveBeenCalledWith([conditionB, conditionA]);
+      expect(setConditions).toHaveBeenCalledWith([
+        expect.objectContaining({ id: 'condition-b' }),
+        expect.objectContaining({ id: 'condition-a' }),
+      ]);
     });
   });
 
