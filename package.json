@@ -27,6 +27,9 @@
     "trailingComma": "es5"
   },
   "overrides": {
+    "@microsoft/api-documenter": {
+      "js-yaml": "4.3.1"
+    },
     "adm-zip": "0.6.0",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
@@ -40,12 +43,12 @@
     "@types/jsdom": "30.0.0",
     "@types/node": "22.20.1",
     "@vitejs/plugin-react": "6.0.5",
+    "@vitest/coverage-v8": "4.1.10",
     "cross-env": "10.1.0",
     "esbuild": "0.28.2",
     "formidable": "3.5.4",
     "jsdom": "29.1.1",
     "npm-check-updates": "22.2.9",
-    "nyc": "18.0.0",
     "prettier": "3.9.6",
     "prettier-plugin-organize-imports": "4.3.0",
     "rimraf": "6.1.3",

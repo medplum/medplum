@@ -46,6 +46,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: '@medplum/server',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],

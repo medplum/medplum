@@ -8,6 +8,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/hl7',
     globals: true,
     environment: 'node',
     testTimeout: 120_000,
