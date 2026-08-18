@@ -88,6 +88,7 @@ export async function createEncounter(
     statusHistory: [],
     classHistory: [],
     class: classification,
+    type: planDefinition?.title ? [{ text: planDefinition.title }] : undefined,
     subject: patientRef,
     appointment: [createReference(appointment)],
     participant: [{ individual: practitionerRef }],

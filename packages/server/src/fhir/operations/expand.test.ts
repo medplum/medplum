@@ -654,6 +654,43 @@ describe('Expand', () => {
     expect(coding.display).toStrictEqual('Correct coding');
   });
 
+  test('Does not leak extended metadata when multiple ValueSets share a URL', async () => {
+    const url = 'https://example.com/vs-' + randomUUID();
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url,
+      compose: { include: [{ system: LOINC, concept: [{ code: '1-8', display: 'Test' }] }] },
+    };
+
+    const { accessToken: linkedAccessToken, project: linkedProject } = await createTestProject({
+      withAccessToken: true,
+    });
+    const linkedRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + linkedAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(linkedRes).toHaveStatus(201);
+
+    accessToken = await initTestAuth({ project: { link: [{ project: createReference(linkedProject) }] } });
+    const ownRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(ownRes).toHaveStatus(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(200);
+    expect(res.body.id).toStrictEqual(ownRes.body.id);
+    expect(res.body.meta.project).toBeUndefined();
+    expect(res.body.meta.author).toBeUndefined();
+    expect(res.body.meta.compartment).toBeUndefined();
+  });
+
   test('Expands ValueSet with explicit concepts from fragment CodeSystem', async () => {
     const csUrl = 'http://example.com/fragment-cs-' + randomUUID();
 
