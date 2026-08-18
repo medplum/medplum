@@ -1376,6 +1376,13 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
 };
 
+export const MedplumUnaccentFn: SqlFunctionDefinition = {
+  name: 'medplum_unaccent',
+  createQuery: `CREATE FUNCTION medplum_unaccent(text)
+    RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+    AS $function$SELECT public.unaccent('public.unaccent', normalize($1, NFC))$function$`,
+};
+
 export function isValidTableName(tableName: string): boolean {
   return /^\w+$/.test(tableName);
 }
