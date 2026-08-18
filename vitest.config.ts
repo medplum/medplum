@@ -32,5 +32,9 @@ export default defineConfig({
       '!packages/app/vite.config.ts',
       'examples/*/vite{,st}.config.ts',
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['lcov', 'text-summary'],
+    },
   },
 });

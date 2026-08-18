@@ -39,6 +39,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: '@medplum/app',
     globals: true,
     environment: 'jsdom',
     environmentOptions: {
