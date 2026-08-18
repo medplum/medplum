@@ -166,7 +166,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     [combobox, options, creatable, handleTimer, setTimer, setSearch, setAbortController]
   );
 
-  const addSelected = useCallback(
+  const toggleSelected = useCallback(
     (newValue: string): void => {
       const alreadySelected = selected.some((v) => v.value === newValue);
       const newSelected = alreadySelected ? selected.filter((v) => v.value !== newValue) : [...selected];
@@ -223,12 +223,12 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       lastValueRef.current = undefined;
       if (val === '$create') {
         setSearch('');
-        addSelected(search);
+        toggleSelected(search);
       } else {
-        addSelected(val);
+        toggleSelected(val);
       }
     };
-  }, [addSelected, combobox, disabled, maxValues, search, setSearch]);
+  }, [toggleSelected, combobox, disabled, maxValues, search, setSearch]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
