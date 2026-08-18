@@ -675,9 +675,7 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexType: 'btree',
         unique: true,
       },
-      // Accent- and normalization-insensitive substring matching on display, e.g. filter "systeme"
-      // matching "Système". Replaces a plain `display gin_trgm_ops` index: the unaccented predicate is a
-      // strict superset match, and a second GIN index would double write amplification on bulk import
+      // Accent- and normalization-insensitive substring matching on display, e.g. filter "systeme"  matching "Système"
       {
         columns: [
           'system',
