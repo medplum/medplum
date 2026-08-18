@@ -323,7 +323,7 @@ export function addExpansionItems(
     if (ex) {
       if (isEmpty(synonymOf)) {
         // Incoming display string is the primary, replacing the one currently in the expansion
-        if (ex.display) {
+        if (ex.display && ex.display !== display) {
           const displaced = displayLanguages.has(ex) ? displayLanguages.get(ex) : codeSystem.language;
           ex.designation = append(ex.designation, { language: displaced, value: ex.display });
         }
