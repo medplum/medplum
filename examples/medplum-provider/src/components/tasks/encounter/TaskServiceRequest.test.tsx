@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { DiagnosticReport, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type { Bundle, DiagnosticReport, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -313,6 +313,7 @@ describe('TaskServiceRequest', () => {
         id: 'test-order-123',
         status: 'active',
       } as ServiceRequest,
+      transactionResponse: { resourceType: 'Bundle', type: 'transaction-response', entry: [] } as Bundle,
     });
     vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
 
