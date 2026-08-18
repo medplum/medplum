@@ -371,9 +371,8 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
-        command: redis-server --requirepass medplum
         options: >-
-          --health-cmd "redis-cli --no-auth-warning -a medplum ping"
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -430,6 +429,7 @@ jobs:
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
           SERVER_TEST_CACHE_KEY: NODE${{ matrix.node-version }}-PG${{ matrix.pg-version }}-REDIS${{ matrix.redis-version }}
           NO_COVERAGE: ${{ case(matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7, '', '1') }}
 
@@ -533,9 +533,8 @@ jobs:
           - 5432:5432
       redis:
         image: redis:${{ matrix.redis-version }}
-        command: redis-server --requirepass medplum
         options: >-
-          --health-cmd "redis-cli --no-auth-warning -a medplum ping"
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -592,6 +591,8 @@ jobs:
       - name: Build Medplum
         run: npm run build:fast
       - name: Smoke test npm run dev
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
         run: |
           pushd packages/server
           setsid npm run dev > server-dev.log 2>&1 &
@@ -627,6 +628,8 @@ jobs:
           # last resort if something is still listening
           kill -9 -- "-$SERVER_PID" 2>/dev/null || true
       - name: Start server and app
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
         run: |
           pushd packages/server
           npm start > server.log 2>&1 &
