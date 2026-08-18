@@ -17,12 +17,12 @@ const PLACEHOLDER = 'placeholder' as const;
 type Face = Logo | typeof PLACEHOLDER;
 
 // Each tile holds at most two faces and flips once from front to back, then back
-// again, on a slow cadence. Fronts lead with the customers featured below on the
-// page (solutions-content.ts) so the hero matches what the page highlights; the
-// featured set is currently smaller than the nine fronts a 3x3 grid needs, so
-// the remainder are other real Medplum customers, as are the backs. Thirty
-// Madison is deliberately excluded from this set (a customer that's since moved
-// off Medplum shouldn't be shown as a logo here).
+// again, on a slow cadence. Fronts are always customers featured below on the
+// page (solutions-content.ts), so the hero matches what the page highlights;
+// backs fill in with other real Medplum customers not otherwise featured on
+// /solutions. Keep that invariant when editing: nine fronts, nine featured
+// customers. Thirty Madison is deliberately excluded from this set (a customer
+// that's since moved off Medplum shouldn't be shown as a logo here).
 //
 // Tile order below is also flip order: the 3-column grid lays these out
 // left-to-right/top-to-bottom, and the per-tile animationDelay below increases
@@ -44,7 +44,7 @@ const TILES: { front: Logo; back: Face }[] = [
   },
   {
     front: { src: '/img/logos/pictionhealth.png', alt: 'Pictionhealth' },
-    back: { src: '/img/logos/tia.svg', alt: 'Tia' },
+    back: { src: '/img/logos/medimind.svg', alt: 'MediMind' },
   },
   {
     front: { src: '/img/logos/ultralight.svg', alt: 'Ultralight' },
@@ -63,7 +63,7 @@ const TILES: { front: Logo; back: Face }[] = [
     back: { src: '/img/logos/quilted-health.svg', alt: 'Quilted Health', scale: 1.45 },
   },
   {
-    front: { src: '/img/logos/medimind.svg', alt: 'MediMind' },
+    front: { src: '/img/logos/tia.svg', alt: 'Tia' },
     back: { src: '/img/logos/titan-intake.png', alt: 'Titan Intake' },
   },
 ];

@@ -245,6 +245,16 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         },
         caseStudyUrl: '/blog/everself-case-study',
       },
+      {
+        id: 'tia',
+        name: 'Tia',
+        logoSrc: '/img/logos/tia.svg',
+        logoHasName: true,
+        screenshotSrc: '/img/solutions/tia-screenshot.png',
+        screenshotAlt: 'Tia care team inbox, with work triaged by priority, status, and market',
+        valueStatement:
+          'Tia runs its own network of multi-disciplinary clinics — primary care, gynecology, mental health, and metabolic and skin health — on a custom EHR built on Medplum. Appointment scheduling, lab results, clinical follow-up, and billing questions all land in one prioritized work queue, filterable by assignee, type, status, and market, so nothing sits unowned as the clinic footprint grows.',
+      },
     ],
   },
   {
