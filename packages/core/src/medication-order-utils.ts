@@ -1199,7 +1199,11 @@ export function parametersToMedicationCartContentsResponse(params: Parameters): 
     vendorPatientId: typeof map.vendorPatientId === 'number' ? map.vendorPatientId : Number.NaN,
     vendorTotal: typeof map.vendorTotal === 'number' ? map.vendorTotal : Number.NaN,
     draftCount: typeof map.draftCount === 'number' ? map.draftCount : Number.NaN,
-    locked: map.locked === true,
+    // Passed through unchecked so the guard below can reject a missing lock
+    // state, exactly as `Number.NaN` does for the counts. `map.locked === true`
+    // would collapse "the bot never told us" into "not locked" — reporting a
+    // cart as safe to write on the strength of a field we never received.
+    locked: map.locked as boolean,
     items,
   };
   if (!isMedicationCartContentsResponse(candidate)) {

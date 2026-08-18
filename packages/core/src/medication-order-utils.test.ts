@@ -823,6 +823,72 @@ describe('Custom FHIR operation Parameters helpers', () => {
       expect(parametersToMedicationCartContentsResponse(params)).toEqual(expected);
     });
 
+    test('parametersToMedicationCartContentsResponse decodes not-staged and missing-from-vendor lines', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 24057 },
+          { name: 'vendorTotal', valueInteger: 0 },
+          { name: 'draftCount', valueInteger: 2 },
+          { name: 'locked', valueBoolean: false },
+          {
+            name: 'items',
+            part: [
+              { name: 'status', valueCode: 'not-staged' },
+              { name: 'medicationRequestId', valueId: 'mr-1' },
+            ],
+          },
+          {
+            name: 'items',
+            part: [
+              { name: 'status', valueCode: 'missing-from-vendor' },
+              { name: 'medicationRequestId', valueId: 'mr-2' },
+              { name: 'vendorLineId', valueString: 'rx-2' },
+            ],
+          },
+        ],
+      };
+
+      const result = parametersToMedicationCartContentsResponse(params);
+
+      // A not-staged draft has no vendor line to describe; a missing-from-vendor
+      // one keeps the rxId it was stamped with, which is what makes the vendor's
+      // removal verifiable.
+      expect(result.items[0]).toEqual({
+        status: 'not-staged',
+        medicationRequestId: 'mr-1',
+        vendorLineId: undefined,
+        drugName: undefined,
+        ndc: undefined,
+        rxnorm: undefined,
+        quantity: undefined,
+        validationState: undefined,
+        createdBy: undefined,
+        createdAt: undefined,
+      });
+      expect(result.items[1]).toMatchObject({
+        status: 'missing-from-vendor',
+        medicationRequestId: 'mr-2',
+        vendorLineId: 'rx-2',
+      });
+    });
+
+    test('parametersToMedicationCartContentsResponse rejects a missing locked flag', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 7 },
+          { name: 'vendorTotal', valueInteger: 0 },
+          { name: 'draftCount', valueInteger: 0 },
+        ],
+      };
+      // An absent lock state must not decode as `locked: false` — that reports a
+      // cart as safe to write on the strength of a field the bot never sent.
+      expect(() => parametersToMedicationCartContentsResponse(params)).toThrow(
+        INVALID_MEDICATION_CART_CONTENTS_RESPONSE
+      );
+    });
+
     test('parametersToMedicationCartContentsResponse drops lines with an unknown status', () => {
       const params: Parameters = {
         resourceType: 'Parameters',
