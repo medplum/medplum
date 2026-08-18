@@ -58,7 +58,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   }
 
   // Need extended mode for meta.project
-  using extendedRepo = repo.withOverrideConfig({ extendedMode: true });
+  const extendedRepo = repo.withOverrideConfig({ extendedMode: true });
   const results = await extendedRepo.searchResources<T>({ resourceType, filters, count: 25 });
 
   const candidates = options?.ownProjectOnly
