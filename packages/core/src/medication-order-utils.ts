@@ -1026,6 +1026,189 @@ export function parametersToMedicationCartManageResponse(params: Parameters): Me
 }
 
 // ============================================================================
+// Cart contents ($get-cart)
+// ============================================================================
+
+/**
+ * Stable error when a cart-read bot response does not match
+ * {@link MedicationCartContentsResponse}.
+ */
+export const INVALID_MEDICATION_CART_CONTENTS_RESPONSE = 'Invalid response from get-cart bot';
+
+/**
+ * Reconciliation verdict for one cart line, comparing what the vendor holds
+ * against the local draft `MedicationRequest`s:
+ *
+ * - `in-sync`: the vendor line matches a draft. The normal case.
+ * - `vendor-only`: the vendor holds a line with no local draft — staged through
+ *   another UI or by a session whose draft is gone. The prescriber will still
+ *   see it in the approval widget, so a draft-derived cart count under-reports.
+ * - `not-staged`: a draft that has not been checked out yet, so the vendor
+ *   legitimately does not hold it. Benign, not drift.
+ * - `missing-from-vendor`: a draft the vendor no longer holds. Resolves the
+ *   ambiguity left by a failed `removeFromCart`: the line really is gone.
+ */
+export type MedicationCartLineStatus = 'in-sync' | 'vendor-only' | 'not-staged' | 'missing-from-vendor';
+
+/** One reconciled line in a {@link MedicationCartContentsResponse}. */
+export interface MedicationCartLine {
+  readonly status: MedicationCartLineStatus;
+  /** Local draft id; absent for `vendor-only` lines. */
+  readonly medicationRequestId?: string;
+  /** Vendor cart-item reference; absent for `not-staged` drafts. */
+  readonly vendorLineId?: string;
+  /** Display fields off the vendor line; absent for `not-staged` drafts (render those from the draft). */
+  readonly drugName?: string;
+  readonly ndc?: string;
+  readonly rxnorm?: string;
+  readonly quantity?: number;
+  /** Vendor readiness hint (e.g. `Ready`, `Incomplete`); not a guarantee the line will send. */
+  readonly validationState?: string;
+  /** Who staged the line, per the vendor. Identifies the source of an unexpected line. */
+  readonly createdBy?: string;
+  readonly createdAt?: string;
+}
+
+/** Vendor-neutral input to read the patient's vendor cart (`$get-cart`). */
+export interface MedicationCartContentsRequest {
+  readonly patientId: string;
+}
+
+/**
+ * Vendor-neutral view of the patient's cart as the vendor holds it, reconciled
+ * against local drafts.
+ *
+ * `vendorTotal` is what the prescriber will see in the approval widget;
+ * `draftCount` is what the local record says. They diverge whenever `items`
+ * contains a line that is not `in-sync` or `not-staged` — the drift a
+ * draft-derived cart badge cannot detect on its own.
+ */
+export interface MedicationCartContentsResponse {
+  /** Vendor-side patient id (numeric in ScriptSure today). */
+  readonly vendorPatientId: number;
+  readonly vendorTotal: number;
+  readonly draftCount: number;
+  /** True when the vendor reports the cart locked; a write may conflict. */
+  readonly locked: boolean;
+  readonly items: MedicationCartLine[];
+}
+
+/**
+ * Type guard: validates a cart-read bot response.
+ * @param value - Unknown bot JSON payload.
+ * @returns True when the value matches {@link MedicationCartContentsResponse}.
+ */
+export function isMedicationCartContentsResponse(value: unknown): value is MedicationCartContentsResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.vendorPatientId === 'number' &&
+    Number.isFinite(obj.vendorPatientId) &&
+    typeof obj.vendorTotal === 'number' &&
+    Number.isFinite(obj.vendorTotal) &&
+    typeof obj.draftCount === 'number' &&
+    Number.isFinite(obj.draftCount) &&
+    typeof obj.locked === 'boolean' &&
+    Array.isArray(obj.items)
+  );
+}
+
+/**
+ * Encodes a {@link MedicationCartContentsRequest} as a FHIR `Parameters` body
+ * for the `$get-cart` custom operation. No `action` discriminator: unlike
+ * remove/clear, this operation has its own read-only bot.
+ *
+ * @param req - Cart-contents request (vendor-neutral).
+ * @returns A `Parameters` resource ready to POST.
+ */
+export function medicationCartContentsRequestToParameters(req: MedicationCartContentsRequest): Parameters {
+  return { resourceType: 'Parameters', parameter: [param('patientId', 'valueId', req.patientId)] };
+}
+
+/**
+ * Parses a single repeating `items` out-parameter (its nested `part:`) into a
+ * {@link MedicationCartLine}. Returns `undefined` when `status` is missing or
+ * not a known verdict.
+ *
+ * @param part - The `part` array of one `items` parameter entry.
+ * @returns The parsed cart line, or `undefined`.
+ */
+function cartLineFromPart(part: ParametersParameter[] | undefined): MedicationCartLine | undefined {
+  if (!part?.length) {
+    return undefined;
+  }
+  const map: Record<string, unknown> = {};
+  for (const p of part) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const status =
+    map.status === 'in-sync' ||
+    map.status === 'vendor-only' ||
+    map.status === 'not-staged' ||
+    map.status === 'missing-from-vendor'
+      ? map.status
+      : undefined;
+  if (!status) {
+    return undefined;
+  }
+  const str = (key: string): string | undefined => (typeof map[key] === 'string' ? map[key] : undefined);
+  return {
+    status,
+    medicationRequestId: str('medicationRequestId'),
+    vendorLineId: str('vendorLineId'),
+    drugName: str('drugName'),
+    ndc: str('ndc'),
+    rxnorm: str('rxnorm'),
+    quantity: typeof map.quantity === 'number' ? map.quantity : undefined,
+    validationState: str('validationState'),
+    createdBy: str('createdBy'),
+    createdAt: str('createdAt'),
+  };
+}
+
+/**
+ * Decodes the `Parameters` response from the `$get-cart` custom operation into
+ * a typed {@link MedicationCartContentsResponse}. Throws
+ * {@link INVALID_MEDICATION_CART_CONTENTS_RESPONSE} when required top-level
+ * fields are missing.
+ *
+ * @param params - The `Parameters` resource returned by the operation.
+ * @returns A vendor-neutral {@link MedicationCartContentsResponse}.
+ */
+export function parametersToMedicationCartContentsResponse(params: Parameters): MedicationCartContentsResponse {
+  const items: MedicationCartLine[] = [];
+  const map: Record<string, unknown> = {};
+  for (const p of params.parameter ?? []) {
+    if (!p.name) {
+      continue;
+    }
+    if (p.name === 'items') {
+      const item = cartLineFromPart(p.part);
+      if (item) {
+        items.push(item);
+      }
+    } else {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const candidate: MedicationCartContentsResponse = {
+    vendorPatientId: typeof map.vendorPatientId === 'number' ? map.vendorPatientId : Number.NaN,
+    vendorTotal: typeof map.vendorTotal === 'number' ? map.vendorTotal : Number.NaN,
+    draftCount: typeof map.draftCount === 'number' ? map.draftCount : Number.NaN,
+    locked: map.locked === true,
+    items,
+  };
+  if (!isMedicationCartContentsResponse(candidate)) {
+    throw new Error(INVALID_MEDICATION_CART_CONTENTS_RESPONSE);
+  }
+  return candidate;
+}
+
+// ============================================================================
 // Order-set sync ($sync-orderset)
 // ============================================================================
 

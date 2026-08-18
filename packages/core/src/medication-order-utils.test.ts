@@ -3,6 +3,7 @@
 
 import type { Medication, MedicationRequest, Parameters } from '@medplum/fhirtypes';
 import type {
+  MedicationCartContentsResponse,
   MedicationCartManageResponse,
   MedicationCheckoutRequest,
   MedicationCheckoutResponse,
@@ -13,6 +14,7 @@ import type {
   MedicationSearchParams,
 } from './medication-order-utils';
 import {
+  INVALID_MEDICATION_CART_CONTENTS_RESPONSE,
   INVALID_MEDICATION_CART_RESPONSE,
   INVALID_MEDICATION_CHECKOUT_RESPONSE,
   INVALID_MEDICATION_ORDER_RESPONSE,
@@ -24,16 +26,19 @@ import {
   getPendingMedicationOrderId,
   getPendingMedicationOrderStatus,
   isMedicationArray,
+  isMedicationCartContentsResponse,
   isMedicationCartManageResponse,
   isMedicationCheckoutResponse,
   isMedicationOrderResponse,
   isMedicationOrderSetResponse,
   medicationCartClearRequestToParameters,
+  medicationCartContentsRequestToParameters,
   medicationCartRemoveRequestToParameters,
   medicationCheckoutRequestToParameters,
   medicationOrderRequestToParameters,
   medicationOrderSetRequestToParameters,
   medicationSearchParamsToParameters,
+  parametersToMedicationCartContentsResponse,
   parametersToMedicationCartManageResponse,
   parametersToMedicationCheckoutResponse,
   parametersToMedicationOrderResponse,
@@ -724,6 +729,126 @@ describe('Custom FHIR operation Parameters helpers', () => {
         parameter: [{ name: 'removedCount', valueInteger: 0 }],
       };
       expect(() => parametersToMedicationCartManageResponse(params)).toThrow(INVALID_MEDICATION_CART_RESPONSE);
+    });
+  });
+
+  describe('cart contents', () => {
+    test('isMedicationCartContentsResponse validates required fields', () => {
+      expect(
+        isMedicationCartContentsResponse({
+          vendorPatientId: 1,
+          vendorTotal: 0,
+          draftCount: 0,
+          locked: false,
+          items: [],
+        })
+      ).toBe(true);
+      expect(isMedicationCartContentsResponse(null)).toBe(false);
+      expect(isMedicationCartContentsResponse({ vendorPatientId: 1, vendorTotal: 0, draftCount: 0, items: [] })).toBe(
+        false
+      );
+    });
+
+    test('medicationCartContentsRequestToParameters encodes the patient only', () => {
+      expect(medicationCartContentsRequestToParameters({ patientId: 'pat-1' }).parameter).toEqual([
+        { name: 'patientId', valueId: 'pat-1' },
+      ]);
+    });
+
+    test('parametersToMedicationCartContentsResponse round-trips reconciled lines', () => {
+      const expected: MedicationCartContentsResponse = {
+        vendorPatientId: 24057,
+        vendorTotal: 2,
+        draftCount: 1,
+        locked: false,
+        items: [
+          {
+            status: 'in-sync',
+            medicationRequestId: 'mr-1',
+            vendorLineId: 'rx-1',
+            drugName: 'Atorvastatin 10 MG',
+            ndc: '00093721410',
+            rxnorm: '859747',
+            quantity: 30,
+            validationState: 'Ready',
+            createdBy: 'Dr. Who',
+            createdAt: '2026-08-16T10:00:00.000Z',
+          },
+          {
+            status: 'vendor-only',
+            medicationRequestId: undefined,
+            vendorLineId: 'rx-2',
+            drugName: 'Melatonin 3 MG',
+            ndc: undefined,
+            rxnorm: undefined,
+            quantity: undefined,
+            validationState: undefined,
+            createdBy: undefined,
+            createdAt: undefined,
+          },
+        ],
+      };
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 24057 },
+          { name: 'vendorTotal', valueInteger: 2 },
+          { name: 'draftCount', valueInteger: 1 },
+          { name: 'locked', valueBoolean: false },
+          {
+            name: 'items',
+            part: [
+              { name: 'status', valueCode: 'in-sync' },
+              { name: 'medicationRequestId', valueId: 'mr-1' },
+              { name: 'vendorLineId', valueString: 'rx-1' },
+              { name: 'drugName', valueString: 'Atorvastatin 10 MG' },
+              { name: 'ndc', valueString: '00093721410' },
+              { name: 'rxnorm', valueString: '859747' },
+              { name: 'quantity', valueDecimal: 30 },
+              { name: 'validationState', valueString: 'Ready' },
+              { name: 'createdBy', valueString: 'Dr. Who' },
+              { name: 'createdAt', valueDateTime: '2026-08-16T10:00:00.000Z' },
+            ],
+          },
+          {
+            name: 'items',
+            part: [
+              { name: 'status', valueCode: 'vendor-only' },
+              { name: 'vendorLineId', valueString: 'rx-2' },
+              { name: 'drugName', valueString: 'Melatonin 3 MG' },
+            ],
+          },
+        ],
+      };
+      expect(parametersToMedicationCartContentsResponse(params)).toEqual(expected);
+    });
+
+    test('parametersToMedicationCartContentsResponse drops lines with an unknown status', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 7 },
+          { name: 'vendorTotal', valueInteger: 0 },
+          { name: 'draftCount', valueInteger: 0 },
+          { name: 'locked', valueBoolean: true },
+          { name: 'items', part: [{ name: 'status', valueCode: 'bogus' }] },
+        ],
+      };
+      expect(parametersToMedicationCartContentsResponse(params)).toMatchObject({ locked: true, items: [] });
+    });
+
+    test('parametersToMedicationCartContentsResponse rejects a missing vendorTotal', () => {
+      const params: Parameters = {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'vendorPatientId', valueInteger: 7 },
+          { name: 'draftCount', valueInteger: 0 },
+          { name: 'locked', valueBoolean: false },
+        ],
+      };
+      expect(() => parametersToMedicationCartContentsResponse(params)).toThrow(
+        INVALID_MEDICATION_CART_CONTENTS_RESPONSE
+      );
     });
   });
 
