@@ -31,14 +31,14 @@
     "@medplum/definitions": "5.1.30",
     "@medplum/fhirtypes": "5.1.30",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.20.4",
+    "@types/pg": "8.21.0",
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.1",
     "fast-xml-parser": "5.10.1",
     "fhirpath": "5.1.1",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.16.0",
-    "pg": "8.22.0",
+    "pg": "8.23.0",
     "unzipper": "0.12.5"
   },
   "engines": {
