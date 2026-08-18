@@ -204,9 +204,10 @@ export const SatelliteRoomSchedule = buildSchedule(
  * A second service, for the harder case: one booking that needs a surgeon, an
  * anesthesiologist and a room, all free at once.
  *
- * Its providers are modelled as PractitionerRole rather than Practitioner, which
- * is what lets a scheduler read the list as surgeons or anesthesiologists — a
- * plain Practitioner says nothing about which it is.
+ * Its providers hold both a Practitioner and a PractitionerRole, split the way
+ * scheduling reads them: the schedule is held on the Practitioner, so one human
+ * has one calendar, while the role carries the specialty and the site that decide
+ * whether that human is eligible at all.
  */
 const PRACTITIONER_ROLE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/practitioner-role';
 
@@ -262,17 +263,12 @@ export const DrKimRole = buildSurgicalRole('role-dr-kim', 'dr-kim', ANESTHESIA);
 
 export const DrMartinezSchedule = buildSchedule(
   'schedule-dr-martinez',
-  'PractitionerRole/role-dr-martinez',
+  'Practitioner/dr-martinez',
   'Dr. Maria Martinez',
   SURGERY
 );
-export const DrChenSchedule = buildSchedule(
-  'schedule-dr-chen',
-  'PractitionerRole/role-dr-chen',
-  'Dr. Wei Chen',
-  SURGERY
-);
-export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'PractitionerRole/role-dr-kim', 'Dr. James Kim', SURGERY);
+export const DrChenSchedule = buildSchedule('schedule-dr-chen', 'Practitioner/dr-chen', 'Dr. Wei Chen', SURGERY);
+export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'Practitioner/dr-kim', 'Dr. James Kim', SURGERY);
 export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/or-3', 'Operating Room 3', SURGERY);
 
 export const SurgicalFixtures = [

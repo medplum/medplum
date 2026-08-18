@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Device, HealthcareService, Location, PractitionerRole, Schedule } from '@medplum/fhirtypes';
+import type {
+  Device,
+  HealthcareService,
+  Location,
+  Practitioner,
+  PractitionerRole,
+  Schedule,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   DrChenRole,
@@ -37,13 +44,44 @@ async function setupClient(): Promise<MockClient> {
   return medplum;
 }
 
-// Adds the surgical service, whose actors are PractitionerRoles with locations.
+// Adds the surgical service, whose providers hold a Practitioner carrying the
+// schedule and a PractitionerRole naming where they practice.
 async function setupSurgicalClient(): Promise<MockClient> {
   const medplum = await setupClient();
   for (const resource of SurgicalFixtures) {
     await medplum.createResource(resource);
   }
   return medplum;
+}
+
+/**
+ * Adds a surgeon sited by their role rather than by their schedule.
+ *
+ * This is the split the filter reads: the Schedule is held on the Practitioner,
+ * so the person has one calendar, and the PractitionerRole says where they
+ * practice.
+ *
+ * @param medplum - The client to create into.
+ * @param display - The name the Schedule gives its actor.
+ * @param locations - Location references the role names, or undefined for a role
+ *   that names none.
+ */
+async function addSitedSurgeon(medplum: MockClient, display: string, locations?: string[]): Promise<void> {
+  const practitioner = await medplum.createResource<Practitioner>({
+    resourceType: 'Practitioner',
+    name: [{ given: ['Wei'], family: 'Chen', prefix: ['Dr.'] }],
+  });
+  await medplum.createResource<PractitionerRole>({
+    ...DrChenRole,
+    id: undefined,
+    practitioner: { reference: `Practitioner/${practitioner.id}` },
+    location: locations?.map((reference) => ({ reference })),
+  });
+  await medplum.createResource<Schedule>({
+    ...DrChenSchedule,
+    id: undefined,
+    actor: [{ reference: `Practitioner/${practitioner.id}`, display }],
+  });
 }
 
 describe('searchEligibleSchedules', () => {
@@ -112,6 +150,23 @@ describe('searchEligibleSchedules', () => {
     const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
 
     expect(candidates).toHaveLength(7);
+  });
+
+  test('Rejects a schedule held on a PractitionerRole', async () => {
+    // A person with several roles has a calendar per role and nothing reconciles
+    // them, so booking one role's Wednesday would leave another's on offer.
+    // Providers are booked on the Practitioner instead.
+    const medplum = await setupClient();
+    await medplum.createResource<Schedule>({
+      ...DrRiveraSchedule,
+      id: undefined,
+      actor: [{ reference: 'PractitionerRole/role-dr-rivera', display: 'Dr. Maya Rivera - Radiology' }],
+    });
+
+    const candidates = await searchEligibleSchedules(medplum, UltrasoundImagingService);
+
+    expect(candidates).toHaveLength(7);
+    expect(providersOf(candidates).sort()).toStrictEqual(['Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
 
   test('Rejects a schedule held on something that cannot be booked', async () => {
@@ -227,16 +282,7 @@ describe('filterCandidatesByLocation', () => {
 
   test('Drops a practitioner whose role is licensed at another site', async () => {
     const medplum = await setupSurgicalClient();
-    const elsewhere = await medplum.createResource<PractitionerRole>({
-      ...DrChenRole,
-      id: undefined,
-      location: [{ reference: 'Location/satellite-clinic' }],
-    });
-    await medplum.createResource<Schedule>({
-      ...DrChenSchedule,
-      id: undefined,
-      actor: [{ reference: `PractitionerRole/${elsewhere.id}`, display: 'Dr. Wei Chen (Satellite)' }],
-    });
+    await addSitedSurgeon(medplum, 'Dr. Wei Chen (Satellite)', ['Location/satellite-clinic']);
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
     const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
@@ -250,16 +296,7 @@ describe('filterCandidatesByLocation', () => {
     const medplum = await setupSurgicalClient();
     await medplum.updateResource<Location>({ ...MainClinic, partOf: { reference: 'Location/state-ny' } });
     await medplum.createResource<Location>({ resourceType: 'Location', id: 'state-ny', name: 'New York' });
-    const statewide = await medplum.createResource<PractitionerRole>({
-      ...DrChenRole,
-      id: undefined,
-      location: [{ reference: 'Location/state-ny' }],
-    });
-    await medplum.createResource<Schedule>({
-      ...DrChenSchedule,
-      id: undefined,
-      actor: [{ reference: `PractitionerRole/${statewide.id}`, display: 'Dr. Wei Chen (NY)' }],
-    });
+    await addSitedSurgeon(medplum, 'Dr. Wei Chen (NY)', ['Location/state-ny']);
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
     const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
@@ -272,16 +309,7 @@ describe('filterCandidatesByLocation', () => {
     // it. The room itself is offered when booking here, so the practitioner in it
     // has to be too.
     const medplum = await setupSurgicalClient();
-    const inTheatre = await medplum.createResource<PractitionerRole>({
-      ...DrChenRole,
-      id: undefined,
-      location: [{ reference: 'Location/or-3' }],
-    });
-    await medplum.createResource<Schedule>({
-      ...DrChenSchedule,
-      id: undefined,
-      actor: [{ reference: `PractitionerRole/${inTheatre.id}`, display: 'Dr. Wei Chen (OR 3)' }],
-    });
+    await addSitedSurgeon(medplum, 'Dr. Wei Chen (OR 3)', ['Location/or-3']);
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
     const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
@@ -297,16 +325,7 @@ describe('filterCandidatesByLocation', () => {
     // not proof of being elsewhere, and a permissions gap must not quietly shorten
     // the list of providers.
     const medplum = await setupSurgicalClient();
-    const unreadable = await medplum.createResource<PractitionerRole>({
-      ...DrChenRole,
-      id: undefined,
-      location: [{ reference: 'Location/deleted-site' }],
-    });
-    await medplum.createResource<Schedule>({
-      ...DrChenSchedule,
-      id: undefined,
-      actor: [{ reference: `PractitionerRole/${unreadable.id}`, display: 'Dr. Wei Chen (unknown site)' }],
-    });
+    await addSitedSurgeon(medplum, 'Dr. Wei Chen (unknown site)', ['Location/deleted-site']);
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
     const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
@@ -316,21 +335,81 @@ describe('filterCandidatesByLocation', () => {
 
   test('Keeps a practitioner whose role names no location at all', async () => {
     const medplum = await setupSurgicalClient();
-    const anywhere = await medplum.createResource<PractitionerRole>({
-      ...DrChenRole,
-      id: undefined,
-      location: undefined,
-    });
-    await medplum.createResource<Schedule>({
-      ...DrChenSchedule,
-      id: undefined,
-      actor: [{ reference: `PractitionerRole/${anywhere.id}`, display: 'Dr. Wei Chen (unsited)' }],
-    });
+    await addSitedSurgeon(medplum, 'Dr. Wei Chen (unsited)');
     const candidates = await searchEligibleSchedules(medplum, SurgeryService);
 
     const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
 
     expect(providersOf(kept)).toContain('Dr. Wei Chen (unsited)');
+  });
+
+  test('Keeps a practitioner who holds no role at all', async () => {
+    // Nothing records where this person practices, so nothing rules them out.
+    const medplum = await setupSurgicalClient();
+    const roleless = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Ada'], family: 'Byron', prefix: ['Dr.'] }],
+    });
+    await medplum.createResource<Schedule>({
+      ...DrChenSchedule,
+      id: undefined,
+      actor: [{ reference: `Practitioner/${roleless.id}`, display: 'Dr. Ada Byron' }],
+    });
+    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
+
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+
+    expect(providersOf(kept)).toContain('Dr. Ada Byron');
+  });
+
+  test('Ignores an inactive role when siting a practitioner', async () => {
+    // A role the person no longer holds should not keep placing them at its site.
+    const medplum = await setupSurgicalClient();
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Wei'], family: 'Chen', prefix: ['Dr.'] }],
+    });
+    await medplum.createResource<PractitionerRole>({
+      ...DrChenRole,
+      id: undefined,
+      active: false,
+      practitioner: { reference: `Practitioner/${practitioner.id}` },
+      location: [{ reference: 'Location/main-clinic' }],
+    });
+    await medplum.createResource<PractitionerRole>({
+      ...DrChenRole,
+      id: undefined,
+      practitioner: { reference: `Practitioner/${practitioner.id}` },
+      location: [{ reference: 'Location/satellite-clinic' }],
+    });
+    await medplum.createResource<Schedule>({
+      ...DrChenSchedule,
+      id: undefined,
+      actor: [{ reference: `Practitioner/${practitioner.id}`, display: 'Dr. Wei Chen (moved)' }],
+    });
+    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
+
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+
+    expect(providersOf(kept)).not.toContain('Dr. Wei Chen (moved)');
+  });
+
+  test('Searches every practitioner’s roles in one request, not one each', async () => {
+    // Repeated Location reads are left to the client's request cache, but no
+    // cache can turn one search per practitioner into one search, so the batching
+    // is this function's job and worth pinning.
+    const medplum = await setupSurgicalClient();
+    for (const name of ['A', 'B', 'C', 'D']) {
+      await addSitedSurgeon(medplum, `Dr. Theatre ${name}`, ['Location/or-3']);
+    }
+    const candidates = await searchEligibleSchedules(medplum, SurgeryService);
+    const searchResources = vi.spyOn(medplum, 'searchResources');
+
+    const kept = await filterCandidatesByLocation(medplum, candidates, MainClinic);
+
+    // All four sit in a theatre inside the clinic, so all four survive.
+    expect(providersOf(kept).filter((name) => name.startsWith('Dr. Theatre'))).toHaveLength(4);
+    expect(searchResources.mock.calls.filter(([type]) => type === 'PractitionerRole')).toHaveLength(1);
   });
 
   test('Drops a device kept at another site, and keeps one that does not say', async () => {

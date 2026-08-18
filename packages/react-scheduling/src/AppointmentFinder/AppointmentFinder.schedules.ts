@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
 import { getDisplayString, getReferenceString, isDefined, serviceTypeIncludesService } from '@medplum/core';
-import type { HealthcareService, Location, Reference, Resource, Schedule } from '@medplum/fhirtypes';
+import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
 import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
-import { ROLE_LABELS, SCHEDULING_ROLES, getSchedulingRole, isSchedulingActorType } from './AppointmentFinder.roles';
+import {
+  ROLE_LABELS,
+  SCHEDULING_ROLES,
+  getSchedulingRole,
+  isBookableActorType,
+  isSchedulingActorType,
+} from './AppointmentFinder.roles';
 import { getActorsKey } from './AppointmentFinder.times';
 
 /**
@@ -40,7 +46,7 @@ function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
  * @returns The role, or undefined for an actor of a type nothing books against.
  */
 export function getCandidateRole(candidate: ScheduleCandidate): SchedulingRole | undefined {
-  const actorType = getCandidateActor(candidate).reference?.split('/')[0];
+  const actorType = getActorType(getCandidateActor(candidate).reference);
   return isSchedulingActorType(actorType) ? getSchedulingRole(actorType) : undefined;
 }
 
@@ -81,7 +87,8 @@ export interface SearchEligibleSchedulesOptions {
 }
 
 /**
- * Finds the Schedules that can be booked for a HealthcareService.
+ * Finds the Schedules that can be booked for a HealthcareService, based on the
+ * service's `type` codes and the schedules' `serviceType` codes.
  * @param medplum - The Medplum client.
  * @param service - The HealthcareService being booked.
  * @param options - Abort signal and page size.
@@ -153,8 +160,9 @@ function toScheduleCandidate(
     return undefined;
   }
 
+  // Leaves out schedules held on a PractitionerRole
   const reference = schedule.actor[0].reference;
-  if (!reference || !isSchedulingActorType(reference.split('/')[0])) {
+  if (!reference || !isBookableActorType(getActorType(reference))) {
     return undefined;
   }
 
@@ -192,43 +200,116 @@ export async function filterCandidatesByLocation(
     return [...candidates];
   }
 
-  // The sites the location sits inside, so a role licensed for a whole state
-  // covers the sites within it.
-  let ancestry: Promise<ReadonlySet<string>> | undefined;
-  const getAncestry = async (): Promise<ReadonlySet<string>> => {
-    ancestry ??= getLocationAncestry(medplum, locationReference, options);
-    return ancestry;
-  };
-  const keep: ScheduleCandidate[] = [];
+  // The location where a Practitioner practices is recorded on their PractitionerRoles.
+  let roles: Promise<ReadonlyMap<string, readonly PractitionerRole[]>> | undefined;
+  const getRoles = async (): Promise<ReadonlyMap<string, readonly PractitionerRole[]>> =>
+    (roles ??= searchRolesByPractitioner(medplum, candidates, options));
 
-  for (const candidate of candidates) {
-    if (await isCandidateAtLocation(medplum, candidate, locationReference, getAncestry, options)) {
-      keep.push(candidate);
+  // The sites the location sits inside, so a role licensed for a whole state
+  // covers the sites within it (lazy init).
+  let ancestry: Promise<ReadonlySet<string>> | undefined;
+  const getAncestry = async (): Promise<ReadonlySet<string>> =>
+    (ancestry ??= getLocationAncestry(medplum, locationReference, options));
+
+  // Test candidates concurrently & let the client's request cache collapse repeated
+  // Location reads.
+  const verdicts = await Promise.all(
+    candidates.map(async (candidate) =>
+      isCandidateAtLocation(candidate, medplum, locationReference, getRoles, getAncestry, options)
+    )
+  );
+
+  return candidates.filter((_, index) => verdicts[index]);
+}
+
+/**
+ * Loads the PractitionerRoles held by the practitioners among the candidates.
+ *
+ * A provider is booked on their Practitioner, but it is their PractitionerRoles
+ * that record _where_ they practice, so the roles have to be read back to filter
+ * by site. One search covers every candidate.
+ *
+ * @param medplum - The Medplum client.
+ * @param candidates - Candidates whose practitioners should be looked up.
+ * @param options - Abort signal.
+ * @returns The active roles, keyed by the practitioner reference they name.
+ *   Empty when the roles cannot be read, which keeps those candidates on offer.
+ */
+async function searchRolesByPractitioner(
+  medplum: MedplumClient,
+  candidates: readonly ScheduleCandidate[],
+  options: FilterCandidatesOptions | undefined
+): Promise<ReadonlyMap<string, readonly PractitionerRole[]>> {
+  const byPractitioner = new Map<string, PractitionerRole[]>();
+  const references = [
+    ...new Set(
+      candidates
+        .map((candidate) => getCandidateActor(candidate).reference)
+        .filter((reference) => getActorType(reference) === 'Practitioner')
+    ),
+  ];
+
+  if (references.length === 0) {
+    return byPractitioner;
+  }
+
+  let roles: PractitionerRole[];
+  try {
+    roles = await medplum.searchResources(
+      'PractitionerRole',
+      // An inactive role no longer places the person at its site.
+      { practitioner: references.join(','), 'active:not': 'false', _count: '1000' },
+      { signal: options?.signal }
+    );
+  } catch {
+    // Unreadable, so where these people practice is unknown.
+    return byPractitioner;
+  }
+
+  for (const role of roles) {
+    const reference = role.practitioner?.reference;
+    if (!reference) {
+      continue;
+    }
+    const held = byPractitioner.get(reference);
+    if (held) {
+      held.push(role);
+    } else {
+      byPractitioner.set(reference, [role]);
     }
   }
 
-  return keep;
+  return byPractitioner;
 }
 
 async function isCandidateAtLocation(
-  medplum: MedplumClient,
   candidate: ScheduleCandidate,
+  medplum: MedplumClient,
   locationReference: string,
+  getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>,
   getAncestry: () => Promise<ReadonlySet<string>>,
   options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
   const actor = candidate.actorResource;
+  const actorReference = getCandidateActor(candidate).reference;
 
   if (getCandidateRole(candidate) === 'room') {
-    return isWithinLocation(medplum, getCandidateActor(candidate).reference, locationReference, options);
+    return isWithinLocation(medplum, actorReference, locationReference, options);
   }
 
   if (actor?.resourceType === 'Device') {
     return isWithinLocation(medplum, actor.location?.reference, locationReference, options);
   }
-  if (actor?.resourceType === 'PractitionerRole' && actor.location?.length) {
+
+  if (actorReference && getActorType(actorReference) === 'Practitioner') {
+    const roles = await getRoles();
+    const practiceLocations = (roles.get(actorReference) ?? []).flatMap((role) => role.location ?? []);
+    if (practiceLocations.length === 0) {
+      // Nothing records where this person practices.
+      return true;
+    }
     const ancestry = await getAncestry();
-    for (const roleLocation of actor.location) {
+    for (const roleLocation of practiceLocations) {
       // A role's location counts whether the chosen location sits inside it or
       // it sits inside the chosen location.
       if (roleLocation.reference && ancestry.has(roleLocation.reference)) {
@@ -242,6 +323,10 @@ async function isCandidateAtLocation(
   }
 
   return true;
+}
+
+function getActorType(reference: string | undefined): string | undefined {
+  return reference?.split('/')[0];
 }
 
 /**
