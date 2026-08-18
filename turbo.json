@@ -19,7 +19,7 @@
     },
     "test": {
       "dependsOn": ["build"],
-      "outputs": ["coverage/**"],
+      "outputs": ["coverage/**", ".vitest-reports/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"]
     },
     "lint": {
