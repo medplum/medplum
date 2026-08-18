@@ -33,6 +33,12 @@ const CR = 0x0d;
 const LF = 0x0a;
 const ETB = 0x17;
 
+// A Beckman AU result record as it arrives off the wire, between its STX and ETX: fixed-width
+// space-delimited fields, `r` separating the result groups, and not a control byte in sight.
+// Sample id and values are invented; only the column layout is load-bearing.
+const AU_RESULT_RECORD =
+  'D 000101 0001         100001    E0                                                                 005   140r 006  0.90r 008    72r 009   110r 011    38r 012  10.5r 096 0 0 0r ';
+
 describe('Byte Stream', () => {
   beforeAll(async () => {
     console.log = vi.fn();
@@ -658,6 +664,33 @@ describe('Byte Stream', () => {
       expect(bodies[0]).toBe(
         '1H|\\^&|||BioRad^1.0|||||||P|1|20251217223735\rC5\r\n2P|1||||Doe^John||19700101|M\r4F\r\n'
       );
+
+      client.destroy();
+      await app.stop();
+      mockServer.stop();
+    });
+
+    test('Beckman AU serial session: the record survives with only its framing stripped', async () => {
+      const bodies: string[] = [];
+      const mockServer = startMockAgentServer(bodies);
+
+      // The Beckman AU serial protocol is not ASTM: a record is space-delimited text wrapped in
+      // STX/ETX alone, with no frame number, checksum or record terminators. So the default
+      // framing plus stripControlChars is the whole of the filtering it needs, and the body is
+      // text rather than hex.
+      const [agentId, agentPort] = await createByteStreamAgent('&stripControlChars=true&bodyEncoding=utf-8');
+
+      const app = new App(medplum, agentId, LogLevel.INFO);
+      await app.start();
+
+      const [client] = await connectCollecting(agentPort);
+      client.write(Buffer.concat([Buffer.from([STX]), Buffer.from(AU_RESULT_RECORD, 'utf-8'), Buffer.from([ETX])]));
+
+      await waitFor(() => bodies.length > 0, 1000, 'transmit request');
+      // Bots dispatch on the leading record type, so a surviving STX — or a hex-encoded body —
+      // costs them the `D ` they parse on.
+      expect(bodies[0].startsWith('D ')).toBe(true);
+      expect(bodies[0]).toBe(AU_RESULT_RECORD);
 
       client.destroy();
       await app.stop();
