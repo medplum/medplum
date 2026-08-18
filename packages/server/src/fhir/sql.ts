@@ -82,6 +82,14 @@ export const Operator = {
     sql.append(' ILIKE ');
     sql.param(parameter as string);
   },
+  // Case- AND accent-insensitive, over Unicode-normalized text on both sides
+  UNACCENT_ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${MedplumUnaccentFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(`) ILIKE ${MedplumUnaccentFn.name}(`);
+    sql.param(parameter as string);
+    sql.append(')');
+  },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),
   '>': simpleBinaryOperator('>'),
@@ -1374,6 +1382,24 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
   createQuery: `CREATE FUNCTION token_array_to_text(text[])
     RETURNS text LANGUAGE sql IMMUTABLE
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
+};
+
+/**
+ * WARNING: Custom SQL functions should be avoided unless absolutely necessary.
+ *
+ * This function is necessary since the postgres `unaccent` function is only STABLE — it resolves its
+ * dictionary through `search_path` — but only IMMUTABLE functions can be used in index expressions.
+ * Folding the (genuinely IMMUTABLE) `normalize` call in here as well means the query predicate and the
+ * index expression are the same single function, so accent folding and Unicode normalization can never
+ * drift apart between the two.
+ *
+ * Requires the `unaccent` extension.
+ */
+export const MedplumUnaccentFn: SqlFunctionDefinition = {
+  name: 'medplum_unaccent',
+  createQuery: `CREATE FUNCTION medplum_unaccent(text)
+    RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+    AS $function$SELECT unaccent('unaccent', normalize($1, NFC))$function$`,
 };
 
 export function isValidTableName(tableName: string): boolean {

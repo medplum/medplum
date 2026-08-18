@@ -1159,6 +1159,10 @@ describe('Expand', () => {
         { code: 'FR100', display: 'Système' },
         { code: 'FR200', display: 'Artère' },
         { code: 'FR300', display: 'Élevé' },
+        // Ranking pair for filter "debit": the accented display is the better match, but trigram
+        // similarity scores it well below the unaccented one unless both sides are folded first
+        { code: 'FR400', display: 'Débit' },
+        { code: 'FR500', display: 'debits' },
       ],
     };
     const diacriticValueSet: ValueSet = {
@@ -1167,9 +1171,28 @@ describe('Expand', () => {
       status: 'active',
       compose: { include: [{ system: diacriticCodeSystem.url }] },
     };
+    // Enumerating concepts explicitly routes the filter through the in-memory match path rather than
+    // the database predicate, so both paths fold text the same way
+    const enumeratedValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [
+          {
+            system: diacriticCodeSystem.url,
+            concept: [
+              { code: 'FR100', display: 'Système' },
+              { code: 'FR200', display: 'Artère' },
+              { code: 'FR300', display: 'Élevé' },
+            ],
+          },
+        ],
+      },
+    };
 
     beforeAll(async () => {
-      for (const resource of [diacriticCodeSystem, diacriticValueSet]) {
+      for (const resource of [diacriticCodeSystem, diacriticValueSet, enumeratedValueSet]) {
         const res = await request(app)
           .post(`/fhir/R4/${resource.resourceType}`)
           .set('Authorization', 'Bearer ' + accessToken)
@@ -1196,6 +1219,41 @@ describe('Expand', () => {
       const decomposedFilter = 'levé'.normalize('NFD');
       const res = await request(app)
         .get(`/fhir/R4/ValueSet/$expand?url=${diacriticValueSet.url}&filter=${encodeURIComponent(decomposedFilter)}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: diacriticCodeSystem.url, code: 'FR300', display: 'Élevé' },
+      ]);
+    });
+
+    test('Unaccented filter ranks the closest accented display first', async () => {
+      // Trigram similarity against raw text penalizes accented characters, so an accented display that
+      // matches the filter exactly once folded loses to a worse unaccented match. Ranking has to fold too.
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${diacriticValueSet.url}&filter=debit`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: diacriticCodeSystem.url, code: 'FR400', display: 'Débit' },
+        { system: diacriticCodeSystem.url, code: 'FR500', display: 'debits' },
+      ]);
+    });
+
+    test('Unaccented filter matches accented display in an enumerated ValueSet', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${enumeratedValueSet.url}&filter=systeme`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: diacriticCodeSystem.url, code: 'FR100', display: 'Système' },
+      ]);
+    });
+
+    test('NFD filter matches NFC display in an enumerated ValueSet', async () => {
+      const res = await request(app)
+        .get(
+          `/fhir/R4/ValueSet/$expand?url=${enumeratedValueSet.url}&filter=${encodeURIComponent('levé'.normalize('NFD'))}`
+        )
         .set('Authorization', 'Bearer ' + accessToken);
       expect(res).toHaveStatus(200);
       expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([

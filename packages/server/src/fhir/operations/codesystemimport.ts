@@ -130,6 +130,17 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   return [allOk, buildOutputParameters(operation, codeSystem)];
 }
 
+/**
+ * Normalizes display text to NFC before it is written to the `Coding` table. Accented characters can be
+ * submitted either precomposed or decomposed; those are distinct byte sequences to Postgres, so storing a
+ * single form keeps equal-looking strings equal for the unique index and for the returned expansion.
+ * @param display - The display text to store, if any.
+ * @returns The NFC-normalized display text.
+ */
+function normalizeDisplay(display: string | undefined): string | undefined {
+  return display?.normalize('NFC');
+}
+
 export async function importCodeSystem(
   db: PgQueryable,
   codeSystem: WithId<CodeSystem>,
@@ -141,7 +152,7 @@ export async function importCodeSystem(
     const rows = uniqueOn(concepts, (c) => c.code as string).map((c) => ({
       system: codeSystem.id,
       code: c.code,
-      display: c.display,
+      display: normalizeDisplay(c.display),
       isSynonym: false,
     }));
     const query = new InsertQuery('Coding', rows).mergeOnConflict(
@@ -171,7 +182,7 @@ export async function importCodeSystem(
       synonyms.push({
         system: codeSystem.id,
         code: designation.code,
-        display: designation.value,
+        display: normalizeDisplay(designation.value),
         isSynonym: true,
         synonymOf: sourceCodingId,
         language: designation.language,
@@ -229,7 +240,7 @@ async function processProperties(
       synonyms.push({
         system: codeSystem.id,
         code: imported.code,
-        display: imported.value,
+        display: normalizeDisplay(imported.value),
         isSynonym: true,
         synonymOf: sourceCodingId,
       });

@@ -79,4 +79,33 @@ describe('Coding lookup table', () => {
         'F (Fibrillation)',
       ]);
     }));
+
+  test('Normalizes decomposed display and designation text to NFC', () =>
+    withTestContext(async () => {
+      const codeSystem: CodeSystem = {
+        resourceType: 'CodeSystem',
+        status: 'active',
+        content: 'complete',
+        url: 'http://example.com/decomposed-code-system',
+        concept: [
+          {
+            code: 'FR1',
+            display: 'Artère'.normalize('NFD'),
+            designation: [{ language: 'fr', value: 'Système artériel'.normalize('NFD') }],
+          },
+        ],
+      };
+
+      const systemResource = await systemRepo.createResource(codeSystem);
+
+      const db = getDatabasePool(DatabaseMode.READER);
+      const results = await db.query('SELECT display FROM "Coding" WHERE system = $1', [systemResource.id]);
+      const displays = results.rows.map((r) => r.display as string);
+      expect(displays).toContainExactly(['Artère'.normalize('NFC'), 'Système artériel'.normalize('NFC')]);
+      // Guard against the assertion above passing on decomposed text that merely renders identically
+      for (const display of displays) {
+        expect(display).toStrictEqual(display.normalize('NFC'));
+        expect(display).not.toStrictEqual(display.normalize('NFD'));
+      }
+    }));
 });

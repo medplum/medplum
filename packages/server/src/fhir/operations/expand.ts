@@ -24,6 +24,7 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
+  MedplumUnaccentFn,
   Parameter,
   SelectQuery,
   SqlFunction,
@@ -72,6 +73,12 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   if (filter?.includes('\0')) {
     throw new OperationOutcomeError(badRequest('Filter value cannot contain null bytes'));
   }
+  if (filter) {
+    // Input methods vary in whether they emit precomposed or decomposed accented characters. Both match
+    // paths renormalize anyway, but the code comparisons and the ranking parameter do not, so settle on
+    // one form here and let everything downstream read a canonical params.filter.
+    params.filter = filter.normalize('NFC');
+  }
   if (filter && filter.trim().split(/\s+/g).length > MAX_FILTER_TOKENS) {
     return [badRequest(`Filter value cannot contain more than ${MAX_FILTER_TOKENS} tokens`)];
   }
@@ -107,8 +114,28 @@ export function filterIncludedConcepts(
   params: ValueSetExpandParameters,
   system?: string
 ): ValueSetExpansionContains[] {
-  const filter = params.filter?.trim().toLowerCase();
-  return flattenConcepts(concepts, { filter, system, displayLanguage: params.displayLanguage });
+  const filter = params.filter?.trim();
+  return flattenConcepts(concepts, {
+    filter: filter ? foldForFilter(filter) : filter,
+    system,
+    displayLanguage: params.displayLanguage,
+  });
+}
+
+/**
+ * Folds text down to the form the in-memory filter compares on: case-, accent-, and
+ * normalization-insensitive. The JS equivalent of the `medplum_unaccent(...) ILIKE` predicate used on the
+ * database path, for pre-expanded ValueSets and explicit `compose.include.concept` lists. Only combining
+ * marks are stripped, so letters whose accent is part of the glyph (ø, ð) fold less aggressively here than
+ * Postgres `unaccent` folds them.
+ * @param s - The text to fold.
+ * @returns The folded text.
+ */
+function foldForFilter(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
 }
 
 function flattenConcepts(
@@ -460,7 +487,7 @@ function buildTextFilterPredicate(filterText: string, tableName: string, display
     new Conjunction(
       filterText
         .split(/\s+/g)
-        .map((word) => new Condition(new Column(tableName, 'display'), 'ILIKE', `%${escapeLikeString(word)}%`))
+        .map((word) => new Condition(new Column(tableName, 'display'), 'UNACCENT_ILIKE', `%${escapeLikeString(word)}%`))
     ),
   ]);
 }
@@ -617,8 +644,13 @@ function applyExpansionFilters(
       .whereExpr(buildTextFilterPredicate(filterText, tableAlias, params.displayLanguage))
       // Surface exact code match ahead of longer prefix and code-only matches, which would otherwise sort arbitrarily
       .orderByExpr(new Condition(new Column(tableAlias, 'code'), '=', filterText), true)
+      // Rank over the same accent-folded text the predicate matches on, so an unaccented filter doesn't
+      // score every accented candidate identically low
       .orderByExpr(
-        new SqlFunction('strict_word_similarity', [new Column(tableAlias, 'display'), new Parameter(filterText)]),
+        new SqlFunction('strict_word_similarity', [
+          new SqlFunction(MedplumUnaccentFn.name, [new Column(tableAlias, 'display')]),
+          new SqlFunction(MedplumUnaccentFn.name, [new Parameter(filterText)]),
+        ]),
         true
       )
       // Final tiebreaker so the overall order is deterministic
@@ -663,8 +695,13 @@ function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): 
   return query;
 }
 
+/**
+ * @param text - Candidate display text, in whatever form it was authored.
+ * @param filter - The filter text, already passed through {@link foldForFilter}.
+ * @returns True if the candidate contains the filter.
+ */
 function matchesTextFilter(text: string | undefined, filter: string): boolean {
-  return text ? text.toLowerCase().includes(filter) : false;
+  return text ? foldForFilter(text).includes(filter) : false;
 }
 
 function getDisplayText(

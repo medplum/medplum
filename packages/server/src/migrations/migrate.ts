@@ -20,7 +20,7 @@ import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
-import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
+import { getSearchParamColumnType, MedplumUnaccentFn, TokenArrayToTextFn } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import * as fns from './migrate-functions';
 import {
@@ -49,7 +49,7 @@ import { SerialColumnTypes } from './types';
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
-const TargetFunctions: SqlFunctionDefinition[] = [TokenArrayToTextFn];
+const TargetFunctions: SqlFunctionDefinition[] = [TokenArrayToTextFn, MedplumUnaccentFn];
 
 export function indexStructureDefinitionsAndSearchParameters(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -675,7 +675,16 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexType: 'btree',
         unique: true,
       },
-      { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
+      // Accent- and normalization-insensitive substring matching on display, e.g. filter "systeme"
+      // matching "Système". Replaces a plain `display gin_trgm_ops` index: the unaccented predicate is a
+      // strict superset match, and a second GIN index would double write amplification on bulk import
+      {
+        columns: [
+          'system',
+          { expression: `${MedplumUnaccentFn.name}(display) gin_trgm_ops`, name: 'displayUnaccentTrgm' },
+        ],
+        indexType: 'gin',
+      },
       // Supports case-insensitive prefix matching on code, e.g. LOWER(code) LIKE 'abc%' under non-C collations
       // Partial on canonical rows only: this mirrors the primary_idx above and makes the index ~40% smaller
       {
@@ -912,6 +921,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
 
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS unaccent;`);
   b.newLine();
 
   for (const action of actions) {
