@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue } from '../types';
-import { getNestedProperty } from './crawler';
 import type { InternalTypeSchema, SliceDefinition, SliceDiscriminator } from './types';
-import { matchDiscriminant } from './validation';
+import { matchDiscriminatorOnParent } from './validation';
 
 export type SliceDefinitionWithTypes = SliceDefinition & {
   type: NonNullable<SliceDefinition['type']>;
@@ -20,15 +19,13 @@ function isDiscriminatorComponentMatch(
   slice: SliceDefinitionWithTypes,
   profileUrl: string | undefined
 ): boolean {
-  const nestedProp = getNestedProperty(typedValue, discriminator.path, { profileUrl });
-
-  if (nestedProp) {
-    const elements = slice.typeSchema?.elements ?? slice.elements;
-    return nestedProp.some((v: any) => matchDiscriminant(v, discriminator, slice, elements)) ?? false;
-  }
-
-  console.assert(false, 'getNestedProperty[%s] in isDiscriminatorComponentMatch missed', discriminator.path);
-  return false;
+  return matchDiscriminatorOnParent(
+    typedValue,
+    discriminator,
+    slice,
+    slice.typeSchema?.elements ?? slice.elements,
+    profileUrl
+  );
 }
 
 export function getValueSliceName(

@@ -58,6 +58,7 @@ export * from './typeschema/crawler';
 export * from './typeschema/slices';
 export * from './typeschema/types';
 export * from './typeschema/validation';
+export * from './typeschema/valuesets';
 export * from './utils';
 export * from './version-utils';
 export * from './websockets/reconnecting-websocket';
