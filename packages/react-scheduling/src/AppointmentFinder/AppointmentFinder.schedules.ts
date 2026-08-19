@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getDisplayString, getReferenceString, isDefined, serviceTypeIncludesService } from '@medplum/core';
+import { getDisplayString, getReferenceString, isDefined, lazy, serviceTypeIncludesService } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
 import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
 import {
@@ -223,15 +223,11 @@ export async function filterCandidatesByLocation(
   }
 
   // The location where a Practitioner practices is recorded on their PractitionerRoles.
-  let roles: Promise<ReadonlyMap<string, readonly PractitionerRole[]>> | undefined;
-  const getRoles = async (): Promise<ReadonlyMap<string, readonly PractitionerRole[]>> =>
-    (roles ??= searchRolesByPractitioner(medplum, candidates, options));
+  const getRoles = lazy(() => searchRolesByPractitioner(medplum, candidates, options));
 
   // The sites the location sits inside, so a role licensed for a whole state
-  // covers the sites within it (lazy init).
-  let ancestry: Promise<ReadonlySet<string>> | undefined;
-  const getAncestry = async (): Promise<ReadonlySet<string>> =>
-    (ancestry ??= getLocationAncestry(medplum, locationReference, options));
+  // covers the sites within it.
+  const getAncestry = lazy(() => getLocationAncestry(medplum, locationReference, options));
 
   // Test candidates concurrently & let the client's request cache collapse repeated
   // Location reads.
