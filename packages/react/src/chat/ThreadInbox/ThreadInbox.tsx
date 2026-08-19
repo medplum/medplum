@@ -11,8 +11,8 @@ import { useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
-import type { ListWithDetailPaneTab } from '../../ListWithDetailPane/ListWithDetailPane';
-import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane';
+import type { ListDetailPaneTab } from '../../ListDetailPane/ListDetailPane';
+import { ListDetailPane } from '../../ListDetailPane/ListDetailPane';
 import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { EditThreadDialog } from './EditThreadDialog';
 import { NewTopicDialog } from './NewTopicDialog';
@@ -183,7 +183,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     refreshThreadMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [refreshThreadMessages]);
 
-  const tabs = useMemo<ListWithDetailPaneTab[]>(
+  const tabs = useMemo<ListDetailPaneTab[]>(
     () => [
       { value: 'in-progress', label: 'In Progress', uri: inProgressUri },
       { value: 'completed', label: 'Completed', uri: completedUri },
@@ -207,7 +207,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   return (
     <>
       <div className={classes.container}>
-        <ListWithDetailPane<Communication>
+        <ListDetailPane<Communication>
           items={items}
           loading={loading}
           selectedKey={selectedThread?.id ?? threadId}

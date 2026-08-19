@@ -15,7 +15,7 @@ import {
 } from '@mantine/core';
 import { formatDate, getDisplayString } from '@medplum/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
-import { ListWithDetailPane, MedplumLink, useMedplum, useResource } from '@medplum/react';
+import { ListDetailPane, MedplumLink, useMedplum, useResource } from '@medplum/react';
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -43,7 +43,7 @@ import { ResourcePanel } from './ResourcePanel';
 import classes from './SpacesInbox.module.css';
 
 // Spaces always renders the chat pane — with no topic selected it is a new (draft)
-// conversation — so this placeholder keeps ListWithDetailPane on its detail slot
+// conversation — so this placeholder keeps ListDetailPane on its detail slot
 // instead of swapping to the empty-detail slot, which would remount the chat once
 // the first message creates the real topic.
 const NEW_CONVERSATION: Communication = { resourceType: 'Communication', status: 'in-progress' };
@@ -323,7 +323,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   }, [messages]);
 
   return (
-    <ListWithDetailPane<Communication>
+    <ListDetailPane<Communication>
       items={topics}
       loading={topicsLoading}
       selectedKey={topic?.id ?? currentTopicId}

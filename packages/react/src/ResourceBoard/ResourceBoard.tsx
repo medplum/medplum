@@ -7,18 +7,18 @@ import type { ResourceBoardLoadResult } from '@medplum/react-hooks';
 import { useResourceBoard } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import type {
-  ListWithDetailPaneDetailContext,
-  ListWithDetailPaneHeaderProps,
-  ListWithDetailPaneItemContext,
-  ListWithDetailPaneTab,
-} from '../ListWithDetailPane/ListWithDetailPane';
-import { ListWithDetailPane } from '../ListWithDetailPane/ListWithDetailPane';
+  ListDetailPaneDetailContext,
+  ListDetailPaneHeaderProps,
+  ListDetailPaneItemContext,
+  ListDetailPaneTab,
+} from '../ListDetailPane/ListDetailPane';
+import { ListDetailPane } from '../ListDetailPane/ListDetailPane';
 
-// The list/detail shell now lives in ListWithDetailPane; these aliases keep the
+// The list/detail shell now lives in ListDetailPane; these aliases keep the
 // ResourceBoard public API stable for existing consumers.
-export type ResourceBoardTab = ListWithDetailPaneTab;
-export type ResourceBoardItemContext<T extends Resource = Resource> = ListWithDetailPaneItemContext<WithId<T>>;
-export type ResourceBoardDetailContext = ListWithDetailPaneDetailContext;
+export type ResourceBoardTab = ListDetailPaneTab;
+export type ResourceBoardItemContext<T extends Resource = Resource> = ListDetailPaneItemContext<WithId<T>>;
+export type ResourceBoardDetailContext = ListDetailPaneDetailContext;
 
 /**
  * Props for the ResourceBoard component.
@@ -44,7 +44,7 @@ export type ResourceBoardDetailContext = ListWithDetailPaneDetailContext;
  * @param emptyDetail - Shown when nothing is selected or the selection cannot be resolved.
  * @param onChange - Fired by the built-in pagination with the updated offset.
  * @param onSelectFirst - Auto-select escape hatch. Fired with the first item when a load for the current search
- * settles with items while nothing is selected (owned by ListWithDetailPane). The consumer decides how to navigate
+ * settles with items while nothing is selected (owned by ListDetailPane). The consumer decides how to navigate
  * (e.g. with history replace).
  * @param onLoad - Fired after every successful load.
  * @param onError - List-load and selection-resolution errors. Default: console.error.
@@ -74,7 +74,7 @@ export interface ResourceBoardProps<T extends Resource = Resource> {
 /**
  * ResourceBoard is a generic master-detail board: it owns data fetching (list search,
  * selection resolution, background refresh via useResourceBoard) and renders the
- * presentational shell with ListWithDetailPane. Escape hatches allow custom loading
+ * presentational shell with ListDetailPane. Escape hatches allow custom loading
  * and selection resolution.
  * @param props - The ResourceBoard React props.
  * @returns The ResourceBoard React node.
@@ -134,11 +134,11 @@ export function ResourceBoard<T extends Resource = Resource>(props: ResourceBoar
     onChange?.({ ...memoizedSearch, offset: (page - 1) * count });
   };
 
-  // ListWithDetailPane treats text and tabs as mutually exclusive; tabs take precedence.
-  const headerProps: ListWithDetailPaneHeaderProps = tabs ? { tabs, activeTab } : { headerText };
+  // ListDetailPane treats text and tabs as mutually exclusive; tabs take precedence.
+  const headerProps: ListDetailPaneHeaderProps = tabs ? { tabs, activeTab } : { headerText };
 
   return (
-    <ListWithDetailPane<WithId<T>>
+    <ListDetailPane<WithId<T>>
       items={items}
       loading={loading}
       selectedKey={selectedKey}

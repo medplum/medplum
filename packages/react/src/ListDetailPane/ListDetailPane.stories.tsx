@@ -7,11 +7,11 @@ import type { Meta } from '@storybook/react';
 import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { ListWithDetailPane } from './ListWithDetailPane';
+import { ListDetailPane } from './ListDetailPane';
 
 export default {
-  title: 'Medplum/ListWithDetailPane',
-  component: ListWithDetailPane,
+  title: 'Medplum/ListDetailPane',
+  component: ListDetailPane,
 } as Meta;
 
 const sampleItems: WithId<Communication>[] = [
@@ -94,7 +94,7 @@ export const Basic = (): JSX.Element => {
 
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={sampleItems}
         loading={false}
         selectedKey={selectedId}
@@ -125,7 +125,7 @@ export const CollapsibleList = (): JSX.Element => {
 
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={sampleItems}
         loading={false}
         selectedKey={selectedId}
@@ -170,7 +170,7 @@ export const CollapsibleList = (): JSX.Element => {
 export const Loading = (): JSX.Element => {
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={[]}
         loading={true}
         selected={undefined}
@@ -187,7 +187,7 @@ export const Loading = (): JSX.Element => {
 export const Empty = (): JSX.Element => {
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={[]}
         loading={false}
         selected={undefined}
