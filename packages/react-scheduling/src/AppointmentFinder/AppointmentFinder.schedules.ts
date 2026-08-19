@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getDisplayString, getReferenceString, isDefined, lazy, serviceTypeIncludesService } from '@medplum/core';
+import {
+  assertNever,
+  getDisplayString,
+  getReferenceString,
+  isDefined,
+  lazy,
+  serviceTypeIncludesService,
+} from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
 import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
 import {
@@ -102,11 +109,8 @@ function getActorCriteria(role: SchedulingRole, query: string): Record<string, s
         'actor:Device.status:not': 'inactive',
         ...(query ? { 'actor:Device.device-name': query } : undefined),
       };
-    default: {
-      // Should be unreachable, but here in case.
-      const unhandled: never = role;
-      throw new Error(`Unhandled scheduling role: ${String(unhandled)}`);
-    }
+    default:
+      return assertNever(role);
   }
 }
 
@@ -300,6 +304,20 @@ async function searchRolesByPractitioner(
   return byPractitioner;
 }
 
+/**
+ * Reports whether one candidate can be booked at a location.
+ *
+ * Each role records where it is in a different place, so the role decides which
+ * question to ask; a role that records nothing is kept.
+ *
+ * @param candidate - The candidate to site.
+ * @param medplum - The Medplum client.
+ * @param locationReference - The site being booked at.
+ * @param getRoles - Reads the candidates' PractitionerRoles, once between them all.
+ * @param getAncestry - Reads the sites the booked location sits inside, once.
+ * @param options - Abort signal.
+ * @returns Whether the candidate is available at the location, or says nothing about it.
+ */
 async function isCandidateAtLocation(
   candidate: ScheduleCandidate,
   medplum: MedplumClient,
@@ -310,37 +328,70 @@ async function isCandidateAtLocation(
 ): Promise<boolean> {
   const actor = candidate.actorResource;
   const actorReference = getCandidateActor(candidate).reference;
+  const role = getCandidateRole(candidate);
 
-  if (getCandidateRole(candidate) === 'room') {
-    return isWithinLocation(medplum, actorReference, locationReference, options);
+  switch (role) {
+    case 'room':
+      // A room is the Location, so it sites itself.
+      return isWithinLocation(medplum, actorReference, locationReference, options);
+    case 'device': {
+      // Where a device is kept is recorded on the Device itself, which is only
+      // to hand when the search could include it.
+      const device = actor?.resourceType === 'Device' ? actor : undefined;
+      return isWithinLocation(medplum, device?.location?.reference, locationReference, options);
+    }
+    case 'provider':
+      return isPractitionerAtLocation(medplum, actorReference, locationReference, getRoles, getAncestry, options);
+    case undefined:
+      // An actor of a type nothing books against, so nothing sites it either.
+      return true;
+    default:
+      return assertNever(role);
+  }
+}
+
+/**
+ * Reports whether a practitioner practices at a location.
+ *
+ * Where someone practices lives on their PractitionerRoles, and a person with no
+ * role that names a location is kept rather than hidden.
+ *
+ * @param medplum - The Medplum client.
+ * @param actorReference - The practitioner the schedule is held on.
+ * @param locationReference - The site being booked at.
+ * @param getRoles - Reads the candidates' PractitionerRoles, once between them all.
+ * @param getAncestry - Reads the sites the booked location sits inside, once.
+ * @param options - Abort signal.
+ * @returns Whether one of their roles reaches the site.
+ */
+async function isPractitionerAtLocation(
+  medplum: MedplumClient,
+  actorReference: string | undefined,
+  locationReference: string,
+  getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>,
+  getAncestry: () => Promise<ReadonlySet<string>>,
+  options: FilterCandidatesOptions | undefined
+): Promise<boolean> {
+  const roles = await getRoles();
+  const held = (actorReference ? roles.get(actorReference) : undefined) ?? [];
+  const practiceLocations = held.flatMap((role) => role.location ?? []);
+  if (practiceLocations.length === 0) {
+    // Nothing records where this person practices.
+    return true;
   }
 
-  if (actor?.resourceType === 'Device') {
-    return isWithinLocation(medplum, actor.location?.reference, locationReference, options);
-  }
-
-  if (actorReference && getActorType(actorReference) === 'Practitioner') {
-    const roles = await getRoles();
-    const practiceLocations = (roles.get(actorReference) ?? []).flatMap((role) => role.location ?? []);
-    if (practiceLocations.length === 0) {
-      // Nothing records where this person practices.
+  const ancestry = await getAncestry();
+  for (const roleLocation of practiceLocations) {
+    // A role's location counts whether the chosen location sits inside it or
+    // it sits inside the chosen location.
+    if (roleLocation.reference && ancestry.has(roleLocation.reference)) {
       return true;
     }
-    const ancestry = await getAncestry();
-    for (const roleLocation of practiceLocations) {
-      // A role's location counts whether the chosen location sits inside it or
-      // it sits inside the chosen location.
-      if (roleLocation.reference && ancestry.has(roleLocation.reference)) {
-        return true;
-      }
-      if (await isWithinLocation(medplum, roleLocation.reference, locationReference, options)) {
-        return true;
-      }
+    if (await isWithinLocation(medplum, roleLocation.reference, locationReference, options)) {
+      return true;
     }
-    return false;
   }
-
-  return true;
+  return false;
 }
 
 function getActorType(reference: string | undefined): string | undefined {
