@@ -418,10 +418,8 @@ describe('AsyncAutocomplete', () => {
     });
 
     expect(onChange).toHaveBeenCalledWith([apple]);
-    // Current implementation: auto-submit fires onChange directly and never
-    // adds the item to the selected pills.
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
-    expect(selected.queryByText('Apple')).not.toBeInTheDocument();
+    expect(selected.getByText('Apple')).toBeInTheDocument();
   });
 
   test('custom item, pill, and empty components render', async () => {

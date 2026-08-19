@@ -99,6 +99,35 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     autoSubmitRef.current = autoSubmit;
   });
 
+  const handleValueAdd = useCallback(
+    (item: AsyncAutocompleteOption<T>): void => {
+      setSelected((selected) => {
+        if (selected.some((v) => v.value === item.value)) {
+          return selected;
+        }
+
+        // when maxValues is 0, still fire the onChange when an item is selected
+        if (maxValues === 0) {
+          onChange([item.resource]);
+          return [];
+        }
+
+        const newSelected = [...selected, item];
+
+        if (maxValues !== undefined) {
+          while (newSelected.length > maxValues) {
+            // Remove from the front
+            newSelected.shift();
+          }
+        }
+
+        onChange(newSelected.map((v) => v.resource));
+        return newSelected;
+      });
+    },
+    [maxValues, onChange]
+  );
+
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
 
@@ -119,10 +148,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     loadOptions(searchRef.current ?? '', newAbortController.signal)
       .then((newValues: T[]) => {
         if (!newAbortController.signal.aborted) {
-          setOptions(newValues.map(toOption));
+          const newOptions = newValues.map(toOption);
+          setOptions(newOptions);
           if (autoSubmitRef.current) {
-            if (newValues.length > 0) {
-              onChange(newValues.slice(0, 1));
+            if (newOptions.length > 0) {
+              handleValueAdd(newOptions[0]);
             }
             setAutoSubmit(false);
           } else if (newValues.length > 0) {
@@ -140,7 +170,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setAbortController(undefined);
         }
       });
-  }, [combobox, loadOptions, onChange, toOption, minInputLength, setTimer, setAutoSubmit, setAbortController]);
+  }, [combobox, loadOptions, handleValueAdd, toOption, minInputLength, setTimer, setAutoSubmit, setAbortController]);
 
   const handleSearchChange = useCallback(
     (e: SyntheticEvent): void => {
@@ -169,41 +199,22 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const toggleSelected = useCallback(
     (newValue: string): void => {
       const alreadySelected = selected.some((v) => v.value === newValue);
-      const newSelected = alreadySelected ? selected.filter((v) => v.value !== newValue) : [...selected];
-      let option = options?.find((option) => option.value === newValue);
-      if (!option && creatable !== false && onCreate) {
-        const createdResource = onCreate(newValue);
-        option = toOption(createdResource);
-      }
-
-      if (option) {
-        // when maxValues is 0, still fire the onChange when an item is selected
-        if (maxValues === 0) {
-          onChange([option.resource]);
-
-          // and clear selected if necessary
-          if (selected.length > 0) {
-            setSelected([]);
-          }
-          return;
+      if (alreadySelected) {
+        const newSelected = selected.filter((v) => v.value !== newValue);
+        onChange(newSelected.map((v) => v.resource));
+        setSelected(newSelected);
+      } else {
+        let option = options?.find((option) => option.value === newValue);
+        if (!option && creatable !== false && onCreate) {
+          const createdResource = onCreate(newValue);
+          option = toOption(createdResource);
         }
-
-        if (!alreadySelected) {
-          newSelected.push(option);
+        if (option) {
+          handleValueAdd(option);
         }
       }
-
-      if (maxValues !== undefined) {
-        while (newSelected.length > maxValues) {
-          // Remove from the front
-          newSelected.shift();
-        }
-      }
-
-      onChange(newSelected.map((v) => v.resource));
-      setSelected(newSelected);
     },
-    [creatable, options, selected, maxValues, onChange, onCreate, toOption]
+    [selected, onChange, handleValueAdd, onCreate, toOption, options, creatable]
   );
 
   const handleValueSelect = useMemo(() => {
