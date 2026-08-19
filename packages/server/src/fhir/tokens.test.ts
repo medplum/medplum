@@ -1122,8 +1122,8 @@ describe('Condition.code token queries', () => {
   test.each<[string, Conditions[]]>([
     [disp1, ['codeOneNoCat']],
     [disp1.split(' ').slice(0, 2).join(' '), ['codeOneNoCat']],
-    [disp1.split(' ').slice(1, 3).join(' '), ['codeOneNoCat']],
-    [disp1.split(' ').slice(-2).join(' '), ['codeOneNoCat']],
+    [disp1.split(' ').slice(1, 3).join(' '), []],
+    [disp1.split(' ').slice(-2).join(' '), []],
   ])('code :text %s', async (value, expected) => {
     const resContains = await repo.search<Condition>({
       resourceType: 'Condition',
@@ -1141,16 +1141,15 @@ describe('Condition.code token queries', () => {
   describe('code :text search for special chars', () => {
     const identifier = randomUUID();
     let condWithSpecialChars: WithId<Condition>;
+
+    const specialStrings = [`.`, `^`, `$`, `*`, `+`, `?`, `()`, `[]`, `{}`, `\\`, `|hello|`];
     beforeAll(async () => {
       condWithSpecialChars = await repo.createResource<Condition>({
         resourceType: 'Condition',
         code: {
           coding: [
-            {
-              system: sys1,
-              code: 'some-value',
-              display: '.^$*+?()[]{}\\|hello|',
-            },
+            ...specialStrings.map((display, i) => ({ system: sys1, code: i.toString(), display })),
+            { system: sys1, code: 'MULTI', display: '.^$*+' },
           ],
         },
         subject,
@@ -1172,11 +1171,11 @@ describe('Condition.code token queries', () => {
       ['+', true],
       ['?', true],
       ['(', true],
-      [')', true],
+      [')', false],
       ['[', true],
-      [']', true],
+      [']', false],
       ['{', true],
-      ['}', true],
+      ['}', false],
       ['\\', true],
       ['()', true],
       ['[]', true],
@@ -1184,10 +1183,10 @@ describe('Condition.code token queries', () => {
 
       ['.^', true],
       ['.^$*+', true],
-      ['$', true],
-      ['+?', true],
-      [']{', true],
-      ['hello', true],
+      ['+?', false],
+      [']{', false],
+      ['hello', false],
+      ['|hello', true],
 
       ['||', false],
     ])(':text search for %s should match? %s', async (query, shouldBeFound) => {
@@ -1212,8 +1211,9 @@ describe('Condition.code token queries', () => {
         ],
       });
       if (shouldBeFound) {
-        expect(res.entry?.length).toBe(1);
-        expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
+        expect(res.entry?.map((e) => e.resource?.id)).toStrictEqual([condWithSpecialChars.id]);
+        // expect(res.entry?.length).toBe(1);
+        // expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
       } else {
         expect(res.entry?.length).toBe(0);
       }
@@ -1246,8 +1246,9 @@ describe('Condition.code token queries', () => {
         ],
       });
       if (shouldBeFound) {
-        expect(res.entry?.length).toBe(1);
-        expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
+        expect(res.entry?.map((e) => e.resource?.id)).toStrictEqual([condWithSpecialChars.id]);
+        // expect(res.entry?.length).toBe(1);
+        // expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
       } else {
         expect(res.entry?.length).toBe(0);
       }
