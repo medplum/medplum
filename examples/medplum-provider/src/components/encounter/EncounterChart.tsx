@@ -34,10 +34,11 @@ const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
 export interface EncounterChartProps {
   encounter: WithId<Encounter> | Reference<Encounter>;
   task?: WithId<Task> | Reference<Task>;
+  onEncounterChange?: (encounter: WithId<Encounter>) => void;
 }
 
 export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
-  const { encounter: encounterProp, task: taskProp } = props;
+  const { encounter: encounterProp, task: taskProp, onEncounterChange } = props;
   const medplum = useMedplum();
 
   const [activeTab, setActiveTab] = useState('notes');
@@ -95,11 +96,12 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
       try {
         const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, newStatus);
         setEncounter(updatedEncounter);
+        onEncounterChange?.(updatedEncounter);
       } catch (err) {
         showErrorNotification(err);
       }
     },
-    [encounter, medplum, setEncounter, appointment]
+    [encounter, medplum, setEncounter, onEncounterChange, appointment]
   );
 
   const handleTabChange = (tab: string): void => {
@@ -261,6 +263,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
             <BillingTab
               encounter={encounter}
               setEncounter={setEncounter}
+              onEncounterSaved={onEncounterChange}
               patient={patientResource}
               practitioner={practitioner}
               setPractitioner={setPractitioner}

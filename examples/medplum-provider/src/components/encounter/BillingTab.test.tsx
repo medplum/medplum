@@ -595,6 +595,7 @@ describe('BillingTab', () => {
   test('updates the encounter and resolves the practitioner when the practitioner is changed', async () => {
     const setEncounter = vi.fn();
     const setPractitioner = vi.fn();
+    const onEncounterSaved = vi.fn();
 
     const mockPractitioner1: Practitioner = {
       resourceType: 'Practitioner',
@@ -648,6 +649,7 @@ describe('BillingTab', () => {
     await setup({
       setEncounter,
       setPractitioner,
+      onEncounterSaved,
       encounter: {
         resourceType: 'Encounter',
         id: 'encounter-123',
@@ -705,6 +707,9 @@ describe('BillingTab', () => {
       },
       { timeout: 5000 }
     );
+
+    // The persisted-save notification fires with the saved encounter.
+    expect(onEncounterSaved).toHaveBeenCalledWith(updatedEncounter);
   }, 15000);
 
   test('creates the claim before exporting when none is persisted yet', async () => {

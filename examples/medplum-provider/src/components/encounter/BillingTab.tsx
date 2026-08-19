@@ -39,13 +39,15 @@ export interface BillingTabProps {
   patient: WithId<Patient>;
   encounter: WithId<Encounter>;
   setEncounter: (encounter: WithId<Encounter>) => void;
+  /** Fired only after an encounter change is persisted (unlike setEncounter, which may be optimistic). */
+  onEncounterSaved?: (encounter: WithId<Encounter>) => void;
   practitioner: WithId<Practitioner> | undefined;
   setPractitioner: (practitioner: WithId<Practitioner>) => void;
   chartNoteStatus: ChartNoteStatus;
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const { encounter, setEncounter, patient, practitioner, setPractitioner, chartNoteStatus } = props;
+  const { encounter, setEncounter, onEncounterSaved, patient, practitioner, setPractitioner, chartNoteStatus } = props;
   const medplum = useMedplum();
   const [claim, setClaim] = useState<WithId<Claim> | undefined>();
   const [chargeItems, setChargeItems] = useState<WithId<ChargeItem>[]>([]);
@@ -138,7 +140,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
   const debouncedPatchDiagnosis = useDebouncedCallback(async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
     try {
-      await medplum.patchResource('Encounter', encounter.id, [{ op: 'add', path: '/diagnosis', value: diagnosis }]);
+      const savedEncounter = await medplum.patchResource('Encounter', encounter.id, [
+        { op: 'add', path: '/diagnosis', value: diagnosis },
+      ]);
+      onEncounterSaved?.(savedEncounter);
     } catch (err) {
       showErrorNotification(err);
     }
@@ -191,6 +196,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     try {
       const savedEncounter = await medplum.patchResource('Encounter', encounter.id, ops);
       setEncounter(savedEncounter);
+      onEncounterSaved?.(savedEncounter);
 
       if (savedEncounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
