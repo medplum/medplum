@@ -6,6 +6,7 @@ import { FhirRouter } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
+import { createBotResponseStream } from '../bots/utils';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
@@ -517,10 +518,15 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
   if (isNotFound(result[0])) {
-    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo, createBotResponseStream(res));
     if (customOperationResponse) {
       result = customOperationResponse;
     }
+  }
+
+  if (res.headersSent) {
+    // A streaming bot behind a custom operation committed the response itself.
+    return;
   }
 
   if (result.length === 1) {
