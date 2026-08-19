@@ -683,6 +683,11 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexType: 'btree',
         where: `"synonymOf" IS NULL`,
       },
+      {
+        columns: ['system', 'language', { expression: 'lower(code) text_pattern_ops', name: 'codeLowerPattern' }],
+        indexType: 'btree',
+        where: `language IS NOT NULL`,
+      },
     ],
   });
 }

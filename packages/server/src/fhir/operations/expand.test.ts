@@ -4,8 +4,10 @@ import type { WithId } from '@medplum/core';
 import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import type {
   CodeSystem,
+  CodeSystemProperty,
   OperationOutcome,
   ValueSet,
+  ValueSetComposeIncludeFilter,
   ValueSetExpansion,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
@@ -17,7 +19,15 @@ import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
-import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
+import { SelectQuery } from '../sql';
+import {
+  addExpansionItems,
+  countCandidatesBounded,
+  expansionQuery,
+  hydrateCodeSystemProperties,
+  joinDesignations,
+} from './expand';
+import { abstractProperty, addDescendants, getParentProperty } from './utils/terminology';
 
 describe('Expand', () => {
   const app = express();
@@ -986,17 +996,36 @@ describe('Expand', () => {
       compose: { include: [{ system: orderingCodeSystem.url }] },
     };
 
+    const translatedCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'LNG100', display: 'Alpha', designation: [{ language: 'fr', value: 'Oméga' }] },
+        { code: 'LNG200', display: 'Beta' },
+      ],
+    };
+    const translatedValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: translatedCodeSystem.url }] },
+    };
+
     beforeAll(async () => {
       for (const resource of [
         flatCodeSystem,
         hierarchyCodeSystem,
         synonymCodeSystem,
         orderingCodeSystem,
+        translatedCodeSystem,
         flatValueSet,
         isaValueSet,
         descendentValueSet,
         synonymValueSet,
         orderingValueSet,
+        translatedValueSet,
       ]) {
         const res = await request(app)
           .post(`/fhir/R4/${resource.resourceType}`)
@@ -1102,6 +1131,16 @@ describe('Expand', () => {
       });
     });
 
+    test('Code prefix matches translation rows with displayLanguage', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${translatedValueSet.url}&filter=LNG&displayLanguage=fr`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: translatedCodeSystem.url, code: 'LNG100', display: 'Oméga' },
+      ]);
+    });
+
     test('Exact code match ranks ahead of longer prefix match', async () => {
       const res = await request(app)
         .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HTX`)
@@ -1157,9 +1196,10 @@ describe('Expand', () => {
         {
           code: 'PAR',
           display: 'parent alpha',
+          designation: [{ language: 'fr', value: 'parent alpha (fr)' }],
           concept: [
-            { code: 'CHD', display: 'child alpha' },
-            { code: 'PET', display: 'pet beta' },
+            { code: 'CHD', display: 'child alpha', designation: [{ language: 'fr', value: 'child alpha (fr)' }] },
+            { code: 'PET', display: 'pet beta', designation: [{ language: 'fr', value: 'pet beta (fr)' }] },
           ],
         },
       ],
@@ -1191,6 +1231,12 @@ describe('Expand', () => {
       expect(await countCandidatesBounded(db, stored, 'zzz', 10)).toBe(0);
     });
 
+    test('countCandidatesBounded counts translation rows for displayLanguage', async () => {
+      expect(await countCandidatesBounded(db, stored, 'alpha', 10, 'fr')).toBe(2);
+      expect(await countCandidatesBounded(db, stored, 'alpha', 1, 'fr')).toBe(1); // bounded
+      expect(await countCandidatesBounded(db, stored, 'alpha', 10, 'de')).toBe(0);
+    });
+
     test('descendant and ancestor strategies return identical members', async () => {
       const include = { system, filter: [{ property: 'concept', op: 'is-a' as const, value: 'PAR' }] };
       const params = { filter: 'alpha' };
@@ -1206,6 +1252,254 @@ describe('Expand', () => {
       const codes = (rows: { code: string }[]): string[] => rows.map((r) => r.code).sort();
       expect(codes(ancestorRows)).toEqual(['CHD', 'PAR']);
       expect(codes(descendantRows)).toEqual(codes(ancestorRows));
+    });
+
+    test('descendant and ancestor strategies agree with displayLanguage', async () => {
+      const include = { system, filter: [{ property: 'concept', op: 'is-a' as const, value: 'PAR' }] };
+      const params = { filter: 'alpha', displayLanguage: 'fr' };
+
+      const ancestorQuery = expansionQuery(include, stored, params, 'ancestor');
+      const descendantQuery = expansionQuery(include, stored, params, 'descendant');
+      if (!ancestorQuery || !descendantQuery) {
+        throw new Error('expected both strategies to build a query');
+      }
+      const ancestorRows = await ancestorQuery.execute(db);
+      const descendantRows = await descendantQuery.execute(db);
+
+      const ancestorCodes = ancestorRows.map((r) => r.code).sort();
+      const descendantCodes = descendantRows.map((r) => r.code).sort();
+      expect(ancestorCodes).toEqual(['CHD', 'PAR']);
+      expect(descendantCodes).toEqual(ancestorCodes);
+      expect(ancestorRows.every((r) => r.language === 'fr')).toBe(true);
+      expect(descendantRows.every((r) => r.language === 'fr')).toBe(true);
+    });
+
+    test('joinDesignations carries over the limit and offset hoisted onto the subtree query', () => {
+      const parentProperty = getParentProperty(stored) as WithId<CodeSystemProperty>;
+      const base = new SelectQuery('Coding').column('code').where('system', '=', stored.id).limit(25).offset(5);
+
+      // addDescendants moves the limit/offset off the recursive term onto the CTE select
+      const descendants = addDescendants(base, stored, parentProperty, 'PAR');
+      expect(descendants.limit_).toBe(25);
+      expect(descendants.offset_).toBe(5);
+
+      expect(joinDesignations(descendants, stored)).toMatchObject({ limit_: 25, offset_: 5 });
+    });
+  });
+
+  describe('Display language with ValueSet filters', () => {
+    const system = 'http://example.com/CodeSystem/' + randomUUID();
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: system,
+      hierarchyMeaning: 'is-a',
+      property: [
+        { code: 'status', type: 'code' },
+        { code: 'notSelectable', uri: abstractProperty, type: 'boolean' },
+      ],
+      concept: [
+        {
+          code: 'ANML',
+          display: 'Animal',
+          designation: [{ language: 'fr', value: 'Animal (fr)' }],
+          property: [{ code: 'notSelectable', valueBoolean: true }],
+          concept: [
+            {
+              code: 'DOG',
+              display: 'Dog',
+              designation: [{ language: 'fr', value: 'Chien' }],
+              property: [{ code: 'status', valueCode: 'active' }],
+            },
+            {
+              code: 'CAT',
+              display: 'Cat',
+              designation: [{ language: 'fr', value: 'Chat' }],
+              property: [{ code: 'status', valueCode: 'retired' }],
+            },
+            { code: 'FSH', display: 'Fish', property: [{ code: 'status', valueCode: 'active' }] },
+          ],
+        },
+      ],
+    };
+
+    const valueSets: ValueSet[] = [];
+    function valueSetWithFilter(filter: ValueSetComposeIncludeFilter): ValueSet {
+      const valueSet: ValueSet = {
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/' + randomUUID(),
+        compose: { include: [{ system, filter: [filter] }] },
+      };
+      valueSets.push(valueSet);
+      return valueSet;
+    }
+    const statusActive = valueSetWithFilter({ property: 'status', op: '=', value: 'active' });
+    const statusInSet = valueSetWithFilter({ property: 'status', op: 'in', value: 'active,retired' });
+    const statusExists = valueSetWithFilter({ property: 'status', op: 'exists', value: 'true' });
+    const statusMissing = valueSetWithFilter({ property: 'status', op: 'exists', value: 'false' });
+    const isaAnimal = valueSetWithFilter({ property: 'concept', op: 'is-a', value: 'ANML' });
+    const belowAnimal = valueSetWithFilter({ property: 'concept', op: 'descendent-of', value: 'ANML' });
+
+    async function expand(valueSet: ValueSet, query = ''): Promise<ValueSetExpansionContains[]> {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}${query}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      return (res.body.expansion as ValueSetExpansion).contains ?? [];
+    }
+
+    beforeAll(async () => {
+      for (const resource of [codeSystem, ...valueSets]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+      }
+    });
+
+    test.each([
+      { name: 'Property = filter', valueSet: statusActive, filter: '', expected: [{ code: 'DOG', display: 'Chien' }] },
+      {
+        name: 'Property = filter with text filter',
+        valueSet: statusActive,
+        filter: 'chi',
+        expected: [{ code: 'DOG', display: 'Chien' }],
+      },
+      {
+        name: 'Property in filter',
+        valueSet: statusInSet,
+        filter: '',
+        expected: [
+          { code: 'DOG', display: 'Chien' },
+          { code: 'CAT', display: 'Chat' },
+        ],
+      },
+      {
+        name: 'Property in filter with text filter',
+        valueSet: statusInSet,
+        filter: 'cha',
+        expected: [{ code: 'CAT', display: 'Chat' }],
+      },
+      {
+        name: 'Property exists=true filter',
+        valueSet: statusExists,
+        filter: '',
+        expected: [
+          { code: 'DOG', display: 'Chien' },
+          { code: 'CAT', display: 'Chat' },
+        ],
+      },
+      {
+        name: 'Property exists=true filter with text filter',
+        valueSet: statusExists,
+        filter: 'chi',
+        expected: [{ code: 'DOG', display: 'Chien' }],
+      },
+      {
+        // Only ANML lacks a `status` property
+        name: 'Property exists=false filter',
+        valueSet: statusMissing,
+        filter: '',
+        expected: [{ code: 'ANML', display: 'Animal (fr)' }],
+      },
+      {
+        name: 'Property exists=false filter with text filter',
+        valueSet: statusMissing,
+        filter: 'ani',
+        expected: [{ code: 'ANML', display: 'Animal (fr)' }],
+      },
+      {
+        name: 'is-a filter',
+        valueSet: isaAnimal,
+        filter: '',
+        expected: [
+          { code: 'ANML', display: 'Animal (fr)' },
+          { code: 'DOG', display: 'Chien' },
+          { code: 'CAT', display: 'Chat' },
+        ],
+      },
+      {
+        name: 'is-a filter with text filter',
+        valueSet: isaAnimal,
+        filter: 'chi',
+        expected: [{ code: 'DOG', display: 'Chien' }],
+      },
+      {
+        name: 'descendent-of filter',
+        valueSet: belowAnimal,
+        filter: '',
+        expected: [
+          { code: 'DOG', display: 'Chien' },
+          { code: 'CAT', display: 'Chat' },
+        ],
+      },
+      {
+        name: 'descendent-of filter with text filter',
+        valueSet: belowAnimal,
+        filter: 'cha',
+        expected: [{ code: 'CAT', display: 'Chat' }],
+      },
+    ])('$name returns translated displays', async ({ valueSet, filter, expected }) => {
+      const query = `&displayLanguage=fr${filter ? `&filter=${filter}` : ''}`;
+      expect(await expand(valueSet, query)).toContainExactly(expected.map((coding) => ({ system, ...coding })));
+    });
+
+    test('excludeNotForUI excludes translations of abstract concepts', async () => {
+      expect(await expand(isaAnimal, '&displayLanguage=fr&excludeNotForUI=true')).toContainExactly([
+        { system, code: 'DOG', display: 'Chien' },
+        { system, code: 'CAT', display: 'Chat' },
+      ]);
+    });
+
+    test('includeDesignations returns designations for hierarchy filters', async () => {
+      const contains = await expand(isaAnimal, '&includeDesignations=true');
+      expect(contains.map((c) => c.code).sort()).toStrictEqual(['ANML', 'CAT', 'DOG', 'FSH']);
+      expect(contains).toContainExactly([
+        { system, code: 'ANML', display: 'Animal', designation: [{ language: 'fr', value: 'Animal (fr)' }] },
+        { system, code: 'DOG', display: 'Dog', designation: [{ language: 'fr', value: 'Chien' }] },
+        { system, code: 'CAT', display: 'Cat', designation: [{ language: 'fr', value: 'Chat' }] },
+        { system, code: 'FSH', display: 'Fish' },
+      ]);
+    });
+
+    test('Designations survive pre-expansion round trip', async () => {
+      const contains = await expand(isaAnimal, '&includeDesignations=true');
+      const preExpanded: ValueSet = {
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/' + randomUUID(),
+        compose: { include: [{ system }] },
+        expansion: { timestamp: new Date().toISOString(), total: contains.length, contains },
+      };
+      const vsRes = await request(app)
+        .post(`/fhir/R4/ValueSet`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(preExpanded);
+      expect(vsRes).toHaveStatus(201);
+
+      expect(await expand(preExpanded, '&displayLanguage=fr')).toContainExactly([
+        { system, code: 'ANML', display: 'Animal (fr)' },
+        { system, code: 'DOG', display: 'Chien' },
+        { system, code: 'CAT', display: 'Chat' },
+        { system, code: 'FSH', display: 'Fish' }, // No French designation: falls back to the base display
+      ]);
+    });
+
+    test.each([
+      { name: 'Property = filter', valueSet: statusActive, expected: ['DOG', 'FSH'] },
+      { name: 'Property exists=false filter', valueSet: statusMissing, expected: ['ANML'] },
+      { name: 'is-a filter', valueSet: isaAnimal, expected: ['ANML', 'CAT', 'DOG', 'FSH'] },
+      { name: 'descendent-of filter', valueSet: belowAnimal, expected: ['CAT', 'DOG', 'FSH'] },
+    ])('$name is unchanged without displayLanguage', async ({ valueSet, expected }) => {
+      const contains = await expand(valueSet);
+      expect(contains.map((c) => c.code).sort()).toStrictEqual(expected);
+      // Base displays, not translations
+      expect(contains.every((c) => !c.display?.includes('Ch'))).toBe(true);
     });
   });
 
@@ -1731,6 +2025,59 @@ describe('Expand', () => {
     ]);
   });
 
+  test('Property filter condenses synonyms the same way as an unfiltered include', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: `urn:uuid:${randomUUID()}`,
+      status: 'draft',
+      content: 'example',
+      property: [{ code: 'status', type: 'code' }],
+      concept: [
+        {
+          code: 'HIV',
+          display: 'Hives',
+          designation: [{ value: 'Wheal' }, { language: 'fr', value: 'éruption urticaire' }],
+          property: [{ code: 'status', valueCode: 'active' }],
+        },
+      ],
+    };
+    const unfiltered: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const filtered: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: {
+        include: [{ system: codeSystem.url, filter: [{ property: 'status', op: '=', value: 'active' }] }],
+      },
+    };
+    for (const resource of [codeSystem, unfiltered, filtered]) {
+      const res = await request(app)
+        .post(`/fhir/R4/${resource.resourceType}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(resource);
+      expect(res).toHaveStatus(201);
+    }
+
+    async function expand(valueSet: ValueSet): Promise<ValueSetExpansionContains[] | undefined> {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      return (res.body.expansion as ValueSetExpansion).contains;
+    }
+
+    const expected: ValueSetExpansionContains[] = [
+      { system: codeSystem.url, code: 'HIV', display: 'Hives', designation: [{ value: 'Wheal' }] },
+    ];
+    expect(await expand(unfiltered)).toStrictEqual(expected);
+    expect(await expand(filtered)).toStrictEqual(expected);
+  });
+
   test('addExpansionItems() allows items out of order', () => {
     const rows = [
       { id: 'foo', code: 'F', display: 'Foo', synonymOf: 'bar', language: null },
@@ -1759,6 +2106,100 @@ describe('Expand', () => {
         ],
       } satisfies ValueSetExpansionContains,
     ]);
+  });
+
+  describe('addExpansionItems() language tagging', () => {
+    const system = 'http://example.com/codes/' + randomUUID();
+    function testCodeSystem(language?: string): WithId<CodeSystem> {
+      return {
+        resourceType: 'CodeSystem',
+        id: randomUUID(),
+        status: 'draft',
+        content: 'not-present',
+        url: system,
+        language,
+      };
+    }
+
+    test.each([
+      { name: 'designation row first', reversed: false },
+      { name: 'canonical row first', reversed: true },
+    ])('Keeps the designation language when the $name', ({ reversed }) => {
+      const rows = [
+        { code: 'DOG', display: 'Chien', synonymOf: '1', language: 'fr' },
+        { code: 'DOG', display: 'Dog', synonymOf: null, language: null },
+      ];
+      const expansion: ValueSetExpansionContains[] = [];
+
+      addExpansionItems(reversed ? [...rows].reverse() : rows, expansion, testCodeSystem());
+      expect(expansion).toStrictEqual([
+        {
+          system,
+          code: 'DOG',
+          display: 'Dog',
+          designation: [{ language: 'fr', value: 'Chien' }],
+        } satisfies ValueSetExpansionContains,
+      ]);
+    });
+
+    test('Leaves a displaced designation without a language untagged', () => {
+      const rows = [
+        { code: 'HIV', display: 'Wheal', synonymOf: '1', language: null },
+        { code: 'HIV', display: 'Hives', synonymOf: null, language: null },
+      ];
+      const expansion: ValueSetExpansionContains[] = [];
+
+      addExpansionItems(rows, expansion, testCodeSystem('en'));
+      expect(expansion).toStrictEqual([
+        {
+          system,
+          code: 'HIV',
+          display: 'Hives',
+          designation: [{ language: undefined, value: 'Wheal' }],
+        } satisfies ValueSetExpansionContains,
+      ]);
+    });
+
+    test('Does not merge the same code from a different CodeSystem', () => {
+      const otherSystem = 'http://example.com/codes/' + randomUUID();
+      const expansion: ValueSetExpansionContains[] = [{ system: otherSystem, code: 'M', display: 'Married' }];
+
+      addExpansionItems([{ code: 'M', display: 'Male', synonymOf: null, language: null }], expansion, testCodeSystem());
+      expect(expansion).toStrictEqual<ValueSetExpansionContains[]>([
+        { system: otherSystem, code: 'M', display: 'Married' },
+        { system, code: 'M', display: 'Male' },
+      ]);
+    });
+
+    test('Maintains designation language across multiple includes', () => {
+      const codeSystem = testCodeSystem('en');
+      const expansion: ValueSetExpansionContains[] = [];
+      const displayLanguages = new Map<ValueSetExpansionContains, string | undefined>();
+
+      // One include contributes only the translation row...
+      addExpansionItems(
+        [{ code: 'DOG', display: 'Chien', synonymOf: '1', language: 'fr' }],
+        expansion,
+        codeSystem,
+        displayLanguages
+      );
+      // ...and a later include contributes the canonical row, displacing it
+      addExpansionItems(
+        [{ code: 'DOG', display: 'Dog', synonymOf: null, language: null }],
+        expansion,
+        codeSystem,
+        displayLanguages
+      );
+
+      expect(expansion).toStrictEqual([
+        {
+          system,
+          code: 'DOG',
+          display: 'Dog',
+          designation: [{ language: 'fr', value: 'Chien' }],
+        } satisfies ValueSetExpansionContains,
+      ]);
+    });
   });
 
   test('Searches translated designations', async () => {

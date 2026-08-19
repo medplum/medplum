@@ -35,6 +35,7 @@ import {
   abstractProperty,
   addDescendants,
   addPropertyFilter,
+  canonicalCodingId,
   findAncestor,
   findTerminologyResource,
   getParentProperty,
@@ -53,6 +54,8 @@ type ValueSetExpandParameters = {
   displayLanguage?: string;
   valueSet?: ValueSet;
 };
+
+type DisplayLanguages = Map<ValueSetExpansionContains, string | undefined>;
 
 /**
  * Implements FHIR ValueSet expansion.
@@ -165,7 +168,8 @@ async function computeExpansion(
   repo: Repository,
   valueSet: ValueSet,
   params: ValueSetExpandParameters,
-  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null)
+  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null),
+  displayLanguages: DisplayLanguages = new Map()
 ): Promise<ValueSetExpansionContains[]> {
   const preExpansion = valueSet.expansion;
   if (
@@ -196,7 +200,8 @@ async function computeExpansion(
             ...params,
             count: maxCount - expansion.length,
           },
-          terminologyResources
+          terminologyResources,
+          displayLanguages
         );
         expansion.push(...nestedExpansion);
 
@@ -233,7 +238,7 @@ async function computeExpansion(
         }
       }
     } else {
-      await includeInExpansion(include, expansion, codeSystem, params);
+      await includeInExpansion(include, expansion, codeSystem, params, displayLanguages);
     }
   }
 
@@ -244,7 +249,8 @@ async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
   codeSystem: WithId<CodeSystem>,
-  params: ValueSetExpandParameters
+  params: ValueSetExpandParameters,
+  displayLanguages: DisplayLanguages
 ): Promise<void> {
   const db = getAuthenticatedContext().repo.getDatabaseClient(
     // for non resource tables derived from CodeSystem, e.g. Coding and CodeSystem_Property
@@ -259,7 +265,7 @@ async function includeInExpansion(
   }
 
   const results = await query.execute(db);
-  addExpansionItems(results as ExpansionRow[], expansion, codeSystem);
+  addExpansionItems(results as ExpansionRow[], expansion, codeSystem, displayLanguages);
 }
 
 interface ExpansionRow {
@@ -275,29 +281,36 @@ interface ExpansionRow {
  * @param rows - The database rows containing codes and display strings.
  * @param expansion - The expansion currently being generated.
  * @param codeSystem - The CodeSystem from which the codes are drawn.
+ * @param displayLanguages - Languages of the display strings already in the expansion.
  */
 export function addExpansionItems(
   rows: ExpansionRow[],
   expansion: ValueSetExpansionContains[],
-  codeSystem: WithId<CodeSystem>
+  codeSystem: WithId<CodeSystem>,
+  displayLanguages: DisplayLanguages = new Map()
 ): void {
   const system = codeSystem.url;
   for (const { code, display, synonymOf, language } of rows) {
-    const ex = expansion.find((o) => o.code === code);
+    const rowLanguage = language ?? (isEmpty(synonymOf) ? codeSystem.language : undefined);
+    const ex = expansion.find((o) => o.code === code && o.system === system);
     if (ex) {
       if (isEmpty(synonymOf)) {
         // Incoming display string is the primary, replacing the one currently in the expansion
         if (ex.display) {
-          ex.designation = append(ex.designation, { language: codeSystem.language, value: ex.display });
+          const displaced = displayLanguages.has(ex) ? displayLanguages.get(ex) : codeSystem.language;
+          ex.designation = append(ex.designation, { language: displaced, value: ex.display });
         }
         ex.display = display ?? undefined;
+        displayLanguages.set(ex, rowLanguage);
       } else if (display) {
         // Incoming display string is a synonym for the code already in the expansion
-        ex.designation = append(ex.designation, { language: language ?? undefined, value: display });
+        ex.designation = append(ex.designation, { language: rowLanguage, value: display });
       }
     } else {
       // New code being added to the expansion
-      expansion.push({ system, code, display: display ?? undefined });
+      const entry: ValueSetExpansionContains = { system, code, display: display ?? undefined };
+      expansion.push(entry);
+      displayLanguages.set(entry, rowLanguage);
     }
   }
 }
@@ -420,9 +433,10 @@ const CANDIDATE_THRESHOLD = 2000;
  * exact code is matched.
  * @param filterText - The `filter` parameter value.
  * @param tableName - Table/alias that the `code` column belongs to (`Coding` or the descendant CTE).
+ * @param displayLanguage - The requested display language, if any.
  * @returns The WHERE expression selecting rows that match the filter text.
  */
-function buildTextFilterPredicate(filterText: string, tableName: string): Expression {
+function buildTextFilterPredicate(filterText: string, tableName: string, displayLanguage?: string): Expression {
   // Match the code by case-insensitive prefix for filters of at least 3 characters, backed by the
   // database index. Shorter filters fall back to exact code equality to avoid an under-selective prefix scan
   const codeMatch =
@@ -430,10 +444,10 @@ function buildTextFilterPredicate(filterText: string, tableName: string): Expres
       ? new Condition(new Column(tableName, 'code'), 'LOWER_LIKE', `${escapeLikeString(filterText)}%`)
       : new Condition(new Column(tableName, 'code'), '=', filterText);
 
-  // Restrict the `code` branch to canonical rows: synonyms for the same code are redundant. This scoping lets the planner
-  // use the partial `(system, lower(code)) WHERE "synonymOf" IS NULL` index, keeping the `code` branch of the query plan
-  // well-indexed. The `display` branch intentionally still matches synonym rows, so alternate terms remain searchable.
-  const codeCondition = new Conjunction([codeMatch, new Condition(new Column(tableName, 'synonymOf'), '=', null)]);
+  const codeScope = displayLanguage
+    ? new Condition(new Column(tableName, 'language'), '=', displayLanguage)
+    : new Condition(new Column(tableName, 'synonymOf'), '=', null);
+  const codeCondition = new Conjunction([codeMatch, codeScope]);
 
   // Below 3 characters the display-substring branch cannot use the trigram GIN index
   // (a substring needs at least one full trigram), so match the exact code only.
@@ -444,7 +458,9 @@ function buildTextFilterPredicate(filterText: string, tableName: string): Expres
   return new Disjunction([
     codeCondition,
     new Conjunction(
-      filterText.split(/\s+/g).map((word) => new Condition('display', 'ILIKE', `%${escapeLikeString(word)}%`))
+      filterText
+        .split(/\s+/g)
+        .map((word) => new Condition(new Column(tableName, 'display'), 'ILIKE', `%${escapeLikeString(word)}%`))
     ),
   ]);
 }
@@ -456,19 +472,21 @@ function buildTextFilterPredicate(filterText: string, tableName: string): Expres
  * @param codeSystem - The CodeSystem being expanded (with resolved id).
  * @param filterText - The `filter` parameter value.
  * @param limit - Upper bound on the count (candidates beyond this don't change the decision).
+ * @param displayLanguage - The requested display language, if any.
  * @returns The number of matching candidate codes, capped at `limit`.
  */
 export async function countCandidatesBounded(
   db: PgQueryable,
   codeSystem: WithId<CodeSystem>,
   filterText: string,
-  limit: number
+  limit: number,
+  displayLanguage?: string
 ): Promise<number> {
   const inner = new SelectQuery('Coding')
     .column('id')
     .where('system', '=', codeSystem.id)
-    .where('synonymOf', '=', null)
-    .whereExpr(buildTextFilterPredicate(filterText, 'Coding'))
+    .where(displayLanguage ? 'language' : 'synonymOf', '=', displayLanguage ?? null)
+    .whereExpr(buildTextFilterPredicate(filterText, 'Coding', displayLanguage))
     .limit(limit);
   const countQuery = new SelectQuery('c', inner).raw('COUNT(*)::int AS "count"');
   const rows = await countQuery.execute(db);
@@ -501,7 +519,13 @@ async function chooseParentFilterStrategy(
     return undefined;
   }
 
-  const count = await countCandidatesBounded(db, codeSystem, filterText, CANDIDATE_THRESHOLD + 1);
+  const count = await countCandidatesBounded(
+    db,
+    codeSystem,
+    filterText,
+    CANDIDATE_THRESHOLD + 1,
+    params.displayLanguage
+  );
   return count > CANDIDATE_THRESHOLD ? 'descendant' : 'ancestor';
 }
 
@@ -535,10 +559,45 @@ export function addParentFilter(
     // No filter, or a broad text filter over a large subtree: materialize the descendant set once
     // and let applyExpansionFilters filter within it, instead of walking ancestors for every candidate
     query = addDescendants(query, codeSystem, parentProperty, condition.value);
+    if (params?.displayLanguage || params?.includeDesignations) {
+      query = joinDesignations(query, codeSystem);
+    }
   }
   if (condition.op !== 'is-a') {
     query.where(new Column(query.effectiveTableName, 'code'), '!=', condition.value);
   }
+  return query;
+}
+
+/**
+ * Rewrites a materialized-subtree query to return every `Coding` row for each descendant code.
+ * @param descendants - The query selecting the descendant subtree.
+ * @param codeSystem - The CodeSystem being expanded.
+ * @returns A query over `Coding` restricted to the subtree, including designation rows.
+ */
+export function joinDesignations(descendants: SelectQuery, codeSystem: WithId<CodeSystem>): SelectQuery {
+  const query = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .column('synonymOf')
+    .column('language')
+    .where('system', '=', codeSystem.id);
+  query.with = descendants.with;
+  query.limit(descendants.limit_).offset(descendants.offset_);
+
+  // The CTE's base term selects the root by `(system, code)`, so it already contains the root's own designation
+  // rows; restricting the join to canonical rows keeps each descendant code from matching more than once
+  const cteAlias = query.getNextJoinAlias();
+  query.join(
+    'INNER JOIN',
+    descendants.effectiveTableName,
+    cteAlias,
+    new Conjunction([
+      new Condition(new Column(cteAlias, 'code'), '=', new Column('Coding', 'code')),
+      new Condition(new Column(cteAlias, 'synonymOf'), '=', null),
+    ])
+  );
   return query;
 }
 
@@ -555,11 +614,11 @@ function applyExpansionFilters(
     const filterText = params.filter;
     const tableAlias = query.effectiveTableName;
     query
-      .whereExpr(buildTextFilterPredicate(filterText, tableAlias))
+      .whereExpr(buildTextFilterPredicate(filterText, tableAlias, params.displayLanguage))
       // Surface exact code match ahead of longer prefix and code-only matches, which would otherwise sort arbitrarily
       .orderByExpr(new Condition(new Column(tableAlias, 'code'), '=', filterText), true)
       .orderByExpr(
-        new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(filterText)]),
+        new SqlFunction('strict_word_similarity', [new Column(tableAlias, 'display'), new Parameter(filterText)]),
         true
       )
       // Final tiebreaker so the overall order is deterministic
@@ -594,7 +653,7 @@ function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): 
     'Coding_Property',
     propertyTable,
     new Conjunction([
-      new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column(propertyTable, 'coding')),
+      new Condition(canonicalCodingId(query.effectiveTableName), '=', new Column(propertyTable, 'coding')),
       new Condition(new Column(propertyTable, 'property'), '=', property.id),
     ])
   );
