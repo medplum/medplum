@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
+import type { Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
@@ -56,7 +56,6 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   } = useEncounterChart(encounterProp);
 
   const [chartNote, setChartNote] = useState(clinicalImpression?.note?.[0]?.text);
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
   const [provenances, setProvenances] = useState<Provenance[]>([]);
   const [chartNoteStatus, setChartNoteStatus] = useState(ChartNoteStatus.Unsigned);
 
@@ -108,28 +107,38 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
     setActiveTab(tab);
   };
 
-  const handleChartNoteChange = async (e: React.ChangeEvent<HTMLTextAreaElement>): Promise<void> => {
+  // Whether the server copy currently has a note; `clinicalImpression` state is not refreshed on
+  // note saves, so this decides between add and remove when the note is cleared.
+  const noteOnServerRef = useRef<boolean | undefined>(undefined);
+
+  const debouncedPatchChartNote = useDebouncedCallback(async (note: string): Promise<void> => {
+    if (!clinicalImpression) {
+      return;
+    }
+
+    try {
+      if (note) {
+        await medplum.patchResource('ClinicalImpression', clinicalImpression.id, [
+          { op: 'add', path: '/note', value: [{ text: note }] },
+        ]);
+        noteOnServerRef.current = true;
+      } else if (noteOnServerRef.current ?? Boolean(clinicalImpression.note)) {
+        await medplum.patchResource('ClinicalImpression', clinicalImpression.id, [{ op: 'remove', path: '/note' }]);
+        noteOnServerRef.current = false;
+      }
+    } catch (err) {
+      showErrorNotification(err);
+    }
+  }, SAVE_TIMEOUT_MS);
+
+  const handleChartNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     setChartNote(e.target.value);
 
     if (!clinicalImpression) {
       return;
     }
 
-    try {
-      if (!e.target.value || e.target.value === '') {
-        const { note: _, ...restOfClinicalImpression } = clinicalImpression;
-        const updatedClinicalImpression: ClinicalImpression = restOfClinicalImpression;
-        await debouncedUpdateResource(updatedClinicalImpression);
-      } else {
-        const updatedClinicalImpression: ClinicalImpression = {
-          ...clinicalImpression,
-          note: [{ text: e.target.value }],
-        };
-        await debouncedUpdateResource(updatedClinicalImpression);
-      }
-    } catch (err) {
-      showErrorNotification(err);
-    }
+    debouncedPatchChartNote(e.target.value);
   };
 
   const handleSign = async (practitioner: Reference<Practitioner>, lock: boolean): Promise<void> => {

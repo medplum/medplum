@@ -684,11 +684,25 @@ describe('BillingTab', () => {
       fireEvent.click(smithOption);
     });
 
+    // Also change the check-in time inside the same debounce window; both field edits must
+    // survive into the persisted patch ops (the debounce must not drop the earlier one).
+    const checkinInput = screen.getByLabelText(/Check in/i);
+    await act(async () => {
+      fireEvent.change(checkinInput, { target: { value: '2024-01-02T09:30' } });
+    });
+
     await waitFor(
       () => {
-        expect(medplum.patchResource).toHaveBeenCalledWith('Encounter', 'encounter-123', [
-          expect.objectContaining({ op: 'add', path: '/participant' }),
-        ]);
+        const encounterPatchOps = vi
+          .mocked(medplum.patchResource)
+          .mock.calls.filter((call) => call[0] === 'Encounter')
+          .flatMap((call) => call[2]);
+        expect(encounterPatchOps).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ op: 'add', path: '/participant' }),
+            expect.objectContaining({ op: 'add', path: '/period/start' }),
+          ])
+        );
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );

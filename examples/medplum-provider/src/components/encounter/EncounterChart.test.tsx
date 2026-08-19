@@ -106,7 +106,7 @@ describe('EncounterChart', () => {
 
   test('updates chart note on change', async () => {
     const user = userEvent.setup();
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(mockClinicalImpression as any);
+    vi.spyOn(medplum, 'patchResource').mockResolvedValue(mockClinicalImpression as any);
 
     setup();
 
@@ -118,9 +118,12 @@ describe('EncounterChart', () => {
     await user.clear(textarea);
     await user.type(textarea, 'Updated note');
 
+    // The debounced save patches only the note, never the whole impression.
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        expect(medplum.patchResource).toHaveBeenCalledWith('ClinicalImpression', 'clinical-123', [
+          { op: 'add', path: '/note', value: [{ text: 'Updated note' }] },
+        ]);
       },
       { timeout: 3000 }
     );

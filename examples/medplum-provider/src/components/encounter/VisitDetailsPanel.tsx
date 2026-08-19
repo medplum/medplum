@@ -29,11 +29,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    onEncounterChange([
-      encounter.period
-        ? { op: 'add', path: '/period/start', value: checkin }
-        : { op: 'add', path: '/period', value: { start: checkin } },
-    ]);
+    onEncounterChange([{ op: 'add', path: '/period/start', value: checkin }]);
   };
 
   const handleCheckoutChange = async (checkout: string): Promise<void> => {
@@ -41,11 +37,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    onEncounterChange([
-      encounter.period
-        ? { op: 'add', path: '/period/end', value: checkout }
-        : { op: 'add', path: '/period', value: { end: checkout } },
-    ]);
+    onEncounterChange([{ op: 'add', path: '/period/end', value: checkout }]);
   };
 
   return (

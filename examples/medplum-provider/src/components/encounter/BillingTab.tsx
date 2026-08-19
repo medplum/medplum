@@ -21,7 +21,7 @@ import type {
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
 import { refreshCandidClaimResponse } from '../../utils/candid';
@@ -192,7 +192,21 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [patient, encounter, practitioner, chargeItems, conditions, coverage, medplum, setClaim]
   );
 
-  const handleEncounterChange = useDebouncedCallback(async (ops: PatchOperation[]): Promise<void> => {
+  // Visit-details edits accumulate here (keyed by path, latest edit per field wins) so rapid
+  // multi-field changes merge into one patch instead of the debounce dropping all but the last.
+  const pendingEncounterOpsRef = useRef(new Map<string, PatchOperation>());
+
+  const flushEncounterOps = useDebouncedCallback(async (): Promise<void> => {
+    const ops = [...pendingEncounterOpsRef.current.values()];
+    pendingEncounterOpsRef.current.clear();
+    if (ops.length === 0) {
+      return;
+    }
+    // Nested period ops can only apply once the period object exists on the resource.
+    if (!encounter.period && ops.some((op) => op.path.startsWith('/period/'))) {
+      ops.unshift({ op: 'add', path: '/period', value: {} });
+    }
+
     try {
       const savedEncounter = await medplum.patchResource('Encounter', encounter.id, ops);
       setEncounter(savedEncounter);
@@ -206,6 +220,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       showErrorNotification(err);
     }
   }, SAVE_TIMEOUT_MS);
+
+  const handleEncounterChange = useCallback(
+    (ops: PatchOperation[]): void => {
+      for (const op of ops) {
+        pendingEncounterOpsRef.current.set(op.path, op);
+      }
+      flushEncounterOps();
+    },
+    [flushEncounterOps]
+  );
 
   const exportClaimAsCMS1500 = useCallback(async (): Promise<void> => {
     try {
