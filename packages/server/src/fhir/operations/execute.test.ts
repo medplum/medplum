@@ -848,6 +848,161 @@ describe('Execute', () => {
     });
   });
 
+  describe('bots reached across a project link', () => {
+    const identifierSystem = 'https://example.com/marketplace-bot';
+    let implAccessToken: string;
+    let implProject: WithId<Project>;
+
+    async function createLinkedEchoBot(accessToken: string, identifierValue: string): Promise<WithId<Bot>> {
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Bot',
+          identifier: [{ system: identifierSystem, value: identifierValue }],
+          name: 'Linked Echo Bot',
+          runtimeVersion: 'vmcontext',
+          runAsUser: true,
+          code: botCodes[0][0],
+        });
+      expect(res1).toHaveStatus(201);
+      const bot = res1.body as WithId<Bot>;
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ code: botCodes[0][1] });
+      expect(res2).toHaveStatus(200);
+
+      return bot;
+    }
+
+    beforeAll(async () => {
+      const implSetup = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: { name: 'Impl Project', exportedResourceType: ['Bot'] },
+      });
+      implProject = implSetup.project;
+      implAccessToken = implSetup.accessToken;
+
+      await createLinkedEchoBot(implAccessToken, 'linked-echo');
+    });
+
+    test('Customer executes a linked bot by identifier', async () => {
+      const { accessToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: { name: 'Customer With Bots', link: [{ project: createReference(implProject) }] },
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/$execute?identifier=${encodeURIComponent(identifierSystem + '|linked-echo')}`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(200);
+      expect(res.text).toStrictEqual('input');
+    });
+
+    test('Customer without the bots feature cannot execute a linked bot', async () => {
+      // The feature must be evaluated against the project the bot runs as, not
+      // only the project that owns the Bot row. Otherwise a link to a project
+      // that has bots enabled is a way around the feature.
+      const { accessToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: {
+          name: 'Customer Without Bots',
+          features: ['email'],
+          link: [{ project: createReference(implProject) }],
+        },
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/$execute?identifier=${encodeURIComponent(identifierSystem + '|linked-echo')}`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toStrictEqual('Bots not enabled');
+    });
+
+    test('A linked bot streams to the customer', async () => {
+      // The combination that matters for a marketplace package exposing a
+      // streaming capability with no customer-side resource: the caller names the
+      // bot, resolution crosses the link, and SSE survives the hop. A proxy bot
+      // could not do this — it forwards a buffered `executeBot` call.
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + implAccessToken)
+        .send({
+          resourceType: 'Bot',
+          identifier: [{ system: identifierSystem, value: 'linked-streaming' }],
+          name: 'Linked Streaming Bot',
+          runtimeVersion: 'vmcontext',
+          runAsUser: true,
+          streamingEnabled: true,
+          code: botCodes[3][0],
+        });
+      expect(res1).toHaveStatus(201);
+      const streamingBot = res1.body as WithId<Bot>;
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + implAccessToken)
+        .send({ code: botCodes[3][1] });
+      expect(res2).toHaveStatus(200);
+
+      const { accessToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: { name: 'Customer Streaming', link: [{ project: createReference(implProject) }] },
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/$execute?identifier=${encodeURIComponent(identifierSystem + '|linked-streaming')}`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', ContentType.EVENT_STREAM)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['content-type']).toContain(ContentType.EVENT_STREAM);
+      expect(res.text).toContain('data: Hello');
+      expect(res.text).toContain('data: World!');
+    });
+
+    test('An identifier matching bots in two linked projects is rejected', async () => {
+      const secondImplSetup = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: { name: 'Second Impl Project', exportedResourceType: ['Bot'] },
+      });
+      await createLinkedEchoBot(secondImplSetup.accessToken, 'linked-echo');
+
+      const { accessToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: {
+          name: 'Customer With Two Links',
+          link: [{ project: createReference(implProject) }, { project: createReference(secondImplSetup.project) }],
+        },
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/$execute?identifier=${encodeURIComponent(identifierSystem + '|linked-echo')}`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toContain('matched multiple bots');
+    });
+  });
+
   describe('Prefer: respond-async', () => {
     test('Plain text -- Prefer: respond-async', async () => {
       const res = await request(app)
