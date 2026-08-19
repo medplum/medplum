@@ -131,6 +131,21 @@ export interface MedplumSourceInfraConfig {
     scaleInCooldown: ValueOrExternalSecret<number>;
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
+  /**
+   * Opt in to the ECS deployment circuit breaker.
+   *
+   * Without it a deployment whose tasks never reach a healthy state retries
+   * indefinitely: ECS keeps replacing the failed task and the deployment never
+   * concludes, so nothing reports a failure. Enabling it fails the deployment
+   * instead, and `rollback` additionally restores the last known-good task
+   * definition.
+   *
+   * Defaults to disabled, which is the current behaviour.
+   */
+  fargateDeploymentCircuitBreaker?: {
+    enable: ValueOrExternalSecret<boolean>;
+    rollback?: ValueOrExternalSecret<boolean>;
+  };
   environment?: StringMap;
   workers?: {
     enabled?: string[];
@@ -303,6 +318,10 @@ export interface MedplumInfraConfig {
     targetUtilizationPercent: number;
     scaleInCooldown: number;
     scaleOutCooldown: number;
+  };
+  fargateDeploymentCircuitBreaker?: {
+    enable: boolean;
+    rollback?: boolean;
   };
   environment?: StringMap;
   workers?: {

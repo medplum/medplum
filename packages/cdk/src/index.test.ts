@@ -649,4 +649,63 @@ describe('Infra', () => {
       0
     );
   });
+
+  // Without the circuit breaker, a deployment whose tasks never become healthy
+  // retries forever: ECS replaces the failed task indefinitely and the
+  // deployment never concludes, so no failure is ever reported.
+  test('Deployment circuit breaker is off unless configured', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumNoCircuitBreakerStack',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.hasResourceProperties('AWS::ECS::Service', {
+      DeploymentConfiguration: Match.objectLike({
+        DeploymentCircuitBreaker: Match.absent(),
+      }),
+    });
+  });
+
+  test('fargateDeploymentCircuitBreaker enables the circuit breaker', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumCircuitBreakerStack',
+      fargateDeploymentCircuitBreaker: { enable: true, rollback: true },
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.hasResourceProperties('AWS::ECS::Service', {
+      DeploymentConfiguration: Match.objectLike({
+        DeploymentCircuitBreaker: { Enable: true, Rollback: true },
+      }),
+    });
+  });
+
+  // `rollback` is the half that can surprise you — it restores the previous
+  // task definition, which is not always safe alongside a schema migration —
+  // so enabling the breaker must not opt you into it by accident.
+  test('rollback defaults to false when only enable is set', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumCircuitBreakerNoRollbackStack',
+      fargateDeploymentCircuitBreaker: { enable: true },
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.hasResourceProperties('AWS::ECS::Service', {
+      DeploymentConfiguration: Match.objectLike({
+        DeploymentCircuitBreaker: { Enable: true, Rollback: false },
+      }),
+    });
+  });
 });

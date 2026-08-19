@@ -549,6 +549,10 @@ export class BackEnd extends Construct {
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
       minHealthyPercent: 100, // 50% is the default
+      // Off unless configured, preserving the previous behaviour.
+      circuitBreaker: config.fargateDeploymentCircuitBreaker?.enable
+        ? { rollback: config.fargateDeploymentCircuitBreaker.rollback ?? false }
+        : undefined,
     });
 
     // Add autoscaling
