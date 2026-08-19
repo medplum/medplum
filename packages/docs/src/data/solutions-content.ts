@@ -130,6 +130,23 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
           'Develo built a full-featured pediatric EHR and CRM on Medplum — scheduling, charting, billing, and family engagement in one FHIR-native system, with AI-assisted documentation designed around how independent pediatric practices actually work.',
         caseStudyUrl: '/blog/develo-case-study',
       },
+      {
+        id: 'everself',
+        name: 'Everself',
+        logoSrc: '/img/logos/everselflogo.png',
+        logoHasName: true,
+        logoScale: 1.6,
+        screenshotSrc: '/img/solutions/everself-screenshot.png',
+        screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
+        valueStatement:
+          'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs, unifying scheduling, charting, messaging, labs, and device data across multiple sites into a single patient record — with a triaged inbox that helps a lean care team manage a growing patient panel.',
+        quote: {
+          text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
+          attribution: 'Petch Jirapinyo',
+          title: 'CEO, Everself',
+        },
+        caseStudyUrl: '/blog/everself-case-study',
+      },
     ],
     accelerator: {
       icon: 'IconRocket',
@@ -228,23 +245,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
       'Task management, scheduling, and care plans that keep clinical teams aligned — one queue, one record, no duplicate data entry across disconnected tools.',
     icon: 'IconFirstAidKit',
     customers: [
-      {
-        id: 'everself',
-        name: 'Everself',
-        logoSrc: '/img/logos/everselflogo.png',
-        logoHasName: true,
-        logoScale: 1.6,
-        screenshotSrc: '/img/solutions/everself-screenshot.png',
-        screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
-        valueStatement:
-          'Everself coordinates care across its outpatient weight-loss sites on Medplum, giving a lean care team a single triaged inbox and one shared record for scheduling, messaging, labs, and device data — so a growing patient panel runs off one queue instead of a separate set of tools per site.',
-        quote: {
-          text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
-          attribution: 'Petch Jirapinyo',
-          title: 'CEO, Everself',
-        },
-        caseStudyUrl: '/blog/everself-case-study',
-      },
       {
         id: 'tia',
         name: 'Tia',
