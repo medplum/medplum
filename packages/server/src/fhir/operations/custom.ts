@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { BotResponseStream } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -8,7 +9,6 @@ import {
   normalizeOperationOutcome,
   Operator,
 } from '@medplum/core';
-import type { BotResponseStream } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';

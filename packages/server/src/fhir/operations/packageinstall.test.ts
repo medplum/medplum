@@ -1066,9 +1066,7 @@ describe('PackageRelease $install', () => {
     // its work, and made the documented reporting contract unusable.
     const informational: OperationOutcome = {
       resourceType: 'OperationOutcome',
-      issue: [
-        { severity: 'information', code: 'informational', details: { text: 'Base prompts ready: 3 created.' } },
-      ],
+      issue: [{ severity: 'information', code: 'informational', details: { text: 'Base prompts ready: 3 created.' } }],
     };
     vi.spyOn(botExecute, 'executeBot').mockResolvedValue({
       success: false,

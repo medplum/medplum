@@ -682,9 +682,7 @@ function setupBotFailed(result: BotExecutionResult): boolean {
   if (!isOperationOutcome(result.returnValue)) {
     return true;
   }
-  return (result.returnValue.issue ?? []).some(
-    (issue) => issue.severity === 'error' || issue.severity === 'fatal'
-  );
+  return (result.returnValue.issue ?? []).some((issue) => issue.severity === 'error' || issue.severity === 'fatal');
 }
 
 /**
