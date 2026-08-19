@@ -407,44 +407,40 @@ describe('narrowing to a location', () => {
     expect(providersOf(kept)).toStrictEqual(['Dr. James Kim', 'Dr. Maria Martinez', 'Dr. Wei Chen']);
   });
 
-  test('Keeps a practitioner licensed for a region the clinic sits inside', async () => {
-    // Licensure is usually held per state rather than per building, so a role
-    // covering the state covers the clinics in it.
+  test('Sites a practitioner only where a role names the clinic itself', async () => {
+    // A role naming the state the clinic sits in, or a theatre inside it, does
+    // not place the person here: a practitioner's roles and their locations both
+    // multiply, so reading those chains costs a request each. Comparing
+    // references also leaves no room for doubt, so an unreadable one is simply
+    // not the clinic rather than kept the way an unplaceable room is.
     const medplum = await setupSurgicalClient();
     await medplum.updateResource<Location>({ ...MainClinic, partOf: { reference: 'Location/state-ny' } });
     await medplum.createResource<Location>({ resourceType: 'Location', id: 'state-ny', name: 'New York' });
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (NY)', ['Location/state-ny']);
-
-    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
-
-    expect(providersOf(kept)).toContain('Dr. Wei Chen (NY)');
-  });
-
-  test('Keeps a practitioner whose role names a room inside the clinic', async () => {
-    // A role attached to a department or a room is inside the clinic, not beside
-    // it. The room itself is offered when booking here, so the practitioner in it
-    // has to be too.
-    const medplum = await setupSurgicalClient();
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (OR 3)', ['Location/or-3']);
-
-    const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
-
-    expect(providersOf(kept)).toContain('Dr. Wei Chen (OR 3)');
-    // Still measured against the site being booked: OR 3 is not at the satellite.
-    const atSatellite = await candidatesFor(medplum, SurgeryService, 'provider', { location: SatelliteClinic });
-    expect(providersOf(atSatellite)).not.toContain('Dr. Wei Chen (OR 3)');
-  });
-
-  test('Keeps a practitioner whose role names a location that cannot be read', async () => {
-    // The same leniency a room gets: an unreadable Location is unknown ancestry,
-    // not proof of being elsewhere, and a permissions gap must not quietly shorten
-    // the list of providers.
-    const medplum = await setupSurgicalClient();
     await addSitedSurgeon(medplum, 'Dr. Wei Chen (unknown site)', ['Location/deleted-site']);
 
     const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
-    expect(providersOf(kept)).toContain('Dr. Wei Chen (unknown site)');
+    // Only the fixture surgeons, whose roles name the clinic itself.
+    expect(providersOf(kept)).toStrictEqual(['Dr. James Kim', 'Dr. Maria Martinez', 'Dr. Wei Chen']);
+  });
+
+  test('Sites providers without reading a Location, unlike rooms', async () => {
+    const medplum = await setupSurgicalClient();
+    await addSitedSurgeon(medplum, 'Dr. Wei Chen (OR 3)', ['Location/or-3']);
+    const readReference = vi.spyOn(medplum, 'readReference');
+
+    await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
+
+    // The role locations are compared as strings, so a long list of them costs
+    // nothing beyond the one PractitionerRole search.
+    expect(readReference).not.toHaveBeenCalled();
+
+    await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: MainClinic });
+
+    // A room is one Location per candidate, which is cheap enough to walk.
+    expect(readReference).toHaveBeenCalled();
   });
 
   test('Keeps a practitioner whose role names no location at all', async () => {
@@ -506,18 +502,17 @@ describe('narrowing to a location', () => {
   });
 
   test('Searches every practitioner’s roles in one request, not one each', async () => {
-    // Repeated Location reads are left to the client's request cache, but no
-    // cache can turn one search per practitioner into one search, so the batching
-    // is this function's job and worth pinning.
+    // Nothing else collapses a search per practitioner into one search, so the
+    // batching is this function's job and worth pinning.
     const medplum = await setupSurgicalClient();
     for (const name of ['A', 'B', 'C', 'D']) {
-      await addSitedSurgeon(medplum, `Dr. Theatre ${name}`, ['Location/or-3']);
+      await addSitedSurgeon(medplum, `Dr. Theatre ${name}`, ['Location/main-clinic']);
     }
     const searchResources = vi.spyOn(medplum, 'searchResources');
 
     const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
 
-    // All four sit in a theatre inside the clinic, so all four survive.
+    // All four hold a role naming the clinic, so all four survive.
     expect(providersOf(kept).filter((name) => name.startsWith('Dr. Theatre'))).toHaveLength(4);
     expect(searchResources.mock.calls.filter(([type]) => type === 'PractitionerRole')).toHaveLength(1);
   });

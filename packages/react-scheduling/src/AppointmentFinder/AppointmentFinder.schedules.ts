@@ -76,7 +76,11 @@ export interface SearchScheduleCandidatesOptions {
   readonly role: SchedulingRole;
   /** What the user typed. Empty offers whatever the role has, unfiltered by name. */
   readonly query: string;
-  /** The site being booked at. Actors sited elsewhere are left out. */
+  /**
+   * The site being booked at. Actors sited elsewhere are left out: a room or a
+   * device anywhere inside it counts, a provider only if one of their
+   * PractitionerRoles names it.
+   */
   readonly location?: Reference<Location> | WithId<Location>;
   readonly signal?: AbortSignal;
   /** Maximum schedules to consider. Defaults to 25. */
@@ -229,16 +233,10 @@ export async function filterCandidatesByLocation(
   // The location where a Practitioner practices is recorded on their PractitionerRoles.
   const getRoles = lazy(() => searchRolesByPractitioner(medplum, candidates, options));
 
-  // The sites the location sits inside, so a role licensed for a whole state
-  // covers the sites within it.
-  const getAncestry = lazy(() => getLocationAncestry(medplum, locationReference, options));
-
   // Test candidates concurrently & let the client's request cache collapse repeated
   // Location reads.
   const verdicts = await Promise.all(
-    candidates.map(async (candidate) =>
-      isCandidateAtLocation(candidate, medplum, locationReference, getRoles, getAncestry, options)
-    )
+    candidates.map(async (candidate) => isCandidateAtLocation(candidate, medplum, locationReference, getRoles, options))
   );
 
   return candidates.filter((_, index) => verdicts[index]);
@@ -314,7 +312,6 @@ async function searchRolesByPractitioner(
  * @param medplum - The Medplum client.
  * @param locationReference - The site being booked at.
  * @param getRoles - Reads the candidates' PractitionerRoles, once between them all.
- * @param getAncestry - Reads the sites the booked location sits inside, once.
  * @param options - Abort signal.
  * @returns Whether the candidate is available at the location, or says nothing about it.
  */
@@ -323,7 +320,6 @@ async function isCandidateAtLocation(
   medplum: MedplumClient,
   locationReference: string,
   getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>,
-  getAncestry: () => Promise<ReadonlySet<string>>,
   options: FilterCandidatesOptions | undefined
 ): Promise<boolean> {
   const actor = candidate.actorResource;
@@ -341,7 +337,7 @@ async function isCandidateAtLocation(
       return isWithinLocation(medplum, device?.location?.reference, locationReference, options);
     }
     case 'provider':
-      return isPractitionerAtLocation(medplum, actorReference, locationReference, getRoles, getAncestry, options);
+      return isPractitionerAtLocation(actorReference, locationReference, getRoles);
     case undefined:
       // An actor of a type nothing books against, so nothing sites it either.
       return true;
@@ -356,21 +352,15 @@ async function isCandidateAtLocation(
  * Where someone practices lives on their PractitionerRoles, and a person with no
  * role that names a location is kept rather than hidden.
  *
- * @param medplum - The Medplum client.
  * @param actorReference - The practitioner the schedule is held on.
  * @param locationReference - The site being booked at.
  * @param getRoles - Reads the candidates' PractitionerRoles, once between them all.
- * @param getAncestry - Reads the sites the booked location sits inside, once.
- * @param options - Abort signal.
- * @returns Whether one of their roles reaches the site.
+ * @returns Whether one of their roles names the site.
  */
 async function isPractitionerAtLocation(
-  medplum: MedplumClient,
   actorReference: string | undefined,
   locationReference: string,
-  getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>,
-  getAncestry: () => Promise<ReadonlySet<string>>,
-  options: FilterCandidatesOptions | undefined
+  getRoles: () => Promise<ReadonlyMap<string, readonly PractitionerRole[]>>
 ): Promise<boolean> {
   const roles = await getRoles();
   const held = (actorReference ? roles.get(actorReference) : undefined) ?? [];
@@ -379,19 +369,7 @@ async function isPractitionerAtLocation(
     // Nothing records where this person practices.
     return true;
   }
-
-  const ancestry = await getAncestry();
-  for (const roleLocation of practiceLocations) {
-    // A role's location counts whether the chosen location sits inside it or
-    // it sits inside the chosen location.
-    if (roleLocation.reference && ancestry.has(roleLocation.reference)) {
-      return true;
-    }
-    if (await isWithinLocation(medplum, roleLocation.reference, locationReference, options)) {
-      return true;
-    }
-  }
-  return false;
+  return practiceLocations.some((roleLocation) => roleLocation.reference === locationReference);
 }
 
 function getActorType(reference: string | undefined): string | undefined {
@@ -436,23 +414,6 @@ async function isWithinLocation(
 
   // Deeper than we look. Treat it as unverifiable rather than excluded.
   return true;
-}
-
-async function getLocationAncestry(
-  medplum: MedplumClient,
-  locationReference: string,
-  options: FilterCandidatesOptions | undefined
-): Promise<Set<string>> {
-  const ancestry = new Set<string>();
-  let reference: string | undefined = locationReference;
-
-  for (let depth = 0; depth < MAX_LOCATION_DEPTH && reference; depth++) {
-    ancestry.add(reference);
-    const location = await readLocation(medplum, reference, options);
-    reference = location?.partOf?.reference;
-  }
-
-  return ancestry;
 }
 
 /**

@@ -19,7 +19,11 @@ export interface AppointmentActorSelectProps {
   readonly role: SchedulingRole;
   /** The service being booked. Nothing is offered until it resolves. */
   readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
-  /** The site being booked at. Actors sited elsewhere are left out. */
+  /**
+   * The site being booked at. Actors sited elsewhere are left out: a room or a
+   * device anywhere inside it counts, a provider only if one of their
+   * PractitionerRoles names it.
+   */
   readonly location?: Reference<Location> | WithId<Location>;
   readonly defaultValue?: readonly ScheduleCandidate[];
   readonly onChange: (candidates: readonly ScheduleCandidate[]) => void;
