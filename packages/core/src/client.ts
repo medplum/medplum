@@ -934,8 +934,9 @@ export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
  * Conditional methods (`createResourceIfNoneExist`, `upsertResource`) emit
  * even when the server made no change, except on HTTP 304 "Not Modified".
  *
- * @template T - The type of the modified resource. Defaults to `Resource`; narrow it (e.g. via
- * `useResourceModified('Slot', ...)`) to get a typed `resource` payload without extra guards.
+ * The generic type parameter `T` specifies the type of the modified resource.
+ * It defaults to `Resource`; narrow it (e.g. via `useResourceModified('Slot', ...)`)
+ * to get a typed `resource` payload without extra guards.
  */
 export interface ResourceModifiedEvent<T extends Resource = Resource> {
   /** The type of the modified resource. */
