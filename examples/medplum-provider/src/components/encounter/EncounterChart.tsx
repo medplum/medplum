@@ -140,10 +140,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
       const tasksToUpdate = tasks.filter((task) => !TASK_COMPLETED_STATUSES.has(task.status));
       const updatedTasks = await Promise.all(
         tasksToUpdate.map((task) =>
-          medplum.updateResource({
-            ...task,
-            status: 'completed',
-          })
+          medplum.patchResource('Task', task.id, [{ op: 'replace', path: '/status', value: 'completed' }])
         )
       );
 
@@ -156,7 +153,9 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
 
       // Mark clinical impression as completed
       if (clinicalImpression) {
-        const updatedImpression = await medplum.updateResource({ ...clinicalImpression, status: 'completed' });
+        const updatedImpression = await medplum.patchResource('ClinicalImpression', clinicalImpression.id, [
+          { op: 'replace', path: '/status', value: 'completed' },
+        ]);
         setClinicalImpression(updatedImpression);
       }
     }

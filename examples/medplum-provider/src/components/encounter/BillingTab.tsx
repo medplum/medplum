@@ -3,7 +3,7 @@
 import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
-import type { WithId } from '@medplum/core';
+import type { PatchOperation, WithId } from '@medplum/core';
 import { CPT, getReferenceString } from '@medplum/core';
 import type {
   ChargeItem,
@@ -23,7 +23,6 @@ import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/ico
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
 import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
@@ -57,8 +56,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
   const [claimResponseLoading, setClaimResponseLoading] = useState(false);
-
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   useEffect(() => {
     const fetchClaim = async (): Promise<void> => {
@@ -139,13 +136,20 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     fetchClaimResponse().catch((err) => showErrorNotification(err));
   }, [fetchClaimResponse]);
 
+  const debouncedPatchDiagnosis = useDebouncedCallback(async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
+    try {
+      await medplum.patchResource('Encounter', encounter.id, [{ op: 'add', path: '/diagnosis', value: diagnosis }]);
+    } catch (err) {
+      showErrorNotification(err);
+    }
+  }, SAVE_TIMEOUT_MS);
+
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
-      const updatedEncounter = { ...encounter, diagnosis };
-      setEncounter(updatedEncounter);
-      await debouncedUpdateResource(updatedEncounter);
+      setEncounter({ ...encounter, diagnosis });
+      debouncedPatchDiagnosis(diagnosis);
     },
-    [encounter, setEncounter, debouncedUpdateResource]
+    [encounter, setEncounter, debouncedPatchDiagnosis]
   );
 
   const generateClaim = useCallback(
@@ -183,9 +187,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [patient, encounter, practitioner, chargeItems, conditions, coverage, medplum, setClaim]
   );
 
-  const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
+  const handleEncounterChange = useDebouncedCallback(async (ops: PatchOperation[]): Promise<void> => {
     try {
-      const savedEncounter = await medplum.updateResource(updatedEncounter);
+      const savedEncounter = await medplum.patchResource('Encounter', encounter.id, ops);
       setEncounter(savedEncounter);
 
       if (savedEncounter?.participant?.[0]?.individual) {

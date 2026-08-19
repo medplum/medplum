@@ -22,7 +22,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { BillingTab } from './BillingTab';
@@ -104,22 +103,12 @@ const mockClaim: WithId<Claim> = {
   provider: { reference: 'Practitioner/practitioner-123' },
 };
 
-const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource> => {
-  const fn = vi.fn().mockResolvedValue(undefined) as unknown as ReturnType<
-    typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource
-  >;
-  fn.cancel = vi.fn();
-  return fn;
-};
-
 describe('BillingTab', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    // Mock useDebouncedUpdateResource to return a function that resolves immediately
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(mockDebouncedUpdate());
     // BillingTab fetches its own charge items; default to a single CPT charge item.
     vi.spyOn(chargeItemsUtils, 'getChargeItemsForEncounter').mockResolvedValue([mockChargeItem]);
   });
@@ -652,7 +641,7 @@ describe('BillingTab', () => {
     // Coverage on mount, Practitioner for the practitioner search, and no existing Claim.
     mockSearchResources({ Coverage: [mockCoverage], Practitioner: [mockPractitioner1, mockPractitioner2] });
     mockChargeItems([appliedChargeItem]); // Charge items already present
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedEncounter as any);
+    vi.spyOn(medplum, 'patchResource').mockResolvedValue(updatedEncounter as any);
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
     // Setup with charge items but no claim initially
@@ -695,7 +684,9 @@ describe('BillingTab', () => {
 
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        expect(medplum.patchResource).toHaveBeenCalledWith('Encounter', 'encounter-123', [
+          expect.objectContaining({ op: 'add', path: '/participant' }),
+        ]);
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
@@ -856,10 +847,8 @@ describe('BillingTab', () => {
 
   test('handles error in encounter change', async () => {
     const setEncounter = vi.fn();
-    const debouncedUpdateResource = mockDebouncedUpdate();
 
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
-    vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Update failed'));
+    vi.spyOn(medplum, 'patchResource').mockRejectedValue(new Error('Update failed'));
 
     await setup({
       setEncounter,
