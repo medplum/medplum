@@ -62,7 +62,7 @@
     "@medplum/fhirtypes": "5.1.30",
     "@medplum/mock": "5.1.30",
     "@medplum/react-hooks": "5.1.30",
-    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.2",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

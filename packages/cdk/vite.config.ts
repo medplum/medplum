@@ -8,6 +8,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/cdk',
     globals: true,
     environment: 'node',
     fileParallelism: false,
