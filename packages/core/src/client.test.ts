@@ -3982,7 +3982,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
       client.setAccessToken(accessToken);
       await client.download(externalUrl);
-      
+
       // Verify the Authorization header was NOT sent to external URL
       expect(fetch).toHaveBeenCalledWith(
         externalUrl,
@@ -3993,11 +3993,11 @@ describe('Client', () => {
           },
         })
       );
-      
+
       // Verify Authorization header is NOT present
       const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(callArgs[1].headers.Authorization).toBeUndefined();
-      
+
       // Verify credentials are NOT included for external URLs
       expect(callArgs[1].credentials).toBeUndefined();
     });
@@ -4009,7 +4009,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
       client.setAccessToken(accessToken);
       await client.download(internalUrl);
-      
+
       // Verify the Authorization header WAS sent to internal URL
       const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(callArgs[1].headers.Authorization).toBe(`Bearer ${accessToken}`);
@@ -4022,7 +4022,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
       client.setAccessToken(accessToken);
       await client.download(externalUrl);
-      
+
       // Verify the Authorization header was NOT sent
       const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(callArgs[1].headers.Authorization).toBeUndefined();
