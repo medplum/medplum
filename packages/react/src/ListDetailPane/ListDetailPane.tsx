@@ -112,9 +112,7 @@ const HEADER_HEIGHT = 64;
  * @param props - The ListDetailPane React props.
  * @returns The ListDetailPane React node.
  */
-export function ListDetailPane<T extends { id?: string } = Resource>(
-  props: ListDetailPaneProps<T>
-): JSX.Element {
+export function ListDetailPane<T extends { id?: string } = Resource>(props: ListDetailPaneProps<T>): JSX.Element {
   const {
     items,
     loading,
