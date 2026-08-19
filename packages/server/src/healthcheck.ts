@@ -29,11 +29,10 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 
   let postgresReaderOk: boolean | undefined;
   if (hasSeparateReaderPool()) {
-    readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
-    startTime = Date.now();
     try {
-      await testPostgres(readerConn);
-      postgresReaderOk = true;
+      readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
+      startTime = Date.now();
+      postgresReaderOk = await testPostgres(readerConn);
     } catch {
       postgresReaderOk = false;
     }
