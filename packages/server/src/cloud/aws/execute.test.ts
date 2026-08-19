@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+import {
+  InvokeCommand,
+  LambdaClient,
+  ListLayerVersionsCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-lambda';
 import { badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -13,7 +18,7 @@ import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
-import { getLambdaFunctionName } from './execute';
+import { getLambdaFunctionName, normalizeLambdaExecutionError } from './execute';
 
 const app = express();
 let accessToken: string;
@@ -247,5 +252,34 @@ describe('Execute', () => {
       .send({});
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(outcome);
+  });
+
+  test('Execute bot that has not been deployed', async () => {
+    // AWS reports a bot whose Lambda was never created as "Function not found"
+    mockLambdaClient
+      .on(InvokeCommand)
+      .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
+
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual(
+      `Bot is not deployed (AWS Lambda function "medplum-bot-lambda-${bot.id}" not found). Deploy the bot with Bot/$deploy and try again.`
+    );
+  });
+});
+
+describe('normalizeLambdaExecutionError', () => {
+  test('Missing function reports the deploy operation', () => {
+    expect(normalizeLambdaExecutionError(new ResourceNotFoundException({ $metadata: {}, message: 'x' }), 'my-fn')).toBe(
+      'Bot is not deployed (AWS Lambda function "my-fn" not found). Deploy the bot with Bot/$deploy and try again.'
+    );
+  });
+
+  test('Other errors are passed through', () => {
+    expect(normalizeLambdaExecutionError(new Error('Rate exceeded'), 'my-fn')).toBe('Rate exceeded');
   });
 });
