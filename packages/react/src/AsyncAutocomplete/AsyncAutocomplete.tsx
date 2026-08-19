@@ -140,7 +140,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setAbortController(undefined);
         }
       });
-  }, [combobox, loadOptions, onChange, toOption, minInputLength]);
+  }, [combobox, loadOptions, onChange, toOption, minInputLength, setTimer, setAutoSubmit, setAbortController]);
 
   const handleSearchChange = useCallback(
     (e: SyntheticEvent): void => {
@@ -163,7 +163,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       const newTimer = window.setTimeout(() => handleTimer(), 100);
       setTimer(newTimer);
     },
-    [combobox, options, creatable, handleTimer]
+    [combobox, options, creatable, handleTimer, setTimer, setSearch, setAbortController]
   );
 
   const addSelected = useCallback(
@@ -228,7 +228,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         addSelected(val);
       }
     };
-  }, [addSelected, combobox, disabled, maxValues, search]);
+  }, [addSelected, combobox, disabled, maxValues, search, setSearch]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
@@ -252,7 +252,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [abortController, handleValueRemove, search.length, selected, timer]
+    [abortController, handleValueRemove, search.length, selected, timer, setAutoSubmit]
   );
 
   useEffect(() => {
