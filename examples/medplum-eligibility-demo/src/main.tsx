@@ -38,6 +38,20 @@ const theme = createTheme({
 });
 
 const container = document.getElementById('root') as HTMLDivElement;
+function setEnvironmentFavicon(): void {
+  const { hostname } = window.location;
+  if (hostname === 'medplum.com' || hostname.endsWith('.medplum.com')) {
+    return;
+  }
+  const isLocal = /^(localhost|127\.0\.0\.1)$/.test(hostname) || /\.local(host)?$/.test(hostname);
+  const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (link) {
+    link.href = isLocal ? '/favicon-local.ico' : '/favicon-staging.ico';
+  }
+}
+
+setEnvironmentFavicon();
+
 const root = createRoot(container);
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 root.render(
