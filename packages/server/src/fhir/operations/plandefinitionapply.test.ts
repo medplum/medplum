@@ -6,6 +6,7 @@ import type {
   ActivityDefinition,
   CarePlan,
   Encounter,
+  Goal,
   OperationOutcome,
   Organization,
   Patient,
@@ -1375,5 +1376,158 @@ describe('PlanDefinition apply', () => {
     expect(res5).toHaveStatus(200);
     const requestGroup = res5.body as RequestGroup;
     expect(requestGroup.instantiatesCanonical).toStrictEqual([planDefinition.url]);
+  });
+  test('Creates Goal resources from PlanDefinition.goal', async () => {
+    // 1. Create a PlanDefinition with goals
+    // 2. Create a Patient
+    // 3. Apply the PlanDefinition
+    // 4. Verify the CarePlan references the Goals
+    // 5. Verify the Goal contents
+
+    // 1. Create a PlanDefinition with goals
+    const res1 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        status: 'active',
+        goal: [
+          {
+            id: 'goal-1',
+            category: { text: 'Treatment' },
+            description: { text: 'Reduce hemoglobin A1c below 7.0%' },
+            priority: { text: 'high-priority' },
+            start: { text: 'When treatment starts' },
+            target: [
+              {
+                measure: { text: 'Hemoglobin A1c' },
+                detailQuantity: { value: 7, unit: '%' },
+                due: { value: 90, unit: 'days' },
+              },
+            ],
+          },
+          {
+            description: { text: 'Attend all scheduled follow up visits' },
+          },
+        ],
+        action: [
+          {
+            title: 'Follow up visit',
+          },
+        ],
+      });
+    expect(res1).toHaveStatus(201);
+
+    // 2. Create a Patient
+    const res2 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Goal'], family: 'Demo' }],
+      });
+    expect(res2).toHaveStatus(201);
+    const patient = res2.body as WithId<Patient>;
+
+    // 3. Apply the PlanDefinition
+    const res3 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res1.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(patient),
+          },
+        ],
+      });
+    expect(res3).toHaveStatus(200);
+
+    // 4. Verify the CarePlan references the Goals
+    const carePlan = res3.body as WithId<CarePlan>;
+    expect(carePlan.goal).toHaveLength(2);
+
+    // 5. Verify the Goal contents
+    const res4 = await request(app)
+      .get(`/fhir/R4/${carePlan.goal?.[0]?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4).toHaveStatus(200);
+    const goal1 = res4.body as Goal;
+    expect(goal1.lifecycleStatus).toStrictEqual('proposed');
+    expect(goal1.subject).toMatchObject({ reference: getReferenceString(patient) });
+    expect(goal1.description).toMatchObject({ text: 'Reduce hemoglobin A1c below 7.0%' });
+    expect(goal1.category).toStrictEqual([{ text: 'Treatment' }]);
+    expect(goal1.priority).toMatchObject({ text: 'high-priority' });
+    expect(goal1.startCodeableConcept).toMatchObject({ text: 'When treatment starts' });
+    expect(goal1.target).toStrictEqual([
+      {
+        measure: { text: 'Hemoglobin A1c' },
+        detailQuantity: { value: 7, unit: '%' },
+        dueDuration: { value: 90, unit: 'days' },
+      },
+    ]);
+
+    const res5 = await request(app)
+      .get(`/fhir/R4/${carePlan.goal?.[1]?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res5).toHaveStatus(200);
+    const goal2 = res5.body as Goal;
+    expect(goal2.description).toMatchObject({ text: 'Attend all scheduled follow up visits' });
+    expect(goal2.category).toBeUndefined();
+    expect(goal2.priority).toBeUndefined();
+    expect(goal2.startCodeableConcept).toBeUndefined();
+    expect(goal2.target).toBeUndefined();
+  });
+
+  test('PlanDefinition without goals does not populate CarePlan.goal', async () => {
+    // 1. Create a PlanDefinition without goals
+    const res1 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        status: 'active',
+        action: [
+          {
+            title: 'Follow up visit',
+          },
+        ],
+      });
+    expect(res1).toHaveStatus(201);
+
+    // 2. Create a Patient
+    const res2 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['NoGoal'], family: 'Demo' }],
+      });
+    expect(res2).toHaveStatus(201);
+
+    // 3. Apply the PlanDefinition
+    const res3 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res1.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(res2.body as Patient),
+          },
+        ],
+      });
+    expect(res3).toHaveStatus(200);
+    expect((res3.body as CarePlan).goal).toBeUndefined();
   });
 });
