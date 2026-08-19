@@ -10,6 +10,7 @@ import {
   getExtensionValue,
   getReferenceString,
   isOk,
+  isOperationOutcome,
   isResource,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -21,11 +22,13 @@ import {
 import type { FhirRepository, FhirRequest, FhirResponse, FhirRouter } from '@medplum/fhir-router';
 import { processBatch } from '@medplum/fhir-router';
 import type {
+  AuditEvent,
   Binary,
   Bot,
   Bundle,
   BundleEntry,
   Extension,
+  OperationOutcome,
   PackageInstallation,
   PackageRelease,
   Parameters,
@@ -38,6 +41,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
 import { executeBot } from '../../bots/execute';
+import type { BotExecutionResult } from '../../bots/types';
 import { getBotProjectMembership } from '../../bots/utils';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
@@ -53,6 +57,15 @@ import { deployBot } from './deploy';
  * for cross-reference; the install handler does not depend on it directly.
  */
 export const PackageInstallTagSystem = 'https://medplum.com/package-install';
+
+/**
+ * Coding system for the install `AuditEvent`'s type and subtype.
+ *
+ * Deliberately the same URL as {@link PackageInstallTagSystem}: both identify the
+ * install operation, and giving them separate namespaces would imply a distinction
+ * that does not exist.
+ */
+export const PackageInstallAuditSystem = PackageInstallTagSystem;
 
 /**
  * Extension declared on a `PackageRelease` naming the setupBot run in the
@@ -198,10 +211,11 @@ export async function packageInstallHandler(
 
   let phase: InstallErrorPhase = skipInstallBundle ? 'setup-bot' : 'install-bundle';
   let installBundleResult: Bundle | undefined;
+  let commissionedBots: string[] = [];
   try {
     if (!skipInstallBundle) {
       installBundleResult = await applyInstallBundle(req, repo, router, bundle, packageRelease);
-      await commissionInstalledBots(ctx, installBundleResult);
+      commissionedBots = await commissionInstalledBots(ctx, installBundleResult);
       phase = 'setup-bot';
     }
 
@@ -216,6 +230,15 @@ export async function packageInstallHandler(
       clearErrorState({ ...installation, status: 'installed' })
     );
 
+    await recordInstallAuditEvent(ctx, {
+      packageRelease,
+      installation,
+      phase,
+      skippedInstallBundle: skipInstallBundle,
+      commissionedBots,
+      configHash,
+    });
+
     // Prefer the setupBot's one-shot-credentials outcome; otherwise fall back to
     // the install-bundle batch response (legacy behavior) or the installation record.
     return [allOk, setupBotResult ?? installBundleResult ?? installation];
@@ -225,7 +248,97 @@ export async function packageInstallHandler(
     await systemRepo.updateResource<PackageInstallation>(
       setErrorState(installation, phase, outcome.issue?.[0]?.details?.text ?? 'Package install failed')
     );
+    await recordInstallAuditEvent(ctx, {
+      packageRelease,
+      installation,
+      phase,
+      skippedInstallBundle: skipInstallBundle,
+      commissionedBots,
+      configHash,
+      error: outcome,
+    });
     return [outcome];
+  }
+}
+
+/**
+ * Records the install attempt as an `AuditEvent` in the installing project.
+ *
+ * The `PackageInstallation` alone cannot answer "what happened here": it is a
+ * current-state record that this operation mutates in place, and a success clears
+ * the error extensions a previous attempt set. So a package that installed only on
+ * the third try, or that reached the setup bot and failed there, reads afterwards
+ * exactly like one that installed cleanly the first time.
+ *
+ * Written for failures as well as successes, because a partially-applied install is
+ * the case someone actually needs to reconstruct — which phase it reached, what it
+ * commissioned, and whether the install bundle was replayed or resumed past.
+ *
+ * A failure to write the record never fails the install: the install already
+ * happened, and turning an audit problem into an install problem would be worse
+ * than the gap. It is logged at error level so the gap is not silent.
+ * @param ctx - The authenticated request context of the installing admin.
+ * @param details - What to record.
+ * @param details.packageRelease - The release being installed.
+ * @param details.installation - The installation record as it now stands.
+ * @param details.phase - The phase reached (on failure, the phase that failed).
+ * @param details.skippedInstallBundle - Whether this attempt resumed past the install bundle.
+ * @param details.commissionedBots - Bots given a membership and deployed by this attempt.
+ * @param details.configHash - Hash of the submitted settings, to correlate reconfigures.
+ * @param details.error - Present when the install failed.
+ */
+async function recordInstallAuditEvent(
+  ctx: AuthenticatedRequestContext,
+  details: {
+    packageRelease: WithId<PackageRelease>;
+    installation: WithId<PackageInstallation>;
+    phase: InstallErrorPhase;
+    skippedInstallBundle: boolean;
+    commissionedBots: string[];
+    configHash: string;
+    error?: OperationOutcome;
+  }
+): Promise<void> {
+  const { packageRelease, installation, phase, skippedInstallBundle, commissionedBots, configHash, error } = details;
+  const releaseRef = packageRelease.identifier?.[0]?.value ?? getReferenceString(packageRelease);
+  const detail = [
+    `phase=${phase}`,
+    `version=${packageRelease.version}`,
+    `installBundle=${skippedInstallBundle ? 'resumed' : 'applied'}`,
+    `commissionedBots=${commissionedBots.length}`,
+    `configHash=${configHash}`,
+    error ? `error=${error.issue?.[0]?.details?.text ?? 'unknown'}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  try {
+    await ctx.systemRepo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      meta: { project: ctx.project.id },
+      type: {
+        system: PackageInstallAuditSystem,
+        code: 'package-install',
+        display: 'Marketplace package install',
+      },
+      subtype: [{ system: PackageInstallAuditSystem, code: error ? 'install-failure' : 'install-success' }],
+      action: 'C',
+      recorded: new Date().toISOString(),
+      outcome: error ? '8' : '0',
+      outcomeDesc: `${releaseRef} ${error ? 'failed' : 'installed'}: ${detail}`,
+      // `AuditEvent.source.observer` cannot reference a Project, and the project is
+      // already recorded by `meta.project`, so name the recorder rather than
+      // duplicating the agent.
+      source: { observer: { display: 'Medplum server' } },
+      agent: [{ who: ctx.membership.profile, requestor: true }],
+      entity: [
+        { what: createReference(packageRelease), name: 'package-release' },
+        { what: createReference(installation), name: 'package-installation' },
+        ...commissionedBots.map((reference) => ({ what: { reference }, name: 'commissioned-bot' })),
+      ],
+    });
+  } catch (auditErr) {
+    getLogger().error('Could not record package install AuditEvent', { err: auditErr, release: releaseRef });
   }
 }
 
@@ -394,12 +507,17 @@ async function resolveConditionalEntries(repo: FhirRepository, bundle: Bundle): 
  * Runs after the install-bundle phase commits, and is idempotent for the same
  * reasons that phase is: the membership is created only when absent, and a
  * deploy overwrites whatever the last one left. A re-installed Bundle in fact
- * requires* the redeploy, since its conditional `PUT` replaces the Bot row and
+ * requires the redeploy, since its conditional `PUT` replaces the Bot row and
  * drops the `executableCode` the previous deploy attached.
  * @param ctx - The authenticated request context of the installing admin.
  * @param installBundleResult - The install-bundle batch response, whose entries carry the written resources.
+ * @returns References to the bots commissioned, for the install audit record.
  */
-async function commissionInstalledBots(ctx: AuthenticatedRequestContext, installBundleResult: Bundle): Promise<void> {
+async function commissionInstalledBots(
+  ctx: AuthenticatedRequestContext,
+  installBundleResult: Bundle
+): Promise<string[]> {
+  const commissioned: string[] = [];
   for (const entry of installBundleResult.entry ?? []) {
     const written = entry.resource;
     if (!isResource(written, 'Bot') || !written.id) {
@@ -411,6 +529,7 @@ async function commissionInstalledBots(ctx: AuthenticatedRequestContext, install
     // necessarily carry it (same rationale as `Bot/$init`).
     const bot = await ctx.systemRepo.readResource<Bot>('Bot', written.id);
     await ensureBotMembership(ctx, bot);
+    commissioned.push(getReferenceString(bot));
 
     if (!bot.code) {
       // Nothing to deploy. A Bundle entry with no `code` is a declaration the
@@ -434,6 +553,7 @@ async function commissionInstalledBots(ctx: AuthenticatedRequestContext, install
       );
     }
   }
+  return commissioned;
 }
 
 /**
@@ -527,14 +647,71 @@ async function runSetupBot(
     traceId: ctx.traceId,
   });
 
-  if (!result.success) {
-    throw new OperationOutcomeError(badRequest(result.logResult || 'Setup bot execution failed'));
+  if (setupBotFailed(result)) {
+    throw new OperationOutcomeError(badRequest(describeSetupBotFailure(result)));
   }
 
   if (isResource(result.returnValue)) {
     return result.returnValue;
   }
   return undefined;
+}
+
+/**
+ * Decides whether a setup bot actually failed.
+ *
+ * `normalizeBotExecutionResult` marks *any* bot that returned a non-OK
+ * `OperationOutcome` as failed, and an `OperationOutcome` is only "OK" if it says
+ * so explicitly. But reporting through an outcome is precisely the setup-bot
+ * contract: it hands back one-shot credentials that way, and a hook that merely
+ * describes what it seeded returns nothing but `information` issues. Under the
+ * plain `success` flag both of those read as failures, which makes the documented
+ * contract unusable — an install would fail after the hook had already done its
+ * work, and re-running it is the only recovery.
+ *
+ * So the outcome is inspected rather than trusted wholesale: a genuine failure is
+ * an execution that produced no outcome to interpret, or one that reports an
+ * `error` or `fatal` issue.
+ * @param result - The bot execution result.
+ * @returns True if the install should treat this as a failure.
+ */
+function setupBotFailed(result: BotExecutionResult): boolean {
+  if (result.success) {
+    return false;
+  }
+  if (!isOperationOutcome(result.returnValue)) {
+    return true;
+  }
+  return (result.returnValue.issue ?? []).some(
+    (issue) => issue.severity === 'error' || issue.severity === 'fatal'
+  );
+}
+
+/**
+ * Builds the message for a setup bot that did not succeed.
+ *
+ * A hook that reports its findings by returning an `OperationOutcome` — which is the
+ * documented contract, and what makes one-shot credentials possible — will often log
+ * nothing at all. `normalizeBotExecutionResult` then marks it failed for carrying a
+ * non-OK outcome, so falling back to `logResult` alone throws away the only
+ * description of what went wrong and reports a bare "execution failed" instead.
+ * @param result - The bot execution result.
+ * @returns The most specific description available.
+ */
+function describeSetupBotFailure(result: BotExecutionResult): string {
+  if (result.logResult) {
+    return result.logResult;
+  }
+  if (isOperationOutcome(result.returnValue)) {
+    const problems = (result.returnValue.issue ?? [])
+      .filter((issue) => issue.severity === 'error' || issue.severity === 'fatal')
+      .map((issue) => issue.details?.text ?? issue.diagnostics)
+      .filter((text): text is string => !!text);
+    if (problems.length > 0) {
+      return problems.join('; ');
+    }
+  }
+  return 'Setup bot execution failed';
 }
 
 // Appends the shared impl `Project` to the calling `Project.link` if the

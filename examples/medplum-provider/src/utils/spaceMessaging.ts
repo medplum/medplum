@@ -7,11 +7,25 @@ import type { useMedplum } from '@medplum/react';
 import type { Message } from '../types/spaces';
 import { createConversationTopic, saveMessage } from './spacePersistence';
 
+/**
+ * Identifier system for the bots the Spaces package publishes.
+ *
+ * Namespaced per package rather than the bare `.../bots`, because these are
+ * resolved by identifier and that search spans every linked project exporting
+ * `Bot` — so two packages using the same short name would both match. Kept in
+ * step with `botIdentifierSystem('spaces')` in `@medplum-ee/package-types`.
+ */
+const SPACES_BOT_SYSTEM = 'https://www.medplum.com/bots/spaces';
+
 const fhirRequestToolsId: Identifier = {
   value: 'ai-fhir-request-tools',
-  system: 'https://www.medplum.com/bots',
+  system: SPACES_BOT_SYSTEM,
 };
 
+/**
+ * Non-streaming summary fallback. No package publishes this bot, so it only
+ * resolves in a project where one was created by hand.
+ */
 const resourceSummaryBotId: Identifier = {
   value: 'ai-resource-summary',
   system: 'https://www.medplum.com/bots',
@@ -19,12 +33,12 @@ const resourceSummaryBotId: Identifier = {
 
 const resourceSummaryBotSseId: Identifier = {
   value: 'ai-resource-summary-sse',
-  system: 'https://www.medplum.com/bots',
+  system: SPACES_BOT_SYSTEM,
 };
 
 const componentGeneratorBotSseId: Identifier = {
   value: 'ai-component-generator-sse',
-  system: 'https://www.medplum.com/bots',
+  system: SPACES_BOT_SYSTEM,
 };
 
 export interface ToolCall {

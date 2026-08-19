@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference, Operator, resolveId } from '@medplum/core';
 import type {
+  AuditEvent,
   Binary,
   Bot,
   Bundle,
@@ -1056,5 +1057,218 @@ describe('PackageRelease $install', () => {
     const installations = await searchInstallations('14.0.0');
     expect(installations).toHaveLength(1);
     expect(installations[0].status).toBe('installed');
+  });
+
+  test('A setup bot that reports only informational issues has succeeded', async () => {
+    // The Spaces hook returns exactly this: an outcome describing what it seeded.
+    // An OperationOutcome is only "OK" if it says so, so the plain success flag
+    // reads this as a failure — which failed the install *after* the hook had done
+    // its work, and made the documented reporting contract unusable.
+    const informational: OperationOutcome = {
+      resourceType: 'OperationOutcome',
+      issue: [
+        { severity: 'information', code: 'informational', details: { text: 'Base prompts ready: 3 created.' } },
+      ],
+    };
+    vi.spyOn(botExecute, 'executeBot').mockResolvedValue({
+      success: false,
+      logResult: '',
+      returnValue: informational,
+    });
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-informational');
+    const release = await publishRelease(installBundle('test-proxy-informational'), {
+      version: '24.0.0',
+      setupBot: 'test-setup-informational',
+      implProject: implProject.id,
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).toBe(200);
+    expect(res.body.issue[0].details.text).toContain('Base prompts ready');
+
+    const installations = await searchInstallations('24.0.0');
+    expect(installations[0].status).toBe('installed');
+  });
+
+  test('A setup bot warning is a report, not a failure', async () => {
+    // Spaces warns when voice input was requested without the `ai-realtime`
+    // feature. That is advisory: the Plugin still works, so it must not fail the
+    // install the way an `error` issue does.
+    vi.spyOn(botExecute, 'executeBot').mockResolvedValue({
+      success: false,
+      logResult: '',
+      returnValue: {
+        resourceType: 'OperationOutcome',
+        issue: [{ severity: 'warning', code: 'incomplete', details: { text: 'Voice input needs ai-realtime' } }],
+      },
+    });
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-warning');
+    const release = await publishRelease(installBundle('test-proxy-warning'), {
+      version: '25.0.0',
+      setupBot: 'test-setup-warning',
+      implProject: implProject.id,
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).toBe(200);
+    expect((await searchInstallations('25.0.0'))[0].status).toBe('installed');
+  });
+
+  test('Surfaces a setup bot that reported its failure as an OperationOutcome', async () => {
+    // A hook that reports findings by returning an OperationOutcome often logs
+    // nothing, so `logResult` is empty and the outcome is the only diagnosis. Before
+    // this, the install reported a bare "Setup bot execution failed" and the reason
+    // was discarded — which is exactly the case an operator needs.
+    vi.spyOn(botExecute, 'executeBot').mockResolvedValue({
+      success: false,
+      logResult: '',
+      returnValue: {
+        resourceType: 'OperationOutcome',
+        issue: [
+          { severity: 'information', code: 'informational', details: { text: 'Base prompts ready: 3 created.' } },
+          { severity: 'error', code: 'invalid', details: { text: 'Project feature "ai" is not enabled' } },
+        ],
+      },
+    });
+    const { implProject } = await publishImplProjectWithSetupBot('test-setup-outcome');
+    const release = await publishRelease(installBundle('test-proxy-outcome'), {
+      version: '23.0.0',
+      setupBot: 'test-setup-outcome',
+      implProject: implProject.id,
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toContain('Project feature "ai" is not enabled');
+    // Only the error-severity issues; the informational one is not a failure reason.
+    expect(res.body.issue[0].details.text).not.toContain('Base prompts ready');
+  });
+
+  describe('audit trail', () => {
+    async function findInstallAuditEvents(releaseId: string): Promise<AuditEvent[]> {
+      const events = await getGlobalSystemRepo().searchResources<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: project.id },
+          { code: 'entity', operator: Operator.EQUALS, value: `PackageRelease/${releaseId}` },
+        ],
+      });
+      return events;
+    }
+
+    test('Records who installed which release, and what it commissioned', async () => {
+      const release = await publishRelease(installBundle('audit-proxy-a'), { version: '20.0.0' });
+
+      const res = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res.status).toBe(200);
+
+      const events = await findInstallAuditEvents(release.id);
+      expect(events).toHaveLength(1);
+      const event = events[0];
+      expect(event.type?.code).toBe('package-install');
+      expect(event.subtype?.[0]?.code).toBe('install-success');
+      expect(event.outcome).toBe('0');
+      expect(event.outcomeDesc).toContain('version=20.0.0');
+      expect(event.outcomeDesc).toContain('installBundle=applied');
+      expect(event.outcomeDesc).toContain('commissionedBots=1');
+
+      // Attributable to the installing admin, not to the server.
+      expect(event.agent?.[0]?.who?.reference).toBeDefined();
+      expect(event.agent?.[0]?.requestor).toBe(true);
+
+      // The entities are what makes the install reconstructable afterwards.
+      const entityNames = (event.entity ?? []).map((e) => e.name);
+      expect(entityNames).toContain('package-release');
+      expect(entityNames).toContain('package-installation');
+      expect(entityNames).toContain('commissioned-bot');
+    });
+
+    test('Records a failed install, and the phase it failed in', async () => {
+      // A setup-bot failure is the case worth reconstructing: the install bundle
+      // committed, so the project is left in a partially-installed state.
+      vi.spyOn(botExecute, 'executeBot').mockResolvedValue({ success: false, logResult: 'setup exploded' });
+      const { implProject } = await publishImplProjectWithSetupBot('audit-setup-b');
+      const release = await publishRelease(installBundle('audit-proxy-b'), {
+        version: '21.0.0',
+        setupBot: 'audit-setup-b',
+        implProject: implProject.id,
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res.status).toBe(400);
+
+      const events = await findInstallAuditEvents(release.id);
+      expect(events).toHaveLength(1);
+      expect(events[0].subtype?.[0]?.code).toBe('install-failure');
+      expect(events[0].outcome).toBe('8');
+      expect(events[0].outcomeDesc).toContain('phase=setup-bot');
+      expect(events[0].outcomeDesc).toContain('setup exploded');
+    });
+
+    test('Retains the failed attempt after a later attempt succeeds', async () => {
+      // The PackageInstallation cannot show this on its own: a success clears the
+      // error extensions the failed attempt set, so without the audit events the
+      // first failure leaves no trace.
+      const execSpy = vi
+        .spyOn(botExecute, 'executeBot')
+        .mockResolvedValueOnce({ success: false, logResult: 'transient failure' })
+        .mockResolvedValue({ success: true, logResult: '' });
+      const { implProject } = await publishImplProjectWithSetupBot('audit-setup-c');
+      const release = await publishRelease(installBundle('audit-proxy-c'), {
+        version: '22.0.0',
+        setupBot: 'audit-setup-c',
+        implProject: implProject.id,
+      });
+
+      const failed = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(failed.status).toBe(400);
+
+      const succeeded = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(succeeded.status).toBe(200);
+      expect(execSpy).toHaveBeenCalledTimes(2);
+
+      // The record now reads `installed` with no error state at all.
+      const installations = await searchInstallations('22.0.0');
+      expect(installations[0].status).toBe('installed');
+      expect(installations[0].extension?.some((e) => e.url === PackageInstallationErrorPhaseUrl)).toBeFalsy();
+
+      // Both attempts remain retraceable, in order.
+      const events = await findInstallAuditEvents(release.id);
+      expect(events).toHaveLength(2);
+      const subtypes = events.map((e) => e.subtype?.[0]?.code).sort();
+      expect(subtypes).toStrictEqual(['install-failure', 'install-success']);
+
+      // The retry resumed past the committed install bundle rather than replaying it.
+      const success = events.find((e) => e.subtype?.[0]?.code === 'install-success');
+      expect(success?.outcomeDesc).toContain('installBundle=resumed');
+    });
   });
 });
