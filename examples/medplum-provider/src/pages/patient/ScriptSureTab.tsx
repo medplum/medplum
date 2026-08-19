@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, useComputedColorScheme } from '@mantine/core';
+import { Box, Center, Loader, useComputedColorScheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
@@ -55,6 +55,11 @@ export function ScriptSureTab(): JSX.Element {
 
   return (
     <Box style={{ flex: 1, minHeight: 0 }}>
+      {!renderedUrl && (
+        <Center mt="xl">
+          <Loader />
+        </Center>
+      )}
       {renderedUrl && (
         <iframe
           id="scriptsure-iframe"
