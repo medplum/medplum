@@ -1154,6 +1154,100 @@ describe('PackageRelease $install', () => {
     expect(res.body.issue[0].details.text).not.toContain('Base prompts ready');
   });
 
+  describe('package secrets', () => {
+    const secretExt = 'https://medplum.com/fhir/StructureDefinition/package-secret';
+
+    function questionnaireWithSecret(): Questionnaire {
+      return {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: 'https://example.com/Questionnaire/secret-config',
+        item: [
+          {
+            linkId: 'API_KEY',
+            type: 'string',
+            required: true,
+            extension: [{ url: secretExt, valueBoolean: true }],
+          },
+          // Not flagged: must stay out of Project.secret entirely.
+          { linkId: 'environment', type: 'string', required: false },
+          {
+            // Nested, to prove groups are walked.
+            linkId: 'advanced',
+            type: 'group',
+            item: [{ linkId: 'WEBHOOK_SECRET', type: 'string', extension: [{ url: secretExt, valueBoolean: true }] }],
+          },
+        ],
+      };
+    }
+
+    async function installWithSettings(version: string, parameters: Record<string, string>): Promise<void> {
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        meta: { project: project.id },
+        type: 'transaction',
+        entry: [{ resource: questionnaireWithSecret(), request: { method: 'POST', url: 'Questionnaire' } }],
+      };
+      const release = await publishRelease(bundle, { version });
+      const res = await request(app)
+        .post(`/fhir/R4/PackageRelease/${release.id}/$install`)
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: Object.entries(parameters).map(([name, valueString]) => ({ name, valueString })),
+        });
+      expect(res.status).toBe(200);
+    }
+
+    async function projectSecrets(): Promise<Record<string, string | undefined>> {
+      const current = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+      return Object.fromEntries((current.secret ?? []).map((s) => [s.name, s.valueString]));
+    }
+
+    test('Writes flagged answers to Project.secret and leaves the rest out', async () => {
+      await installWithSettings('30.0.0', {
+        API_KEY: 'sk-first',
+        environment: 'staging',
+        WEBHOOK_SECRET: 'whsec-first',
+      });
+
+      const secrets = await projectSecrets();
+      expect(secrets.API_KEY).toBe('sk-first');
+      // Nested inside a group, so this proves the walk recurses.
+      expect(secrets.WEBHOOK_SECRET).toBe('whsec-first');
+      // Not flagged — it is handed to the hook, not persisted as a secret.
+      expect(secrets).not.toHaveProperty('environment');
+    });
+
+    test('Rotating a secret replaces it rather than appending a duplicate', async () => {
+      await installWithSettings('31.0.0', { API_KEY: 'sk-old', WEBHOOK_SECRET: 'whsec-old' });
+      await installWithSettings('32.0.0', { API_KEY: 'sk-new', WEBHOOK_SECRET: 'whsec-old' });
+
+      const current = await getGlobalSystemRepo().readResource<Project>('Project', project.id);
+      const apiKeys = (current.secret ?? []).filter((s) => s.name === 'API_KEY');
+      expect(apiKeys).toHaveLength(1);
+      expect(apiKeys[0].valueString).toBe('sk-new');
+    });
+
+    test('Records how many secrets were written, without the values', async () => {
+      await installWithSettings('33.0.0', { API_KEY: 'sk-audited', WEBHOOK_SECRET: 'whsec-audited' });
+
+      const events = await getGlobalSystemRepo().searchResources<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: project.id },
+          { code: 'type', operator: Operator.EQUALS, value: 'package-install' },
+        ],
+        sortRules: [{ code: '_lastUpdated', descending: true }],
+        count: 1,
+      });
+      expect(events[0]?.outcomeDesc).toContain('secretsWritten=2');
+      expect(events[0]?.outcomeDesc).not.toContain('sk-audited');
+      expect(events[0]?.outcomeDesc).not.toContain('whsec-audited');
+    });
+  });
+
   describe('audit trail', () => {
     async function findInstallAuditEvents(releaseId: string): Promise<AuditEvent[]> {
       const events = await getGlobalSystemRepo().searchResources<AuditEvent>({

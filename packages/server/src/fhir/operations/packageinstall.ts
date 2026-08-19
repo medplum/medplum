@@ -34,6 +34,7 @@ import type {
   Parameters,
   Project,
   ProjectMembership,
+  ProjectSetting,
   Questionnaire,
   QuestionnaireItem,
   Reference,
@@ -92,6 +93,18 @@ export const PackageReleaseSetupBotUrl = 'https://medplum.com/fhir/StructureDefi
 export const PackageReleaseImplProjectUrl = 'https://medplum.com/fhir/StructureDefinition/packageRelease-impl-project';
 
 /**
+ * Extension on a config `Questionnaire.item` marking its answer as a secret, so
+ * `$install` writes it to `Project.secret` instead of leaving it to the package.
+ *
+ * Owned here rather than by the manifest tooling for the same reason as the two
+ * extensions above: the install operation is what acts on it, and a convention only
+ * the publisher knows is one the server cannot honor. A package that declares it and
+ * gets nothing is worse than one that never declared it, because the failure is
+ * silent until a bot tries to read the secret.
+ */
+export const PackageSecretExtensionUrl = 'https://medplum.com/fhir/StructureDefinition/package-secret';
+
+/**
  * `PackageInstallation` state extensions. Per RFC §Idempotent reconciliation these
  * are stored as extensions for v1 (no `status` enum change, no schema migration).
  */
@@ -145,9 +158,9 @@ type InstallSettings = Record<string, boolean | number | string>;
  * Install-bundle phase (declarative): apply the PackageRelease Bundle into the
  * calling project via `processBatch`, then commission the bots it wrote — a
  * Bundle can describe a Bot row but cannot give it a membership or a deployed
- * function. Setup-bot phase (imperative, Tier 3): invoke the declared setupBot
- * with the `PackageInstallation` + validated settings; the setupBot writes
- * `Project.secret` and returns one-shot credentials in an OperationOutcome.
+ * function. Secret-flagged answers are written to `Project.secret`. Setup-bot phase
+ * (imperative, Tier 3): invoke the declared setupBot with the `PackageInstallation`
+ * + validated settings; it returns one-shot credentials in an OperationOutcome.
  *
  * Endpoint: [fhir base]/PackageRelease/[id]/$install
  * @param req - The FHIR request.
@@ -212,6 +225,7 @@ export async function packageInstallHandler(
   let phase: InstallErrorPhase = skipInstallBundle ? 'setup-bot' : 'install-bundle';
   let installBundleResult: Bundle | undefined;
   let commissionedBots: string[] = [];
+  let secretsWritten = 0;
   try {
     if (!skipInstallBundle) {
       installBundleResult = await applyInstallBundle(req, repo, router, bundle, packageRelease);
@@ -223,6 +237,11 @@ export async function packageInstallHandler(
     // the setup-bot phase runs, so the setupBot can resolve impl resources through
     // the link.
     await linkImplProject(systemRepo, project, packageRelease);
+
+    // Before the setup bot, so a hook can verify the state it will run against, and
+    // outside the skip above, so a reconfigure with rotated values takes effect on a
+    // re-invoke that resumes past the committed bundle.
+    secretsWritten = await writePackageSecrets(systemRepo, project, questionnaire, settings);
 
     const setupBotResult = await runSetupBot(ctx, packageRelease, installation, settings);
 
@@ -236,6 +255,7 @@ export async function packageInstallHandler(
       phase,
       skippedInstallBundle: skipInstallBundle,
       commissionedBots,
+      secretsWritten,
       configHash,
     });
 
@@ -254,6 +274,7 @@ export async function packageInstallHandler(
       phase,
       skippedInstallBundle: skipInstallBundle,
       commissionedBots,
+      secretsWritten,
       configHash,
       error: outcome,
     });
@@ -284,6 +305,7 @@ export async function packageInstallHandler(
  * @param details.phase - The phase reached (on failure, the phase that failed).
  * @param details.skippedInstallBundle - Whether this attempt resumed past the install bundle.
  * @param details.commissionedBots - Bots given a membership and deployed by this attempt.
+ * @param details.secretsWritten - How many secret-flagged answers reached `Project.secret`.
  * @param details.configHash - Hash of the submitted settings, to correlate reconfigures.
  * @param details.error - Present when the install failed.
  */
@@ -295,17 +317,20 @@ async function recordInstallAuditEvent(
     phase: InstallErrorPhase;
     skippedInstallBundle: boolean;
     commissionedBots: string[];
+    secretsWritten: number;
     configHash: string;
     error?: OperationOutcome;
   }
 ): Promise<void> {
   const { packageRelease, installation, phase, skippedInstallBundle, commissionedBots, configHash, error } = details;
+  const { secretsWritten } = details;
   const releaseRef = packageRelease.identifier?.[0]?.value ?? getReferenceString(packageRelease);
   const detail = [
     `phase=${phase}`,
     `version=${packageRelease.version}`,
     `installBundle=${skippedInstallBundle ? 'resumed' : 'applied'}`,
     `commissionedBots=${commissionedBots.length}`,
+    `secretsWritten=${secretsWritten}`,
     `configHash=${configHash}`,
     error ? `error=${error.issue?.[0]?.details?.text ?? 'unknown'}` : undefined,
   ]
@@ -578,6 +603,89 @@ async function ensureBotMembership(ctx: AuthenticatedRequestContext, bot: WithId
     user: profile,
     profile,
   });
+}
+
+/**
+ * Writes the secret-flagged install answers to `Project.secret`.
+ *
+ * The config `Questionnaire` marks which answers are secrets; everything else stays
+ * in memory and is handed to the setup bot. Upserted by name rather than appended,
+ * so rotating a value on a re-install replaces it instead of leaving two entries
+ * under the same name with the stale one first.
+ *
+ * Written with `systemRepo` even though a project admin may edit `Project.secret`
+ * themselves. The project-admin policy hides `superAdmin`, `systemSecret`, and
+ * `strictMode` on the own-project entry, so a read-modify-write through the caller's
+ * repo risks writing the project back without them. The operation has already
+ * required the caller to be a project admin or super admin, which is the
+ * authorization; this is only about not truncating the resource. Same reason
+ * `linkImplProject` uses it.
+ *
+ * `Project.secret` is a single flat namespace shared with the platform — the `$ai`
+ * endpoint reads `OPENAI_API_KEY` from it, for instance — so names are deliberately
+ * not namespaced per package, and two packages choosing the same name will collide.
+ * That is a review concern rather than something to mangle here.
+ *
+ * Values are never logged, and only the count reaches the audit record.
+ * @param systemRepo - System repository.
+ * @param project - The installing project.
+ * @param questionnaire - The release's config Questionnaire, if it has one.
+ * @param settings - The validated install answers.
+ * @returns How many secrets were written.
+ */
+async function writePackageSecrets(
+  systemRepo: FhirRepository,
+  project: WithId<Project>,
+  questionnaire: Questionnaire | undefined,
+  settings: InstallSettings
+): Promise<number> {
+  if (!questionnaire) {
+    return 0;
+  }
+  const secretLinkIds: string[] = [];
+  collectSecretLinkIds(questionnaire.item, secretLinkIds);
+
+  const incoming = secretLinkIds
+    .filter((linkId) => settings[linkId] !== undefined)
+    .map((linkId) => toProjectSetting(linkId, settings[linkId]));
+  if (incoming.length === 0) {
+    return 0;
+  }
+
+  const current = await systemRepo.readResource<Project>('Project', project.id);
+  const merged = [...(current.secret ?? [])];
+  for (const setting of incoming) {
+    const existing = merged.findIndex((s) => s.name === setting.name);
+    if (existing >= 0) {
+      merged[existing] = setting;
+    } else {
+      merged.push(setting);
+    }
+  }
+
+  await systemRepo.updateResource<Project>({ ...current, secret: merged });
+  return incoming.length;
+}
+
+// Collects the linkIds whose item is flagged as a secret, including inside groups.
+function collectSecretLinkIds(items: QuestionnaireItem[] | undefined, out: string[]): void {
+  for (const item of items ?? []) {
+    if (item.linkId && getExtensionValue(item, PackageSecretExtensionUrl) === true) {
+      out.push(item.linkId);
+    }
+    collectSecretLinkIds(item.item, out);
+  }
+}
+
+// Maps a settings value onto the matching `ProjectSetting` value element.
+function toProjectSetting(name: string, value: InstallSettings[string]): ProjectSetting {
+  if (typeof value === 'boolean') {
+    return { name, valueBoolean: value };
+  }
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? { name, valueInteger: value } : { name, valueDecimal: value };
+  }
+  return { name, valueString: value };
 }
 
 // Setup-bot phase: invoke the declared setupBot, passing the PackageInstallation and
