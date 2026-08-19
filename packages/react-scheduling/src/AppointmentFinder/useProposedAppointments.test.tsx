@@ -139,9 +139,10 @@ describe('useProposedAppointments', () => {
     expect(readResource).not.toHaveBeenCalled();
   });
 
-  test('Offers what several sets of actors found, as one list in time order', async () => {
+  test('Offers what several sets of actors found, as one list in the order they were asked', async () => {
     // `$find` cannot be asked for a choice, so a choice is a request each and
-    // the alternatives are read back together.
+    // the alternatives are read back together. The later request answers with
+    // the earlier time, so an ordering imposed here would show.
     const get = respond({
       'Schedule/dr-rivera': offered(WITH_RIVERA, '2026-08-10T16:00:00.000Z'),
       'Schedule/dr-okafor': offered(WITH_OKAFOR, '2026-08-10T09:00:00.000Z'),
@@ -152,22 +153,8 @@ describe('useProposedAppointments', () => {
 
     expect(get).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId('requests')).toHaveTextContent('2');
-    expect(screen.getByTestId('times')).toHaveTextContent('2026-08-10T09:00:00.000Z,2026-08-10T16:00:00.000Z');
-    expect(screen.getByTestId('actors')).toHaveTextContent('Practitioner/dr-okafor,Practitioner/dr-rivera');
-  });
-
-  test('Offers a time found for the same actors twice only once', async () => {
-    const time = '2026-08-10T15:00:00.000Z';
-    respond({
-      'Schedule/dr-rivera': offered(WITH_RIVERA, time),
-      'Schedule/dr-okafor': offered(WITH_RIVERA, time),
-    });
-
-    setup([WITH_RIVERA, WITH_OKAFOR]);
-    await settle();
-
-    expect(screen.getByTestId('times')).toHaveTextContent(time);
-    expect(screen.getByTestId('times').textContent).not.toContain(',');
+    expect(screen.getByTestId('times')).toHaveTextContent('2026-08-10T16:00:00.000Z,2026-08-10T09:00:00.000Z');
+    expect(screen.getByTestId('actors')).toHaveTextContent('Practitioner/dr-rivera,Practitioner/dr-okafor');
   });
 
   test('Loses one alternative rather than the whole search when a set of actors fails', async () => {

@@ -7,7 +7,6 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
-import { getAppointmentKey } from './AppointmentFinder.times';
 
 /** `$find`'s own default page size, applied per combination. */
 const DEFAULT_COUNT = 20;
@@ -31,7 +30,9 @@ export interface UseProposedAppointmentsOptions {
 }
 
 export interface UseProposedAppointmentsResult {
-  /** Every time offered, by ascending start. Never persisted — `$find` proposes. */
+  /**
+   * Every time offered, never persisted — `$find` proposes.
+   */
   readonly appointments: readonly Appointment[];
   /** How many `$find` requests the current combinations take. */
   readonly requestCount: number;
@@ -136,22 +137,12 @@ function buildFindUrl(
 }
 
 /**
- * Unions what the combinations found, by ascending start.
+ * Unions what the combinations found, in the order they were asked.
  * @param results - What each combination returned.
- * @returns The times offered, deduplicated and sorted.
+ * @returns The times offered, each combination's own ascending.
  */
 function collectAppointments(results: readonly PromiseSettledResult<Bundle<Appointment>>[]): Appointment[] {
-  const found = new Map<string, Appointment>();
-  for (const result of results) {
-    if (result.status === 'rejected') {
-      continue;
-    }
-    for (const appointment of (result.value.entry ?? []).map((entry) => entry.resource).filter(isDefined)) {
-      const key = getAppointmentKey(appointment);
-      if (!found.has(key)) {
-        found.set(key, appointment);
-      }
-    }
-  }
-  return [...found.values()].sort((left, right) => (left.start ?? '').localeCompare(right.start ?? ''));
+  return results
+    .filter((result) => result.status === 'fulfilled')
+    .flatMap((result) => (result.value.entry ?? []).map((entry) => entry.resource).filter(isDefined));
 }
