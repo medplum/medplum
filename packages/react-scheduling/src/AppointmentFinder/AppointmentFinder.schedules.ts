@@ -72,11 +72,11 @@ export interface SearchScheduleCandidatesOptions {
   /** The site being booked at. Actors sited elsewhere are left out. */
   readonly location?: Reference<Location> | WithId<Location>;
   readonly signal?: AbortSignal;
-  /** Maximum schedules to consider per service type code. Defaults to 25. */
+  /** Maximum schedules to consider. Defaults to 25. */
   readonly count?: number;
 }
 
-/** How many schedules one search offers, per service type code. */
+/** How many schedules one search offers. */
 const DEFAULT_COUNT = 25;
 
 /**
@@ -127,38 +127,30 @@ export async function searchScheduleCandidates(
   const actorCriteria = getActorCriteria(options.role, options.query);
 
   const tokens = getServiceTypeTokens(service);
-  const searches = tokens.length > 0 ? tokens.map((token) => ({ 'service-type': token })) : [{}];
+  const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
 
-  const bundles = await Promise.all(
-    searches.map(async (criteria) =>
-      medplum.search(
-        'Schedule',
-        { ...criteria, ...actorCriteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
-        { signal: options.signal }
-      )
-    )
+  const bundle = await medplum.search(
+    'Schedule',
+    { ...typeCriteria, ...actorCriteria, 'active:not': 'false', _count: count, _include: 'Schedule:actor' },
+    { signal: options.signal }
   );
 
-  // `_include` results are merged across searches first, so a schedule found by
-  // one token can still name its actor using another search's included copy.
   const actorsByReference = new Map<string, WithId<Resource>>();
-  const schedules = new Map<string, WithId<Schedule>>();
+  const schedules: WithId<Schedule>[] = [];
 
-  for (const bundle of bundles) {
-    for (const entry of bundle.entry ?? []) {
-      const resource = entry.resource as WithId<Resource> | undefined;
-      if (!resource?.id) {
-        continue;
-      }
-      if (entry.search?.mode === 'include') {
-        actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
-      } else if (resource.resourceType === 'Schedule') {
-        schedules.set(resource.id, resource);
-      }
+  for (const entry of bundle.entry ?? []) {
+    const resource = entry.resource as WithId<Resource> | undefined;
+    if (!resource?.id) {
+      continue;
+    }
+    if (entry.search?.mode === 'include') {
+      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
+    } else if (resource.resourceType === 'Schedule') {
+      schedules.push(resource);
     }
   }
 
-  const found = [...schedules.values()]
+  const found = schedules
     .map((schedule) => toScheduleCandidate(schedule, service, actorsByReference))
     .filter(isDefined);
 

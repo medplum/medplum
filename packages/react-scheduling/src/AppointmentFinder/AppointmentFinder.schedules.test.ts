@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { ServiceTypeReferenceURI } from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
+  APPOINTMENT_TYPE_SYSTEM,
   DrChenRole,
   DrChenSchedule,
   DrOkaforSchedule,
@@ -35,6 +37,8 @@ async function setupClient(): Promise<MockClient> {
     await medplum.createResource(resource);
   }
   stubChainedActorSearch(medplum);
+  // Over the stub, so `querySentTo` can read the criteria the field wrote.
+  vi.spyOn(medplum, 'search');
   return medplum;
 }
 
@@ -117,9 +121,9 @@ describe('searchScheduleCandidates', () => {
 
     await candidatesFor(medplum, UltrasoundImagingService, 'provider', { query: 'riv' });
 
-    // One request per service type code, each narrowed to the role's actor type
-    // and to the name typed, so how many schedules the practice has configured
-    // never decides how many of them can be reached.
+    // One request, narrowed to the role's actor type and to the name typed, so
+    // how many schedules the practice has configured never decides how many of
+    // them can be reached.
     expect(medplum.search).toHaveBeenCalledTimes(1);
     expect(querySentTo(medplum)).toMatchObject({
       'service-type': expect.stringContaining('|'),
@@ -129,6 +133,47 @@ describe('searchScheduleCandidates', () => {
       _include: 'Schedule:actor',
       _count: '25',
     });
+  });
+
+  test('Asks for every one of the service’s type codes in one search', async () => {
+    const medplum = await setupClient();
+
+    // A service carrying a second type code, and a provider linked to it by that
+    // code alone.
+    const service: WithId<HealthcareService> = {
+      ...UltrasoundImagingService,
+      type: [
+        ...(UltrasoundImagingService.type ?? []),
+        { coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: 'vascular-study' }] },
+      ],
+    };
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Ada'], family: 'Vance', prefix: ['Dr.'] }],
+    });
+    await medplum.createResource<Schedule>({
+      resourceType: 'Schedule',
+      active: true,
+      actor: [{ reference: `Practitioner/${practitioner.id}`, display: 'Dr. Ada Vance' }],
+      serviceType: [
+        {
+          coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: 'vascular-study' }],
+          extension: [
+            { url: ServiceTypeReferenceURI, valueReference: { reference: `HealthcareService/${service.id}` } },
+          ],
+        },
+      ],
+    });
+
+    const candidates = await candidatesFor(medplum, service, 'provider');
+
+    // Comma-separated tokens are an OR, so both codes are one request, and a
+    // schedule linked by either of them is offered.
+    expect(medplum.search).toHaveBeenCalledTimes(1);
+    expect(querySentTo(medplum)['service-type']).toBe(
+      `${APPOINTMENT_TYPE_SYSTEM}|ultrasound-imaging,${APPOINTMENT_TYPE_SYSTEM}|vascular-study`
+    );
+    expect(providersOf(candidates)).toStrictEqual(['Dr. Ada Vance', 'Dr. Maya Rivera', 'Dr. Tunde Okafor']);
   });
 
   test('Leaves the name out when nothing has been typed, but still asks by role', async () => {

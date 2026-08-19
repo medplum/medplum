@@ -26,7 +26,7 @@ type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
  * through the `service-type-reference` extension on its `serviceType`.
  */
 
-const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
+export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
 
 export const MainClinic: WithId<Location> = {
   resourceType: 'Location',

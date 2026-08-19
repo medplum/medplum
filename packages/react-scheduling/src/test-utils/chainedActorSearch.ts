@@ -18,13 +18,11 @@ const ACTOR_CHAIN_PREFIX = 'actor:';
  * still run against the fixtures. It understands only the two filters the search
  * sends, not chained search in general.
  *
- * A test that needs the query it was sent reads it off `vi.mocked(medplum.search)`.
- *
  * @param medplum - The client to stub.
  */
 export function stubChainedActorSearch(medplum: MockClient): void {
   const search = medplum.search.bind(medplum);
-  vi.spyOn(medplum, 'search').mockImplementation((async (
+  medplum.search = (async (
     resourceType: 'Schedule',
     query: Record<string, string>,
     options?: object
@@ -60,7 +58,7 @@ export function stubChainedActorSearch(medplum: MockClient): void {
     });
 
     return { ...bundle, entry: kept };
-  }) as never);
+  }) as never;
 }
 
 /**
