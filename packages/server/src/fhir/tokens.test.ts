@@ -1100,7 +1100,7 @@ describe('Condition.code token queries', () => {
         },
       ],
     });
-    expect(toIdentifierValues(resContains)).toContainExactly([]);
+    expect(toIdentifierValues(resContains)).toStrictEqual([]);
   });
 
   test.each<[string]>([[val1.slice(1, 3)], [val2.slice(1, 3)]])(`code :contains middle of value %s`, async (value) => {
@@ -1119,23 +1119,19 @@ describe('Condition.code token queries', () => {
     expect(toIdentifierValues(resContains).length).toBe(0);
   });
 
-  test.each<[string, Conditions[]]>([
-    [disp1, ['codeOneNoCat']],
-    [disp1.split(' ').slice(0, 2).join(' '), ['codeOneNoCat']],
-    [disp1.split(' ').slice(1, 3).join(' '), []],
-    [disp1.split(' ').slice(-2).join(' '), []],
-  ])('code :text %s', async (value, expected) => {
+  test.each<[string, Operator, Conditions[]]>([
+    [disp1, Operator.TEXT, ['codeOneNoCat']],
+    [disp1.split(' ').slice(0, 2).join(' '), Operator.TEXT, ['codeOneNoCat']],
+    [disp1.split(' ').slice(1, 3).join(' '), Operator.TEXT, []],
+    [disp1.split(' ').slice(-2).join(' '), Operator.TEXT, []],
+    [disp1.split(' ').slice(1, 3).join(' '), Operator.CONTAINS, ['codeOneNoCat']],
+    [disp1.split(' ').slice(-2).join(' '), Operator.CONTAINS, ['codeOneNoCat']],
+  ])('code :text %s', async (value, operator, expected) => {
     const resContains = await repo.search<Condition>({
       resourceType: 'Condition',
-      filters: [
-        {
-          code: 'code',
-          operator: Operator.TEXT,
-          value,
-        },
-      ],
+      filters: [{ code: 'code', operator, value }],
     });
-    expect(toIdentifierValues(resContains)).toContainExactly(expected);
+    expect(toIdentifierValues(resContains)).toStrictEqual(expected);
   });
 
   describe('code :text search for special chars', () => {
@@ -1162,8 +1158,8 @@ describe('Condition.code token queries', () => {
       });
     });
 
-    // same behavior between token columns and lookup tables
     test.each<[string, boolean]>([
+      // same behavior between token columns and lookup tables
       ['.', true],
       ['^', true],
       ['$', true],
@@ -1189,38 +1185,8 @@ describe('Condition.code token queries', () => {
       ['|hello', true],
 
       ['||', false],
-    ])(':text search for %s should match? %s', async (query, shouldBeFound) => {
-      const res = await repo.search<Condition>({
-        resourceType: 'Condition',
-        filters: [
-          {
-            code: 'subject',
-            operator: Operator.EQUALS,
-            value: subject.reference,
-          },
-          {
-            code: 'identifier',
-            operator: Operator.EQUALS,
-            value: identifier,
-          },
-          {
-            code: 'code',
-            operator: Operator.TEXT,
-            value: query,
-          },
-        ],
-      });
-      if (shouldBeFound) {
-        expect(res.entry?.map((e) => e.resource?.id)).toStrictEqual([condWithSpecialChars.id]);
-        // expect(res.entry?.length).toBe(1);
-        // expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
-      } else {
-        expect(res.entry?.length).toBe(0);
-      }
-    });
 
-    // differing behavior between token columns and lookup tables
-    test.each<[string, boolean]>([
+      // differing behavior between token columns and lookup tables
       ['|', true],
       ['|hello|', true],
       ['.()', false],
@@ -1247,8 +1213,6 @@ describe('Condition.code token queries', () => {
       });
       if (shouldBeFound) {
         expect(res.entry?.map((e) => e.resource?.id)).toStrictEqual([condWithSpecialChars.id]);
-        // expect(res.entry?.length).toBe(1);
-        // expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
       } else {
         expect(res.entry?.length).toBe(0);
       }
