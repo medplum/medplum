@@ -393,9 +393,7 @@ async function findExistingPatientCondition(
     { cache: 'no-cache' }
   );
 
-  return matches.find(
-    (condition) => !condition.verificationStatus?.coding?.some((c) => c.code === 'entered-in-error')
-  );
+  return matches.find((condition) => !condition.verificationStatus?.coding?.some((c) => c.code === 'entered-in-error'));
 }
 
 export function encounterUrl(encounter: WithId<Encounter>): string {
