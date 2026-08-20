@@ -1456,6 +1456,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PractitionerRole-davinci-pdex-network-reference",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PractitionerRole-davinci-pdex-network-reference",
+        "url": "https://medplum.com/fhir/SearchParameter/PractitionerRole-davinci-pdex-network-reference",
+        "version": "4.0.1",
+        "name": "davinci-pdex-network-reference",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The healthcare provider insurance networks the practitioner participates in through their role",
+        "code": "network-reference",
+        "base": ["PractitionerRole"],
+        "type": "reference",
+        "expression": "PractitionerRole.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference').value.ofType(Reference)",
+        "target": ["Organization"]
+      }
+    },
+    {
       "fullUrl" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
       "resource" : {
         "resourceType" : "SearchParameter",

@@ -71,6 +71,17 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toStrictEqual(SearchParameterType.REFERENCE);
   });
 
+  test('Get reference details for extension value', () => {
+    const networkReferenceParam = searchParams.find(
+      (e) => e.id === 'PractitionerRole-davinci-pdex-network-reference'
+    ) as SearchParameter;
+    const details = getSearchParameterDetails('PractitionerRole', networkReferenceParam);
+    expect(details).toBeDefined();
+    expect(details.type).toStrictEqual(SearchParameterType.REFERENCE);
+    expect(details.array).toStrictEqual(true);
+    expect(details.referenceTargetTypes).toStrictEqual(['Organization']);
+  });
+
   test('Missing expression for resource type', () => {
     const missingExpressionParam: SearchParameter = {
       resourceType: 'SearchParameter',
