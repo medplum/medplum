@@ -79,7 +79,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [search, setSearch] = useState('');
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
-  const [autoSubmit, setAutoSubmit] = useState<boolean>();
   const [selected, setSelected] = useState(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
@@ -91,12 +90,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const lastValueRef = useRef<string>(undefined);
   const timerRef = useRef<number>(timer);
   const abortControllerRef = useRef<AbortController>(abortController);
-  const autoSubmitRef = useRef<boolean>(autoSubmit);
+  const autoSubmitRef = useRef<boolean>(false);
   useLayoutEffect(() => {
     searchRef.current = search;
     timerRef.current = timer;
     abortControllerRef.current = abortController;
-    autoSubmitRef.current = autoSubmit;
   });
 
   const handleValueAdd = useCallback(
@@ -154,7 +152,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
             if (newOptions.length > 0) {
               handleValueAdd(newOptions[0]);
             }
-            setAutoSubmit(false);
+            autoSubmitRef.current = false;
           } else if (newValues.length > 0) {
             combobox.openDropdown();
           }
@@ -170,7 +168,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setAbortController(undefined);
         }
       });
-  }, [combobox, loadOptions, handleValueAdd, toOption, minInputLength, setTimer, setAutoSubmit, setAbortController]);
+  }, [combobox, loadOptions, handleValueAdd, toOption, minInputLength, setTimer, setAbortController]);
 
   const handleSearchChange = useCallback(
     (e: SyntheticEvent): void => {
@@ -256,14 +254,14 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         if (timer || abortController) {
           // The user pressed enter, but we don't have results yet.
           // We need to wait for the results to come in.
-          setAutoSubmit(true);
+          autoSubmitRef.current = true;
         }
       } else if (e.key === 'Backspace' && search.length === 0) {
         killEvent(e);
         handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [abortController, handleValueRemove, search.length, selected, timer, setAutoSubmit]
+    [abortController, handleValueRemove, search.length, selected, timer]
   );
 
   useEffect(() => {
