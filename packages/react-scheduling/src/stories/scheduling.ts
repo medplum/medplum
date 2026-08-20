@@ -6,6 +6,7 @@ import type {
   Appointment,
   AppointmentParticipant,
   Bundle,
+  CodeableConcept,
   Device,
   HealthcareService,
   Location,
@@ -28,6 +29,18 @@ type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
 
+/**
+ * What a Location says it physically is, which is how the site field tells a site
+ * from a room. The clinics below deliberately say nothing: nothing requires the
+ * element, and a Location that omits it is still offered as a site.
+ *
+ * @param code - The `location-physical-type` code the Location declares.
+ * @returns The concept to record it as.
+ */
+function physicalType(code: 'ro' | 'bd'): CodeableConcept {
+  return { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code }] };
+}
+
 export const MainClinic: WithId<Location> = {
   resourceType: 'Location',
   id: 'main-clinic',
@@ -40,7 +53,17 @@ export const ExamRoomA: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-a',
   name: 'Exam Room A',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/main-clinic' },
+};
+
+/** A bed in that room: the other thing a site is never one of. */
+export const ExamRoomABed: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'exam-room-a-bed-1',
+  name: 'Exam Room A Bed 1',
+  physicalType: physicalType('bd'),
+  partOf: { reference: 'Location/exam-room-a' },
 };
 
 export const SecondFloor: WithId<Location> = {
@@ -55,6 +78,7 @@ export const ExamRoomB: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-b',
   name: 'Exam Room B',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/second-floor' },
 };
 
@@ -69,6 +93,7 @@ export const SatelliteRoom: WithId<Location> = {
   resourceType: 'Location',
   id: 'satellite-room',
   name: 'Satellite Exam Room',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/satellite-clinic' },
 };
 
@@ -79,22 +104,25 @@ export interface SchedulableServiceOptions {
   readonly category: string;
   readonly durationMinutes: number;
   readonly alignmentMinutes: number;
-  /** The sites holding it. */
-  readonly locationIds: readonly string[];
+  /** The sites holding it, omitted entirely by a visit type held nowhere in particular. */
+  readonly locationIds?: readonly string[];
 }
 
 /**
- * Builds a service `$find` can produce times for: typed, sited, and carrying the
- * `SchedulingParameters` a booking needs.
+ * Builds a service `$find` can produce times for: typed, optionally sited, and
+ * carrying the `SchedulingParameters` a booking needs.
  * @param options - What the visit is, how long it runs, and where it is held.
  * @returns The service.
  */
 export function buildSchedulableService(options: SchedulableServiceOptions): WithId<HealthcareService> {
+  const locationIds = options.locationIds ?? [];
   return {
     resourceType: 'HealthcareService',
     id: options.id,
     name: options.name,
-    location: options.locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    ...(locationIds.length > 0 && {
+      location: locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    }),
     type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
     extension: [
       {
@@ -116,6 +144,21 @@ export const UltrasoundImagingService = buildSchedulableService({
   durationMinutes: 30,
   alignmentMinutes: 15,
   locationIds: ['main-clinic'],
+});
+
+/**
+ * A visit type held nowhere in particular.
+ *
+ * It names no location, so a reference search on `location` matches it against no
+ * site — which is why choosing a site stops it being offered, while a site change
+ * cannot invalidate an answer that was never tied to one.
+ */
+export const TelehealthService = buildSchedulableService({
+  id: 'telehealth-consult',
+  name: 'Telehealth Consult',
+  category: 'Telehealth',
+  durationMinutes: 20,
+  alignmentMinutes: 20,
 });
 
 /** A service with no SchedulingParameters, which must never be offered. */
@@ -289,11 +332,13 @@ export const SurgicalFixtures = [
 export const SchedulingFixtures = [
   MainClinic,
   ExamRoomA,
+  ExamRoomABed,
   SecondFloor,
   ExamRoomB,
   SatelliteClinic,
   SatelliteRoom,
   UltrasoundImagingService,
+  TelehealthService,
   WalkInService,
   DrRiveraPractitioner,
   DrOkaforPractitioner,

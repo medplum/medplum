@@ -18,9 +18,14 @@ import { getActorCombinations, getSelectedCandidates, getSelectionError } from '
 import type { DateRange } from './AppointmentFinder.times';
 import { endOfDay, getFindWindowError, groupAppointmentsByDay } from './AppointmentFinder.times';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
+import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 import { useProposedAppointments } from './useProposedAppointments';
 
-const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
+// Rooms are Locations too, so the site field is kept off them by what they are
+// not: `physical-type` is a Medplum search parameter, so the exclusion is the
+// server's and paging survives it. Naming what a site *is* would be more precise
+// and would silently hide a Location whose type nobody populated.
+const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
 // Nothing has scanned a month for the days that have times on them, so every day
 // is offered and the search is what answers.
@@ -82,6 +87,12 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
+  // The fields below hold their own selections and ignore `defaultValue` after
+  // mount, so clearing the state above is not enough to clear what is on screen.
+  // Remounting is, and these are what force it — counters rather than the chosen
+  // values, so a field is never remounted out from under the user's own pick.
+  const [roleFieldsKey, setRoleFieldsKey] = useState(0);
+  const [serviceFieldKey, setServiceFieldKey] = useState(0);
 
   const selectionError = getSelectionError(selections);
   const windowError = getFindWindowError(range);
@@ -116,8 +127,40 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     onChangeService?.(next);
     // The actors on offer come from the visit type, so what was chosen for the
     // last one cannot mean anything for this one — nor can a time held on them.
+    clearResources();
+    // Nothing can be searched without a visit type, and the field holds one at a
+    // time, so every change passes through none. Collapsing keeps the times from
+    // outliving what produced them, and the host is told so its panel narrows
+    // with them.
+    closeFinder();
+  }
+
+  function chooseLocation(next: WithId<Location> | undefined): void {
+    setLocation(next);
+    // Where a visit is held decides which actors are offered at all, so the ones
+    // chosen for the last site cannot be assumed to serve this one.
+    clearResources();
+    // The visit type is narrowed by site too. It only has to go when the new site
+    // does not hold it; otherwise the answer still stands.
+    if (service && !isServiceKeptAtLocation(service, next)) {
+      setService(undefined);
+      onChangeService?.(undefined);
+      setServiceFieldKey((key) => key + 1);
+      closeFinder();
+    }
+  }
+
+  function clearResources(): void {
     setSelections({});
     setChosen(undefined);
+    setRoleFieldsKey((key) => key + 1);
+  }
+
+  function closeFinder(): void {
+    if (finding) {
+      setFinding(false);
+      onToggleTimeFinder?.(false);
+    }
   }
 
   function chooseDay(date: Date): void {
@@ -136,12 +179,30 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           placeholder="Any location"
           searchCriteria={LOCATION_SEARCH_CRITERIA}
           defaultValue={defaultLocation}
-          onChange={setLocation}
+          onChange={chooseLocation}
         />
-        <AppointmentServiceSelect location={location} defaultValue={defaultService} onChange={chooseService} />
+        <AppointmentServiceSelect
+          key={serviceFieldKey}
+          location={location}
+          // Seeded from state, not from the prop: a remount is how the field is
+          // cleared, and re-seeding from `defaultService` would put back the visit
+          // type that was just cleared.
+          defaultValue={service}
+          onChange={chooseService}
+        />
 
         {SCHEDULING_ROLES.map((role) => (
-          <RoleField key={role} role={role} service={service} location={location} onChange={setSelections} />
+          <RoleField
+            key={`${role}-${roleFieldsKey}`}
+            role={role}
+            service={service}
+            location={location}
+            // The actors on offer come from the visit type, so asking before one
+            // is chosen could only ever find nothing, which reads as a fault in
+            // the field rather than an answer still owed.
+            disabled={!service}
+            onChange={setSelections}
+          />
         ))}
 
         <TextInput
@@ -199,7 +260,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
                 onSelectAppointment={setChosen}
               />
             ))}
-          {!search.loading && !search.error && !selectionError && days.length === 0 && (
+          {!search.loading && !search.error && !selectionError && !windowError && days.length === 0 && (
             <Text c="dimmed" ta="center">
               No times are available for this selection.
             </Text>
@@ -214,6 +275,7 @@ interface RoleFieldProps {
   readonly role: SchedulingRole;
   readonly service: WithId<HealthcareService> | undefined;
   readonly location: WithId<Location> | undefined;
+  readonly disabled?: boolean;
   readonly onChange: (update: (selections: ActorSelections) => ActorSelections) => void;
 }
 
@@ -228,14 +290,22 @@ interface RoleFieldProps {
  * @returns The field for that role.
  */
 function RoleField(props: RoleFieldProps): JSX.Element {
-  const { role, service, location, onChange } = props;
+  const { role, service, location, disabled, onChange } = props;
 
   const handleChange = useCallback(
     (candidates: readonly ScheduleCandidate[]) => onChange((selections) => ({ ...selections, [role]: candidates })),
     [onChange, role]
   );
 
-  return <AppointmentActorSelect role={role} service={service} location={location} onChange={handleChange} />;
+  return (
+    <AppointmentActorSelect
+      role={role}
+      service={service}
+      location={location}
+      disabled={disabled}
+      onChange={handleChange}
+    />
+  );
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   SubClinicProviderFixtures,
   SurgeryService,
   SurgicalFixtures,
+  TelehealthService,
   Ultrasound1Device,
   UltrasoundImagingService,
 } from '../stories/scheduling';
@@ -85,25 +86,36 @@ async function openRoleField(role: RegExp): Promise<HTMLElement> {
 }
 
 /**
- * Names an actor for one role.
+ * Searches one field and returns the dropdown that field owns.
  *
- * The pick is scoped to the dropdown this field owns: three role fields are on
- * screen at once and a dropdown stays in the document once it has been opened,
- * so an unscoped search could click an option belonging to another field.
+ * Scoped per field because five autocompletes are on screen at once and a
+ * dropdown stays in the document once it has been opened, so an unscoped query
+ * could read — or click — an option belonging to another field.
  *
- * @param role - The field to choose in.
+ * @param label - Matches the label above the field.
  * @param query - What to type, which is what the search narrows on.
- * @param name - The actor to choose out of what came back.
+ * @returns The field's dropdown.
  */
-async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
-  const input = field(role);
+async function searchField(label: RegExp, query: string): Promise<HTMLElement> {
+  const input = field(label);
   await typeInAutocomplete(input, query);
 
   const listboxId = input.getAttribute('aria-controls');
   const listbox = listboxId && document.getElementById(listboxId);
   if (!listbox) {
-    throw new Error(`No dropdown found for ${role.source}`);
+    throw new Error(`No dropdown found for ${label.source}`);
   }
+  return listbox;
+}
+
+/**
+ * Names an actor for one role.
+ * @param role - The field to choose in.
+ * @param query - What to type, which is what the search narrows on.
+ * @param name - The actor to choose out of what came back.
+ */
+async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
+  const listbox = await searchField(role, query);
   await act(async () => {
     fireEvent.click(within(listbox).getByText(name));
   });
@@ -125,6 +137,25 @@ async function clearVisitType(name: string): Promise<void> {
   }
   await act(async () => {
     fireEvent.click(remove);
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Chooses a site in the location field.
+ *
+ * Starts from an empty field: like the visit type, it holds one value and takes
+ * its search box away while full.
+ *
+ * @param query - What to type.
+ * @param name - The site to click out of what came back.
+ */
+async function chooseSite(query: string, name: string): Promise<void> {
+  const listbox = await searchField(/location/i, query);
+  // By name, not by position: a search narrow enough to return one site is a
+  // search narrow enough to pass while offering the wrong one.
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText(name));
   });
   await settleAutocomplete();
 }
@@ -167,6 +198,19 @@ async function chooseFirstOfferedTime(): Promise<string> {
 }
 
 /**
+ * Whether a field is holding a value, read off the pill rather than the state.
+ *
+ * The pill is what went stale: the fields keep their own selection and ignore
+ * `defaultValue` after mount, so a cleared form could still show one.
+ *
+ * @param name - The value's label.
+ * @returns Whether a pill is showing it.
+ */
+function hasPill(name: string): boolean {
+  return screen.queryAllByText(name).some((node) => node.className.includes('Pill'));
+}
+
+/**
  * The read-only field the chosen time is shown in.
  * @returns The field.
  */
@@ -198,6 +242,22 @@ describe('AppointmentBookingForm', () => {
       expect(field(/provider/i)).toBeInTheDocument();
       expect(field(/room/i)).toBeInTheDocument();
       expect(field(/device/i)).toBeInTheDocument();
+    });
+
+    test('Offers nothing to type into until a visit type is chosen', async () => {
+      setup(medplum);
+      await settleAutocomplete();
+
+      // Asking before a visit type is chosen could only ever find nothing, which
+      // reads as a broken field rather than an answer still owed.
+      for (const role of [/^Provider$/, /^Room$/, /^Device$/]) {
+        expect(screen.queryByRole('searchbox', { name: role })).not.toBeInTheDocument();
+        expect(screen.getByText(role)).toBeInTheDocument();
+      }
+
+      await chooseImagingService();
+
+      expect(field(/provider/i)).toBeInTheDocument();
     });
 
     test('Searches no times until a provider is named', async () => {
@@ -333,6 +393,49 @@ describe('AppointmentBookingForm', () => {
 
       expect(await screen.findByText('Exam Room A')).toBeInTheDocument();
       expect(screen.getByText('Satellite Exam Room')).toBeInTheDocument();
+    });
+  });
+
+  describe('Choosing where the visit is held', () => {
+    test('Leaves a room and a bed out of the site field', async () => {
+      setup(medplum);
+
+      // Unscoped, because a field whose search came back with nothing has no
+      // dropdown to scope to. The empty message can only be this field's: it is
+      // the only one that has been searched, and a field nobody typed into shows
+      // none.
+      await typeInAutocomplete(field(/location/i), 'Exam Room A');
+
+      // Rooms and beds are Locations, so nothing but their own physical type keeps
+      // them out of a field asking where the visit is held.
+      expect(await screen.findByText('Nothing found')).toBeInTheDocument();
+      expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
+      expect(screen.queryByText('Exam Room A Bed 1')).not.toBeInTheDocument();
+    });
+
+    test('Offers a Location that records no physical type', async () => {
+      setup(medplum);
+
+      const listbox = await searchField(/location/i, 'Uro Associates');
+
+      // Neither clinic says what it physically is, and nothing requires it to. The
+      // field excludes what declares itself a room rather than admitting only what
+      // declares itself a site, so both are still offered.
+      expect(within(listbox).getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
+      expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
+    });
+
+    test('Narrows the visit types to the chosen site, and says which site', async () => {
+      setup(medplum);
+      await chooseSite('Satellite', 'Uro Associates - Satellite');
+
+      await typeInAutocomplete(field(/service type/i), 'Ultrasound');
+
+      expect(screen.getByText('Showing visit types offered at Uro Associates - Satellite.')).toBeInTheDocument();
+      // Imaging names the main clinic, and only a visit type naming this site
+      // exactly is offered at it.
+      expect(await screen.findByText('Nothing found')).toBeInTheDocument();
+      expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
     });
   });
 
@@ -485,7 +588,75 @@ describe('AppointmentBookingForm', () => {
       await settleAutocomplete();
 
       expect(chosenTimeField().value).toBe('');
-      expect(screen.getByText('Choose at least one provider')).toBeInTheDocument();
+      // Not just the state: the field keeps its own selection, so a surviving pill
+      // would be handed back on the next pick and searched against a schedule the
+      // new visit type cannot book.
+      expect(hasPill('Dr. Maya Rivera')).toBe(false);
+    });
+
+    test('Clears the chosen resources when the site changes', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      expect(hasPill('Dr. Maya Rivera')).toBe(true);
+
+      await chooseSite('Main Clinic', 'Uro Associates - Main Clinic');
+
+      // Where a visit is held decides which actors are offered at all, so the one
+      // chosen before the site was known cannot be assumed to serve it.
+      expect(hasPill('Dr. Maya Rivera')).toBe(false);
+      // The imaging service is held there, so that answer stands.
+      expect(hasPill('Ultrasound Imaging')).toBe(true);
+    });
+
+    test('Clears the visit type when the new site does not hold it', async () => {
+      setup(medplum, { defaultService: SurgeryService });
+      await settleAutocomplete();
+      expect(hasPill('Bariatric Surgery')).toBe(true);
+
+      // Surgery is held at the main clinic only.
+      await chooseSite('Satellite', 'Uro Associates - Satellite');
+
+      expect(hasPill('Bariatric Surgery')).toBe(false);
+    });
+
+    test('Keeps a visit type the new site does hold', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService });
+      await settleAutocomplete();
+
+      await chooseSite('Main Clinic', 'Uro Associates - Main Clinic');
+
+      // The imaging service names the main clinic, so the answer still stands.
+      expect(hasPill('Ultrasound Imaging')).toBe(true);
+    });
+
+    test('Keeps a visit type that names no location when the site changes', async () => {
+      setup(medplum, { defaultService: TelehealthService });
+      await settleAutocomplete();
+      expect(hasPill('Telehealth Consult')).toBe(true);
+
+      await chooseSite('Main Clinic', 'Uro Associates - Main Clinic');
+
+      // Nothing about it was ever tied to a site, so no site can invalidate it —
+      // even though choosing one now keeps it from being offered again.
+      expect(hasPill('Telehealth Consult')).toBe(true);
+    });
+
+    test('Collapses the time search when the visit type is cleared, and says so', async () => {
+      const onToggleTimeFinder = vi.fn();
+      setup(medplum, { onToggleTimeFinder });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findAllByTestId(/^slot-group-/);
+
+      await clearVisitType('Ultrasound Imaging');
+
+      // Nothing can be searched without a visit type, and the host has to be told
+      // so the panel it widened narrows again.
+      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
+      expect(screen.queryByRole('button', { name: /close time finder/i })).not.toBeInTheDocument();
+      expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });
 
     test('Reports the visit type as it changes', async () => {
