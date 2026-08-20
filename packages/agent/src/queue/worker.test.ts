@@ -1376,9 +1376,15 @@ describe('ChannelQueueWorker', () => {
       // rather than a wall-clock one.
       startSlot(app, worker, { loopYieldBudgetMs: 0 });
 
-      // One `await` drains the whole microtask queue. Without the yield the loop
-      // never leaves that drain, so all nine would already be parked here.
-      await sleep(0);
+      // Drain microtasks, and only microtasks. `sleep(0)` would not do: it is a timer,
+      // so the check-phase yields run during it and the assertion becomes a race
+      // between nine parks and one clamped 0ms timeout — about 110us per park is the
+      // tipping point. A microtask drain no park can cross removes the clock from the
+      // measurement, and still fails if the yield is dropped or downgraded to a
+      // microtask. 200 ticks is far more than the nine iterations need, and each is free.
+      for (let i = 0; i < 200; i++) {
+        await Promise.resolve();
+      }
       expect(queue.getChannelDepth('ch1').delayed).toBeLessThan(followers.length);
 
       // The budget only spreads the parks out — it must not lose any.
