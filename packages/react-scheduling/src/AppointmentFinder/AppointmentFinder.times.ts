@@ -357,9 +357,8 @@ export function enumerateDateRange(range: DateRange, limit = MAX_FIND_WINDOW_DAY
 /**
  * Reports a window `$find` will not answer, before a request is made for it.
  *
- * The server refuses a range wider than `MAX_FIND_WINDOW_DAYS`, so asking for
- * one only produces a server error where a message about the range is what the
- * user needs.
+ * The server refuses a range wider than `MAX_FIND_WINDOW_DAYS`, and answers with
+ * an error rather than anything a user could act on.
  *
  * @param range - The days asked for.
  * @returns The message to show, or undefined when the range can be searched.

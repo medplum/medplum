@@ -13,12 +13,10 @@ export interface WithChainedActorSearchProps {
 /**
  * Teaches the ambient Storybook client to answer the chained `actor:` filters.
  *
- * The role fields find their schedules through `actor:Practitioner.name` and its
- * siblings. `MemoryRepository` looks a filter's code up in the flat search
- * parameter table, so a chained one matches nothing — and returns an empty
- * bundle rather than an error, which reads as a visit type with nothing
- * configured. Installed before the children render, so the first search cannot
- * reach the unpatched client and come back empty.
+ * The role fields search through chained `actor:` filters, which the in-memory
+ * repository answers with an empty bundle rather than an error — see
+ * `stubChainedActorSearch`. Installed before the children render, so the first
+ * search cannot reach the unpatched client and come back empty.
  *
  * @param props - The React props.
  * @returns The children, once the stub is in place.

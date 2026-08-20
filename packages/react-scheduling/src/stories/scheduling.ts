@@ -382,14 +382,12 @@ export function buildFindBundle(appointments: readonly Appointment[]): Bundle<Ap
 }
 
 /**
- * A provider whose only role sits inside the main clinic rather than at it.
+ * A provider whose only role names the clinic's second floor rather than the
+ * clinic, which is what leaves her out of a provider field booking at the clinic
+ * while Exam Room B, on that same floor, is offered.
  *
- * The site filter is asymmetric by role: a room is sited by walking `partOf`, so
- * anywhere inside the clinic counts, while a provider is sited by a
- * `PractitionerRole` naming the clinic exactly. Dr. Osei practises on the second
- * floor, so booking at the main clinic leaves her out while offering Exam Room B,
- * which is on that same floor. Kept apart from `SchedulingFixtures` so it is the
- * asymmetry story's own case rather than something every other story inherits.
+ * Exported separately from `SchedulingFixtures` so that adding her does not change
+ * the option counts the actor and schedule tests assert on.
  */
 export const DrOseiPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
