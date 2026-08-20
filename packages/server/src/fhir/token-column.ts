@@ -306,9 +306,15 @@ function buildTokenColumnsWhereConditionTextAndContains(
        - If the search parameter does NOT have dedicated columns, `code + DELIM`
        - the query string
       */
-    const regexStr = impl.hasDedicatedColumns
-      ? ARRAY_DELIM + escapeRegexString(query.trim())
-      : ARRAY_DELIM + code + DELIM + escapeRegexString(query.trim());
+    let regexStr: string =
+      operator === 'contains'
+        ? '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query.trim()) // infix match
+        : escapeRegexString(query.trim()); // prefix match
+    if (impl.hasDedicatedColumns) {
+      regexStr = ARRAY_DELIM + regexStr;
+    } else {
+      regexStr = ARRAY_DELIM + code + DELIM + regexStr;
+    }
     const textSearchCol = new Column(tableName, impl.textSearchColumnName);
     const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
     expressions.push(regexCond);
