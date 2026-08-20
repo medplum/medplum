@@ -37,8 +37,8 @@ describe('$explain', () => {
       } satisfies Parameters);
     expect(res1).toHaveStatus(200);
 
-    const output1 = res1.body.parameter as ParametersParameter[];
-    expect(output1).toContainExactly([
+    const output = res1.body.parameter as ParametersParameter[];
+    expect(output).toContainExactly([
       { name: 'query', valueString: expect.stringContaining('SELECT "Patient"') },
       { name: 'parameters', valueString: expect.stringContaining('$1 = ') },
       { name: 'explain', valueString: expect.stringContaining(format === 'json' ? '{"Plan":' : '(cost=') },
