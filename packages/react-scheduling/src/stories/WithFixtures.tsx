@@ -4,6 +4,7 @@ import type { Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
+import { indexSchedulingSearchParameters } from './searchParameters';
 
 export interface WithFixturesProps {
   readonly resources: readonly Resource[];
@@ -26,6 +27,9 @@ export function WithFixtures(props: WithFixturesProps): JSX.Element | null {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // Storing the resources is only half of it: MockClient still needs the
+    // search parameters registered before it can find any of them again.
+    indexSchedulingSearchParameters();
     Promise.all(props.resources.map((resource) => medplum.updateResource(resource)))
       .then(() => setReady(true))
       .catch(console.error);

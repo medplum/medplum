@@ -19,8 +19,11 @@ const ACTOR_CHAIN_PREFIX = 'actor:';
  * sends, not chained search in general.
  *
  * @param medplum - The client to stub.
+ * @returns A function restoring the client's own `search`, for a caller sharing
+ *   one client across renders.
  */
-export function stubChainedActorSearch(medplum: MockClient): void {
+export function stubChainedActorSearch(medplum: MockClient): () => void {
+  const original = medplum.search;
   const search = medplum.search.bind(medplum);
   medplum.search = (async (
     resourceType: 'Schedule',
@@ -59,6 +62,10 @@ export function stubChainedActorSearch(medplum: MockClient): void {
 
     return { ...bundle, entry: kept };
   }) as never;
+
+  return () => {
+    medplum.search = original;
+  };
 }
 
 /**
