@@ -157,13 +157,13 @@ Instead, use `comment` — a free-text field that's a good place for a human-rea
 
 :::
 
-#### Choosing the actor: `Practitioner` vs `PractitionerRole`
+#### Choosing the actor
 
-`Schedule.actor` may reference a [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device). When the actor is a person:
+`Schedule.actor` may reference a [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device). When the actor is a person, reference the **`Practitioner`** — a provider's availability lives on their Schedule regardless of how many services or locations they work across.
 
-- Use **`Practitioner`** when availability is for the individual regardless of role or location.
-- Use **`PractitionerRole`** when availability is specific to a role, organization, or location binding (for example, when licensure varies by state — see [state-by-state licensure](/docs/scheduling/state-by-state-licensure)).
+To vary a provider's availability by location, model the variation on the service rather than the actor: create one [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) per location (for example "Office Visit — Downtown" and "Office Visit — Northside", each pointing at its own `HealthcareService.location`), and put that site's hours on each service's `availableTime`. The practitioner's Schedule lists both services in `serviceType`, and `$find` is called with the service for the location the patient is booking into.
 
+If a provider's hours at one site differ from that site's default, add a [per-service override](#override-behavior) on their Schedule. Scope the override to that service — a Schedule-level `availability` with no `service` pointer replaces the service hours everywhere.
 
 ### `availability` Extension
 
@@ -285,7 +285,7 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 1. If `timezone` is specified in the `scheduling-parameters` extension of a `Schedule` resource, use that time zone
 2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone
-3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, PractitionerRole, Location, or Device)
+3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
 
 **Important Notes:**
 
@@ -414,7 +414,7 @@ This Schedule uses the shared availability from the "Follow-Up" service (Mon-Fri
 graph TD
     A1[HealthcareService<br/>*New Patient Visit*] -. overridden on<br/>Schedule .-> B[Schedule<br/>*Dr. Chen's Schedule*]
     A2[HealthcareService<br/>*Follow-up Visit*] -.-> B
-    C[PractitionerRole<br/>*Dr. Chen*] --> B
+    C[Practitioner<br/>*Dr. Chen*] --> B
 
     B --> D1[Slot<br/>*status: busy*<br/>new patient]
 
