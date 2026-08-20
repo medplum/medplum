@@ -17,10 +17,9 @@ import { AppointmentBookingForm } from './AppointmentBookingForm';
 
 const STORY_FIXTURES = [...SchedulingFixtures, ...SurgicalFixtures, ...SubClinicProviderFixtures];
 
-// `withFindStub` is per story rather than shared: a story's own decorators are
-// added to these rather than replacing them, so a shared stub plus a story's own
-// would install two, and which of them answered would be an accident of effect
-// ordering. Everything here is safe to nest, so it stays.
+// Storybook adds a story's own decorators to these rather than replacing them, so
+// `$find` is stubbed per story: two stubs would both install, and which one
+// answered would be an accident of effect ordering.
 export default {
   title: 'Medplum/AppointmentBookingForm',
   component: AppointmentBookingForm,
@@ -81,8 +80,7 @@ NoAvailability.decorators = [withFindStub({ empty: true })];
  * counts. Open the provider field and Dr. Osei is not — a provider is sited only
  * by a role naming the clinic exactly, with no walk up the chain.
  *
- * Inherited from the schedule search rather than chosen here, and pinned as a
- * story so it stays a decision on the record.
+ * The rule lives in the schedule search, not in this component.
  * @returns The story.
  */
 export const SiteAsymmetryByRole = (): JSX.Element => (

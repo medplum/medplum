@@ -228,8 +228,8 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await chooseImagingService();
 
-      // A name the visit type has never heard of finds nothing, and the field
-      // says so rather than disappearing.
+      // A role with nothing configured is a search that finds nothing, not a
+      // missing field.
       const input = await openRoleField(/device/i);
       await typeInAutocomplete(input, 'nosuchdevice');
 
@@ -278,8 +278,8 @@ describe('AppointmentBookingForm', () => {
     });
 
     test('Offers a provider whose role names the chosen site', async () => {
-      // Dr. Martinez's practitioner role names the main clinic itself, which is
-      // the only way a provider is sited: there is no walk up the chain.
+      // Dr. Martinez's role names the main clinic itself, which is the only way a
+      // provider is sited.
       setup(medplum, { defaultLocation: MainClinic, defaultService: SurgeryService });
       await settleAutocomplete();
 
@@ -301,8 +301,8 @@ describe('AppointmentBookingForm', () => {
     });
 
     test('Leaves out a provider sited inside the chosen site rather than at it, while offering a room there', async () => {
-      // The asymmetry a reader is most likely to take for a bug: a room is sited
-      // by walking `partOf`, a provider only by a role naming the site exactly.
+      // A room is sited by walking `partOf`; a provider only by a role naming the
+      // site exactly.
       setup(medplum, { defaultLocation: MainClinic, defaultService: UltrasoundImagingService });
       await settleAutocomplete();
 
@@ -420,8 +420,8 @@ describe('AppointmentBookingForm', () => {
       await openTimeFinder();
       const label = await chooseFirstOfferedTime();
 
-      // The chosen time is the server's own proposal, so the instant it carries
-      // is what a booking would record, and the field reads it at the site.
+      // The chosen time is the server's own proposal, so its instant is what a
+      // booking would record.
       expect(chosenTimeField().value).toContain(label);
     });
   });
@@ -484,8 +484,6 @@ describe('AppointmentBookingForm', () => {
       await clickAutocompleteOption('Bariatric Surgery');
       await settleAutocomplete();
 
-      // The actors on offer come from the visit type, so what was chosen for the
-      // last one cannot mean anything for this one — nor can a time held on them.
       expect(chosenTimeField().value).toBe('');
       expect(screen.getByText('Choose at least one provider')).toBeInTheDocument();
     });

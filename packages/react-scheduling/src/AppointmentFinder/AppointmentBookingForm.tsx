@@ -20,13 +20,10 @@ import { endOfDay, getFindWindowError, groupAppointmentsByDay } from './Appointm
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { useProposedAppointments } from './useProposedAppointments';
 
-/** How many places the site field offers, and the order they come back in. */
 const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
 
-/**
- * The calendar marks the days it knows have times on them. Nothing has scanned a
- * whole month for that, so every day is offered instead and the search answers.
- */
+// Nothing has scanned a month for the days that have times on them, so every day
+// is offered and the search is what answers.
 const NO_MARKED_DATES: Date[] = [];
 
 export interface AppointmentBookingFormProps {
@@ -45,16 +42,15 @@ export interface AppointmentBookingFormProps {
    * Called when the time search opens or closes.
    *
    * The times sit beside the form rather than under it, so a host that puts this
-   * in a side panel has to widen the panel to fit them. That is the host's
-   * layout to change, which is why this reports rather than decides.
+   * in a side panel has to widen the panel to fit them. Reports rather than
+   * decides, because that is the host's layout to change.
    */
   readonly onToggleTimeFinder?: (open: boolean) => void;
   /**
    * Called with the visit type as it changes.
    *
-   * The type decides more than the search — it carries the availability a host
-   * may want to shade its own calendar with, and the configuration that says
-   * what else a booking implies.
+   * The type decides more than the search: it carries the availability a host may
+   * want to shade its own calendar with.
    */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
 }
@@ -151,9 +147,8 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
         <TextInput
           label="Date & time"
           placeholder="Find a time to choose one"
-          // Read-only rather than absent: the chosen time belongs among the
-          // answers, but only a time the search offered may be booked, so there
-          // is nothing here to type into.
+          // A field rather than plain text, because the chosen time belongs among
+          // the answers — but read-only, so there is nothing to type into.
           readOnly
           value={chosen?.start ? formatZonedDateTime(new Date(chosen.start), timezone) : ''}
         />
