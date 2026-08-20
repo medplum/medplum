@@ -380,3 +380,31 @@ export function buildFindBundle(appointments: readonly Appointment[]): Bundle<Ap
     entry: appointments.map((resource) => ({ resource })),
   };
 }
+
+/**
+ * A provider whose only role sits inside the main clinic rather than at it.
+ *
+ * The site filter is asymmetric by role: a room is sited by walking `partOf`, so
+ * anywhere inside the clinic counts, while a provider is sited by a
+ * `PractitionerRole` naming the clinic exactly. Dr. Osei practises on the second
+ * floor, so booking at the main clinic leaves her out while offering Exam Room B,
+ * which is on that same floor. Kept apart from `SchedulingFixtures` so it is the
+ * asymmetry story's own case rather than something every other story inherits.
+ */
+export const DrOseiPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-osei',
+  name: [{ given: ['Ama'], family: 'Osei', prefix: ['Dr.'] }],
+};
+
+export const DrOseiRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-osei',
+  practitioner: { reference: 'Practitioner/dr-osei' },
+  healthcareService: [{ reference: 'HealthcareService/ultrasound-imaging' }],
+  location: [{ reference: 'Location/second-floor' }],
+};
+
+export const DrOseiSchedule = buildSchedule('schedule-dr-osei', 'Practitioner/dr-osei', 'Dr. Ama Osei');
+
+export const SubClinicProviderFixtures = [DrOseiPractitioner, DrOseiRole, DrOseiSchedule];
