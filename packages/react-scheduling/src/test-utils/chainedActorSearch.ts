@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { QueryTypes } from '@medplum/core';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
@@ -25,18 +26,19 @@ const ACTOR_CHAIN_PREFIX = 'actor:';
 export function stubChainedActorSearch(medplum: MockClient): () => void {
   const original = medplum.search;
   const search = medplum.search.bind(medplum);
-  medplum.search = (async (
-    resourceType: 'Schedule',
-    query: Record<string, string>,
-    options?: object
-  ): Promise<Bundle> => {
-    const criteria: Record<string, string> = {};
+  medplum.search = (async (resourceType: 'Schedule', query: QueryTypes, options?: object): Promise<Bundle> => {
+    // Through the constructor rather than by reading keys off the query: callers
+    // hand `search` a record, a query string or a `URLSearchParams`, and
+    // `Object.entries` of the last of those is empty — which would drop every
+    // filter and answer a narrowed search with everything.
+    const params = new URLSearchParams(query as never);
+    const criteria = new URLSearchParams();
     const chained: [string, string][] = [];
-    for (const [code, value] of Object.entries(query ?? {})) {
+    for (const [code, value] of params) {
       if (code.startsWith(ACTOR_CHAIN_PREFIX)) {
         chained.push([code.slice(ACTOR_CHAIN_PREFIX.length), value]);
       } else {
-        criteria[code] = value;
+        criteria.append(code, value);
       }
     }
 
