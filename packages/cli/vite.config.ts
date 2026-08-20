@@ -8,6 +8,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/cli',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],

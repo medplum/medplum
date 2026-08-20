@@ -119,12 +119,14 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
         const encounter = await medplum.searchOne('Encounter', { appointment: getReferenceString(appointment) });
         if (encounter) {
           await navigate(encounterUrl(encounter));
+        } else {
+          handleSelectAppointment(appointment);
         }
       } catch (error) {
         showErrorNotification(error);
       }
     },
-    [medplum, navigate]
+    [medplum, navigate, handleSelectAppointment]
   );
 
   const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);

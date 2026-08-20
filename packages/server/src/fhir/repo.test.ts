@@ -1149,6 +1149,26 @@ describe('FHIR Repo', () => {
       expect(entries[2].resource).toBeDefined();
     }));
 
+  test('readVersion returns an unshared resource', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      const versionId = patient.meta?.versionId as string;
+
+      // Callers mutate the result of readVersion in place rather than cloning it first,
+      // so each read must return structure that is not shared with any cache or other reader.
+      const first = await systemRepo.readVersion<Patient>('Patient', patient.id, versionId);
+      const second = await systemRepo.readVersion<Patient>('Patient', patient.id, versionId);
+      expect(first).not.toBe(second);
+      expect(first.name).not.toBe(second.name);
+      expect(first.name?.[0]).not.toBe(second.name?.[0]);
+
+      (first.name as object[])[0] = { family: 'Mutated' };
+      expect(second.name?.[0]?.family).toStrictEqual('Smith');
+    }));
+
   test('Restore deleted resource', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({

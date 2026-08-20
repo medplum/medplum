@@ -37,6 +37,24 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "HealthcareService-location",
+    "name": "location",
+    "code": "location",
+    "base": ["HealthcareService"],
+    "type": "reference",
+    "expression": "HealthcareService.location"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "HealthcareService-name",
+    "name": "name",
+    "code": "name",
+    "base": ["HealthcareService"],
+    "type": "string",
+    "expression": "HealthcareService.name"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Measure-url",
     "name": "url",
     "code": "url",
@@ -160,6 +178,42 @@
     "base": ["Questionnaire"],
     "type": "uri",
     "expression": "Questionnaire.url"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-active",
+    "name": "active",
+    "code": "active",
+    "base": ["Schedule"],
+    "type": "token",
+    "expression": "Schedule.active"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-actor",
+    "name": "actor",
+    "code": "actor",
+    "base": ["Schedule"],
+    "type": "reference",
+    "expression": "Schedule.actor",
+    "target": [
+      "Practitioner",
+      "Device",
+      "Patient",
+      "HealthcareService",
+      "PractitionerRole",
+      "RelatedPerson",
+      "Location"
+    ]
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-service-type",
+    "name": "service-type",
+    "code": "service-type",
+    "base": ["Schedule"],
+    "type": "token",
+    "expression": "Schedule.serviceType"
   },
   {
     "resourceType": "SearchParameter",
