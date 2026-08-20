@@ -90,7 +90,8 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
   const output = buildOutputParameters(operation, {
     query,
     parameters,
-    explain,
+    // explain,
+    explain: escapeUnicode(explain),
     countEstimate: countResult?.estimate,
     countAccurate: countResult?.accurate,
   });
