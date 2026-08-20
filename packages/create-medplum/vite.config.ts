@@ -8,6 +8,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: 'create-medplum',
     globals: true,
     environment: 'node',
     pool: 'threads',

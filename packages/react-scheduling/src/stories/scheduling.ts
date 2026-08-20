@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { SchedulingParametersURI, ServiceTypeReferenceURI } from '@medplum/core';
+import { SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
@@ -26,7 +26,7 @@ type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
  * through the `service-type-reference` extension on its `serviceType`.
  */
 
-const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
+export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
 
 export const MainClinic: WithId<Location> = {
   resourceType: 'Location',
@@ -72,23 +72,51 @@ export const SatelliteRoom: WithId<Location> = {
   partOf: { reference: 'Location/satellite-clinic' },
 };
 
-export const UltrasoundImagingService: WithId<HealthcareService> = {
-  resourceType: 'HealthcareService',
+export interface SchedulableServiceOptions {
+  readonly id: string;
+  readonly name: string;
+  /** What the visit is, which is the line the pick list shows under the name. */
+  readonly category: string;
+  readonly durationMinutes: number;
+  readonly alignmentMinutes: number;
+  /** The sites holding it. */
+  readonly locationIds: readonly string[];
+}
+
+/**
+ * Builds a service `$find` can produce times for: typed, sited, and carrying the
+ * `SchedulingParameters` a booking needs.
+ * @param options - What the visit is, how long it runs, and where it is held.
+ * @returns The service.
+ */
+export function buildSchedulableService(options: SchedulableServiceOptions): WithId<HealthcareService> {
+  return {
+    resourceType: 'HealthcareService',
+    id: options.id,
+    name: options.name,
+    location: options.locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
+    extension: [
+      {
+        url: SchedulingParametersURI,
+        extension: [
+          { url: 'duration', valueDuration: { value: options.durationMinutes, unit: 'min' } },
+          { url: 'alignmentInterval', valueDuration: { value: options.alignmentMinutes, unit: 'min' } },
+          { url: 'timezone', valueCode: 'America/New_York' },
+        ],
+      },
+    ],
+  };
+}
+
+export const UltrasoundImagingService = buildSchedulableService({
   id: 'ultrasound-imaging',
   name: 'Ultrasound Imaging',
-  location: [{ reference: 'Location/main-clinic' }],
-  type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: 'ultrasound-imaging' }], text: 'Ultrasound Imaging' }],
-  extension: [
-    {
-      url: SchedulingParametersURI,
-      extension: [
-        { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
-        { url: 'alignmentInterval', valueDuration: { value: 15, unit: 'min' } },
-        { url: 'timezone', valueCode: 'America/New_York' },
-      ],
-    },
-  ],
-};
+  category: 'Imaging',
+  durationMinutes: 30,
+  alignmentMinutes: 15,
+  locationIds: ['main-clinic'],
+});
 
 /** A service with no SchedulingParameters, which must never be offered. */
 export const WalkInService: WithId<HealthcareService> = {
@@ -176,30 +204,21 @@ export const SatelliteRoomSchedule = buildSchedule(
  * A second service, for the harder case: one booking that needs a surgeon, an
  * anesthesiologist and a room, all free at once.
  *
- * Its providers are modelled as PractitionerRole rather than Practitioner, which
- * is what lets a scheduler read the list as surgeons or anesthesiologists — a
- * plain Practitioner says nothing about which it is.
+ * Its providers hold both a Practitioner and a PractitionerRole, split the way
+ * scheduling reads them: the schedule is held on the Practitioner, so one human
+ * has one calendar, while the role carries the specialty and the site that decide
+ * whether that human is eligible at all.
  */
-const SNOMED = 'http://snomed.info/sct';
 const PRACTITIONER_ROLE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/practitioner-role';
 
-export const SurgeryService: WithId<HealthcareService> = {
-  resourceType: 'HealthcareService',
+export const SurgeryService = buildSchedulableService({
   id: 'bariatric-surgery',
   name: 'Bariatric Surgery',
-  location: [{ reference: 'Location/main-clinic' }],
-  type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: 'bariatric-surgery' }], text: 'Bariatric Surgery' }],
-  extension: [
-    {
-      url: SchedulingParametersURI,
-      extension: [
-        { url: 'duration', valueDuration: { value: 120, unit: 'min' } },
-        { url: 'alignmentInterval', valueDuration: { value: 30, unit: 'min' } },
-        { url: 'timezone', valueCode: 'America/New_York' },
-      ],
-    },
-  ],
-};
+  category: 'Surgery',
+  durationMinutes: 120,
+  alignmentMinutes: 30,
+  locationIds: ['main-clinic'],
+});
 
 export const OperatingRoom3: WithId<Location> = {
   resourceType: 'Location',
@@ -244,17 +263,12 @@ export const DrKimRole = buildSurgicalRole('role-dr-kim', 'dr-kim', ANESTHESIA);
 
 export const DrMartinezSchedule = buildSchedule(
   'schedule-dr-martinez',
-  'PractitionerRole/role-dr-martinez',
+  'Practitioner/dr-martinez',
   'Dr. Maria Martinez',
   SURGERY
 );
-export const DrChenSchedule = buildSchedule(
-  'schedule-dr-chen',
-  'PractitionerRole/role-dr-chen',
-  'Dr. Wei Chen',
-  SURGERY
-);
-export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'PractitionerRole/role-dr-kim', 'Dr. James Kim', SURGERY);
+export const DrChenSchedule = buildSchedule('schedule-dr-chen', 'Practitioner/dr-chen', 'Dr. Wei Chen', SURGERY);
+export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'Practitioner/dr-kim', 'Dr. James Kim', SURGERY);
 export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/or-3', 'Operating Room 3', SURGERY);
 
 export const SurgicalFixtures = [

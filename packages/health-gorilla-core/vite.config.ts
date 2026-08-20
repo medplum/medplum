@@ -6,6 +6,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/health-gorilla-core',
     globals: true,
     pool: 'threads',
   },

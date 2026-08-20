@@ -8,6 +8,7 @@ const vitestConfig = defineVitestConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/health-gorilla-react',
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',

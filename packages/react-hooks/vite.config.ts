@@ -8,6 +8,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/react-hooks',
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test.setup.ts'],

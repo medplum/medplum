@@ -40,7 +40,7 @@ describe('TaskDetailsModal', () => {
     authoredOn: '2023-01-01T12:00:00Z',
   };
 
-  const setup = (): ReturnType<typeof render> => {
+  const setup = (onUpdateTask?: (task: WithId<Task>) => void): ReturnType<typeof render> => {
     vi.spyOn(usePatientModule, 'usePatient').mockReturnValue(mockPatient);
 
     return render(
@@ -48,7 +48,10 @@ describe('TaskDetailsModal', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Routes>
-              <Route path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId" element={<TaskDetailsModal />} />
+              <Route
+                path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId"
+                element={<TaskDetailsModal task={{ reference: 'Task/task-123' }} onUpdateTask={onUpdateTask} />}
+              />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -115,11 +118,7 @@ describe('TaskDetailsModal', () => {
     await medplum.createResource(mockTask);
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
-    });
-
-    const noteInput = screen.getByPlaceholderText('Add note to this task');
+    const noteInput = await screen.findByPlaceholderText('Add note to this task');
     await user.type(noteInput, 'Updated note');
 
     const saveButton = screen.getByText('Save Changes');
@@ -130,13 +129,29 @@ describe('TaskDetailsModal', () => {
     });
   });
 
+  test('reports the saved task through onUpdateTask', async () => {
+    const user = userEvent.setup();
+    const onUpdateTask = vi.fn();
+    await medplum.createResource(mockTask);
+    setup(onUpdateTask);
+
+    const noteInput = await screen.findByPlaceholderText('Add note to this task');
+    await user.type(noteInput, 'Updated note');
+
+    await user.click(screen.getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(onUpdateTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-123' }));
+    });
+  });
+
   test('shows success notification after saving', async () => {
     const user = userEvent.setup();
     await medplum.createResource(mockTask);
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
+      expect(screen.getByText('Save Changes')).toBeEnabled();
     });
 
     const saveButton = screen.getByText('Save Changes');
@@ -156,7 +171,7 @@ describe('TaskDetailsModal', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
+      expect(screen.getByText('Save Changes')).toBeEnabled();
     });
 
     const saveButton = screen.getByText('Save Changes');
@@ -208,11 +223,7 @@ describe('TaskDetailsModal', () => {
     await medplum.createResource(taskWithAllFields);
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
-    });
-
-    const noteInput = screen.getByPlaceholderText('Add note to this task');
+    const noteInput = await screen.findByPlaceholderText('Add note to this task');
     await user.type(noteInput, 'Comprehensive update');
 
     const saveButton = screen.getByText('Save Changes');
@@ -233,11 +244,7 @@ describe('TaskDetailsModal', () => {
     await medplum.createResource(mockTask);
     setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
-    });
-
-    const noteInput = screen.getByPlaceholderText('Add note to this task');
+    const noteInput = await screen.findByPlaceholderText('Add note to this task');
     await user.type(noteInput, 'Test');
     await user.clear(noteInput);
 
