@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { QueryTypes } from '@medplum/core';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
@@ -19,21 +20,24 @@ const ACTOR_CHAIN_PREFIX = 'actor:';
  * sends, not chained search in general.
  *
  * @param medplum - The client to stub.
+ * @returns A function restoring the client's own `search`, for a caller sharing
+ *   one client across renders.
  */
-export function stubChainedActorSearch(medplum: MockClient): void {
+export function stubChainedActorSearch(medplum: MockClient): () => void {
+  const original = medplum.search;
   const search = medplum.search.bind(medplum);
-  medplum.search = (async (
-    resourceType: 'Schedule',
-    query: Record<string, string>,
-    options?: object
-  ): Promise<Bundle> => {
-    const criteria: Record<string, string> = {};
+  medplum.search = (async (resourceType: 'Schedule', query: QueryTypes, options?: object): Promise<Bundle> => {
+    // `Object.entries` of a `URLSearchParams` is empty, and `searchResources` hands
+    // `search` exactly that — reading keys off the query would drop every filter and
+    // answer a narrowed search with everything.
+    const params = new URLSearchParams(query as never);
+    const criteria = new URLSearchParams();
     const chained: [string, string][] = [];
-    for (const [code, value] of Object.entries(query ?? {})) {
+    for (const [code, value] of params) {
       if (code.startsWith(ACTOR_CHAIN_PREFIX)) {
         chained.push([code.slice(ACTOR_CHAIN_PREFIX.length), value]);
       } else {
-        criteria[code] = value;
+        criteria.append(code, value);
       }
     }
 
@@ -59,6 +63,10 @@ export function stubChainedActorSearch(medplum: MockClient): void {
 
     return { ...bundle, entry: kept };
   }) as never;
+
+  return () => {
+    medplum.search = original;
+  };
 }
 
 /**

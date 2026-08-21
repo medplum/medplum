@@ -10,6 +10,8 @@ import type { SchedulingActor } from './AppointmentFinder.roles';
  */
 export const MAX_FIND_WINDOW_DAYS = 31;
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 
 /** A calendar day's worth of available times, split by the actors offering them. */
@@ -350,6 +352,24 @@ export function enumerateDateRange(range: DateRange, limit = MAX_FIND_WINDOW_DAY
     days.push(day);
   }
   return days;
+}
+
+/**
+ * Reports a window `$find` will not answer, before a request is made for it.
+ *
+ * The server refuses a range wider than `MAX_FIND_WINDOW_DAYS`, and answers with
+ * an error rather than anything a user could act on.
+ *
+ * @param range - The days asked for.
+ * @returns The message to show, or undefined when the range can be searched.
+ */
+export function getFindWindowError(range: DateRange): string | undefined {
+  const { start, end } = range;
+  if (!start || !end) {
+    return undefined;
+  }
+  const days = Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
+  return days > MAX_FIND_WINDOW_DAYS ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.` : undefined;
 }
 
 /**
