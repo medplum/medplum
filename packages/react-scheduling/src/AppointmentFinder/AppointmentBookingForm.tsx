@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Loader, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Loader, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
@@ -140,9 +140,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const [roleFieldsKey, setRoleFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
-  const [reason, setReason] = useState('');
-  const [comment, setComment] = useState('');
-  const [patientInstruction, setPatientInstruction] = useState('');
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
@@ -241,7 +238,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     setBooking(true);
     setBookError(undefined);
     try {
-      const proposal = buildBooking(chosen, patient, { reason, comment, patientInstruction });
+      const proposal = buildBooking(chosen, patient);
 
       if (onBook) {
         await onBook(proposal);
@@ -343,28 +340,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           defaultValue={defaultPatient}
           itemComponent={patientItem}
           onChange={setPatient}
-        />
-        <TextInput
-          label="Reason for visit"
-          placeholder="What the visit is for"
-          value={reason}
-          onChange={(event) => setReason(event.currentTarget.value)}
-        />
-        <Textarea
-          label="Notes or comments"
-          description="Kept internally, for the practice."
-          autosize
-          minRows={2}
-          value={comment}
-          onChange={(event) => setComment(event.currentTarget.value)}
-        />
-        <Textarea
-          label="Patient instructions"
-          description="Shown to the patient."
-          autosize
-          minRows={2}
-          value={patientInstruction}
-          onChange={(event) => setPatientInstruction(event.currentTarget.value)}
         />
 
         {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
@@ -541,24 +516,16 @@ function RoleField(props: RoleFieldProps): JSX.Element {
   );
 }
 
-/** The free text written onto a booking, as typed. */
-interface AppointmentNotes {
-  readonly reason: string;
-  readonly comment: string;
-  readonly patientInstruction: string;
-}
-
 /**
- * Puts the patient and the free text onto the proposal that will be booked.
+ * Puts the patient onto the proposal that will be booked.
  *
  * @param proposal - The time that was chosen, as `$find` offered it.
  * @param patient - Who the visit is for.
- * @param notes - What was typed about it.
  * @returns The appointment to book.
  */
-function buildBooking(proposal: Appointment, patient: WithId<Patient>, notes: AppointmentNotes): Appointment {
+function buildBooking(proposal: Appointment, patient: WithId<Patient>): Appointment {
   const patientReference = getReferenceString(patient);
-  const booking: Appointment = {
+  return {
     ...proposal,
     participant: [
       // A proposal knows nothing about patients, but a host may have put one on
@@ -567,23 +534,6 @@ function buildBooking(proposal: Appointment, patient: WithId<Patient>, notes: Ap
       { actor: createReference(patient), required: 'required', status: 'needs-action' },
     ],
   };
-
-  // A field nobody filled in is left off rather than written empty: an empty
-  // string is a note saying nothing, which reads as a note on the chart.
-  const description = notes.reason.trim();
-  if (description) {
-    booking.description = description;
-  }
-  const comment = notes.comment.trim();
-  if (comment) {
-    booking.comment = comment;
-  }
-  const patientInstruction = notes.patientInstruction.trim();
-  if (patientInstruction) {
-    booking.patientInstruction = patientInstruction;
-  }
-
-  return booking;
 }
 
 /**
