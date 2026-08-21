@@ -178,9 +178,10 @@ describe('Batch worker', () => {
         await expect(execBatchJob(job)).resolves.toBeUndefined();
 
         // Three chunks were written this run, but assembly reads back none of them (only chunks
-        // from previous runs of the job, of which there are none); cleanup still deletes all three.
+        // from previous runs of the job, of which there are none); cleanup still deletes all three
+        // result chunks plus the single identity chunk (the seed at chunk 0; no divergence).
         expect(loadSpy).toHaveBeenCalledWith(0);
-        expect(cleanupSpy).toHaveBeenCalledWith(3);
+        expect(cleanupSpy).toHaveBeenCalledWith(3, 1);
         const finished = await readAsyncJob(asyncJob.id);
         expect(finished.status).toStrictEqual('completed');
         const results = await readResultsBundle(finished);
@@ -550,7 +551,7 @@ describe('Batch worker', () => {
           await failedHandler(job, new Error('boom'));
 
           expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('error');
-          expect(cleanupSpy).toHaveBeenCalledWith(0);
+          expect(cleanupSpy).toHaveBeenCalledWith(0, 0);
           cleanupSpy.mockRestore();
         }));
 
