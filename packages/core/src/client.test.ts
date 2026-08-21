@@ -2938,6 +2938,57 @@ describe('Client', () => {
       );
       expect(fetch).toHaveBeenCalledTimes(2);
     });
+
+    test('should not retry POST on server error', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.post(client.fhirUrl('Patient'), { resourceType: 'Patient' })).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not retry PATCH on server error', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(
+        client.patch(client.fhirUrl('Patient', '123'), [{ op: 'replace', path: '/active', value: true }])
+      ).rejects.toThrow('Internal server error (Error: Something is broken)');
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should retry PUT on server error', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(
+        client.put(client.fhirUrl('Patient', '123'), { resourceType: 'Patient', id: '123' })
+      ).rejects.toThrow('Internal server error (Error: Something is broken)');
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
+    test('should not retry POST on fetch error', async () => {
+      const fetch = vi.fn().mockImplementation(async (_url: string, _options?: RequestInit) => {
+        throw new Error('Some kind of fetch error occurred');
+      });
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.post(client.fhirUrl('Patient'), { resourceType: 'Patient' })).rejects.toThrow(
+        'Some kind of fetch error occurred'
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should retry POST on rate limit', async () => {
+      // A rate limited request was never processed, so retrying it is safe for any method
+      const fetch = mockFetch(429, tooManyRequests);
+      const client = new MedplumClient({ fetch, maxRetries: 1 });
+
+      await expect(client.post(client.fhirUrl('Patient'), { resourceType: 'Patient' })).rejects.toThrow();
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('Paginated Search ', () => {
