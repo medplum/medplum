@@ -47,6 +47,15 @@ export const Basic = (): JSX.Element => {
       schedule: createReference(DrAliceSmithSchedule),
       comment: 'Coming in early on wednesday morning',
     },
+
+    {
+      resourceType: 'Slot',
+      id: 'slot-4',
+      start: '2020-05-08T15:15:00Z',
+      end: '2020-05-08T16:15:00Z',
+      status: 'entered-in-error',
+      schedule: createReference(DrAliceSmithSchedule),
+    },
   ] satisfies Slot[];
 
   const appointments: Appointment[] = [
@@ -65,6 +74,38 @@ export const Basic = (): JSX.Element => {
         {
           status: 'accepted',
           actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+    {
+      resourceType: 'Appointment',
+      id: 'appt-2',
+      status: 'cancelled',
+      start: '2020-05-06T17:00:00Z',
+      end: '2020-05-06T18:00:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'accepted',
+          actor: createReference(DrAliceSmith),
+        },
+        {
+          status: 'accepted',
+          actor: createReference(HomerSimpson),
+        },
+      ],
+    },
+    {
+      resourceType: 'Appointment',
+      id: 'appt-3',
+      status: 'pending',
+      start: '2020-05-05T16:30:00Z',
+      end: '2020-05-05T17:00:00Z',
+      slot: [],
+      participant: [
+        {
+          status: 'tentative',
+          actor: createReference(DrAliceSmith),
         },
       ],
     },
