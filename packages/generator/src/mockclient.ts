@@ -70,6 +70,8 @@ const searchParams = [
   'Observation-value-quantity',
   'Observation-value-string',
   'Encounter-length',
+  'HealthcareService-location',
+  'HealthcareService-name',
   'Communication-encounter',
   'Communication-part-of',
   'Media-encounter',

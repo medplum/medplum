@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { allOk, append, badRequest, EMPTY, isEmpty, OperationOutcomeError } from '@medplum/core';
-import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { FhirRepository, FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '@medplum/fhir-router';
 import type {
   CodeSystem,
   CodeSystemProperty,
@@ -14,6 +14,7 @@ import type {
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
@@ -58,9 +59,17 @@ type ValueSetExpandParameters = {
  * Implements FHIR ValueSet expansion.
  * @see https://www.hl7.org/fhir/operation-valueset-expand.html
  * @param req - The incoming request.
+ * @param _repo - The current user FHIR repository.
+ * @param _router - The router for router options.
+ * @param options - Additional route options.
  * @returns The server response.
  */
-export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
+export async function expandOperator(
+  req: FhirRequest,
+  _repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
   const filter = params.filter;
   if (filter !== undefined && typeof filter !== 'string') {
@@ -74,6 +83,10 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   }
 
   const repo = getAuthenticatedContext().repo;
+  if (!options?.batch) {
+    repo.setMode(DatabaseMode.READER);
+  }
+
   let valueSet = params.valueSet;
   if (!valueSet) {
     let url = params.url;

@@ -4,6 +4,7 @@ import type {
   Attachment,
   Bundle,
   CodeableConcept,
+  Coding,
   DeviceDeviceName,
   Observation,
   ObservationDefinition,
@@ -13,6 +14,7 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import { vi } from 'vitest';
+import { HL7_V2_0203 } from './constants';
 import { ContentType } from './contenttype';
 import { OperationOutcomeError } from './outcomes';
 import { PropertyType } from './types';
@@ -49,6 +51,7 @@ import {
   getExtensions,
   getExtensionValue,
   getIdentifier,
+  getIdentifierByType,
   getImageSrc,
   getPathDifference,
   getQueryString,
@@ -65,6 +68,7 @@ import {
   isValidHostname,
   lazy,
   mapByIdentifier,
+  MRN_IDENTIFIER_TYPE,
   NOOP,
   parseReference,
   preciseEquals,
@@ -627,6 +631,105 @@ describe('Core Utils', () => {
     expect(
       getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'y', value: 'y' } }, 'x')
     ).toBeUndefined();
+  });
+
+  test('Get identifier by type', () => {
+    const type: Coding = { system: 'http://example.com/types', code: 'MR' };
+    const typed = (coding: Coding[] | undefined, value: string): Patient => ({
+      resourceType: 'Patient',
+      identifier: [{ type: { coding }, value }],
+    });
+
+    expect(getIdentifierByType({} as unknown as Resource, type)).toBeUndefined();
+    expect(getIdentifierByType({ identifier: null } as unknown as Resource, type)).toBeUndefined();
+    expect(getIdentifierByType({ identifier: undefined } as unknown as Resource, type)).toBeUndefined();
+    expect(getIdentifierByType({ identifier: [] } as unknown as Resource, type)).toBeUndefined();
+    expect(getIdentifierByType({ identifier: {} } as unknown as Resource, type)).toBeUndefined();
+
+    // Non-array identifier is normalized to an array
+    expect(
+      getIdentifierByType(
+        { resourceType: 'SpecimenDefinition', identifier: { type: { coding: [type] }, value: 'y' } },
+        type
+      )
+    ).toStrictEqual('y');
+
+    expect(getIdentifierByType(typed([type], 'y'), type)).toStrictEqual('y');
+    expect(getIdentifierByType(typed([{ system: type.system, code: 'DL' }], 'y'), type)).toBeUndefined();
+    expect(getIdentifierByType(typed(undefined, 'y'), type)).toBeUndefined();
+    expect(getIdentifierByType(typed([], 'y'), type)).toBeUndefined();
+
+    // Right code, different system: must not match
+    expect(getIdentifierByType(typed([{ system: 'http://example.com/other', code: 'MR' }], 'y'), type)).toBeUndefined();
+    expect(getIdentifierByType(typed([{ code: 'MR' }], 'y'), type)).toBeUndefined();
+
+    // Multiple codings from the same system: any of them can match
+    expect(getIdentifierByType(typed([{ system: type.system, code: 'DL' }, type], 'y'), type)).toStrictEqual('y');
+
+    // Identifier with no type at all
+    expect(
+      getIdentifierByType({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] }, type)
+    ).toBeUndefined();
+
+    // A malformed type argument matches nothing
+    expect(getIdentifierByType(typed([type], 'y'), {})).toBeUndefined();
+    expect(getIdentifierByType(typed([type], 'y'), { code: 'MR' })).toBeUndefined();
+    expect(getIdentifierByType(typed([type], 'y'), { system: type.system })).toBeUndefined();
+
+    // Multiple identifiers, only the later one matches
+    expect(
+      getIdentifierByType(
+        {
+          resourceType: 'Patient',
+          identifier: [
+            { system: 'x', value: 'first' },
+            { type: { coding: [{ system: 'http://example.com/other', code: 'MR' }] }, value: 'second' },
+            { type: { coding: [type] }, value: 'third' },
+          ],
+        },
+        type
+      )
+    ).toStrictEqual('third');
+
+    // First match wins
+    expect(
+      getIdentifierByType(
+        {
+          resourceType: 'Patient',
+          identifier: [
+            { type: { coding: [type] }, value: 'first' },
+            { type: { coding: [type] }, value: 'second' },
+          ],
+        },
+        type
+      )
+    ).toStrictEqual('first');
+  });
+
+  test('Get identifier by type - MRN', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [
+        {
+          system: 'http://hospital.example.com/ssn',
+          type: { coding: [{ system: HL7_V2_0203, code: 'SS' }] },
+          value: '999-99-9999',
+        },
+        {
+          system: 'http://hospital.example.com/mrn',
+          type: { coding: [{ system: HL7_V2_0203, code: 'MR' }], text: 'Medical Record Number' },
+          value: 'MRN-12345',
+        },
+      ],
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    };
+
+    expect(getIdentifierByType(patient, MRN_IDENTIFIER_TYPE)).toStrictEqual('MRN-12345');
+    expect(getIdentifierByType({ resourceType: 'Patient' }, MRN_IDENTIFIER_TYPE)).toBeUndefined();
+    expect(MRN_IDENTIFIER_TYPE).toStrictEqual({
+      system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+      code: 'MR',
+    });
   });
 
   test('Set identifier', () => {

@@ -6,6 +6,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/dosespot-core',
     globals: true,
     pool: 'threads',
   },

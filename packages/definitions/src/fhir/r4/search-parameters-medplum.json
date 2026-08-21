@@ -299,6 +299,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ClientApplication-identity-provider-issuer",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ClientApplication-identity-provider-issuer",
+        "url": "https://medplum.com/fhir/SearchParameter/ClientApplication-identity-provider-issuer",
+        "version": "4.0.1",
+        "name": "identity-provider-issuer",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The issuer of the client application's identity provider",
+        "code": "identity-provider-issuer",
+        "base": ["ClientApplication"],
+        "type": "string",
+        "expression": "ClientApplication.identityProvider.issuer"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/JsonWebKey-active",
       "resource": {
         "resourceType": "SearchParameter",

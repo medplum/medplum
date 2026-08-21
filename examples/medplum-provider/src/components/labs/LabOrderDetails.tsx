@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Badge,
+  Button,
   Divider,
   Group,
   Loader,
+  Menu,
   Paper,
   ScrollArea,
   Stack,
@@ -13,6 +15,7 @@ import {
   ThemeIcon,
   Timeline,
 } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type {
   CarePlan,
@@ -24,15 +27,16 @@ import type {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { AttachmentDisplay, useMedplum, useResource } from '@medplum/react';
-import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import { showErrorNotification } from '../../utils/notifications';
 import { LabReportContent } from './LabReportContent';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;
+  onChange?: (order: WithId<ServiceRequest>) => void;
 }
 
 interface ProgressStep {
@@ -45,7 +49,7 @@ interface ProgressStep {
 }
 
 export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
-  const { order } = props;
+  const { order, onChange } = props;
   const medplum = useMedplum();
   const patient = useResource(order.subject);
   const requester = useResource(order.requester);
@@ -59,6 +63,23 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
     order.status !== 'completed' ? 'progress' : 'report'
   );
+
+  const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
+
+  // A revoked order has no progress to track, so only Order Details is shown.
+  const isRevoked = order.status === 'revoked';
+  const detailTab = isRevoked ? 'order' : activeDetailTab;
+
+  const handleRevoke = useCallback(async (): Promise<void> => {
+    try {
+      const updated = await medplum.patchResource('ServiceRequest', order.id as string, [
+        { op: 'replace', path: '/status', value: 'revoked' },
+      ]);
+      onChange?.(updated);
+    } catch (err) {
+      showErrorNotification(err);
+    }
+  }, [medplum, order.id, onChange]);
 
   // Filter DiagnosticReports for this specific order
   useEffect(() => {
@@ -382,27 +403,44 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             <Divider />
             <Group justify="space-between" align="center">
               <Tabs
-                value={activeDetailTab}
+                value={detailTab}
                 onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
                 variant="unstyled"
                 className="pill-tabs"
               >
                 <Tabs.List>
-                  <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
-                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                  </Tabs.Tab>
+                  {!isRevoked && (
+                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
+                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                    </Tabs.Tab>
+                  )}
                   <Tabs.Tab value="order">Order Details</Tabs.Tab>
                 </Tabs.List>
               </Tabs>
-              <Badge size="lg" color={getStatusColor(order.status)} variant="light">
-                {getStatusDisplayText(order.status)}
-              </Badge>
+              <Menu position="bottom-end" shadow="md">
+                <Menu.Target>
+                  <Button
+                    variant="light"
+                    color={getStatusColor(order.status)}
+                    rightSection={canRevoke ? <IconChevronDown size={16} /> : undefined}
+                    radius="xl"
+                    size="sm"
+                  >
+                    {getStatusDisplayText(order.status)}
+                  </Button>
+                </Menu.Target>
+                {canRevoke && (
+                  <Menu.Dropdown>
+                    <Menu.Item onClick={() => handleRevoke().catch(console.error)}>Revoked</Menu.Item>
+                  </Menu.Dropdown>
+                )}
+              </Menu>
             </Group>
           </Stack>
 
           <Stack gap="xs" p="md">
             {/* Order Details Tab Content */}
-            {activeDetailTab === 'order' && (
+            {detailTab === 'order' && (
               <Stack gap="md">
                 <Stack gap="sm" mb="xl">
                   <Group align="flex-start" gap="lg">
@@ -736,7 +774,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             )}
 
             {/* Progress Tracker Tab Content - for open items */}
-            {activeDetailTab === 'progress' && (
+            {detailTab === 'progress' && (
               <Stack gap="md">
                 <Stack p="xl" align="center">
                   <Timeline
@@ -801,7 +839,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             )}
 
             {/* Report Tab Content - for completed items */}
-            {activeDetailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
+            {detailTab === 'report' && primaryReport && <LabReportContent report={primaryReport} />}
           </Stack>
         </Stack>
       </Paper>

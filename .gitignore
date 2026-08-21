@@ -28,8 +28,9 @@ storybook-static/
 # Chromatic
 packages/storybook/build-storybook.log
 
-# Jest code coverage
+# Vitest code coverage
 coverage/
+.vitest-reports/
 
 # TypeScript incremental build
 tsconfig.tsbuildinfo

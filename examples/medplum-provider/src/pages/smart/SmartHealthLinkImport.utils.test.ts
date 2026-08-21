@@ -167,6 +167,16 @@ describe('SmartHealthLinkImport utils', () => {
     ]);
   });
 
+  test('sorts entries with no resource to the front', () => {
+    const sorted = sortImportableEntries([{ resource: observation }, {}, {}, { resource: allergyIntolerance }]);
+    expect(sorted.map((entry) => entry.resource?.resourceType)).toEqual([
+      undefined,
+      undefined,
+      'AllergyIntolerance',
+      'Observation',
+    ]);
+  });
+
   test('does not mutate the array it sorts', () => {
     const entries: BundleEntry[] = [{ resource: observation }, { resource: allergyIntolerance }];
     sortImportableEntries(entries);
@@ -282,6 +292,116 @@ describe('SmartHealthLinkImport utils', () => {
     );
   });
 
+  test('prefers an identifier over patient and code criteria', () => {
+    // An identifier from the sharing system is a stronger dedupe key than patient + code + date.
+    const identifiedCondition: Condition = {
+      ...condition,
+      identifier: [{ system: 'http://issuer.example.com/conditions', value: 'cond-42' }],
+    };
+    const result = buildSmartHealthLinkImportBundle(
+      { resourceType: 'Bundle', type: 'collection', entry: [{ resource: identifiedCondition }] },
+      new Set(['Condition/condition-1']),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe(
+      'identifier=http://issuer.example.com/conditions|cond-42'
+    );
+  });
+
+  test('accepts a system-less identifier and ignores a value-less one', () => {
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          { resource: { ...condition, identifier: [{ value: 'cond-42' }] } },
+          {
+            resource: {
+              ...observation,
+              identifier: [{ system: 'http://issuer.example.com/observations' }],
+            },
+          },
+        ],
+      },
+      new Set(['Condition/condition-1', 'Observation/observation-1']),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect(findEntry(result, 'Condition').request?.ifNoneExist).toBe('identifier=cond-42');
+    // No usable identifier, so it falls back to patient + code + date.
+    expect(findEntry(result, 'Observation').request?.ifNoneExist).toBe(
+      'subject=Patient/local-patient&code=http://loinc.org|4548-4&date=2026-05-30'
+    );
+  });
+
+  test('omits the date from the criteria when the resource has none', () => {
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              ...observation,
+              effectiveDateTime: undefined,
+              // A code with no system searches on the bare code.
+              code: { coding: [{ code: 'local-a1c' }] },
+            },
+          },
+        ],
+      },
+      new Set(['Observation/observation-1']),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect(findEntry(result, 'Observation').request?.ifNoneExist).toBe('subject=Patient/local-patient&code=local-a1c');
+  });
+
+  test('leaves resources outside the conditional create set unconditional', () => {
+    // An Encounter carries no dedupe criteria we trust, so it is always created.
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Encounter',
+              id: 'encounter-1',
+              status: 'finished',
+              class: { code: 'AMB' },
+              subject: { reference: 'Patient/shared-patient' },
+            },
+          },
+        ],
+      },
+      new Set(['Encounter/encounter-1']),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect(findEntry(result, 'Encounter').request?.ifNoneExist).toBeUndefined();
+  });
+
+  test('skips bundle entries with no code to search on', () => {
+    const result = buildSmartHealthLinkImportBundle(
+      {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [{ resource: { ...condition, code: undefined } }],
+      },
+      new Set(['Condition/condition-1']),
+      sharedPatient,
+      { ...sharedPatient, id: 'local-patient' }
+    );
+
+    expect(findEntry(result, 'Condition').request?.ifNoneExist).toBeUndefined();
+  });
+
   test('rewrites internal references between imported resources', () => {
     const result = buildSmartHealthLinkImportBundle(bundle, selectedKeys, sharedPatient, {
       ...sharedPatient,
@@ -304,7 +424,16 @@ describe('SmartHealthLinkImport utils', () => {
     const bundleWithAttachment: Bundle = {
       resourceType: 'Bundle',
       type: 'transaction',
-      entry: [{ resource: { ...documentReference } }],
+      entry: [
+        // An entry with no resource is skipped rather than throwing.
+        {},
+        {
+          resource: {
+            ...documentReference,
+            content: [{ attachment: { ...documentReference.content[0].attachment, title: 'summary.pdf' } }],
+          },
+        },
+      ],
     };
 
     await uploadInlineAttachments(medplum, bundleWithAttachment);
@@ -312,10 +441,11 @@ describe('SmartHealthLinkImport utils', () => {
     expect(createAttachment).toHaveBeenCalledTimes(1);
     const options = createAttachment.mock.calls[0][0];
     expect(options.contentType).toBe('application/pdf');
+    expect(options.filename).toBe('summary.pdf');
     // Assert the decoded bytes rather than the class: `fetch` yields an undici Blob under jsdom,
     // so `expect.any(Blob)` would fail on realm identity even though the payload is correct.
     expect(await (options.data as Blob).text()).toBe('%PDF-');
-    const uploadedAttachment = (bundleWithAttachment.entry?.[0].resource as DocumentReference).content?.[0].attachment;
+    const uploadedAttachment = (bundleWithAttachment.entry?.[1].resource as DocumentReference).content?.[0].attachment;
     expect(uploadedAttachment?.url).toBe('Binary/uploaded-binary');
     expect(uploadedAttachment?.data).toBeUndefined();
   });

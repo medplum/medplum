@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "5.1.29",
+  "version": "5.1.31",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -60,16 +60,16 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.1105.0",
-    "@aws-sdk/client-cloudformation": "3.1105.0",
-    "@aws-sdk/client-cloudfront": "3.1105.0",
-    "@aws-sdk/client-ecs": "3.1105.0",
-    "@aws-sdk/client-s3": "3.1105.0",
-    "@aws-sdk/client-ssm": "3.1105.0",
-    "@aws-sdk/client-sts": "3.1105.0",
-    "@aws-sdk/types": "3.974.2",
-    "@medplum/core": "5.1.29",
-    "@medplum/hl7": "5.1.29",
+    "@aws-sdk/client-acm": "3.1110.0",
+    "@aws-sdk/client-cloudformation": "3.1110.0",
+    "@aws-sdk/client-cloudfront": "3.1110.0",
+    "@aws-sdk/client-ecs": "3.1110.0",
+    "@aws-sdk/client-s3": "3.1110.0",
+    "@aws-sdk/client-ssm": "3.1110.0",
+    "@aws-sdk/client-sts": "3.1110.0",
+    "@aws-sdk/types": "3.974.3",
+    "@medplum/core": "5.1.31",
+    "@medplum/hl7": "5.1.31",
     "commander": "12.1.0",
     "dotenv": "17.4.2",
     "fast-glob": "3.3.3",
@@ -78,8 +78,8 @@
     "tar": "7.5.22"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "5.1.29",
-    "@medplum/mock": "5.1.29",
+    "@medplum/fhirtypes": "5.1.31",
+    "@medplum/mock": "5.1.31",
     "@types/semver": "7.8.0",
     "aws-sdk-client-mock": "4.1.0"
   },
