@@ -123,15 +123,19 @@ async function chooseActor(role: RegExp, query: string, name: string): Promise<v
 }
 
 /**
- * Empties the visit type field, which is the only way to change what it holds:
- * it takes one value at most, so its search box is gone while it is full.
+ * Takes one chosen value back out of the field holding it.
  *
- * @param name - The visit type currently chosen.
+ * The only way to change the visit type, which holds one value at most and so has
+ * no search box while it is full. Also how a named resource is dropped.
+ *
+ * @param name - The value currently chosen.
  */
-async function clearVisitType(name: string): Promise<void> {
-  // Mantine's remove button is `aria-hidden`, so it is reached through the pill
-  // it sits in rather than by its role.
-  const remove = screen.getByText(name).parentElement?.querySelector('button');
+async function removePill(name: string): Promise<void> {
+  // Scoped to the pill, because a named resource is also on the slot card and in
+  // the chosen time's description. Mantine's remove button is `aria-hidden`, so it
+  // is reached through the pill it sits in rather than by its role.
+  const pill = screen.queryAllByText(name).find((node) => node.className.includes('Pill'));
+  const remove = pill?.parentElement?.querySelector('button');
   if (!remove) {
     throw new Error(`No remove button on the ${name} pill`);
   }
@@ -286,17 +290,24 @@ describe('AppointmentBookingForm', () => {
       expect(field(/provider/i)).toBeInTheDocument();
     });
 
-    test('Searches no times until a provider is named', async () => {
+    test('Offers no search until a provider is named, and says so', async () => {
       setup(medplum);
       await chooseImagingService();
 
       // A room alone is not enough: it would hold the room while leaving the
-      // calendar it is booked against open.
+      // calendar it is booked against open. The action says so rather than opening
+      // a search that could only refuse to run — which would widen the host's
+      // panel to show a refusal.
       await chooseActor(/room/i, 'exam', 'Exam Room A');
-      await openTimeFinder();
 
-      expect(screen.getByText('Choose at least one provider')).toBeInTheDocument();
+      expect(finderButton()).toBeDisabled();
+      expect(screen.getByText('Choose at least one provider first.')).toBeInTheDocument();
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
+
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+
+      expect(finderButton()).toBeEnabled();
+      expect(screen.queryByText('Choose at least one provider first.')).not.toBeInTheDocument();
     });
 
     test('Searches against the provider alone when the room and device are left empty', async () => {
@@ -635,7 +646,90 @@ describe('AppointmentBookingForm', () => {
     });
   });
 
-  describe('Clearing answers that depended on the visit type', () => {
+  describe('Clearing answers that no longer hold', () => {
+    test('Replacing the provider clears the time, so no booking can hold the old one', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).toHaveAccessibleDescription(/Dr. Maya Rivera/);
+
+      await removePill('Dr. Maya Rivera');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+
+      // A chosen time is a proposal carrying its own participants and Slots. Kept
+      // through this, it would book Dr. Rivera while the form showed Dr. Okafor —
+      // and `$book` would accept it, because that time genuinely was hers.
+      expect(chosenTimeField()).not.toBeInTheDocument();
+
+      const label = await chooseFirstOfferedTime();
+
+      // The replacement is the new provider's, not a relabelled copy of the old.
+      const chosen = chosenTimeField() as HTMLInputElement;
+      expect(chosen.value).toContain(label);
+      expect(chosen).toHaveAccessibleDescription(/Dr. Tunde Okafor/);
+      expect(chosen).not.toHaveAccessibleDescription(/Dr. Maya Rivera/);
+    });
+
+    test.each([
+      ['added', async (): Promise<void> => chooseActor(/room/i, 'exam', 'Exam Room A')],
+      ['removed', async (): Promise<void> => removePill('Exam Room A')],
+    ])('A room %s after a time was chosen clears it', async (_change, changeRoom) => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      if (_change === 'removed') {
+        await chooseActor(/room/i, 'exam', 'Exam Room A');
+      }
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).toBeInTheDocument();
+
+      await changeRoom();
+
+      // A time found without a room's availability is not a time that room is free
+      // for, and one found with it is not valid once it is no longer held.
+      expect(chosenTimeField()).not.toBeInTheDocument();
+    });
+
+    test('A resource change leaves the search open and re-runs it', async () => {
+      const onToggleTimeFinder = vi.fn();
+      setup(medplum, { onToggleTimeFinder });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      onToggleTimeFinder.mockClear();
+
+      await chooseActor(/room/i, 'exam', 'Exam Room A');
+
+      // The replacement stays one click away: closing here would take back the
+      // panel width the host just widened, mid-task.
+      expect(finderButton()).toHaveTextContent('Close time finder');
+      expect(onToggleTimeFinder).not.toHaveBeenCalled();
+      const [group] = await screen.findAllByTestId(/^slot-group-/);
+      // Re-run for the new set, so the times on offer are the ones both share.
+      expect(within(group).getByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(within(group).getByText('Exam Room A')).toBeInTheDocument();
+    });
+
+    test('Dropping the last provider closes the search, and says so', async () => {
+      const onToggleTimeFinder = vi.fn();
+      setup(medplum, { onToggleTimeFinder });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findAllByTestId(/^slot-group-/);
+
+      await removePill('Dr. Maya Rivera');
+
+      // Not a rule about the provider field: there is simply nothing left to
+      // search, which is the one condition that closes the search at all.
+      expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
+      expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
+    });
+
     test('Clears the chosen resources and time when the visit type changes', async () => {
       setup(medplum);
       await chooseImagingService();
@@ -644,7 +738,7 @@ describe('AppointmentBookingForm', () => {
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).toBeInTheDocument();
 
-      await clearVisitType('Ultrasound Imaging');
+      await removePill('Ultrasound Imaging');
       await typeInAutocomplete(field(/visit type/i), 'Bariatric');
       await clickAutocompleteOption('Bariatric Surgery');
       await settleAutocomplete();
@@ -710,10 +804,11 @@ describe('AppointmentBookingForm', () => {
       await openTimeFinder();
       await screen.findAllByTestId(/^slot-group-/);
 
-      await clearVisitType('Ultrasound Imaging');
+      await removePill('Ultrasound Imaging');
 
-      // Nothing can be searched without a visit type, and the host has to be told
-      // so the panel it widened narrows again.
+      // Through the derived condition rather than a close of its own: clearing the
+      // visit type clears the resources, which leaves no provider, which is what
+      // closes the search. The host is told so its panel narrows again.
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
       expect(screen.queryByRole('button', { name: /close time finder/i })).not.toBeInTheDocument();
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
@@ -734,6 +829,9 @@ describe('AppointmentBookingForm', () => {
       const onToggleTimeFinder = vi.fn();
       setup(medplum, { onToggleTimeFinder });
       await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      // Mounting is not an open or a close, so the host hears nothing until one.
+      expect(onToggleTimeFinder).not.toHaveBeenCalled();
 
       await openTimeFinder();
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(true);

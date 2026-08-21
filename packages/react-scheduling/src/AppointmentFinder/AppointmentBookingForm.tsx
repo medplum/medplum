@@ -7,7 +7,7 @@ import type { Appointment, HealthcareService, Location } from '@medplum/fhirtype
 import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/react';
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -95,11 +95,16 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const selectionError = getSelectionError(selections);
   const windowError = getFindWindowError(range);
 
+  // The one condition for the search being open. Closing is never its own rule:
+  // there is nothing to search without a provider, so clearing the last one closes
+  // it — however it was cleared, and without any caller having to remember to.
+  const searching = finding && !selectionError;
+
   // Nothing is searched until the time search is open, so the answers above can
   // be changed without a request per keystroke.
   const combinations = useMemo(
-    () => (finding && !selectionError && !windowError ? getActorCombinations(selections) : []),
-    [finding, selectionError, windowError, selections]
+    () => (searching && !windowError ? getActorCombinations(selections) : []),
+    [searching, windowError, selections]
   );
 
   const search = useProposedAppointments({ service, combinations, range });
@@ -114,21 +119,38 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
 
   const days = useMemo(() => groupAppointmentsByDay(search.appointments, timezone), [search.appointments, timezone]);
 
+  // Reported from the derived value rather than from the click, so a search that
+  // closed because its last provider went is reported the same as one closed by
+  // hand. The ref holds what the host was last told, so mounting reports nothing.
+  const reported = useRef(false);
+  useEffect(() => {
+    if (reported.current !== searching) {
+      reported.current = searching;
+      onToggleTimeFinder?.(searching);
+    }
+  }, [searching, onToggleTimeFinder]);
+
   function toggleFinder(): void {
-    const next = !finding;
-    setFinding(next);
-    onToggleTimeFinder?.(next);
+    setFinding(!finding);
   }
+
+  const chooseResources = useCallback((update: (selections: ActorSelections) => ActorSelections): void => {
+    setSelections(update);
+    // A chosen time is a proposal held on the resources it was found for, carrying
+    // their Slots. Booking it after one changes would hold the resources inside the
+    // proposal rather than the ones on screen — and `$book` cannot catch that,
+    // because the proposal is internally consistent and that time genuinely was
+    // free for whoever is named in it.
+    setChosen(undefined);
+  }, []);
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
     onChangeService?.(next);
     // The actors on offer come from the visit type, so what was chosen for the
     // last one cannot mean anything for this one — nor can a time held on them.
+    // That leaves no provider, which is what closes the search.
     clearResources();
-    // Times must not outlive the visit type that produced them, and every change
-    // passes through none, since the field holds one at a time.
-    closeFinder();
   }
 
   function chooseLocation(next: WithId<Location> | undefined): void {
@@ -140,7 +162,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
       setService(undefined);
       onChangeService?.(undefined);
       setServiceFieldKey((key) => key + 1);
-      closeFinder();
     }
   }
 
@@ -148,13 +169,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     setSelections({});
     setChosen(undefined);
     setRoleFieldsKey((key) => key + 1);
-  }
-
-  function closeFinder(): void {
-    if (finding) {
-      setFinding(false);
-      onToggleTimeFinder?.(false);
-    }
   }
 
   function chooseDay(date: Date): void {
@@ -193,19 +207,21 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
             // Searching before a visit type is chosen could only find nothing,
             // which reads as a broken field rather than an answer still owed.
             disabled={!service}
-            onChange={setSelections}
+            onChange={chooseResources}
           />
         ))}
 
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
-          finding={finding}
-          disabled={!service}
+          searching={searching}
+          // Before a visit type there is no provider to ask for yet, so the answer
+          // owed is the one the fields above are already waiting on.
+          blockedBy={service ? selectionError : 'Choose a visit type'}
           onToggleFinder={toggleFinder}
         />
 
-        {finding && (
+        {searching && (
           <Stack gap={4}>
             <CalendarDateInput
               availableDates={NO_MARKED_DATES}
@@ -217,16 +233,11 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
               onClick={chooseDay}
             />
             {windowError && <Alert color="yellow">{windowError}</Alert>}
-            {selectionError && (
-              <Text size="sm" c="dimmed">
-                {selectionError}
-              </Text>
-            )}
           </Stack>
         )}
       </Stack>
 
-      {finding && (
+      {searching && (
         <Stack className={classes.results} gap="lg">
           {search.loading && <Loader size="sm" />}
           {search.error && <Alert color="red">{normalizeErrorString(search.error)}</Alert>}
@@ -242,7 +253,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
                 onSelectAppointment={setChosen}
               />
             ))}
-          {!search.loading && !search.error && !selectionError && !windowError && days.length === 0 && (
+          {!search.loading && !search.error && !windowError && days.length === 0 && (
             <Text c="dimmed" ta="center">
               No times are available for this selection.
             </Text>
@@ -257,8 +268,9 @@ interface ChosenTimeProps {
   readonly appointment: Appointment | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
-  readonly finding: boolean;
-  readonly disabled?: boolean;
+  readonly searching: boolean;
+  /** What is still owed before a time can be searched for, if anything. */
+  readonly blockedBy: string | undefined;
   readonly onToggleFinder: () => void;
 }
 
@@ -276,7 +288,7 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, finding, disabled, onToggleFinder } = props;
+  const { appointment, timezone, searching, blockedBy, onToggleFinder } = props;
 
   return (
     <>
@@ -291,15 +303,24 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         />
       )}
 
-      <Button
-        variant="outline"
-        fullWidth
-        leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
-        disabled={disabled}
-        onClick={onToggleFinder}
-      >
-        {getFinderLabel(finding, !!appointment)}
-      </Button>
+      <Stack gap={4}>
+        <Button
+          variant="outline"
+          fullWidth
+          leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
+          disabled={!!blockedBy}
+          onClick={onToggleFinder}
+        >
+          {getFinderLabel(searching, !!appointment)}
+        </Button>
+        {/* On the action rather than inside the search: a disabled action cannot
+            open the region that used to carry this, so it would never be read. */}
+        {blockedBy && (
+          <Text size="xs" c="dimmed">
+            {blockedBy} first.
+          </Text>
+        )}
+      </Stack>
     </>
   );
 }
@@ -342,12 +363,12 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
 
 /**
  * Names what the action does next.
- * @param finding - Whether the time search is open.
+ * @param searching - Whether the time search is open.
  * @param chosen - Whether a time has been picked.
  * @returns The button's label.
  */
-function getFinderLabel(finding: boolean, chosen: boolean): string {
-  if (finding) {
+function getFinderLabel(searching: boolean, chosen: boolean): string {
+  if (searching) {
     return 'Close time finder';
   }
   // Repeating the invitation over a time already found reads as a search that
