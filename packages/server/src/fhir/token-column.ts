@@ -304,10 +304,12 @@ function buildTokenColumnsWhereConditionTextAndContains(
       this regex looks for an entry from the format described above:
        - `ARRAY_DELIM`
        - If the search parameter does NOT have dedicated columns, `code + DELIM`
-       - any number of characters that are not `ARRAY_DELIM` (to support infix search)
        - the query string
       */
-    let regexStr: string = '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query.trim());
+    let regexStr: string =
+      operator === 'contains'
+        ? '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query.trim()) // infix match
+        : escapeRegexString(query.trim()); // prefix match
     if (impl.hasDedicatedColumns) {
       regexStr = ARRAY_DELIM + regexStr;
     } else {
