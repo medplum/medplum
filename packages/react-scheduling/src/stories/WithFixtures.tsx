@@ -27,8 +27,8 @@ export function WithFixtures(props: WithFixturesProps): JSX.Element | null {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Storing the resources is only half of it: MockClient still needs the
-    // search parameters registered before it can find any of them again.
+    // MockClient cannot find a stored resource until the search parameters are
+    // registered too.
     indexSchedulingSearchParameters();
     Promise.all(props.resources.map((resource) => medplum.updateResource(resource)))
       .then(() => setReady(true))

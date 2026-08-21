@@ -21,13 +21,11 @@ import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 import { useProposedAppointments } from './useProposedAppointments';
 
-// Excluded by what a room is, never by what a site is: `physicalType` is optional,
-// so `physical-type=si,bu` would silently hide a Location nobody typed. Server-side,
-// because it is a Medplum search parameter, so paging survives it.
+// Excludes what a room is rather than admitting what a site is: `physicalType` is
+// optional, so `physical-type=si,bu` would hide a Location that never declared one.
 const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
-// Nothing has scanned a month for the days that have times on them, so every day
-// is offered and the search is what answers.
+// No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
 
 export interface AppointmentBookingFormProps {
@@ -38,40 +36,29 @@ export interface AppointmentBookingFormProps {
   /**
    * The day the time search opens on. Defaults to today.
    *
-   * Seeds the day rather than the time: only a time `$find` offered can be
-   * chosen, so a pre-filled time could not survive its own validation.
+   * A day, not a time: only a time `$find` offered can be chosen.
    */
   readonly defaultStart?: Date;
   /**
    * Called when the time search opens or closes.
    *
-   * The times sit beside the form rather than under it, so a host that puts this
-   * in a side panel has to widen the panel to fit them. Reports rather than
-   * decides, because that is the host's layout to change.
+   * The times render beside the form, not under it, so a host in a side panel has
+   * to widen it to fit them.
    */
   readonly onToggleTimeFinder?: (open: boolean) => void;
-  /**
-   * Called with the visit type as it changes.
-   *
-   * The type decides more than the search: it carries the availability a host may
-   * want to shade its own calendar with.
-   */
+  /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
 }
 
 /**
  * Gathers what a visit is held on, and finds a time every one of them is free.
  *
- * Narrow by site and visit type, then name the actors: one field per scheduling
- * role, each searching the schedules bookable for that type. Everything named
- * attends, because `$find` intersects their schedules — so naming a second room
- * narrows the times rather than widening them.
+ * One field per scheduling role, each searching the schedules bookable for the
+ * chosen visit type. Everything named attends, because `$find` intersects their
+ * schedules — so naming a second room narrows the times rather than widening them.
  *
- * Choosing a time is deliberately a separate step behind "Find a time". The
- * times depend on every answer above them, so offering them earlier would only
- * show times that are about to change. Only a time the search offered can be
- * chosen: the field holding it accepts no input, so nothing can be booked onto time
- * that was never checked against anybody's availability.
+ * Only a time the search offered can be chosen: the field holding it accepts no
+ * input, so nothing can be booked onto time nobody checked availability for.
  *
  * @param props - The React props.
  * @returns The form.
@@ -86,22 +73,20 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
-  // The fields below ignore `defaultValue` after mount, so clearing the state above
-  // leaves their pills on screen; remounting is what clears them. Counters rather
-  // than the chosen values, so a field is never remounted out from under a pick.
+  // The fields ignore `defaultValue` after mount, so remounting is the only way to
+  // clear their pills. Counters, so a field is never remounted out from under a pick.
   const [roleFieldsKey, setRoleFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
 
   const selectionError = getSelectionError(selections);
   const windowError = getFindWindowError(range);
 
-  // The one condition for the search being open. Closing is never its own rule:
-  // there is nothing to search without a provider, so clearing the last one closes
-  // it — however it was cleared, and without any caller having to remember to.
+  // Derived, not a flag: closing is never its own rule, so losing the last provider
+  // closes the search however it was lost.
   const searching = finding && !selectionError;
 
-  // Nothing is searched until the time search is open, so the answers above can
-  // be changed without a request per keystroke.
+  // Nothing is searched until the time search is open, so the answers above cost no
+  // request per keystroke.
   const combinations = useMemo(
     () => (searching && !windowError ? getActorCombinations(selections) : []),
     [searching, windowError, selections]
@@ -109,9 +94,8 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
 
   const search = useProposedAppointments({ service, combinations, range });
 
-  // The schedule is what carries the timezone for a service, so the first chosen
-  // actor's schedule answers it. Every actor in one search shares the scheduling
-  // parameters — `$find` rejects the request otherwise.
+  // The first actor's schedule answers for all of them: every actor in one search
+  // shares the scheduling parameters, or `$find` rejects the request.
   const timezone = useMemo(() => {
     const [first] = getSelectedCandidates(selections);
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
@@ -119,9 +103,8 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
 
   const days = useMemo(() => groupAppointmentsByDay(search.appointments, timezone), [search.appointments, timezone]);
 
-  // Reported from the derived value rather than from the click, so a search that
-  // closed because its last provider went is reported the same as one closed by
-  // hand. The ref holds what the host was last told, so mounting reports nothing.
+  // The ref holds what the host was last told, so mounting reports nothing and a
+  // search that closed on its own is reported like one closed by hand.
   const reported = useRef(false);
   useEffect(() => {
     if (reported.current !== searching) {
@@ -136,27 +119,20 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
 
   const chooseResources = useCallback((update: (selections: ActorSelections) => ActorSelections): void => {
     setSelections(update);
-    // A chosen time is a proposal held on the resources it was found for, carrying
-    // their Slots. Booking it after one changes would hold the resources inside the
-    // proposal rather than the ones on screen — and `$book` cannot catch that,
-    // because the proposal is internally consistent and that time genuinely was
-    // free for whoever is named in it.
+    // A chosen time is a proposal carrying the Slots it was found for. Booked after
+    // a resource changes it would hold whoever is named inside the proposal, and
+    // `$book` cannot catch that: the proposal is internally consistent.
     setChosen(undefined);
   }, []);
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
     onChangeService?.(next);
-    // The actors on offer come from the visit type, so what was chosen for the
-    // last one cannot mean anything for this one — nor can a time held on them.
-    // That leaves no provider, which is what closes the search.
     clearResources();
   }
 
   function chooseLocation(next: WithId<Location> | undefined): void {
     setLocation(next);
-    // The site decides which actors are offered at all, so the ones chosen for the
-    // last one cannot be assumed to serve this.
     clearResources();
     if (service && !isServiceKeptAtLocation(service, next)) {
       setService(undefined);
@@ -165,6 +141,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     }
   }
 
+  /** Both the site and the visit type decide which actors are offered at all. */
   function clearResources(): void {
     setSelections({});
     setChosen(undefined);
@@ -173,7 +150,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
 
   function chooseDay(date: Date): void {
     setRange(oneDay(date));
-    // A time on one day is not a time on another.
     setChosen(undefined);
   }
 
@@ -192,8 +168,8 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
         <AppointmentServiceSelect
           key={serviceFieldKey}
           location={location}
-          // From state, not the prop: re-seeding from `defaultService` on a remount
-          // would put back the visit type that remount was clearing.
+          // From state, not the prop: `defaultService` on a remount would put back
+          // the visit type the remount was clearing.
           defaultValue={service}
           onChange={chooseService}
         />
@@ -204,8 +180,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
             role={role}
             service={service}
             location={location}
-            // Searching before a visit type is chosen could only find nothing,
-            // which reads as a broken field rather than an answer still owed.
             disabled={!service}
             onChange={chooseResources}
           />
@@ -215,8 +189,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           appointment={chosen}
           timezone={timezone}
           searching={searching}
-          // Before a visit type there is no provider to ask for yet, so the answer
-          // owed is the one the fields above are already waiting on.
           blockedBy={service ? selectionError : 'Choose a visit type'}
           onToggleFinder={toggleFinder}
         />
@@ -277,12 +249,8 @@ interface ChosenTimeProps {
 /**
  * The chosen time, and under it the action that found it.
  *
- * Above the action, because the form is a column of labelled answers. But no field
- * at all until there is a time: an empty white input among greyed-out ones reads as
- * the one thing still fillable.
- *
- * An input rather than plain text, deliberately: for a user permitted to override,
- * this same field in this same place becomes editable and gains a warning.
+ * An input rather than plain text: for a user permitted to override, this same field
+ * in this same place becomes editable and gains a warning.
  *
  * @param props - The React props.
  * @returns The chosen time, once there is one, and the action.
@@ -297,7 +265,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           label="Date & time"
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
-          // Below the value, which is the answer; the description only qualifies it.
+          // Mantine puts the description above the input by default.
           inputWrapperOrder={['label', 'input', 'description']}
           description={<ChosenTimeCommitment appointment={appointment} />}
         />
@@ -313,8 +281,6 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         >
           {getFinderLabel(searching, !!appointment)}
         </Button>
-        {/* On the action rather than inside the search: a disabled action cannot
-            open the region that used to carry this, so it would never be read. */}
         {blockedBy && (
           <Text size="xs" c="dimmed">
             {blockedBy} first.
@@ -332,9 +298,9 @@ interface ChosenTimeCommitmentProps {
 /**
  * What the chosen time commits to: how long the visit runs, and what holds it.
  *
- * Read off the proposal rather than off the answers above, since the proposal is what
- * `$book` is handed. Inline elements only — it renders inside the field's
- * description, which is a paragraph.
+ * Read off the proposal rather than the answers above, since the proposal is what
+ * `$book` is handed. Inline elements only: it renders inside a `description`, which
+ * is a paragraph.
  *
  * @param props - The React props.
  * @returns The detail beneath the time.
@@ -371,8 +337,6 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
   if (searching) {
     return 'Close time finder';
   }
-  // Repeating the invitation over a time already found reads as a search that
-  // came back with nothing.
   return chosen ? 'Change time' : 'Find a time';
 }
 
@@ -388,8 +352,8 @@ interface RoleFieldProps {
  * One role's field, writing its own key of the selections.
  *
  * A component of its own so the callback it hands down is stable per role: the
- * field searches on a changed callback, and one built inline would be new on
- * every keystroke anywhere in the form.
+ * field searches on a changed callback, and an inline one would be new on every
+ * keystroke anywhere in the form.
  *
  * @param props - The React props.
  * @returns The field for that role.
@@ -423,10 +387,8 @@ function oneDay(date: Date): DateRange {
 }
 
 /**
- * Writes an instant as the day and time it falls on at the site.
- *
- * Read in the timezone the visit is held in, so the field shows the time the clinic
- * will keep rather than the time on the booker's own clock.
+ * Writes an instant as the day and time it falls on at the site, not on the
+ * booker's own clock.
  *
  * @param value - The chosen start time.
  * @param timezone - IANA timezone the visit is scheduled in.

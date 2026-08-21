@@ -6,14 +6,11 @@ import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 /**
  * The search parameters the scheduling fields issue their searches against.
  *
- * `MockClient` answers a search by evaluating each parameter against what it
- * holds, so a parameter nobody registered matches nothing — silently, with an
- * empty bundle rather than an error. Without `Schedule.service-type` a story
- * reads as "this visit type has nothing configured".
+ * A parameter nobody registered matches nothing, silently, with an empty bundle
+ * rather than an error — so a story reads as a visit type with nothing configured.
  *
- * The tests index every bundle `@medplum/definitions` ships. A story cannot:
- * `readJson` reads from disk, and there is no disk in a browser. These are the
- * ones the form actually issues, written out rather than loaded.
+ * Written out rather than loaded from `@medplum/definitions` the way the tests do:
+ * `readJson` reads from disk, and there is no disk in a browser.
  */
 const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
   resourceType: 'Bundle',
@@ -151,10 +148,8 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
 let indexed = false;
 
 /**
- * Registers those parameters, once per page.
- *
- * The registry is global to `@medplum/core`, so indexing the same bundle for
- * every story would only rewrite what is already there.
+ * Registers those parameters once per page; the registry is global to
+ * `@medplum/core`.
  */
 export function indexSchedulingSearchParameters(): void {
   if (!indexed) {

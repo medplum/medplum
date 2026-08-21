@@ -20,11 +20,9 @@ export interface FindStubOptions {
 /**
  * Answers `Appointment/$find` against the resources a MockClient already holds.
  *
- * `MockClient` has no scheduling operations, so a story showing times has to
- * stand in for the server. This intersects nothing and checks no availability —
- * it lays times on the alignment grid through the range asked for, on the
- * schedules asked for, which is enough for the flow around it to behave the way
- * it will against a real server.
+ * `MockClient` has no scheduling operations. This intersects nothing and checks no
+ * availability: it lays times on the alignment grid through the range asked for, on
+ * the schedules asked for.
  *
  * @param medplum - The client to patch. Other requests are passed through.
  * @param options - Whether to offer anything.
@@ -63,8 +61,8 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
   const service = await medplum.readReference<HealthcareService>({ reference: serviceReference });
   const durationMinutes = getServiceDurationMinutes(service) ?? DEFAULT_DURATION_MINUTES;
 
-  // Every actor named attends, mirroring what `$find` returns for an intersected
-  // set of schedules: one appointment carrying all of them.
+  // `$find` answers an intersected set of schedules with one appointment carrying
+  // every actor, so the stub does the same.
   const actorReferences = schedules.map((schedule) => schedule.actor[0]);
 
   const appointments: Appointment[] = [];

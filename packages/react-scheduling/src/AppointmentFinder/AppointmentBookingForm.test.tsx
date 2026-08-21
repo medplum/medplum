@@ -26,10 +26,7 @@ import { act, fireEvent, renderWithMedplum, screen, waitFor, within } from '../t
 import type { AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
 
-/**
- * A Monday morning, so the stubbed `$find` has weekday hours ahead of it on the
- * day the form searches by default.
- */
+/** A Monday, so the stub has weekday hours ahead of it on the default search day. */
 const MONDAY_MORNING = new Date(2026, 7, 17, 8, 0, 0);
 
 /** The timezone the fixtures' visit type is held in, which is not the runner's. */
@@ -51,16 +48,10 @@ function setup(medplum: MockClient, props?: AppointmentBookingFormProps): void {
   renderWithMedplum(element, medplum);
 }
 
-/**
- * The search box for one of the form's fields.
- * @param label - Matches the label above the field.
- * @returns The field's search box.
- */
 function field(label: RegExp): HTMLElement {
   return screen.getByRole('searchbox', { name: label });
 }
 
-/** Chooses the imaging service, which is what the role fields search against. */
 async function chooseImagingService(): Promise<void> {
   await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
   await clickAutocompleteOption('Ultrasound Imaging');
@@ -68,10 +59,8 @@ async function chooseImagingService(): Promise<void> {
 }
 
 /**
- * Opens one role's field on everything it has, without typing a name.
- *
- * `fireEvent.change` to the value already in the box is not a change, so the
- * unfiltered list is reached the way a user reaches it: by focusing.
+ * Opens one role's field on everything it has, by focusing: `fireEvent.change` to the
+ * value already in the box is not a change.
  *
  * @param role - The field to open.
  * @returns The field's search box.
@@ -88,9 +77,8 @@ async function openRoleField(role: RegExp): Promise<HTMLElement> {
 /**
  * Searches one field and returns the dropdown that field owns.
  *
- * Scoped per field: several autocompletes are on screen at once and a dropdown stays
- * in the document once opened, so an unscoped query could read — or click — an option
- * belonging to another field.
+ * Several autocompletes are on screen at once and a dropdown stays in the document
+ * once opened, so an unscoped query could read — or click — another field's option.
  *
  * @param label - Matches the label above the field.
  * @param query - What to type, which is what the search narrows on.
@@ -108,12 +96,6 @@ async function searchField(label: RegExp, query: string): Promise<HTMLElement> {
   return listbox;
 }
 
-/**
- * Names an actor for one role.
- * @param role - The field to choose in.
- * @param query - What to type, which is what the search narrows on.
- * @param name - The actor to choose out of what came back.
- */
 async function chooseActor(role: RegExp, query: string, name: string): Promise<void> {
   const listbox = await searchField(role, query);
   await act(async () => {
@@ -123,17 +105,14 @@ async function chooseActor(role: RegExp, query: string, name: string): Promise<v
 }
 
 /**
- * Takes one chosen value back out of the field holding it.
- *
- * The only way to change the visit type, which holds one value at most and so has
- * no search box while it is full. Also how a named resource is dropped.
+ * Takes one chosen value back out of the field holding it: the only way to change the
+ * visit type, which takes its search box away while full.
  *
  * @param name - The value currently chosen.
  */
 async function removePill(name: string): Promise<void> {
-  // Scoped to the pill, because a named resource is also on the slot card and in
-  // the chosen time's description. Mantine's remove button is `aria-hidden`, so it
-  // is reached through the pill it sits in rather than by its role.
+  // Scoped to the pill, since a named resource is also on the slot card and in the
+  // chosen time's description. Mantine's remove button is `aria-hidden`.
   const pill = screen.queryAllByText(name).find((node) => node.className.includes('Pill'));
   const remove = pill?.parentElement?.querySelector('button');
   if (!remove) {
@@ -146,18 +125,12 @@ async function removePill(name: string): Promise<void> {
 }
 
 /**
- * Chooses a site in the location field.
- *
- * Starts from an empty field: like the visit type, it holds one value and takes
- * its search box away while full.
- *
+ * Chooses a site in the location field, which holds one value at a time.
  * @param query - What to type.
  * @param name - The site to click out of what came back.
  */
 async function chooseSite(query: string, name: string): Promise<void> {
   const listbox = await searchField(/location/i, query);
-  // By name, not by position: a search narrow enough to return one site is a
-  // search narrow enough to pass while offering the wrong one.
   await act(async () => {
     fireEvent.click(within(listbox).getByText(name));
   });
@@ -174,7 +147,7 @@ async function openTimeFinder(): Promise<void> {
 
 /**
  * Clicks a day in the time search's calendar.
- * @param dayOfMonth - The day's number, which is what the cell is labelled with.
+ * @param dayOfMonth - The number the cell is labelled with.
  */
 async function chooseDay(dayOfMonth: string): Promise<void> {
   await act(async () => {
@@ -184,10 +157,8 @@ async function chooseDay(dayOfMonth: string): Promise<void> {
 }
 
 /**
- * Picks the first time on offer.
- *
- * Times are read at the site, whose timezone is not the runner's, so the time is
- * picked by position rather than by the clock face it shows.
+ * Picks the first time on offer, by position: times are read at the site, whose
+ * timezone is not the runner's.
  *
  * @returns The label of the time that was picked.
  */
@@ -202,10 +173,8 @@ async function chooseFirstOfferedTime(): Promise<string> {
 }
 
 /**
- * Whether a field is holding a value, read off the pill rather than the state.
- *
- * The pill is what went stale: the fields keep their own selection and ignore
- * `defaultValue` after mount, so a cleared form could still show one.
+ * Whether a field is holding a value, read off the pill rather than the state: the
+ * fields ignore `defaultValue` after mount, so a cleared form could still show one.
  *
  * @param name - The value's label.
  * @returns Whether a pill is showing it.
@@ -215,10 +184,8 @@ function hasPill(name: string): boolean {
 }
 
 /**
- * The field holding the chosen time, or null while no time has been chosen.
- *
- * There is no field at all before a time is picked, so its absence is an assertion
- * in its own right rather than an empty value to read.
+ * The field holding the chosen time, or null while no time has been chosen — there is
+ * no field at all before one is picked, so its absence is an assertion of its own.
  *
  * @returns The field, or null.
  */
@@ -227,11 +194,8 @@ function chosenTimeField(): HTMLInputElement | null {
 }
 
 /**
- * Whether one element comes before another in the document.
- *
- * Where the chosen time sits is part of the behaviour: the form is a column of
- * labelled fields and the answer belongs above the control that produced it, which
- * only document order carries.
+ * Whether one element comes before another in the document, which is the only thing
+ * carrying where the chosen time sits relative to the action.
  *
  * @param first - The element expected to come first.
  * @param second - The element expected to follow it.
@@ -242,7 +206,7 @@ function isBefore(first: Element, second: Element): boolean {
 }
 
 /**
- * The action that finds a time, whatever it currently offers to do.
+ * The action that finds a time, under whichever of its three labels.
  * @returns The button.
  */
 function finderButton(): HTMLElement {
@@ -268,8 +232,6 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await chooseImagingService();
 
-      // All three render whatever the visit type has configured, so the form's
-      // shape does not change with the data behind it.
       expect(field(/provider/i)).toBeInTheDocument();
       expect(field(/room/i)).toBeInTheDocument();
       expect(field(/device/i)).toBeInTheDocument();
@@ -279,7 +241,6 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await settleAutocomplete();
 
-      // Searching before a visit type is chosen could only find nothing.
       for (const role of [/^Provider$/, /^Room$/, /^Device$/]) {
         expect(screen.queryByRole('searchbox', { name: role })).not.toBeInTheDocument();
         expect(screen.getByText(role)).toBeInTheDocument();
@@ -294,10 +255,7 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await chooseImagingService();
 
-      // A room alone is not enough: it would hold the room while leaving the
-      // calendar it is booked against open. The action says so rather than opening
-      // a search that could only refuse to run — which would widen the host's
-      // panel to show a refusal.
+      // A room alone holds a room but no calendar to book it against.
       await chooseActor(/room/i, 'exam', 'Exam Room A');
 
       expect(finderButton()).toBeDisabled();
@@ -325,8 +283,6 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await chooseImagingService();
 
-      // A role with nothing configured is a search that finds nothing, not a
-      // missing field.
       const input = await openRoleField(/device/i);
       await typeInAutocomplete(input, 'nosuchdevice');
 
@@ -341,8 +297,7 @@ describe('AppointmentBookingForm', () => {
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
-      // One request over both schedules: `$find` intersects what it is given, so
-      // the times come back as a single set both are free for rather than two.
+      // One group, not two: `$find` intersects the schedules it is given.
       const groups = await screen.findAllByTestId(/^slot-group-/);
       expect(groups).toHaveLength(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
@@ -375,8 +330,7 @@ describe('AppointmentBookingForm', () => {
     });
 
     test('Offers a provider whose role names the chosen site', async () => {
-      // Dr. Martinez's role names the main clinic itself, which is the only way a
-      // provider is sited.
+      // Dr. Martinez's role names the main clinic itself, the only way a provider is sited.
       setup(medplum, { defaultLocation: MainClinic, defaultService: SurgeryService });
       await settleAutocomplete();
 
@@ -417,8 +371,7 @@ describe('AppointmentBookingForm', () => {
 
       await openRoleField(/device/i);
 
-      // The devices record no location, and hiding something the caller may be
-      // entitled to book is worse than offering something at the wrong site.
+      // The devices record no location at all.
       expect(await screen.findByText('Ultrasound 1 (Main Campus)')).toBeInTheDocument();
     });
 
@@ -437,11 +390,9 @@ describe('AppointmentBookingForm', () => {
     test('Leaves a room and a bed out of the site field', async () => {
       setup(medplum);
 
-      // Unscoped: a search that came back with nothing leaves no dropdown to scope
-      // to, and only a field that has been searched shows an empty message at all.
+      // Unscoped: a search that came back with nothing leaves no dropdown to scope to.
       await typeInAutocomplete(field(/location/i), 'Exam Room A');
 
-      // Rooms and beds are Locations; nothing but their physical type keeps them out.
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
       expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument();
       expect(screen.queryByText('Exam Room A Bed 1')).not.toBeInTheDocument();
@@ -452,8 +403,8 @@ describe('AppointmentBookingForm', () => {
 
       const listbox = await searchField(/location/i, 'Uro Associates');
 
-      // Neither clinic declares a physical type, and nothing requires one: the field
-      // excludes what says it is a room, rather than admitting only what says site.
+      // Neither clinic declares one, and nothing requires it: the field excludes what
+      // says it is a room rather than admitting only what says site.
       expect(within(listbox).getByText('Uro Associates - Main Clinic')).toBeInTheDocument();
       expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
     });
@@ -465,8 +416,8 @@ describe('AppointmentBookingForm', () => {
       await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
 
       expect(screen.getByText('Showing visit types offered at Uro Associates - Satellite.')).toBeInTheDocument();
-      // Imaging names the main clinic, and only a visit type naming this site
-      // exactly is offered at it.
+      // Imaging names the main clinic, and only a visit type naming this site exactly
+      // is offered at it.
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
       expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
     });
@@ -492,8 +443,6 @@ describe('AppointmentBookingForm', () => {
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
 
-      // Everything the search needs has been answered, and still nothing is
-      // asked for: the times depend on every answer above them.
       expect(get.mock.calls.filter(([url]) => String(url).includes('find'))).toHaveLength(0);
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
 
@@ -536,8 +485,8 @@ describe('AppointmentBookingForm', () => {
 
       const [group] = await screen.findAllByTestId(/^slot-group-/);
       const [firstTime] = within(group).getAllByRole('button');
-      // The stub lays times on the clinic's open hours in the runner's timezone,
-      // so the label is that instant read at the site rather than 9:00 repeated.
+      // The stub lays times on the clinic's open hours in the runner's timezone, so the
+      // label is that instant read at the site rather than 9:00 repeated.
       const start = new Date(2026, 7, 17, 9, 0, 0);
 
       expect(firstTime).toHaveTextContent(
@@ -556,8 +505,6 @@ describe('AppointmentBookingForm', () => {
       await openTimeFinder();
       const label = await chooseFirstOfferedTime();
 
-      // The chosen time is the server's own proposal, so its instant is what a
-      // booking would record.
       expect(chosenTimeField()?.value).toContain(label);
     });
   });
@@ -567,8 +514,6 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await chooseImagingService();
 
-      // By name rather than by there being no text field at all, since the form has
-      // other ones to grow.
       expect(finderButton()).toHaveTextContent('Find a time');
       expect(chosenTimeField()).not.toBeInTheDocument();
       expect(screen.queryByRole('textbox', { name: /date|time/i })).not.toBeInTheDocument();
@@ -586,11 +531,8 @@ describe('AppointmentBookingForm', () => {
 
       const chosen = chosenTimeField() as HTMLInputElement;
       expect(chosen.value).toContain(label);
-      // Above the action, so the form stays one column of labelled answers rather
-      // than putting one below the control that produced it.
       expect(isBefore(chosen, finderButton())).toBe(true);
-      // Off the proposal, so what the field commits to is what `$book` would be
-      // handed. Roles named, since the field is read away from their own fields.
+      // Off the proposal, so what the field commits to is what `$book` would be handed.
       expect(chosen).toHaveAccessibleDescription('30 min visit · Provider: Dr. Maya Rivera · Room: Exam Room A');
     });
 
@@ -606,8 +548,6 @@ describe('AppointmentBookingForm', () => {
         fireEvent.change(chosenTimeField() as HTMLInputElement, { target: { value: 'Monday, August 17 at 11:59 PM' } });
       });
 
-      // Nothing can be booked onto time nobody checked availability for, so the
-      // field only ever displays.
       expect(chosenTimeField()).toHaveAttribute('readonly');
       expect(chosenTimeField()?.value).toBe(shown);
       expect(screen.getAllByRole('textbox', { name: /date|time/i })).toHaveLength(1);
@@ -626,8 +566,6 @@ describe('AppointmentBookingForm', () => {
       });
       await settleAutocomplete();
 
-      // Repeating "Find a time" over a time that was found reads as though the
-      // search had come back with nothing.
       expect(finderButton()).toHaveTextContent('Change time');
       expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
     });
@@ -641,7 +579,6 @@ describe('AppointmentBookingForm', () => {
 
       await chooseDay('18');
 
-      // The field goes with the time rather than staying behind as an empty one.
       expect(chosenTimeField()).not.toBeInTheDocument();
     });
   });
@@ -659,13 +596,12 @@ describe('AppointmentBookingForm', () => {
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
 
       // A chosen time is a proposal carrying its own participants and Slots. Kept
-      // through this, it would book Dr. Rivera while the form showed Dr. Okafor —
-      // and `$book` would accept it, because that time genuinely was hers.
+      // through this it would book Dr. Rivera while the form showed Dr. Okafor, and
+      // `$book` would accept it: that time genuinely was Dr. Rivera's.
       expect(chosenTimeField()).not.toBeInTheDocument();
 
       const label = await chooseFirstOfferedTime();
 
-      // The replacement is the new provider's, not a relabelled copy of the old.
       const chosen = chosenTimeField() as HTMLInputElement;
       expect(chosen.value).toContain(label);
       expect(chosen).toHaveAccessibleDescription(/Dr. Tunde Okafor/);
@@ -688,8 +624,8 @@ describe('AppointmentBookingForm', () => {
 
       await changeRoom();
 
-      // A time found without a room's availability is not a time that room is free
-      // for, and one found with it is not valid once it is no longer held.
+      // A time found without a room's availability is not a time that room is free for,
+      // and one found with it does not hold once the room is dropped.
       expect(chosenTimeField()).not.toBeInTheDocument();
     });
 
@@ -704,12 +640,10 @@ describe('AppointmentBookingForm', () => {
 
       await chooseActor(/room/i, 'exam', 'Exam Room A');
 
-      // The replacement stays one click away: closing here would take back the
-      // panel width the host just widened, mid-task.
+      // Closing here would take back the panel width the host just widened, mid-task.
       expect(finderButton()).toHaveTextContent('Close time finder');
       expect(onToggleTimeFinder).not.toHaveBeenCalled();
       const [group] = await screen.findAllByTestId(/^slot-group-/);
-      // Re-run for the new set, so the times on offer are the ones both share.
       expect(within(group).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(group).getByText('Exam Room A')).toBeInTheDocument();
     });
@@ -724,8 +658,6 @@ describe('AppointmentBookingForm', () => {
 
       await removePill('Dr. Maya Rivera');
 
-      // Not a rule about the provider field: there is simply nothing left to
-      // search, which is the one condition that closes the search at all.
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });
@@ -744,8 +676,8 @@ describe('AppointmentBookingForm', () => {
       await settleAutocomplete();
 
       expect(chosenTimeField()).not.toBeInTheDocument();
-      // Not just the state: a surviving pill is handed back on the next pick, and
-      // searched against a schedule the new visit type cannot book.
+      // A surviving pill would be handed back on the next pick, and searched against a
+      // schedule the new visit type cannot book.
       expect(hasPill('Dr. Maya Rivera')).toBe(false);
     });
 
@@ -757,7 +689,6 @@ describe('AppointmentBookingForm', () => {
 
       await chooseSite('Main Clinic', 'Uro Associates - Main Clinic');
 
-      // The site decides which actors are offered at all.
       expect(hasPill('Dr. Maya Rivera')).toBe(false);
       // The imaging service is held there, so that answer stands.
       expect(hasPill('Ultrasound Imaging')).toBe(true);
@@ -791,8 +722,8 @@ describe('AppointmentBookingForm', () => {
 
       await chooseSite('Main Clinic', 'Uro Associates - Main Clinic');
 
-      // Never tied to a site, so no site can invalidate it — even though choosing one
-      // now keeps it from being offered again.
+      // Never tied to a site, so no site invalidates it — even though choosing one now
+      // keeps it from being offered again.
       expect(hasPill('Telehealth Consult')).toBe(true);
     });
 
@@ -806,9 +737,6 @@ describe('AppointmentBookingForm', () => {
 
       await removePill('Ultrasound Imaging');
 
-      // Through the derived condition rather than a close of its own: clearing the
-      // visit type clears the resources, which leaves no provider, which is what
-      // closes the search. The host is told so its panel narrows again.
       expect(screen.queryAllByTestId(/^slot-group-/)).toHaveLength(0);
       expect(screen.queryByRole('button', { name: /close time finder/i })).not.toBeInTheDocument();
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
@@ -843,8 +771,8 @@ describe('AppointmentBookingForm', () => {
     });
 
     test('Opens the time search on the day the host named', async () => {
-      // A Wednesday in the following month, so neither today nor the month the
-      // calendar would otherwise open on could pass this by accident.
+      // In the following month, so the month the calendar would otherwise open on
+      // cannot pass this by accident.
       setup(medplum, { defaultService: UltrasoundImagingService, defaultStart: new Date(2026, 8, 2, 0, 0, 0) });
       await settleAutocomplete();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
