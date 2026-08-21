@@ -33,6 +33,7 @@ POST [base]/Patient/$match
 | -------------------- | ----------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `resource`           | 1..1        | `Patient` | The patient to match against (may be partial). Must include at least one of: `identifier`, `name`, `birthDate`, or `telecom`. |
 | `onlyCertainMatches` | 0..1        | `boolean` | Selects the matching mode. See [Matching Modes](#matching-modes). Defaults to `false`.                                        |
+| `onlyActivePatients` | 0..1        | `boolean` | Restricts candidates to active patients. See [Candidate Search](#candidate-search). Defaults to `false`.                      |
 | `count`              | 0..1        | `integer` | Maximum number of results (discovery mode only). Defaults to the server's default search count.                               |
 
 ## Matching Modes
@@ -147,6 +148,14 @@ Before scoring, candidates are gathered with selective FHIR searches anchored on
 - `Patient?identifier=<system>|<value>` for each identifier
 - `Patient?telecom=<value>` for each phone or email
 - `Patient?birthdate=<date>&family=<family>` and `Patient?birthdate=<date>&given=<given>` when a birth date is present
+
+When `onlyActivePatients` is `true`, every candidate search additionally filters on `active=true`.
+
+:::caution[Patients without an `active` element are excluded]
+
+`Patient.active` is optional in FHIR, and an unset value is not the same as `false`. Because `onlyActivePatients` requires `active=true`, any patient that omits the element is excluded from matching. In projects where records were created without `active`, this flag will exclude nearly everything until the field is backfilled.
+
+:::
 
 Results are deduplicated by patient ID, then compared and scored in memory. Discovery mode ranks the gathered candidate set; it is intended for review and is not an exhaustive population scan. In disclosure mode, if a search hits its result cap (uniqueness cannot be proven), the match is suppressed.
 

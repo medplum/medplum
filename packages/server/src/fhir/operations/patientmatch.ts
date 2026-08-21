@@ -13,7 +13,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, BundleEntry, Extension, Patient } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry, Extension, OperationDefinition, Patient } from '@medplum/fhirtypes';
 import type { AuthenticatedRequestContext } from '../../context';
 import { getAuthenticatedContext } from '../../context';
 import {
@@ -29,7 +29,16 @@ import type { CmsPatientMatchResult } from './utils/cms-patient-match';
 import { cmsPatientMatch } from './utils/cms-patient-match';
 import { parseInputParameters } from './utils/parameters';
 
-const operation = getOperationDefinition('Patient', 'match');
+const baseOperation = getOperationDefinition('Patient', 'match');
+
+// `onlyActivePatients` is a Medplum extension not in the standard OperationDefinition.
+const operation: OperationDefinition = {
+  ...baseOperation,
+  parameter: [
+    ...(baseOperation.parameter ?? EMPTY),
+    { use: 'in', name: 'onlyActivePatients', min: 0, max: '1', type: 'boolean' },
+  ],
+};
 
 // Extension URL for match-grade, as defined by the FHIR spec
 const MATCH_GRADE_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/match-grade`;
@@ -43,11 +52,16 @@ const PROBABLE_THRESHOLD = 0.65;
 const POSSIBLE_THRESHOLD = 0.2;
 const CMS_MATCH_FACTOR_COUNT = 11;
 
+// Restricts candidate searches to patients explicitly marked active. Patients without an
+// `active` element are excluded, since FHIR treats the field as optional and unset is not false.
+const ACTIVE_FILTER = { code: 'active', operator: Operator.EQUALS, value: 'true' };
+
 export type MatchGrade = 'certain' | 'probable' | 'possible' | 'certainly-not';
 
 export interface PatientMatchParameters {
   resource: Patient;
   onlyCertainMatches?: boolean;
+  onlyActivePatients?: boolean;
   count?: number;
 }
 
@@ -103,7 +117,7 @@ export async function matchPatients(
 ): Promise<{ bundle: Bundle<WithId<Patient>>; certainMatches: ScoredPatient[]; truncated: boolean }> {
   const input = params.resource;
   const maxCount = params.count ?? DEFAULT_SEARCH_COUNT;
-  const { candidates, truncated } = await gatherCandidates(repo, input);
+  const { candidates, truncated } = await gatherCandidates(repo, input, params.onlyActivePatients);
   const scored = candidates.map((candidate) => scoreCandidate(candidate, input));
   const relevant = scored.filter((s) => s.grade !== 'certainly-not');
   const certainMatches = relevant.filter((s) => s.grade === 'certain');
@@ -125,11 +139,13 @@ export async function matchPatients(
  * demographics in the input patient. Results are deduplicated by patient ID.
  * @param repo - The repository.
  * @param input - The input patient resource to match against.
+ * @param onlyActivePatients - Whether to restrict candidates to patients marked active.
  * @returns Deduplicated array of candidate patients and whether any search was truncated.
  */
 async function gatherCandidates(
   repo: Repository,
-  input: Patient
+  input: Patient,
+  onlyActivePatients?: boolean
 ): Promise<{ candidates: WithId<Patient>[]; truncated: boolean }> {
   const seen = new Map<string, WithId<Patient>>();
   let truncated = false;
@@ -137,7 +153,7 @@ async function gatherCandidates(
   const runSearch = async (filters: { code: string; operator: Operator; value: string }[]): Promise<void> => {
     const result = await repo.search<WithId<Patient>>({
       resourceType: 'Patient',
-      filters,
+      filters: onlyActivePatients ? [...filters, ACTIVE_FILTER] : filters,
       count: CANDIDATE_SEARCH_COUNT,
     });
     const entries = result.entry ?? EMPTY;
