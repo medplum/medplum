@@ -367,8 +367,111 @@ describe('Patient $match Operation', () => {
     expect((bundle.entry ?? []).length).toBeLessThanOrEqual(2);
   });
 
+  test('Respects onlyActivePatients flag', async () => {
+    const birthDate = '1968-02-14';
+    const family = `Activetest${Date.now()}`;
+    const activePatient = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Delta'] }],
+        birthDate,
+        active: true,
+      } satisfies Patient);
+    const inactivePatient = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Delta'] }],
+        birthDate,
+        active: false,
+      } satisfies Patient);
+
+    const matchResource = {
+      resourceType: 'Patient',
+      name: [{ family, given: ['Delta'] }],
+      birthDate,
+    } satisfies Patient;
+
+    // Without the flag, both the active and the inactive patient are candidates.
+    const allRes = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'resource', resource: matchResource }],
+      });
+
+    expect(allRes).toHaveStatus(200);
+    const allIds = ((allRes.body as Bundle<Patient>).entry ?? []).map((e) => e.resource?.id);
+    expect(allIds).toContain(activePatient.body.id);
+    expect(allIds).toContain(inactivePatient.body.id);
+
+    // With the flag, the inactive patient is excluded from the candidate search.
+    const activeRes = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'resource', resource: matchResource },
+          { name: 'onlyActivePatients', valueBoolean: true },
+        ],
+      });
+
+    expect(activeRes).toHaveStatus(200);
+    const activeIds = ((activeRes.body as Bundle<Patient>).entry ?? []).map((e) => e.resource?.id);
+    expect(activeIds).toContain(activePatient.body.id);
+    expect(activeIds).not.toContain(inactivePatient.body.id);
+  });
+
+  test('onlyActivePatients excludes patients with no active element', async () => {
+    // `active` is optional in FHIR, and an unset value is not the same as false. The flag
+    // requires `active=true`, so records that omit the element are excluded.
+    const birthDate = '1969-08-30';
+    const family = `Activeunset${Date.now()}`;
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Epsilon'] }],
+        birthDate,
+      } satisfies Patient);
+    expect(created).toHaveStatus(201);
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient/$match')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: {
+              resourceType: 'Patient',
+              name: [{ family, given: ['Epsilon'] }],
+              birthDate,
+            } satisfies Patient,
+          },
+          { name: 'onlyActivePatients', valueBoolean: true },
+        ],
+      });
+
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
+  });
+
   describe('CMS mode (onlyCertainMatches=true)', () => {
-    const cmsMatch = (resource: Patient): Promise<request.Response> =>
+    const cmsMatch = (resource: Patient, onlyActivePatients?: boolean): Promise<request.Response> =>
       request(app)
         .post('/fhir/R4/Patient/$match')
         .set('Authorization', 'Bearer ' + accessToken)
@@ -378,6 +481,7 @@ describe('Patient $match Operation', () => {
           parameter: [
             { name: 'resource', resource },
             { name: 'onlyCertainMatches', valueBoolean: true },
+            ...(onlyActivePatients ? [{ name: 'onlyActivePatients', valueBoolean: true }] : []),
           ],
         });
 
@@ -446,6 +550,46 @@ describe('Patient $match Operation', () => {
       expect(res).toHaveStatus(200);
       const bundle = res.body as Bundle<Patient>;
       expect(bundle.entry ?? []).toHaveLength(0);
+    });
+
+    test('releases a unique active match that an inactive duplicate would make ambiguous', async () => {
+      const phone = '+1-617-555-0199';
+      const birthDate = '1974-01-09';
+      const family = `CmsInactiveDupe${Date.now()}`;
+      const active = await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Charles'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+        active: true,
+      });
+      expect(active).toHaveStatus(201);
+      await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Charles'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+        active: false,
+      });
+
+      const matchResource = {
+        resourceType: 'Patient',
+        name: [{ given: ['Charles'] }],
+        birthDate,
+        telecom: [{ system: 'phone', value: phone }],
+      } satisfies Patient;
+
+      // Both satisfy rule 11, so the uniqueness gate suppresses the disclosure.
+      const ambiguousRes = await cmsMatch(matchResource);
+      expect(ambiguousRes).toHaveStatus(200);
+      expect((ambiguousRes.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
+
+      // The inactive duplicate never reaches the uniqueness gate, so the match is released.
+      const res = await cmsMatch(matchResource, true);
+      expect(res).toHaveStatus(200);
+      const bundle = res.body as Bundle<Patient>;
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0]?.resource?.id).toBe(active.body.id);
     });
 
     test('no match when only a single non-discriminating field agrees', async () => {
