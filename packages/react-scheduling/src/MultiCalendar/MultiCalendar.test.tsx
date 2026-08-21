@@ -284,5 +284,31 @@ describe('MultiCalendar', () => {
       await userEvent.click(screen.getByText('Available'));
       await expect(onSelectSlot).toHaveBeenCalledWith(slot, DrAliceSmithSchedule);
     });
+
+    test('still calls onSelectSlot when double-clicking a slot while onDoubleClickAppointment is configured', async () => {
+      const onSelectSlot = vi.fn();
+      const onDoubleClickAppointment = vi.fn();
+      const slot = createSlot();
+      setup({
+        sources: [
+          {
+            schedule: DrAliceSmithSchedule,
+            slots: [slot],
+            appointments: [],
+          },
+        ],
+        onSelectSlot,
+        onDoubleClickAppointment,
+      });
+
+      await userEvent.dblClick(screen.getByText('Available'));
+      expect(onDoubleClickAppointment).not.toHaveBeenCalled();
+
+      // Since the double click landed on a slot (not an appointment), the pending
+      // single-click select must not be cancelled — it should still fire once the
+      // debounce elapses.
+      await sleep(150);
+      expect(onSelectSlot).toHaveBeenCalledWith(slot, DrAliceSmithSchedule);
+    });
   });
 });

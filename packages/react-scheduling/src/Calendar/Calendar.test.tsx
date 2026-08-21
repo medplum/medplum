@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { sleep } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent } from '../test-utils/render';
@@ -204,6 +205,22 @@ describe('Calendar', () => {
 
       await userEvent.dblClick(screen.getByText('Available'));
       await expect(onDoubleClickAppointment).not.toHaveBeenCalled();
+    });
+
+    test('still calls onSelectSlot when double-clicking a slot while onDoubleClickAppointment is configured', async () => {
+      const onSelectSlot = vi.fn();
+      const onDoubleClickAppointment = vi.fn();
+      const slot = createSlot();
+      setup({ appointments: [], slots: [slot], onSelectSlot, onDoubleClickAppointment });
+
+      await userEvent.dblClick(screen.getByText('Available'));
+      expect(onDoubleClickAppointment).not.toHaveBeenCalled();
+
+      // Since the double click landed on a slot (not an appointment), the pending
+      // single-click select must not be cancelled — it should still fire once the
+      // debounce elapses.
+      await sleep(150);
+      expect(onSelectSlot).toHaveBeenCalledWith(slot);
     });
 
     test('shows busy slot not referenced by any appointment', async () => {

@@ -93,11 +93,13 @@ export function Calendar(props: CalendarProps): JSX.Element {
   );
 
   const handleDoubleClick = useCallback(
-    (event: EventApi) => {
+    (event: EventApi): boolean => {
       const ext = event.extendedProps as ExtendedEvent;
       if (ext.type === 'appointment') {
         onDoubleClickAppointment?.(ext.appointment);
+        return true;
       }
+      return false;
     },
     [onDoubleClickAppointment]
   );

@@ -25,7 +25,10 @@ export interface CalendarBaseProps extends Omit<
   // disallow specifying some FullCalendar props that we rely on
   'controller' | 'headerToolbar' | 'datesSet' | 'eventDidMount' | 'businessHours' | 'plugins'
 > {
-  eventDoubleClick?: (event: EventApi) => void;
+  // Return `false` to indicate the double-clicked event wasn't actually handled (e.g. it's
+  // not a type the caller cares about), so the pending single-click select fires normally
+  // instead of being cancelled.
+  eventDoubleClick?: (event: EventApi) => boolean | undefined;
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
@@ -60,10 +63,14 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     (e: Event) => {
       const event = eventDataRef.current.get(e.currentTarget as Element);
       if (event) {
+        const handled = eventDoubleClickRef.current?.(event);
         // The first click started a timer for `handleSelectEvent`; cancel that pending
-        // event since we are emitting the double-click instead.
-        eventClickDebounced.cancel();
-        eventDoubleClickRef.current?.(event);
+        // event since we are emitting the double-click instead — unless the handler
+        // explicitly declined to handle this event (e.g. wrong event type), in which
+        // case the pending single-click select should still fire.
+        if (handled !== false) {
+          eventClickDebounced.cancel();
+        }
       }
     },
     [eventClickDebounced]

@@ -139,11 +139,13 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
   );
 
   const eventDoubleClick = useCallback(
-    (e: EventApi) => {
+    (e: EventApi): boolean => {
       const ext = e.extendedProps as ExtendedEvent;
       if (ext?.type === 'appointment') {
         onDoubleClickAppointment?.(ext.appointment, ext.schedule);
+        return true;
       }
+      return false;
     },
     [onDoubleClickAppointment]
   );

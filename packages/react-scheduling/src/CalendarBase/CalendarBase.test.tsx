@@ -25,7 +25,7 @@ describe('CalendarBase', () => {
     appointments?: Appointment[];
     availableTime?: HealthcareServiceAvailableTime[];
     eventClick?: (eventInfo: EventClickInfo) => void;
-    eventDoubleClick?: (event: EventApi) => void;
+    eventDoubleClick?: (event: EventApi) => boolean | undefined;
     onRangeChange?: (range: DateTimeRange) => void;
   } = {}): ReturnType<typeof render> => {
     return render(
@@ -212,6 +212,31 @@ describe('CalendarBase', () => {
       // merely delayed.
       await sleep(150);
       expect(eventClick).not.toHaveBeenCalled();
+    });
+
+    test('still fires the pending eventClick when eventDoubleClick declines to handle the event', async () => {
+      const eventClick = vi.fn();
+      const eventDoubleClick = vi.fn().mockReturnValue(false);
+      setup({
+        events: [
+          {
+            title: 'Test Event One',
+            start: baseDate.toISOString(),
+            end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+          },
+        ],
+        eventClick,
+        eventDoubleClick,
+      });
+
+      await userEvent.dblClick(screen.getByText('Test Event One'));
+      expect(eventDoubleClick).toHaveBeenCalled();
+
+      // eventDoubleClick returned `false`, meaning it didn't actually handle this event
+      // (e.g. it only cares about a subset of event types), so the pending single-click
+      // select must not be cancelled — it should still fire once the debounce elapses.
+      await sleep(250);
+      expect(eventClick).toHaveBeenCalled();
     });
   });
 
