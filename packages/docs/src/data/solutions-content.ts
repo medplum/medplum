@@ -1,0 +1,321 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * All copy and customer entries for the /solutions page live here.
+ * Swapping a placeholder for a real customer means editing one object below —
+ * no component changes required. Optional fields degrade gracefully:
+ * a missing quote renders no quote block, a missing screenshot renders a
+ * "coming soon" frame, and so on.
+ */
+
+export interface CustomerQuote {
+  text: string;
+  attribution: string;
+  title?: string;
+  avatarSrc?: string;
+}
+
+export interface CustomerMetric {
+  value: string;
+  label: string;
+}
+
+export interface CustomerFeature {
+  id: string;
+  name: string;
+  logoSrc?: string;
+  /** True when the logo is a wordmark that already spells the name, so the
+   * text name is redundant and should be hidden in favor of the logo. */
+  logoHasName?: boolean;
+  /** Height multiplier for the header logo, to even out wordmarks whose files
+   * are shorter/narrower than their peers. */
+  logoScale?: number;
+  /** A short autoplaying UI clip. Takes precedence over screenshotSrc when set. */
+  videoSrc?: string;
+  screenshotSrc?: string;
+  screenshotAlt?: string;
+  valueStatement: string;
+  quote?: CustomerQuote;
+  metrics?: CustomerMetric[];
+  caseStudyUrl?: string;
+  isPlaceholder?: boolean;
+  /** Renders a static illustrative mockup component instead of a screenshot/video/empty frame. */
+  illustrativeMockup?: boolean;
+  /** CTA shown on a placeholder card, e.g. inviting a partner to build the category. */
+  placeholderCta?: { label: string; url: string };
+}
+
+export interface AcceleratorCallout {
+  icon: string;
+  text: string;
+  linkLabel: string;
+  linkUrl: string;
+}
+
+export interface SolutionCategory {
+  id: string;
+  title: string;
+  tagline: string;
+  description: string;
+  icon: string;
+  learnMoreUrl?: string;
+  customers: CustomerFeature[];
+  accelerator?: AcceleratorCallout;
+}
+
+export const SOLUTIONS_HERO = {
+  headline: 'Built on Medplum',
+  sub: "From custom EHRs to payer platforms, leading healthcare organizations use Medplum to launch products faster. Explore what they've built — and what you could build next.",
+  primaryCta: { label: 'Book a Demo', href: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a' },
+  /* Renders as the BuildDropdown trigger (CLI/repo/docs menu), not a plain link — so label only, no href. */
+  secondaryCta: { label: 'Start Building' },
+};
+
+export const SOLUTIONS_CTA = {
+  headline: 'Ready to see what you could build?',
+  body: 'Talk to our team about your use case, or dive deeper into the case studies.',
+  primaryCta: { label: 'Book a Demo', href: 'https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a' },
+  secondaryCta: { label: 'Contact Us', href: 'mailto:hello@medplum.com' },
+};
+
+export interface MoreCaseStudy {
+  name: string;
+  logoSrc: string;
+  url: string;
+  /** True when `url` points off medplum.com, so the link opens in a new tab. */
+  external?: boolean;
+}
+
+/**
+ * Customers with a published case study who are NOT featured in a category
+ * section above — the sections cover the rest. Shown as a logo strip in the
+ * closing CTA so every case study still has a route off this page.
+ * When a customer graduates into a category section, remove them here.
+ */
+export const SOLUTIONS_MORE_CASE_STUDIES: MoreCaseStudy[] = [
+  { name: 'Ro Diagnostics', logoSrc: '/img/blog/ro-logo.png', url: '/blog/ro-case-study' },
+  { name: 'MediMind', logoSrc: '/img/blog/medimind-icon.png', url: '/blog/medimind-case-study' },
+  { name: 'Profile Health', logoSrc: '/img/blog/profile-logo.png', url: '/blog/profile-case-study' },
+  { name: 'Chamber Cardio', logoSrc: '/img/blog/chamber-cardio-logo.jpeg', url: '/blog/chamber-cardio-case-study' },
+  { name: 'Titan Intake', logoSrc: '/img/blog/titan-logo.jpeg', url: '/blog/titan-case-study' },
+  {
+    name: 'Rewind',
+    logoSrc: '/img/blog/rewind-logo.png',
+    url: 'https://www.vintasoftware.com/work/rewind',
+    external: true,
+  },
+];
+
+export const SOLUTIONS_MORE_CASE_STUDIES_HEADING = 'More customer stories';
+
+export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
+  {
+    id: 'custom-ehr',
+    title: 'Custom EHR',
+    tagline: 'A clinical system that fits your care model — not the other way around.',
+    description:
+      'Teams replace legacy systems or launch new ones with EHRs designed around their own workflows — pediatrics, cardiology, virtual-first care, and beyond. Complete control over the clinical experience, without building the plumbing.',
+    icon: 'IconHeartRateMonitor',
+    learnMoreUrl: '/solutions/custom-ehr',
+    customers: [
+      {
+        id: 'develo',
+        name: 'Develo',
+        logoSrc: '/img/logos/develo.png',
+        logoHasName: true,
+        screenshotSrc: '/img/solutions/develo-screenshot.jpg',
+        screenshotAlt: 'Develo pediatric EHR visit orders and diagnoses screen',
+        valueStatement:
+          'Develo built a full-featured pediatric EHR and CRM on Medplum — scheduling, charting, billing, and family engagement in one FHIR-native system, with AI-assisted documentation designed around how independent pediatric practices actually work.',
+        caseStudyUrl: '/blog/develo-case-study',
+      },
+      {
+        id: 'everself',
+        name: 'Everself',
+        logoSrc: '/img/logos/everselflogo.png',
+        logoHasName: true,
+        logoScale: 1.6,
+        screenshotSrc: '/img/solutions/everself-screenshot.png',
+        screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
+        valueStatement:
+          'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs, unifying scheduling, charting, messaging, labs, and device data across multiple sites into a single patient record — with a triaged inbox that helps a lean care team manage a growing patient panel.',
+        quote: {
+          text: "With Medplum, it's just a lot more flexible, and we have a big vision for what we want our EHR to look like: integrating all the modern communications, a newsfeed style that shows longitudinal care rather than episodes of care, and a data structure we own that we can integrate more AI into.",
+          attribution: 'Petch Jirapinyo',
+          title: 'CEO, Everself',
+        },
+        caseStudyUrl: '/blog/everself-case-study',
+      },
+    ],
+    accelerator: {
+      icon: 'IconRocket',
+      text: 'Starting from scratch? Medplum Provider is our open-source reference implementation — run it on day one, then customize every screen and workflow.',
+      linkLabel: 'Explore Medplum Provider',
+      linkUrl: '/docs/provider',
+    },
+  },
+  {
+    id: 'patient-engagement',
+    title: 'Patient Engagement',
+    tagline: 'Patient experiences that feel like modern consumer apps.',
+    description:
+      'Portals, onboarding, messaging, and scheduling that patients actually use — fully connected to the clinical record behind the scenes, so nothing falls through the cracks.',
+    icon: 'IconUserHeart',
+    learnMoreUrl: '/solutions/patient-portal',
+    customers: [
+      {
+        id: 'summer-health',
+        name: 'Summer Health',
+        logoSrc: '/img/logos/summer-health.svg',
+        logoHasName: true,
+        // Summer Health's wordmark is unusually wide (~9.5:1) — its render is
+        // width-bound by the logo's max-width cap, not the height, so this
+        // needs a much larger scale than a normal-aspect wordmark to actually
+        // grow (see the maxWidth scaling in SolutionsCustomerFeature.tsx).
+        logoScale: 2.25,
+        valueStatement:
+          'Summer Health built a custom pediatric EHR and patient portal on Medplum in just 16 weeks, giving parents 24/7 SMS-based access to pediatricians with AI-assisted encounter documentation and full family and caregiver access controls.',
+        screenshotSrc: '/img/solutions/summer-health-screenshot.webp',
+        screenshotAlt: 'Summer Health pediatric care app',
+        caseStudyUrl: '/blog/summer-case-study',
+      },
+    ],
+  },
+  {
+    id: 'scribe-agents',
+    title: 'Scribe and Agents',
+    tagline: 'AI documentation and agents, grounded in real clinical data.',
+    description:
+      'Ambient scribes and clinical agents whose output lands directly in the chart as structured data — not in a silo. Build AI that reads context, takes action, and stays auditable.',
+    icon: 'IconFileTextSpark',
+    customers: [
+      {
+        id: 'ultralight',
+        name: 'Ultralight',
+        logoSrc: '/img/logos/ultralight.svg',
+        logoHasName: true,
+        videoSrc: '/img/solutions/ultralight-clip.mp4',
+        screenshotAlt: 'Ultralight AI-native EHR biomarker dashboard with ambient scribing',
+        valueStatement:
+          'Ultralight is an AI-native EHR built on Medplum, with an ambient scribe and biomarker intelligence woven directly into the chart — turning documentation and longitudinal data into structured, actionable insight at the point of care.',
+      },
+      {
+        id: 'rad-ai',
+        name: 'Rad AI',
+        logoSrc: '/img/logos/rad-ai.svg',
+        logoHasName: true,
+        videoSrc: '/img/solutions/rad-ai-clip.mp4',
+        valueStatement:
+          'Rad AI builds generative AI trusted by radiologists across thousands of healthcare facilities, using Medplum to ground its models in structured clinical data — automating reporting and follow-up so care teams move faster with less manual work.',
+        caseStudyUrl: '/blog/radai-case-study',
+      },
+    ],
+  },
+  {
+    id: 'population-health',
+    title: 'Population Health',
+    tagline: 'See and manage outcomes across entire populations.',
+    description:
+      'Registries, screening programs, and analytics that help organizations track cohorts, close care gaps, and report with confidence — on data that stays current as care happens.',
+    icon: 'IconChartHistogram',
+    customers: [
+      {
+        id: 'color',
+        name: 'Color',
+        logoSrc: '/img/logos/color.svg',
+        logoHasName: true,
+        videoSrc: '/img/solutions/color-clip.mp4',
+        screenshotAlt: 'Color Virtual Cancer Clinic walkthrough',
+        valueStatement:
+          "Color's Virtual Cancer Clinic serves nearly 200 employers, health plans and unions, providing full spectrum cancer care to their populations, from screening and early detection, through treatment and survivorship. To provide gold standard cancer care at this scale, Color utilizes Medplum to power a nationwide service platform that includes automated care pathways for record coordination, medical assessments, appointment scheduling, management of screening results and, crucially, follow up for 100% of Color patients.",
+        quote: {
+          text: 'Medplum frees us to focus on designing the best possible care experience for our patients, on top of a certified EHR that adapts to our needs seamlessly, without having to build it ourselves. From one unified patient record, our clinic manages entire populations across every stage of cancer care, while keeping care deeply personal for each individual.',
+          attribution: 'Sarah Lynn',
+          title: 'Group Product Manager, Color',
+        },
+      },
+    ],
+  },
+  {
+    id: 'clinical-operations',
+    title: 'Clinical Operations',
+    tagline: 'Care team coordination without the swivel chair.',
+    description:
+      'Task management, scheduling, and care plans that keep clinical teams aligned — one queue, one record, no duplicate data entry across disconnected tools.',
+    icon: 'IconFirstAidKit',
+    customers: [
+      {
+        id: 'tia',
+        name: 'Tia',
+        logoSrc: '/img/logos/tia.svg',
+        logoHasName: true,
+        screenshotSrc: '/img/solutions/tia-screenshot.png',
+        screenshotAlt: 'Tia care team inbox, with work triaged by priority, status, and market',
+        valueStatement:
+          'Tia runs its own network of multi-disciplinary clinics — primary care, gynecology, mental health, and metabolic and skin health — on a custom EHR built on Medplum. Appointment scheduling, lab results, clinical follow-up, and billing questions all land in one prioritized work queue, filterable by assignee, type, status, and market, so nothing sits unowned as the clinic footprint grows.',
+      },
+    ],
+  },
+  {
+    id: 'rcm',
+    title: 'RCM',
+    tagline: "Billing that's connected to care from day one.",
+    description:
+      'Charge capture, claims, and payments built on the same record as the clinical work — so revenue operations stop chasing missing data and start closing the loop.',
+    icon: 'IconReceiptDollar',
+    customers: [
+      {
+        id: 'pictionhealth',
+        name: 'Pictionhealth',
+        logoSrc: '/img/logos/pictionhealth.png',
+        logoHasName: true,
+        logoScale: 1.35,
+        valueStatement:
+          'Pictionhealth built a teledermatology EHR on Medplum that runs its full care model — asynchronous dermatology review through nurse-practitioner visits — with automated claims submission through a live Candid Health integration and lab ordering through Health Gorilla.',
+      },
+    ],
+  },
+  {
+    id: 'payer-interoperability',
+    title: 'Payer Interoperability',
+    tagline: 'The data layer between plans, providers, and the apps patients choose.',
+    description:
+      'Claims, coverage, and patient-access data on a FHIR-native platform built for the CMS rules that govern them — and the same foundation for the plan side: utilization management, member data, and provider collaboration.',
+    icon: 'IconExchange',
+    customers: [
+      {
+        id: 'flexpa',
+        name: 'Flexpa',
+        logoSrc: '/img/logos/flexpa.svg',
+        logoHasName: true,
+        logoScale: 1.8,
+        screenshotSrc: '/img/solutions/flexpa-screenshot.png',
+        screenshotAlt: 'Flexpa Link health plan picker, covering 200+ US payers',
+        valueStatement:
+          'Flexpa connects applications to claims data with patient consent, aggregating the Patient Access APIs that CMS requires of 200+ payers into one normalized FHIR dataset — with Medplum as the self-hosted, multi-tenant FHIR store and API behind it.',
+        caseStudyUrl: '/blog/flexpa-case-study',
+      },
+    ],
+  },
+  {
+    id: 'life-sciences',
+    title: 'Life Sciences',
+    tagline: 'Research infrastructure on the same record as care.',
+    description:
+      'Trial recruitment, consent, and longitudinal data capture on a FHIR-native platform — so research cohorts draw on real clinical data instead of a parallel system built to duplicate it.',
+    icon: 'IconFlask',
+    learnMoreUrl: '/solutions/life-sciences',
+    customers: [
+      {
+        id: 'life-sciences-illustrative',
+        name: 'Illustrative example',
+        illustrativeMockup: true,
+        valueStatement:
+          "No customer has built this on Medplum yet — here's what it could look like: trial eligibility screening against the clinical record, e-consent, and longitudinal outcome capture, all on FHIR from day one.",
+        isPlaceholder: true,
+        placeholderCta: { label: 'Partner with us to build this', url: 'mailto:hello@medplum.com' },
+      },
+    ],
+  },
+];
