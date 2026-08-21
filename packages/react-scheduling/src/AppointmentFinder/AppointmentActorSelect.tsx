@@ -71,7 +71,7 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
       name={role}
       label={label}
       required={required}
-      description={required ? undefined : `Optional. Leave empty to search without holding a ${noun}.`}
+      description={getFieldDescription(!service, required, noun)}
       placeholder={`Search ${noun}s`}
       error={error}
       disabled={disabled}
@@ -83,6 +83,25 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
       onChange={handleChange}
     />
   );
+}
+
+/**
+ * Says what the field is waiting for, or what leaving it empty means.
+ *
+ * The description rather than the placeholder, because a disabled field's
+ * placeholder does not render: without this the field waits on a visit type as a
+ * blank grey box, with nothing saying which answer is owed first.
+ *
+ * @param gated - Whether there is no visit type to search against yet.
+ * @param required - Whether a search can run without this role.
+ * @param noun - The role, lowercased, as it reads in a sentence.
+ * @returns The description, or undefined when the field has nothing to add.
+ */
+function getFieldDescription(gated: boolean, required: boolean, noun: string): string | undefined {
+  if (gated) {
+    return 'Choose a visit type first.';
+  }
+  return required ? undefined : `Optional. Leave empty to search without holding a ${noun}.`;
 }
 
 function toOption(candidate: ScheduleCandidate): AsyncAutocompleteOption<ScheduleCandidate> {

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Loader, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Group, Loader, Paper, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getSchedulingTimezone, normalizeErrorString } from '@medplum/core';
+import { getReferenceString, getSchedulingTimezone, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Appointment, HealthcareService, Location } from '@medplum/fhirtypes';
-import { CalendarDateInput, ResourceInput } from '@medplum/react';
+import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/react';
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
@@ -12,11 +12,11 @@ import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
 import type { SchedulingRole } from './AppointmentFinder.roles';
-import { SCHEDULING_ROLES } from './AppointmentFinder.roles';
+import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
-import { endOfDay, getFindWindowError, groupAppointmentsByDay } from './AppointmentFinder.times';
+import { endOfDay, getDurationMinutes, getFindWindowError, groupAppointmentsByDay } from './AppointmentFinder.times';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 import { useProposedAppointments } from './useProposedAppointments';
@@ -71,8 +71,9 @@ export interface AppointmentBookingFormProps {
  * Choosing a time is deliberately a separate step behind "Find a time". The
  * times depend on every answer above them, so offering them earlier would only
  * show times that are about to change. Only a time the search offered can be
- * chosen: the field displaying it is read-only, so nothing can be booked onto
- * time that was never checked against anybody's availability.
+ * chosen: what it produced is summarised beneath the action, and there is no
+ * field to type into, so nothing can be booked onto time that was never checked
+ * against anybody's availability.
  *
  * @param props - The React props.
  * @returns The form.
@@ -205,23 +206,13 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           />
         ))}
 
-        <TextInput
-          label="Date & time"
-          placeholder="Find a time to choose one"
-          // A field rather than plain text, because the chosen time belongs among
-          // the answers — but read-only, so there is nothing to type into.
-          readOnly
-          value={chosen?.start ? formatZonedDateTime(new Date(chosen.start), timezone) : ''}
-        />
-        <Button
-          variant="outline"
-          fullWidth
-          leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
+        <ChosenTime
+          appointment={chosen}
+          timezone={timezone}
+          finding={finding}
           disabled={!service}
-          onClick={toggleFinder}
-        >
-          {finding ? 'Close time finder' : 'Find a time'}
-        </Button>
+          onToggleFinder={toggleFinder}
+        />
 
         {finding && (
           <Stack gap={4}>
@@ -269,6 +260,97 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
       )}
     </div>
   );
+}
+
+interface ChosenTimeProps {
+  /** The proposal the user picked, or undefined while none has been. */
+  readonly appointment: Appointment | undefined;
+  /** IANA timezone the visit is held in. */
+  readonly timezone: string | undefined;
+  readonly finding: boolean;
+  readonly disabled?: boolean;
+  readonly onToggleFinder: () => void;
+}
+
+/**
+ * The action that finds a time, and beneath it what the chosen one commits to.
+ *
+ * One region: the action sits directly under the resource fields it depends on,
+ * the summary sits directly under the action that produced it, and both read from
+ * the chosen proposal. Nothing stands in for a time before one is chosen — an
+ * empty white input among greyed-out ones reads as the one thing still fillable,
+ * and the field this replaces sat above the button that filled it.
+ *
+ * The summary is deliberately the only thing that varies here: entering a time
+ * nobody offered arrives by swapping it for a time input and an override warning
+ * in place, which stays a control change only while the region around it is not
+ * arranged for the read-only case.
+ *
+ * @param props - The React props.
+ * @returns The action, and the summary once there is one.
+ */
+function ChosenTime(props: ChosenTimeProps): JSX.Element {
+  const { appointment, timezone, finding, disabled, onToggleFinder } = props;
+
+  // Read off the proposal rather than off the answers above: it is what `$book`
+  // is handed, so the summary describes what would actually be booked.
+  const actors = (appointment?.participant ?? []).map((participant) => participant.actor).filter(isDefined);
+  const durationMinutes = getDurationMinutes(appointment);
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        fullWidth
+        leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
+        disabled={disabled}
+        onClick={onToggleFinder}
+      >
+        {getFinderLabel(finding, !!appointment)}
+      </Button>
+
+      {appointment?.start && (
+        <Paper withBorder p="sm" data-testid="chosen-time">
+          <Group justify="space-between" align="flex-start" wrap="nowrap">
+            <Text size="sm" fw={500}>
+              {formatZonedDateTime(new Date(appointment.start), timezone)}
+            </Text>
+            {durationMinutes > 0 && (
+              <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                {durationMinutes} min visit
+              </Text>
+            )}
+          </Group>
+          <Group gap="md" mt={4} wrap="wrap">
+            {actors.map((actor) => {
+              const roleLabel = getActorRoleLabel(actor);
+              return (
+                <Text key={getReferenceString(actor) ?? actor.display} size="sm" c="dimmed">
+                  {roleLabel && `${roleLabel}: `}
+                  <ReferenceDisplay value={actor} link={false} />
+                </Text>
+              );
+            })}
+          </Group>
+        </Paper>
+      )}
+    </>
+  );
+}
+
+/**
+ * Names what the action does next.
+ * @param finding - Whether the time search is open.
+ * @param chosen - Whether a time has been picked.
+ * @returns The button's label.
+ */
+function getFinderLabel(finding: boolean, chosen: boolean): string {
+  if (finding) {
+    return 'Close time finder';
+  }
+  // Repeating the invitation once a time is chosen reads as though the search had
+  // come back with nothing.
+  return chosen ? 'Change time' : 'Find a time';
 }
 
 interface RoleFieldProps {
@@ -320,7 +402,7 @@ function oneDay(date: Date): DateRange {
 /**
  * Writes an instant as the day and time it falls on at the site.
  *
- * Read in the timezone the visit is held in, so the field shows the time the
+ * Read in the timezone the visit is held in, so the summary shows the time the
  * clinic will keep rather than the time on the booker's own clock.
  *
  * @param value - The chosen start time.

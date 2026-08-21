@@ -25,6 +25,7 @@ import { stubChainedActorSearch } from '../test-utils/chainedActorSearch';
 import { act, fireEvent, renderWithMedplum, screen, waitFor, within } from '../test-utils/render';
 import type { AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
+import { SCHEDULING_ROLES } from './AppointmentFinder.roles';
 
 /**
  * A Monday morning, so the stubbed `$find` has weekday hours ahead of it on the
@@ -211,11 +212,23 @@ function hasPill(name: string): boolean {
 }
 
 /**
- * The read-only field the chosen time is shown in.
- * @returns The field.
+ * The summary of the chosen time, or null while no time has been chosen.
+ *
+ * Nothing stands in for a time before one is picked, so its absence is an
+ * assertion in its own right rather than an empty value to read.
+ *
+ * @returns The summary region, or null.
  */
-function chosenTimeField(): HTMLInputElement {
-  return screen.getByRole<HTMLInputElement>('textbox', { name: /date & time/i });
+function chosenTimeSummary(): HTMLElement | null {
+  return screen.queryByTestId('chosen-time');
+}
+
+/**
+ * The action that finds a time, whatever it currently offers to do.
+ * @returns The button.
+ */
+function finderButton(): HTMLElement {
+  return screen.getByRole('button', { name: /find a time|change time|close time finder/i });
 }
 
 describe('AppointmentBookingForm', () => {
@@ -258,6 +271,22 @@ describe('AppointmentBookingForm', () => {
       await chooseImagingService();
 
       expect(field(/provider/i)).toBeInTheDocument();
+    });
+
+    test('Says what each gated field is waiting for', async () => {
+      setup(medplum);
+      await settleAutocomplete();
+
+      // In the description, not the placeholder: a disabled field's placeholder
+      // does not render, which is how three silent grey boxes reached review.
+      expect(screen.getAllByText('Choose a visit type first.')).toHaveLength(SCHEDULING_ROLES.length);
+
+      await chooseImagingService();
+
+      // Once there is something to search against, each field goes back to saying
+      // what leaving it empty means.
+      expect(screen.queryByText('Choose a visit type first.')).not.toBeInTheDocument();
+      expect(screen.getByText(/Optional. Leave empty to search without holding a room./)).toBeInTheDocument();
     });
 
     test('Searches no times until a provider is named', async () => {
@@ -525,39 +554,76 @@ describe('AppointmentBookingForm', () => {
 
       // The chosen time is the server's own proposal, so its instant is what a
       // booking would record.
-      expect(chosenTimeField().value).toContain(label);
+      expect(chosenTimeSummary()).toHaveTextContent(label);
     });
   });
 
   describe('Booking only a time that was offered', () => {
-    test('Shows the time that was picked', async () => {
+    test('Shows nothing standing in for a time before one is chosen', async () => {
+      setup(medplum);
+      await chooseImagingService();
+
+      // The action is offered, and nothing above or below it is an empty field
+      // waiting to be filled with a time. Matched by name rather than by there
+      // being no text field at all, since the form has other ones to grow.
+      expect(finderButton()).toHaveTextContent('Find a time');
+      expect(chosenTimeSummary()).not.toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /date|time/i })).not.toBeInTheDocument();
+    });
+
+    test('Shows the time that was picked, and what it commits to', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/room/i, 'exam', 'Exam Room A');
       await openTimeFinder();
 
-      expect(chosenTimeField().value).toBe('');
+      expect(chosenTimeSummary()).not.toBeInTheDocument();
       const label = await chooseFirstOfferedTime();
 
-      expect(chosenTimeField().value).toContain(label);
+      // Read off the proposal rather than off the answers above it, so the
+      // summary describes what `$book` would be handed: the time, how long the
+      // visit runs, and every resource it is held on.
+      const summary = chosenTimeSummary();
+      expect(summary).toHaveTextContent(label);
+      expect(summary).toHaveTextContent('30 min visit');
+      // Named with the role each fills, since the summary is read away from the
+      // fields they were chosen in.
+      expect(summary).toHaveTextContent('Provider: Dr. Maya Rivera');
+      expect(summary).toHaveTextContent('Room: Exam Room A');
     });
 
-    test('Refuses a time typed into the field', async () => {
+    test('Offers no way to type or amend the chosen time', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      const shown = chosenTimeField().value;
+
+      // Nothing can be booked onto time that was never checked against anybody's
+      // availability, so the time exists on screen only as text. Searching again
+      // is the only way to change it.
+      expect(within(chosenTimeSummary() as HTMLElement).queryByRole('textbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: /date|time/i })).not.toBeInTheDocument();
+      expect(finderButton()).toBeInTheDocument();
+    });
+
+    test('Offers to change the time once one is chosen', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
 
       await act(async () => {
-        fireEvent.change(chosenTimeField(), { target: { value: 'Monday, August 17 at 11:59 PM' } });
+        fireEvent.click(finderButton());
       });
+      await settleAutocomplete();
 
-      // Nothing can be booked onto time that was never checked against
-      // anybody's availability, so the field only ever displays.
-      expect(chosenTimeField()).toHaveAttribute('readonly');
-      expect(chosenTimeField().value).toBe(shown);
+      // Repeating "Find a time" over a time that was found reads as though the
+      // search had come back with nothing.
+      expect(finderButton()).toHaveTextContent('Change time');
+      expect(screen.queryByRole('button', { name: /^find a time$/i })).not.toBeInTheDocument();
     });
 
     test('Clears the chosen time when the day changes', async () => {
@@ -569,7 +635,7 @@ describe('AppointmentBookingForm', () => {
 
       await chooseDay('18');
 
-      expect(chosenTimeField().value).toBe('');
+      expect(chosenTimeSummary()).not.toBeInTheDocument();
     });
   });
 
@@ -580,14 +646,14 @@ describe('AppointmentBookingForm', () => {
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      expect(chosenTimeField().value).not.toBe('');
+      expect(chosenTimeSummary()).toBeInTheDocument();
 
       await clearVisitType('Ultrasound Imaging');
       await typeInAutocomplete(field(/service type/i), 'Bariatric');
       await clickAutocompleteOption('Bariatric Surgery');
       await settleAutocomplete();
 
-      expect(chosenTimeField().value).toBe('');
+      expect(chosenTimeSummary()).not.toBeInTheDocument();
       // Not just the state: the field keeps its own selection, so a surviving pill
       // would be handed back on the next pick and searched against a schedule the
       // new visit type cannot book.

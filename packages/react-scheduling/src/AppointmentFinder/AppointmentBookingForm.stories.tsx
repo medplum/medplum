@@ -31,7 +31,12 @@ export default {
  *
  * Choose "Ultrasound Imaging" and the three role fields search against it: it is
  * held on practitioners, rooms and devices, and only the provider is required.
- * Nothing is searched for times until "Find a time" is opened.
+ * Until then each says so in its description rather than sitting blank, since a
+ * disabled field's placeholder does not render.
+ *
+ * Nothing is searched for times until "Find a time" is opened. There is no field
+ * for a time: pick one and it appears as a summary under the action, saying how
+ * long the visit runs and what it is held on, and the action offers to change it.
  * @returns The story.
  */
 export const Basic = (): JSX.Element => (
