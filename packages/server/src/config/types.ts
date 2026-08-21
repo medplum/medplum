@@ -21,6 +21,11 @@ export interface MedplumServerConfig {
   signingKeyId?: string;
   signingKeyPassphrase?: string;
   supportEmail: string;
+  /**
+   * App name used in user-facing content (emails, MFA) for projects that have
+   * not set their own `appName` setting. Defaults to "Medplum".
+   */
+  appName?: string;
   approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   /** @deprecated specify `database.host` and `database.ssl.require` as needed */

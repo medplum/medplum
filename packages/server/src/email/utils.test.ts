@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Project } from '@medplum/fhirtypes';
-import { addressToString, applyFromDisplayName, getProjectAppName } from './utils';
+import { getConfig, loadTestConfig } from '../config/loader';
+import { addressToString, applyFromDisplayName, DEFAULT_APP_NAME, getAppName, getProjectAppName } from './utils';
 
 describe('Email utils', () => {
   function projectWithAppName(valueString: string | undefined): Project {
@@ -26,6 +27,43 @@ describe('Email utils', () => {
   test('getProjectAppName returns the trimmed app name', () => {
     expect(getProjectAppName(projectWithAppName('Acme Health'))).toBe('Acme Health');
     expect(getProjectAppName(projectWithAppName('  Acme Health  '))).toBe('Acme Health');
+  });
+
+  describe('getAppName', () => {
+    let originalAppName: string | undefined;
+
+    beforeAll(async () => {
+      await loadTestConfig();
+      originalAppName = getConfig().appName;
+    });
+
+    afterEach(() => {
+      getConfig().appName = originalAppName;
+    });
+
+    test('prefers the project setting over the server config', () => {
+      getConfig().appName = 'Server Brand';
+      expect(getAppName(projectWithAppName('Project Brand'))).toBe('Project Brand');
+    });
+
+    test('falls back to the server config when the project sets nothing', () => {
+      getConfig().appName = 'Server Brand';
+      expect(getAppName(projectWithAppName(undefined))).toBe('Server Brand');
+      // No project at all: server-scoped users, and the password reset flow
+      // that looks them up, take this path.
+      expect(getAppName()).toBe('Server Brand');
+    });
+
+    test('falls back to the default when neither names one', () => {
+      getConfig().appName = undefined;
+      expect(getAppName()).toBe(DEFAULT_APP_NAME);
+      expect(getAppName(projectWithAppName(undefined))).toBe(DEFAULT_APP_NAME);
+    });
+
+    test('treats a blank server config value as unset', () => {
+      getConfig().appName = '   ';
+      expect(getAppName()).toBe(DEFAULT_APP_NAME);
+    });
   });
 
   test('addressToString', () => {

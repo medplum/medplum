@@ -26,7 +26,7 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { EMAIL_MFA_CODE_EXPIRATION_MS, MAX_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
-import { getProjectAppName } from '../email/utils';
+import { getAppName, getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
@@ -36,9 +36,6 @@ import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export type MfaMethod = 'totp' | 'email';
-
-/** App name used in MFA emails for projects that have not been white-labeled. */
-const DEFAULT_APP_NAME = 'Medplum';
 
 /** Authenticator app issuer used for projects that have not been white-labeled. */
 const DEFAULT_MFA_ISSUER = 'medplum.com';
@@ -149,7 +146,7 @@ export async function sendMfaEmailCode(
   const expiresAt = new Date(Date.now() + EMAIL_MFA_CODE_EXPIRATION_MS).toISOString();
   await systemRepo.updateResource<Login>({ ...login, emailMfa: { codeHash, expiresAt } });
   const expirationMinutes = Math.floor(EMAIL_MFA_CODE_EXPIRATION_MS / 60_000);
-  const appName = getProjectAppName(project) ?? DEFAULT_APP_NAME;
+  const appName = getAppName(project);
   await sendEmail(
     systemRepo,
     {
