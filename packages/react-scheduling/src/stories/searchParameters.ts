@@ -132,9 +132,6 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
       },
     },
     {
-      // Medplum's own parameter rather than one of FHIR's, and the one the site
-      // field excludes rooms with. Unregistered it would match nothing, so the
-      // field would offer no site at all.
       resource: {
         resourceType: 'SearchParameter',
         id: 'Location-physical-type',

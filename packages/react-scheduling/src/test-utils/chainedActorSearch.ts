@@ -27,10 +27,9 @@ export function stubChainedActorSearch(medplum: MockClient): () => void {
   const original = medplum.search;
   const search = medplum.search.bind(medplum);
   medplum.search = (async (resourceType: 'Schedule', query: QueryTypes, options?: object): Promise<Bundle> => {
-    // Through the constructor rather than by reading keys off the query: callers
-    // hand `search` a record, a query string or a `URLSearchParams`, and
-    // `Object.entries` of the last of those is empty — which would drop every
-    // filter and answer a narrowed search with everything.
+    // `Object.entries` of a `URLSearchParams` is empty, and `searchResources` hands
+    // `search` exactly that — reading keys off the query would drop every filter and
+    // answer a narrowed search with everything.
     const params = new URLSearchParams(query as never);
     const criteria = new URLSearchParams();
     const chained: [string, string][] = [];
