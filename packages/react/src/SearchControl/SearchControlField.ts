@@ -103,7 +103,11 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
   // Best case: Exact match of element definition or search parameter.
   // Examples: ServiceRequest.subject, Patient.name, Patient.birthDate
   // In this case, we only show the one search parameter.
-  if (exactElementDefinition && exactSearchParam) {
+  if (
+    exactElementDefinition &&
+    exactSearchParam &&
+    isExactElementSearchParameter(resourceType, name, exactSearchParam)
+  ) {
     return { name, elementDefinition: exactElementDefinition, searchParams: [exactSearchParam] };
   }
 
@@ -115,12 +119,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
     const allSearchParams = getSearchParameters(resourceType);
     let searchParams: SearchParameter[] | undefined = undefined;
     if (allSearchParams) {
-      // To avoid matching names that happen to be prefixes of other names, e.g. id and identifier,
-      // match ${resourceType}.${name} followed by a non-name character OR the end of the string
-      // Name characters include letters, numbers, underscores, and hyphens
-      const pathRegex = new RegExp(`${resourceType}\\.${name.replaceAll('[x]', '')}([^\\w-]|$)`);
-
-      searchParams = Object.values(allSearchParams).filter((p) => !!p.expression && pathRegex.test(p?.expression));
+      searchParams = Object.values(allSearchParams).filter((p) => searchParameterMatchesElement(resourceType, name, p));
       if (searchParams.length === 0) {
         searchParams = undefined;
       }
@@ -143,4 +142,20 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
   // This is probably a malformed URL that includes an unknown field.
   // We will render the column header, but all cells will be empty.
   return { name };
+}
+
+function searchParameterMatchesElement(resourceType: string, name: string, searchParam: SearchParameter): boolean {
+  if (!searchParam.expression) {
+    return false;
+  }
+
+  // To avoid matching names that happen to be prefixes of other names, e.g. id and identifier,
+  // match ${resourceType}.${name} followed by a non-name character OR the end of the string.
+  // Name characters include letters, numbers, underscores, and hyphens.
+  const pathRegex = new RegExp(`${resourceType}\\.${name.replaceAll('[x]', '')}([^\\w-]|$)`);
+  return pathRegex.test(searchParam.expression);
+}
+
+function isExactElementSearchParameter(resourceType: string, name: string, searchParam: SearchParameter): boolean {
+  return searchParam.code !== name.toLowerCase() || searchParameterMatchesElement(resourceType, name, searchParam);
 }
