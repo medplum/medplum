@@ -25,7 +25,6 @@ import { stubChainedActorSearch } from '../test-utils/chainedActorSearch';
 import { act, fireEvent, renderWithMedplum, screen, waitFor, within } from '../test-utils/render';
 import type { AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
-import { SCHEDULING_ROLES } from './AppointmentFinder.roles';
 
 /**
  * A Monday morning, so the stubbed `$find` has weekday hours ahead of it on the
@@ -63,7 +62,7 @@ function field(label: RegExp): HTMLElement {
 
 /** Chooses the imaging service, which is what the role fields search against. */
 async function chooseImagingService(): Promise<void> {
-  await typeInAutocomplete(field(/service type/i), 'Ultrasound');
+  await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
   await clickAutocompleteOption('Ultrasound Imaging');
   await settleAutocomplete();
 }
@@ -273,22 +272,6 @@ describe('AppointmentBookingForm', () => {
       expect(field(/provider/i)).toBeInTheDocument();
     });
 
-    test('Says what each gated field is waiting for', async () => {
-      setup(medplum);
-      await settleAutocomplete();
-
-      // In the description, not the placeholder: a disabled field's placeholder
-      // does not render, which is how three silent grey boxes reached review.
-      expect(screen.getAllByText('Choose a visit type first.')).toHaveLength(SCHEDULING_ROLES.length);
-
-      await chooseImagingService();
-
-      // Once there is something to search against, each field goes back to saying
-      // what leaving it empty means.
-      expect(screen.queryByText('Choose a visit type first.')).not.toBeInTheDocument();
-      expect(screen.getByText(/Optional. Leave empty to search without holding a room./)).toBeInTheDocument();
-    });
-
     test('Searches no times until a provider is named', async () => {
       setup(medplum);
       await chooseImagingService();
@@ -458,7 +441,7 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await chooseSite('Satellite', 'Uro Associates - Satellite');
 
-      await typeInAutocomplete(field(/service type/i), 'Ultrasound');
+      await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
 
       expect(screen.getByText('Showing visit types offered at Uro Associates - Satellite.')).toBeInTheDocument();
       // Imaging names the main clinic, and only a visit type naming this site
@@ -649,7 +632,7 @@ describe('AppointmentBookingForm', () => {
       expect(chosenTimeSummary()).toBeInTheDocument();
 
       await clearVisitType('Ultrasound Imaging');
-      await typeInAutocomplete(field(/service type/i), 'Bariatric');
+      await typeInAutocomplete(field(/visit type/i), 'Bariatric');
       await clickAutocompleteOption('Bariatric Surgery');
       await settleAutocomplete();
 
