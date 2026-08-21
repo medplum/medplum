@@ -310,24 +310,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           />
         ))}
 
-        <ResourceInput<WithId<Patient>>
-          resourceType="Patient"
-          name="patient"
-          label="Patient"
-          placeholder="Search patients by name"
-          required
-          searchCriteria={PATIENT_SEARCH_CRITERIA}
-          defaultValue={defaultPatient}
-          itemComponent={patientItem}
-          onChange={setPatient}
-        />
-        <TextInput
-          label="Reason for visit"
-          placeholder="What the visit is for"
-          value={reason}
-          onChange={(event) => setReason(event.currentTarget.value)}
-        />
-
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
@@ -351,8 +333,23 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           </Stack>
         )}
 
-        {/* Below the booking decision: they are the longest fields on the form and
-            the least likely to change what can be booked. */}
+        <ResourceInput<WithId<Patient>>
+          resourceType="Patient"
+          name="patient"
+          label="Patient"
+          placeholder="Search patients by name"
+          required
+          searchCriteria={PATIENT_SEARCH_CRITERIA}
+          defaultValue={defaultPatient}
+          itemComponent={patientItem}
+          onChange={setPatient}
+        />
+        <TextInput
+          label="Reason for visit"
+          placeholder="What the visit is for"
+          value={reason}
+          onChange={(event) => setReason(event.currentTarget.value)}
+        />
         <Textarea
           label="Notes or comments"
           description="Kept internally, for the practice."
