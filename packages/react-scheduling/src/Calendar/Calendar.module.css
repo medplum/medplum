@@ -22,9 +22,19 @@
     border: 1px solid var(--cal-color);
   }
 
+  :global(.appointment.cancelled) {
+    --cal-color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+    --cal-background-color: light-dark(var(--mantine-color-red-3), var(--mantine-color-red-8));
+  }
+
   :global(.slot.free) {
     --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-gray-1));
     --cal-background-color: light-dark(var(--mantine-color-green-1), var(--mantine-color-green-9));
+  }
+
+  :global(.slot.entered-in-error) {
+    --cal-color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-black));
+    --cal-background-color: light-dark(var(--mantine-color-red-1), var(--mantine-color-red-3));
   }
 
   .event,
