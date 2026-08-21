@@ -5,14 +5,42 @@
  * Do not edit manually.
  */
 
+import type { Address } from './Address.d.ts';
+import type { Age } from './Age.d.ts';
+import type { Annotation } from './Annotation.d.ts';
+import type { Attachment } from './Attachment.d.ts';
 import type { Bot } from './Bot.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Contributor } from './Contributor.d.ts';
+import type { Count } from './Count.d.ts';
+import type { DataRequirement } from './DataRequirement.d.ts';
+import type { Distance } from './Distance.d.ts';
+import type { Dosage } from './Dosage.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Expression } from './Expression.d.ts';
 import type { Extension } from './Extension.d.ts';
+import type { HumanName } from './HumanName.d.ts';
+import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
 import type { Narrative } from './Narrative.d.ts';
-import type { Parameters } from './Parameters.d.ts';
+import type { ParameterDefinition } from './ParameterDefinition.d.ts';
+import type { Period } from './Period.d.ts';
 import type { ProjectMembership } from './ProjectMembership.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Ratio } from './Ratio.d.ts';
 import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
 import type { Resource } from './Resource.d.ts';
+import type { SampledData } from './SampledData.d.ts';
+import type { Signature } from './Signature.d.ts';
+import type { Timing } from './Timing.d.ts';
+import type { TriggerDefinition } from './TriggerDefinition.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * A scheduled job that executes a Bot on a recurring schedule.
@@ -96,24 +124,325 @@ export interface Cron {
   modifierExtension?: Extension[];
 
   /**
+   * The status of the scheduled job. Only a job with status 'active' is
+   * registered with the scheduler; any other status removes it while
+   * leaving the schedule itself intact, so the job can be turned back on
+   * without redefining it.
+   */
+  status: 'requested' | 'active' | 'error' | 'off';
+
+  /**
    * The project membership whose identity and access policy the scheduled
    * job assumes when it runs.
    */
   onBehalfOf: Reference<ProjectMembership>;
 
   /**
-   * Parameters passed to the target as input each time the scheduled job
-   * runs.
+   * Input passed to the target each time the scheduled job runs, with the
+   * same structure as Parameters.parameter. When absent, the Cron resource
+   * itself is passed as the input.
    */
-  parameters?: Parameters;
+  parameter?: CronParameter[];
 
   /**
-   * A schedule for the job to be executed, as a cron expression.
+   * A schedule for the job to be executed, as a cron expression. An
+   * expression that is not a valid five-field cron expression is rejected
+   * on write. When absent, the job has no schedule and never runs; to
+   * pause a job that has one, set status to something other than active.
    */
   cronString?: string;
+
+  /**
+   * The point in time after which the job no longer runs. A job whose end
+   * time has already passed is never scheduled, and a running one is
+   * removed once the time passes. When absent, the job runs until it is
+   * disabled or deleted.
+   */
+  endTime?: string;
 
   /**
    * The target invoked each time the scheduled job runs.
    */
   targetReference: Reference<Bot>;
 }
+
+/**
+ * Input passed to the target each time the scheduled job runs, with the
+ * same structure as Parameters.parameter. When absent, the Cron resource
+ * itself is passed as the input.
+ */
+export interface CronParameter {
+
+  /**
+   * The name of the parameter (reference to the operation definition).
+   */
+  name: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueBase64Binary?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueBoolean?: boolean;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueCanonical?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueCode?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDate?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDateTime?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDecimal?: number;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueId?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueInstant?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueInteger?: number;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueMarkdown?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueOid?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valuePositiveInt?: number;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueString?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueTime?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueUnsignedInt?: number;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueUri?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueUrl?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueUuid?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueAddress?: Address;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueAge?: Age;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueAnnotation?: Annotation;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueAttachment?: Attachment;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueCodeableConcept?: CodeableConcept;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueCoding?: Coding;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueContactPoint?: ContactPoint;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueCount?: Count;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDistance?: Distance;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDuration?: Duration;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueHumanName?: HumanName;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueIdentifier?: Identifier;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueMoney?: Money;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valuePeriod?: Period;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueQuantity?: Quantity;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueRange?: Range;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueRatio?: Ratio;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueReference?: Reference;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueSampledData?: SampledData;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueSignature?: Signature;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueTiming?: Timing;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueContactDetail?: ContactDetail;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueContributor?: Contributor;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDataRequirement?: DataRequirement;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueExpression?: Expression;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueParameterDefinition?: ParameterDefinition;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueRelatedArtifact?: RelatedArtifact;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueTriggerDefinition?: TriggerDefinition;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueUsageContext?: UsageContext;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueDosage?: Dosage;
+
+  /**
+   * If the parameter is a data type.
+   */
+  valueMeta?: Meta;
+
+  /**
+   * If the parameter is a whole resource.
+   */
+  resource?: Resource;
+
+  /**
+   * A named part of a multi-part parameter.
+   */
+  part?: CronParameter[];
+}
+
+/**
+ * If the parameter is a data type.
+ */
+export type CronParameterValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;

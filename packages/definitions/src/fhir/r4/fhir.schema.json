@@ -204,7 +204,8 @@
       "DicomStudy": "#/definitions/DicomStudy",
       "DicomSeries": "#/definitions/DicomSeries",
       "DicomInstance": "#/definitions/DicomInstance",
-      "Cron": "#/definitions/Cron"
+      "Cron": "#/definitions/Cron",
+      "CronParameter": "#/definitions/CronParameter"
     }
   },
   "oneOf": [
@@ -807,6 +808,9 @@
     },
     {
       "$ref": "#/definitions/Cron"
+    },
+    {
+      "$ref": "#/definitions/CronParameter"
     }
   ],
   "definitions": {
@@ -1411,6 +1415,9 @@
         },
         {
           "$ref": "#/definitions/Cron"
+        },
+        {
+          "$ref": "#/definitions/CronParameter"
         }
       ]
     },
@@ -65715,17 +65722,33 @@
           },
           "type": "array"
         },
+        "status": {
+          "description": "The status of the scheduled job. Only a job with status \u0027active\u0027 is registered with the scheduler; any other status removes it while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
+          "enum": [
+            "requested",
+            "active",
+            "error",
+            "off"
+          ]
+        },
         "onBehalfOf": {
           "description": "The project membership whose identity and access policy the scheduled job assumes when it runs.",
           "$ref": "#/definitions/Reference"
         },
-        "parameters": {
-          "description": "Parameters passed to the target as input each time the scheduled job runs.",
-          "$ref": "#/definitions/Parameters"
+        "parameter": {
+          "description": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+          "items": {
+            "$ref": "#/definitions/CronParameter"
+          },
+          "type": "array"
         },
         "cronString": {
-          "description": "A schedule for the job to be executed, as a cron expression.",
+          "description": "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write. When absent, the job has no schedule and never runs; to pause a job that has one, set status to something other than active.",
           "$ref": "#/definitions/string"
+        },
+        "endTime": {
+          "description": "The point in time after which the job no longer runs. A job whose end time has already passed is never scheduled, and a running one is removed once the time passes. When absent, the job runs until it is disabled or deleted.",
+          "$ref": "#/definitions/dateTime"
         },
         "targetReference": {
           "description": "The target invoked each time the scheduled job runs.",
@@ -65735,8 +65758,233 @@
       "additionalProperties": false,
       "required": [
         "resourceType",
+        "status",
         "onBehalfOf",
         "targetReference"
+      ]
+    },
+    "CronParameter": {
+      "description": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+      "properties": {
+        "name": {
+          "description": "The name of the parameter (reference to the operation definition).",
+          "$ref": "#/definitions/string"
+        },
+        "valueBase64Binary": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/base64Binary"
+        },
+        "valueBoolean": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/boolean"
+        },
+        "valueCanonical": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/canonical"
+        },
+        "valueCode": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/code"
+        },
+        "valueDate": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/date"
+        },
+        "valueDateTime": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/dateTime"
+        },
+        "valueDecimal": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/decimal"
+        },
+        "valueId": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/id"
+        },
+        "valueInstant": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/instant"
+        },
+        "valueInteger": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/integer"
+        },
+        "valueMarkdown": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/markdown"
+        },
+        "valueOid": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/oid"
+        },
+        "valuePositiveInt": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/positiveInt"
+        },
+        "valueString": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/string"
+        },
+        "valueTime": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/time"
+        },
+        "valueUnsignedInt": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "valueUri": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/uri"
+        },
+        "valueUrl": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/url"
+        },
+        "valueUuid": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/uuid"
+        },
+        "valueAddress": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Address"
+        },
+        "valueAge": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Age"
+        },
+        "valueAnnotation": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Annotation"
+        },
+        "valueAttachment": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Attachment"
+        },
+        "valueCodeableConcept": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "valueCoding": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Coding"
+        },
+        "valueContactPoint": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/ContactPoint"
+        },
+        "valueCount": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Count"
+        },
+        "valueDistance": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Distance"
+        },
+        "valueDuration": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Duration"
+        },
+        "valueHumanName": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/HumanName"
+        },
+        "valueIdentifier": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Identifier"
+        },
+        "valueMoney": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Money"
+        },
+        "valuePeriod": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Period"
+        },
+        "valueQuantity": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Quantity"
+        },
+        "valueRange": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Range"
+        },
+        "valueRatio": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Ratio"
+        },
+        "valueReference": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Reference"
+        },
+        "valueSampledData": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/SampledData"
+        },
+        "valueSignature": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Signature"
+        },
+        "valueTiming": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Timing"
+        },
+        "valueContactDetail": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/ContactDetail"
+        },
+        "valueContributor": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Contributor"
+        },
+        "valueDataRequirement": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/DataRequirement"
+        },
+        "valueExpression": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Expression"
+        },
+        "valueParameterDefinition": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/ParameterDefinition"
+        },
+        "valueRelatedArtifact": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/RelatedArtifact"
+        },
+        "valueTriggerDefinition": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/TriggerDefinition"
+        },
+        "valueUsageContext": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/UsageContext"
+        },
+        "valueDosage": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Dosage"
+        },
+        "valueMeta": {
+          "description": "If the parameter is a data type.",
+          "$ref": "#/definitions/Meta"
+        },
+        "resource": {
+          "description": "If the parameter is a whole resource.",
+          "$ref": "#/definitions/Resource"
+        },
+        "part": {
+          "description": "A named part of a multi-part parameter.",
+          "items": {
+            "$ref": "#/definitions/CronParameter"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
       ]
     }
   }

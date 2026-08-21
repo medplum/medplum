@@ -10612,21 +10612,7 @@
               "path" : "Cron",
               "min" : 0,
               "max" : "*"
-            },
-            "constraint": [
-              {
-                "key" : "cron-1",
-                "severity" : "error",
-                "human" : "A cron job resolves its identity by reading onBehalfOf, so a logical reference is not enough.",
-                "expression" : "onBehalfOf.reference.exists()"
-              },
-              {
-                "key" : "cron-2",
-                "severity" : "error",
-                "human" : "A cron job resolves its target by reading targetReference, so a logical reference is not enough.",
-                "expression" : "targetReference.reference.exists()"
-              }
-            ]
+            }
           },
           {
             "id" : "Cron.id",
@@ -10754,6 +10740,26 @@
             }]
           },
           {
+            "id" : "Cron.status",
+            "path" : "Cron.status",
+            "short" : "requested | active | error | off",
+            "definition" : "The status of the scheduled job. Only a job with status 'active' is registered with the scheduler; any other status removes it while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.status",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "http://hl7.org/fhir/ValueSet/subscription-status|4.0.1"
+            }
+          },
+          {
             "id" : "Cron.onBehalfOf",
             "path" : "Cron.onBehalfOf",
             "short" : "The membership on whose behalf the job runs",
@@ -10768,38 +10774,279 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ProjectMembership"]
+            }],
+            "constraint" : [{
+              "key" : "cron-1",
+              "severity" : "error",
+              "human" : "A cron job resolves its identity by reading onBehalfOf, so a logical reference is not enough.",
+              "expression" : "reference.exists()"
             }]
           },
           {
-            "id" : "Cron.parameters",
-            "path" : "Cron.parameters",
-            "short" : "Parameters passed to the target",
-            "definition" : "Parameters passed to the target as input each time the scheduled job runs.",
+            "id" : "Cron.parameter",
+            "path" : "Cron.parameter",
+            "short" : "Input passed to the target",
+            "definition" : "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Cron.parameter",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "constraint" : [{
+              "key" : "cron-3",
+              "severity" : "error",
+              "human" : "A parameter must have one and only one of (value, resource, part)",
+              "expression" : "(part.exists() and value.empty() and resource.empty()) or (part.empty() and (value.exists() xor resource.exists()))"
+            }]
+          },
+          {
+            "id" : "Cron.parameter.name",
+            "path" : "Cron.parameter.name",
+            "short" : "Name from the definition",
+            "definition" : "The name of the parameter (reference to the operation definition).",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.parameter.name",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Cron.parameter.value[x]",
+            "path" : "Cron.parameter.value[x]",
+            "short" : "If parameter is a data type",
+            "definition" : "If the parameter is a data type.",
             "min" : 0,
             "max" : "1",
             "base" : {
-              "path" : "Cron.parameters",
+              "path" : "Cron.parameter.value[x]",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [
+              {
+                "code" : "base64Binary"
+              },
+              {
+                "code" : "boolean"
+              },
+              {
+                "code" : "canonical"
+              },
+              {
+                "code" : "code"
+              },
+              {
+                "code" : "date"
+              },
+              {
+                "code" : "dateTime"
+              },
+              {
+                "code" : "decimal"
+              },
+              {
+                "code" : "id"
+              },
+              {
+                "code" : "instant"
+              },
+              {
+                "code" : "integer"
+              },
+              {
+                "code" : "markdown"
+              },
+              {
+                "code" : "oid"
+              },
+              {
+                "code" : "positiveInt"
+              },
+              {
+                "code" : "string"
+              },
+              {
+                "code" : "time"
+              },
+              {
+                "code" : "unsignedInt"
+              },
+              {
+                "code" : "uri"
+              },
+              {
+                "code" : "url"
+              },
+              {
+                "code" : "uuid"
+              },
+              {
+                "code" : "Address"
+              },
+              {
+                "code" : "Age"
+              },
+              {
+                "code" : "Annotation"
+              },
+              {
+                "code" : "Attachment"
+              },
+              {
+                "code" : "CodeableConcept"
+              },
+              {
+                "code" : "Coding"
+              },
+              {
+                "code" : "ContactPoint"
+              },
+              {
+                "code" : "Count"
+              },
+              {
+                "code" : "Distance"
+              },
+              {
+                "code" : "Duration"
+              },
+              {
+                "code" : "HumanName"
+              },
+              {
+                "code" : "Identifier"
+              },
+              {
+                "code" : "Money"
+              },
+              {
+                "code" : "Period"
+              },
+              {
+                "code" : "Quantity"
+              },
+              {
+                "code" : "Range"
+              },
+              {
+                "code" : "Ratio"
+              },
+              {
+                "code" : "Reference"
+              },
+              {
+                "code" : "SampledData"
+              },
+              {
+                "code" : "Signature"
+              },
+              {
+                "code" : "Timing"
+              },
+              {
+                "code" : "ContactDetail"
+              },
+              {
+                "code" : "Contributor"
+              },
+              {
+                "code" : "DataRequirement"
+              },
+              {
+                "code" : "Expression"
+              },
+              {
+                "code" : "ParameterDefinition"
+              },
+              {
+                "code" : "RelatedArtifact"
+              },
+              {
+                "code" : "TriggerDefinition"
+              },
+              {
+                "code" : "UsageContext"
+              },
+              {
+                "code" : "Dosage"
+              },
+              {
+                "code" : "Meta"
+              }
+            ]
+          },
+          {
+            "id" : "Cron.parameter.resource",
+            "path" : "Cron.parameter.resource",
+            "short" : "If parameter is a whole resource",
+            "definition" : "If the parameter is a whole resource.",
+            "comment" : "When resolving references in resources, the operation definition may specify how references may be resolved between parameters. If a reference cannot be resolved between the parameters, the application should fall back to it's general resource resolution methods.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.parameter.resource",
               "min" : 0,
               "max" : "1"
             },
             "type" : [{
-              "code" : "Parameters"
+              "code" : "Resource"
             }]
           },
           {
-            "id" : "Cron.cron[x]",
-            "path" : "Cron.cron[x]",
+            "id" : "Cron.parameter.part",
+            "path" : "Cron.parameter.part",
+            "short" : "Named part of a multi-part parameter",
+            "definition" : "A named part of a multi-part parameter.",
+            "comment" : "Only one level of nested parameters is allowed.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Cron.parameter.part",
+              "min" : 0,
+              "max" : "*"
+            },
+            "contentReference" : "#Cron.parameter"
+          },
+          {
+            "id" : "Cron.cronString",
+            "path" : "Cron.cronString",
             "short" : "The schedule on which the job runs",
-            "definition" : "A schedule for the job to be executed, as a cron expression.",
+            "definition" : "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write. When absent, the job has no schedule and never runs; to pause a job that has one, set status to something other than active.",
             "min" : 0,
             "max" : "1",
             "base" : {
-              "path" : "Cron.cron[x]",
+              "path" : "Cron.cronString",
               "min" : 0,
               "max" : "1"
             },
             "type" : [{
               "code" : "string"
+            }]
+          },
+          {
+            "id" : "Cron.endTime",
+            "path" : "Cron.endTime",
+            "short" : "The point after which the job stops running",
+            "definition" : "The point in time after which the job no longer runs. A job whose end time has already passed is never scheduled, and a running one is removed once the time passes. When absent, the job runs until it is disabled or deleted.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.endTime",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "dateTime"
             }]
           },
           {
@@ -10817,6 +11064,12 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot"]
+            }],
+            "constraint" : [{
+              "key" : "cron-2",
+              "severity" : "error",
+              "human" : "A cron job resolves its target by reading targetReference, so a logical reference is not enough.",
+              "expression" : "reference.exists()"
             }]
           }
         ]

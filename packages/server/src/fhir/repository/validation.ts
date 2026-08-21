@@ -1,15 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValueWithPath, ValidatorOptions } from '@medplum/core';
-import { getReferenceString, OperationOutcomeError, Operator, validateResource } from '@medplum/core';
+import { badRequest, getReferenceString, OperationOutcomeError, Operator, validateResource } from '@medplum/core';
 import type {
   CodeableConcept,
   Coding,
+  Cron,
   OperationOutcomeIssue,
   Resource,
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { isValidCron } from 'cron-validator';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { recordHistogramValue } from '../../otel/otel';
@@ -29,6 +31,10 @@ import { cacheProfile, getCachedProfile } from './profile-cache';
  * @param resource - The candidate resource to validate.
  */
 export async function validateRepositoryResource(repo: Repository, resource: Resource): Promise<void> {
+  if (resource.resourceType === 'Cron') {
+    validateCronString(resource);
+  }
+
   if (repo.getConfig().strictMode) {
     await validateRepositoryResourceStrictly(repo, resource);
   } else {
@@ -44,6 +50,20 @@ export async function validateRepositoryResource(repo: Repository, resource: Res
         err,
       });
     }
+  }
+}
+
+/**
+ * Rejects a `Cron` whose schedule cannot be parsed.
+ *
+ * A cron expression resists being stated as a FHIRPath constraint -- an inverted range such as
+ * `10-2` is well formed but invalid -- and constraints only warn outside strict mode. Checking here
+ * means a schedule the worker cannot use fails the write instead of silently never firing.
+ * @param cron - The Cron resource being written.
+ */
+function validateCronString(cron: Cron): void {
+  if (cron.cronString !== undefined && !isValidCron(cron.cronString)) {
+    throw new OperationOutcomeError(badRequest(`Invalid cron expression: '${cron.cronString}'`, 'Cron.cronString'));
   }
 }
 

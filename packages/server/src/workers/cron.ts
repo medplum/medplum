@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bot, Cron, Project, ProjectMembership, Resource, Timing } from '@medplum/fhirtypes';
+import type { Bot, Cron, Parameters, Project, ProjectMembership, Resource, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
@@ -165,13 +165,29 @@ function getCronString(resource: Bot | Cron): string | undefined {
   return resource.resourceType === 'Cron' ? getCronStringForCron(resource) : getCronStringForBot(resource);
 }
 
+/**
+ * Returns the schedule a `Cron` should currently run on, or `undefined` if it should not run at all.
+ *
+ * Being turned off or past its end time collapses to the same answer as having no schedule, so the
+ * ordinary "schedule changed" path in `addCronJobs` removes the job without a separate branch.
+ * @param cron - The Cron resource.
+ * @returns The cron string, or undefined if the job should not be scheduled.
+ */
 function getCronStringForCron(cron: Cron): string | undefined {
+  if (cron.status !== 'active' || isPastEndTime(cron)) {
+    return undefined;
+  }
+
   if (cron.cronString && isValidCron(cron.cronString)) {
     return cron.cronString;
   }
 
   // Otherwise, this is not a valid cron job
   return undefined;
+}
+
+function isPastEndTime(cron: Cron): boolean {
+  return cron.endTime !== undefined && Date.parse(cron.endTime) <= Date.now();
 }
 
 function getCronStringForBot(bot: Bot | undefined): string | undefined {
@@ -242,6 +258,13 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 
   if (job.data.resourceType === 'Cron') {
     const cron = await systemRepo.readResource<Cron>('Cron', job.data.cronId);
+    if (!getCronStringForCron(cron)) {
+      // Edits go through addCronJobs, but nothing fires when an end time merely passes, so a job
+      // that can no longer run unregisters itself on its next tick.
+      await removeBullMQJobByKey(getSchedulerId(cron));
+      return;
+    }
+
     bot = await systemRepo.readReference<Bot>(cron.targetReference);
 
     // `onBehalfOf` is the membership the bot runs as, so it decides which access policy applies.
@@ -257,7 +280,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
       throw new Error('Cron onBehalfOf membership belongs to a different project');
     }
 
-    input = cron.parameters ?? cron;
+    input = cron.parameter ? ({ resourceType: 'Parameters', parameter: cron.parameter } satisfies Parameters) : cron;
   } else {
     bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
     runAs = await findProjectMembership(bot.meta?.project as string, createReference(bot));
@@ -271,10 +294,10 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   await executeBot({ bot, runAs, input, contentType: ContentType.FHIR_JSON });
 }
 
-export async function removeBullMQJobByKey(botId: string): Promise<void> {
+export async function removeBullMQJobByKey(schedulerId: string): Promise<void> {
   const queue = queueRegistry.get(queueName);
   if (queue) {
-    await queue.removeJobScheduler(botId);
+    await queue.removeJobScheduler(schedulerId);
   }
 }
 

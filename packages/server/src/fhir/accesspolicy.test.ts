@@ -2090,6 +2090,7 @@ describe('AccessPolicy', () => {
 
       const cron: Cron = {
         resourceType: 'Cron',
+        status: 'active',
         cronString: '* * * * *',
         onBehalfOf: createReference(botMembership),
         targetReference: createReference(bot),
