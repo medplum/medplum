@@ -32,9 +32,14 @@ export default {
  * Choose "Ultrasound Imaging" and the three role fields search against it: it is
  * held on practitioners, rooms and devices, and only the provider is required.
  *
- * Nothing is searched for times until "Find a time" is opened. There is no field
- * for a time until one is picked: it then appears above the action, read-only, with
- * how long the visit runs and what holds it, and the action offers to change it.
+ * "Find a time" stays unusable until a provider is named, and says so: a search
+ * without one could only report that a provider is needed. There is no field for a
+ * time until one is picked: it then appears above the action, read-only, with how
+ * long the visit runs and what holds it, and the action offers to change it.
+ *
+ * Change a resource with a time already picked and the time goes — it was found for
+ * the resources that no longer stand — while the search stays open and re-runs, so
+ * the replacement is one click away.
  * @returns The story.
  */
 export const Basic = (): JSX.Element => (
