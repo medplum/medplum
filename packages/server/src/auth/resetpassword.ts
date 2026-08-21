@@ -7,6 +7,7 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
+import { DEFAULT_APP_NAME, getProjectAppName } from '../email/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -72,13 +73,14 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
 
   if (req.body.sendEmail !== false) {
     const project = user.project ? await systemRepo.readReference<Project>(user.project) : undefined;
+    const appName = getProjectAppName(project) ?? DEFAULT_APP_NAME;
     await sendEmail(
       systemRepo,
       {
         to: user.email,
-        subject: 'Medplum Password Reset',
+        subject: `${appName} Password Reset`,
         text: [
-          'Someone requested to reset your Medplum password.',
+          `Someone requested to reset your ${appName} password.`,
           '',
           'Please click on the following link:',
           '',
@@ -87,7 +89,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
           'If you received this in error, you can safely ignore it.',
           '',
           'Thank you,',
-          'Medplum',
+          appName,
           '',
         ].join('\n'),
       },

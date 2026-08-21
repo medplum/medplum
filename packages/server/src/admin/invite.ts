@@ -34,6 +34,7 @@ import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
+import { DEFAULT_APP_NAME, getProjectAppName } from '../email/utils';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -535,9 +536,10 @@ async function sendInviteEmail(
   resetPasswordUrl: string | undefined
 ): Promise<void> {
   const options: Mail.Options = { to: user.email };
+  const appName = getProjectAppName(request.project) ?? DEFAULT_APP_NAME;
   if (existing) {
     // Existing user
-    options.subject = `Medplum: Welcome to ${request.project.name}`;
+    options.subject = `${appName}: Welcome to ${request.project.name}`;
     options.text = [
       `You were invited to ${request.project.name}`,
       '',
@@ -546,12 +548,12 @@ async function sendInviteEmail(
       `You can sign in here: ${getConfig().appBaseUrl}signin`,
       '',
       'Thank you,',
-      'Medplum',
+      appName,
       '',
     ].join('\n');
   } else {
     // New user
-    options.subject = 'Welcome to Medplum';
+    options.subject = `Welcome to ${appName}`;
     options.text = [
       `You were invited to ${request.project.name}`,
       '',
@@ -560,7 +562,7 @@ async function sendInviteEmail(
       resetPasswordUrl,
       '',
       'Thank you,',
-      'Medplum',
+      appName,
       '',
     ].join('\n');
   }

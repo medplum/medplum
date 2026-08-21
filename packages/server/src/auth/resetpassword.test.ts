@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
 import type { DomainConfiguration, Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -10,6 +11,7 @@ import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
 import { vi } from 'vitest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -505,5 +507,62 @@ describe('Reset Password', () => {
     // Verify parsed email content
     const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
     expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+
+  describe('Project branding', () => {
+    const appName = 'Acme Health';
+
+    async function setProjectSetting(project: WithId<Project>, name: string, valueString: string): Promise<void> {
+      const systemRepo = getGlobalSystemRepo();
+      await withTestContext(async () => {
+        // Read the current project so successive calls compose rather than clobber.
+        const current = await systemRepo.readResource<Project>('Project', project.id);
+        await systemRepo.updateResource<Project>({
+          ...current,
+          setting: [...(current.setting?.filter((s) => s.name !== name) ?? []), { name, valueString }],
+        });
+      });
+    }
+
+    test('appName brands the password reset email for a project-scoped user', async () => {
+      const { project } = await withTestContext(() =>
+        registerNew({
+          firstName: 'Admin',
+          lastName: 'Admin',
+          projectName: 'Branded Project',
+          email: `admin${randomUUID()}@example.com`,
+          password: 'password!@#',
+        })
+      );
+      await setProjectSetting(project, 'appName', appName);
+
+      // A project-scoped user, so the reset flow resolves the project.
+      const email = `member${randomUUID()}@example.com`;
+      await withTestContext(() =>
+        inviteUser({
+          project,
+          resourceType: 'Practitioner',
+          firstName: 'Member',
+          lastName: 'Member',
+          email,
+          scope: 'project',
+          sendEmail: false,
+        })
+      );
+
+      const res = await request(app).post('/auth/resetpassword').type('json').send({
+        email,
+        projectId: project.id,
+        recaptchaToken: 'xyz',
+      });
+      expect(res).toHaveStatus(200);
+      expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
+
+      const args = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+      const parsed = await simpleParser(args.Content?.Raw?.Data as Buffer);
+      expect(parsed.subject).toBe(`${appName} Password Reset`);
+      expect(parsed.text).toContain(`Someone requested to reset your ${appName} password.`);
+      expect(parsed.text).toContain(`Thank you,\n${appName}`);
+    });
   });
 });
