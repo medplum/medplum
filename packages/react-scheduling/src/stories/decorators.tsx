@@ -16,9 +16,6 @@ export const withMockedDate: Decorator = (Story) => (
 
 /**
  * Stores resources on the ambient client before the story renders.
- *
- * For fields that search the server, which have nothing to offer unless the
- * fixtures are already stored.
  * @param resources - What to store first. Must be a stable reference; a module
  * constant rather than an array built inside a story.
  * @returns The decorator.

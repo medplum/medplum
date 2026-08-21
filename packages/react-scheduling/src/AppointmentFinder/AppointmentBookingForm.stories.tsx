@@ -17,9 +17,9 @@ import { AppointmentBookingForm } from './AppointmentBookingForm';
 
 const STORY_FIXTURES = [...SchedulingFixtures, ...SurgicalFixtures, ...SubClinicProviderFixtures];
 
-// Storybook adds a story's own decorators to these rather than replacing them, so
-// `$find` is stubbed per story: two stubs would both install, and which one
-// answered would be an accident of effect ordering.
+// A story's own decorators add to these rather than replacing them, so `$find` is
+// stubbed per story: two stubs would both install, and which one answered would be
+// an accident of effect ordering.
 export default {
   title: 'Medplum/AppointmentBookingForm',
   component: AppointmentBookingForm,
@@ -30,16 +30,12 @@ export default {
  * The form from an empty state to a chosen time.
  *
  * Choose "Ultrasound Imaging" and the three role fields search against it: it is
- * held on practitioners, rooms and devices, and only the provider is required.
- *
- * "Find a time" stays unusable until a provider is named, and says so: a search
- * without one could only report that a provider is needed. There is no field for a
- * time until one is picked: it then appears above the action, read-only, with how
- * long the visit runs and what holds it, and the action offers to change it.
+ * held on practitioners, rooms and devices, and only the provider is required. So
+ * "Find a time" stays unusable until a provider is named, and says so.
  *
  * Change a resource with a time already picked and the time goes — it was found for
- * the resources that no longer stand — while the search stays open and re-runs, so
- * the replacement is one click away.
+ * resources that no longer stand — while the search stays open and re-runs, so the
+ * replacement is one click away.
  * @returns The story.
  */
 export const Basic = (): JSX.Element => (
@@ -67,8 +63,8 @@ SurgicalTeam.decorators = [withFindStub()];
 /**
  * A fully configured visit type with nothing free.
  *
- * The distinction matters: "no times for this selection" is a different dead end
- * from a role field that finds nobody, and the form says which.
+ * "No times for this selection" is a different dead end from a role field that finds
+ * nobody, and the form says which.
  * @returns The story.
  */
 export const NoAvailability = (): JSX.Element => (
@@ -79,14 +75,13 @@ export const NoAvailability = (): JSX.Element => (
 NoAvailability.decorators = [withFindStub({ empty: true })];
 
 /**
- * The site filter, which is asymmetric by role and reads as a bug until it is
- * seen deliberately.
+ * The site filter, which is asymmetric by role and reads as a bug until it is seen
+ * deliberately.
  *
- * The main clinic has a second floor, and on that floor are Exam Room B and Dr.
- * Ama Osei's only practitioner role. Open the room field and Exam Room B is
- * there — a room is sited by walking `partOf`, so anywhere inside the clinic
- * counts. Open the provider field and Dr. Osei is not — a provider is sited only
- * by a role naming the clinic exactly, with no walk up the chain.
+ * On the main clinic's second floor sit both Exam Room B and Dr. Ama Osei's only
+ * practitioner role. Booking at the clinic, the room field offers Exam Room B — a
+ * room is sited by walking `partOf` — while the provider field leaves Dr. Osei out,
+ * since a provider is sited only by a role naming the site exactly.
  *
  * The rule lives in the schedule search, not in this component.
  * @returns The story.

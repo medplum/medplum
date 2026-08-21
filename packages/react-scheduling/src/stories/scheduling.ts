@@ -32,8 +32,8 @@ export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
 /**
  * Declares a fixture a room or a bed.
  *
- * The clinics deliberately declare nothing: the element is optional, and a Location
- * omitting it must still be offered as a site. Do not complete them.
+ * Leave the clinics without one: the element is optional, and a Location omitting it
+ * must still be offered as a site.
  *
  * @param code - The `location-physical-type` code the Location declares.
  * @returns The concept to record it as.
@@ -422,12 +422,12 @@ export function buildFindBundle(appointments: readonly Appointment[]): Bundle<Ap
 }
 
 /**
- * A provider whose only role names the clinic's second floor rather than the
- * clinic, which is what leaves her out of a provider field booking at the clinic
- * while Exam Room B, on that same floor, is offered.
+ * A provider whose only role names the clinic's second floor rather than the clinic,
+ * so a provider field booking at the clinic leaves them out while Exam Room B, on
+ * that same floor, is offered.
  *
- * Exported separately from `SchedulingFixtures` so that adding her does not change
- * the option counts the actor and schedule tests assert on.
+ * Kept out of `SchedulingFixtures` so it does not change the option counts the actor
+ * and schedule tests assert on.
  */
 export const DrOseiPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
