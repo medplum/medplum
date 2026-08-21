@@ -36,6 +36,7 @@ import { getExtraEntries } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
+import { recordHistogramValue } from '../otel/otel';
 import { clamp } from './operations/utils/parameters';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
@@ -114,6 +115,7 @@ export async function searchImpl<T extends Resource>(
   options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
   validateSearchResourceTypes(repo, searchRequest);
+  validateSearchFilterCount(searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
@@ -212,6 +214,26 @@ export async function searchByReferenceImpl<T extends Resource>(
   }
 
   return results;
+}
+
+/**
+ * Rejects searches carrying more filters than the server allows.
+ *
+ * @param searchRequest - The search request.
+ */
+function validateSearchFilterCount(searchRequest: SearchRequest): void {
+  const count = searchRequest.filters?.length ?? 0;
+  // Record the number of filters to inform setting `maxSearchFilters`
+  recordHistogramValue('medplum.fhir.search.filters', count, {
+    attributes: { resourceType: searchRequest.resourceType },
+  });
+
+  const maxFilters = getConfig().maxSearchFilters;
+  if (count > getConfig().maxSearchFilters) {
+    throw new OperationOutcomeError(
+      badRequest(`Search parameter count exceeds maximum (got ${count}, max ${maxFilters})`)
+    );
+  }
 }
 
 function applyCountAndOffsetLimits<T extends Resource>(
