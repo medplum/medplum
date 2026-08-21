@@ -224,27 +224,6 @@ describe('Calendar', () => {
       expect(screen.getByText(/No Patient/)).toBeInTheDocument();
     });
 
-    test('filters out cancelled appointments', async () => {
-      const cancelledAppointment = createAppointment({
-        id: 'cancelled-1',
-        status: 'cancelled',
-        participant: [
-          {
-            actor: {
-              reference: 'Patient/999',
-              display: 'Cancelled Patient',
-            },
-            status: 'accepted',
-          },
-        ],
-      });
-      const bookedAppointment = createAppointment();
-
-      setup({ appointments: [cancelledAppointment, bookedAppointment] });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-      expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
-    });
-
     test.each(['booked', 'arrived', 'fulfilled', 'pending'] as const)(
       'does not show status suffix for %s appointments',
       async (status) => {
@@ -256,13 +235,16 @@ describe('Calendar', () => {
       }
     );
 
-    test.each(['waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
-      const bookedAppointment = createAppointment({ status });
+    test.each(['waitlist', 'noshow', 'cancelled'] as const)(
+      'shows status suffix for %s appointments',
+      async (status) => {
+        const bookedAppointment = createAppointment({ status });
 
-      setup({ appointments: [bookedAppointment] });
-      const appointmentText = screen.getByText(/John Doe/);
-      expect(appointmentText.textContent).toContain(`(${status})`);
-    });
+        setup({ appointments: [bookedAppointment] });
+        const appointmentText = screen.getByText(/John Doe/);
+        expect(appointmentText.textContent).toContain(`(${status})`);
+      }
+    );
 
     test('calls onSelectAppointment when clicking an appointment', async () => {
       const appointment = createAppointment();
@@ -316,10 +298,17 @@ describe('Calendar', () => {
         start: new Date(baseDate.getTime() + 120 * 60 * 1000).toISOString(),
         end: new Date(baseDate.getTime() + 150 * 60 * 1000).toISOString(),
       });
+      const slot4 = createSlot({
+        id: 'slot-4',
+        status: 'entered-in-error',
+        start: new Date(baseDate.getTime() + 150 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 180 * 60 * 1000).toISOString(),
+      });
 
-      setup({ slots: [slot1, slot2, slot3] });
+      setup({ slots: [slot1, slot2, slot3, slot4] });
       expect(screen.queryAllByText('Available')).toHaveLength(1);
       expect(screen.queryAllByText('Blocked')).toHaveLength(2);
+      expect(screen.queryAllByText('Entered in error')).toHaveLength(1);
     });
 
     test('calls onSelectSlot when clicking a Slot', async () => {
@@ -356,14 +345,6 @@ describe('Calendar', () => {
       // was cancelled, not merely delayed.
       await sleep(150);
       expect(onSelectAppointment).not.toHaveBeenCalled();
-    });
-
-    test('filters out entered-in-error slots', async () => {
-      const slot = createSlot({ status: 'entered-in-error' });
-      setup({ slots: [slot] });
-
-      expect(screen.queryByText('Available')).not.toBeInTheDocument();
-      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
     });
 
     test('shows busy slot not referenced by any appointment', async () => {

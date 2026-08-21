@@ -25,7 +25,7 @@ type ExtendedEvent = { type: 'appointment'; appointment: Appointment } | { type:
 
 function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
   return appointments
-    .filter((appointment) => appointment.status !== 'cancelled' && appointment.start && appointment.end)
+    .filter((appointment) => appointment.start && appointment.end)
     .map((appointment) => {
       // Find the patient among the participants to use as title
       const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
@@ -47,12 +47,22 @@ function appointmentsToEvents(appointments: Appointment[]): EventInput[] {
     });
 }
 
+function slotTitle(slot: Slot): string {
+  if (slot.status === 'free') {
+    return 'Available';
+  }
+  if (slot.status === 'entered-in-error') {
+    return 'Entered in error';
+  }
+  return 'Blocked';
+}
+
 function slotsToEvents(slots: Slot[]): EventInput[] {
   return slots.map((slot) => ({
     id: slot.id,
     start: slot.start,
     end: slot.end,
-    title: slot.status === 'free' ? 'Available' : 'Blocked',
+    title: slotTitle(slot),
     extendedProps: { type: 'slot', slot } satisfies ExtendedEvent,
     interactive: false,
     className: cx(classes.slot, classes[slot.status]),
@@ -135,10 +145,6 @@ export function Calendar(props: CalendarProps): JSX.Element {
     }, {});
 
     const filteredSlots = slots.filter((slot) => {
-      // never show "entered-in-error" slots on the calendar
-      if (slot.status === 'entered-in-error') {
-        return false;
-      }
       const key = getReferenceString(slot);
       if (key && appointmentIndex[key]) {
         const appointment = appointmentIndex[key];
