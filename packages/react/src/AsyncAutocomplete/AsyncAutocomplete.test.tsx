@@ -170,6 +170,29 @@ describe('AsyncAutocomplete', () => {
     expect(selected.getByText('Apple')).toBeInTheDocument();
   });
 
+  test('maxValues=2 hides the search input and dropdown once the cap is reached', async () => {
+    // Regression test: reaching the cap must clean up dropdown state for any maxValues > 1, not just 1.
+    const onChange = vi.fn();
+    render(
+      <AsyncAutocomplete<TestOption>
+        maxValues={2}
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByRole('searchbox');
+    await selectAutocompleteOption(input, 'Apple', 'Apple');
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+
+    await selectAutocompleteOption(input, 'Banana', 'Banana');
+
+    expect(onChange).toHaveBeenLastCalledWith([apple, banana]);
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.getByTestId(AsyncAutocompleteTestIds.options)).toHaveAttribute('data-hidden', 'true');
+  });
+
   test('maxValues=0 calls onChange on every selection without keeping a pill', async () => {
     const onChange = vi.fn();
     render(
@@ -421,6 +444,38 @@ describe('AsyncAutocomplete', () => {
     expect(onChange).toHaveBeenCalledWith([apple]);
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.getByText('Apple')).toBeInTheDocument();
+  });
+
+  test('maxValues=1 autosubmit hides the dropdown and clears search after adding the result', async () => {
+    // Regression test: the autosubmit path must clean up search/options/dropdown state the same way
+    // manual selection does for maxValues=1, instead of leaving a dangling dropdown with no search input.
+    const deferred = createDeferred<TestOption[]>();
+    const onChange = vi.fn();
+    const loadOptions = vi.fn(() => deferred.promise);
+    render(
+      <AsyncAutocomplete<TestOption> maxValues={1} toOption={toOption} loadOptions={loadOptions} onChange={onChange} />
+    );
+
+    const input = screen.getByRole('searchbox');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'ap' } });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      deferred.resolve([apple, cherry]);
+      await Promise.resolve();
+    });
+
+    expect(onChange).toHaveBeenCalledWith([apple]);
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.getByTestId(AsyncAutocompleteTestIds.options)).toHaveAttribute('data-hidden', 'true');
   });
 
   test('autosubmit under React.StrictMode calls onChange exactly once', async () => {

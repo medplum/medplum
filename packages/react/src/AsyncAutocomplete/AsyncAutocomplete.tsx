@@ -120,12 +120,20 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           // Remove from the front
           newSelected.shift();
         }
+
+        if (newSelected.length >= maxValues) {
+          // The search input is about to be hidden now that the cap is reached; reset the dropdown
+          // state so it doesn't linger with stale options and no input left to dismiss it.
+          setSearch('');
+          setOptions([]);
+          combobox.closeDropdown();
+        }
       }
 
       onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
-    [maxValues, onChange]
+    [maxValues, onChange, combobox, setSearch, setOptions]
   );
 
   const handleTimer = useCallback((): void => {
@@ -226,11 +234,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       if (disabled) {
         return;
       }
-      if (maxValues === 1) {
-        setSearch('');
-        setOptions([]);
-        combobox.closeDropdown();
-      }
       lastValueRef.current = undefined;
       if (val === '$create') {
         setSearch('');
@@ -239,7 +242,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         toggleSelected(val);
       }
     };
-  }, [toggleSelected, combobox, disabled, maxValues, search, setSearch]);
+  }, [toggleSelected, disabled, search, setSearch]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
