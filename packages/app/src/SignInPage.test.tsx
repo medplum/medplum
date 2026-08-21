@@ -92,6 +92,18 @@ describe('SignInPage', () => {
     });
   });
 
+  test('Does not loop back to registration while creating a new project', async () => {
+    getConfig().registerEnabled = true;
+    setup('/signin', new MockClient({ profile: DrAliceSmith }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Register'));
+    });
+
+    expect(await screen.findByText('Sign in again to create a new project')).toBeInTheDocument();
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
+  });
+
   test('Register disabled', async () => {
     getConfig().registerEnabled = false;
     setup();

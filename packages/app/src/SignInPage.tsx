@@ -12,6 +12,8 @@ export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const config = getConfig();
+  const projectId = searchParams.get('project') || undefined;
+  const isCreatingNewProject = projectId === 'new';
 
   const navigateToNext = useCallback(() => {
     // only redirect to next if it is a pathname to avoid redirecting
@@ -30,18 +32,22 @@ export function SignInPage(): JSX.Element {
     <SignInForm
       onSuccess={() => navigateToNext()}
       onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
-      onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      onRegister={
+        isRegisterEnabled() && !(profile && isCreatingNewProject)
+          ? () => navigate('/register')?.catch(console.error)
+          : undefined
+      }
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
-      projectId={searchParams.get('project') || undefined}
+      projectId={projectId}
     >
       <Logo size={32} />
-      {searchParams.get('project') !== 'new' && (
+      {!isCreatingNewProject && (
         <Title order={3} py="lg" ta="center">
           Sign in to {getAppName()}
         </Title>
       )}
-      {searchParams.get('project') === 'new' && (
+      {isCreatingNewProject && (
         <Title order={3} py="lg" ta="center">
           Sign in again to create a new project
         </Title>
