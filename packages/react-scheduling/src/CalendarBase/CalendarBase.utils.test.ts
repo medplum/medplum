@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { availableTimeToBusinessHoursEntry } from './Calendar.utils';
+import { createReference } from '@medplum/core';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
+import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
 
 describe('availableTimeToBusinessHoursEntry', () => {
   test('converts a simple weekday range', () => {
@@ -90,5 +93,53 @@ describe('availableTimeToBusinessHoursEntry', () => {
       { daysOfWeek: [1], startTime: '09:00:00', endTime: '24:00:00' },
       { daysOfWeek: [2], startTime: '00:00:00', endTime: '09:00:00' },
     ]);
+  });
+});
+
+describe('filterBookedSlots', () => {
+  test('removes exact matches for appointments', () => {
+    const now = new Date();
+    const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
+
+    const slots: Slot[] = [
+      {
+        resourceType: 'Slot',
+        id: '0',
+        status: 'free',
+        start: new Date(baseDate.getTime() - 90 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+        schedule: createReference(DrAliceSmithSchedule),
+      },
+      {
+        resourceType: 'Slot',
+        id: '1',
+        status: 'busy',
+        start: baseDate.toISOString(),
+        end: new Date(baseDate.getTime() + 45 * 60 * 1000).toISOString(),
+        schedule: createReference(DrAliceSmithSchedule),
+      },
+      {
+        resourceType: 'Slot',
+        id: '2',
+        status: 'busy-unavailable',
+        start: new Date(baseDate.getTime() + 45 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        schedule: createReference(DrAliceSmithSchedule),
+      },
+    ];
+
+    const appointments: Appointment[] = [
+      {
+        resourceType: 'Appointment',
+        id: 'ap1',
+        status: 'booked',
+        start: baseDate.toISOString(),
+        end: new Date(baseDate.getTime() + 45 * 60 * 1000).toISOString(),
+        slot: [{ reference: 'Slot/1' }, { reference: 'Slot/2' }],
+        participant: [{ actor: createReference(DrAliceSmith), status: 'accepted' }],
+      },
+    ];
+
+    expect(filterBookedSlots(slots, appointments)).toEqual([slots[0], slots[2]]);
   });
 });
