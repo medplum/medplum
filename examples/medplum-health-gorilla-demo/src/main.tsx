@@ -46,6 +46,20 @@ const theme = createTheme({
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 const navigate = (path: string): Promise<void> => router.navigate(path);
 
+function setEnvironmentFavicon(): void {
+  const { hostname } = window.location;
+  if (hostname === 'medplum.com' || hostname.endsWith('.medplum.com')) {
+    return;
+  }
+  const isLocal = /^(localhost|127\.0\.0\.1)$/.test(hostname) || /\.local(host)?$/.test(hostname);
+  const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (link) {
+    link.href = isLocal ? '/favicon-local.ico' : '/favicon-staging.ico';
+  }
+}
+
+setEnvironmentFavicon();
+
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <MantineProvider theme={theme}>
