@@ -30,9 +30,10 @@ type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
 
 /**
- * What a Location says it physically is, which is how the site field tells a site
- * from a room. The clinics below deliberately say nothing: nothing requires the
- * element, and a Location that omits it is still offered as a site.
+ * Declares a fixture a room or a bed.
+ *
+ * The clinics deliberately declare nothing: the element is optional, and a Location
+ * omitting it must still be offered as a site. Do not complete them.
  *
  * @param code - The `location-physical-type` code the Location declares.
  * @returns The concept to record it as.
@@ -146,13 +147,7 @@ export const UltrasoundImagingService = buildSchedulableService({
   locationIds: ['main-clinic'],
 });
 
-/**
- * A visit type held nowhere in particular.
- *
- * It names no location, so a reference search on `location` matches it against no
- * site — which is why choosing a site stops it being offered, while a site change
- * cannot invalidate an answer that was never tied to one.
- */
+/** A visit type naming no location, for the kept-but-not-offered asymmetry. */
 export const TelehealthService = buildSchedulableService({
   id: 'telehealth-consult',
   name: 'Telehealth Consult',

@@ -21,10 +21,9 @@ import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 import { useProposedAppointments } from './useProposedAppointments';
 
-// Rooms are Locations too, so the site field is kept off them by what they are
-// not: `physical-type` is a Medplum search parameter, so the exclusion is the
-// server's and paging survives it. Naming what a site *is* would be more precise
-// and would silently hide a Location whose type nobody populated.
+// Excluded by what a room is, never by what a site is: `physicalType` is optional,
+// so `physical-type=si,bu` would silently hide a Location nobody typed. Server-side,
+// because it is a Medplum search parameter, so paging survives it.
 const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
 // Nothing has scanned a month for the days that have times on them, so every day
@@ -71,9 +70,8 @@ export interface AppointmentBookingFormProps {
  * Choosing a time is deliberately a separate step behind "Find a time". The
  * times depend on every answer above them, so offering them earlier would only
  * show times that are about to change. Only a time the search offered can be
- * chosen: the field that holds it accepts no input, and there is none at all until
- * a time exists, so nothing can be booked onto time that was never checked against
- * anybody's availability.
+ * chosen: the field holding it accepts no input, so nothing can be booked onto time
+ * that was never checked against anybody's availability.
  *
  * @param props - The React props.
  * @returns The form.
@@ -88,10 +86,9 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
-  // The fields below hold their own selections and ignore `defaultValue` after
-  // mount, so clearing the state above is not enough to clear what is on screen.
-  // Remounting is, and these are what force it — counters rather than the chosen
-  // values, so a field is never remounted out from under the user's own pick.
+  // The fields below ignore `defaultValue` after mount, so clearing the state above
+  // leaves their pills on screen; remounting is what clears them. Counters rather
+  // than the chosen values, so a field is never remounted out from under a pick.
   const [roleFieldsKey, setRoleFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
 
@@ -129,20 +126,16 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     // The actors on offer come from the visit type, so what was chosen for the
     // last one cannot mean anything for this one — nor can a time held on them.
     clearResources();
-    // Nothing can be searched without a visit type, and the field holds one at a
-    // time, so every change passes through none. Collapsing keeps the times from
-    // outliving what produced them, and the host is told so its panel narrows
-    // with them.
+    // Times must not outlive the visit type that produced them, and every change
+    // passes through none, since the field holds one at a time.
     closeFinder();
   }
 
   function chooseLocation(next: WithId<Location> | undefined): void {
     setLocation(next);
-    // Where a visit is held decides which actors are offered at all, so the ones
-    // chosen for the last site cannot be assumed to serve this one.
+    // The site decides which actors are offered at all, so the ones chosen for the
+    // last one cannot be assumed to serve this.
     clearResources();
-    // The visit type is narrowed by site too. It only has to go when the new site
-    // does not hold it; otherwise the answer still stands.
     if (service && !isServiceKeptAtLocation(service, next)) {
       setService(undefined);
       onChangeService?.(undefined);
@@ -185,9 +178,8 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
         <AppointmentServiceSelect
           key={serviceFieldKey}
           location={location}
-          // Seeded from state, not from the prop: a remount is how the field is
-          // cleared, and re-seeding from `defaultService` would put back the visit
-          // type that was just cleared.
+          // From state, not the prop: re-seeding from `defaultService` on a remount
+          // would put back the visit type that remount was clearing.
           defaultValue={service}
           onChange={chooseService}
         />
@@ -198,9 +190,8 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
             role={role}
             service={service}
             location={location}
-            // The actors on offer come from the visit type, so asking before one
-            // is chosen could only ever find nothing, which reads as a fault in
-            // the field rather than an answer still owed.
+            // Searching before a visit type is chosen could only find nothing,
+            // which reads as a broken field rather than an answer still owed.
             disabled={!service}
             onChange={setSelections}
           />
@@ -263,7 +254,6 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
 }
 
 interface ChosenTimeProps {
-  /** The proposal the user picked, or undefined while none has been. */
   readonly appointment: Appointment | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
@@ -275,17 +265,12 @@ interface ChosenTimeProps {
 /**
  * The chosen time, and under it the action that found it.
  *
- * The form is a column of labelled fields and the chosen time is one of its
- * answers, so it sits in that column, above the control that produced it. What it
- * must not be is a field before there is anything to put in it: an empty white
- * input among greyed-out ones reads as the one thing still fillable, and its
- * placeholder repeated the button's own invitation. So there is no field until
- * there is a time.
+ * Above the action, because the form is a column of labelled answers. But no field
+ * at all until there is a time: an empty white input among greyed-out ones reads as
+ * the one thing still fillable.
  *
- * Read-only, and deliberately an input rather than plain text: for a user
- * permitted to override, this same field in this same place becomes editable and
- * gains a warning. Keeping the region isolated and reading from the chosen
- * proposal is what makes that a control change rather than a layout change.
+ * An input rather than plain text, deliberately: for a user permitted to override,
+ * this same field in this same place becomes editable and gains a warning.
  *
  * @param props - The React props.
  * @returns The chosen time, once there is one, and the action.
@@ -300,8 +285,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           label="Date & time"
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
-          // Under the value rather than over it: the time is the answer, and what
-          // it commits to only qualifies it.
+          // Below the value, which is the answer; the description only qualifies it.
           inputWrapperOrder={['label', 'input', 'description']}
           description={<ChosenTimeCommitment appointment={appointment} />}
         />
@@ -327,10 +311,9 @@ interface ChosenTimeCommitmentProps {
 /**
  * What the chosen time commits to: how long the visit runs, and what holds it.
  *
- * Read off the proposal rather than off the answers above, because the proposal is
- * what `$book` is handed — so this describes what would actually be booked. Inline
- * elements only: it renders as the field's description, which is a paragraph, and
- * being the field's own description is what ties it to the value it qualifies.
+ * Read off the proposal rather than off the answers above, since the proposal is what
+ * `$book` is handed. Inline elements only — it renders inside the field's
+ * description, which is a paragraph.
  *
  * @param props - The React props.
  * @returns The detail beneath the time.
@@ -367,8 +350,8 @@ function getFinderLabel(finding: boolean, chosen: boolean): string {
   if (finding) {
     return 'Close time finder';
   }
-  // Repeating the invitation once a time is chosen reads as though the search had
-  // come back with nothing.
+  // Repeating the invitation over a time already found reads as a search that
+  // came back with nothing.
   return chosen ? 'Change time' : 'Find a time';
 }
 
@@ -421,8 +404,8 @@ function oneDay(date: Date): DateRange {
 /**
  * Writes an instant as the day and time it falls on at the site.
  *
- * Read in the timezone the visit is held in, so the summary shows the time the
- * clinic will keep rather than the time on the booker's own clock.
+ * Read in the timezone the visit is held in, so the field shows the time the clinic
+ * will keep rather than the time on the booker's own clock.
  *
  * @param value - The chosen start time.
  * @param timezone - IANA timezone the visit is scheduled in.

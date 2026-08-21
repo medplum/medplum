@@ -25,16 +25,13 @@ export function getServiceDurationMinutes(service: HealthcareService): number | 
 /**
  * Reports whether a chosen service survives a move to a site.
  *
- * A named site is matched the way the pick list matches it: `AppointmentServiceSelect`
- * narrows on the `location` parameter, which reads `HealthcareService.location` by
- * exact reference and does not walk `partOf`, so a room inside a site does not
- * stand for the site.
+ * Matched the way the pick list matches it: `HealthcareService.location` by exact
+ * reference, with no `partOf` walk, so a room inside a site does not stand for the
+ * site.
  *
- * A service naming no location at all is kept, because nothing about it was ever
- * tied to a site and so no site can invalidate it. That is deliberately not what
- * the search does — a reference search needs the element present, so such a
- * service matches no site and is not *offered* once one is chosen even though it
- * is *kept* when it was chosen first.
+ * A service naming no location is kept, since nothing about it was ever tied to a
+ * site. That deliberately diverges from the search, which needs the element present
+ * — so such a service is kept when chosen first but is not offered once a site is.
  *
  * @param service - The service being checked.
  * @param location - The site being booked at, or undefined for no site at all.
