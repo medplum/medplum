@@ -246,9 +246,9 @@ function chosenTimeField(): HTMLInputElement | null {
 /**
  * Whether one element comes before another in the document.
  *
- * Where the chosen time sits is part of the behaviour: the form is a column of
- * labelled fields and the answer belongs above the control that produced it, which
- * only document order carries.
+ * Where a field sits is part of the behaviour: the form asks the criteria, finds the
+ * time, then takes the details, and the chosen time belongs above the control that
+ * produced it. Only document order carries either.
  *
  * @param first - The element expected to come first.
  * @param second - The element expected to follow it.
@@ -975,6 +975,15 @@ describe('AppointmentBookingForm', () => {
   });
 
   describe('Identifying the patient', () => {
+    test('Asks for the patient below the action that finds a time', async () => {
+      setup(medplum);
+
+      // Naming a patient cannot change which times are offered, so asking for one
+      // ahead of the search puts work that cannot affect the result in front of the
+      // one control that can.
+      expect(isBefore(finderButton(), field(/patient/i))).toBe(true);
+    });
+
     test('Offers patients matching the name typed', async () => {
       setup(medplum);
       await typeInAutocomplete(field(/patient/i), 'Whitfield');
@@ -1026,6 +1035,16 @@ describe('AppointmentBookingForm', () => {
   });
 
   describe('Recording what the visit is for', () => {
+    test('Asks for all three free-text fields below the action that finds a time', async () => {
+      setup(medplum);
+
+      // Together rather than split across the action: none of the three is an answer
+      // the search depends on, so none of them belongs above it.
+      for (const label of [/reason for visit/i, /notes or comments/i, /patient instructions/i]) {
+        expect(isBefore(finderButton(), screen.getByRole('textbox', { name: label }))).toBe(true);
+      }
+    });
+
     test('Names the patient as a required participant, once', async () => {
       const post = vi.spyOn(medplum, 'post');
       setup(medplum);
