@@ -494,6 +494,25 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
     result.indexes.push({ columns: ['compartments', 'deleted', 'appointment'], indexType: 'gin', unique: false });
   }
 
+  if (resourceType === 'Observation') {
+    // Prefixing `projectId` lets a tenant-scoped Observation.code search narrow within the index
+    // instead of discarding other projects' rows during the bitmap heap scan. GIN searches any
+    // subset of its columns equally well; Super Admin queries can still use this index
+    result.indexes.push(
+      { columns: ['projectId', '__code'], indexType: 'gin' },
+      {
+        columns: [
+          'projectId',
+          {
+            expression: `${TokenArrayToTextFn.name}(${escapeIdentifier('__codeText')}) gin_trgm_ops`,
+            name: '__codeTextTrgm',
+          },
+        ],
+        indexType: 'gin',
+      }
+    );
+  }
+
   // uniqueness of SearchParameter-based indexes cannot be specified anywhere, so do it manually here
   // perhaps this should  also be moved to getSearchParameterDetails. Or preferably, where ever the
   // implementation-specific parts of SearchParameterDetails are moved to?
