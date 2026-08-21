@@ -98,11 +98,12 @@ export function EncountersPage(): JSX.Element {
           </Text>
         </Box>
       }
-      renderDetail={(encounter) => (
+      renderDetail={(encounter, ctx) => (
         <Box key={encounter.id} flex={1} miw={0} h="100%" style={{ overflow: 'auto' }}>
           <EncounterChart
             encounter={{ reference: `Encounter/${encounter.id}` }}
             task={taskId ? { reference: `Task/${taskId}` } : undefined}
+            onEncounterChange={() => ctx.refresh().catch(showErrorNotification)}
           />
         </Box>
       )}
