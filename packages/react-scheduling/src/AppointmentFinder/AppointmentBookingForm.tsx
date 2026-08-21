@@ -141,7 +141,12 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     }
   }
 
-  /** Both the site and the visit type decide which actors are offered at all. */
+  /**
+   * Clears every named resource, deliberately: a resource can be schedulable for more
+   * than one visit type, so some would survive a narrower check. Both the site and the
+   * visit type change which actors are offered, and re-asking is easier to explain than
+   * a partial clear.
+   */
   function clearResources(): void {
     setSelections({});
     setChosen(undefined);
@@ -249,8 +254,8 @@ interface ChosenTimeProps {
 /**
  * The chosen time, and under it the action that found it.
  *
- * An input rather than plain text: for a user permitted to override, this same field
- * in this same place becomes editable and gains a warning.
+ * An input rather than plain text: overrides are not implemented, but when they are, a
+ * permitted user gets this same field in this same place, editable and with a warning.
  *
  * @param props - The React props.
  * @returns The chosen time, once there is one, and the action.
@@ -378,12 +383,19 @@ function RoleField(props: RoleFieldProps): JSX.Element {
 }
 
 /**
- * Returns the range covering one whole day.
+ * Returns the range covering the bookable part of one day.
+ *
+ * `$find` treats `start` as a hard floor, so a day already under way starts from now
+ * rather than midnight: the calendar hands back local midnight, and asking from there
+ * would offer times that have already passed.
+ *
  * @param date - Any instant during the day.
- * @returns The day, both ends closed, as `$find` requires.
+ * @returns The day from now at the earliest, both ends closed, as `$find` requires.
  */
 function oneDay(date: Date): DateRange {
-  return { start: date, end: endOfDay(date) };
+  const now = new Date();
+  const start = date > now ? date : now;
+  return { start, end: endOfDay(start) };
 }
 
 /**

@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import type { Device } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
+import type { MockInstance } from 'vitest';
 import { installFindStub } from '../stories/mockFind';
 import {
   MainClinic,
@@ -203,6 +205,19 @@ function chosenTimeField(): HTMLInputElement | null {
  */
 function isBefore(first: Element, second: Element): boolean {
   return Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+}
+
+/**
+ * The `start` the most recent `$find` asked for.
+ * @param get - A spy on the client's `get`.
+ * @returns The `start` parameter, or undefined when nothing was asked.
+ */
+function lastFindStart(get: MockInstance<MedplumClient['get']>): string | undefined {
+  const urls = get.mock.calls
+    .map(([url]) => String(url))
+    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
+  const last = urls.at(-1);
+  return last ? (new URL(last, 'https://example.com').searchParams.get('start') ?? undefined) : undefined;
 }
 
 /**
@@ -473,6 +488,24 @@ describe('AppointmentBookingForm', () => {
 
       await waitFor(() => expect(screen.getByText(/Tuesday, August 18/)).toBeInTheDocument());
       expect(screen.queryByText(/Monday, August 17/)).not.toBeInTheDocument();
+    });
+
+    test('Searches today from now rather than from midnight', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      // The calendar hands back local midnight, so picking today must not walk the
+      // floor back: `$find` honours whatever `start` it is given, and would answer
+      // with times that have already passed.
+      await chooseDay('17');
+
+      const start = lastFindStart(get);
+      expect(start).toBeDefined();
+      // Local midnight would be 07:00Z on this clock; the floor must not go back there.
+      expect(new Date(start as string).getTime()).toBeGreaterThanOrEqual(MONDAY_MORNING.getTime());
     });
   });
 
