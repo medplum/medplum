@@ -28,7 +28,8 @@ import type {
   SliceDiscriminator,
   SlicingRules,
 } from './types';
-import { getDataType, isResourceType, parseStructureDefinition } from './types';
+import { getDataType, isResourceType, parseStructureDefinition, tryGetProfile } from './types';
+import { typedValueInValueSet } from './valuesets';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -109,6 +110,12 @@ const skippedConstraintKeys: Record<string, boolean> = {
 
 export interface ValidatorOptions {
   profile?: StructureDefinition;
+  /**
+   * Canonical URL of a previously loaded profile (`loadDataType`).
+   * Used when validating against an indexed profile schema without re-parsing
+   * a StructureDefinition resource (e.g. profile discriminator matching).
+   */
+  profileUrl?: string;
   collect?: {
     tokens?: Record<string, TypedValueWithPath[]>;
   };
@@ -141,10 +148,12 @@ class ResourceValidator implements CrawlerVisitor {
     if (isResource(typedValue.value)) {
       this.resourceStack.push(typedValue.value);
     }
-    if (!options?.profile) {
-      this.schema = getDataType(typedValue.type);
-    } else {
+    if (options?.profile) {
       this.schema = parseStructureDefinition(options.profile);
+    } else if (options?.profileUrl) {
+      this.schema = getDataType(typedValue.type, options.profileUrl);
+    } else {
+      this.schema = getDataType(typedValue.type);
     }
     this.base64BinaryMaxBytes = options?.base64BinaryMaxBytes ?? 1 * 1024 * 1024;
     this.collect = options?.collect;
@@ -681,17 +690,47 @@ function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: Intern
   return true;
 }
 
+/**
+ * Resolves a discriminator path on a parent value and tests slice membership.
+ * Shared by resource validation and schema-crawler slice matching.
+ * @param parent - The parent typed value (slice candidate).
+ * @param discriminator - The discriminator to apply.
+ * @param slice - The slice definition to test against.
+ * @param elements - Optional element map override (defaults to slice.elements).
+ * @param profileUrl - Optional profile URL for nested property resolution.
+ * @returns True if the parent matches this discriminator for the slice.
+ */
+export function matchDiscriminatorOnParent(
+  parent: TypedValue,
+  discriminator: SliceDiscriminator,
+  slice: SliceDefinition,
+  elements?: Record<string, InternalSchemaElement>,
+  profileUrl?: string
+): boolean {
+  const resolved = arrayify(getNestedProperty(parent, discriminator.path, { profileUrl }));
+  const elems = elements ?? slice.elements;
+
+  if (discriminator.type === 'exists') {
+    if (!resolved?.length) {
+      return matchDiscriminant(undefined, discriminator, slice, elems);
+    }
+    // A single resolved node may itself be an array-valued property; pass it
+    // through so presence means "non-empty". Multiple nodes: any match wins.
+    if (resolved.length === 1) {
+      return matchDiscriminant(resolved[0] as TypedValue | TypedValue[] | undefined, discriminator, slice, elems);
+    }
+    return resolved.some((v) => matchDiscriminant(v as TypedValue | undefined, discriminator, slice, elems));
+  }
+
+  return resolved?.some((v) => matchDiscriminant(v, discriminator, slice, elems)) ?? false;
+}
+
 export function matchDiscriminant(
   value: TypedValue | TypedValue[] | undefined,
   discriminator: SliceDiscriminator,
   slice: SliceDefinition,
   elements?: Record<string, InternalSchemaElement>
 ): boolean {
-  if (Array.isArray(value)) {
-    // Only single values can match
-    return false;
-  }
-
   let sliceElement: InternalSchemaElement | undefined;
   if (discriminator.path === '$this') {
     sliceElement = slice;
@@ -702,7 +741,11 @@ export function matchDiscriminant(
   const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':
-    case 'pattern':
+    case 'pattern': {
+      if (Array.isArray(value)) {
+        // Only single values can match value/pattern discriminators
+        return false;
+      }
       if (!value || !sliceElement) {
         return false;
       }
@@ -713,30 +756,127 @@ export function matchDiscriminant(
         return deepEquals(value, sliceElement.fixed);
       }
 
+      // FHIR R4: value/pattern discriminators may also distinguish slices via a
+      // required binding to an extensional ValueSet.
+      // See: https://hl7.org/fhir/R4/profiling.html#discriminator
       if (sliceElement.binding?.strength === 'required' && sliceElement.binding.valueSet) {
-        // This cannot be implemented correctly without asynchronous validation, so make it permissive for now.
-        // Ideally this should check something like value.value.coding.some((code) => isValidCode(sliceElement.binding.valueSet, code))
-        // where isValidCode is a function that checks if the code is included in the expansion of the ValueSet
+        const inSet = typedValueInValueSet(value, sliceElement.binding.valueSet);
+        if (inSet !== undefined) {
+          return inSet;
+        }
+        // ValueSet not loaded or not extensional — cannot distinguish; be
+        // permissive so profiles remain usable without a terminology server.
         return true;
       }
-      break;
-    case 'type':
-      if (!value || !sliceType?.length) {
+      return false;
+    }
+    case 'exists': {
+      // FHIR R4/R5: slices distinguished by presence vs absence. Typically one
+      // slice has min≥1 and the other max=0 on the nominated element.
+      // See: https://hl7.org/fhir/R4/profiling.html#discriminator
+      if (!sliceElement) {
+        return false;
+      }
+      const present = isDiscriminantValuePresent(value);
+      if (sliceElement.max === 0) {
+        return !present;
+      }
+      if (sliceElement.min >= 1) {
+        return present;
+      }
+      return false;
+    }
+    case 'type': {
+      if (Array.isArray(value) || !value || !sliceType?.length) {
         return false;
       }
       return sliceType.some((t) => t.code === value.type);
-    // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
+    }
+    case 'profile': {
+      // FHIR R4: slices distinguished by conformance to a profile on the
+      // nominated element (or targetProfile when the path uses resolve()).
+      // See: https://hl7.org/fhir/R4/profiling.html#discriminator
+      if (Array.isArray(value) || !value) {
+        return false;
+      }
+      return matchesProfileDiscriminant(value, sliceElement, slice, discriminator.path);
+    }
   }
   // Default to no match
   return false;
 }
 
+/**
+ * Returns whether a discriminant path value is considered "present" for an
+ * `exists` discriminator.
+ * @param value - The resolved property value(s).
+ * @returns True if a non-empty value is present.
+ */
+function isDiscriminantValuePresent(value: TypedValue | TypedValue[] | undefined): boolean {
+  if (value === undefined) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.some((v) => v !== undefined && !isEmpty(v.value));
+  }
+  return !isEmpty(value.value);
+}
+
+/**
+ * Matches a value against a `profile` discriminator using slice type profiles.
+ * @param value - The instance value at the discriminator path.
+ * @param sliceElement - The slice's element definition for the discriminator path.
+ * @param slice - The full slice definition.
+ * @param discriminatorPath - The discriminator path (may include `resolve()`).
+ * @returns True if the value conforms to a profile declared on the slice.
+ */
+function matchesProfileDiscriminant(
+  value: TypedValue,
+  sliceElement: InternalSchemaElement | undefined,
+  slice: SliceDefinition,
+  discriminatorPath: string
+): boolean {
+  const types = sliceElement?.type?.length ? sliceElement.type : slice.type;
+  if (!types?.length) {
+    return false;
+  }
+
+  const useTargetProfile = discriminatorPath.includes('resolve()');
+  const candidateProfiles = types.flatMap((t) => (useTargetProfile ? (t.targetProfile ?? []) : (t.profile ?? [])));
+  if (candidateProfiles.length === 0) {
+    return false;
+  }
+
+  return candidateProfiles.some((profileUrl) => conformsToProfile(value, profileUrl));
+}
+
+/**
+ * Checks whether a typed value conforms to a profile URL.
+ * Prefers full validation when the profile schema is loaded; falls back to a
+ * `meta.profile` assertion when the profile is not indexed.
+ * @param value - The value to check.
+ * @param profileUrl - Canonical profile URL.
+ * @returns True if conformance can be established.
+ */
+function conformsToProfile(value: TypedValue, profileUrl: string): boolean {
+  if (tryGetProfile(profileUrl)) {
+    try {
+      validateTypedValue(value, { profileUrl });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Profile schema not loaded — accept explicit profile assertion on Resources
+  const metaProfiles = (value.value as { meta?: { profile?: string[] } } | undefined)?.meta?.profile;
+  return Array.isArray(metaProfiles) && metaProfiles.includes(profileUrl);
+}
+
 function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): string | undefined {
   for (const slice of slicingRules?.slices ?? EMPTY) {
     if (
-      slicingRules?.discriminator?.every((discriminator) =>
-        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
-      )
+      slicingRules?.discriminator?.every((discriminator) => matchDiscriminatorOnParent(value, discriminator, slice))
     ) {
       return slice.name;
     }

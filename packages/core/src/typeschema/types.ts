@@ -383,11 +383,19 @@ class StructureDefinitionParser {
     }
     field.slicing = {
       discriminator: (element.slicing?.discriminator ?? []).map((d) => {
-        if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
+        // FHIR R4 DiscriminatorType: value | exists | pattern | type | profile
+        // See: https://hl7.org/fhir/R4/codesystem-discriminator-type.html
+        if (
+          d.type !== 'value' &&
+          d.type !== 'exists' &&
+          d.type !== 'pattern' &&
+          d.type !== 'type' &&
+          d.type !== 'profile'
+        ) {
           throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
         }
         return {
-          path: d.path,
+          path: d.path as string,
           type: d.type,
         };
       }),

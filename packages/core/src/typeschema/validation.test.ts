@@ -43,7 +43,10 @@ import { generateId } from '../crypto';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
-import { validateResource, validateTypedValue } from './validation';
+import type { SliceDefinition } from './types';
+import { matchDiscriminant, validateResource, validateTypedValue } from './validation';
+import { clearValueSets, loadValueSet } from './valuesets';
+import { toTypedValue } from '../fhirpath/utils';
 
 const VALID_BP: Observation = {
   resourceType: 'Observation',
@@ -771,10 +774,28 @@ describe('FHIR resource validation', () => {
       expect(() => validateResource(conditionNoCategory, { profile: healthConcernsProfile })).toThrow();
     });
 
-    // Slicing by ValueSet not supported without async validation. Ideally validating this resource would fail,
-    // but it must pass for now to make it possible to save resources against profiles using ValueSet slicing
-    // like https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-condition-problems-health-concerns.html
-    test.fails('Populated but missing required Condition.category', () => {
+    // Slicing by required ValueSet binding (FHIR R4 profiling §discriminator).
+    // With the ValueSet loaded, a category outside the bound set must not match
+    // the required `us-core` slice.
+    test('Populated but missing required Condition.category', () => {
+      loadValueSet({
+        resourceType: 'ValueSet',
+        url: 'http://hl7.org/fhir/us/core/ValueSet/us-core-problem-or-health-concern',
+        status: 'active',
+        compose: {
+          include: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              concept: [{ code: 'problem-list-item' }],
+            },
+            {
+              system: 'http://hl7.org/fhir/us/core/CodeSystem/condition-category',
+              concept: [{ code: 'health-concern' }],
+            },
+          ],
+        },
+      });
+
       const conditionWrongCategory = deepClone(baseCondition);
       conditionWrongCategory.category = [
         {
@@ -2058,6 +2079,201 @@ describe('FHIR resource validation', () => {
         )
       )
     );
+  });
+});
+
+describe('FHIR R4 discriminator types', () => {
+  afterEach(() => {
+    clearValueSets();
+  });
+
+  test('exists discriminator matches presence vs absence', () => {
+    const presentSlice: SliceDefinition = {
+      name: 'withPeriod',
+      path: 'Patient.identifier',
+      description: '',
+      min: 1,
+      max: 1,
+      type: [{ code: 'Identifier' }],
+      elements: {
+        period: {
+          description: '',
+          path: 'Patient.identifier.period',
+          min: 1,
+          max: 1,
+          type: [{ code: 'Period' }],
+        },
+      },
+    };
+    const absentSlice: SliceDefinition = {
+      name: 'withoutPeriod',
+      path: 'Patient.identifier',
+      description: '',
+      min: 0,
+      max: 1,
+      type: [{ code: 'Identifier' }],
+      elements: {
+        period: {
+          description: '',
+          path: 'Patient.identifier.period',
+          min: 0,
+          max: 0,
+          type: [{ code: 'Period' }],
+        },
+      },
+    };
+    const discriminator = { type: 'exists', path: 'period' };
+
+    expect(
+      matchDiscriminant(toTypedValue({ start: '2020-01-01' }), discriminator, presentSlice, presentSlice.elements)
+    ).toBe(true);
+    expect(matchDiscriminant(undefined, discriminator, presentSlice, presentSlice.elements)).toBe(false);
+
+    expect(matchDiscriminant(undefined, discriminator, absentSlice, absentSlice.elements)).toBe(true);
+    expect(
+      matchDiscriminant(toTypedValue({ start: '2020-01-01' }), discriminator, absentSlice, absentSlice.elements)
+    ).toBe(false);
+  });
+
+  test('profile discriminator matches loaded profile conformance', () => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
+    const patientProfileA: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://example.org/StructureDefinition/patient-profile-a',
+      name: 'PatientProfileA',
+      status: 'active',
+      kind: 'resource',
+      abstract: false,
+      type: 'Patient',
+      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/Patient',
+      derivation: 'constraint',
+      snapshot: {
+        element: [
+          { id: 'Patient', path: 'Patient', min: 0, max: '*' },
+          {
+            id: 'Patient.active',
+            path: 'Patient.active',
+            min: 1,
+            max: '1',
+            type: [{ code: 'boolean' }],
+          },
+        ],
+      },
+    };
+    loadDataType(patientProfileA);
+
+    const slice: SliceDefinition = {
+      name: 'profileA',
+      path: 'Bundle.entry',
+      description: '',
+      min: 1,
+      max: 1,
+      type: [{ code: 'BackboneElement' }],
+      elements: {
+        resource: {
+          description: '',
+          path: 'Bundle.entry.resource',
+          min: 1,
+          max: 1,
+          type: [
+            {
+              code: 'Patient',
+              profile: ['http://example.org/StructureDefinition/patient-profile-a'],
+            },
+          ],
+        },
+      },
+    };
+    const discriminator = { type: 'profile', path: 'resource' };
+
+    const conforming = toTypedValue({ resourceType: 'Patient', active: true });
+    conforming.type = 'Patient';
+    expect(matchDiscriminant(conforming, discriminator, slice, slice.elements)).toBe(true);
+
+    const nonConforming = toTypedValue({ resourceType: 'Patient', gender: 'male' });
+    nonConforming.type = 'Patient';
+    expect(matchDiscriminant(nonConforming, discriminator, slice, slice.elements)).toBe(false);
+  });
+
+  test('profile discriminator falls back to meta.profile when schema not loaded', () => {
+    const slice: SliceDefinition = {
+      name: 'asserted',
+      path: 'Bundle.entry',
+      description: '',
+      min: 0,
+      max: 1,
+      type: [{ code: 'BackboneElement' }],
+      elements: {
+        resource: {
+          description: '',
+          path: 'Bundle.entry.resource',
+          min: 1,
+          max: 1,
+          type: [
+            {
+              code: 'Patient',
+              profile: ['http://example.org/StructureDefinition/unloaded-profile'],
+            },
+          ],
+        },
+      },
+    };
+    const discriminator = { type: 'profile', path: 'resource' };
+
+    const asserted = toTypedValue({
+      resourceType: 'Patient',
+      meta: { profile: ['http://example.org/StructureDefinition/unloaded-profile'] },
+    });
+    asserted.type = 'Patient';
+    expect(matchDiscriminant(asserted, discriminator, slice, slice.elements)).toBe(true);
+
+    const notAsserted = toTypedValue({ resourceType: 'Patient' });
+    notAsserted.type = 'Patient';
+    expect(matchDiscriminant(notAsserted, discriminator, slice, slice.elements)).toBe(false);
+  });
+
+  test('value discriminator with required ValueSet binding matches extensional codes', () => {
+    loadValueSet({
+      resourceType: 'ValueSet',
+      url: 'http://example.org/ValueSet/telecom-systems',
+      status: 'active',
+      compose: {
+        include: [
+          {
+            system: 'http://hl7.org/fhir/contact-point-system',
+            concept: [{ code: 'phone' }, { code: 'email' }],
+          },
+        ],
+      },
+    });
+
+    const slice: SliceDefinition = {
+      name: 'allowed',
+      path: 'Patient.telecom',
+      description: '',
+      min: 1,
+      max: Number.POSITIVE_INFINITY,
+      type: [{ code: 'ContactPoint' }],
+      elements: {
+        system: {
+          description: '',
+          path: 'Patient.telecom.system',
+          min: 1,
+          max: 1,
+          type: [{ code: 'code' }],
+          binding: {
+            strength: 'required',
+            valueSet: 'http://example.org/ValueSet/telecom-systems',
+          },
+        },
+      },
+    };
+    const discriminator = { type: 'value', path: 'system' };
+
+    expect(matchDiscriminant(toTypedValue('email'), discriminator, slice, slice.elements)).toBe(true);
+    expect(matchDiscriminant(toTypedValue('fax'), discriminator, slice, slice.elements)).toBe(false);
   });
 });
 
