@@ -37,7 +37,7 @@ export interface AppointmentServiceSelectProps {
  * @returns The service field.
  */
 export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): JSX.Element {
-  const { location, defaultValue, onChange, label = 'Service type', error, disabled } = props;
+  const { location, defaultValue, onChange, label = 'Visit type', error, disabled } = props;
   const medplum = useMedplum();
 
   const locationReference = location && getReferenceString(location);
