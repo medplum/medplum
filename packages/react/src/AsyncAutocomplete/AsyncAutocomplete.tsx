@@ -91,37 +91,39 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const timerRef = useRef<number>(timer);
   const abortControllerRef = useRef<AbortController>(abortController);
   const autoSubmitRef = useRef<boolean>(false);
+  const selectedRef = useRef(selected);
   useLayoutEffect(() => {
     searchRef.current = search;
     timerRef.current = timer;
     abortControllerRef.current = abortController;
+    selectedRef.current = selected;
   });
 
   const handleValueAdd = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
-      setSelected((selected) => {
-        if (selected.some((v) => v.value === item.value)) {
-          return selected;
+      const selected = selectedRef.current;
+      if (selected.some((v) => v.value === item.value)) {
+        return;
+      }
+
+      // when maxValues is 0, still fire the onChange when an item is selected
+      if (maxValues === 0) {
+        onChange([item.resource]);
+        setSelected([]);
+        return;
+      }
+
+      const newSelected = [...selected, item];
+
+      if (maxValues !== undefined) {
+        while (newSelected.length > maxValues) {
+          // Remove from the front
+          newSelected.shift();
         }
+      }
 
-        // when maxValues is 0, still fire the onChange when an item is selected
-        if (maxValues === 0) {
-          onChange([item.resource]);
-          return [];
-        }
-
-        const newSelected = [...selected, item];
-
-        if (maxValues !== undefined) {
-          while (newSelected.length > maxValues) {
-            // Remove from the front
-            newSelected.shift();
-          }
-        }
-
-        onChange(newSelected.map((v) => v.resource));
-        return newSelected;
-      });
+      onChange(newSelected.map((v) => v.resource));
+      setSelected(newSelected);
     },
     [maxValues, onChange]
   );

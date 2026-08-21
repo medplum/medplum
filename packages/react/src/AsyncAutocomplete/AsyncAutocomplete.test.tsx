@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import type { JSX } from 'react';
+import { StrictMode } from 'react';
 import {
   act,
   fireEvent,
@@ -420,6 +421,38 @@ describe('AsyncAutocomplete', () => {
     expect(onChange).toHaveBeenCalledWith([apple]);
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
     expect(selected.getByText('Apple')).toBeInTheDocument();
+  });
+
+  test('autosubmit under React.StrictMode calls onChange exactly once', async () => {
+    // Regression test: handleValueAdd must not call onChange from inside a setState updater function,
+    // since React double-invokes updater functions under StrictMode to surface impurities.
+    const deferred = createDeferred<TestOption[]>();
+    const onChange = vi.fn();
+    const loadOptions = vi.fn(() => deferred.promise);
+    render(
+      <AsyncAutocomplete<TestOption> toOption={toOption} loadOptions={loadOptions} onChange={onChange} />,
+      ({ children }) => <StrictMode>{children}</StrictMode>
+    );
+
+    const input = screen.getByRole('searchbox');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'ap' } });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      deferred.resolve([apple, cherry]);
+      await Promise.resolve();
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith([apple]);
   });
 
   test('custom item, pill, and empty components render', async () => {
