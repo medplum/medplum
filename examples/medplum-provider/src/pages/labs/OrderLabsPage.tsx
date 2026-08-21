@@ -3,7 +3,7 @@
 import { Button, Container, Group, Input, Radio, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, normalizeErrorString } from '@medplum/core';
 import type {
   Coding,
   Encounter,
@@ -39,6 +39,8 @@ import { useParams } from 'react-router';
 import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { relinkChargeItemToLabOrder } from '../../utils/chargeitems';
+import { addDiagnosesToEncounter } from '../../utils/conditions';
 import { showErrorNotification } from '../../utils/notifications';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
@@ -122,14 +124,30 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     try {
       setIsSubmitting(true);
       setCreateError(undefined);
-      let { serviceRequest } = await createOrderBundle();
+      const orderBundleResult = await createOrderBundle();
+      const { transactionResponse } = orderBundleResult;
+      let { serviceRequest } = orderBundleResult;
       if (encounterResource) {
-        serviceRequest = {
+        const encounterRef = createReference(encounterResource);
+        // Persist the encounter link before executing the bot, which re-reads the order from the server
+        serviceRequest = await medplum.updateResource({
           ...serviceRequest,
-          encounter: createReference(encounterResource),
-        };
+          encounter: encounterRef,
+        });
+        const testServiceRequests = (transactionResponse.entry ?? [])
+          .map((entry) => entry.resource)
+          .filter(
+            (resource): resource is ServiceRequest =>
+              resource?.resourceType === 'ServiceRequest' && resource.id !== serviceRequest.id
+          );
+        await Promise.all(
+          testServiceRequests.map((testServiceRequest) =>
+            medplum.updateResource({ ...testServiceRequest, encounter: encounterRef })
+          )
+        );
       }
       if (taskResource) {
+        const previousFocusRef = taskResource.focus?.reference;
         await medplum.updateResource({
           ...taskResource,
           output: [
@@ -141,8 +159,24 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
           ],
           focus: createReference(serviceRequest),
         });
+        if (encounterResource) {
+          await relinkChargeItemToLabOrder(medplum, createReference(encounterResource), previousFocusRef, serviceRequest);
+        }
       }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
+
+      if (encounterResource && patient && serviceRequest.reasonCode?.length) {
+        try {
+          await addDiagnosesToEncounter(medplum, patient, encounterResource, serviceRequest.reasonCode);
+        } catch (error) {
+          // The order was already placed; surface the write-back failure without failing the submit
+          showNotification({
+            title: 'Diagnoses not added to encounter',
+            message: normalizeErrorString(error),
+            color: 'yellow',
+          });
+        }
+      }
 
       showNotification({
         title: 'Lab Order Submitted',

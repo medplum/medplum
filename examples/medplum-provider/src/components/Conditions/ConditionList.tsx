@@ -15,7 +15,7 @@ interface ConditionListProps {
   encounter: Encounter;
   conditions: Condition[] | undefined;
   setConditions: (conditions: Condition[]) => void;
-  onDiagnosisChange: (diagnosis: EncounterDiagnosis[]) => void;
+  onDiagnosisChange: (diagnosis: EncounterDiagnosis[], updatedConditions: Condition[]) => void;
 }
 
 export const ConditionList = (props: ConditionListProps): JSX.Element => {
@@ -102,7 +102,8 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
       updatedConditions.map((c, index) => ({
         condition: { reference: `Condition/${c.id}` },
         rank: index + 1,
-      }))
+      })),
+      updatedConditions
     );
   };
 
@@ -113,7 +114,6 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
 
     try {
       await medplum.deleteResource('Condition', condition.id as string);
-      setConditions(conditions?.filter((c) => c.id !== condition.id));
       const updatedDiagnosis = encounter.diagnosis?.filter(
         (d) => d.condition?.reference !== getReferenceString(condition)
       );
@@ -122,8 +122,9 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
         rank: index + 1,
       }));
 
-      setConditions(conditions?.filter((c) => c.id !== condition.id) || []);
-      onDiagnosisChange(reindexedDiagnosis || []);
+      const remainingConditions = conditions?.filter((c) => c.id !== condition.id) || [];
+      setConditions(remainingConditions);
+      onDiagnosisChange(reindexedDiagnosis || [], remainingConditions);
     } catch (err) {
       showErrorNotification(err);
     }
@@ -140,8 +141,9 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
             rank: encounter.diagnosis?.length ? encounter.diagnosis.length + 1 : 1,
           },
         ];
-        setConditions([...(conditions || []), newCondition]);
-        onDiagnosisChange(updatedDiagnosis);
+        const updatedConditions = [...(conditions || []), newCondition];
+        setConditions(updatedConditions);
+        onDiagnosisChange(updatedDiagnosis, updatedConditions);
       }
     } catch (err) {
       showErrorNotification(err);

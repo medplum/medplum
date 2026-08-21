@@ -208,6 +208,123 @@ describe('ConditionList', () => {
     });
   });
 
+  test('reorders conditions when a rank is changed', async () => {
+    const user = userEvent.setup();
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+
+    const condition2: Condition = {
+      ...mockCondition,
+      id: 'condition-456',
+      code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I10', display: 'Essential hypertension' }] },
+    };
+    const condition3: Condition = {
+      ...mockCondition,
+      id: 'condition-789',
+      code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9', display: 'Type 2 diabetes' }] },
+    };
+
+    setup({
+      conditions: [mockCondition, condition2, condition3],
+      setConditions,
+      onDiagnosisChange,
+    });
+
+    // Move the first condition (rank 1) to rank 3.
+    // The dropdown options stay aria-hidden in jsdom, so query with hidden: true.
+    const rankSelects = screen.getAllByRole('textbox');
+    await user.click(rankSelects[0]);
+    const options = await screen.findAllByRole('option', { name: '3', hidden: true });
+    await user.click(options[0]);
+
+    await waitFor(() => {
+      expect(setConditions).toHaveBeenCalledWith([condition2, condition3, mockCondition]);
+      expect(onDiagnosisChange).toHaveBeenCalledWith(
+        [
+          { condition: { reference: 'Condition/condition-456' }, rank: 1 },
+          { condition: { reference: 'Condition/condition-789' }, rank: 2 },
+          { condition: { reference: 'Condition/condition-123' }, rank: 3 },
+        ],
+        [condition2, condition3, mockCondition]
+      );
+    });
+  });
+
+  test('sorts fetched conditions by encounter diagnosis rank', async () => {
+    const conditionA: Condition = { ...mockCondition, id: 'condition-a' };
+    const conditionB: Condition = {
+      ...mockCondition,
+      id: 'condition-b',
+      code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I10', display: 'Essential hypertension' }] },
+    };
+    await medplum.createResource(conditionA);
+    await medplum.createResource(conditionB);
+
+    const encounter: WithId<Encounter> = {
+      ...mockEncounter,
+      diagnosis: [
+        { condition: { reference: 'Condition/condition-a' }, rank: 2 },
+        { condition: { reference: 'Condition/condition-b' }, rank: 1 },
+      ],
+    };
+
+    const setConditions = vi.fn();
+    setup({ encounter, setConditions });
+
+    await waitFor(() => {
+      expect(setConditions).toHaveBeenCalledWith([
+        expect.objectContaining({ id: 'condition-b' }),
+        expect.objectContaining({ id: 'condition-a' }),
+      ]);
+    });
+  });
+
+  test('does not update state when delete fails', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    const user = userEvent.setup();
+
+    vi.spyOn(medplum, 'deleteResource').mockRejectedValue(new Error('Delete failed'));
+
+    setup({
+      conditions: [mockCondition],
+      setConditions,
+      onDiagnosisChange,
+    });
+
+    const removeButtons = screen.getAllByRole('button', { hidden: true });
+    const removeButton = removeButtons.find((btn) => btn.querySelector('svg'));
+
+    if (!removeButton) {
+      throw new Error('Remove button not found');
+    }
+
+    await user.click(removeButton);
+
+    await waitFor(() => {
+      expect(medplum.deleteResource).toHaveBeenCalledWith('Condition', 'condition-123');
+    });
+    expect(setConditions).not.toHaveBeenCalled();
+    expect(onDiagnosisChange).not.toHaveBeenCalled();
+  });
+
+  test('closes add diagnosis modal', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
   test('creates a new condition with cholera ICD-10 code and active status', async () => {
     const user = userEvent.setup();
     const setConditions = vi.fn();

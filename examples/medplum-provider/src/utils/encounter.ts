@@ -235,6 +235,7 @@ async function createChargeItemFromServiceRequest(
     context: serviceRequest.encounter,
     occurrenceDateTime: serviceRequest.occurrenceDateTime || new Date().toISOString(),
     code: serviceRequest.code || { coding: [] },
+    ...(serviceRequest.reasonCode?.length ? { reason: serviceRequest.reasonCode } : {}),
     quantity: {
       value: 1,
     },

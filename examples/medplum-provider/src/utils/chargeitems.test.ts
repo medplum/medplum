@@ -1,12 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { ChargeItem, ChargeItemDefinition, Encounter } from '@medplum/fhirtypes';
+import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Condition, Encounter, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as chargeitemsModule from './chargeitems';
 
-const { applyChargeItemDefinition, getChargeItemsForEncounter, calculateTotalPrice } = chargeitemsModule;
+const {
+  applyChargeItemDefinition,
+  getChargeItemsForEncounter,
+  calculateTotalPrice,
+  relinkChargeItemToLabOrder,
+  syncEncounterDiagnosesToVisitChargeItems,
+} =
+  chargeitemsModule;
 
 describe('chargeitems utils', () => {
   let medplum: MockClient;
@@ -137,6 +144,164 @@ describe('chargeitems utils', () => {
       ];
 
       expect(calculateTotalPrice(items)).toBe(45.5);
+    });
+  });
+
+  describe('syncEncounterDiagnosesToVisitChargeItems', () => {
+    const encounter: Encounter = {
+      resourceType: 'Encounter',
+      id: 'encounter-1',
+      status: 'in-progress',
+      class: { code: 'AMB' },
+    };
+    const conditions: Condition[] = [
+      {
+        resourceType: 'Condition',
+        id: 'cond-1',
+        subject: { reference: 'Patient/patient-1' },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E75.6' }] },
+      },
+      {
+        resourceType: 'Condition',
+        id: 'cond-2',
+        subject: { reference: 'Patient/patient-1' },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'I10' }] },
+      },
+    ];
+
+    function visitChargeItem(): ChargeItem {
+      return {
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '99203' }] },
+        subject: { reference: 'Patient/patient-1' },
+        context: { reference: 'Encounter/encounter-1' },
+      };
+    }
+
+    test('sets reason on charge items without a ServiceRequest link, in rank order', async () => {
+      const visitItem = await medplum.createResource<ChargeItem>(visitChargeItem());
+      const orderItem = await medplum.createResource<ChargeItem>({
+        ...visitChargeItem(),
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        supportingInformation: [{ reference: 'ServiceRequest/lab-order-1' }],
+      });
+
+      const updated = await syncEncounterDiagnosesToVisitChargeItems(medplum, encounter, conditions);
+
+      expect(updated).toHaveLength(1);
+      expect(updated[0].id).toBe(visitItem.id);
+      expect(updated[0].reason).toEqual([conditions[0].code, conditions[1].code]);
+      const untouchedOrderItem = await medplum.readResource('ChargeItem', orderItem.id);
+      expect(untouchedOrderItem.reason).toBeUndefined();
+    });
+
+    test('is a no-op when reason already matches', async () => {
+      await medplum.createResource<ChargeItem>({
+        ...visitChargeItem(),
+        reason: [conditions[0].code as CodeableConcept, conditions[1].code as CodeableConcept],
+      });
+
+      const updated = await syncEncounterDiagnosesToVisitChargeItems(medplum, encounter, conditions);
+      expect(updated).toHaveLength(0);
+    });
+
+    test('clears reason when the encounter has no diagnoses left', async () => {
+      const visitItem = await medplum.createResource<ChargeItem>({
+        ...visitChargeItem(),
+        reason: [conditions[0].code as CodeableConcept],
+      });
+
+      const updated = await syncEncounterDiagnosesToVisitChargeItems(medplum, encounter, []);
+
+      expect(updated).toHaveLength(1);
+      expect(updated[0].id).toBe(visitItem.id);
+      expect(updated[0].reason).toBeUndefined();
+    });
+  });
+
+  describe('relinkChargeItemToLabOrder', () => {
+    const encounterRef = { reference: 'Encounter/encounter-1' };
+    const labOrder: WithId<ServiceRequest> = {
+      resourceType: 'ServiceRequest',
+      id: 'lab-order-1',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/patient-1' },
+      reasonCode: [{ coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] }],
+    };
+
+    test('repoints supportingInformation and copies reasonCode', async () => {
+      const chargeItem = await medplum.createResource<ChargeItem>({
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        subject: { reference: 'Patient/patient-1' },
+        context: encounterRef,
+        supportingInformation: [{ reference: 'ServiceRequest/draft-sr-1' }],
+      });
+
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', labOrder);
+
+      expect(result?.id).toBe(chargeItem.id);
+      expect(result?.supportingInformation).toEqual([{ reference: 'ServiceRequest/lab-order-1' }]);
+      expect(result?.reason).toEqual(labOrder.reasonCode);
+    });
+
+    test('preserves other supportingInformation entries', async () => {
+      await medplum.createResource<ChargeItem>({
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        subject: { reference: 'Patient/patient-1' },
+        context: encounterRef,
+        supportingInformation: [{ reference: 'DocumentReference/doc-1' }, { reference: 'ServiceRequest/draft-sr-1' }],
+      });
+
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', labOrder);
+
+      expect(result?.supportingInformation).toEqual([
+        { reference: 'DocumentReference/doc-1' },
+        { reference: 'ServiceRequest/lab-order-1' },
+      ]);
+    });
+
+    test('returns undefined when no ChargeItem references the draft order', async () => {
+      await medplum.createResource<ChargeItem>({
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        subject: { reference: 'Patient/patient-1' },
+        context: encounterRef,
+        supportingInformation: [{ reference: 'ServiceRequest/other-sr' }],
+      });
+
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', labOrder);
+      expect(result).toBeUndefined();
+    });
+
+    test('returns undefined without a previous reference', async () => {
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, undefined, labOrder);
+      expect(result).toBeUndefined();
+    });
+
+    test('omits reason when the order has no reasonCode', async () => {
+      await medplum.createResource<ChargeItem>({
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        subject: { reference: 'Patient/patient-1' },
+        context: encounterRef,
+        supportingInformation: [{ reference: 'ServiceRequest/draft-sr-1' }],
+      });
+
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', {
+        ...labOrder,
+        reasonCode: undefined,
+      });
+
+      expect(result?.supportingInformation).toEqual([{ reference: 'ServiceRequest/lab-order-1' }]);
+      expect(result?.reason).toBeUndefined();
     });
   });
 });

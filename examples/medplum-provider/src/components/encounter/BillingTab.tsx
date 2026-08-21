@@ -26,7 +26,7 @@ import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
 import { refreshCandidClaimResponse } from '../../utils/candid';
-import { getChargeItemsForEncounter } from '../../utils/chargeitems';
+import { getChargeItemsForEncounter, syncEncounterDiagnosesToVisitChargeItems } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
@@ -140,12 +140,24 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [fetchClaimResponse]);
 
   const handleDiagnosisChange = useCallback(
-    async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
+    async (diagnosis: EncounterDiagnosis[], updatedConditions: Condition[]): Promise<void> => {
       const updatedEncounter = { ...encounter, diagnosis };
       setEncounter(updatedEncounter);
       await debouncedUpdateResource(updatedEncounter);
+      try {
+        const syncedChargeItems = await syncEncounterDiagnosesToVisitChargeItems(
+          medplum,
+          updatedEncounter,
+          updatedConditions
+        );
+        if (syncedChargeItems.length > 0) {
+          setChargeItems((prev) => prev.map((item) => syncedChargeItems.find((u) => u.id === item.id) ?? item));
+        }
+      } catch (err) {
+        showErrorNotification(err);
+      }
     },
-    [encounter, setEncounter, debouncedUpdateResource]
+    [encounter, setEncounter, debouncedUpdateResource, medplum]
   );
 
   const generateClaim = useCallback(
