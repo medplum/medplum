@@ -257,7 +257,8 @@ class ResourceValidator implements CrawlerVisitor {
     field: InternalSchemaElement,
     path: string
   ): boolean {
-    if (!Array.isArray(value) && value.value === undefined) {
+    // A primitive extension with no value still satisfies the presence of the element.
+    if (!Array.isArray(value) && value.value === undefined && value.primitiveExtension === undefined) {
       if (field.min > 0) {
         this.issues.push(createStructureIssue(value.path, 'Missing required property'));
       }
@@ -360,7 +361,12 @@ class ResourceValidator implements CrawlerVisitor {
         choiceOfTypeElements[choiceOfTypeElementName] = key;
         continue;
       }
-      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties) && object[key] !== undefined) {
+
+      if (
+        !Object.hasOwn(properties, key) &&
+        !(key.startsWith('_') && Object.hasOwn(properties, key.slice(1))) &&
+        object[key] !== undefined
+      ) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
@@ -508,11 +514,11 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   private validatePrimitiveType(typedValue: TypedValueWithPath): void {
-    const [primitiveValue, extensionElement] = unpackPrimitiveElement(typedValue);
+    const { type, value, primitiveExtension } = typedValue;
     const path = typedValue.path;
 
-    if (primitiveValue) {
-      const { type, value } = primitiveValue;
+    // A primitive may carry only an extension, in which case there is no value to check
+    if (value !== undefined) {
       // First, make sure the value is the correct JS type
       if (!(type in fhirTypeToJsType)) {
         this.issues.push(createStructureIssue(path, `Invalid JSON type: ${type} is not a valid FHIR type`));
@@ -538,8 +544,17 @@ class ResourceValidator implements CrawlerVisitor {
         this.validateNumber(value as number, type, path);
       }
     }
-    if (extensionElement) {
-      crawlTypedValue(extensionElement, this, { schema: getDataType('Element'), initialPath: path });
+    if (primitiveExtension !== undefined) {
+      if (typeof primitiveExtension !== 'object') {
+        this.issues.push(
+          createStructureIssue(path, `Invalid JSON type: expected object, but got ${typeof primitiveExtension}`)
+        );
+        return;
+      }
+      crawlTypedValue({ type: 'Element', value: primitiveExtension }, this, {
+        schema: getDataType('Element'),
+        initialPath: path,
+      });
     }
   }
 
@@ -742,23 +757,6 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
     }
   }
   return undefined;
-}
-
-function unpackPrimitiveElement(v: TypedValue): [TypedValue | undefined, TypedValue | undefined] {
-  if (typeof v.value !== 'object' || !v.value) {
-    return [v, undefined];
-  }
-  const primitiveValue = v.value.valueOf();
-  if (primitiveValue === v.value) {
-    return [undefined, { type: 'Element', value: v.value }];
-  }
-  const primitiveKeys = new Set(Object.keys(primitiveValue));
-  const extensionEntries = Object.entries(v.value).filter(([k, _]) => !primitiveKeys.has(k));
-  const extensionElement = extensionEntries.length > 0 ? Object.fromEntries(extensionEntries) : undefined;
-  return [
-    { type: v.type, value: primitiveValue },
-    { type: 'Element', value: extensionElement },
-  ];
 }
 
 /**

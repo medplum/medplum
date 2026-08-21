@@ -4,6 +4,7 @@ import type {
   Bundle,
   CodeableConcept,
   Coding,
+  Element,
   ElementDefinition,
   Reference,
   Resource,
@@ -30,6 +31,15 @@ export type TypeName<T> = T extends string
 export interface TypedValue {
   readonly type: string;
   readonly value: any;
+  /**
+   * The FHIR "primitive element" sibling of this value, i.e. the `_propertyName` object carrying
+   * `id` and `extension` for a primitive. Present only when the source JSON had one.
+   *
+   * The extension is kept alongside the value rather than attached to it, so that `value` remains
+   * a true primitive and `typeof` narrowing keeps working downstream.
+   * @see {@link https://hl7.org/fhir/R4/json.html#primitive}
+   */
+  readonly primitiveExtension?: Element;
 }
 
 /**
