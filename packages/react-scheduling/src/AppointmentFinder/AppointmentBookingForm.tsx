@@ -1,10 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Loader, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Loader, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, getSchedulingTimezone, isDefined, normalizeErrorString } from '@medplum/core';
-import type { Appointment, HealthcareService, Location } from '@medplum/fhirtypes';
+import {
+  createReference,
+  formatDate,
+  getIdentifier,
+  getIdentifierByType,
+  getReferenceString,
+  getSchedulingTimezone,
+  isDefined,
+  MRN_IDENTIFIER_TYPE,
+  normalizeErrorString,
+} from '@medplum/core';
+import type { Appointment, Bundle, HealthcareService, Location, Patient, Slot } from '@medplum/fhirtypes';
+import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -17,6 +29,7 @@ import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.sch
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
 import { endOfDay, getDurationMinutes, getFindWindowError, groupAppointmentsByDay } from './AppointmentFinder.times';
+import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 import { useProposedAppointments } from './useProposedAppointments';
@@ -26,15 +39,28 @@ import { useProposedAppointments } from './useProposedAppointments';
 // because it is a Medplum search parameter, so paging survives it.
 const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
+// Birth date rather than name: the list is already narrowed by the name that was
+// typed, so what orders it usefully is the thing that tells those people apart.
+const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'birthdate' };
+
 // Nothing has scanned a month for the days that have times on them, so every day
 // is offered and the search is what answers.
 const NO_MARKED_DATES: Date[] = [];
+
+/** What a booking wrote, as `Appointment/$book` returned it. */
+export interface AppointmentBooking {
+  readonly appointment: WithId<Appointment>;
+  /** The times reserved for it, one per schedule it is held on. */
+  readonly slots: readonly WithId<Slot>[];
+}
 
 export interface AppointmentBookingFormProps {
   /** Pre-fills where the visit is, for a host that already knows. */
   readonly defaultLocation?: WithId<Location>;
   /** Pre-fills the visit type, for a deep link or a reschedule. */
   readonly defaultService?: WithId<HealthcareService>;
+  /** Pre-fills who the visit is for, for a host launching from a patient's chart. */
+  readonly defaultPatient?: WithId<Patient>;
   /**
    * The day the time search opens on. Defaults to today.
    *
@@ -42,6 +68,14 @@ export interface AppointmentBookingFormProps {
    * chosen, so a pre-filled time could not survive its own validation.
    */
   readonly defaultStart?: Date;
+  /**
+   * The `Identifier.system` a project issues medical record numbers under.
+   *
+   * Only needed where identifiers carry no `type`. Which identifier is the
+   * medical record number is a project's own convention, and there is nothing on
+   * an untyped one to recognise it by.
+   */
+  readonly mrnSystem?: string;
   /**
    * Called when the time search opens or closes.
    *
@@ -57,10 +91,22 @@ export interface AppointmentBookingFormProps {
    * want to shade its own calendar with.
    */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
+  /**
+   * Takes the booking over, instead of the form writing it.
+   *
+   * For a host doing something other than `$book` with the proposal — holding it
+   * through `$hold`, or writing it inside a transaction of its own. The form
+   * writes nothing and announces nothing in that case, so a host taking this over
+   * owns invalidating its own caches.
+   */
+  readonly onBook?: (proposal: Appointment) => void | Promise<void>;
+  /** Called with what the booking wrote. Not called when `onBook` took it over. */
+  readonly onBooked: (booking: AppointmentBooking) => void | Promise<void>;
 }
 
 /**
- * Gathers what a visit is held on, and finds a time every one of them is free.
+ * Gathers what a visit is held on, finds a time every one of them is free, and
+ * books it.
  *
  * Narrow by site and visit type, then name the actors: one field per scheduling
  * role, each searching the schedules bookable for that type. Everything named
@@ -73,11 +119,27 @@ export interface AppointmentBookingFormProps {
  * chosen: the field holding it accepts no input, so nothing can be booked onto time
  * that was never checked against anybody's availability.
  *
+ * The booking itself is the form's, not the host's: it posts `Appointment/$book`
+ * and announces what came back, so a host embedding this needs no scheduling API
+ * code of its own. `onBook` is there for the host that wants it anyway.
+ *
  * @param props - The React props.
  * @returns The form.
  */
 export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.Element {
-  const { defaultLocation, defaultService, defaultStart, onToggleTimeFinder, onChangeService } = props;
+  const {
+    defaultLocation,
+    defaultService,
+    defaultPatient,
+    defaultStart,
+    mrnSystem,
+    onToggleTimeFinder,
+    onChangeService,
+    onBook,
+    onBooked,
+  } = props;
+
+  const medplum = useMedplum();
 
   const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
@@ -91,6 +153,12 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   // than the chosen values, so a field is never remounted out from under a pick.
   const [roleFieldsKey, setRoleFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
+  const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
+  const [reason, setReason] = useState('');
+  const [comment, setComment] = useState('');
+  const [patientInstruction, setPatientInstruction] = useState('');
+  const [booking, setBooking] = useState(false);
+  const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
   const windowError = getFindWindowError(range);
@@ -129,6 +197,13 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
       onToggleTimeFinder?.(searching);
     }
   }, [searching, onToggleTimeFinder]);
+
+  const patientItem = useCallback(
+    (option: AsyncAutocompleteOption<WithId<Patient>>) => (
+      <AppointmentOptionRow label={option.label} detail={formatPatientDetail(option.resource, mrnSystem)} />
+    ),
+    [mrnSystem]
+  );
 
   function toggleFinder(): void {
     setFinding(!finding);
@@ -177,8 +252,53 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     setChosen(undefined);
   }
 
+  async function bookAppointment(): Promise<void> {
+    if (!chosen || !patient) {
+      return;
+    }
+
+    setBooking(true);
+    setBookError(undefined);
+    try {
+      const proposal = buildBooking(chosen, patient, { reason, comment, patientInstruction });
+
+      if (onBook) {
+        await onBook(proposal);
+        return;
+      }
+
+      const written = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+        medplum.fhirUrl('Appointment', '$book'),
+        { resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: proposal }] }
+      );
+      const booked = readBooking(written);
+
+      // `$book` is a custom operation, so the client cannot tell what it changed.
+      // Announcing it is what refreshes a host's calendar beside this form.
+      medplum.notifyResourceModified({
+        resourceType: 'Appointment',
+        operation: 'create',
+        id: booked.appointment.id,
+        resource: booked.appointment,
+      });
+      for (const slot of booked.slots) {
+        medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
+      }
+
+      await onBooked(booked);
+    } catch (error) {
+      // Left on screen with every answer still filled in: a refusal is usually
+      // somebody else taking the time, and the next attempt is one field away.
+      setBookError(error);
+    } finally {
+      setBooking(false);
+    }
+  }
+
   return (
     <div className={classes.layout}>
+      {/* Not a `form` element: this mounts inside a host's own surface, which may
+          already be one, and a form cannot be nested in a form. */}
       <Stack className={classes.form} gap="sm">
         <ResourceInput<WithId<Location>>
           resourceType="Location"
@@ -211,6 +331,24 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           />
         ))}
 
+        <ResourceInput<WithId<Patient>>
+          resourceType="Patient"
+          name="patient"
+          label="Patient"
+          placeholder="Search patients by name"
+          required
+          searchCriteria={PATIENT_SEARCH_CRITERIA}
+          defaultValue={defaultPatient}
+          itemComponent={patientItem}
+          onChange={setPatient}
+        />
+        <TextInput
+          label="Reason for visit"
+          placeholder="What the visit is for"
+          value={reason}
+          onChange={(event) => setReason(event.currentTarget.value)}
+        />
+
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
@@ -235,6 +373,30 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
             {windowError && <Alert color="yellow">{windowError}</Alert>}
           </Stack>
         )}
+
+        {/* Below the booking decision: they are the longest fields on the form and
+            the least likely to change what can be booked. */}
+        <Textarea
+          label="Notes or comments"
+          description="Kept internally, for the practice."
+          autosize
+          minRows={2}
+          value={comment}
+          onChange={(event) => setComment(event.currentTarget.value)}
+        />
+        <Textarea
+          label="Patient instructions"
+          description="Shown to the patient."
+          autosize
+          minRows={2}
+          value={patientInstruction}
+          onChange={(event) => setPatientInstruction(event.currentTarget.value)}
+        />
+
+        {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
+        <Button fullWidth disabled={!chosen || !patient} loading={booking} onClick={bookAppointment}>
+          Book appointment
+        </Button>
       </Stack>
 
       {searching && (
@@ -410,6 +572,95 @@ function RoleField(props: RoleFieldProps): JSX.Element {
       disabled={disabled}
       onChange={handleChange}
     />
+  );
+}
+
+/** The free text written onto a booking, as typed. */
+interface AppointmentNotes {
+  readonly reason: string;
+  readonly comment: string;
+  readonly patientInstruction: string;
+}
+
+/**
+ * Puts the patient and the free text onto the proposal that will be booked.
+ *
+ * @param proposal - The time that was chosen, as `$find` offered it.
+ * @param patient - Who the visit is for.
+ * @param notes - What was typed about it.
+ * @returns The appointment to book.
+ */
+function buildBooking(proposal: Appointment, patient: WithId<Patient>, notes: AppointmentNotes): Appointment {
+  const patientReference = getReferenceString(patient);
+  const booking: Appointment = {
+    ...proposal,
+    participant: [
+      // A proposal knows nothing about patients, but a host may have put one on
+      // the appointment it handed over, and naming them twice books them twice.
+      ...proposal.participant.filter((participant) => participant.actor?.reference !== patientReference),
+      { actor: createReference(patient), required: 'required', status: 'needs-action' },
+    ],
+  };
+
+  // A field nobody filled in is left off rather than written empty: an empty
+  // string is a note saying nothing, which reads as a note on the chart.
+  const description = notes.reason.trim();
+  if (description) {
+    booking.description = description;
+  }
+  const comment = notes.comment.trim();
+  if (comment) {
+    booking.comment = comment;
+  }
+  const patientInstruction = notes.patientInstruction.trim();
+  if (patientInstruction) {
+    booking.patientInstruction = patientInstruction;
+  }
+
+  return booking;
+}
+
+/**
+ * Reads what `$book` wrote out of the bundle it answers with.
+ * @param written - The bundle `$book` returned.
+ * @returns The appointment and the times reserved for it.
+ */
+function readBooking(written: Bundle<WithId<Appointment> | WithId<Slot>>): AppointmentBooking {
+  const resources = (written.entry ?? []).map((entry) => entry.resource).filter(isDefined);
+  const appointment = resources.find((resource) => resource.resourceType === 'Appointment');
+  if (!appointment) {
+    // Cannot happen against a server that honoured the request, and the host is
+    // owed an appointment rather than a silent success.
+    throw new Error('$book returned no appointment');
+  }
+  return { appointment, slots: resources.filter((resource) => resource.resourceType === 'Slot') };
+}
+
+/**
+ * What tells one patient apart from another of the same name.
+ * @param patient - The patient on offer.
+ * @param mrnSystem - The system a project issues medical record numbers under.
+ * @returns The line under their name, or undefined when nothing is on file.
+ */
+function formatPatientDetail(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
+  const mrn = getMedicalRecordNumber(patient, mrnSystem);
+  return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ') || undefined;
+}
+
+/**
+ * Reads a patient's medical record number.
+ *
+ * A typed identifier answers it whoever issued it, which is the case that needs
+ * no configuration. `mrnSystem` is for the project whose identifiers carry no
+ * type, where nothing but the system says which one this is.
+ *
+ * @param patient - The patient to read.
+ * @param mrnSystem - The system a project issues medical record numbers under.
+ * @returns The medical record number, or undefined for a patient with none.
+ */
+function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | undefined): string | undefined {
+  return (
+    getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
   );
 }
 
