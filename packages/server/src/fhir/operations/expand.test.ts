@@ -4,7 +4,6 @@ import type { WithId } from '@medplum/core';
 import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import type {
   CodeSystem,
-  CodeSystemProperty,
   OperationOutcome,
   ValueSet,
   ValueSetComposeIncludeFilter,
@@ -19,15 +18,9 @@ import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
-import { SelectQuery } from '../sql';
-import {
-  addExpansionItems,
-  countCandidatesBounded,
-  expansionQuery,
-  hydrateCodeSystemProperties,
-  joinDesignations,
-} from './expand';
-import { abstractProperty, addDescendants, getParentProperty } from './utils/terminology';
+import { SqlBuilder } from '../sql';
+import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
+import { abstractProperty } from './utils/terminology';
 
 describe('Expand', () => {
   const app = express();
@@ -1104,22 +1097,20 @@ describe('Expand', () => {
         ],
       },
       {
-        // The code branch surfaces the canonical row only; synonyms share the canonical code and are
-        // redundant there, so the synonym display 'Zeta' is not attached as a designation.
-        name: 'Code prefix branch matches canonical rows only, not synonyms',
+        name: 'Code prefix branch matches the concept once',
         valueSet: synonymValueSet.url,
         system: synonymCodeSystem.url,
         filter: 'SYN',
         expected: [{ code: 'SYN100', display: 'Alpha' }],
       },
       {
-        // The display branch is unchanged (non-partial index), so a filter matching only the
-        // synonym's display still finds the code.
-        name: 'Display branch still matches synonym rows',
+        // The display branch searches every display the concept has, and the semi-join collapses the match
+        // back onto the canonical row — so the code is found by its synonym but shown with its own display.
+        name: 'Display branch matches a synonym and returns the canonical display',
         valueSet: synonymValueSet.url,
         system: synonymCodeSystem.url,
         filter: 'zeta',
-        expected: [{ code: 'SYN100', display: 'Zeta' }],
+        expected: [{ code: 'SYN100', display: 'Alpha' }],
       },
     ])('$name', async ({ valueSet, system, filter, expected }) => {
       const res = await request(app)
@@ -1131,14 +1122,17 @@ describe('Expand', () => {
       });
     });
 
-    test('Code prefix matches translation rows with displayLanguage', async () => {
+    test('Code prefix filter is unscoped by displayLanguage', async () => {
+      // Both codes match the prefix; the one with a French designation is shown in French, and the one
+      // without keeps its base display rather than dropping out of the expansion.
       const res = await request(app)
         .get(`/fhir/R4/ValueSet/$expand?url=${translatedValueSet.url}&filter=LNG&displayLanguage=fr`)
         .set('Authorization', 'Bearer ' + accessToken);
       expect(res).toHaveStatus(200);
-      expect((res.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+      expect((res.body.expansion as ValueSetExpansion).contains).toContainExactly([
         { system: translatedCodeSystem.url, code: 'LNG100', display: 'Oméga' },
-      ]);
+        { system: translatedCodeSystem.url, code: 'LNG200', display: 'Beta' },
+      ] satisfies ValueSetExpansionContains[]);
     });
 
     test('Exact code match ranks ahead of longer prefix match', async () => {
@@ -1346,10 +1340,12 @@ describe('Expand', () => {
       expect(await countCandidatesBounded(db, stored, 'zzz', 10)).toBe(0);
     });
 
-    test('countCandidatesBounded counts translation rows for displayLanguage', async () => {
-      expect(await countCandidatesBounded(db, stored, 'alpha', 10, 'fr')).toBe(2);
-      expect(await countCandidatesBounded(db, stored, 'alpha', 1, 'fr')).toBe(1); // bounded
-      expect(await countCandidatesBounded(db, stored, 'alpha', 10, 'de')).toBe(0);
+    test('countCandidatesBounded counts concepts, not matching rows', async () => {
+      // 'alpha' matches four rows — the canonical displays of PAR and CHD plus both French designations —
+      // but only two concepts. CANDIDATE_THRESHOLD is expressed in codes, so the count must be too.
+      expect(await countCandidatesBounded(db, stored, 'alpha', 10)).toBe(2);
+      // 'beta' matches PET's canonical display and its French designation: one concept.
+      expect(await countCandidatesBounded(db, stored, 'beta', 10)).toBe(1);
     });
 
     test('descendant and ancestor strategies return identical members', async () => {
@@ -1385,20 +1381,12 @@ describe('Expand', () => {
       const descendantCodes = descendantRows.map((r) => r.code).sort();
       expect(ancestorCodes).toEqual(['CHD', 'PAR']);
       expect(descendantCodes).toEqual(ancestorCodes);
-      expect(ancestorRows.every((r) => r.language === 'fr')).toBe(true);
-      expect(descendantRows.every((r) => r.language === 'fr')).toBe(true);
-    });
-
-    test('joinDesignations carries over the limit and offset hoisted onto the subtree query', () => {
-      const parentProperty = getParentProperty(stored) as WithId<CodeSystemProperty>;
-      const base = new SelectQuery('Coding').column('code').where('system', '=', stored.id).limit(25).offset(5);
-
-      // addDescendants moves the limit/offset off the recursive term onto the CTE select
-      const descendants = addDescendants(base, stored, parentProperty, 'PAR');
-      expect(descendants.limit_).toBe(25);
-      expect(descendants.offset_).toBe(5);
-
-      expect(joinDesignations(descendants, stored)).toMatchObject({ limit_: 25, offset_: 5 });
+      // displayLanguage is a display preference resolved after the window, so neither strategy's driving
+      // query returns designation rows: exactly one row per concept, and no `language` column at all.
+      expect(ancestorRows).toHaveLength(2);
+      expect(descendantRows).toHaveLength(2);
+      expect(ancestorRows.every((r) => !('language' in r))).toBe(true);
+      expect(descendantRows.every((r) => !('language' in r))).toBe(true);
     });
   });
 
@@ -1476,8 +1464,18 @@ describe('Expand', () => {
       }
     });
 
+    // FSH has no French designation. It stays in every expansion below and falls back to its base display:
+    // displayLanguage is a display preference, so it never changes which codes are members.
     test.each([
-      { name: 'Property = filter', valueSet: statusActive, filter: '', expected: [{ code: 'DOG', display: 'Chien' }] },
+      {
+        name: 'Property = filter',
+        valueSet: statusActive,
+        filter: '',
+        expected: [
+          { code: 'DOG', display: 'Chien' },
+          { code: 'FSH', display: 'Fish' },
+        ],
+      },
       {
         name: 'Property = filter with text filter',
         valueSet: statusActive,
@@ -1491,6 +1489,7 @@ describe('Expand', () => {
         expected: [
           { code: 'DOG', display: 'Chien' },
           { code: 'CAT', display: 'Chat' },
+          { code: 'FSH', display: 'Fish' },
         ],
       },
       {
@@ -1506,6 +1505,7 @@ describe('Expand', () => {
         expected: [
           { code: 'DOG', display: 'Chien' },
           { code: 'CAT', display: 'Chat' },
+          { code: 'FSH', display: 'Fish' },
         ],
       },
       {
@@ -1535,6 +1535,7 @@ describe('Expand', () => {
           { code: 'ANML', display: 'Animal (fr)' },
           { code: 'DOG', display: 'Chien' },
           { code: 'CAT', display: 'Chat' },
+          { code: 'FSH', display: 'Fish' },
         ],
       },
       {
@@ -1550,6 +1551,7 @@ describe('Expand', () => {
         expected: [
           { code: 'DOG', display: 'Chien' },
           { code: 'CAT', display: 'Chat' },
+          { code: 'FSH', display: 'Fish' },
         ],
       },
       {
@@ -1564,9 +1566,21 @@ describe('Expand', () => {
     });
 
     test('excludeNotForUI excludes translations of abstract concepts', async () => {
+      // Only ANML is abstract; FSH is selectable and keeps its base display for want of a translation
       expect(await expand(isaAnimal, '&displayLanguage=fr&excludeNotForUI=true')).toContainExactly([
         { system, code: 'DOG', display: 'Chien' },
         { system, code: 'CAT', display: 'Chat' },
+        { system, code: 'FSH', display: 'Fish' },
+      ]);
+    });
+
+    test('includeDesignations and displayLanguage both apply to one request', async () => {
+      // These were mutually exclusive while the two were a single if/else on the `language` column
+      expect(await expand(isaAnimal, '&displayLanguage=fr&includeDesignations=true')).toContainExactly([
+        { system, code: 'ANML', display: 'Animal (fr)', designation: [{ language: 'fr', value: 'Animal (fr)' }] },
+        { system, code: 'DOG', display: 'Chien', designation: [{ language: 'fr', value: 'Chien' }] },
+        { system, code: 'CAT', display: 'Chat', designation: [{ language: 'fr', value: 'Chat' }] },
+        { system, code: 'FSH', display: 'Fish' },
       ]);
     });
 
@@ -2091,8 +2105,9 @@ describe('Expand', () => {
     expect(res).toHaveStatus(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
+    // The synonym is what the filter matched, but the concept is shown with its own display
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
-      { code: 'UTIC', display: 'Hives', system: codeSystem.url },
+      { code: 'UTIC', display: 'Uticarial rash', system: codeSystem.url },
     ]);
   });
 
@@ -2135,8 +2150,9 @@ describe('Expand', () => {
     expect(res).toHaveStatus(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
+    // 'Wheal' carries no language, but it is still a designation: it appears only when asked for
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
-      { system: codeSystem.url, code: 'HIV', display: 'Hives', designation: [{ value: 'Wheal' }] },
+      { system: codeSystem.url, code: 'HIV', display: 'Hives' },
     ]);
   });
 
@@ -2186,44 +2202,12 @@ describe('Expand', () => {
       return (res.body.expansion as ValueSetExpansion).contains;
     }
 
-    const expected: ValueSetExpansionContains[] = [
-      { system: codeSystem.url, code: 'HIV', display: 'Hives', designation: [{ value: 'Wheal' }] },
-    ];
+    const expected: ValueSetExpansionContains[] = [{ system: codeSystem.url, code: 'HIV', display: 'Hives' }];
     expect(await expand(unfiltered)).toStrictEqual(expected);
     expect(await expand(filtered)).toStrictEqual(expected);
   });
 
-  test('addExpansionItems() allows items out of order', () => {
-    const rows = [
-      { id: 'foo', code: 'F', display: 'Foo', synonymOf: 'bar', language: null },
-      { id: 'bar', code: 'F', display: 'Food', synonymOf: null, language: null },
-      { id: 'baz', code: 'F', display: 'Essen', synonymOf: 'bar', language: 'de' },
-    ];
-    const expansion: ValueSetExpansionContains[] = [];
-    const system = 'http://example.com/codes/' + randomUUID();
-    const codeSystem: WithId<CodeSystem> = {
-      resourceType: 'CodeSystem',
-      id: randomUUID(),
-      status: 'draft',
-      content: 'not-present',
-      url: system,
-    };
-
-    addExpansionItems(rows, expansion, codeSystem);
-    expect(expansion).toStrictEqual([
-      {
-        system,
-        code: 'F',
-        display: 'Food',
-        designation: [
-          { value: 'Foo', language: undefined },
-          { value: 'Essen', language: 'de' },
-        ],
-      } satisfies ValueSetExpansionContains,
-    ]);
-  });
-
-  describe('addExpansionItems() language tagging', () => {
+  describe('addExpansionItems()', () => {
     const system = 'http://example.com/codes/' + randomUUID();
     function testCodeSystem(language?: string): WithId<CodeSystem> {
       return {
@@ -2236,84 +2220,46 @@ describe('Expand', () => {
       };
     }
 
-    test.each([
-      { name: 'designation row first', reversed: false },
-      { name: 'canonical row first', reversed: true },
-    ])('Keeps the designation language when the $name', ({ reversed }) => {
-      const rows = [
-        { code: 'DOG', display: 'Chien', synonymOf: '1', language: 'fr' },
-        { code: 'DOG', display: 'Dog', synonymOf: null, language: null },
-      ];
+    test('Builds one entry per row', () => {
       const expansion: ValueSetExpansionContains[] = [];
+      const page = addExpansionItems(
+        [
+          { code: 'F', display: 'Food' },
+          { code: 'D', display: null },
+        ],
+        expansion,
+        testCodeSystem('en')
+      );
 
-      addExpansionItems(reversed ? [...rows].reverse() : rows, expansion, testCodeSystem());
-      expect(expansion).toStrictEqual([
-        {
-          system,
-          code: 'DOG',
-          display: 'Dog',
-          designation: [{ language: 'fr', value: 'Chien' }],
-        } satisfies ValueSetExpansionContains,
+      expect(expansion).toStrictEqual<ValueSetExpansionContains[]>([
+        { system, code: 'F', display: 'Food' },
+        { system, code: 'D', display: undefined },
       ]);
-    });
-
-    test('Leaves a displaced designation without a language untagged', () => {
-      const rows = [
-        { code: 'HIV', display: 'Wheal', synonymOf: '1', language: null },
-        { code: 'HIV', display: 'Hives', synonymOf: null, language: null },
-      ];
-      const expansion: ValueSetExpansionContains[] = [];
-
-      addExpansionItems(rows, expansion, testCodeSystem('en'));
-      expect(expansion).toStrictEqual([
-        {
-          system,
-          code: 'HIV',
-          display: 'Hives',
-          designation: [{ language: undefined, value: 'Wheal' }],
-        } satisfies ValueSetExpansionContains,
-      ]);
+      // The returned page is what the designation resolver decorates
+      expect(page).toStrictEqual(expansion);
     });
 
     test('Does not merge the same code from a different CodeSystem', () => {
       const otherSystem = 'http://example.com/codes/' + randomUUID();
       const expansion: ValueSetExpansionContains[] = [{ system: otherSystem, code: 'M', display: 'Married' }];
 
-      addExpansionItems([{ code: 'M', display: 'Male', synonymOf: null, language: null }], expansion, testCodeSystem());
+      addExpansionItems([{ code: 'M', display: 'Male' }], expansion, testCodeSystem());
       expect(expansion).toStrictEqual<ValueSetExpansionContains[]>([
         { system: otherSystem, code: 'M', display: 'Married' },
         { system, code: 'M', display: 'Male' },
       ]);
     });
 
-    test('Maintains designation language across multiple includes', () => {
+    test('Keeps a code contributed by an earlier include only once', () => {
       const codeSystem = testCodeSystem('en');
       const expansion: ValueSetExpansionContains[] = [];
-      const displayLanguages = new Map<ValueSetExpansionContains, string | undefined>();
 
-      // One include contributes only the translation row...
-      addExpansionItems(
-        [{ code: 'DOG', display: 'Chien', synonymOf: '1', language: 'fr' }],
-        expansion,
-        codeSystem,
-        displayLanguages
-      );
-      // ...and a later include contributes the canonical row, displacing it
-      addExpansionItems(
-        [{ code: 'DOG', display: 'Dog', synonymOf: null, language: null }],
-        expansion,
-        codeSystem,
-        displayLanguages
-      );
+      addExpansionItems([{ code: 'DOG', display: 'Dog' }], expansion, codeSystem);
+      const page = addExpansionItems([{ code: 'DOG', display: 'Dog' }], expansion, codeSystem);
 
-      expect(expansion).toStrictEqual([
-        {
-          system,
-          code: 'DOG',
-          display: 'Dog',
-          designation: [{ language: 'fr', value: 'Chien' }],
-        } satisfies ValueSetExpansionContains,
-      ]);
+      expect(expansion).toStrictEqual<ValueSetExpansionContains[]>([{ system, code: 'DOG', display: 'Dog' }]);
+      // The second include still gets the entry back, so its designations are resolved onto it
+      expect(page).toStrictEqual(expansion);
     });
   });
 
@@ -2536,5 +2482,453 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + superAdminToken);
     expect(res).toHaveStatus(200);
     expect(res.body.expansion.contains[0].display).toStrictEqual('ClientApplication');
+  });
+
+  describe('Pagination', () => {
+    const systemA = 'http://example.com/CodeSystem/' + randomUUID();
+    const systemB = 'http://example.com/CodeSystem/' + randomUUID();
+    const designationSystem = 'http://example.com/CodeSystem/' + randomUUID();
+
+    const codeSystemA: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: systemA,
+      concept: [
+        { code: 'A1', display: 'Alpha one' },
+        { code: 'A2', display: 'Alpha two' },
+        { code: 'A3', display: 'Alpha three' },
+        { code: 'A4', display: 'Alpha four' },
+      ],
+    };
+    const codeSystemB: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: systemB,
+      concept: [
+        { code: 'B1', display: 'Bravo one' },
+        { code: 'B2', display: 'Bravo two' },
+        { code: 'B3', display: 'Bravo three' },
+        { code: 'B4', display: 'Bravo four' },
+      ],
+    };
+    // D3 deliberately has no translations, to show how displayLanguage interacts with page membership
+    const designationCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: designationSystem,
+      concept: [
+        {
+          code: 'D1',
+          display: 'Delta one',
+          designation: [
+            { language: 'fr', value: 'Delta un' },
+            { language: 'de', value: 'Delta eins' },
+          ],
+        },
+        {
+          code: 'D2',
+          display: 'Delta two',
+          designation: [
+            { language: 'fr', value: 'Delta deux' },
+            { language: 'de', value: 'Delta zwei' },
+          ],
+        },
+        { code: 'D3', display: 'Delta three' },
+      ],
+    };
+    // Two designations per code in the same language: FHIR allows this (they are distinguished by
+    // `designation.use`), and it is what makes a row-space page window straddle concept boundaries
+    const multiDesignationSystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const multiDesignationCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: multiDesignationSystem,
+      concept: ['un', 'deux', 'trois', 'quatre'].map((word, i) => ({
+        code: `M${i + 1}`,
+        display: `Mike ${i + 1}`,
+        designation: [
+          { language: 'fr', value: `Mike ${word}` },
+          { language: 'fr', value: `Mike ${word} bis` },
+        ],
+      })),
+    };
+    // A CodeSystem declaring its own language, to show displayLanguage falling back rather than
+    // matching `language = 'en'` against canonical rows, which carry no language at all
+    const englishSystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const englishCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      language: 'en',
+      url: englishSystem,
+      concept: [
+        { code: 'E1', display: 'Echo one' },
+        { code: 'E2', display: 'Echo two' },
+      ],
+    };
+    // Designation rows that carry no language: one written by an untagged `designation`, one by the
+    // `#synonym` property path, which every CodeSystem using that property produces
+    const synonymRowSystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const synonymRowCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: synonymRowSystem,
+      property: [{ code: 'SY', uri: 'http://hl7.org/fhir/concept-properties#synonym', type: 'string' }],
+      concept: [
+        {
+          code: 'S1',
+          display: 'Sierra one',
+          designation: [{ value: 'Unlabelled one' }, { language: 'fr', value: 'Sierra un' }],
+          property: [{ code: 'SY', valueString: 'Synonym one' }],
+        },
+        { code: 'S2', display: 'Sierra two' },
+      ],
+    };
+
+    const allCodes = ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4'];
+
+    function valueSet(compose: ValueSet['compose'], expansion?: ValueSetExpansion): ValueSet {
+      return {
+        resourceType: 'ValueSet',
+        status: 'active',
+        url: 'http://example.com/ValueSet/' + randomUUID(),
+        compose,
+        expansion,
+      };
+    }
+
+    const singleSystemValueSet = valueSet({ include: [{ system: systemA }] });
+    const twoSystemValueSet = valueSet({ include: [{ system: systemA }, { system: systemB }] });
+    const onlyA = valueSet({ include: [{ system: systemA }] });
+    const onlyB = valueSet({ include: [{ system: systemB }] });
+    const nestedValueSet = valueSet({
+      include: [{ valueSet: [onlyA.url as string] }, { valueSet: [onlyB.url as string] }],
+    });
+    const enumeratedValueSet = valueSet({
+      include: [{ system: systemA, concept: codeSystemA.concept?.map((c) => ({ code: c.code, display: c.display })) }],
+    });
+    const preExpandedValueSet = valueSet({ include: [{ system: systemA }] }, {
+      timestamp: new Date().toISOString(),
+      contains: codeSystemA.concept?.map((c) => ({ system: systemA, code: c.code, display: c.display })),
+    } satisfies ValueSetExpansion);
+    const designationValueSet = valueSet({ include: [{ system: designationSystem }] });
+    const multiDesignationValueSet = valueSet({ include: [{ system: multiDesignationSystem }] });
+    const englishValueSet = valueSet({ include: [{ system: englishSystem }] });
+    const synonymRowValueSet = valueSet({ include: [{ system: synonymRowSystem }] });
+
+    let storedA: WithId<CodeSystem>;
+
+    beforeAll(async () => {
+      for (const resource of [
+        codeSystemA,
+        codeSystemB,
+        designationCodeSystem,
+        multiDesignationCodeSystem,
+        englishCodeSystem,
+        synonymRowCodeSystem,
+        singleSystemValueSet,
+        twoSystemValueSet,
+        onlyA,
+        onlyB,
+        nestedValueSet,
+        enumeratedValueSet,
+        preExpandedValueSet,
+        designationValueSet,
+        multiDesignationValueSet,
+        englishValueSet,
+        synonymRowValueSet,
+      ]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+        if (resource === codeSystemA) {
+          storedA = res.body as WithId<CodeSystem>;
+        }
+      }
+    });
+
+    async function expand(vs: ValueSet, query = ''): Promise<ValueSetExpansion> {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(vs.url as string)}${query}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      return res.body.expansion as ValueSetExpansion;
+    }
+
+    async function pageCodes(vs: ValueSet, offset: number, count: number, query = ''): Promise<string[]> {
+      const expansion = await expand(vs, `&offset=${offset}&count=${count}${query}`);
+      return (expansion.contains ?? []).map((c) => c.code as string);
+    }
+
+    test('Windows over a single include partition the expansion', async () => {
+      // Baseline: the one case pagination does handle correctly.
+      const paged = [
+        ...(await pageCodes(singleSystemValueSet, 0, 2)),
+        ...(await pageCodes(singleSystemValueSet, 2, 2)),
+      ];
+      expect(paged.toSorted()).toStrictEqual(['A1', 'A2', 'A3', 'A4']);
+    });
+
+    test.fails('FAILING offset is applied to each compose.include separately', async () => {
+      // `offset` is pushed into the per-include SQL query, so every include skips its own first N rows
+      // instead of the offset being consumed across the concatenated expansion. Codes from every include
+      // after the first are silently unreachable.
+      const paged = [
+        ...(await pageCodes(twoSystemValueSet, 0, 3)),
+        ...(await pageCodes(twoSystemValueSet, 3, 3)),
+        ...(await pageCodes(twoSystemValueSet, 6, 3)),
+      ];
+      expect(paged.toSorted()).toStrictEqual(allCodes);
+    });
+
+    test.fails('FAILING offset is applied to each nested include.valueSet separately', async () => {
+      // Same defect through the `compose.include.valueSet` path: `computeExpansion` recurses with an
+      // adjusted `count` but passes `offset` through unchanged to every nested ValueSet.
+      const paged = [
+        ...(await pageCodes(nestedValueSet, 0, 3)),
+        ...(await pageCodes(nestedValueSet, 3, 3)),
+        ...(await pageCodes(nestedValueSet, 6, 3)),
+      ];
+      expect(paged.toSorted()).toStrictEqual(allCodes);
+    });
+
+    test.fails('FAILING offset is ignored for an enumerated compose.include.concept', async () => {
+      // The enumerated-concept path filters in memory and never consumes `offset`; `expandValueSet` only
+      // ever slices [0, count), so every page returns the first page.
+      expect(await pageCodes(enumeratedValueSet, 0, 2)).toStrictEqual(['A1', 'A2']);
+      expect(await pageCodes(enumeratedValueSet, 2, 2)).toStrictEqual(['A3', 'A4']);
+    });
+
+    test.fails('FAILING offset is ignored for a pre-expanded ValueSet', async () => {
+      // When `ValueSet.expansion.contains` is already complete, `computeExpansion` short-circuits to the
+      // stored list and drops `offset` entirely.
+      expect(await pageCodes(preExpandedValueSet, 0, 2)).toStrictEqual(['A1', 'A2']);
+      expect(await pageCodes(preExpandedValueSet, 2, 2)).toStrictEqual(['A3', 'A4']);
+    });
+
+    test.fails('FAILING expansion.total reports the fetched page, not the size of the expansion', async () => {
+      // The query fetches `count + 1` rows purely as a has-more probe, and `total` is set to however many
+      // rows came back. A client cannot compute the number of pages, and `total` shifts as `offset` moves.
+      const firstPage = await expand(singleSystemValueSet, '&offset=0&count=2');
+      expect(firstPage.contains).toHaveLength(2);
+      expect(firstPage.total).toBe(4);
+
+      const lastPage = await expand(singleSystemValueSet, '&offset=2&count=2');
+      expect(lastPage.contains).toHaveLength(2);
+      expect(lastPage.total).toBe(4);
+    });
+
+    test.fails('FAILING expansion.total signals end-of-collection while later includes are unread', async () => {
+      // The first include exactly fills the page, so the `count + 1` has-more probe finds nothing extra and
+      // the loop breaks before reaching the second include. `total` equals `count`, which a paging client
+      // reads as "no more results" even though every code in system B is still unread.
+      const expansion = await expand(twoSystemValueSet, '&offset=0&count=4');
+      expect(expansion.contains?.map((c) => c.code)).toStrictEqual(['A1', 'A2', 'A3', 'A4']);
+      expect(expansion.total).toBeGreaterThan(4);
+    });
+
+    test.fails('FAILING count is exceeded when the page reaches MAX_EXPANSION_SIZE', async () => {
+      // `expandValueSet` slices to MAX_EXPANSION_SIZE rather than `count` whenever the fetched rows reach
+      // the cap, so a count just below the cap returns one more concept than was asked for.
+      const largeValueSet = valueSet({ include: [{ system: 'http://dicom.nema.org/resources/ontology/DCM' }] });
+      const res = await request(app)
+        .post('/fhir/R4/ValueSet')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(largeValueSet);
+      expect(res).toHaveStatus(201);
+
+      const expansion = await expand(largeValueSet, '&count=999');
+      expect(expansion.contains).toHaveLength(999);
+    });
+
+    test.fails('FAILING expansion.offset is not echoed back in the response', async () => {
+      // ValueSet.expansion.offset is how a client knows which window it received.
+      const expansion = await expand(singleSystemValueSet, '&offset=2&count=2');
+      expect(expansion.offset).toBe(2);
+    });
+
+    test.fails('FAILING count=0 does not report the size of the expansion', async () => {
+      // Per the $expand spec, count=0 asks for the size of the expansion with no codes returned.
+      const expansion = await expand(singleSystemValueSet, '&count=0');
+      expect(expansion.contains ?? []).toHaveLength(0);
+      expect(expansion.total).toBe(4);
+    });
+
+    test.fails('FAILING count=0 is overridden by the typeahead default when a filter is present', async () => {
+      // `if (params.filter && !params.count) params.count = 10` treats an explicit count=0 as unset.
+      const expansion = await expand(singleSystemValueSet, '&count=0&filter=Alpha');
+      expect(expansion.contains ?? []).toHaveLength(0);
+    });
+
+    test('count limits concepts, not rows, when designations are included', async () => {
+      // The window is applied to canonical rows, which are one per concept, so designations cannot
+      // consume slots in it.
+      const expansion = await expand(designationValueSet, '&includeDesignations=true&count=2');
+      expect((expansion.contains ?? []).map((c) => c.code)).toStrictEqual(['D1', 'D2']);
+    });
+
+    test('paging with designations partitions the concepts', async () => {
+      const paged = [
+        ...(await pageCodes(designationValueSet, 0, 2, '&includeDesignations=true')),
+        ...(await pageCodes(designationValueSet, 2, 2, '&includeDesignations=true')),
+        ...(await pageCodes(designationValueSet, 4, 2, '&includeDesignations=true')),
+      ];
+      expect(paged).toStrictEqual(['D1', 'D2', 'D3']);
+    });
+
+    test('displayLanguage keeps codes that have no translation', async () => {
+      // displayLanguage is a display preference, not a membership filter: D3 has no French designation
+      // and stays in the expansion with its base display.
+      const expansion = await expand(designationValueSet, '&displayLanguage=fr&count=10');
+      expect(expansion.contains).toContainExactly([
+        { system: designationSystem, code: 'D1', display: 'Delta un' },
+        { system: designationSystem, code: 'D2', display: 'Delta deux' },
+        { system: designationSystem, code: 'D3', display: 'Delta three' },
+      ]);
+    });
+
+    test('Paging a code with several designations in one language visits it once', async () => {
+      // The reproduction from the plan: four codes, each with two `fr` designations, is 12 rows but
+      // 4 concepts. A row-space window would emit every code after the first twice and report
+      // `total === count` on page 0, stopping a paging client halfway.
+      const firstPage = await expand(multiDesignationValueSet, '&displayLanguage=fr&offset=0&count=2');
+      expect((firstPage.contains ?? []).map((c) => c.code)).toStrictEqual(['M1', 'M2']);
+      expect(firstPage.total).toBeGreaterThan(2); // has-more probe counts concepts
+
+      const paged = [
+        ...(await pageCodes(multiDesignationValueSet, 0, 2, '&displayLanguage=fr')),
+        ...(await pageCodes(multiDesignationValueSet, 2, 2, '&displayLanguage=fr')),
+        ...(await pageCodes(multiDesignationValueSet, 4, 2, '&displayLanguage=fr')),
+      ];
+      expect(paged).toStrictEqual(['M1', 'M2', 'M3', 'M4']);
+    });
+
+    test('Several designations in one language resolve to a stable display', async () => {
+      const displays = new Set<string | undefined>();
+      for (let i = 0; i < 3; i++) {
+        const expansion = await expand(multiDesignationValueSet, '&displayLanguage=fr&count=10');
+        displays.add(expansion.contains?.find((c) => c.code === 'M1')?.display);
+      }
+      // Which of the two `fr` designations wins is arbitrary, but it must not vary between requests
+      expect(displays.size).toBe(1);
+      expect([...displays][0]).toMatch(/^Mike un/);
+    });
+
+    test('displayLanguage matching the CodeSystem language returns the full expansion', async () => {
+      // Canonical rows carry no `language`, so scoping by `language = 'en'` used to match nothing at all
+      const expansion = await expand(englishValueSet, '&displayLanguage=en&count=10');
+      expect(expansion.contains).toContainExactly([
+        { system: englishSystem, code: 'E1', display: 'Echo one' },
+        { system: englishSystem, code: 'E2', display: 'Echo two' },
+      ]);
+    });
+
+    test('Language-less designations and synonyms do not leak into the expansion', async () => {
+      // Both a designation with no language and a `#synonym` property row are designation rows. Neither
+      // may surface unasked, and neither may consume a slot in the page window.
+      const expansion = await expand(synonymRowValueSet, '&count=10');
+      expect(expansion.contains).toContainExactly([
+        { system: synonymRowSystem, code: 'S1', display: 'Sierra one' },
+        { system: synonymRowSystem, code: 'S2', display: 'Sierra two' },
+      ]);
+
+      // Every code is reachable with a window narrower than the row count
+      const paged = [...(await pageCodes(synonymRowValueSet, 0, 1)), ...(await pageCodes(synonymRowValueSet, 1, 1))];
+      expect(paged).toStrictEqual(['S1', 'S2']);
+
+      // ...and they are all present when asked for
+      const withDesignations = await expand(synonymRowValueSet, '&includeDesignations=true&count=10');
+      expect(withDesignations.contains).toContainExactly([
+        {
+          system: synonymRowSystem,
+          code: 'S1',
+          display: 'Sierra one',
+          designation: [{ value: 'Synonym one' }, { value: 'Unlabelled one' }, { language: 'fr', value: 'Sierra un' }],
+        },
+        { system: synonymRowSystem, code: 'S2', display: 'Sierra two' },
+      ]);
+    });
+
+    test('A filter matches any display the concept has', async () => {
+      // 'Sierra un' appears only in S1's French designation. The concept is a member on an unlocalized
+      // request, shown in English — the filter searches every display, but does not localize the result.
+      const french = await expand(synonymRowValueSet, '&filter=' + encodeURIComponent('Sierra un'));
+      expect(french.contains).toContainExactly([{ system: synonymRowSystem, code: 'S1', display: 'Sierra one' }]);
+
+      // A `#synonym` row's text is searchable for the same reason
+      const synonym = await expand(synonymRowValueSet, '&filter=Synonym');
+      expect(synonym.contains).toContainExactly([{ system: synonymRowSystem, code: 'S1', display: 'Sierra one' }]);
+    });
+
+    test('filter and displayLanguage together rank and display the translation', async () => {
+      // Relevance is scored before LIMIT, so it must be scored against the text the client will see:
+      // 'Mike deux' is an exact French display, 'Mike deux bis' only contains it.
+      const expansion = await expand(multiDesignationValueSet, '&displayLanguage=fr&filter=Mike%20deux&count=10');
+      const contains = expansion.contains ?? [];
+      expect(contains[0]).toStrictEqual({ system: multiDesignationSystem, code: 'M2', display: 'Mike deux' });
+      expect(contains.every((c) => c.display?.startsWith('Mike'))).toBe(true);
+    });
+
+    describe('Query shape', () => {
+      function sqlFor(params: Parameters<typeof expansionQuery>[2]): string {
+        const query = expansionQuery({ system: systemA }, storedA, params);
+        const builder = new SqlBuilder();
+        query?.buildSql(builder);
+        return builder.toString();
+      }
+
+      test('Windows canonical rows in a deterministic order', () => {
+        // Postgres makes no ordering guarantee without ORDER BY, and is free to choose a different plan
+        // per OFFSET, so unfiltered paging could otherwise skip or repeat codes between windows.
+        const sql = sqlFor({ offset: 2, count: 2 });
+        expect(sql).toContain('"synonymOf" IS NULL');
+        expect(sql).toContain('ORDER BY "Coding"."code"');
+        expect(sql).toContain('LIMIT 3 OFFSET 2');
+      });
+
+      test('Joins the match set back onto canonical rows', () => {
+        // The UNION collapses several matching designation rows for one code onto its canonical row, so the
+        // window stays in concept space without a DISTINCT — and each branch keeps its own driving index.
+        const sql = sqlFor({ filter: 'alpha' });
+        expect(sql).toContain('COALESCE("display_match"."synonymOf", "display_match"."id") AS "id"');
+        expect(sql).toContain(' UNION ');
+        expect(sql).toContain('INNER JOIN (SELECT "matches"."id"');
+        expect(sql).toMatch(/"T\d+"\."id" = "Coding"\."id"/);
+        // Never OR-ed into the WHERE: that forces a scan of every row in the CodeSystem
+        expect(sql).not.toContain('=ANY(');
+        // The display match set is deliberately unscoped: a filter searches every display the concept has
+        expect(sql).not.toContain('"display_match"."language"');
+        expect(sql).not.toContain('"display_match"."synonymOf" IS');
+      });
+
+      test('Short filters match the code alone, with no join', () => {
+        const sql = sqlFor({ filter: 'ab' });
+        expect(sql).toContain('"Coding"."code" = ');
+        expect(sql).not.toContain('JOIN');
+      });
+
+      test('Joins the ranking lateral only when filter and displayLanguage are both set', () => {
+        expect(sqlFor({ filter: 'alpha', displayLanguage: 'fr' })).toContain('LEFT JOIN LATERAL');
+        expect(sqlFor({ filter: 'alpha' })).not.toContain('LATERAL');
+        expect(sqlFor({ displayLanguage: 'fr' })).not.toContain('LATERAL');
+      });
+
+      test('Keys the ranking lateral on (system, code), not synonymOf', () => {
+        // Keying on `d."synonymOf" = <outer id>` has no supporting index and degenerates to a sequential
+        // scan over Coding, once per outer row.
+        const sql = sqlFor({ filter: 'alpha', displayLanguage: 'fr' });
+        expect(sql).toContain('"translation"."code" = "Coding"."code"');
+        expect(sql).not.toContain('"translation"."synonymOf"');
+      });
+    });
   });
 });

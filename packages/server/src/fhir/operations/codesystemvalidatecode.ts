@@ -6,6 +6,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { Column, Condition, Disjunction } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, selectCoding } from './utils/terminology';
@@ -101,7 +102,16 @@ export async function validateCodings(
   if (codesToQuery.size > 0) {
     const query = selectCoding(codeSystem.id, ...codesToQuery);
     if (options?.displayLanguage) {
-      query.where('language', '=', options.displayLanguage);
+      // Membership comes from the canonical row, the display from the translation when there is one: a code
+      // with no translation validates successfully and falls back to its base display
+      query.whereExpr(
+        new Disjunction([
+          new Condition(new Column('Coding', 'synonymOf'), '=', null),
+          new Condition(new Column('Coding', 'language'), '=', options.displayLanguage),
+        ])
+      );
+      // Several designations may share a language; the lowest ID is an arbitrary but stable choice
+      query.orderBy('id');
     } else {
       query.where('synonymOf', '=', null);
     }
@@ -110,7 +120,22 @@ export async function validateCodings(
   }
 
   return codings.map((c, idx) => {
-    const row = eligible[idx] && result?.find((r: any) => r.code === c.code);
-    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: c.display ?? row.display } : undefined;
+    if (!eligible[idx]) {
+      return undefined;
+    }
+    const rows = result?.filter((r: any) => r.code === c.code) ?? [];
+    const canonical = rows.find((r: any) => !r.synonymOf);
+    if (!canonical) {
+      return undefined;
+    }
+    const translation = options?.displayLanguage
+      ? rows.find((r: any) => r.language === options.displayLanguage)
+      : undefined;
+    return {
+      id: canonical.id,
+      system: codeSystem.url,
+      code: c.code,
+      display: c.display ?? translation?.display ?? canonical.display,
+    };
   });
 }

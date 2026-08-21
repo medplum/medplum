@@ -345,6 +345,30 @@ describe('CodeSystem validate-code', () => {
     });
   });
 
+  test('Falls back to the base display when the code has no translation', async () => {
+    // Membership comes from the canonical row: displayLanguage selects a display, it does not decide
+    // whether the code is in the CodeSystem.
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'coding', valueCoding: { system: codeSystem.url, code: '2' } },
+          { name: 'displayLanguage', valueCode: 'fr' },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'result', valueBoolean: true },
+        { name: 'display', valueString: 'Biopsy of head' },
+      ],
+    });
+  });
+
   test('validateCodings', async () => {
     const result = await validateCodings(codeSystem, [
       { system: codeSystem.url, code: '1' }, // valid
