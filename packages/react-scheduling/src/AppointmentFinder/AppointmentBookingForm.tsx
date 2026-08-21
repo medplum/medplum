@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, Loader, Paper, Stack, Text } from '@mantine/core';
+import { Alert, Button, Loader, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, getSchedulingTimezone, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Appointment, HealthcareService, Location } from '@medplum/fhirtypes';
 import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/react';
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -71,9 +71,9 @@ export interface AppointmentBookingFormProps {
  * Choosing a time is deliberately a separate step behind "Find a time". The
  * times depend on every answer above them, so offering them earlier would only
  * show times that are about to change. Only a time the search offered can be
- * chosen: what it produced is summarised beneath the action, and there is no
- * field to type into, so nothing can be booked onto time that was never checked
- * against anybody's availability.
+ * chosen: the field that holds it accepts no input, and there is none at all until
+ * a time exists, so nothing can be booked onto time that was never checked against
+ * anybody's availability.
  *
  * @param props - The React props.
  * @returns The form.
@@ -273,32 +273,40 @@ interface ChosenTimeProps {
 }
 
 /**
- * The action that finds a time, and beneath it what the chosen one commits to.
+ * The chosen time, and under it the action that found it.
  *
- * One region: the action sits directly under the resource fields it depends on,
- * the summary sits directly under the action that produced it, and both read from
- * the chosen proposal. Nothing stands in for a time before one is chosen — an
- * empty white input among greyed-out ones reads as the one thing still fillable,
- * and the field this replaces sat above the button that filled it.
+ * The form is a column of labelled fields and the chosen time is one of its
+ * answers, so it sits in that column, above the control that produced it. What it
+ * must not be is a field before there is anything to put in it: an empty white
+ * input among greyed-out ones reads as the one thing still fillable, and its
+ * placeholder repeated the button's own invitation. So there is no field until
+ * there is a time.
  *
- * The summary is deliberately the only thing that varies here: entering a time
- * nobody offered arrives by swapping it for a time input and an override warning
- * in place, which stays a control change only while the region around it is not
- * arranged for the read-only case.
+ * Read-only, and deliberately an input rather than plain text: for a user
+ * permitted to override, this same field in this same place becomes editable and
+ * gains a warning. Keeping the region isolated and reading from the chosen
+ * proposal is what makes that a control change rather than a layout change.
  *
  * @param props - The React props.
- * @returns The action, and the summary once there is one.
+ * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
   const { appointment, timezone, finding, disabled, onToggleFinder } = props;
 
-  // Read off the proposal rather than off the answers above: it is what `$book`
-  // is handed, so the summary describes what would actually be booked.
-  const actors = (appointment?.participant ?? []).map((participant) => participant.actor).filter(isDefined);
-  const durationMinutes = getDurationMinutes(appointment);
-
   return (
     <>
+      {appointment?.start && (
+        <TextInput
+          label="Date & time"
+          readOnly
+          value={formatZonedDateTime(new Date(appointment.start), timezone)}
+          // Under the value rather than over it: the time is the answer, and what
+          // it commits to only qualifies it.
+          inputWrapperOrder={['label', 'input', 'description']}
+          description={<ChosenTimeCommitment appointment={appointment} />}
+        />
+      )}
+
       <Button
         variant="outline"
         fullWidth
@@ -308,32 +316,43 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
       >
         {getFinderLabel(finding, !!appointment)}
       </Button>
+    </>
+  );
+}
 
-      {appointment?.start && (
-        <Paper withBorder p="sm" data-testid="chosen-time">
-          <Group justify="space-between" align="flex-start" wrap="nowrap">
-            <Text size="sm" fw={500}>
-              {formatZonedDateTime(new Date(appointment.start), timezone)}
-            </Text>
-            {durationMinutes > 0 && (
-              <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-                {durationMinutes} min visit
-              </Text>
-            )}
-          </Group>
-          <Group gap="md" mt={4} wrap="wrap">
-            {actors.map((actor) => {
-              const roleLabel = getActorRoleLabel(actor);
-              return (
-                <Text key={getReferenceString(actor) ?? actor.display} size="sm" c="dimmed">
-                  {roleLabel && `${roleLabel}: `}
-                  <ReferenceDisplay value={actor} link={false} />
-                </Text>
-              );
-            })}
-          </Group>
-        </Paper>
-      )}
+interface ChosenTimeCommitmentProps {
+  readonly appointment: Appointment;
+}
+
+/**
+ * What the chosen time commits to: how long the visit runs, and what holds it.
+ *
+ * Read off the proposal rather than off the answers above, because the proposal is
+ * what `$book` is handed — so this describes what would actually be booked. Inline
+ * elements only: it renders as the field's description, which is a paragraph, and
+ * being the field's own description is what ties it to the value it qualifies.
+ *
+ * @param props - The React props.
+ * @returns The detail beneath the time.
+ */
+function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
+  const { appointment } = props;
+  const actors = (appointment.participant ?? []).map((participant) => participant.actor).filter(isDefined);
+  const durationMinutes = getDurationMinutes(appointment);
+
+  return (
+    <>
+      {durationMinutes > 0 && `${durationMinutes} min visit`}
+      {actors.map((actor, index) => {
+        const roleLabel = getActorRoleLabel(actor);
+        return (
+          <Fragment key={getReferenceString(actor) ?? actor.display}>
+            {(index > 0 || durationMinutes > 0) && ' · '}
+            {roleLabel && `${roleLabel}: `}
+            <ReferenceDisplay value={actor} link={false} />
+          </Fragment>
+        );
+      })}
     </>
   );
 }

@@ -33,8 +33,8 @@ export default {
  * held on practitioners, rooms and devices, and only the provider is required.
  *
  * Nothing is searched for times until "Find a time" is opened. There is no field
- * for a time: pick one and it appears as a summary under the action, saying how
- * long the visit runs and what it is held on, and the action offers to change it.
+ * for a time until one is picked: it then appears above the action, read-only, with
+ * how long the visit runs and what holds it, and the action offers to change it.
  * @returns The story.
  */
 export const Basic = (): JSX.Element => (
