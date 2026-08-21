@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import type { Mock } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
@@ -18,6 +19,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import * as otel from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
@@ -258,6 +260,42 @@ describe('Batch worker', () => {
         const results = await readResultsBundle(finished);
         expect(results.entry).toHaveLength(2);
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201']);
+      }));
+
+    // Runs in an authenticated context like the real worker does, since the telemetry listeners
+    // read the project from it and EventTarget.dispatchEvent swallows anything they throw.
+    test('Dispatches batch telemetry once across a delayed and resumed job', () =>
+      runInAuthenticatedContext(authState, undefined, undefined, { async: true }, async () => {
+        const histogram = vi.spyOn(otel, 'recordHistogramValue');
+        const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+        try {
+          // One entry succeeds, one 404s, so the terminal event carries a non-zero error count.
+          const bundle = multiEntryBundle(1);
+          (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+          const { job } = await setupReentrantJob(bundle);
+
+          // Process one entry, then report the queue as closing so the job is checkpointed.
+          let checks = 0;
+          const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 1);
+          await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+          isClosingSpy.mockRestore();
+
+          // Preprocessing dispatched the pre-event. Being delayed for another worker to pick up is
+          // not terminal, so nothing closes it out yet.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(0);
+
+          await expect(execBatchJob(makeReentrantJob(job.data))).resolves.toBeUndefined();
+
+          // Resume rehydrates via fromState, which skips preprocessing, so the pre-event is not
+          // repeated. Completion is terminal and reports the whole job's errors exactly once.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+        } finally {
+          histogram.mockRestore();
+        }
       }));
 
     test('Publishes partial results when the AsyncJob was cancelled out of band', () =>

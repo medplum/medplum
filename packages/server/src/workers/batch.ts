@@ -10,7 +10,7 @@ import {
   OperationOutcomeError,
   serverError,
 } from '@medplum/core';
-import type { BatchInitialState, FhirRequest } from '@medplum/fhir-router';
+import type { BatchEvent, BatchInitialState, FhirRequest } from '@medplum/fhir-router';
 import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/fhir-router';
 import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters, UserConfiguration } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
@@ -18,6 +18,7 @@ import { DelayedError, Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
+import { addFhirRouterTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -274,8 +275,18 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const priorChunkSeq = chunkSeq;
   const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
+  // TODO: A bare FhirRouter exposes only the base FHIR interactions, so async batch entries cannot
+  // reach the custom operations that initInternalFhirRouter adds ($validate, $reindex, $resend, the
+  // $db-* operations, and so on) even though the same entry succeeds in a synchronous batch.
+  // Determine whether that narrower surface is an intentional restriction on async batches or just
+  // a side effect of building the router here, and either document it or switch to
+  // getInternalFhirRouter(). Some of those operations are superadmin-scoped, so widening the
+  // surface needs its own review.
+  const router = new FhirRouter();
+  addFhirRouterTelemetryListeners(router);
+
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
+    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
     return;
   }
 
@@ -288,7 +299,6 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
     userRepo = await getBatchUserRepo(authState, userConfig);
 
-    const router = new FhirRouter();
     const req: FhirRequest = {
       method: 'POST',
       url: '/',
@@ -356,7 +366,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
         asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
+          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
           return;
         }
       }
@@ -380,6 +390,9 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       resultsThisRun
     );
     const errors = countBundleErrors(resultBundle);
+    // `resultBundle.type` is the response type (`batch-response`); the event reports the request
+    // type so it matches what the synchronous path emits.
+    dispatchBatchCompleted(router, initialState.bundle.type, errors);
     logger.info('completed processing batch', {
       results: getReferenceString(binary),
       entries: resultBundle.entry?.length,
@@ -407,7 +420,15 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     try {
       if (userRepo && initialState) {
         // attach whatever partial results were persisted and fail the job
-        const { binary } = await assembleResultBundle(userRepo.clone(), store, initialState, chunkSeq, resultsThisRun);
+        const { binary, bundle } = await assembleResultBundle(
+          userRepo.clone(),
+          store,
+          initialState,
+          chunkSeq,
+          resultsThisRun
+        );
+        // Failure is terminal (DelayedError was re-thrown above), so close out the pre-event.
+        dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
         await exec
           .failJob(failErr, {
             resourceType: 'Parameters',
@@ -442,6 +463,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * @param chunkSeq - The number of result chunks written so far.
  * @param authState - The auth state captured when the batch was submitted.
  * @param inMemoryResults - Result entries produced during this run, i.e. checkpointed during this run.
+ * @param router - The router to dispatch the terminal batch event on.
  */
 async function finalizeInterrupted(
   logger: ILogger,
@@ -450,7 +472,8 @@ async function finalizeInterrupted(
   asyncJob: WithId<AsyncJob>,
   chunkSeq: number,
   authState: Readonly<AuthState>,
-  inMemoryResults: Record<number, BundleEntry>
+  inMemoryResults: Record<number, BundleEntry>,
+  router: FhirRouter
 ): Promise<void> {
   try {
     logger.info('Async batch job cancelled mid-flight; making partial results available', {
@@ -460,6 +483,9 @@ async function finalizeInterrupted(
     const userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
     const repo = await getBatchUserRepo(authState, userConfig);
     const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq, inMemoryResults);
+    // Cancellation is terminal, so close out the pre-event dispatched when the bundle was
+    // preprocessed, possibly by an earlier run of this job.
+    dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
     const output: Parameters = {
       resourceType: 'Parameters',
       parameter: [
@@ -507,6 +533,24 @@ async function assembleResultBundle(
   return { binary, bundle };
 }
 
+/**
+ * Dispatches the terminal batch telemetry event for an async batch, closing out the pre-event that
+ * `BatchProcessor.preprocess` dispatched when the bundle was first accepted.
+ *
+ * A re-entrant batch is processed by a succession of `BatchProcessor` instances, none of which can
+ * tell that the batch is finished or account for the runs before it, so the worker emits this
+ * rather than the processor. It must be sent exactly once per job, on completion, failure, or
+ * cancellation — and never when a run is merely checkpointed for a later worker to resume, which
+ * would count one batch as several.
+ * @param router - The router the telemetry listeners are subscribed to.
+ * @param bundleType - The type of the *request* bundle, matching what the synchronous path reports.
+ * @param errorCount - Failed entries across the whole job, from the assembled response bundle.
+ */
+function dispatchBatchCompleted(router: FhirRouter, bundleType: Bundle['type'], errorCount: number): void {
+  const event: BatchEvent = { type: 'batch', bundleType, errorCount };
+  router.dispatchEvent(event);
+}
+
 function countBundleErrors(bundle: Bundle): number {
   let errors = 0;
   for (const entry of bundle.entry ?? []) {
@@ -530,7 +574,11 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  // This path runs the whole bundle through `processBatch`, which dispatches both telemetry events
+  // itself; it only needed listeners subscribed. See the TODO in `execBatchJob` about the routes a
+  // bare FhirRouter exposes.
   const router = new FhirRouter();
+  addFhirRouterTelemetryListeners(router);
   const req: FhirRequest = {
     method: 'POST',
     url: '/',
