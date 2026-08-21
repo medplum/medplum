@@ -5,5 +5,6 @@
     "moduleResolution": "bundler",
     "lib": ["esnext", "dom", "dom.iterable"],
     "types": ["vite/client"]
-  }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import type { TestSpecification } from 'vitest/node';
 import { BaseSequencer } from 'vitest/node';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../aliases.mjs';
 import packageJson from './package.json' with { type: 'json' };
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
