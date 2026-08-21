@@ -21,3 +21,34 @@ In the Edit Form, scroll down to the Cron and choose one of the two ways to crea
 ![Edit Form Page](/img/tutorials/edit-form.png)
 
 Click Ok in the bottom of the page, and your bot will be added to the queue.
+
+## Scheduling with the Cron resource
+
+A [`Cron`](/docs/api/fhir/medplum/cron) resource owns a schedule independently of the Bot, so the
+same Bot can run on several schedules, each under a different identity and with different input.
+Requires the `cron` project feature.
+
+| Element           | Meaning                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| `status`          | Only `active` is scheduled. Any other value unregisters the job but keeps the schedule. |
+| `onBehalfOf`      | The `ProjectMembership` whose identity and access policy the run assumes.               |
+| `targetReference` | The Bot to execute.                                                                     |
+| `cronString`      | The schedule, as a five-field cron expression. Absent means the job never runs.         |
+| `endTime`         | The point after which the job stops running.                                            |
+| `parameter`       | Input passed to the Bot as a `Parameters` resource. Absent passes the `Cron` itself.    |
+
+```json
+{
+  "resourceType": "Cron",
+  "status": "active",
+  "cronString": "0 */3 * * *",
+  "endTime": "2026-01-01T00:00:00.000Z",
+  "onBehalfOf": { "reference": "ProjectMembership/<membershipId>" },
+  "targetReference": { "reference": "Bot/<botId>" },
+  "parameter": [{ "name": "region", "valueString": "us-east" }]
+}
+```
+
+Writing a `Cron` whose `cronString` is not a valid cron expression is rejected, so a broken schedule
+surfaces as an error on the request rather than as a job that silently never fires. Authoring a
+`Cron` is a project-administrator capability, since it chooses the identity the Bot runs as.

@@ -44,6 +44,7 @@ import type { Contract } from './Contract.d.ts';
 import type { Coverage } from './Coverage.d.ts';
 import type { CoverageEligibilityRequest } from './CoverageEligibilityRequest.d.ts';
 import type { CoverageEligibilityResponse } from './CoverageEligibilityResponse.d.ts';
+import type { Cron } from './Cron.d.ts';
 import type { DetectedIssue } from './DetectedIssue.d.ts';
 import type { Device } from './Device.d.ts';
 import type { DeviceDefinition } from './DeviceDefinition.d.ts';
@@ -214,6 +215,7 @@ export type Resource = AccessPolicy
   | Coverage
   | CoverageEligibilityRequest
   | CoverageEligibilityResponse
+  | Cron
   | DetectedIssue
   | Device
   | DeviceDefinition
