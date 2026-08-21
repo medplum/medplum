@@ -117,6 +117,34 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Patient-name',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-name',
+        name: 'name',
+        status: 'active',
+        description: 'A portion of either family or given name of the patient',
+        code: 'name',
+        base: ['Patient'],
+        type: 'string',
+        expression: 'Patient.name',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Patient-birthdate',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-birthdate',
+        name: 'birthdate',
+        status: 'active',
+        description: "The patient's date of birth",
+        code: 'birthdate',
+        base: ['Patient'],
+        type: 'date',
+        expression: 'Patient.birthDate',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Location-name',
         url: 'http://hl7.org/fhir/SearchParameter/Location-name',
         name: 'name',

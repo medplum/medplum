@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
+import { HL7_V2_0203, SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
@@ -9,7 +9,9 @@ import type {
   CodeableConcept,
   Device,
   HealthcareService,
+  Identifier,
   Location,
+  Patient,
   Practitioner,
   PractitionerRole,
   Schedule,
@@ -450,3 +452,37 @@ export const DrOseiRole: WithId<PractitionerRole> = {
 export const DrOseiSchedule = buildSchedule('schedule-dr-osei', 'Practitioner/dr-osei', 'Dr. Ama Osei');
 
 export const SubClinicProviderFixtures = [DrOseiPractitioner, DrOseiRole, DrOseiSchedule];
+
+/** A project's own medical record number system, for identifiers carrying no type. */
+export const MRN_SYSTEM = 'http://example.org/mrn';
+
+// Patients for the field that has to tell one from another. Two of them share a
+// name, which is the case the option row exists to answer: a name alone cannot
+// separate them, so the row carries a birth date and a medical record number.
+// One has none on file, and must still be listed rather than hidden.
+function buildPatient(id: string, given: string, family: string, birthDate: string, mrn?: Identifier): WithId<Patient> {
+  return {
+    resourceType: 'Patient',
+    id,
+    name: [{ given: [given], family }],
+    birthDate,
+    identifier: mrn ? [mrn] : undefined,
+  };
+}
+
+/** Typed as a medical record number, which is how it is read without configuration. */
+export const ElderJordanPatient = buildPatient('jordan-elder', 'Jordan', 'Reyes', '1961-04-02', {
+  type: { coding: [{ system: HL7_V2_0203, code: 'MR' }] },
+  value: 'MRN-0041',
+});
+
+/** Same name, different person, and no medical record number on file. */
+export const YoungerJordanPatient = buildPatient('jordan-younger', 'Jordan', 'Reyes', '1994-11-30');
+
+/** Identified only by the system that issued it, which is what `mrnSystem` names. */
+export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield', '1978-06-14', {
+  system: MRN_SYSTEM,
+  value: 'MRN-0099',
+});
+
+export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
