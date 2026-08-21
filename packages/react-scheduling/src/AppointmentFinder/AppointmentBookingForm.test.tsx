@@ -1,11 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Device } from '@medplum/fhirtypes';
+import type { MedplumClient } from '@medplum/core';
+import { formatDate } from '@medplum/core';
+import type { Appointment, Device, Parameters, Patient, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
+import type { MockInstance } from 'vitest';
+import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
 import {
+  ElderJordanPatient,
   MainClinic,
+  MRN_SYSTEM,
+  PatientFixtures,
   SatelliteClinic,
   SchedulingFixtures,
   SubClinicProviderFixtures,
@@ -14,6 +21,8 @@ import {
   TelehealthService,
   Ultrasound1Device,
   UltrasoundImagingService,
+  UntypedMrnPatient,
+  YoungerJordanPatient,
 } from '../stories/scheduling';
 import {
   clickAutocompleteOption,
@@ -39,15 +48,23 @@ installAutocompleteTimers();
 
 async function setupClient(): Promise<MockClient> {
   const medplum = new MockClient();
-  for (const resource of [...SchedulingFixtures, ...SurgicalFixtures, ...SubClinicProviderFixtures]) {
+  for (const resource of [
+    ...SchedulingFixtures,
+    ...SurgicalFixtures,
+    ...SubClinicProviderFixtures,
+    ...PatientFixtures,
+  ]) {
     await medplum.createResource(resource);
   }
   stubChainedActorSearch(medplum);
   return medplum;
 }
 
-function setup(medplum: MockClient, props?: AppointmentBookingFormProps): void {
-  const element: JSX.Element = <AppointmentBookingForm {...props} />;
+/** Every mount needs one, and it is the only prop a host must supply. */
+const onBooked = vi.fn();
+
+function setup(medplum: MockClient, props?: Partial<AppointmentBookingFormProps>): void {
+  const element: JSX.Element = <AppointmentBookingForm onBooked={onBooked} {...props} />;
   renderWithMedplum(element, medplum);
 }
 
@@ -229,9 +246,9 @@ function chosenTimeField(): HTMLInputElement | null {
 /**
  * Whether one element comes before another in the document.
  *
- * Where the chosen time sits is part of the behaviour: the form is a column of
- * labelled fields and the answer belongs above the control that produced it, which
- * only document order carries.
+ * Where a field sits is part of the behaviour: the form asks the criteria, finds the
+ * time, then takes the details, and the chosen time belongs above the control that
+ * produced it. Only document order carries either.
  *
  * @param first - The element expected to come first.
  * @param second - The element expected to follow it.
@@ -249,17 +266,82 @@ function finderButton(): HTMLElement {
   return screen.getByRole('button', { name: /find a time|change time|close time finder/i });
 }
 
+/**
+ * What one patient's option row reads under their name.
+ * @param patient - The patient on offer.
+ * @param mrn - Their medical record number, for a patient with one on file.
+ * @returns The line that tells them apart from a namesake.
+ */
+function patientDetail(patient: Patient, mrn?: string): string {
+  return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ');
+}
+
+/**
+ * Names the patient the visit is for.
+ *
+ * Chosen by the line under the name rather than the name itself, because two of
+ * the fixtures share one — which is the reason that line is there.
+ *
+ * @param query - What to type, which is what the search narrows on.
+ * @param detail - The birth date and medical record number of the one to pick.
+ */
+async function choosePatient(query: string, detail: string): Promise<void> {
+  const input = field(/patient/i);
+  await typeInAutocomplete(input, query);
+
+  const listboxId = input.getAttribute('aria-controls');
+  const listbox = listboxId && document.getElementById(listboxId);
+  if (!listbox) {
+    throw new Error('No dropdown found for the patient field');
+  }
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText(detail));
+  });
+  await settleAutocomplete();
+}
+
+/** Answers everything a booking needs: a visit type, a provider, a time, a patient. */
+async function fillBooking(): Promise<void> {
+  await chooseImagingService();
+  await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+  await openTimeFinder();
+  await chooseFirstOfferedTime();
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+}
+
+/** Confirms the booking. */
+async function clickBook(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /book appointment/i }));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * The appointment handed to `$book`, as the form assembled it.
+ * @param post - The spy standing in front of the client's `post`.
+ * @returns The proposal that was posted.
+ */
+function postedAppointment(post: MockInstance<MedplumClient['post']>): Appointment {
+  const [, body] = post.mock.calls[0];
+  return (body as Parameters).parameter?.find((parameter) => parameter.name === 'appointment')?.resource as Appointment;
+}
+
 describe('AppointmentBookingForm', () => {
   let medplum: MockClient;
   let restoreFind: () => void;
+  let restoreBook: () => void;
 
   beforeEach(async () => {
     vi.setSystemTime(MONDAY_MORNING);
+    onBooked.mockClear();
     medplum = await setupClient();
     restoreFind = installFindStub(medplum);
+    restoreBook = installBookStub(medplum);
   });
 
   afterEach(() => {
+    restoreBook();
     restoreFind();
   });
 
@@ -824,7 +906,34 @@ describe('AppointmentBookingForm', () => {
     });
   });
 
-  describe('Mounting the form', () => {
+  describe('Mounting the booking form', () => {
+    test('Books with nothing supplied but the booking callback', async () => {
+      // The zero-configuration case: one prop, every field offered, and a
+      // booking written without the host issuing a request of its own.
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      expect(onBooked).toHaveBeenCalledTimes(1);
+      const [booking] = onBooked.mock.calls[0] as [{ appointment: Appointment; slots: Slot[] }];
+      expect(booking.appointment.id).toBeDefined();
+      expect(booking.appointment.status).toBe('booked');
+      expect(booking.slots.length).toBeGreaterThan(0);
+    });
+
+    test('Starts with the answers the host pre-filled', async () => {
+      setup(medplum, {
+        defaultLocation: MainClinic,
+        defaultService: UltrasoundImagingService,
+        defaultPatient: ElderJordanPatient,
+      });
+      await settleAutocomplete();
+
+      expect(screen.getByText(MainClinic.name as string)).toBeInTheDocument();
+      expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+      expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
+    });
+
     test('Reports the time search opening and closing', async () => {
       const onToggleTimeFinder = vi.fn();
       setup(medplum, { onToggleTimeFinder });
@@ -851,6 +960,146 @@ describe('AppointmentBookingForm', () => {
       await openTimeFinder();
 
       expect(await screen.findByText(/Wednesday, September 2/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Identifying the patient', () => {
+    test('Asks for the patient below the action that finds a time', async () => {
+      setup(medplum);
+
+      // Naming a patient cannot change which times are offered, so asking for one
+      // ahead of the search puts work that cannot affect the result in front of the
+      // one control that can.
+      expect(isBefore(finderButton(), field(/patient/i))).toBe(true);
+    });
+
+    test('Offers patients matching the name typed', async () => {
+      setup(medplum);
+      await typeInAutocomplete(field(/patient/i), 'Whitfield');
+
+      expect(await screen.findByText('Sam Whitfield')).toBeInTheDocument();
+      expect(screen.queryByText('Jordan Reyes')).not.toBeInTheDocument();
+    });
+
+    test('Tells apart two patients who share a name', async () => {
+      setup(medplum);
+      await typeInAutocomplete(field(/patient/i), 'Jordan');
+
+      // The name is on both rows, so the birth date and the medical record
+      // number under it are the only things separating them.
+      expect(await screen.findByText(patientDetail(ElderJordanPatient, 'MRN-0041'))).toBeInTheDocument();
+      expect(screen.getByText(patientDetail(YoungerJordanPatient))).toBeInTheDocument();
+      expect(screen.getAllByText('Jordan Reyes')).toHaveLength(2);
+    });
+
+    test('Lists a patient with no medical record number by name and birth date', async () => {
+      setup(medplum);
+      await typeInAutocomplete(field(/patient/i), 'Jordan');
+
+      // Hiding somebody because a number is missing would lose the patient, not
+      // the ambiguity.
+      expect(await screen.findByText(patientDetail(YoungerJordanPatient))).toBeInTheDocument();
+    });
+
+    test('Reads the medical record number from the system the host named', async () => {
+      // Sam's identifier carries no type, so nothing but its system says what it
+      // is. Without `mrnSystem` the same patient lists by birth date alone.
+      setup(medplum, { mrnSystem: MRN_SYSTEM });
+      await typeInAutocomplete(field(/patient/i), 'Whitfield');
+
+      expect(await screen.findByText(patientDetail(UntypedMrnPatient, 'MRN-0099'))).toBeInTheDocument();
+    });
+
+    test('Leaves the patient out of the search for times', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await fillBooking();
+
+      // `$find` proposes times on calendars and knows nothing about who the
+      // visit is for; the patient is attached on the way to `$book`.
+      const searched = get.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('find'));
+      expect(searched.length).toBeGreaterThan(0);
+      expect(searched.some((url) => url.includes('Patient'))).toBe(false);
+    });
+
+    test('Asks nothing else below the action that finds a time', async () => {
+      setup(medplum);
+
+      // The free text about the visit that used to sit here is one of the fields a
+      // practice configures, so the patient is the form's last question.
+      const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
+      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([field(/patient/i)]);
+    });
+
+    test('Names the patient as a required participant, once', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      const participants = postedAppointment(post).participant.filter(
+        (participant) => participant.actor?.reference === `Patient/${ElderJordanPatient.id}`
+      );
+      expect(participants).toHaveLength(1);
+      expect(participants[0].required).toBe('required');
+    });
+  });
+
+  describe('Booking the appointment', () => {
+    test('Persists the booking and reports what was written', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      expect(String(post.mock.calls[0][0])).toContain('Appointment/$book');
+      const [booking] = onBooked.mock.calls[0] as [{ appointment: Appointment; slots: Slot[] }];
+      expect(booking.appointment.resourceType).toBe('Appointment');
+      expect(booking.slots.every((slot) => slot.resourceType === 'Slot')).toBe(true);
+    });
+
+    test('Announces the appointment and every slot it reserved', async () => {
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      // `$book` is a custom operation, so nothing else invalidates the caches a
+      // host's own calendar reads from.
+      const announced = notify.mock.calls.map(([event]) => event.resourceType);
+      expect(announced).toContain('Appointment');
+      expect(announced).toContain('Slot');
+    });
+
+    test('Hands the proposal over to a host supplying onBook', async () => {
+      const onBook = vi.fn();
+      const post = vi.spyOn(medplum, 'post');
+      const notify = vi.spyOn(medplum, 'notifyResourceModified');
+      setup(medplum, { onBook });
+      await fillBooking();
+      await clickBook();
+
+      expect(onBook).toHaveBeenCalledTimes(1);
+      const [proposal] = onBook.mock.calls[0] as [Appointment];
+      expect(proposal.participant.some((p) => p.actor?.reference === `Patient/${ElderJordanPatient.id}`)).toBe(true);
+      // The host owns the write, so it owns invalidating its own caches too.
+      expect(post).not.toHaveBeenCalled();
+      expect(notify).not.toHaveBeenCalled();
+      expect(onBooked).not.toHaveBeenCalled();
+    });
+
+    test('Shows a refused booking and keeps every answer', async () => {
+      vi.spyOn(medplum, 'post').mockRejectedValue(new Error('Slot is no longer available'));
+      setup(medplum);
+      await fillBooking();
+      const time = (chosenTimeField() as HTMLInputElement).value;
+      await clickBook();
+
+      expect(await screen.findByText('Slot is no longer available')).toBeInTheDocument();
+      // A refusal is usually somebody else taking the time, and the next attempt
+      // is one field away.
+      expect(chosenTimeField()?.value).toBe(time);
+      expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
     });
   });
 });
