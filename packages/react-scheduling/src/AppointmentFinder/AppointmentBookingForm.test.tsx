@@ -300,17 +300,6 @@ async function choosePatient(query: string, detail: string): Promise<void> {
   await settleAutocomplete();
 }
 
-/**
- * Types into one of the free-text fields.
- * @param label - Matches the label above the field.
- * @param text - What to type.
- */
-async function typeInto(label: RegExp, text: string): Promise<void> {
-  await act(async () => {
-    fireEvent.change(screen.getByRole('textbox', { name: label }), { target: { value: text } });
-  });
-}
-
 /** Answers everything a booking needs: a visit type, a provider, a time, a patient. */
 async function fillBooking(): Promise<void> {
   await chooseImagingService();
@@ -1032,17 +1021,14 @@ describe('AppointmentBookingForm', () => {
       expect(searched.length).toBeGreaterThan(0);
       expect(searched.some((url) => url.includes('Patient'))).toBe(false);
     });
-  });
 
-  describe('Recording what the visit is for', () => {
-    test('Asks for all three free-text fields below the action that finds a time', async () => {
+    test('Asks nothing else below the action that finds a time', async () => {
       setup(medplum);
 
-      // Together rather than split across the action: none of the three is an answer
-      // the search depends on, so none of them belongs above it.
-      for (const label of [/reason for visit/i, /notes or comments/i, /patient instructions/i]) {
-        expect(isBefore(finderButton(), screen.getByRole('textbox', { name: label }))).toBe(true);
-      }
+      // The free text about the visit that used to sit here is one of the fields a
+      // practice configures, so the patient is the form's last question.
+      const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
+      expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([field(/patient/i)]);
     });
 
     test('Names the patient as a required participant, once', async () => {
@@ -1056,35 +1042,6 @@ describe('AppointmentBookingForm', () => {
       );
       expect(participants).toHaveLength(1);
       expect(participants[0].required).toBe('required');
-    });
-
-    test('Writes each free-text field onto its own element', async () => {
-      const post = vi.spyOn(medplum, 'post');
-      setup(medplum);
-      await fillBooking();
-      await typeInto(/reason for visit/i, 'Follow-up scan');
-      await typeInto(/notes or comments/i, 'Bring prior imaging');
-      await typeInto(/patient instructions/i, 'Arrive 15 minutes early');
-      await clickBook();
-
-      const booked = postedAppointment(post);
-      expect(booked.description).toBe('Follow-up scan');
-      expect(booked.comment).toBe('Bring prior imaging');
-      expect(booked.patientInstruction).toBe('Arrive 15 minutes early');
-    });
-
-    test('Leaves off an element whose field holds nothing', async () => {
-      const post = vi.spyOn(medplum, 'post');
-      setup(medplum);
-      await fillBooking();
-      // Whitespace is nothing typed, not a note saying nothing.
-      await typeInto(/notes or comments/i, '   ');
-      await clickBook();
-
-      const booked = postedAppointment(post);
-      expect(booked).not.toHaveProperty('description');
-      expect(booked).not.toHaveProperty('comment');
-      expect(booked).not.toHaveProperty('patientInstruction');
     });
   });
 
@@ -1136,7 +1093,6 @@ describe('AppointmentBookingForm', () => {
       setup(medplum);
       await fillBooking();
       const time = (chosenTimeField() as HTMLInputElement).value;
-      await typeInto(/reason for visit/i, 'Follow-up scan');
       await clickBook();
 
       expect(await screen.findByText('Slot is no longer available')).toBeInTheDocument();
@@ -1144,7 +1100,6 @@ describe('AppointmentBookingForm', () => {
       // is one field away.
       expect(chosenTimeField()?.value).toBe(time);
       expect(screen.getByText('Jordan Reyes')).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: /reason for visit/i })).toHaveValue('Follow-up scan');
     });
   });
 });
