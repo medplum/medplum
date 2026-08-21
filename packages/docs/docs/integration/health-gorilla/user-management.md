@@ -12,6 +12,7 @@ The basic process is:
 2. **Check and Enroll**: It checks if the practitioner is already enrolled in your Health Gorilla tenant. If not, it searches the Health Gorilla NPI registry and automatically enrolls them as a clinical user.
 3. **Sync Identifiers**: The Health Gorilla ID and login details are saved back to the Medplum `Practitioner`. Health Gorilla ID consistency is validated on every sync.
 4. **Sync Lab Account Numbers**: Physician-level lab account numbers (AN identifiers) are resolved and merged into the Health Gorilla `PractitionerRole`.
+5. **Sync Practitioner Credentials**: `Practitioner.name[0].suffix` (e.g. `MD`, `NP`, `CNM`) is the credential that gets displayed on the eReq form. On sync, it's compared against what Health Gorilla currently has on file and corrected if it differs. This also runs automatically during order submission, so a corrected suffix takes effect on the next order without needing to run this bot directly.
 
 ### Bot Call Pattern
 
