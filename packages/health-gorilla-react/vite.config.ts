@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { defineConfig as defineVitestConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { globalSetupFiles, medplumAliases } from '../../vitest.config';
 
 const vitestConfig = defineVitestConfig({
   resolve: {
@@ -11,7 +11,7 @@ const vitestConfig = defineVitestConfig({
     name: '@medplum/health-gorilla-react',
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test.setup.ts',
+    setupFiles: [...globalSetupFiles, './src/test.setup.ts'],
     pool: 'threads',
   },
 });

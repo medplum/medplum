@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { globalSetupFiles, medplumAliases } from '../../vitest.config';
 
 export default defineConfig({
   resolve: {
@@ -9,7 +9,7 @@ export default defineConfig({
     name: '@medplum/scriptsure-react',
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test.setup.ts',
+    setupFiles: [...globalSetupFiles, './src/test.setup.ts'],
     pool: 'threads',
   },
 });

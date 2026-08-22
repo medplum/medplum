@@ -8,6 +8,8 @@ import { defineConfig } from 'vitest/config';
 const repoDir = dirname(fileURLToPath(import.meta.url));
 
 // resolve to the submodules for much easier testing
+export const globalSetupFiles = [resolve(repoDir, 'test.setup.webstorage.ts')];
+
 export const medplumAliases = {
   '@medplum/ccda': resolve(repoDir, 'packages/ccda/src'),
   '@medplum/core': resolve(repoDir, 'packages/core/src'),
