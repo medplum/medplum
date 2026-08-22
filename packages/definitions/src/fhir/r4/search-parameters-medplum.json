@@ -1473,6 +1473,24 @@
       }
     },
     {
+      "fullUrl": "http://hl7.org/fhir/SearchParameter/MedicationDispense-context",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "MedicationDispense-context",
+        "url": "http://hl7.org/fhir/SearchParameter/MedicationDispense-context",
+        "version": "4.0.1",
+        "name": "context",
+        "status": "draft",
+        "publisher": "Health Level Seven International (Pharmacy)",
+        "description": "Returns dispenses with a specific context (episode or episode of care)",
+        "code": "context",
+        "base": ["MedicationDispense"],
+        "type": "reference",
+        "expression": "MedicationDispense.context",
+        "target": ["EpisodeOfCare", "Encounter"]
+      }
+    },
+    {
       "fullUrl" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
       "resource" : {
         "resourceType" : "SearchParameter",
