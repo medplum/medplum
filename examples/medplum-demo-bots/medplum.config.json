@@ -25,6 +25,12 @@
       "dist": "dist/create-pdf.js"
     },
     {
+      "name": "parse-diagnostic-report",
+      "id": "",
+      "source": "src/parse-diagnostic-report.ts",
+      "dist": "dist/parse-diagnostic-report.js"
+    },
+    {
       "name": "sample-account-setup",
       "id": "",
       "source": "src/sample-account-setup.ts",
