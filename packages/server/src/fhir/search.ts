@@ -1252,7 +1252,12 @@ function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplement
   if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
     throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
   }
+ if(filter.operator===Operator.PRESENT||filter.operator===Operator.MISSING){
+  const isMissing=(filter.operator===Operator.MISSING && filter.value==='true')||
+          (filter.operator === Operator.PRESENT && filter.value !== 'true')
 
+    return new Condition(new Column(table,impl.columnName),isMissing?"=":"!=",null)
+ }
   const values = splitSearchOnComma(filter.value);
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
