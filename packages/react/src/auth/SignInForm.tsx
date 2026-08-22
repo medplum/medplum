@@ -22,6 +22,7 @@ export interface SignInFormProps extends BaseLoginRequest {
   readonly chooseScopes?: boolean;
   readonly disableEmailAuth?: boolean;
   readonly disableGoogleAuth?: boolean;
+  readonly externalAuthDomain?: string;
   readonly onSuccess?: () => void;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
@@ -51,6 +52,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     onForgotPassword,
     onRegister,
     onCode,
+    externalAuthDomain,
     ...baseLoginRequest
   } = props;
   const medplum = useMedplum();
@@ -173,6 +175,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               handleAuthResponse={handleAuthResponse}
               disableGoogleAuth={props.disableGoogleAuth}
               disableEmailAuth={props.disableEmailAuth}
+              externalAuthDomain={externalAuthDomain}
               {...baseLoginRequest}
             >
               {props.children}

@@ -97,3 +97,16 @@ Create a [`DomainConfiguration`](/docs/api/fhir/medplum/domainconfiguration) res
 Configuring a DL-IDP on the Medplum Hosted service requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
 
 :::
+
+## Skipping the email prompt
+
+By default, users open the sign-in form and type their email before being redirected to the identity provider. The Medplum App also accepts a `domain` query parameter on its sign-in page that skips the email prompt and redirects to the configured identity provider directly:
+
+```
+{medplumAppBaseUrl}/signin?domain={domain}
+```
+
+- For the Medplum hosted app, `medplumAppBaseUrl` is `https://app.medplum.com`, so the link is `https://app.medplum.com/signin?domain=mydomain.com`.
+- When self-hosting, use your own app base URL, e.g. `https://medplum.example.com/signin?domain=mydomain.com`.
+
+Because it is just a URL, you can use it anywhere you can place a link — a bookmark, an internal portal, or a launcher on your identity provider's dashboard — to take users straight to their identity provider. If the domain has no `DomainConfiguration`, the sign-in page falls back to the normal email/password form.
