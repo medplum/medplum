@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { BotResponseStream, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -146,12 +146,33 @@ export function normalizeBotExecutionResult(result: BotExecutionResult): BotExec
 
 /**
  * Returns true if the bot is enabled and bots are enabled for the project.
+ *
+ * When `runAs` belongs to a different project than the bot — a `runAsUser: true`
+ * bot reached across a `Project.link`, as marketplace packages do — *both*
+ * projects must have the feature. Checking only the bot's project would let a
+ * project that has bots disabled execute a linked project's bots, since the
+ * feature would be evaluated against the publisher's project rather than the
+ * caller's.
  * @param bot - The bot resource.
+ * @param runAs - The membership the bot will execute as, when known.
  * @returns True if the bot is enabled.
  */
-export async function isBotEnabled(bot: Bot): Promise<boolean> {
+export async function isBotEnabled(bot: Bot, runAs?: ProjectMembership): Promise<boolean> {
   const systemRepo = getGlobalSystemRepo();
-  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  const botProjectId = bot.meta?.project as string;
+  if (!(await projectHasBotsEnabled(systemRepo, botProjectId))) {
+    return false;
+  }
+
+  const runAsProjectId = runAs ? resolveId(runAs.project) : undefined;
+  if (!runAsProjectId || runAsProjectId === botProjectId) {
+    return true;
+  }
+  return projectHasBotsEnabled(systemRepo, runAsProjectId);
+}
+
+async function projectHasBotsEnabled(systemRepo: SystemRepository, projectId: string): Promise<boolean> {
+  const project = await systemRepo.readResource<Project>('Project', projectId);
   return !!project.features?.includes('bots');
 }
 
@@ -333,6 +354,41 @@ export function getJsFileExtension(bot: Bot, code: string): string {
 
   // 3. Default to CJS
   return '.cjs';
+}
+
+/**
+ * Wraps an Express response as a {@link BotResponseStream}.
+ *
+ * Building the wrapper is free of side effects — nothing reaches the client until
+ * the bot calls `startStreaming` — so a caller that does not yet know whether the
+ * bot it is about to dispatch to streams can build one unconditionally and let
+ * the dispatch decide.
+ * @param res - The HTTP response to stream through.
+ * @returns The response stream to hand to a streaming bot.
+ */
+export function createBotResponseStream(res: Response): BotResponseStream {
+  return Object.assign(res, {
+    startStreaming: (statusCode: number, headers: Record<string, string>): void => {
+      if (!res.headersSent) {
+        res.status(statusCode);
+        for (const [key, value] of Object.entries(headers)) {
+          res.setHeader(key, value);
+        }
+        res.flushHeaders();
+      }
+    },
+  }) as BotResponseStream;
+}
+
+/**
+ * Returns true if the caller asked for a Server-Sent Events response.
+ * @param headers - The request headers.
+ * @returns True if the `Accept` header names the SSE content type.
+ */
+export function acceptsEventStream(headers: FhirRequest['headers']): boolean {
+  const accept = headers?.accept;
+  const value = Array.isArray(accept) ? accept.join(',') : accept;
+  return !!value?.includes(ContentType.EVENT_STREAM);
 }
 
 /**
