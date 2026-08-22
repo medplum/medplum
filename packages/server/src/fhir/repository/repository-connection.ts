@@ -6,8 +6,9 @@ import { RepositoryMode } from '@medplum/fhir-router';
 import assert from 'node:assert';
 import type { PoolClient } from 'pg';
 import { getConfig } from '../../config/loader';
-import { DatabaseMode, getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool, recordPoolInUse } from '../../database';
 import { getLogger } from '../../logger';
+import { incrementCounter, recordHistogramValue } from '../../otel/otel';
 import { normalizeShardId } from '../sharding';
 import type { PgQueryable, TransactionIsolationLevel } from '../sql';
 import { isPoolClient, isRetryableTransactionError, normalizeDatabaseError } from '../sql';
@@ -29,6 +30,13 @@ const transactionIsolationLevelPriority: Record<TransactionIsolationLevel, numbe
   'REPEATABLE READ': 1,
   SERIALIZABLE: 2,
 };
+
+const queueDepthMetricName = 'medplum.db.queueDepthAtAcquire';
+const acquireAtSaturationMetricName = 'medplum.db.acquireAtSaturation';
+const acquireFailureMetricName = 'medplum.db.acquireFailure';
+const poolSaturationLogIntervalMs = 10_000;
+
+let lastPoolSaturationLogMs = 0;
 
 export interface StatementTimeoutOptions extends RepositoryAccessOptions {
   timeoutMs: number;
@@ -77,6 +85,25 @@ function createScope(kind: 'transaction' | 'savepoint', parent: Scope): Transact
     preCommitCallbacks: [],
     postCommitCallbacks: [],
   };
+}
+
+/**
+ * Logs that a pool had no connection to hand out, rate limited across the process.
+ *
+ * The metric counterpart carries no project attribute because project cardinality is too high
+ * for a metric dimension; this log is what allows saturation to be attributed to a tenant.
+ * @param dbInstanceType - The pool that was saturated.
+ * @param waitingCount - Callers already queued for a connection.
+ * @param totalCount - Connections the pool currently holds.
+ * @param max - Configured pool ceiling.
+ */
+function logPoolSaturation(dbInstanceType: DatabaseMode, waitingCount: number, totalCount: number, max: number): void {
+  const now = Date.now();
+  if (now - lastPoolSaturationLogMs < poolSaturationLogIntervalMs) {
+    return;
+  }
+  lastPoolSaturationLogMs = now;
+  getLogger().warn('Database connection pool saturated', { dbInstanceType, waitingCount, totalCount, max });
 }
 
 function validateScope(scope: unknown): Scope {
@@ -310,7 +337,31 @@ export class RepositoryConnection implements Disposable {
 
     this.assertCanAcquireConnection();
     this.promoteRepositoryMode(mode);
-    this.conn = await getDatabasePool(mode).connect();
+
+    const pool = getDatabasePool(mode);
+    // Label by the pool that was actually resolved rather than the requested mode: reader
+    // requests fall back to the writer pool when no reader is configured, and the connections
+    // they take belong to that pool.
+    const dbInstanceType = pool === getDatabasePool(DatabaseMode.WRITER) ? DatabaseMode.WRITER : DatabaseMode.READER;
+    const attributes = { dbInstanceType };
+
+    // Read pool state synchronously, before awaiting. These are counts the pool already holds
+    // rather than elapsed times, so they measure contention alone and not how long the event
+    // loop took to resume this continuation.
+    const { waitingCount, idleCount, totalCount } = pool;
+    recordPoolInUse(dbInstanceType, totalCount - idleCount);
+    recordHistogramValue(queueDepthMetricName, waitingCount, { attributes });
+    if (idleCount === 0 && totalCount >= pool.options.max) {
+      incrementCounter(acquireAtSaturationMetricName, { attributes });
+      logPoolSaturation(dbInstanceType, waitingCount, totalCount, pool.options.max);
+    }
+
+    try {
+      this.conn = await pool.connect();
+    } catch (err) {
+      incrementCounter(acquireFailureMetricName, { attributes });
+      throw err;
+    }
     this.connMode = mode;
     return this.conn;
   }

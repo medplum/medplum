@@ -6,7 +6,7 @@ import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
 import type { WorkerName } from '../config/types';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, takePoolInUseHighWater } from '../database';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
@@ -168,6 +168,14 @@ export function initOtelHeartbeat(): void {
       ...BASE_METRIC_OPTIONS,
       attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
     });
+    // Reset both marks every heartbeat, even when only the writer gauge is emitted, so a
+    // stale reader peak cannot persist as the reported maximum.
+    const writerInUseHighWater = takePoolInUseHighWater(DatabaseMode.WRITER);
+    const readerInUseHighWater = takePoolInUseHighWater(DatabaseMode.READER);
+    setGauge('medplum.db.inUseHighWater', writerInUseHighWater, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
+    });
 
     if (writerPool !== readerPool) {
       setGauge('medplum.db.totalConnections', readerPool.totalCount, {
@@ -179,6 +187,10 @@ export function initOtelHeartbeat(): void {
         attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
       });
       setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
+        ...BASE_METRIC_OPTIONS,
+        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
+      });
+      setGauge('medplum.db.inUseHighWater', readerInUseHighWater, {
         ...BASE_METRIC_OPTIONS,
         attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
       });

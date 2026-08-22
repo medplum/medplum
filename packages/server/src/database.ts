@@ -25,6 +25,37 @@ export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
 
+/**
+ * High-water mark of in-use connections per pool since the last read.
+ *
+ * Recorded synchronously when a connection is acquired rather than sampled by the metrics
+ * heartbeat: the heartbeat's interval is long enough to miss the short bursts that determine
+ * how small `max` can safely be.
+ */
+const poolInUseHighWater: Record<DatabaseMode, number> = { reader: 0, writer: 0 };
+
+/**
+ * Records the number of in-use connections observed on a pool, keeping the maximum.
+ * @param mode - The pool the observation came from.
+ * @param inUse - Connections checked out of that pool at the time of observation.
+ */
+export function recordPoolInUse(mode: DatabaseMode, inUse: number): void {
+  if (inUse > poolInUseHighWater[mode]) {
+    poolInUseHighWater[mode] = inUse;
+  }
+}
+
+/**
+ * Returns the peak in-use connection count since the previous call and resets the mark.
+ * @param mode - The pool to read.
+ * @returns Peak in-use connections for the elapsed interval.
+ */
+export function takePoolInUseHighWater(mode: DatabaseMode): number {
+  const value = poolInUseHighWater[mode];
+  poolInUseHighWater[mode] = 0;
+  return value;
+}
+
 export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
     throw new Error('Database not setup');
