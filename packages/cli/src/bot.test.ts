@@ -5,6 +5,7 @@ import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import { resolve } from 'node:path';
 import type { Mock, MockInstance } from 'vitest';
 import * as cli from '.';
 import { createMedplumClient } from './util/client';
@@ -320,6 +321,35 @@ describe('CLI Bots', () => {
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Success! Bot created:'));
     expect(fs.existsSync).toHaveBeenCalled();
     expect(fs.readFileSync).not.toHaveBeenCalled();
+  });
+
+  test('Create bot command with custom config file', async () => {
+    const configFileName = 'medplum.staging.config.json';
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+
+    (fs.existsSync as unknown as Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as Mock).mockReturnValue(JSON.stringify({ bots: [] }));
+
+    await main([
+      'node',
+      'index.js',
+      'bot',
+      'create',
+      'test-bot',
+      '1',
+      'src/hello-world.ts',
+      'dist/src/hello-world.ts',
+      '--file',
+      configFileName,
+    ]);
+
+    expect(fs.existsSync).toHaveBeenCalledWith(resolve(configFileName));
+    expect(fs.readFileSync).toHaveBeenCalledWith(resolve(configFileName), 'utf8');
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      resolve(configFileName),
+      expect.stringContaining('"name": "test-bot"'),
+      'utf-8'
+    );
   });
 
   test('Create bot command with auth options', async () => {

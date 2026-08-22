@@ -97,7 +97,8 @@ export async function createBot(
   sourceFile: string,
   distFile: string,
   runtimeVersion?: string,
-  writeConfig?: boolean
+  writeConfig?: boolean,
+  configFileName?: string
 ): Promise<void> {
   const body = {
     name: botName,
@@ -119,7 +120,7 @@ export async function createBot(
   console.log(`Success! Bot created: ${bot.id}`);
 
   if (writeConfig) {
-    addBotToConfig(botConfig);
+    addBotToConfig(botConfig, configFileName);
   }
 }
 
@@ -188,13 +189,13 @@ function readFileContents(fileName: string): string {
   return readFileSync(path, 'utf8');
 }
 
-function addBotToConfig(botConfig: MedplumBotConfig): void {
-  const config = readConfig() ?? {};
+function addBotToConfig(botConfig: MedplumBotConfig, configFileName = getConfigFileName()): void {
+  const config = readConfig(undefined, { file: configFileName }) ?? {};
   if (!config.bots) {
     config.bots = [];
   }
   config.bots.push(botConfig);
-  writeFileSync('medplum.config.json', JSON.stringify(config, null, 2), 'utf8');
+  writeConfig(configFileName, config);
   console.log(`Bot added to config: ${botConfig.id}`);
 }
 
