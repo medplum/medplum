@@ -3,9 +3,11 @@
 import { Table } from '@mantine/core';
 import type { InternalSchemaElement, Operation, TypedValue } from '@medplum/core';
 import {
+  applyPatch,
   arrayify,
   capitalize,
   createPatch,
+  deepClone,
   evalFhirPathTyped,
   getSearchParameterDetails,
   toTypedValue,
@@ -43,19 +45,44 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
     const typedRevised = [toTypedValue(revised)];
     const result = [];
 
-    // First, we filter and consolidate the patch operations
-    // We can do this because we do not use the "value" field in the patch operations
     // Remove patch operations on meta elements such as "meta.lastUpdated" and "meta.versionId"
-    // Consolidate patch operations on arrays
-    const patch = mergePatchOperations(createPatch(original, revised));
+    const patch = createPatch(original, revised).filter((op) => !isIgnoredPath(op.path));
 
-    // Next, convert the patch operations to a diff table
+    // JSON patch operation paths are sequential -- each operation assumes the prior operations
+    // were already applied. Apply the operations one at a time to an intermediate state, and
+    // evaluate each path against the state just before the operation (for removed/replaced
+    // values) and just after it (for added/replaced values), so paths produced by array
+    // reorders, inserts, and removes always resolve to the true values.
+    const state = deepClone(original);
+    const consolidatedPaths = new Set<string>();
+
     for (const op of patch) {
-      const path = op.path;
-      const fhirPath = jsonPathToFhirPath(path);
+      const consolidatedPath = getConsolidatedPath(op, patch);
+      if (consolidatedPath) {
+        // Multiple add/remove operations on the same array path are consolidated into a single
+        // "replace" row showing the whole array before and after.
+        if (!consolidatedPaths.has(consolidatedPath)) {
+          consolidatedPaths.add(consolidatedPath);
+          const fhirPath = jsonPathToFhirPath(consolidatedPath);
+          const property = tryGetElementDefinition(original.resourceType, fhirPath);
+          result.push({
+            key: `op-replace-${consolidatedPath}`,
+            name: `Replace ${fhirPath}`,
+            path: property?.path ?? original.resourceType + '.' + fhirPath,
+            property: property,
+            originalValue: touchUpValue(property, evalFhirPathTyped(fhirPath, typedOriginal)),
+            revisedValue: touchUpValue(property, evalFhirPathTyped(fhirPath, typedRevised)),
+          });
+        }
+        applyPatch(state, [op]);
+        continue;
+      }
+
+      const fhirPath = jsonPathToFhirPath(op.path);
       const property = tryGetElementDefinition(original.resourceType, fhirPath);
-      const originalValue = op.op === 'add' ? undefined : evalFhirPathTyped(fhirPath, typedOriginal);
-      const revisedValue = op.op === 'remove' ? undefined : evalFhirPathTyped(fhirPath, typedRevised);
+      const originalValue = op.op === 'add' ? undefined : evalFhirPathTyped(fhirPath, [toTypedValue(state)]);
+      applyPatch(state, [op]);
+      const revisedValue = op.op === 'remove' ? undefined : evalFhirPathTyped(fhirPath, [toTypedValue(state)]);
       result.push({
         key: `op-${op.op}-${op.path}`,
         name: `${capitalize(op.op)} ${fhirPath}`,
@@ -92,31 +119,24 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   );
 }
 
-function mergePatchOperations(patch: Operation[]): Operation[] {
-  const result: Operation[] = [];
-  for (const patchOperation of patch) {
-    const { op, path } = patchOperation;
-    if (
-      path.startsWith('/meta/author') ||
-      path.startsWith('/meta/compartment') ||
-      path.startsWith('/meta/lastUpdated') ||
-      path.startsWith('/meta/versionId')
-    ) {
-      continue;
-    }
-    const count = patch.filter((el) => el.op === op && el.path === path).length;
-    const resultOperation = { op, path } as Operation;
-    if (count > 1 && (op === 'add' || op === 'remove') && /\/[0-9-]+$/.test(path)) {
+function isIgnoredPath(path: string): boolean {
+  return (
+    path.startsWith('/meta/author') ||
+    path.startsWith('/meta/compartment') ||
+    path.startsWith('/meta/lastUpdated') ||
+    path.startsWith('/meta/versionId')
+  );
+}
+
+function getConsolidatedPath(op: Operation, patch: Operation[]): string | undefined {
+  if ((op.op === 'add' || op.op === 'remove') && /\/[0-9-]+$/.test(op.path)) {
+    const count = patch.filter((el) => el.op === op.op && el.path === op.path).length;
+    if (count > 1) {
       // Remove everything after the last slash
-      resultOperation.op = 'replace';
-      resultOperation.path = path.replace(/\/[^/]+$/, '');
-    }
-    if (!result.some((el) => el.op === resultOperation.op && el.path === resultOperation.path)) {
-      // Only add the operation if it doesn't already exist
-      result.push(resultOperation);
+      return op.path.replace(/\/[^/]+$/, '');
     }
   }
-  return result;
+  return undefined;
 }
 
 function jsonPathToFhirPath(path: string): string {
@@ -166,8 +186,11 @@ function touchUpValue(
   property: InternalSchemaElement | undefined,
   input: TypedValue[] | TypedValue | undefined
 ): TypedValue | undefined {
-  if (!input) {
-    return input;
+  if (!input || (Array.isArray(input) && input.length === 0)) {
+    // Empty array means the FHIRPath expression did not resolve to a value.
+    // Operations are evaluated against sequentially patched states, so this should
+    // not normally happen, but render an empty cell rather than crash if it does.
+    return undefined;
   }
   return {
     type: Array.isArray(input) ? input[0].type : input.type,
