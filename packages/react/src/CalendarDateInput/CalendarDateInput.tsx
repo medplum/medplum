@@ -5,7 +5,16 @@ import cx from 'clsx';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarDateInput.module.css';
-import { getMonthString, getStartMonth, isBeforeDay, isSameDay, startOfMonth } from './CalendarDateInput.utils';
+import {
+  getMonthString,
+  getStartMonth,
+  isBeforeDay,
+  isSameDay,
+  sortEnds,
+  startOfDay,
+  startOfMonth,
+} from './CalendarDateInput.utils';
+import { useDayRangeDrag } from './useDayRangeDrag';
 
 export interface CalendarDateInputProps {
   readonly availableDates: Date[];
@@ -15,6 +24,8 @@ export interface CalendarDateInputProps {
   readonly selected?: Date;
   readonly allowUnavailableDates?: boolean;
   readonly earliestDate?: Date;
+  readonly range?: { readonly start: Date; readonly end: Date };
+  readonly onSelectRange?: (start: Date, end: Date) => void;
 }
 
 interface CalendarCell {
@@ -25,13 +36,15 @@ interface CalendarCell {
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
-  const { onChangeMonth, onClick, selected, allowUnavailableDates, earliestDate } = props;
+  const { onChangeMonth, onClick, onSelectRange, allowUnavailableDates, earliestDate } = props;
   const [uncontrolledMonth, setUncontrolledMonth] = useState<Date>(getStartMonth);
   const shownMonth = props.month ?? uncontrolledMonth;
   const year = shownMonth.getFullYear();
   const monthIndex = shownMonth.getMonth();
   const month = useMemo(() => new Date(year, monthIndex, 1), [year, monthIndex]);
   const atEarliestMonth = !!earliestDate && month <= startOfMonth(earliestDate);
+
+  const drag = useDayRangeDrag(onSelectRange);
 
   function moveMonth(delta: number): void {
     const newMonth = new Date(month.getFullYear(), month.getMonth() + delta, 1);
@@ -44,6 +57,9 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   function isDayDisabled(day: CalendarCell): boolean {
     return (!day.available && !allowUnavailableDates) || (!!earliestDate && isBeforeDay(day.date, earliestDate));
   }
+
+  const range = toDays(drag.range ?? props.range);
+  const selected = range ? undefined : props.selected;
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);
 
@@ -65,7 +81,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
           </Button>
         </Group>
       </Group>
-      <table className={classes.table}>
+      <table className={cx(classes.table, onSelectRange && classes.selectsRanges)}>
         <thead>
           <tr>
             <th>SUN</th>
@@ -81,17 +97,49 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
           {grid.map((week, weekIndex) => (
             <tr key={'week-' + weekIndex}>
               {week.map((day, dayIndex) => (
-                <td key={'day-' + dayIndex}>
+                <td
+                  key={'day-' + dayIndex}
+                  className={cx(
+                    day &&
+                      range &&
+                      day.date >= range.start &&
+                      day.date <= range.end && [
+                        classes.inRange,
+                        (isSameDay(day.date, range.start) || dayIndex === 0) && classes.rangeOpens,
+                        (isSameDay(day.date, range.end) || dayIndex === week.length - 1) && classes.rangeCloses,
+                      ]
+                  )}
+                >
                   {day && (
                     <Button
                       variant="light"
                       className={cx(
                         day.available && classes.available,
-                        isSameDay(day.date, selected) && classes.selected
+                        isRangeEnd(day.date, range, selected) && classes.selected
                       )}
-                      aria-pressed={selected ? isSameDay(day.date, selected) : undefined}
+                      aria-pressed={selected || range ? isChosen(day.date, range, selected) : undefined}
                       disabled={isDayDisabled(day)}
-                      onClick={() => onClick(day.date)}
+                      onPointerDown={(event) => {
+                        if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+                          event.currentTarget.releasePointerCapture(event.pointerId);
+                        }
+                        drag.begin(day.date);
+                      }}
+                      onPointerOver={() => drag.extend(day.date)}
+                      onClick={(event) => {
+                        // A drag that crossed days has already asked for them, and
+                        // the browser reports the release as a click as well.
+                        if (drag.consumeClick()) {
+                          return;
+                        }
+                        const anchor = props.selected ?? props.range?.start;
+                        if (event.shiftKey && anchor && onSelectRange && !isSameDay(anchor, day.date)) {
+                          const ends = sortEnds(anchor, day.date);
+                          onSelectRange(ends.start, ends.end);
+                          return;
+                        }
+                        onClick(day.date);
+                      }}
                     >
                       {day.date.getDate()}
                     </Button>
@@ -104,6 +152,39 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
       </table>
     </div>
   );
+}
+
+type DayRange = CalendarDateInputProps['range'];
+
+/**
+ * Pulls the ends of a range back to the days they fall on.
+ * @param range - The stretch of days asked for, if there is one.
+ * @returns The same range at day granularity.
+ */
+function toDays(range: DayRange): DayRange {
+  return range && { start: startOfDay(range.start), end: startOfDay(range.end) };
+}
+
+/**
+ * Returns whether a day is one of the two a range is anchored on.
+ * @param date - Local midnight of the day in question.
+ * @param range - The stretch of days asked for, if there is one.
+ * @param selected - The single day chosen, if there is one.
+ * @returns True when the day is an end of the range, or the day chosen.
+ */
+function isRangeEnd(date: Date, range: DayRange, selected: Date | undefined): boolean {
+  return isSameDay(date, selected) || (!!range && (isSameDay(date, range.start) || isSameDay(date, range.end)));
+}
+
+/**
+ * Returns whether a day is part of what has been chosen.
+ * @param date - Local midnight of the day in question.
+ * @param range - The stretch of days asked for, if there is one.
+ * @param selected - The single day chosen, if there is one.
+ * @returns True when the day falls within what is chosen.
+ */
+function isChosen(date: Date, range: DayRange, selected: Date | undefined): boolean {
+  return isRangeEnd(date, range, selected) || (!!range && date > range.start && date < range.end);
 }
 
 function buildGrid(startDate: Date, availableDates: Date[]): OptionalCalendarCell[][] {
