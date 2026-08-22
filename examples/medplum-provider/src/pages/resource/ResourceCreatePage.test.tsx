@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import { badRequest, notFound, OperationOutcomeError, serverError } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -10,6 +11,14 @@ import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ResourceCreatePage } from './ResourceCreatePage';
+
+const US_CORE_PATIENT = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
+
+// What a Medplum server actually returns when the profile is not installed: `$expand-profile`
+// reports it as a 400, not a 404.
+const profileNotInstalled = new OperationOutcomeError(
+  badRequest(`StructureDefinition profile with URL ${US_CORE_PATIENT} not found`)
+);
 
 describe('ResourceCreatePage', () => {
   let medplum: MockClient;
@@ -143,6 +152,80 @@ describe('ResourceCreatePage', () => {
       },
       { timeout: 3000 }
     );
+  });
+
+  test('Shows friendly admin guidance when a required profile is missing', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(profileNotInstalled);
+
+    await setup('/Patient/new');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Creating a Patient requires/i)).toBeInTheDocument();
+    });
+
+    // Admins see the specific profile URL and a docs link...
+    expect(screen.getByText(US_CORE_PATIENT)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /profiles documentation/i })).toBeInTheDocument();
+    // ...and the raw server-error string is no longer shown.
+    expect(screen.queryByText(/Server error:/i)).not.toBeInTheDocument();
+  });
+
+  test('Directs non-admins to an administrator when a required profile is missing', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(profileNotInstalled);
+
+    await setup('/Patient/new');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Contact your administrator/i)).toBeInTheDocument();
+    });
+
+    // The specific profile URL is only shown to admins.
+    expect(screen.queryByText(US_CORE_PATIENT)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Server error:/i)).not.toBeInTheDocument();
+  });
+
+  test('Treats a 404 as a missing profile too', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(new OperationOutcomeError(notFound));
+
+    await setup('/Patient/new');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Creating a Patient requires/i)).toBeInTheDocument();
+    });
+  });
+
+  test('Surfaces the real error on a 5xx instead of missing-profile guidance', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(
+      new OperationOutcomeError(serverError(new Error('Internal server error')))
+    );
+
+    await setup('/Patient/new');
+
+    // The real error is surfaced...
+    await waitFor(() => {
+      expect(screen.getByText(/Server error: Internal server error/i)).toBeInTheDocument();
+    });
+
+    // ...and the admin is not misdirected to install a profile that may already be present.
+    expect(screen.queryByText(/Creating a Patient requires/i)).not.toBeInTheDocument();
+  });
+
+  test('Surfaces the real error on a network failure instead of missing-profile guidance', async () => {
+    vi.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
+    // A bare Error (fetch failure, timeout) says nothing about whether the profile exists.
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(new Error('Failed to fetch'));
+
+    await setup('/Patient/new');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Server error: Failed to fetch/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Creating a Patient requires/i)).not.toBeInTheDocument();
   });
 
   test('Handles form submission error', async () => {

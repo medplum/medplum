@@ -36,10 +36,12 @@ import {
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
-import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { CoverageInput } from '../../components/labs/CoverageInput';
 import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { PerformingLabInput } from '../../components/PerformingLabInput';
 import { showErrorNotification } from '../../utils/notifications';
+import { WORKFLOWS } from '../../workflow/dependencies';
+import { WorkflowGate } from '../../workflow/WorkflowGate';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(
@@ -62,6 +64,14 @@ export interface OrderLabsPageProps {
 }
 
 export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
+  return (
+    <WorkflowGate workflow={WORKFLOWS['order-labs']}>
+      <OrderLabsPageContent {...props} />
+    </WorkflowGate>
+  );
+}
+
+function OrderLabsPageContent(props: OrderLabsPageProps): JSX.Element {
   const { patient: defaultPatient, encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();

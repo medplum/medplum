@@ -113,13 +113,13 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
     if (isCreatable) {
       // The field is still usable, so show a non-error helper note (in the description slot)
       const unavailableNote = (
-        <UnavailableNote text="Suggestions unavailable" color="yellow.9" message={unavailableMessage} />
+        <UnavailableNote text="Suggestions unavailable" severity="warning" message={unavailableMessage} />
       );
       inputDescription = combineNodes(description, unavailableNote);
     } else {
       // The field is unusable: disable it and explain why alongside any consumer validation error
       const unavailableNote = (
-        <UnavailableNote text="This field is unavailable." color="red" message={unavailableMessage} />
+        <UnavailableNote text="This field is unavailable." severity="error" message={unavailableMessage} />
       );
       inputError = combineNodes(error, unavailableNote);
       inputDisabled = true;

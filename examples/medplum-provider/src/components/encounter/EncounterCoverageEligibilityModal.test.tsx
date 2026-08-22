@@ -308,10 +308,13 @@ describe('EncounterCoverageEligibilityModal', () => {
       });
       await user.click(screen.getByText('Plan Benefits'));
       await waitFor(() => {
-        expect(
-          screen.getByText('No eligibility check found. Contact support to enable eligibility checks.')
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Contact support to enable eligibility checks/)).toBeInTheDocument();
       });
+      // The upsell links to the Stedi eligibility docs
+      expect(screen.getByText('learn about insurance eligibility')).toHaveAttribute(
+        'href',
+        'https://www.medplum.com/docs/integration/stedi/insurance-eligibility/eligibility-checks'
+      );
     });
 
     test('shows prompt to check eligibility when bot exists but no prior response', async () => {

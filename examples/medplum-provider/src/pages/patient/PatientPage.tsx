@@ -43,7 +43,7 @@ export function PatientPage(): JSX.Element {
 
   const handleCloseLabsModal = useCallback(() => {
     setIsLabsModalOpen(false);
-  }, []);
+  }, [setIsLabsModalOpen]);
 
   const sections = useMemo(
     () =>

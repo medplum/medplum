@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text } from '@mantine/core';
+import { Anchor, Code, List, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum } from '@medplum/react';
+import { IconFileAlert } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
+import { UnavailableNotice } from '../../components/UnavailableNotice';
 import { usePatient } from '../../hooks/usePatient';
 import { prependPatientPath } from '../patient/PatientPage.utils';
 import { RESOURCE_PROFILE_URLS } from './utils';
@@ -101,6 +103,36 @@ export function ResourceCreatePage(): JSX.Element {
     return <Loading />;
   }
 
+  const isProjectAdmin = medplum.isProjectAdmin();
+  const missingProfileMessage = profileUrl && (
+    <UnavailableNotice
+      icon={<IconFileAlert size={48} color="var(--mantine-color-gray-5)" aria-hidden />}
+      title={`${resourceType} creation is unavailable`}
+      description={
+        isProjectAdmin
+          ? `Creating a ${resourceType} requires a FHIR profile that is not installed in this project:`
+          : `${resourceType} creation is not set up yet. Contact your administrator to enable it.`
+      }
+    >
+      {isProjectAdmin && (
+        <>
+          <List spacing={4} size="sm" withPadding>
+            <List.Item>
+              <Code>{profileUrl}</Code>
+            </List.Item>
+          </List>
+          <Text size="sm" c="dimmed">
+            Import the profile’s StructureDefinition (e.g. the US Core profiles) to enable it. See{' '}
+            <Anchor href="https://www.medplum.com/docs/fhir-datastore/profiles" target="_blank" rel="noreferrer">
+              the profiles documentation
+            </Anchor>
+            .
+          </Text>
+        </>
+      )}
+    </UnavailableNotice>
+  );
+
   return (
     <Document shadow="xs">
       <Stack>
@@ -110,6 +142,7 @@ export function ResourceCreatePage(): JSX.Element {
           onSubmit={handleSubmit}
           outcome={outcome}
           profileUrl={profileUrl}
+          missingProfileMessage={missingProfileMessage}
         />
       </Stack>
     </Document>
