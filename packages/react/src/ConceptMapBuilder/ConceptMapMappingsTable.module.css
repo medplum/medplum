@@ -1,0 +1,23 @@
+.systemUri {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-xs);
+}
+
+/* Six columns of URLs and long display names overflow narrow viewports; scroll the table
+   rather than the page. */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.mappingTable {
+  min-width: 720px;
+}
+
+.sourceCell {
+  vertical-align: top;
+  border-right: 1px solid var(--mantine-color-gray-2);
+}
+
+[data-mantine-color-scheme='dark'] .sourceCell {
+  border-right-color: var(--mantine-color-dark-4);
+}
