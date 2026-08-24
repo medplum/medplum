@@ -11,10 +11,14 @@ import { useCallback } from 'react';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 
+const SERVICE_PAGE_SIZE = 25;
+
 /**
- * How many visit types one search offers, and the order they come back in.
+ * `_sort=name` stays on both requests even though the field orders the merge itself:
+ * it makes each response its own first page by name, and the true first page is
+ * contained in the union of the two.
  */
-const SERVICE_SEARCH_CRITERIA = { _count: '25', _sort: 'name' };
+const SERVICE_SEARCH_CRITERIA = { _count: String(SERVICE_PAGE_SIZE), _sort: 'name' };
 
 export interface AppointmentServiceSelectProps {
   readonly defaultValue?: WithId<HealthcareService>;
@@ -33,6 +37,9 @@ export interface AppointmentServiceSelectProps {
  * without a `SchedulingParameters` extension has no duration or alignment for
  * `$find` to work from, so booking against it cannot succeed.
  *
+ * A chosen site narrows the list to the visit types it can hold: the ones naming
+ * that site, and the ones naming no location at all.
+ *
  * @param props - The React props.
  * @returns The service field.
  */
@@ -45,17 +52,27 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 
   const loadOptions = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
-      const searchParams = new URLSearchParams(SERVICE_SEARCH_CRITERIA);
+      const criteria = new URLSearchParams(SERVICE_SEARCH_CRITERIA);
       if (input) {
-        searchParams.set('name', input);
+        criteria.set('name', input);
       }
-      if (locationReference) {
-        searchParams.set('location', locationReference);
-      }
-      const services = await medplum.searchResources('HealthcareService', searchParams, { signal });
+      // A reference search needs the element present, so what names no location cannot
+      // ride on the site's own search and the field asks twice, together. With no site
+      // it asks once: `location:missing=true` alone would hide every sited visit type.
+      const searches = locationReference
+        ? [withParam(criteria, 'location', locationReference), withParam(criteria, 'location:missing', 'true')]
+        : [criteria];
+      const pages = await Promise.all(
+        searches.map(async (params) => medplum.searchResources('HealthcareService', params, { signal }))
+      );
       // The scheduling filter is applied here rather than in the search because it
       // reads an extension, which no search parameter covers.
-      return services.filter(hasSchedulingParameters);
+      const services = pages.flatMap((page) => page.filter(hasSchedulingParameters));
+      // Disjoint by construction — one needs `location` present, the other needs it
+      // absent — so the merge is a sort with nothing to deduplicate, and where a visit
+      // type was found never shows in the order.
+      services.sort((left, right) => (left.name ?? '').localeCompare(right.name ?? ''));
+      return services.slice(0, SERVICE_PAGE_SIZE);
     },
     [medplum, locationReference]
   );
@@ -68,7 +85,9 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       label={label}
       placeholder="Search visit types"
       description={
-        locationResource ? `Showing visit types offered at ${getDisplayString(locationResource)}.` : undefined
+        locationResource
+          ? `Showing visit types offered at ${getDisplayString(locationResource)}, plus those not tied to a site.`
+          : undefined
       }
       required
       maxValues={1}
@@ -81,6 +100,12 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       onChange={handleChange}
     />
   );
+}
+
+function withParam(criteria: URLSearchParams, name: string, value: string): URLSearchParams {
+  const params = new URLSearchParams(criteria);
+  params.set(name, value);
+  return params;
 }
 
 function toOption(service: WithId<HealthcareService>): AsyncAutocompleteOption<WithId<HealthcareService>> {

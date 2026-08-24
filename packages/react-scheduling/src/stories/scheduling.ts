@@ -147,7 +147,11 @@ export const UltrasoundImagingService = buildSchedulableService({
   locationIds: ['main-clinic'],
 });
 
-/** A visit type naming no location, for the kept-but-not-offered asymmetry. */
+/**
+ * A visit type naming no location: offered at every site, kept across every site change.
+ * Its name has to sort between the sited ones — that is what makes the merged list's
+ * order evidence of a sort rather than one search appended to the other.
+ */
 export const TelehealthService = buildSchedulableService({
   id: 'telehealth-consult',
   name: 'Telehealth Consult',

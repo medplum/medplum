@@ -28,9 +28,9 @@ export function getServiceDurationMinutes(service: HealthcareService): number | 
  * Matches `HealthcareService.location` by exact reference, with no `partOf` walk, so
  * a room inside a site does not stand for the site.
  *
- * A service naming no location is kept, which diverges from the search: the search
- * needs the element present, so such a service survives being chosen first but is
- * not offered once a site is.
+ * A service naming no location is kept: nothing about it was ever tied to a site. This
+ * is the client-side mirror of the field's pair of searches — `location=<site>` and
+ * `location:missing=true` — held to them by nothing but the test that runs both.
  *
  * @param service - The service being checked.
  * @param location - The site being booked at, or undefined for no site at all.

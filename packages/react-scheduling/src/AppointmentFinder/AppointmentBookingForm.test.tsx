@@ -430,7 +430,9 @@ describe('AppointmentBookingForm', () => {
 
       await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
 
-      expect(screen.getByText('Showing visit types offered at Uro Associates - Satellite.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Showing visit types offered at Uro Associates - Satellite, plus those not tied to a site.')
+      ).toBeInTheDocument();
       // Imaging names the main clinic, and only a visit type naming this site exactly
       // is offered at it.
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
@@ -748,16 +750,22 @@ describe('AppointmentBookingForm', () => {
       expect(hasPill('Ultrasound Imaging')).toBe(true);
     });
 
-    test('Keeps a visit type that names no location when the site changes', async () => {
+    test('Keeps a visit type that names no location when the site changes, and offers it there', async () => {
       setup(medplum, { defaultService: TelehealthService });
       await settleAutocomplete();
       expect(hasPill('Telehealth Consult')).toBe(true);
 
       await chooseSite('Main Clinic', 'Uro Associates - Main Clinic');
 
-      // Never tied to a site, so no site invalidates it — even though choosing one now
-      // keeps it from being offered again.
+      // Never tied to a site, so no site invalidates it.
       expect(hasPill('Telehealth Consult')).toBe(true);
+
+      // The predicate here and the pair of searches behind the field are one rule spelled
+      // twice, and only a test through both catches them drifting apart. The field hides
+      // its search box while it holds an answer, so asking costs the pill just asserted.
+      await removePill('Telehealth Consult');
+      const listbox = await searchField(/visit type/i, 'Telehealth');
+      expect(within(listbox).getByText('Telehealth Consult')).toBeInTheDocument();
     });
 
     test('Collapses the time search when the visit type is cleared, and says so', async () => {
