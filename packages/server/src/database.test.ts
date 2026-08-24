@@ -9,7 +9,7 @@ import {
   DatabaseMode,
   getDatabasePool,
   initDatabase,
-  purgeIdleDatabasePoolConnections,
+  prepareDatabasePoolsForShutdown,
   releaseAdvisoryLock,
 } from './database';
 
@@ -60,9 +60,10 @@ describe('Advisory locks', () => {
   });
 });
 
-describe('purgeAllIdlePoolConnections', () => {
+describe('prepareDatabasePoolsForShutdown', () => {
   beforeEach(async () => {
     const config = await loadTestConfig();
+    config.database.minConnections = 2;
     await initDatabase(config);
   });
 
@@ -70,14 +71,38 @@ describe('purgeAllIdlePoolConnections', () => {
     await closeDatabase();
   });
 
-  test('Closes all idle connections', async () => {
+  test('Closes all idle connections regardless of the configured minimum', async () => {
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const clients = await Promise.all([pool.connect(), pool.connect()]);
     clients.forEach((client) => client.release());
+    expect(pool.options.min).toBe(2);
     expect(pool.idleCount).toBe(2);
 
-    purgeIdleDatabasePoolConnections();
+    prepareDatabasePoolsForShutdown();
 
+    expect(pool.options.min).toBe(0);
+    expect(pool.idleCount).toBe(0);
+    expect(pool.totalCount).toBe(0);
+  });
+
+  test('Closes connections released during graceful shutdown', async () => {
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const idleClient = await pool.connect();
+    const activeClient = await pool.connect();
+    idleClient.release();
+    expect(pool.idleCount).toBe(1);
+    expect(pool.totalCount).toBe(2);
+
+    prepareDatabasePoolsForShutdown();
+
+    expect(pool.idleCount).toBe(0);
+    expect(pool.totalCount).toBe(1);
+
+    await pool.query('SELECT 1');
+    expect(pool.idleCount).toBe(0);
+    expect(pool.totalCount).toBe(1);
+
+    expect(() => activeClient.release()).not.toThrow();
     expect(pool.idleCount).toBe(0);
     expect(pool.totalCount).toBe(0);
   });

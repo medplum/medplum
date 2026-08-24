@@ -4,7 +4,7 @@ import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
 import { loadConfig } from './config/loader';
-import { purgeIdleDatabasePoolConnections } from './database';
+import { prepareDatabasePoolsForShutdown } from './database';
 import { exitAfterStdoutDrain, globalLogger } from './logger';
 import { getServerVersion } from './util/version';
 
@@ -49,7 +49,7 @@ export async function main(configName: string): Promise<void> {
         `Shutdown signal received... allowing graceful shutdown for up to ${config.shutdownTimeoutMilliseconds} milliseconds`,
         { signal }
       );
-      purgeIdleDatabasePoolConnections();
+      prepareDatabasePoolsForShutdown();
     },
     onShutdown: () => shutdownApp(),
     finally: () => {
