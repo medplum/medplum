@@ -11,6 +11,7 @@ export * from './AppointmentFinder/AppointmentFinder.roles';
 export * from './AppointmentFinder/AppointmentFinder.schedules';
 export * from './AppointmentFinder/AppointmentFinder.times';
 export * from './AppointmentFinder/AppointmentOptionRow';
+export * from './AppointmentFinder/AppointmentProposalForm';
 export * from './AppointmentFinder/AppointmentServiceSelect';
 export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
