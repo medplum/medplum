@@ -42,11 +42,11 @@ describe('VisitDetailsPanel', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <VisitDetailsPanel
-            encounter={mockEncounter}
-            onEncounterChange={vi.fn()}
-            onBillingOrganizationChange={vi.fn()}
-            {...props}
-          />
+              encounter={mockEncounter}
+              onEncounterChange={vi.fn()}
+              onBillingOrganizationChange={vi.fn()}
+              {...props}
+            />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
