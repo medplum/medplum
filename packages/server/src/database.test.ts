@@ -9,6 +9,7 @@ import {
   DatabaseMode,
   getDatabasePool,
   initDatabase,
+  purgeIdleDatabasePoolConnections,
   releaseAdvisoryLock,
 } from './database';
 
@@ -56,5 +57,28 @@ describe('Advisory locks', () => {
     await Promise.all([aPromise(), bPromise()]);
 
     expect(bLock).toBe(true);
+  });
+});
+
+describe('purgeAllIdlePoolConnections', () => {
+  beforeEach(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config);
+  });
+
+  afterEach(async () => {
+    await closeDatabase();
+  });
+
+  test('Closes all idle connections', async () => {
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const clients = await Promise.all([pool.connect(), pool.connect()]);
+    clients.forEach((client) => client.release());
+    expect(pool.idleCount).toBe(2);
+
+    purgeIdleDatabasePoolConnections();
+
+    expect(pool.idleCount).toBe(0);
+    expect(pool.totalCount).toBe(0);
   });
 });

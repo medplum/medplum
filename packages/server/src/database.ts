@@ -265,3 +265,50 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
     }
   }
 }
+
+/**
+ * Synchronously close all idle connections DB pool connections to immediately free
+ * up DB resources instead of waiting for the graceful server shutdown to invoke
+ * {@link closeDatabase}.
+ */
+export function purgeIdleDatabasePoolConnections(): void {
+  try {
+    if (pool) {
+      purgeIdleConnections(pool, DatabaseMode.WRITER);
+    }
+  } catch (err) {
+    globalLogger.error('Error purging idle pool connections', { err });
+  }
+
+  try {
+    if (readonlyPool) {
+      purgeIdleConnections(readonlyPool, DatabaseMode.READER);
+    }
+  } catch (err) {
+    globalLogger.error('Error purging idle pool connections', { err });
+  }
+}
+
+/**
+ * Synchronously removes all idle connections from the given pool and initiates their closure.
+ * @param pool - The Pool to purge
+ * @param mode - The database mode
+ * @returns The number of idle connections that were purged.
+ */
+function purgeIdleConnections(pool: Pool, mode: DatabaseMode): number {
+  const poolInternal = pool as Pool & {
+    _idle: { client: PoolClient }[];
+    _remove: (client: PoolClient) => void;
+  };
+
+  const idleItems = poolInternal._idle;
+  const count = idleItems.length;
+
+  // Iterate backwards because _remove mutates _idle.
+  for (let i = count - 1; i >= 0; i--) {
+    poolInternal._remove(idleItems[i].client);
+  }
+
+  globalLogger.info(`Purged idle connections from pool`, { mode, count });
+  return count;
+}
