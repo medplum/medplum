@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { EventApi, EventClickInfo, EventSourceInput } from '@fullcalendar/react';
-import { sleep } from '@medplum/core';
-import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { createReference, sleep } from '@medplum/core';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent } from '../test-utils/render';
-import type { DateTimeRange } from '../types';
+import type { CalendarBaseProps } from './CalendarBase';
 import { CalendarBase } from './CalendarBase';
 
 describe('CalendarBase', () => {
@@ -13,31 +14,129 @@ describe('CalendarBase', () => {
   const now = new Date();
   const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
 
-  const setup = ({
-    events,
-    availableTime,
-    eventClick,
-    eventDoubleClick,
-    onRangeChange,
-  }: {
-    events?: EventSourceInput;
-    slots?: Slot[];
-    appointments?: Appointment[];
-    availableTime?: HealthcareServiceAvailableTime[];
-    eventClick?: (eventInfo: EventClickInfo) => void;
-    eventDoubleClick?: (event: EventApi) => boolean | undefined;
-    onRangeChange?: (range: DateTimeRange) => void;
-  } = {}): ReturnType<typeof render> => {
-    return render(
-      <CalendarBase
-        events={events}
-        availableTime={availableTime}
-        eventClick={eventClick}
-        eventDoubleClick={eventDoubleClick}
-        onRangeChange={onRangeChange}
-      />
-    );
+  const createAppointment = (overrides: Partial<Appointment> = {}): WithId<Appointment> => ({
+    resourceType: 'Appointment',
+    id: 'test-appointment-1',
+    status: 'booked',
+    start: new Date(baseDate.getTime()).toISOString(),
+    end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+    participant: [
+      {
+        actor: {
+          reference: 'Patient/123',
+          display: 'John Doe',
+        },
+        status: 'accepted',
+      },
+      {
+        actor: createReference(DrAliceSmith),
+        status: 'accepted',
+      },
+    ],
+    ...overrides,
+  });
+
+  const createSlot = (overrides: Partial<Slot> = {}): WithId<Slot> => ({
+    resourceType: 'Slot',
+    id: 'test-slot-1',
+    status: 'free',
+    schedule: createReference(DrAliceSmithSchedule),
+    start: new Date(baseDate.getTime()).toISOString(),
+    end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+    ...overrides,
+  });
+
+  const setup = (props: CalendarBaseProps): ReturnType<typeof render> => {
+    return render(<CalendarBase {...props} />);
   };
+
+  describe('eventSources', () => {
+    test('renders appointment with patient name', async () => {
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [createAppointment()],
+        slots: [],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    });
+
+    test('renders appointments without a patient', async () => {
+      const appointment = {
+        ...createAppointment(),
+        participant: [
+          {
+            actor: createReference(DrAliceSmith),
+            status: 'accepted' as const,
+          },
+        ],
+      };
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [appointment],
+        slots: [],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/No Patient/)).toBeInTheDocument();
+    });
+
+    test('renders multiple appointments', async () => {
+      const appointment1 = createAppointment({
+        id: 'apt-1',
+        participant: [{ actor: { reference: 'Patient/1', display: 'Homer Simpson' }, status: 'accepted' }],
+      });
+      const appointment2 = createAppointment({
+        id: 'apt-2',
+        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
+      });
+
+      setup({
+        eventSources: [
+          {
+            schedule: DrAliceSmithSchedule,
+            appointments: [appointment1, appointment2],
+            slots: [],
+          },
+        ],
+      });
+      expect(screen.getByText(/Homer Simpson/)).toBeInTheDocument();
+      expect(screen.getByText(/Bob Jones/)).toBeInTheDocument();
+    });
+
+    test('renders "free" slots', async () => {
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [],
+        slots: [createSlot({ status: 'free' })],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/Available/)).toBeInTheDocument();
+    });
+
+    test('renders "busy" slots', async () => {
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [],
+        slots: [createSlot({ status: 'busy' })],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/Blocked/)).toBeInTheDocument();
+    });
+
+    test('filters out slots backing rendered appointmenst', () => {
+      const appointment = createAppointment({ slot: [{ reference: 'Slot/slot-1' }] });
+      const source = {
+        schedule: DrAliceSmithSchedule,
+        appointments: [appointment],
+        slots: [createSlot({ id: 'slot-1', status: 'busy', start: appointment.start, end: appointment.end })],
+      };
+      setup({ eventSources: [source] });
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.queryAllByText(/Blocked/)).toHaveLength(0);
+    });
+  });
 
   // Week view always lays out columns Sun..Sat regardless of which week is showing,
   // so day-of-week behavior can be asserted by position without depending on "today".
@@ -46,7 +145,7 @@ describe('CalendarBase', () => {
 
   describe('CalendarToolbar', () => {
     test('renders toolbar with navigation buttons', async () => {
-      setup();
+      setup({ eventSources: [] });
 
       expect(screen.getByText('Today')).toBeInTheDocument();
       expect(screen.getByLabelText('Next')).toBeInTheDocument();
@@ -54,14 +153,14 @@ describe('CalendarBase', () => {
     });
 
     test('renders view switcher with Month, Week, Day options', async () => {
-      setup();
+      setup({ eventSources: [] });
       expect(screen.getByText('Month')).toBeInTheDocument();
       expect(screen.getByText('Week')).toBeInTheDocument();
       expect(screen.getByText('Day')).toBeInTheDocument();
     });
 
     test('displays current month/year in title for non-day views', async () => {
-      setup();
+      setup({ eventSources: [] });
 
       // Check for month/year format (e.g., "January 2024")
       const title = screen.getByText(/\w+\s+\d{4}/);
@@ -70,7 +169,7 @@ describe('CalendarBase', () => {
 
     test('navigates to previous period when clicking prev button', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
 
       expect(screen.getByText('Today')).toBeInTheDocument();
       expect(onRangeChange).toHaveBeenCalled();
@@ -84,7 +183,7 @@ describe('CalendarBase', () => {
 
     test('navigates to next period when clicking next button', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
       expect(screen.getByText('Today')).toBeInTheDocument();
       expect(onRangeChange).toHaveBeenCalled();
 
@@ -97,7 +196,7 @@ describe('CalendarBase', () => {
 
     test('navigates to today when clicking today button', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
 
       // First navigate away from today
       await userEvent.click(screen.getByLabelText('Previous'));
@@ -113,7 +212,7 @@ describe('CalendarBase', () => {
 
     test('switches to day view and triggers range change', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
 
       expect(screen.getByText('Day')).toBeInTheDocument();
       expect(onRangeChange).toHaveBeenCalled();
@@ -128,7 +227,7 @@ describe('CalendarBase', () => {
     });
 
     test('switches between views', async () => {
-      setup();
+      setup({ eventSources: [] });
 
       const monthRadio = screen.getByLabelText<HTMLInputElement>('Month');
       const weekRadio = screen.getByLabelText<HTMLInputElement>('Week');
@@ -171,79 +270,89 @@ describe('CalendarBase', () => {
   });
 
   describe('event interactions', () => {
-    test('calls eventClick when clicking on an event', async () => {
-      const eventClick = vi.fn();
+    test('calls onAppointmentSelect when clicking on an appointment', async () => {
+      const onSelectAppointment = vi.fn();
+      const onSelectSlot = vi.fn();
       setup({
-        events: [
+        eventSources: [
           {
-            title: 'Test Event One',
-            start: baseDate.toISOString(),
-            end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+            appointments: [createAppointment()],
+            slots: [],
           },
         ],
-        eventClick,
+        onSelectAppointment,
+        onSelectSlot,
       });
-      await userEvent.click(screen.getByText('Test Event One'));
-      expect(eventClick).toHaveBeenCalled();
+      await userEvent.click(screen.getByText('John Doe'));
+      expect(onSelectAppointment).toHaveBeenCalled();
+      expect(onSelectSlot).not.toHaveBeenCalled();
     });
 
-    test('calls eventDoubleClick when double clicking on an event', async () => {
-      const eventClick = vi.fn();
-      const eventDoubleClick = vi.fn();
+    test('calls onAppointmentDoubleClick when double clicking on an appointment', async () => {
+      const onSelectAppointment = vi.fn();
+      const onDoubleClickAppointment = vi.fn();
+      const onSelectSlot = vi.fn();
+      const onDoubleClickSlot = vi.fn();
       setup({
-        events: [
+        eventSources: [
           {
-            title: 'Test Event One',
-            start: baseDate.toISOString(),
-            end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+            appointments: [createAppointment()],
+            slots: [],
           },
         ],
-        eventClick,
-        eventDoubleClick,
+        onSelectAppointment,
+        onDoubleClickAppointment,
+        onSelectSlot,
+        onDoubleClickSlot,
       });
 
-      await userEvent.dblClick(screen.getByText('Test Event One'));
-      expect(eventDoubleClick).toHaveBeenCalled();
-      expect(eventClick).not.toHaveBeenCalled();
+      await userEvent.dblClick(screen.getByText('John Doe'));
+      expect(onDoubleClickAppointment).toHaveBeenCalled();
+      expect(onDoubleClickSlot).not.toHaveBeenCalled();
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+      expect(onSelectSlot).not.toHaveBeenCalled();
 
-      // With eventDoubleClick, the single-click select is debounced (100ms) so
+      // With double clicks, the single-click select is debounced (100ms) so
       // the double-click handler can cancel it before it fires. Wait past the
       // debounce window to confirm the pending select was cancelled, not
       // merely delayed.
       await sleep(150);
-      expect(eventClick).not.toHaveBeenCalled();
+      expect(onSelectAppointment).not.toHaveBeenCalled();
     });
 
-    test('still fires the pending eventClick when eventDoubleClick declines to handle the event', async () => {
-      const eventClick = vi.fn();
-      const eventDoubleClick = vi.fn().mockReturnValue(false);
+    test('calls onSelectSlot after 100ms when clicking on a slot when a double-click handler is registered', async () => {
+      const onSelectAppointment = vi.fn();
+      const onDoubleClickAppointment = vi.fn();
+      const onSelectSlot = vi.fn();
+      const onDoubleClickSlot = vi.fn();
       setup({
-        events: [
+        eventSources: [
           {
-            title: 'Test Event One',
-            start: baseDate.toISOString(),
-            end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+            appointments: [createAppointment()],
+            slots: [createSlot()],
           },
         ],
-        eventClick,
-        eventDoubleClick,
+        onSelectAppointment,
+        onDoubleClickAppointment,
+        onSelectSlot,
+        onDoubleClickSlot,
       });
 
-      await userEvent.dblClick(screen.getByText('Test Event One'));
-      expect(eventDoubleClick).toHaveBeenCalled();
+      await userEvent.click(screen.getByText('Available'));
+      expect(onDoubleClickAppointment).not.toHaveBeenCalled();
+      expect(onDoubleClickSlot).not.toHaveBeenCalled();
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+      expect(onSelectSlot).not.toHaveBeenCalled();
 
-      // eventDoubleClick returned `false`, meaning it didn't actually handle this event
-      // (e.g. it only cares about a subset of event types), so the pending single-click
-      // select must not be cancelled — it should still fire once the debounce elapses.
-      await sleep(250);
-      expect(eventClick).toHaveBeenCalled();
+      await sleep(100);
+      expect(onSelectSlot).toHaveBeenCalled();
     });
   });
 
   describe('onRangeChange', () => {
     test('calls onRangeChange on initial render', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
       expect(onRangeChange).toHaveBeenCalled();
 
       const range = onRangeChange.mock.calls[0][0];
@@ -254,7 +363,7 @@ describe('CalendarBase', () => {
 
     test('calls onRangeChange when navigating', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
       expect(onRangeChange).toHaveBeenCalled();
 
       const initialCallCount = onRangeChange.mock.calls.length;
@@ -268,7 +377,7 @@ describe('CalendarBase', () => {
 
     test('calls onRangeChange when switching views', async () => {
       const onRangeChange = vi.fn();
-      setup({ onRangeChange });
+      setup({ eventSources: [], onRangeChange });
       expect(onRangeChange).toHaveBeenCalled();
 
       const initialCallCount = onRangeChange.mock.calls.length;
@@ -281,7 +390,7 @@ describe('CalendarBase', () => {
 
   describe('availableTime prop', () => {
     test('renders no non-business-hours overlay when availableTime is not provided', async () => {
-      const { container } = setup();
+      const { container } = setup({ eventSources: [] });
 
       expect(container.querySelectorAll('.nonBusinessHours')).toHaveLength(0);
     });
@@ -289,6 +398,7 @@ describe('CalendarBase', () => {
     test('highlights days outside availableTime, and both sides of the day for partial availability', async () => {
       const { container } = setup({
         availableTime: [{ daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
+        eventSources: [],
       });
 
       const cells = getWeekGridCells(container);
@@ -313,6 +423,7 @@ describe('CalendarBase', () => {
 
     test('does not highlight a day marked allDay', async () => {
       const { container } = setup({
+        eventSources: [],
         availableTime: [{ daysOfWeek: ['fri'], allDay: true }],
       });
 
@@ -333,6 +444,7 @@ describe('CalendarBase', () => {
 
     test('combines multiple availableTime entries across days', async () => {
       const { container } = setup({
+        eventSources: [],
         availableTime: [
           {
             daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
