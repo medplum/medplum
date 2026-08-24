@@ -294,6 +294,7 @@ export interface MedplumDatabaseConfig {
   disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
   minConnections?: number;
+  maxConnectionUses?: number;
   idleTimeoutMs?: number;
   connectionTimeoutMs?: number;
   disableConnectionConfiguration?: boolean;

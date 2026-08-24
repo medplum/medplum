@@ -70,6 +70,7 @@ function initPoolConfig(
     max: config.maxConnections ?? DEFAULT_MAX_CONNECTIONS,
     min: config.minConnections,
     idleTimeoutMillis: config.idleTimeoutMs,
+    maxUses: config.maxConnectionUses,
     connectionTimeoutMillis: config.connectionTimeoutMs,
     options: config.disableConnectionConfiguration
       ? undefined
