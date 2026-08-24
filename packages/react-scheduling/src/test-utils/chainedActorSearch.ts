@@ -39,10 +39,11 @@ export function stubChainedActorSearch(medplum: MockClient): () => void {
       }
     }
 
-    const bundle = await search(resourceType, criteria, options);
     if (chained.length === 0) {
-      return bundle;
+      return search(resourceType, query, options);
     }
+
+    const bundle = await search(resourceType, criteria, options);
 
     const actors = new Map<string, Resource>();
     for (const entry of bundle.entry ?? []) {
