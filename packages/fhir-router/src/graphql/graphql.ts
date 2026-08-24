@@ -31,6 +31,7 @@ import type {
 } from 'graphql';
 import {
   execute,
+  GraphQLError,
   GraphQLFloat,
   GraphQLID,
   GraphQLInt,
@@ -154,9 +155,38 @@ export async function graphqlHandler(
       operationName,
       variableValues: variables,
     });
+
+    if (result.errors) {
+      result.errors = result.errors.map(attachOperationOutcome);
+    }
   }
 
   return [allOk, result, { contentType: ContentType.JSON }];
+}
+
+/**
+ * Exposes the structured `OperationOutcome` of a resolver-thrown `OperationOutcomeError` in the
+ * GraphQL error extensions.
+ *
+ * By default, only the flattened message string appears in the GraphQL `errors` array. Attaching
+ * the outcome under `extensions.outcome` preserves the full structure (issue, severity, code,
+ * expression, etc.) in the response. Errors not caused by an `OperationOutcomeError` are returned
+ * unchanged.
+ * @param error - The GraphQL error from the execution result.
+ * @returns The GraphQL error with `extensions.outcome` set if caused by an `OperationOutcomeError`.
+ */
+function attachOperationOutcome(error: GraphQLError): GraphQLError {
+  if (!(error.originalError instanceof OperationOutcomeError)) {
+    return error;
+  }
+  return new GraphQLError(error.message, {
+    nodes: error.nodes,
+    source: error.source,
+    positions: error.positions,
+    path: error.path,
+    originalError: error.originalError,
+    extensions: { ...error.extensions, outcome: error.originalError.outcome },
+  });
 }
 
 /**

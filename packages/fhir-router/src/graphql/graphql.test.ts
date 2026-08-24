@@ -1109,6 +1109,48 @@ describe('GraphQL', () => {
     ]);
   });
 
+  test('Resolver error preserves OperationOutcome in extensions', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientCreate(res: { resourceType: "ServiceRequest" }) { id }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const errors = (res[1] as any).errors;
+    expect(errors[0].message).toStrictEqual('Invalid resourceType');
+    expect(errors[0].extensions).toMatchObject({
+      outcome: {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Invalid resourceType' },
+          },
+        ],
+      },
+    });
+  });
+
+  test('Non-OperationOutcome error does not get outcome extension', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `query ($id: ID!) {
+        Patient(id: $id) { id }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const errors = (res[1] as any).errors;
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain('non-null type "ID!"');
+    expect(errors[0].extensions?.outcome).toBeUndefined();
+  });
+
   test('Updating Patient Record', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
