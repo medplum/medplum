@@ -189,6 +189,15 @@ async function chooseFirstOfferedTime(): Promise<string> {
   return label;
 }
 
+/** Picks the next time along, for a change of mind about the first. */
+async function chooseSecondOfferedTime(): Promise<void> {
+  const [firstGroup] = await screen.findAllByTestId(/^slot-group-/);
+  const [, secondTime] = within(firstGroup).getAllByRole('button');
+  await act(async () => {
+    fireEvent.click(secondTime);
+  });
+}
+
 /**
  * Whether a field is holding a value, read off the pill rather than the state: the
  * fields ignore `defaultValue` after mount, so a cleared form could still show one.
@@ -247,6 +256,14 @@ function finderButton(): HTMLElement {
 }
 
 /**
+ * The action that writes the booking.
+ * @returns The button.
+ */
+function bookButton(): HTMLElement {
+  return screen.getByRole('button', { name: /book appointment/i });
+}
+
+/**
  * What one patient's option row reads under their name.
  * @param patient - The patient on offer.
  * @param mrn - Their medical record number, for a patient with one on file.
@@ -295,6 +312,19 @@ async function clickBook(): Promise<void> {
     fireEvent.click(screen.getByRole('button', { name: /book appointment/i }));
   });
   await settleAutocomplete();
+}
+
+/**
+ * How many times `$book` was posted.
+ *
+ * Counted off the URL rather than off the spy: the stub standing in for the
+ * server writes the appointment and its slots through the same `post`.
+ *
+ * @param post - The spy standing in front of the client's `post`.
+ * @returns The number of bookings written.
+ */
+function bookCount(post: MockInstance<MedplumClient['post']>): number {
+  return post.mock.calls.filter(([url]) => String(url).includes('$book')).length;
 }
 
 /**
@@ -1056,6 +1086,57 @@ describe('AppointmentBookingForm', () => {
       expect(post).not.toHaveBeenCalled();
       expect(notify).not.toHaveBeenCalled();
       expect(onBooked).not.toHaveBeenCalled();
+    });
+
+    test('Reports a booking the host callback threw over as written', async () => {
+      onBooked.mockRejectedValueOnce(new Error('Calendar refresh failed'));
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      // The appointment exists by the time `onBooked` runs, so what the host does
+      // with it afterwards is not the booking failing. Painting the refusal here
+      // would show an error over a time that was taken, and invite a second click.
+      expect(bookCount(post)).toBe(1);
+      expect(screen.queryByText('Calendar refresh failed')).not.toBeInTheDocument();
+    });
+
+    test('Writes a booking once, however many times the button is clicked', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+
+      // Every answer stays on screen, because a refusal needs them; the button is
+      // what keeps that from booking the same time a second time.
+      expect(bookButton()).toBeDisabled();
+      await clickBook();
+      expect(bookCount(post)).toBe(1);
+    });
+
+    test('Offers to book again once the patient changes', async () => {
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+      expect(bookButton()).toBeDisabled();
+
+      await removePill('Jordan Reyes');
+      await choosePatient('Jordan', patientDetail(YoungerJordanPatient));
+
+      // The other Jordan is a different visit, not the one already written.
+      expect(bookButton()).toBeEnabled();
+    });
+
+    test('Offers to book again once the time changes', async () => {
+      setup(medplum);
+      await fillBooking();
+      await clickBook();
+      expect(bookButton()).toBeDisabled();
+
+      await chooseSecondOfferedTime();
+
+      expect(bookButton()).toBeEnabled();
     });
 
     test('Shows a refused booking and keeps every answer', async () => {

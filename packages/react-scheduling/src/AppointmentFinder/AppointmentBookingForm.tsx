@@ -91,7 +91,12 @@ export interface AppointmentBookingFormProps {
    * owns invalidating its own caches.
    */
   readonly onBook?: (proposal: Appointment) => void | Promise<void>;
-  /** Called with what the booking wrote. Not called when `onBook` took it over. */
+  /**
+   * Called with what the booking wrote. Not called when `onBook` took it over.
+   *
+   * The answers stay on screen and the form stops offering to book, until one of
+   * them changes: a host is free to keep this mounted without it writing twice.
+   */
   readonly onBooked: (booking: AppointmentBooking) => void | Promise<void>;
 }
 
@@ -141,6 +146,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
   const [booking, setBooking] = useState(false);
+  const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
@@ -230,6 +236,19 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
     setChosen(undefined);
   }
 
+  // The two answers a written booking can still be changed by. Everything else
+  // above clears the chosen time, which disables the button on its own; these
+  // are what re-enable it, because changing either makes it a different visit.
+  function chooseTime(next: Appointment): void {
+    setChosen(next);
+    setBooked(false);
+  }
+
+  function choosePatient(next: WithId<Patient> | undefined): void {
+    setPatient(next);
+    setBooked(false);
+  }
+
   async function bookAppointment(): Promise<void> {
     if (!chosen || !patient) {
       return;
@@ -241,32 +260,51 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
       const proposal = buildBooking(chosen, patient);
 
       if (onBook) {
+        // The host owns the write here, so a refusal from it is the booking's.
         await onBook(proposal);
         return;
       }
 
-      const written = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
-        medplum.fhirUrl('Appointment', '$book'),
-        { resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: proposal }] }
-      );
-      const booked = readBooking(written);
+      let result: AppointmentBooking;
+      try {
+        const written = await medplum.post<Bundle<WithId<Appointment> | WithId<Slot>>>(
+          medplum.fhirUrl('Appointment', '$book'),
+          { resourceType: 'Parameters', parameter: [{ name: 'appointment', resource: proposal }] }
+        );
+        result = readBooking(written);
+      } catch (error) {
+        // Left on screen with every answer still filled in: a refusal is usually
+        // somebody else taking the time, and the next attempt is one field away.
+        setBookError(error);
+        return;
+      }
+
+      // Only the write is reported as a booking that failed. Past it the
+      // appointment exists, and a red refusal over one that was written would
+      // invite a second click that books the time twice.
+      setBooked(true);
 
       // `$book` is a custom operation, so the client cannot tell what it changed.
       // Announcing it is what refreshes a host's calendar beside this form.
       medplum.notifyResourceModified({
         resourceType: 'Appointment',
         operation: 'create',
-        id: booked.appointment.id,
-        resource: booked.appointment,
+        id: result.appointment.id,
+        resource: result.appointment,
       });
-      for (const slot of booked.slots) {
+      for (const slot of result.slots) {
         medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'create', id: slot.id, resource: slot });
       }
 
-      await onBooked(booked);
+      try {
+        await onBooked(result);
+      } catch (error) {
+        // Reported where a host's own failures are, never as the booking's: the
+        // appointment exists by now, and a red refusal over one that was written
+        // reads as a time still free.
+        console.error(error);
+      }
     } catch (error) {
-      // Left on screen with every answer still filled in: a refusal is usually
-      // somebody else taking the time, and the next attempt is one field away.
       setBookError(error);
     } finally {
       setBooking(false);
@@ -339,11 +377,19 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
           searchCriteria={PATIENT_SEARCH_CRITERIA}
           defaultValue={defaultPatient}
           itemComponent={patientItem}
-          onChange={setPatient}
+          onChange={choosePatient}
         />
 
         {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
-        <Button fullWidth disabled={!chosen || !patient} loading={booking} onClick={bookAppointment}>
+        <Button
+          fullWidth
+          // A booking that was written is not written again: every answer is
+          // still on screen, and clicking through a second time would book the
+          // same time twice. Changing one of them makes it a new request.
+          disabled={!chosen || !patient || booked}
+          loading={booking}
+          onClick={bookAppointment}
+        >
           Book appointment
         </Button>
       </Stack>
@@ -361,7 +407,7 @@ export function AppointmentBookingForm(props: AppointmentBookingFormProps): JSX.
                 groups={day.groups}
                 timezone={timezone}
                 selected={chosen}
-                onSelectAppointment={setChosen}
+                onSelectAppointment={chooseTime}
               />
             ))}
           {!search.loading && !search.error && !windowError && days.length === 0 && (
