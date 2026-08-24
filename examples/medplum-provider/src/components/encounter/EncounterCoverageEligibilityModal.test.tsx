@@ -3,13 +3,12 @@
 import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type {
-  Bot,
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
   PractitionerRole,
 } from '@medplum/fhirtypes';
-import { DrAliceSmith, ExampleBot, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
+import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -66,14 +65,8 @@ const mockEligibilityResponse: WithId<CoverageEligibilityResponse> = {
 
 // useSearchOne calls medplum.searchOne; direct medplum.searchResources calls cover
 // Coverage, CoverageEligibilityRequest, and CoverageEligibilityResponse.
-function mockSearchOne(
-  medplum: MockClient,
-  opts: { bot?: Bot | undefined; practitionerRole?: PractitionerRole | undefined } = {}
-): void {
+function mockSearchOne(medplum: MockClient, opts: { practitionerRole?: PractitionerRole | undefined } = {}): void {
   vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string) => {
-    if (resourceType === 'Bot') {
-      return opts.bot ?? undefined;
-    }
     if (resourceType === 'PractitionerRole') {
       return opts.practitionerRole ?? undefined;
     }
@@ -212,19 +205,11 @@ describe('EncounterCoverageEligibilityModal', () => {
       expect(document.querySelector('.mantine-Select-root')).not.toBeInTheDocument();
     });
 
-    test('shows Check Eligibility button when eligibility bot is found', async () => {
-      mockSearchOne(medplum, { bot: ExampleBot });
+    test('shows Check Eligibility button', async () => {
+      mockSearchOne(medplum);
       await setup();
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeInTheDocument();
-      });
-    });
-
-    test('shows Contact Support button when no eligibility bot', async () => {
-      mockSearchOne(medplum, { bot: undefined });
-      await setup();
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Contact Support' })).toBeInTheDocument();
       });
     });
 
@@ -234,7 +219,7 @@ describe('EncounterCoverageEligibilityModal', () => {
         eligibilityRequests: [mockEligibilityRequest],
         eligibilityResponses: [mockEligibilityResponse],
       });
-      mockSearchOne(medplum, { bot: ExampleBot });
+      mockSearchOne(medplum);
       await setup();
       await waitFor(() => {
         expect(screen.getByText(/Last checked/)).toBeInTheDocument();
@@ -274,12 +259,12 @@ describe('EncounterCoverageEligibilityModal', () => {
   describe('check eligibility', () => {
     beforeEach(() => {
       mockSearchResources(medplum, { coverages: [mockCoverage] });
-      mockSearchOne(medplum, { bot: ExampleBot, practitionerRole: mockPractitionerRole });
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole });
       vi.spyOn(medplum, 'createResource').mockResolvedValue(mockEligibilityRequest);
-      vi.spyOn(medplum, 'executeBot').mockResolvedValue({} as any);
+      vi.spyOn(medplum, 'post').mockResolvedValue(mockEligibilityResponse);
     });
 
-    test('calls createResource and executeBot when Check Eligibility is clicked', async () => {
+    test('creates the request and posts $submit when Check Eligibility is clicked', async () => {
       const user = userEvent.setup();
       await setup();
       await waitFor(() => {
@@ -292,31 +277,17 @@ describe('EncounterCoverageEligibilityModal', () => {
         expect(medplum.createResource).toHaveBeenCalledWith(
           expect.objectContaining({ resourceType: 'CoverageEligibilityRequest' })
         );
-        expect(medplum.executeBot).toHaveBeenCalledWith(ExampleBot.id, mockEligibilityRequest, 'application/fhir+json');
+        expect(medplum.post).toHaveBeenCalledWith(
+          medplum.fhirUrl('CoverageEligibilityRequest', mockEligibilityRequest.id, '$submit')
+        );
       });
     });
   });
 
   describe('benefits section', () => {
-    test('shows contact support prompt when benefits expanded and no bot', async () => {
+    test('shows prompt to check eligibility when no prior response', async () => {
       mockSearchResources(medplum, { coverages: [mockCoverage] });
-      mockSearchOne(medplum, { bot: undefined });
-      const user = userEvent.setup();
-      await setup();
-      await waitFor(() => {
-        expect(screen.getByText('Plan Benefits')).toBeInTheDocument();
-      });
-      await user.click(screen.getByText('Plan Benefits'));
-      await waitFor(() => {
-        expect(
-          screen.getByText('No eligibility check found. Contact support to enable eligibility checks.')
-        ).toBeInTheDocument();
-      });
-    });
-
-    test('shows prompt to check eligibility when bot exists but no prior response', async () => {
-      mockSearchResources(medplum, { coverages: [mockCoverage] });
-      mockSearchOne(medplum, { bot: ExampleBot, practitionerRole: mockPractitionerRole });
+      mockSearchOne(medplum, { practitionerRole: mockPractitionerRole });
       const user = userEvent.setup();
       await setup();
       await waitFor(() => {
