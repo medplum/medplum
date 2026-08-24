@@ -6,6 +6,7 @@ import type {
   Appointment,
   AppointmentParticipant,
   Bundle,
+  CodeableConcept,
   Device,
   HealthcareService,
   Location,
@@ -28,6 +29,19 @@ type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
 
+/**
+ * Declares a fixture a room or a bed.
+ *
+ * Leave the clinics without one: the element is optional, and a Location omitting it
+ * must still be offered as a site.
+ *
+ * @param code - The `location-physical-type` code the Location declares.
+ * @returns The concept to record it as.
+ */
+function physicalType(code: 'ro' | 'bd'): CodeableConcept {
+  return { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code }] };
+}
+
 export const MainClinic: WithId<Location> = {
   resourceType: 'Location',
   id: 'main-clinic',
@@ -40,7 +54,17 @@ export const ExamRoomA: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-a',
   name: 'Exam Room A',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/main-clinic' },
+};
+
+/** A bed in that room: the other thing a site is never one of. */
+export const ExamRoomABed: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'exam-room-a-bed-1',
+  name: 'Exam Room A Bed 1',
+  physicalType: physicalType('bd'),
+  partOf: { reference: 'Location/exam-room-a' },
 };
 
 export const SecondFloor: WithId<Location> = {
@@ -55,6 +79,7 @@ export const ExamRoomB: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-b',
   name: 'Exam Room B',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/second-floor' },
 };
 
@@ -69,6 +94,7 @@ export const SatelliteRoom: WithId<Location> = {
   resourceType: 'Location',
   id: 'satellite-room',
   name: 'Satellite Exam Room',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/satellite-clinic' },
 };
 
@@ -79,22 +105,25 @@ export interface SchedulableServiceOptions {
   readonly category: string;
   readonly durationMinutes: number;
   readonly alignmentMinutes: number;
-  /** The sites holding it. */
-  readonly locationIds: readonly string[];
+  /** The sites holding it, omitted entirely by a visit type held nowhere in particular. */
+  readonly locationIds?: readonly string[];
 }
 
 /**
- * Builds a service `$find` can produce times for: typed, sited, and carrying the
- * `SchedulingParameters` a booking needs.
+ * Builds a service `$find` can produce times for: typed, optionally sited, and
+ * carrying the `SchedulingParameters` a booking needs.
  * @param options - What the visit is, how long it runs, and where it is held.
  * @returns The service.
  */
 export function buildSchedulableService(options: SchedulableServiceOptions): WithId<HealthcareService> {
+  const locationIds = options.locationIds ?? [];
   return {
     resourceType: 'HealthcareService',
     id: options.id,
     name: options.name,
-    location: options.locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    ...(locationIds.length > 0 && {
+      location: locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    }),
     type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
     extension: [
       {
@@ -116,6 +145,19 @@ export const UltrasoundImagingService = buildSchedulableService({
   durationMinutes: 30,
   alignmentMinutes: 15,
   locationIds: ['main-clinic'],
+});
+
+/**
+ * A visit type naming no location: offered at every site, kept across every site change.
+ * Its name has to sort between the sited ones — that is what makes the merged list's
+ * order evidence of a sort rather than one search appended to the other.
+ */
+export const TelehealthService = buildSchedulableService({
+  id: 'telehealth-consult',
+  name: 'Telehealth Consult',
+  category: 'Telehealth',
+  durationMinutes: 20,
+  alignmentMinutes: 20,
 });
 
 /** A service with no SchedulingParameters, which must never be offered. */
@@ -289,11 +331,13 @@ export const SurgicalFixtures = [
 export const SchedulingFixtures = [
   MainClinic,
   ExamRoomA,
+  ExamRoomABed,
   SecondFloor,
   ExamRoomB,
   SatelliteClinic,
   SatelliteRoom,
   UltrasoundImagingService,
+  TelehealthService,
   WalkInService,
   DrRiveraPractitioner,
   DrOkaforPractitioner,
@@ -380,3 +424,29 @@ export function buildFindBundle(appointments: readonly Appointment[]): Bundle<Ap
     entry: appointments.map((resource) => ({ resource })),
   };
 }
+
+/**
+ * A provider whose only role names the clinic's second floor rather than the clinic,
+ * so a provider field booking at the clinic leaves them out while Exam Room B, on
+ * that same floor, is offered.
+ *
+ * Kept out of `SchedulingFixtures` so it does not change the option counts the actor
+ * and schedule tests assert on.
+ */
+export const DrOseiPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-osei',
+  name: [{ given: ['Ama'], family: 'Osei', prefix: ['Dr.'] }],
+};
+
+export const DrOseiRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-osei',
+  practitioner: { reference: 'Practitioner/dr-osei' },
+  healthcareService: [{ reference: 'HealthcareService/ultrasound-imaging' }],
+  location: [{ reference: 'Location/second-floor' }],
+};
+
+export const DrOseiSchedule = buildSchedule('schedule-dr-osei', 'Practitioner/dr-osei', 'Dr. Ama Osei');
+
+export const SubClinicProviderFixtures = [DrOseiPractitioner, DrOseiRole, DrOseiSchedule];

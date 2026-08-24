@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Card, Stack, Text } from '@mantine/core';
+import type { PatchOperation } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Encounter, Organization, Practitioner, Reference } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
@@ -27,7 +28,7 @@ interface VisitDetailsPanelProps {
   practitioner?: Practitioner;
   encounter: Encounter;
   billingOrganization?: Reference<Organization>;
-  onEncounterChange: (encounter: Encounter) => void;
+  onEncounterChange: (ops: PatchOperation[]) => void;
   onBillingOrganizationChange: (organization: Organization | undefined) => void;
 }
 
@@ -39,16 +40,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      participant: [
-        {
-          individual: createReference(practitioner),
-        },
-      ],
-    };
-
-    onEncounterChange(updatedEncounter);
+    onEncounterChange([{ op: 'add', path: '/participant', value: [{ individual: createReference(practitioner) }] }]);
   };
 
   const handleCheckinChange = async (checkin: string): Promise<void> => {
@@ -56,14 +48,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      period: {
-        start: checkin,
-      },
-    };
-
-    onEncounterChange(updatedEncounter);
+    onEncounterChange([{ op: 'add', path: '/period/start', value: checkin }]);
   };
 
   const handleCheckoutChange = async (checkout: string): Promise<void> => {
@@ -71,14 +56,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      period: {
-        end: checkout,
-      },
-    };
-
-    onEncounterChange(updatedEncounter);
+    onEncounterChange([{ op: 'add', path: '/period/end', value: checkout }]);
   };
 
   return (

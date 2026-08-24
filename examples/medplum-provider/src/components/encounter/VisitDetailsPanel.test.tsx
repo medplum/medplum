@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { WithId } from '@medplum/core';
+import type { PatchOperation, WithId } from '@medplum/core';
 import type { Encounter, Organization, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -148,14 +148,19 @@ describe('VisitDetailsPanel', () => {
       fireEvent.click(smithOption);
     });
 
-    // Verify onEncounterChange was called with updated encounter
+    // Verify onEncounterChange was called with a participant patch
     await waitFor(
       () => {
         expect(onEncounterChange).toHaveBeenCalled();
         const call = onEncounterChange.mock.calls[onEncounterChange.mock.calls.length - 1];
-        const updatedEncounter = call[0] as Encounter;
-        expect(updatedEncounter.participant).toBeDefined();
-        expect(updatedEncounter.participant?.[0]?.individual?.reference).toBe('Practitioner/practitioner-2');
+        const ops = call[0] as PatchOperation[];
+        expect(ops).toEqual([
+          {
+            op: 'add',
+            path: '/participant',
+            value: [{ individual: expect.objectContaining({ reference: 'Practitioner/practitioner-2' }) }],
+          },
+        ]);
       },
       { timeout: 5000 }
     );
