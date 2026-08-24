@@ -1277,6 +1277,64 @@ describe('Subscription Worker', () => {
       expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
     }));
 
+  test('Execute bot subscriptions by identifier', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        identifier: [{ system: 'https://example.com/bots', value: 'test-bot-by-identifier' }],
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler(medplum, event) {
+          return event.input;
+        }
+      `,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'Bot/$execute?identifier=test-bot-by-identifier',
+        },
+      });
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      await findAndExecSubscriptionJob(patient, 'create');
+      expect(fetch).not.toHaveBeenCalled();
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      });
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+    }));
+
   test('Bot subscription execution AuditEvent is always emitted to logs', () =>
     withTestContext(async () => {
       const config = await loadTestConfig();

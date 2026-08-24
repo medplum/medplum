@@ -5,7 +5,9 @@ import {
   AccessPolicyInteraction,
   ContentType,
   EMPTY,
+  OperationOutcomeError,
   Operator,
+  badRequest,
   createReference,
   getExtension,
   getExtensionValue,
@@ -37,6 +39,7 @@ import type { Job, MinimalJob } from 'bullmq';
 import { Queue, UnrecoverableError, Worker } from 'bullmq';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
+import { findBotByIdentifier } from '../bots/utils';
 import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
@@ -895,8 +898,23 @@ async function execBot(
     return;
   }
 
-  // URL should be a Bot reference string
-  const bot = await systemRepo.readReference<Bot>({ reference: url });
+  // URL is either a Bot reference string ("Bot/<id>")
+  // or a Bot execute URL with an identifier ("Bot/$execute?identifier=<value>")
+  let bot: WithId<Bot>;
+  if (url === 'Bot/$execute' || url.startsWith('Bot/$execute?')) {
+    const [, query] = url.split('?', 2);
+    const identifier = new URLSearchParams(query).get('identifier');
+    if (!identifier) {
+      throw new OperationOutcomeError(badRequest('Must specify bot ID or identifier.'));
+    }
+    const project = subscription.meta?.project;
+    if (!project) {
+      throw new Error('Subscription is missing project metadata');
+    }
+    bot = await findBotByIdentifier(systemRepo, identifier, project);
+  } else {
+    bot = await systemRepo.readReference<Bot>({ reference: url });
+  }
 
   const project = subscription.meta?.project as string;
   const requester = resource.meta?.author as Reference<
