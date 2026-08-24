@@ -38,9 +38,10 @@ import { useProposedAppointments } from './useProposedAppointments';
 // optional, so `physical-type=si,bu` would hide a Location that never declared one.
 const LOCATION_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
-// Birth date rather than name: the list is already narrowed by the name that was
-// typed, so what orders it usefully is the thing that tells those people apart.
-const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'birthdate' };
+// Alphabetical, then by birth date: a short prefix — or the first click, before
+// anything is typed — leaves a list only a name orders usefully, and the birth
+// date is what tells the people sharing one apart.
+const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
