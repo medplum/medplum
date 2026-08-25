@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { buildProposedAppointment } from '../stories/scheduling';
 import {
+  MAX_FIND_WINDOW_DAYS,
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
@@ -10,6 +11,7 @@ import {
   getActorGroupKey,
   getAppointmentKey,
   getDurationMinutes,
+  getFindWindowError,
   groupAppointmentsByDay,
   parseDayKey,
   parseZonedTime,
@@ -219,5 +221,26 @@ describe('formatDateRange', () => {
 
   test('Says nothing when neither end was asked for', () => {
     expect(formatDateRange({})).toBeUndefined();
+  });
+});
+
+describe('getFindWindowError', () => {
+  test('A range inside the window can be searched', () => {
+    expect(getFindWindowError({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27, 23, 59) })).toBeUndefined();
+    const lastAllowed = new Date(2026, 6, 27);
+    lastAllowed.setDate(lastAllowed.getDate() + MAX_FIND_WINDOW_DAYS);
+    expect(getFindWindowError({ start: new Date(2026, 6, 27), end: lastAllowed })).toBeUndefined();
+  });
+
+  test('A wider range is refused before a request is made for it', () => {
+    const tooFar = new Date(2026, 6, 27);
+    tooFar.setDate(tooFar.getDate() + MAX_FIND_WINDOW_DAYS + 1);
+    expect(getFindWindowError({ start: new Date(2026, 6, 27), end: tooFar })).toBe('Choose at most 31 days at a time.');
+  });
+
+  test('An open range says nothing, because there is no width to judge', () => {
+    expect(getFindWindowError({})).toBeUndefined();
+    expect(getFindWindowError({ start: new Date(2026, 6, 27) })).toBeUndefined();
+    expect(getFindWindowError({ end: new Date(2026, 6, 27) })).toBeUndefined();
   });
 });
