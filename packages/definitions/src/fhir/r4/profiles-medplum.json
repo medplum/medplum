@@ -10785,24 +10785,20 @@
             }]
           },
           {
-            "id" : "Cron.status",
-            "path" : "Cron.status",
-            "short" : "requested | active | error | off",
-            "definition" : "The status of the scheduled job. Only a job with status 'active' is registered with the scheduler; any other status removes it while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
+            "id" : "Cron.active",
+            "path" : "Cron.active",
+            "short" : "Whether the job is registered with the scheduler",
+            "definition" : "Whether the scheduled job runs. Setting this to false unregisters the job while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
             "min" : 1,
             "max" : "1",
             "base" : {
-              "path" : "Cron.status",
+              "path" : "Cron.active",
               "min" : 1,
               "max" : "1"
             },
             "type" : [{
-              "code" : "code"
-            }],
-            "binding" : {
-              "strength" : "required",
-              "valueSet" : "http://hl7.org/fhir/ValueSet/subscription-status|4.0.1"
-            }
+              "code" : "boolean"
+            }]
           },
           {
             "id" : "Cron.onBehalfOf",
@@ -11066,12 +11062,12 @@
             "id" : "Cron.cronString",
             "path" : "Cron.cronString",
             "short" : "The schedule on which the job runs",
-            "definition" : "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write. When absent, the job has no schedule and never runs; to pause a job that has one, set status to something other than active.",
-            "min" : 0,
+            "definition" : "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
+            "min" : 1,
             "max" : "1",
             "base" : {
               "path" : "Cron.cronString",
-              "min" : 0,
+              "min" : 1,
               "max" : "1"
             },
             "type" : [{

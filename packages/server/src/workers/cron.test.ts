@@ -309,14 +309,14 @@ describe('Cron resource', () => {
   function validCron(): Cron {
     return {
       resourceType: 'Cron',
-      status: 'active',
+      active: true,
       cronString: '* * * * *',
       onBehalfOf: createReference(botMembership),
       targetReference: createReference(bot),
     };
   }
 
-  test.each(['status', 'onBehalfOf', 'targetReference'])('%s is required', (field) =>
+  test.each(['active', 'cronString', 'onBehalfOf', 'targetReference'])('%s is required', (field) =>
     withTestContext(async () => {
       const { [field as 'onBehalfOf']: _omitted, ...withoutField } = validCron();
       await expect(repo.createResource<Cron>(withoutField as Cron)).rejects.toThrow('Missing required property');
@@ -342,7 +342,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(bot),
@@ -365,24 +365,24 @@ describe('Cron resource', () => {
     })
   );
 
-  test('A non-active status schedules nothing', () =>
+  test('An inactive Cron schedules nothing', () =>
     withTestContext(async () => {
       const queue = getCronQueue() as any;
       queue.upsertJobScheduler.mockClear();
 
-      const cron = await repo.createResource<Cron>({ ...validCron(), status: 'off' });
+      const cron = await repo.createResource<Cron>({ ...validCron(), active: false });
       await findAndExecDispatchJob(cron, 'create');
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
 
-  test('Turning the status off removes the job', () =>
+  test('Turning off active removes the job', () =>
     withTestContext(async () => {
       const queue = getCronQueue() as any;
       const cron = await repo.createResource<Cron>(validCron());
       await findAndExecDispatchJob(cron, 'create');
 
       queue.removeJobScheduler.mockClear();
-      await repo.updateResource<Cron>({ ...cron, status: 'off' });
+      await repo.updateResource<Cron>({ ...cron, active: false });
       await findAndExecDispatchJob(cron, 'update');
       expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
     }));
@@ -425,28 +425,20 @@ describe('Cron resource', () => {
       executeBotSpy.mockRestore();
     }));
 
-  test('Removing the cronString removes the job', () =>
+  test('Changing the cronString reschedules the job', () =>
     withTestContext(async () => {
       const queue = getCronQueue() as any;
-      const cron = await repo.createResource<Cron>({
-        resourceType: 'Cron',
-        status: 'active',
-        onBehalfOf: createReference(botMembership),
-        cronString: '* * * * *',
-        targetReference: createReference(bot),
-      });
+      const cron = await repo.createResource<Cron>(validCron());
       await findAndExecDispatchJob(cron, 'create');
 
-      queue.removeJobScheduler.mockClear();
-      await repo.updateResource<Cron>({
-        resourceType: 'Cron',
-        status: 'active',
-        onBehalfOf: createReference(botMembership),
-        id: cron.id,
-        targetReference: createReference(bot),
-      });
+      queue.upsertJobScheduler.mockClear();
+      await repo.updateResource<Cron>({ ...cron, cronString: '0 */3 * * *' });
       await findAndExecDispatchJob(cron, 'update');
-      expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
+      expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+        `Cron/${cron.id}`,
+        { pattern: '0 */3 * * *' },
+        { data: { resourceType: 'Cron', cronId: cron.id } }
+      );
     }));
 
   test('Deleting a Cron removes the job', () =>
@@ -454,7 +446,7 @@ describe('Cron resource', () => {
       const queue = getCronQueue() as any;
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(bot),
@@ -481,7 +473,7 @@ describe('Cron resource', () => {
 
       const cron = await plainRepo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         onBehalfOf: createReference(botMembership),
         targetReference: createReference(bot),
         cronString: '* * * * *',
@@ -504,7 +496,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         cronString: '* * * * *',
         targetReference: createReference(bot),
         onBehalfOf: createReference(membership),
@@ -528,7 +520,7 @@ describe('Cron resource', () => {
     withTestContext(async () => {
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         cronString: '* * * * *',
         targetReference: createReference(bot),
         onBehalfOf: createReference(botMembership),
@@ -555,7 +547,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         cronString: '* * * * *',
         targetReference: createReference(bot),
         onBehalfOf: createReference(otherMembership),
@@ -578,7 +570,7 @@ describe('Cron resource', () => {
 
       const cron = await repo.createResource<Cron>({
         resourceType: 'Cron',
-        status: 'active',
+        active: true,
         onBehalfOf: createReference(botMembership),
         cronString: '* * * * *',
         targetReference: createReference(otherBot),

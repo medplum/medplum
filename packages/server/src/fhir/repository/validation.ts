@@ -62,7 +62,7 @@ export async function validateRepositoryResource(repo: Repository, resource: Res
  * @param cron - The Cron resource being written.
  */
 function validateCronString(cron: Cron): void {
-  if (cron.cronString !== undefined && !isValidCron(cron.cronString)) {
+  if (cron.cronString && !isValidCron(cron.cronString)) {
     throw new OperationOutcomeError(badRequest(`Invalid cron expression: '${cron.cronString}'`, 'Cron.cronString'));
   }
 }

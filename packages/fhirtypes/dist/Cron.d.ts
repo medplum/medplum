@@ -124,12 +124,11 @@ export interface Cron {
   modifierExtension?: Extension[];
 
   /**
-   * The status of the scheduled job. Only a job with status 'active' is
-   * registered with the scheduler; any other status removes it while
-   * leaving the schedule itself intact, so the job can be turned back on
-   * without redefining it.
+   * Whether the scheduled job runs. Setting this to false unregisters the
+   * job while leaving the schedule itself intact, so the job can be turned
+   * back on without redefining it.
    */
-  status: 'requested' | 'active' | 'error' | 'off';
+  active: boolean;
 
   /**
    * The project membership whose identity and access policy the scheduled
@@ -147,10 +146,9 @@ export interface Cron {
   /**
    * A schedule for the job to be executed, as a cron expression. An
    * expression that is not a valid five-field cron expression is rejected
-   * on write. When absent, the job has no schedule and never runs; to
-   * pause a job that has one, set status to something other than active.
+   * on write.
    */
-  cronString?: string;
+  cronString: string;
 
   /**
    * The point in time after which the job no longer runs. A job whose end

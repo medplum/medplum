@@ -168,13 +168,13 @@ function getCronString(resource: Bot | Cron): string | undefined {
 /**
  * Returns the schedule a `Cron` should currently run on, or `undefined` if it should not run at all.
  *
- * Being turned off or past its end time collapses to the same answer as having no schedule, so the
+ * Being inactive or past its end time collapses to the same answer as having no schedule, so the
  * ordinary "schedule changed" path in `addCronJobs` removes the job without a separate branch.
  * @param cron - The Cron resource.
  * @returns The cron string, or undefined if the job should not be scheduled.
  */
 function getCronStringForCron(cron: Cron): string | undefined {
-  if (cron.status !== 'active' || isPastEndTime(cron)) {
+  if (!cron.active || isPastEndTime(cron)) {
     return undefined;
   }
 
@@ -327,7 +327,7 @@ export async function reloadCronBots(): Promise<void> {
     await systemRepo.processAllResources<Cron>(
       { resourceType: 'Cron', count: MAX_BOTS_PER_PAGE },
       async (cron) => {
-        if (cron.cronString) {
+        if (cron.active) {
           const project = await systemRepo.readResource<Project>('Project', cron.meta?.project as string);
           await addCronJobs(cron, undefined, { project, interaction: 'update' });
         }

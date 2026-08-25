@@ -28,19 +28,19 @@ A [`Cron`](/docs/api/fhir/medplum/cron) resource owns a schedule independently o
 same Bot can run on several schedules, each under a different identity and with different input.
 Requires the `cron` project feature.
 
-| Element           | Meaning                                                                                 |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| `status`          | Only `active` is scheduled. Any other value unregisters the job but keeps the schedule. |
-| `onBehalfOf`      | The `ProjectMembership` whose identity and access policy the run assumes.               |
-| `targetReference` | The Bot to execute.                                                                     |
-| `cronString`      | The schedule, as a five-field cron expression. Absent means the job never runs.         |
-| `endTime`         | The point after which the job stops running.                                            |
-| `parameter`       | Input passed to the Bot as a `Parameters` resource. Absent passes the `Cron` itself.    |
+| Element           | Meaning                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `active`          | Only an active job is scheduled. Setting it to false unregisters the job but keeps the schedule. |
+| `onBehalfOf`      | The `ProjectMembership` whose identity and access policy the run assumes.                        |
+| `targetReference` | The Bot to execute.                                                                              |
+| `cronString`      | The schedule, as a five-field cron expression. Required.                                         |
+| `endTime`         | The point after which the job stops running.                                                     |
+| `parameter`       | Input passed to the Bot as a `Parameters` resource. Absent passes the `Cron` itself.             |
 
 ```json
 {
   "resourceType": "Cron",
-  "status": "active",
+  "active": true,
   "cronString": "0 */3 * * *",
   "endTime": "2026-01-01T00:00:00.000Z",
   "onBehalfOf": { "reference": "ProjectMembership/<membershipId>" },

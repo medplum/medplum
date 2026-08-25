@@ -160,18 +160,18 @@
       "base": "DomainResource"
     },
     {
-      "name": "status",
+      "name": "active",
       "depth": 1,
       "types": [
         {
-          "datatype": "code"
+          "datatype": "boolean"
         }
       ],
-      "path": "Cron.status",
+      "path": "Cron.active",
       "min": 1,
       "max": "1",
-      "short": "requested | active | error | off",
-      "definition": "The status of the scheduled job. Only a job with status 'active' is registered with the scheduler; any other status removes it while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
+      "short": "Whether the job is registered with the scheduler",
+      "definition": "Whether the scheduled job runs. Setting this to false unregisters the job while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
       "comment": "",
       "inherited": false
     },
@@ -466,10 +466,10 @@
         }
       ],
       "path": "Cron.cronString",
-      "min": 0,
+      "min": 1,
       "max": "1",
       "short": "The schedule on which the job runs",
-      "definition": "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write. When absent, the job has no schedule and never runs; to pause a job that has one, set status to something other than active.",
+      "definition": "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
       "comment": "",
       "inherited": false
     },
