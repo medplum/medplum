@@ -65,8 +65,13 @@ export const SparseAvailability = (): JSX.Element => {
   );
 };
 
-// A stretch of days, banded across the weeks it spans with both of its ends
-// marked. Drag across the days, or shift-click, to ask for another.
+/**
+ * A stretch of days, banded across the weeks it spans with both of its ends marked. Drag across
+ * the days to ask for another, or shift-click to move one end — the range is measured from the day
+ * last clicked, or the day the last drag began on, so shift-clicking back where you started puts
+ * it back.
+ * @returns The story.
+ */
 export const Range = (): JSX.Element => {
   const [range, setRange] = useState({ start: weekdaysOfMonth()[2], end: weekdaysOfMonth()[8] });
   return (

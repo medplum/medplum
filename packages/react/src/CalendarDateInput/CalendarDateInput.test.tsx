@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CalendarDateInput } from './CalendarDateInput';
 import { getMonthString, getStartMonth } from './CalendarDateInput.utils';
@@ -437,7 +439,8 @@ describe('CalendarDateInput', () => {
     );
 
     // Dragging needs a pointer that hovers, so shift is what leaves a range within
-    // reach of a touchscreen or a keyboard.
+    // reach of a touchscreen or a keyboard. With no gesture of its own to go on,
+    // the range is measured from the day the calendar was handed.
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '12' }), { shiftKey: true });
     });
@@ -446,7 +449,7 @@ describe('CalendarDateInput', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  test('Shift-clicking an earlier day asks for the range back to it', async () => {
+  test('A range handed in with no gesture is measured from its start', async () => {
     const onSelectRange = vi.fn();
     const month = getStartMonth();
     render(
@@ -465,8 +468,9 @@ describe('CalendarDateInput', () => {
       fireEvent.click(screen.getByRole('button', { name: '8' }), { shiftKey: true });
     });
 
-    // Measured from where the range began, so widening it backwards works the same
-    // way as dragging backwards does.
+    // Nothing here says which end the user anchored on, so the start is the only
+    // end there is to measure from. A range the calendar produced itself is
+    // measured from the day that gesture anchored on instead.
     expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 8), dayOf(month, 10));
   });
 
@@ -492,6 +496,145 @@ describe('CalendarDateInput', () => {
     // There is no other end for the range to run to.
     expect(onSelectRange).not.toHaveBeenCalled();
     expect(onClick).toHaveBeenCalledWith(dayOf(month, 12));
+  });
+
+  test('Shift-clicking again measures from the same day, so a range can be taken back', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(<HeldRangeCalendar month={month} onSelectRange={onSelectRange} />);
+
+    await pressDay(10);
+    await shiftPressDay(20);
+
+    expect(onSelectRange).toHaveBeenLastCalledWith(dayOf(month, 10), dayOf(month, 20));
+
+    await shiftPressDay(5);
+
+    // The far end moves; the day picked stays put.
+    expect(onSelectRange).toHaveBeenLastCalledWith(dayOf(month, 5), dayOf(month, 10));
+
+    await shiftPressDay(20);
+
+    // So shift-clicking back where it started puts the range back.
+    expect(onSelectRange).toHaveBeenLastCalledWith(dayOf(month, 10), dayOf(month, 20));
+  });
+
+  test('A shift-click after a backwards drag measures from where the drag began', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(<HeldRangeCalendar month={month} onSelectRange={onSelectRange} />);
+
+    await drag(20, 15, 10);
+    await release();
+
+    expect(onSelectRange).toHaveBeenLastCalledWith(dayOf(month, 10), dayOf(month, 20));
+
+    await shiftPressDay(25);
+
+    // Not from the 10th: the range grew out of the 20th, so that is the end it
+    // is still measured from.
+    expect(onSelectRange).toHaveBeenLastCalledWith(dayOf(month, 20), dayOf(month, 25));
+  });
+
+  test('A day picked with the keyboard is the day a shift-click measures from', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(<HeldRangeCalendar month={month} onSelectRange={onSelectRange} />);
+
+    // No press at all, which is the route a keyboard takes.
+    await click(10);
+    await shiftPressDay(12);
+
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 10), dayOf(month, 12));
+  });
+
+  test('A day the caller did not keep is not measured from', async () => {
+    const onSelectRange = vi.fn();
+    const onClick = vi.fn();
+    const month = getStartMonth();
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={onClick}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await pressDay(10);
+    await shiftPressDay(12);
+
+    // Nothing is on show to have anchored on, so there is no range to ask for.
+    expect(onSelectRange).not.toHaveBeenCalled();
+    expect(onClick).toHaveBeenLastCalledWith(dayOf(month, 12));
+  });
+
+  test('A range the caller replaces is measured from its own start', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    const { rerender } = render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={onSelectRange}
+      />
+    );
+
+    await pressDay(10);
+
+    rerender(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        range={{ start: dayOf(month, 20), end: dayOf(month, 22) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+        onSelectRange={onSelectRange}
+      />
+    );
+    await shiftPressDay(25);
+
+    // The caller has replaced what the click anchored on, so that day is spent.
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 20), dayOf(month, 25));
+  });
+
+  test('Shift-clicking carries a range into the next month', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+    render(<HeldRangeCalendar onSelectRange={onSelectRange} />);
+
+    await pressDay(20);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+    });
+    await shiftPressDay(3);
+
+    // Paging needs the pointer let go of, so a drag cannot cross a month. Shift
+    // is the only way to ask for a range that spans two of them.
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 20), dayOf(nextMonth, 3));
+  });
+
+  test('A drag the browser takes over leaves the day to measure from where it was', async () => {
+    const onSelectRange = vi.fn();
+    const month = getStartMonth();
+    render(<HeldRangeCalendar month={month} onSelectRange={onSelectRange} />);
+
+    await pressDay(10);
+    await drag(20, 22);
+    await act(async () => {
+      fireEvent.pointerCancel(window);
+    });
+    await shiftPressDay(15);
+
+    // A drag that asked for nothing anchored on nothing either.
+    expect(onSelectRange).toHaveBeenCalledWith(dayOf(month, 10), dayOf(month, 15));
   });
 
   test('A drag begun by a finger takes the pointer back off the day it landed on', async () => {
@@ -726,4 +869,63 @@ async function pressDay(date: number): Promise<void> {
   await drag(date);
   await release();
   await click(date);
+}
+
+/**
+ * Shift-clicks a day the way a mouse does: press, release, then the click.
+ *
+ * The press is what a shift-click has to survive, since it is the same press
+ * that begins a drag.
+ *
+ * @param date - The day to shift-click.
+ */
+async function shiftPressDay(date: number): Promise<void> {
+  await act(async () => {
+    fireEvent.pointerDown(screen.getByRole('button', { name: String(date) }), { shiftKey: true });
+  });
+  await release();
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: String(date) }), { shiftKey: true });
+  });
+}
+
+interface HeldRangeCalendarProps {
+  readonly month?: Date;
+  readonly onClick?: (date: Date) => void;
+  readonly onSelectRange?: (start: Date, end: Date) => void;
+}
+
+/**
+ * A calendar whose caller keeps what it asks for, as a working one does.
+ *
+ * The day a shift-click measures from is only trusted while it is still on show,
+ * so what was asked for has to be handed back in for the next shift-click to
+ * build on it.
+ *
+ * @param props - The month to show, and spies on what is asked for.
+ * @returns The calendar, holding the day or the range it has been asked for.
+ */
+function HeldRangeCalendar(props: HeldRangeCalendarProps): JSX.Element {
+  const [selected, setSelected] = useState<Date>();
+  const [range, setRange] = useState<{ start: Date; end: Date }>();
+  return (
+    <CalendarDateInput
+      availableDates={[]}
+      month={props.month}
+      selected={selected}
+      range={range}
+      allowUnavailableDates
+      onChangeMonth={vi.fn()}
+      onClick={(date) => {
+        setRange(undefined);
+        setSelected(date);
+        props.onClick?.(date);
+      }}
+      onSelectRange={(start, end) => {
+        setSelected(undefined);
+        setRange({ start, end });
+        props.onSelectRange?.(start, end);
+      }}
+    />
+  );
 }

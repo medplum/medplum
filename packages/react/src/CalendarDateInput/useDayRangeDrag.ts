@@ -12,10 +12,16 @@ export interface DayRangeDrag {
   readonly extend: (date: Date) => void;
   /** Whether the click now arriving is the tail of a drag, and so is spent. */
   readonly consumeClick: () => boolean;
+  /** The day a shift-click measures its range from, as the last gesture left it. */
+  readonly anchor: () => Date | undefined;
+  /** Anchors on a day, so a shift-click measures its range from there. */
+  readonly anchorOn: (date: Date) => void;
 }
 
 /**
- * Tracks a drag across calendar days, asking for the range it covers on release.
+ * Tracks the gestures that leave a range behind: a drag across calendar days,
+ * which asks for the range it covers on release, and the day a shift-click
+ * measures its range from.
  * @param onSelectRange - Called with the range a finished drag covered. A drag
  * is only tracked when this is given.
  * @returns The drag under way and the handlers that drive it.
@@ -25,6 +31,9 @@ export function useDayRangeDrag(onSelectRange?: (start: Date, end: Date) => void
   const [to, setTo] = useState<Date>();
   // Set when a drag has just ended, to swallow the click that follows it.
   const dragged = useRef(false);
+  // The day a range grows from: a drag anchors on the day it began, a click on
+  // the day it picked, and a shift-click on neither.
+  const anchored = useRef<Date>(undefined);
 
   useEffect(() => {
     if (!from) {
@@ -33,6 +42,7 @@ export function useDayRangeDrag(onSelectRange?: (start: Date, end: Date) => void
     function finish(): void {
       if (from && to && !isSameDay(from, to)) {
         dragged.current = true;
+        anchored.current = from;
         const { start, end } = sortEnds(from, to);
         onSelectRange?.(start, end);
       }
@@ -71,6 +81,12 @@ export function useDayRangeDrag(onSelectRange?: (start: Date, end: Date) => void
       const wasDrag = dragged.current;
       dragged.current = false;
       return wasDrag;
+    },
+    anchor(): Date | undefined {
+      return anchored.current;
+    },
+    anchorOn(date: Date): void {
+      anchored.current = date;
     },
   };
 }
