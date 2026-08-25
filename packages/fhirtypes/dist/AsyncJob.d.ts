@@ -124,7 +124,7 @@ export interface AsyncJob {
   /**
    * The type of the AsyncJob.
    */
-  type?: 'data-migration';
+  type?: 'data-migration' | 'aws-lambda-microvm';
 
   /**
    * The data version of the migration this job represents.

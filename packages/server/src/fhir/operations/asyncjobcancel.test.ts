@@ -127,7 +127,7 @@ describe('AsyncJob/$cancel', () => {
 
     const outcome = res2.body as OperationOutcome;
     expect(outcome).toMatchObject(
-      badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${status}'`)
+      badRequest(`AsyncJob cannot be cancelled if status is not 'accepted' or 'active', job had status '${status}'`)
     );
   });
 

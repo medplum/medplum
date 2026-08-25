@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BotResponseStream, WithId } from '@medplum/core';
 import {
+  accepted,
   badRequest,
   isOk,
   isOperationOutcome,
@@ -20,7 +21,9 @@ import {
   getOutParametersFromResult,
   sendBotResponse,
 } from '../../bots/utils';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { sendOutcome } from '../outcomes';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
@@ -35,16 +38,40 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * @param res - The response object
  */
 export const executeHandler = async (req: Request, res: Response): Promise<void> => {
-  if (req.header('Prefer') === 'respond-async') {
+  const ctx = getAuthenticatedContext();
+  const respondAsync = req.header('Prefer') === 'respond-async';
+
+  // Resolve the bot up front, since its runtime decides how the result is delivered.
+  // Resolution failures are left to executeOperation, which reports them as it always has.
+  const userBot = await getBotForRequest(req).catch(() => undefined);
+  const bot = userBot && (await ctx.systemRepo.readResource<Bot>('Bot', userBot.id));
+
+  if (bot?.runtimeVersion === 'awslambdamicrovm') {
+    // A MicroVM can run for hours, so it always returns an AsyncJob handle rather than a result.
+    // Require the header so that callers never expect a bot return value they will not get.
+    if (!respondAsync) {
+      await sendBotResponse(req, res, badRequest('MicroVM bots require the "Prefer: respond-async" header'));
+      return;
+    }
+    const result = await executeOperation(req, res, bot);
+    if (isOperationOutcome(result) || !result.asyncJob) {
+      await sendBotResponse(req, res, result);
+      return;
+    }
+    sendOutcome(res, accepted(`${getConfig().baseUrl}fhir/R4/job/${result.asyncJob.id}/status`));
+    return;
+  }
+
+  if (respondAsync) {
     await sendAsyncResponse(req, res, async () => {
-      const result = await executeOperation(req, res);
+      const result = await executeOperation(req, res, bot);
       if (isOperationOutcome(result) && !isOk(result)) {
         throw new OperationOutcomeError(result);
       }
       return getOutParametersFromResult(result);
     });
   } else {
-    const result = await executeOperation(req, res);
+    const result = await executeOperation(req, res, bot);
 
     // If a response has already started (e.g. SSE streaming), we do not control the response, clean up and return.
     if (res.headersSent) {
@@ -58,17 +85,24 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
   }
 };
 
-async function executeOperation(req: Request, res: Response): Promise<OperationOutcome | BotExecutionResult> {
+async function executeOperation(
+  req: Request,
+  res: Response,
+  resolvedBot?: WithId<Bot>
+): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
 
-  // First read the bot as the user to verify access
-  const userBot = await getBotForRequest(req);
-  if (!userBot) {
-    return badRequest('Must specify bot ID or identifier.');
-  }
+  let bot = resolvedBot;
+  if (!bot) {
+    // First read the bot as the user to verify access
+    const userBot = await getBotForRequest(req);
+    if (!userBot) {
+      return badRequest('Must specify bot ID or identifier.');
+    }
 
-  // Then read the bot as system user to load extended metadata
-  const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+    // Then read the bot as system user to load extended metadata
+    bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
+  }
 
   // Check if client accepts streaming and bot supports it
   const acceptsStreaming = bot.streamingEnabled && req.header('Accept')?.includes('text/event-stream');

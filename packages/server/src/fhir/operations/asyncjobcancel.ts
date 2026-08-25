@@ -3,6 +3,7 @@
 import { allOk, assert, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AsyncJob } from '@medplum/fhirtypes';
+import { MICROVM_ASYNC_JOB_TYPE, terminateMicrovm } from '../../cloud/aws/microvm';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
 
@@ -31,6 +32,11 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
   const job = await ctx.repo.readResource<AsyncJob>('AsyncJob', req.params.id);
   switch (job.status) {
     case 'accepted':
+    case 'active':
+      if (job.type === MICROVM_ASYNC_JOB_TYPE) {
+        // Cancelling a MicroVM job has to actually stop the MicroVM; nothing else will
+        await terminateMicrovm(job);
+      }
       // We patch with system repo so that AsyncJob is not added to a project
       // This occurs because the behavior when a super admin updates a resource is different depending on whether
       // The `X-Medplum` header is set or not
@@ -39,14 +45,18 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
       // Using system repo always maintains that the resource is not added to a project
       // Due to it lacking any projects listed in `context.projects`
       await ctx.systemRepo.patchResource('AsyncJob', req.params.id, [
-        { op: 'test', path: '/status', value: 'accepted' },
+        { op: 'test', path: '/status', value: job.status },
         { op: 'add', path: '/status', value: 'cancelled' },
       ]);
       break;
     case 'cancelled':
       break;
     default:
-      return [badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${job.status}'`)];
+      return [
+        badRequest(
+          `AsyncJob cannot be cancelled if status is not 'accepted' or 'active', job had status '${job.status}'`
+        ),
+      ];
   }
   return [allOk];
 }
