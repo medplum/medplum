@@ -3,6 +3,7 @@
 import type { Resource } from '@medplum/fhirtypes';
 import type { Decorator } from '@storybook/react';
 import { MockDateWrapper } from './MockDateWrapper';
+import { WithBookStub } from './WithBookStub';
 import { WithChainedActorSearch } from './WithChainedActorSearch';
 import { WithFindStub } from './WithFindStub';
 import { WithFixtures } from './WithFixtures';
@@ -41,6 +42,17 @@ export const withFindStub =
       <Story />
     </WithFindStub>
   );
+
+/**
+ * Answers `Appointment/$book` by writing what it was handed, which MockClient
+ * cannot.
+ * @returns The decorator.
+ */
+export const withBookStub = (): Decorator => (Story) => (
+  <WithBookStub>
+    <Story />
+  </WithBookStub>
+);
 
 /**
  * Answers the chained `actor:` filters the role fields search with, which the
