@@ -761,6 +761,53 @@ describe('BillingTab', () => {
     windowOpenSpy.mockRestore();
   });
 
+  test('defaults the claim billing provider from the practitioner PractitionerRole organization', async () => {
+    const user = userEvent.setup();
+
+    mockSearchResources({ Coverage: [mockCoverage] });
+
+    // No persisted Claim; the practitioner bills under an organization via PractitionerRole.
+    vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) => {
+      if (resourceType === 'PractitionerRole') {
+        return Promise.resolve({
+          resourceType: 'PractitionerRole',
+          id: 'role-1',
+          practitioner: { reference: 'Practitioner/practitioner-123' },
+          organization: { reference: 'Organization/billing-org-123', display: 'Test Medical Practice' },
+        });
+      }
+      return Promise.resolve(undefined);
+    }) as any);
+
+    const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({ ...mockClaim, id: 'created-claim' });
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/claim.pdf' },
+    });
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup();
+
+    await waitFor(() => {
+      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', expect.anything());
+    });
+
+    await user.click(screen.getByText('Export Claim'));
+    await user.click(await screen.findByText('CMS 1500 Form'));
+
+    // The generated claim bills through the role's organization instead of the practitioner.
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Claim',
+          provider: expect.objectContaining({ reference: 'Organization/billing-org-123' }),
+        })
+      );
+    });
+
+    windowOpenSpy.mockRestore();
+  });
+
   test('re-fetches the existing claim at persist time and updates it instead of creating a duplicate', async () => {
     const user = userEvent.setup();
 

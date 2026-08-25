@@ -84,6 +84,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     updateBillingInformation,
     setSpecimenCollectedDateTime,
     setOrderNotes,
+    setPerformingLabAccountNumber,
     createOrderBundle,
   } = labOrderReturn;
 
@@ -194,6 +195,13 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
               patient={patient}
               performingLab={performingLab}
               error={createError?.validation?.performingLab}
+            />
+            <TextInput
+              label="Performing lab account number"
+              description="Overrides the practice-level account number for this order"
+              disabled={!state.performingLab}
+              value={state.performingLabAccountNumber ?? ''}
+              onChange={(e) => setPerformingLabAccountNumber(e.currentTarget.value || undefined)}
             />
             <div>
               <AsyncAutocomplete<TestCoding>

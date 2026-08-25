@@ -4,7 +4,7 @@ import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mant
 import { useDebouncedCallback } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import type { PatchOperation, WithId } from '@medplum/core';
-import { CPT, getReferenceString } from '@medplum/core';
+import { CPT, createReference, getReferenceString } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
@@ -14,6 +14,7 @@ import type {
   Encounter,
   EncounterDiagnosis,
   Media,
+  Organization,
   Patient,
   Practitioner,
   Reference,
@@ -58,6 +59,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
   const [claimResponseLoading, setClaimResponseLoading] = useState(false);
+  const [billingOrganization, setBillingOrganization] = useState<Reference<Organization> | undefined>();
 
   useEffect(() => {
     const fetchClaim = async (): Promise<void> => {
@@ -105,6 +107,32 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
     fetchCoverage().catch((err) => showErrorNotification(err));
   }, [medplum, patient]);
+
+  // Default the billing organization: an existing draft claim records the previous choice;
+  // otherwise use the organization the practitioner bills under (PractitionerRole).
+  useEffect(() => {
+    const resolveBillingOrganization = async (): Promise<Reference<Organization> | undefined> => {
+      if (claim?.provider?.reference?.startsWith('Organization/')) {
+        return claim.provider as Reference<Organization>;
+      }
+      if (!practitioner) {
+        return undefined;
+      }
+      const role = await medplum.searchOne('PractitionerRole', {
+        practitioner: getReferenceString(practitioner),
+        active: 'true',
+      });
+      return role?.organization;
+    };
+
+    resolveBillingOrganization()
+      .then((organization) => {
+        if (organization) {
+          setBillingOrganization(organization);
+        }
+      })
+      .catch((err) => showErrorNotification(err));
+  }, [claim, practitioner, medplum]);
 
   const fetchClaimResponse = useCallback(async (): Promise<void> => {
     if (!claim?.id) {
@@ -170,6 +198,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         chargeItems,
         conditions,
         insurance,
+        billingOrganization,
       });
 
       const existingClaim = await medplum.searchOne(
@@ -189,7 +218,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       setClaim(saved);
       return saved;
     },
-    [patient, encounter, practitioner, chargeItems, conditions, coverage, medplum, setClaim]
+    [patient, encounter, practitioner, chargeItems, conditions, coverage, billingOrganization, medplum, setClaim]
   );
 
   // Visit-details edits accumulate here (keyed by path, latest edit per field wins) so rapid
@@ -454,7 +483,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <VisitDetailsPanel
           practitioner={practitioner}
           encounter={encounter}
+          billingOrganization={billingOrganization}
           onEncounterChange={handleEncounterChange}
+          onBillingOrganizationChange={(organization) =>
+            setBillingOrganization(organization ? createReference(organization) : undefined)
+          }
         />
       </Group>
 
