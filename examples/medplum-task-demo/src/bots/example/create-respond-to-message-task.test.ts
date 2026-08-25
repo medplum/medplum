@@ -4,7 +4,7 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
 import {
   assignToPractitionerBatch,
   assignToQueueBatch,
@@ -15,8 +15,6 @@ import {
 import { handler } from './create-respond-to-message-task';
 
 describe('Create Respond to Message Task', async () => {
-  let medplum: MockClient;
-
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -25,16 +23,8 @@ describe('Create Respond to Message Task', async () => {
     }
   });
 
-  beforeEach(async () => {
-    medplum = new MockClient();
-    // MockClient seeds its example data (e.g. the example message thread) lazily, on the first
-    // request. Force that seeding now, then clear it, so it can't match this bot's chained search
-    // queries and pollute these tests' results.
-    await medplum.searchResources('Communication', {});
-    medplum.repo.clear();
-  });
-
   test('No messages in the last 30 minutes', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
     await medplum.executeBatch(noMessagesInLast30Minutes);
 
@@ -44,6 +34,7 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('Messages in the last 30 minutes not sent by patients', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
     await medplum.executeBatch(messagesNotSentByPatients);
 
@@ -53,6 +44,7 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('Messages part of thread that already has active task', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
     await medplum.executeBatch(threadsWithTasks);
 
@@ -62,6 +54,7 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('Assign task to care coordinator queue', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
     await medplum.executeBatch(assignToQueueBatch);
 
@@ -72,6 +65,7 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('Assign to practitioner who previously responded to thread', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
     await medplum.executeBatch(assignToPractitionerBatch);
 

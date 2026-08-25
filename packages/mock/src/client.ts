@@ -113,6 +113,16 @@ export interface MockClientOptions extends Pick<
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
+  /**
+   * Whether to seed the mock repository with default example data (Homer Simpson, Dr. Alice Smith,
+   * the example message thread, `TestProject`, etc.) on first request. Defaults to `true`.
+   *
+   * Set to `false` to start with an empty repository, e.g. to avoid this example data colliding with
+   * a test's own fixtures. Note that `getProfile()`/`getProject()` still return their defaults
+   * (`DrAliceSmith`/`TestProject`) even when seeding is skipped, since those come from in-memory
+   * client state rather than the repository.
+   */
+  readonly seedDefaultData?: boolean;
 }
 
 /**
@@ -164,7 +174,7 @@ export class MockClient extends MedplumClient {
     } else {
       router = new FhirRouter();
       repo = new MemoryRepository();
-      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug, clientOptions?.seedDefaultData);
     }
 
     super({
@@ -465,14 +475,16 @@ export class MockFetchClient {
   readonly repo: MemoryRepository;
   readonly baseUrl: string;
   readonly debug: boolean;
+  readonly seedDefaultData: boolean;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false) {
+  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false, seedDefaultData = true) {
     this.router = router;
     this.repo = repo;
     this.baseUrl = baseUrl;
     this.debug = debug;
+    this.seedDefaultData = seedDefaultData;
   }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
@@ -806,6 +818,24 @@ export class MockFetchClient {
   }
 
   private async initMockRepo(): Promise<void> {
+    if (this.seedDefaultData) {
+      await this.seedDefaultResources();
+    }
+
+    for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
+      structureDefinition.kind = 'resource';
+      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
+      loadDataType(structureDefinition);
+      await this.repo.createResource(structureDefinition);
+    }
+
+    for (const searchParameter of SearchParameterList) {
+      indexSearchParameter(searchParameter as SearchParameter);
+      await this.repo.createResource(searchParameter as SearchParameter);
+    }
+  }
+
+  private async seedDefaultResources(): Promise<void> {
     await this.repo.withSeeding(async () => {
       const defaultResources = [
         HomerSimpsonPreviousVersion,
@@ -868,21 +898,9 @@ export class MockFetchClient {
       for (const resource of updateResources) {
         await this.repo.updateResource(resource);
       }
+
+      makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
     });
-
-    for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
-      structureDefinition.kind = 'resource';
-      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
-      loadDataType(structureDefinition);
-      await this.repo.createResource(structureDefinition);
-    }
-
-    for (const searchParameter of SearchParameterList) {
-      indexSearchParameter(searchParameter as SearchParameter);
-      await this.repo.createResource(searchParameter as SearchParameter);
-    }
-
-    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {
