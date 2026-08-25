@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bot, Cron, Parameters, Project, ProjectMembership, Resource, Timing } from '@medplum/fhirtypes';
+import type {
+  Bot,
+  Cron,
+  Parameters,
+  Project,
+  ProjectMembership,
+  Resource,
+  ResourceType,
+  Timing,
+} from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
@@ -134,8 +143,10 @@ export async function addCronJobs(
   }
 }
 
-function isSchedulable(resource: Resource | undefined): resource is WithId<Bot> | WithId<Cron> {
-  return (resource?.resourceType === 'Bot' || resource?.resourceType === 'Cron') && resource.id !== undefined;
+const SCHEDULABLE_TYPES: readonly ResourceType[] = ['Bot', 'Cron'];
+
+function isSchedulable(resource: Resource | undefined): resource is Bot | Cron {
+  return resource !== undefined && SCHEDULABLE_TYPES.includes(resource.resourceType);
 }
 
 /**
@@ -168,22 +179,17 @@ function getCronString(resource: Bot | Cron): string | undefined {
 /**
  * Returns the schedule a `Cron` should currently run on, or `undefined` if it should not run at all.
  *
- * Being inactive or past its end time collapses to the same answer as having no schedule, so the
+ * Being inactive or past its end time collapses to the same answer as an unusable schedule, so the
  * ordinary "schedule changed" path in `addCronJobs` removes the job without a separate branch.
  * @param cron - The Cron resource.
  * @returns The cron string, or undefined if the job should not be scheduled.
  */
 function getCronStringForCron(cron: Cron): string | undefined {
-  if (!cron.active || isPastEndTime(cron)) {
+  if (!cron.active || isPastEndTime(cron) || !isValidCron(cron.cronString)) {
     return undefined;
   }
 
-  if (cron.cronString && isValidCron(cron.cronString)) {
-    return cron.cronString;
-  }
-
-  // Otherwise, this is not a valid cron job
-  return undefined;
+  return cron.cronString;
 }
 
 function isPastEndTime(cron: Cron): boolean {
@@ -267,16 +273,12 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 
     bot = await systemRepo.readReference<Bot>(cron.targetReference);
 
-    // `onBehalfOf` is the membership the bot runs as, so it decides which access policy applies.
-    // Both it and the bot are confined to the Cron's own project; otherwise a Cron could name a
-    // membership elsewhere and run with its privileges.
-    const projectRef = `Project/${cron.meta?.project}`;
     if (bot.meta?.project !== cron.meta?.project) {
       throw new Error('Cron target bot belongs to a different project');
     }
 
     runAs = await systemRepo.readReference<ProjectMembership>(cron.onBehalfOf);
-    if (runAs.project?.reference !== projectRef) {
+    if (runAs.project?.reference !== `Project/${cron.meta?.project}`) {
       throw new Error('Cron onBehalfOf membership belongs to a different project');
     }
 
