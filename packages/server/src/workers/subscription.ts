@@ -898,25 +898,24 @@ async function execBot(
     return;
   }
 
+  const project = subscription.meta?.project;
+  if (!project) {
+    throw new Error('Subscription is missing project metadata');
+  }
+
   // URL is either a Bot reference string ("Bot/<id>")
   // or a Bot execute URL with an identifier ("Bot/$execute?identifier=<value>")
   let bot: WithId<Bot>;
   if (url === 'Bot/$execute' || url.startsWith('Bot/$execute?')) {
-    const [, query] = url.split('?', 2);
-    const identifier = new URLSearchParams(query).get('identifier');
+    const identifier = new URLSearchParams(url.slice(url.indexOf('?') + 1)).get('identifier');
     if (!identifier) {
       throw new OperationOutcomeError(badRequest('Must specify bot ID or identifier.'));
-    }
-    const project = subscription.meta?.project;
-    if (!project) {
-      throw new Error('Subscription is missing project metadata');
     }
     bot = await findBotByIdentifier(systemRepo, identifier, project);
   } else {
     bot = await systemRepo.readReference<Bot>({ reference: url });
   }
 
-  const project = subscription.meta?.project as string;
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;
