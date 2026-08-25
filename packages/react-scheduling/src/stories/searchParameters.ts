@@ -170,6 +170,48 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         expression: 'Location.physicalType',
       },
     },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Device-status',
+        url: 'http://hl7.org/fhir/SearchParameter/Device-status',
+        name: 'status',
+        status: 'draft',
+        description: 'active | inactive | entered-in-error | unknown',
+        code: 'status',
+        base: ['Device'],
+        type: 'token',
+        expression: 'Device.status',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Location-status',
+        url: 'http://hl7.org/fhir/SearchParameter/Location-status',
+        name: 'status',
+        status: 'draft',
+        description: 'Searches for locations with a specific kind of status',
+        code: 'status',
+        base: ['Location'],
+        type: 'token',
+        expression: 'Location.status',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Practitioner-active',
+        url: 'http://hl7.org/fhir/SearchParameter/Practitioner-active',
+        name: 'active',
+        status: 'draft',
+        description: 'Whether the practitioner record is active',
+        code: 'active',
+        base: ['Practitioner'],
+        type: 'token',
+        expression: 'Practitioner.active',
+      },
+    },
   ],
 };
 

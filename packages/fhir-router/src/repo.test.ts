@@ -191,6 +191,67 @@ describe('MemoryRepository', () => {
     expect(actualResourceCountAfter).toBe(0);
   });
 
+  describe('chained search', () => {
+    test('matches on a forward-chained parameter', async () => {
+      const family = randomUUID();
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+      const otherPatient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: randomUUID() }],
+      });
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(otherPatient),
+      });
+
+      const results = await repo.searchResources<Observation>(
+        parseSearchRequest(`Observation?subject:Patient.name=${family}`)
+      );
+      expect(results.map((r) => r.id)).toEqual([observation.id]);
+    });
+
+    test('no match through a dangling reference, regardless of modifier', async () => {
+      // Mirrors the real server: chained search joins to the referenced row via
+      // `EXISTS(...)`, so a reference to a resource that doesn't exist can't
+      // satisfy the chain — not even a `:not` filter, whose "no value" leniency
+      // only applies to a resource that exists but lacks the field.
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: 'Patient/does-not-exist' },
+      });
+
+      const results = await repo.searchResources<Observation>(
+        parseSearchRequest(`Observation?_id=${observation.id}&subject:Patient.active:not=false`)
+      );
+      expect(results).toHaveLength(0);
+    });
+
+    test('no match when the referenced resource fails the chained filter', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: randomUUID() }] });
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+
+      const results = await repo.searchResources<Observation>(
+        parseSearchRequest(`Observation?subject:Patient.name=${randomUUID()}`)
+      );
+      expect(results).toHaveLength(0);
+    });
+  });
+
   describe('searchByReference', () => {
     async function createPatients(repo: MemoryRepository, count: number): Promise<WithId<Patient>[]> {
       const patients = [];

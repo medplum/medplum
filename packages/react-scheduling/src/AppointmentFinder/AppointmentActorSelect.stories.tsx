@@ -10,7 +10,6 @@ import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { MainClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
-import { stubChainedActorSearch } from '../test-utils/chainedActorSearch';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { SchedulingRole } from './AppointmentFinder.roles';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
@@ -23,10 +22,6 @@ export default {
 /**
  * Builds a client holding the scheduling fixtures.
  *
- * The preview's shared client has none of them, and the chained actor search the
- * field runs is a server feature the in-memory repository does not implement, so
- * the stories stand it up themselves and stub the chain the way the tests do.
- *
  * @returns The seeded client.
  */
 async function buildClient(): Promise<MockClient> {
@@ -34,7 +29,6 @@ async function buildClient(): Promise<MockClient> {
   for (const resource of SchedulingFixtures) {
     await medplum.createResource(resource);
   }
-  stubChainedActorSearch(medplum);
   return medplum;
 }
 
