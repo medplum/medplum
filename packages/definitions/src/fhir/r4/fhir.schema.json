@@ -61458,6 +61458,7 @@
               "ai-realtime",
               "aws-comprehend",
               "aws-textract",
+              "billing",
               "bots",
               "cron",
               "email",
