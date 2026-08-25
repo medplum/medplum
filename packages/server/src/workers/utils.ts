@@ -132,68 +132,60 @@ export interface QueueRegistry {
   add(name: string, queue: Queue, worker: Worker | undefined): void;
   get<T>(name: string): Queue<T> | undefined;
   isClosing(name: string): boolean | undefined;
-  closeAll(): Promise<void>[];
+  closeAll(): Promise<void>;
 }
 
-type QueueEntry = { queue: Queue | undefined; worker: Worker | undefined; isClosing: boolean };
+type QueueEntry = { name: string; queue: Queue | undefined; worker: Worker | undefined; isClosing: boolean };
 
 // exported for testing only, use `queueRegistry` for non-test code
 export class DefaultQueueRegistry implements QueueRegistry {
-  private queueMap: Record<string, QueueEntry | undefined>;
+  private queues: QueueEntry[];
 
   constructor() {
-    this.queueMap = Object.create(null);
+    this.queues = [];
   }
 
   add(name: string, queue: Queue, worker: Worker | undefined): void {
-    if (this.queueMap[name]) {
+    if (this.queues.some((q) => q.name === name)) {
       throw new Error(`Queue ${name} already registered`);
     }
 
-    this.queueMap[name] = { queue, worker, isClosing: false };
+    this.queues.push({ name, queue, worker, isClosing: false });
 
     if (worker) {
       worker.on('closing', () => {
-        if (this.queueMap[name]) {
-          this.queueMap[name].isClosing = true;
+        const queue = this.queues.find((q) => q.name === name);
+        if (queue) {
+          queue.isClosing = true;
         }
       });
     }
   }
 
   get<T>(name: string): Queue<T> | undefined {
-    return this.queueMap[name]?.queue as Queue<T> | undefined;
+    return this.queues.find((q) => q.name === name)?.queue as Queue<T> | undefined;
   }
 
-  private async close(name: string): Promise<void> {
-    const entry = this.queueMap[name];
-    if (!entry) {
-      return;
+  async closeAll(): Promise<void> {
+    // Close workers in reverse registration order
+    for (let i = this.queues.length - 1; i >= 0; i--) {
+      const entry = this.queues[i];
+      // Drain worker first, so any jobs that need to finish can enqueue the next job before exiting
+      if (entry.worker) {
+        await entry.worker.close();
+        entry.worker = undefined;
+      }
+
+      if (entry.queue) {
+        await entry.queue.close();
+        entry.queue = undefined;
+      }
     }
-
-    // Close worker first, so any jobs that need to finish can enqueue the next job before exiting
-    if (entry.worker) {
-      await entry.worker.close();
-      entry.worker = undefined;
-    }
-
-    if (entry.queue) {
-      await entry.queue.close();
-      entry.queue = undefined;
-    }
-
-    delete this.queueMap[name];
-  }
-
-  closeAll(): Promise<void>[] {
-    const promises = Object.keys(this.queueMap).map(async (name) => {
-      return this.close(name);
-    });
-    return promises;
+    this.queues = [];
   }
 
   isClosing(name: string): boolean | undefined {
-    return this.queueMap[name]?.isClosing;
+    return this.queues.find((q) => q.name === name)?.isClosing;
   }
 }
 
@@ -240,6 +232,7 @@ export function addVerboseQueueLogging<TDataType>(
       prev,
     });
   });
+
   worker.on('error', (failedReason) =>
     globalLogger.info(`${queue.name} worker: error`, {
       error: failedReason instanceof Error ? failedReason.message : String(failedReason),

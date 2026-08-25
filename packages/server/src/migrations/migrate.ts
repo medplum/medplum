@@ -20,7 +20,7 @@ import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
-import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
+import { getSearchParamColumnType, MedplumUnaccentFn, TokenArrayToTextFn } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import * as fns from './migrate-functions';
 import {
@@ -674,6 +674,14 @@ function buildCodingTable(result: SchemaDefinition): void {
         ],
         indexType: 'btree',
         unique: true,
+      },
+      // Accent- and normalization-insensitive substring matching on display, e.g. filter "systeme"  matching "Système"
+      {
+        columns: [
+          'system',
+          { expression: `${MedplumUnaccentFn.name}(display) gin_trgm_ops`, name: 'displayUnaccentTrgm' },
+        ],
+        indexType: 'gin',
       },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
       // Supports case-insensitive prefix matching on code, e.g. LOWER(code) LIKE 'abc%' under non-C collations

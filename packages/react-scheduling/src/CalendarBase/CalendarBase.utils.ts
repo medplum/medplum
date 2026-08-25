@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BusinessHoursInput } from '@fullcalendar/react';
-import type { HealthcareServiceAvailableTime } from '@medplum/fhirtypes';
+import { EMPTY, getReferenceString } from '@medplum/core';
+import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
 
 const DayIndexer = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -40,4 +41,29 @@ export function availableTimeToBusinessHoursEntry(availableTime: HealthcareServi
       endTime,
     },
   ];
+}
+
+// Slots that exactly match a booked appointment's start/end are redundant with that
+// appointment's event, so they're excluded from the slots returned to the calendar.
+export function filterBookedSlots(slots: Slot[], appointments: Appointment[]): Slot[] {
+  const appointmentIndex = appointments.reduce<Record<string, Appointment>>((acc, appointment) => {
+    (appointment.slot ?? EMPTY).forEach((slotRef) => {
+      const key = getReferenceString(slotRef);
+      if (key) {
+        acc[key] = appointment;
+      }
+    });
+    return acc;
+  }, {});
+
+  return slots.filter((slot) => {
+    const key = getReferenceString(slot);
+    if (key && appointmentIndex[key]) {
+      const appointment = appointmentIndex[key];
+      if (slot.start === appointment.start && slot.end === appointment.end) {
+        return false;
+      }
+    }
+    return true;
+  });
 }
