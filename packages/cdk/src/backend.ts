@@ -34,6 +34,7 @@ import { buildWaf } from './waf';
 export class BackEnd extends Construct {
   vpc: ec2.IVpc;
   botLambdaRole: iam.IRole;
+  lambdaBuildRole: iam.IRole;
   rdsSecretsArn?: string;
   rdsCluster?: rds.DatabaseCluster;
   rdsProxy?: rds.DatabaseProxy;
@@ -100,6 +101,28 @@ export class BackEnd extends Construct {
     // Bot Lambda Role
     this.botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
+    // Lambda MicroVM Build Role
+    this.lambdaBuildRole = new iam.Role(this, 'LambdaBuildRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com').withSessionTags(),
+      description: 'Lambda MicroVM image build role',
+      inlinePolicies: {
+        LambdaBuildPolicies: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['s3:GetObject'],
+              resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+              resources: [`arn:aws:logs:${region}:${accountNumber}:*`],
+            }),
+          ],
+        }),
+      },
     });
 
     // RDS
@@ -393,7 +416,7 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
-          resources: [this.botLambdaRole.roleArn],
+          resources: [this.botLambdaRole.roleArn, this.lambdaBuildRole.roleArn],
         }),
 
         // Lambda: Create, read, update, delete, and invoke functions
