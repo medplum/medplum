@@ -160,4 +160,23 @@ describe('EncountersPage', () => {
     });
     expect(await screen.findByText('Completed')).toBeInTheDocument();
   });
+
+  test('Reflects a status change from the chart on the list row', async () => {
+    const user = userEvent.setup();
+    const encounter = await createVisit(patient);
+    setup(encounter.id);
+
+    // Status renders on both the list row badge and the chart header button.
+    expect(await screen.findByRole('button', { name: 'In Progress' })).toBeInTheDocument();
+    expect(screen.getAllByText('In Progress')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'In Progress' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Finished' }));
+
+    // The chart header and the refreshed list row both show the new status.
+    await waitFor(() => {
+      expect(screen.getAllByText('Finished')).toHaveLength(2);
+    });
+    expect(screen.queryByText('In Progress')).not.toBeInTheDocument();
+  });
 });

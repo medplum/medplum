@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
+import type { Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
@@ -34,10 +34,11 @@ const TASK_COMPLETED_STATUSES = new Set<Task['status']>([
 export interface EncounterChartProps {
   encounter: WithId<Encounter> | Reference<Encounter>;
   task?: WithId<Task> | Reference<Task>;
+  onEncounterChange?: (encounter: WithId<Encounter>) => void;
 }
 
 export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
-  const { encounter: encounterProp, task: taskProp } = props;
+  const { encounter: encounterProp, task: taskProp, onEncounterChange } = props;
   const medplum = useMedplum();
 
   const [activeTab, setActiveTab] = useState('notes');
@@ -55,7 +56,6 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   } = useEncounterChart(encounterProp);
 
   const [chartNote, setChartNote] = useState(clinicalImpression?.note?.[0]?.text);
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
   const [provenances, setProvenances] = useState<Provenance[]>([]);
   const [chartNoteStatus, setChartNoteStatus] = useState(ChartNoteStatus.Unsigned);
 
@@ -95,39 +95,50 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
       try {
         const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, newStatus);
         setEncounter(updatedEncounter);
+        onEncounterChange?.(updatedEncounter);
       } catch (err) {
         showErrorNotification(err);
       }
     },
-    [encounter, medplum, setEncounter, appointment]
+    [encounter, medplum, setEncounter, onEncounterChange, appointment]
   );
 
   const handleTabChange = (tab: string): void => {
     setActiveTab(tab);
   };
 
-  const handleChartNoteChange = async (e: React.ChangeEvent<HTMLTextAreaElement>): Promise<void> => {
+  // Whether the server copy currently has a note; `clinicalImpression` state is not refreshed on
+  // note saves, so this decides between add and remove when the note is cleared.
+  const noteOnServerRef = useRef<boolean | undefined>(undefined);
+
+  const debouncedPatchChartNote = useDebouncedCallback(async (note: string): Promise<void> => {
+    if (!clinicalImpression) {
+      return;
+    }
+
+    try {
+      if (note) {
+        await medplum.patchResource('ClinicalImpression', clinicalImpression.id, [
+          { op: 'add', path: '/note', value: [{ text: note }] },
+        ]);
+        noteOnServerRef.current = true;
+      } else if (noteOnServerRef.current ?? Boolean(clinicalImpression.note)) {
+        await medplum.patchResource('ClinicalImpression', clinicalImpression.id, [{ op: 'remove', path: '/note' }]);
+        noteOnServerRef.current = false;
+      }
+    } catch (err) {
+      showErrorNotification(err);
+    }
+  }, SAVE_TIMEOUT_MS);
+
+  const handleChartNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     setChartNote(e.target.value);
 
     if (!clinicalImpression) {
       return;
     }
 
-    try {
-      if (!e.target.value || e.target.value === '') {
-        const { note: _, ...restOfClinicalImpression } = clinicalImpression;
-        const updatedClinicalImpression: ClinicalImpression = restOfClinicalImpression;
-        await debouncedUpdateResource(updatedClinicalImpression);
-      } else {
-        const updatedClinicalImpression: ClinicalImpression = {
-          ...clinicalImpression,
-          note: [{ text: e.target.value }],
-        };
-        await debouncedUpdateResource(updatedClinicalImpression);
-      }
-    } catch (err) {
-      showErrorNotification(err);
-    }
+    debouncedPatchChartNote(e.target.value);
   };
 
   const handleSign = async (practitioner: Reference<Practitioner>, lock: boolean): Promise<void> => {
@@ -140,10 +151,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
       const tasksToUpdate = tasks.filter((task) => !TASK_COMPLETED_STATUSES.has(task.status));
       const updatedTasks = await Promise.all(
         tasksToUpdate.map((task) =>
-          medplum.updateResource({
-            ...task,
-            status: 'completed',
-          })
+          medplum.patchResource('Task', task.id, [{ op: 'replace', path: '/status', value: 'completed' }])
         )
       );
 
@@ -156,7 +164,9 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
 
       // Mark clinical impression as completed
       if (clinicalImpression) {
-        const updatedImpression = await medplum.updateResource({ ...clinicalImpression, status: 'completed' });
+        const updatedImpression = await medplum.patchResource('ClinicalImpression', clinicalImpression.id, [
+          { op: 'replace', path: '/status', value: 'completed' },
+        ]);
         setClinicalImpression(updatedImpression);
       }
     }
@@ -262,6 +272,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
             <BillingTab
               encounter={encounter}
               setEncounter={setEncounter}
+              onEncounterSaved={onEncounterChange}
               patient={patientResource}
               practitioner={practitioner}
               setPractitioner={setPractitioner}
