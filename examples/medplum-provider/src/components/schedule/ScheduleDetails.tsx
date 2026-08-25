@@ -129,7 +129,18 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [medplum, navigate, handleSelectAppointment]
   );
 
-  const mergedSlots = useMemo(() => mergeOverlappingSlots(slots ?? []), [slots]);
+  // Omit any "entered-in-error" slots; merge overlapping blocks into
+  // contiguous blocks to reduce visual noise
+  const finalSlots = useMemo(() => {
+    const filtered = (slots ?? []).filter((slot) => slot.status !== 'entered-in-error');
+    return mergeOverlappingSlots(filtered);
+  }, [slots]);
+
+  // Omit any "cancelled" appointments
+  const finalAppointments = useMemo(
+    () => (appointments ?? []).filter((appointment) => appointment.status !== 'cancelled'),
+    [appointments]
+  );
 
   return (
     <>
@@ -141,8 +152,8 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
               onSelectInterval={handleSelectInterval}
               onSelectAppointment={handleSelectAppointment}
               onSelectSlot={handleSelectSlot}
-              slots={mergedSlots}
-              appointments={appointments ?? []}
+              slots={finalSlots}
+              appointments={finalAppointments}
               onRangeChange={setRange}
               onDoubleClickAppointment={handleDoubleClickAppointment}
               availableTime={availableTime}
