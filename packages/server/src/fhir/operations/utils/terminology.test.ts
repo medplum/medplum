@@ -27,12 +27,20 @@ describe('Terminology query builders', () => {
   } as WithId<CodeSystemProperty>;
 
   test('addDescendants emits a literal `target > 0` predicate to use the partial reverse index', () => {
-    const query = new SelectQuery('Coding').column('id').column('code').where('system', '=', codeSystem.id);
+    // Column list must match the CTE's base term, which selects the root's canonical row
+    const query = new SelectQuery('Coding')
+      .column('id')
+      .column('code')
+      .column('display')
+      .where('system', '=', codeSystem.id);
     const descendantQuery = addDescendants(query, codeSystem, property, 'ROOT');
 
     const sql = new SqlBuilder();
     descendantQuery.buildSql(sql);
     const text = sql.toString();
+
+    // The subtree is seeded from the root's canonical row, so the CTE holds one row per concept
+    expect(text).toContain('"synonymOf" IS NULL');
 
     // The recursive join must carry a `target > 0` bound, emitted as a SQL literal so the query planner can prove
     // the partial `Coding_Property_reverse_rel_lookup_idx` (target > 0) predicate at plan time.

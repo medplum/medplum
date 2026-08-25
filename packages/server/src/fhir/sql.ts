@@ -82,6 +82,14 @@ export const Operator = {
     sql.append(' ILIKE ');
     sql.param(parameter as string);
   },
+  // Case- AND accent-insensitive, over Unicode-normalized text on both sides
+  UNACCENT_ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${MedplumUnaccentFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(`) ILIKE ${MedplumUnaccentFn.name}(`);
+    sql.param(parameter as string);
+    sql.append(')');
+  },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),
   '>': simpleBinaryOperator('>'),

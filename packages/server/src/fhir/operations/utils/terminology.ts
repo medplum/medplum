@@ -162,15 +162,29 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .where('code', 'IN', code);
 }
 
+export function canonicalCodingId(tableName: string): Column {
+  return new Column(undefined, `COALESCE("${tableName}"."synonymOf", "${tableName}"."id")`, true);
+}
+
+/**
+ * Restricts a query to codes carrying (or lacking) a given property value.
+ * @param query - The query to extend.
+ * @param condition - The ValueSet filter to apply.
+ * @param property - The CodeSystem property the filter names, with resolved ID.
+ * @param codingId - Expression yielding the canonical coding ID of the driving relation. Defaults to
+ *   `COALESCE(synonymOf, id)`, for callers whose rows may include designation rows.
+ * @returns The extended SELECT query.
+ */
 export function addPropertyFilter(
   query: SelectQuery,
   condition: ValueSetComposeIncludeFilter,
-  property: WithId<CodeSystemProperty>
+  property: WithId<CodeSystemProperty>,
+  codingId: Column = canonicalCodingId(query.effectiveTableName)
 ): SelectQuery {
   const multiValue = condition.op.endsWith('in');
   const values = multiValue ? condition.value.split(',') : condition.value;
   const whereClauses = [
-    new Condition(new Column(query.effectiveTableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+    new Condition(codingId, '=', new Column('Coding_Property', 'coding')),
     new Condition(new Column('Coding_Property', 'property'), '=', property.id),
   ];
   if (condition.op !== 'exists') {
@@ -268,14 +282,15 @@ export function addDescendants(
   property: WithId<CodeSystemProperty>,
   parentCode: string
 ): SelectQuery {
+  // `Coding_Property.coding` always references canonical IDs, so seeding the subtree from the root's canonical
+  // row alone loses no descendants — and keeps the CTE one row per concept
   const base = new SelectQuery('Coding')
     .column('id')
     .column('code')
     .column('display')
-    .column('synonymOf')
-    .column('language')
     .where('system', '=', codeSystem.id)
-    .where('code', '=', parentCode);
+    .where('code', '=', parentCode)
+    .where('synonymOf', '=', null);
 
   const propertyTable = query.getNextJoinAlias();
   const propertyJoinCondition = new Conjunction([
