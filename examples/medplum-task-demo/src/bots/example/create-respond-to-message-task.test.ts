@@ -4,7 +4,7 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { beforeAll, describe, expect, test, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   assignToPractitionerBatch,
   assignToQueueBatch,
@@ -15,6 +15,8 @@ import {
 import { handler } from './create-respond-to-message-task';
 
 describe('Create Respond to Message Task', async () => {
+  let medplum: MockClient;
+
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -23,10 +25,17 @@ describe('Create Respond to Message Task', async () => {
     }
   });
 
-  test('No messages in the last 30 minutes', async () => {
-    const medplum = new MockClient();
-    console.log = vi.fn();
+  beforeEach(async () => {
+    medplum = new MockClient();
+    // MockClient seeds its example data (e.g. the example message thread) lazily, on the first
+    // request. Force that seeding now, then clear it, so it can't match this bot's chained search
+    // queries and pollute these tests' results.
+    await medplum.searchResources('Communication', {});
+    medplum.repo.clear();
+  });
 
+  test('No messages in the last 30 minutes', async () => {
+    console.log = vi.fn();
     await medplum.executeBatch(noMessagesInLast30Minutes);
 
     const result = await handler(medplum);
@@ -35,9 +44,7 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('Messages in the last 30 minutes not sent by patients', async () => {
-    const medplum = new MockClient();
     console.log = vi.fn();
-
     await medplum.executeBatch(messagesNotSentByPatients);
 
     const result = await handler(medplum);
@@ -45,11 +52,8 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
   });
 
-  // Skipping until chained search is implemented in MockClient
-  test.skip('Messages part of thread that already has active task', async () => {
-    const medplum = new MockClient();
+  test('Messages part of thread that already has active task', async () => {
     console.log = vi.fn();
-
     await medplum.executeBatch(threadsWithTasks);
 
     const result = await handler(medplum);
@@ -57,11 +61,8 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('Task already exists for this thread.');
   });
 
-  // Skipping until chained search is implemented in MockClient
-  test.skip('Assign task to care coordinator queue', async () => {
-    const medplum = new MockClient();
+  test('Assign task to care coordinator queue', async () => {
     console.log = vi.fn();
-
     await medplum.executeBatch(assignToQueueBatch);
 
     const result = await handler(medplum);
@@ -70,11 +71,8 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('Assigned to care coordinator queue');
   });
 
-  // Skipping until chained search is implemented in MockClient
-  test.skip('Assign to practitioner who previously responded to thread', async () => {
-    const medplum = new MockClient();
+  test('Assign to practitioner who previously responded to thread', async () => {
     console.log = vi.fn();
-
     await medplum.executeBatch(assignToPractitionerBatch);
 
     const result = await handler(medplum);
