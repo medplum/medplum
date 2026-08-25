@@ -18,8 +18,6 @@ flowchart TD
 
     Practitioner["<div style='text-align: center;'><strong>Practitioner (Rendering Provider)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br><u>qualification[0].code</u>:<br>  system: http://nucc.org/provider-taxonomy</div>"]
 
-    PractitionerRole["<div style='text-align: center;'><strong>PractitionerRole</strong></div>"]
-
     BillingOrg["<div style='text-align: center;'><strong>Organization (Billing Provider)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br>  system: http://hl7.org/fhir/sid/us-ein</div>"]
 
     PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: https://www.cms.gov/payer-id</div>"]
@@ -29,16 +27,14 @@ flowchart TD
     Encounter["<div style='text-align: center;'><strong>Encounter</strong></div>"]
 
     Claim -->|patient| Patient
-    Claim -->|provider| Practitioner
+    Claim -->|provider| BillingOrg
+    Claim -->|"careTeam.provider (role: primary)"| Practitioner
     Claim -->|insurance.coverage| Coverage
     Claim -->|item.encounter| Encounter
 
     Coverage -->|subscriber| Patient
     Coverage -->|beneficiary| Patient
     Coverage -->|payor| PayerOrg
-
-    PractitionerRole -->|practitioner| Practitioner
-    PractitionerRole -->|organization| BillingOrg
 
     classDef claim fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
     classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
@@ -48,7 +44,6 @@ flowchart TD
 
     class Claim claim
     class BillingOrg,PayerOrg organization
-    class PractitionerRole organization
     class Patient patient
     class Coverage coverage
     class Encounter encounter
@@ -60,12 +55,15 @@ flowchart TD
 | Field | Description | Required |
 |-------|-------------|----------|
 | `patient` | Reference to the Patient | Yes |
-| `provider` | Reference to the rendering Practitioner | Yes |
+| `provider` | Reference to the billing provider: an Organization for organization billing (the common case), or a Practitioner for individual billing | Yes |
+| `careTeam` | Care team member with role `primary` (system: `http://terminology.hl7.org/CodeSystem/claimcareteamrole`) referencing the rendering Practitioner | Yes* |
 | `billablePeriod.start` | Preferred date of service when service lines carry no individual `servicedDate` | No |
 | `created` | Fallback date of service when `billablePeriod.start` is also absent | No |
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
 | `diagnosis` | Array of ICD-10-CM diagnoses with `sequence` (1-based) and `diagnosisCodeableConcept` | Yes |
 | `item` | Array of service lines (see below) | Yes |
+
+\* The rendering Practitioner is resolved in this order: the `careTeam` member with role `primary`, then the first `careTeam` member referencing a Practitioner, then `Claim.provider` itself when it is a Practitioner (individual billing). Contained resources (e.g. `"reference": "#rendering-practitioner"`) are supported for both `provider` and `careTeam.provider`.
 
 Each `Claim.item` (service line) requires:
 
@@ -92,6 +90,8 @@ Each `Claim.item` (service line) requires:
 
 ### Practitioner (Rendering Provider)
 
+The rendering provider is referenced from `Claim.careTeam` (role `primary`).
+
 | Field | Description | Required |
 |-------|-------------|----------|
 | `identifier` | System must be `http://hl7.org/fhir/sid/us-npi` | Yes |
@@ -100,7 +100,7 @@ Each `Claim.item` (service line) requires:
 
 ### Organization (Billing Provider)
 
-The billing provider Organization is linked to the Practitioner via a `PractitionerRole` resource.
+The billing provider Organization is referenced directly from `Claim.provider`. For individual billing, `Claim.provider` may instead reference a Practitioner, in which case no billing Organization is needed.
 
 | Field | Description | Required |
 |-------|-------------|----------|
@@ -269,18 +269,6 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
       "request": { "method": "POST", "url": "Practitioner", "ifNoneExist": "identifier=http://hl7.org/fhir/sid/us-npi|1234567890" }
     },
     {
-      "fullUrl": "urn:uuid:practitioner-role",
-      "resource": {
-        "resourceType": "PractitionerRole",
-        "meta": {
-          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner-role"]
-        },
-        "practitioner": { "reference": "urn:uuid:practitioner" },
-        "organization": { "reference": "urn:uuid:billing-org" }
-      },
-      "request": { "method": "POST", "url": "PractitionerRole" }
-    },
-    {
       "fullUrl": "urn:uuid:payer-org",
       "resource": {
         "resourceType": "Organization",
@@ -340,7 +328,14 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
         "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional", "display": "Professional" }] },
         "patient": { "reference": "urn:uuid:patient" },
         "created": "2025-01-15T10:00:00Z",
-        "provider": { "reference": "urn:uuid:practitioner" },
+        "provider": { "reference": "urn:uuid:billing-org" },
+        "careTeam": [
+          {
+            "sequence": 1,
+            "provider": { "reference": "urn:uuid:practitioner" },
+            "role": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claimcareteamrole", "code": "primary" }] }
+          }
+        ],
         "priority": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/processpriority", "code": "normal" }] },
         "insurance": [{ "sequence": 1, "focal": true, "coverage": { "reference": "urn:uuid:coverage" } }],
         "diagnosis": [

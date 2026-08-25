@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient, WithId } from '@medplum/core';
+import type { MedplumClient, PatchOperation, WithId } from '@medplum/core';
 import {
   createReference,
   getExtension,
@@ -244,53 +244,46 @@ async function createChargeItemFromServiceRequest(
   await medplum.createResource(chargeItem);
 }
 
+const APPOINTMENT_STATUS_BY_ENCOUNTER_STATUS: Partial<Record<NonNullable<Encounter['status']>, Appointment['status']>> =
+  {
+    cancelled: 'cancelled',
+    finished: 'fulfilled',
+    'in-progress': 'checked-in',
+    arrived: 'arrived',
+  };
+
 export async function updateEncounterStatus(
   medplum: MedplumClient,
   encounter: WithId<Encounter>,
   appointment: WithId<Appointment> | undefined,
   newStatus: Encounter['status']
 ): Promise<WithId<Encounter>> {
-  const updatedEncounter: WithId<Encounter> = {
-    ...encounter,
-    status: newStatus,
-    ...(newStatus === 'in-progress' &&
-      !encounter.period?.start && {
-        period: {
-          ...encounter.period,
-          start: new Date().toISOString(),
-        },
-      }),
-    ...(newStatus === 'finished' &&
-      !encounter.period?.end && {
-        period: {
-          ...encounter.period,
-          end: new Date().toISOString(),
-        },
-      }),
-  };
+  const ops: PatchOperation[] = [{ op: 'replace', path: '/status', value: newStatus }];
 
-  if (appointment) {
-    const updatedAppointment: Appointment = appointment;
-    switch (newStatus) {
-      case 'cancelled':
-        updatedAppointment.status = 'cancelled';
-        break;
-      case 'finished':
-        updatedAppointment.status = 'fulfilled';
-        break;
-      case 'in-progress':
-        updatedAppointment.status = 'checked-in';
-        break;
-      case 'arrived':
-        updatedAppointment.status = 'arrived';
-        break;
-      default:
-        break;
-    }
-    await medplum.updateResource(updatedAppointment);
+  if (newStatus === 'in-progress' && !encounter.period?.start) {
+    ops.push(
+      encounter.period
+        ? { op: 'add', path: '/period/start', value: new Date().toISOString() }
+        : { op: 'add', path: '/period', value: { start: new Date().toISOString() } }
+    );
   }
 
-  return medplum.updateResource(updatedEncounter);
+  if (newStatus === 'finished' && !encounter.period?.end) {
+    ops.push(
+      encounter.period
+        ? { op: 'add', path: '/period/end', value: new Date().toISOString() }
+        : { op: 'add', path: '/period', value: { end: new Date().toISOString() } }
+    );
+  }
+
+  const appointmentStatus = newStatus && APPOINTMENT_STATUS_BY_ENCOUNTER_STATUS[newStatus];
+  if (appointment && appointmentStatus) {
+    await medplum.patchResource('Appointment', appointment.id, [
+      { op: 'replace', path: '/status', value: appointmentStatus },
+    ]);
+  }
+
+  return medplum.patchResource('Encounter', encounter.id, ops);
 }
 
 export function encounterUrl(encounter: WithId<Encounter>): string {

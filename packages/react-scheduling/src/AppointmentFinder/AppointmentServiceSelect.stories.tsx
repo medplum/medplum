@@ -14,7 +14,8 @@ import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 /**
  * Enough visit types to read as a list, chosen for what each one shows: two share a
  * category and differ only in length, and the third is held at the satellite site
- * alone, so narrowing to the main clinic drops it.
+ * alone, so narrowing to the main clinic drops it. The location-less "Telehealth
+ * Consult" comes with the shared fixtures, and is what a site cannot exclude.
  */
 const STORY_FIXTURES = [
   ...SchedulingFixtures,
@@ -73,8 +74,14 @@ export const Basic = (): JSX.Element => {
 };
 
 /**
- * A site chosen earlier narrows what is on offer, and the field says so. The
- * satellite-only "Urodynamics Study" drops off the list.
+ * A site chosen earlier narrows what is on offer, and the field says so.
+ *
+ * A site holds what it is named on, plus everything named on no location at all: the
+ * practice-wide "Telehealth Consult" is offered here and at every other site, while the
+ * satellite-only "Urodynamics Study" drops off. Open the field to read them — the two
+ * come from separate searches and arrive as one list in name order, "Telehealth Consult"
+ * between the sited visit types rather than grouped at either end.
+ *
  * @returns The story.
  */
 export const NarrowedToASite = (): JSX.Element => (
