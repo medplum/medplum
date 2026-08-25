@@ -77,7 +77,7 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
   } catch (err) {
     return {
       success: false,
-      logResult: normalizeLambdaExecutionError(err, name),
+      logResult: normalizeLambdaExecutionError(err, request.bot),
     };
   }
 }
@@ -87,14 +87,15 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
  *
  * If the bot has never been deployed, there is no Lambda function to invoke, and AWS
  * reports that as a bare "Function not found". That does not tell the user what to do,
- * so this substitutes a message naming the deploy operation.
+ * so this substitutes a message naming the bot and the deploy operation.
  * @param err - The error thrown while invoking the Lambda.
- * @param name - The AWS Lambda function name.
+ * @param bot - The Bot resource being invoked.
  * @returns The log result string.
  */
-export function normalizeLambdaExecutionError(err: unknown, name: string): string {
+export function normalizeLambdaExecutionError(err: unknown, bot: Bot): string {
   if (err instanceof ResourceNotFoundException) {
-    return `Bot is not deployed (AWS Lambda function "${name}" not found). Deploy the bot with Bot/$deploy and try again.`;
+    const botLabel = bot.name ?? bot.id;
+    return `Bot "${botLabel}" is not deployed. Deploy the bot with Bot/$deploy and try again.`;
   }
   return normalizeErrorString(err);
 }

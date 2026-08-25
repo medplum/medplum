@@ -267,19 +267,29 @@ describe('Execute', () => {
       .send({});
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toStrictEqual(
-      `Bot is not deployed (AWS Lambda function "medplum-bot-lambda-${bot.id}" not found). Deploy the bot with Bot/$deploy and try again.`
+      `Bot "${bot.name}" is not deployed. Deploy the bot with Bot/$deploy and try again.`
     );
   });
 });
 
 describe('normalizeLambdaExecutionError', () => {
   test('Missing function reports the deploy operation', () => {
-    expect(normalizeLambdaExecutionError(new ResourceNotFoundException({ $metadata: {}, message: 'x' }), 'my-fn')).toBe(
-      'Bot is not deployed (AWS Lambda function "my-fn" not found). Deploy the bot with Bot/$deploy and try again.'
+    const bot: Bot = { resourceType: 'Bot', id: '123', name: 'My Bot' };
+    // The AWS error message is discarded; we synthesize our own naming the bot.
+    expect(normalizeLambdaExecutionError(new ResourceNotFoundException({ $metadata: {}, message: 'x' }), bot)).toBe(
+      'Bot "My Bot" is not deployed. Deploy the bot with Bot/$deploy and try again.'
+    );
+  });
+
+  test('Missing function falls back to the bot id when unnamed', () => {
+    const bot: Bot = { resourceType: 'Bot', id: '123' };
+    expect(normalizeLambdaExecutionError(new ResourceNotFoundException({ $metadata: {}, message: 'x' }), bot)).toBe(
+      'Bot "123" is not deployed. Deploy the bot with Bot/$deploy and try again.'
     );
   });
 
   test('Other errors are passed through', () => {
-    expect(normalizeLambdaExecutionError(new Error('Rate exceeded'), 'my-fn')).toBe('Rate exceeded');
+    const bot: Bot = { resourceType: 'Bot', id: '123', name: 'My Bot' };
+    expect(normalizeLambdaExecutionError(new Error('Rate exceeded'), bot)).toBe('Rate exceeded');
   });
 });
