@@ -330,6 +330,15 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" ILIKE $1');
     });
 
+    test('Select where unaccent ilike', () => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable').column('id').where('name', 'UNACCENT_ILIKE', '%x%').buildSql(sql);
+      expect(sql.toString()).toBe(
+        'SELECT "MyTable"."id" FROM "MyTable" WHERE medplum_unaccent("MyTable"."name") ILIKE medplum_unaccent($1)'
+      );
+      expect(sql.getValues()).toStrictEqual(['%x%']);
+    });
+
     test('Select missing columns', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').buildSql(sql);
