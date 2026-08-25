@@ -67,9 +67,8 @@ export const SparseAvailability = (): JSX.Element => {
 
 /**
  * A stretch of days, banded across the weeks it spans with both of its ends marked. Drag across
- * the days to ask for another, or shift-click to move one end — the range is measured from the day
- * last clicked, or the day the last drag began on, so shift-clicking back where you started puts
- * it back.
+ * the days to ask for another, or shift-click to move the nearer end of this one — beyond either
+ * end to widen the range, within it to draw that end in.
  * @returns The story.
  */
 export const Range = (): JSX.Element => {
