@@ -764,6 +764,84 @@ describe('Infra', () => {
     template.resourcePropertiesCountIs('AWS::ElastiCache::ReplicationGroup', { CacheNodeType: 'cache.t4g.medium' }, 1);
   });
 
+  test('Lambda MicroVM build role', async () => {
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumLambdaBuildRoleStack',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.hasResourceProperties('AWS::IAM::Role', {
+      Description: 'Lambda MicroVM image build role',
+      AssumeRolePolicyDocument: {
+        Statement: [
+          {
+            Action: ['sts:AssumeRole', 'sts:TagSession'],
+            Effect: 'Allow',
+            Principal: { Service: 'lambda.amazonaws.com' },
+          },
+        ],
+      },
+      Policies: [
+        {
+          PolicyName: 'LambdaBuildPolicies',
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              {
+                Action: 's3:GetObject',
+                Effect: 'Allow',
+                Resource: `arn:aws:s3:::${baseConfig.storageBucketName}/bot-microvm/*`,
+              },
+              {
+                Action: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+                Effect: 'Allow',
+                Resource: [
+                  `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*`,
+                  `arn:aws:logs:${baseConfig.region}:${baseConfig.accountNumber}:log-group:/aws/lambda-microvms/medplum-bot-*:log-stream:*`,
+                ],
+              },
+            ]),
+            Version: '2012-10-17',
+          },
+        },
+      ],
+    });
+
+    template.hasResourceProperties('AWS::IAM::Role', {
+      Description: 'Medplum Server Task Execution Role',
+      Policies: Match.arrayWith([
+        Match.objectLike({
+          PolicyDocument: {
+            Statement: Match.arrayWith([
+              Match.objectLike({
+                Action: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
+                Effect: 'Allow',
+                Resource: Match.arrayWith([
+                  { 'Fn::GetAtt': [Match.stringLikeRegexp('BotLambdaRole'), 'Arn'] },
+                  { 'Fn::GetAtt': [Match.stringLikeRegexp('LambdaBuildRole'), 'Arn'] },
+                ]),
+              }),
+              {
+                Action: [
+                  'lambda:CreateMicrovmImage',
+                  'lambda:GetMicrovmImage',
+                  'lambda:RunMicrovm',
+                  'lambda:GetMicrovm',
+                  'lambda:TerminateMicrovm',
+                ],
+                Effect: 'Allow',
+                Resource: `arn:aws:lambda:${baseConfig.region}:${baseConfig.accountNumber}:microvm-image:medplum-bot-microvm-*`,
+              },
+            ]),
+          },
+        }),
+      ]),
+    });
+  });
+
   // Regression test for https://github.com/medplum/medplum/issues/9287:
   // `loadBalancerLoggingPrefix` was being silently ignored because both
   // `BackEnd.createLoadBalancer` call sites passed `loadBalancerLoggingBucket`
