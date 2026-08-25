@@ -174,7 +174,10 @@ export class MockClient extends MedplumClient {
     } else {
       router = new FhirRouter();
       repo = new MemoryRepository();
-      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug, clientOptions?.seedDefaultData);
+      client = new MockFetchClient(router, repo, baseUrl, {
+        debug: clientOptions?.debug,
+        seedDefaultData: clientOptions?.seedDefaultData,
+      });
     }
 
     super({
@@ -470,6 +473,11 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   }
 }
 
+interface MockFetchClientOptions {
+  debug?: boolean;
+  seedDefaultData?: boolean;
+}
+
 export class MockFetchClient {
   readonly router: FhirRouter;
   readonly repo: MemoryRepository;
@@ -479,12 +487,12 @@ export class MockFetchClient {
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false, seedDefaultData = true) {
+  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, options?: MockFetchClientOptions) {
     this.router = router;
     this.repo = repo;
     this.baseUrl = baseUrl;
-    this.debug = debug;
-    this.seedDefaultData = seedDefaultData;
+    this.debug = options?.debug ?? false;
+    this.seedDefaultData = options?.seedDefaultData ?? true;
   }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
