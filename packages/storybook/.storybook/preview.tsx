@@ -4,8 +4,9 @@ import '@mantine/spotlight/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import '@medplum/react/styles.css';
+import type { Decorator } from '@storybook/react';
 import { DARK_MODE_EVENT_NAME } from '@vueless/storybook-dark-mode';
-import { FC, useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router';
 import { useFakeTimers } from 'sinon';
 import { addons } from 'storybook/preview-api';
@@ -63,21 +64,23 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export const decorators = [
+export const decorators: Decorator[] = [
   withSchedulingHeader,
-  (Story: FC) => (
+  (Story, ctx) => (
     <BrowserRouter>
-      <MedplumProvider medplum={medplum}>
+      <MedplumProvider
+        medplum={ctx.parameters.skipDefaultSeeding ? new MockClient({ seedDefaultData: false }) : medplum}
+      >
         <Story />
       </MedplumProvider>
     </BrowserRouter>
   ),
-  (Story: FC) => (
+  (Story) => (
     <ColorSchemeWrapper>
       <Story />
     </ColorSchemeWrapper>
   ),
-  (Story: FC, context: { globals: { theme?: string } }) => {
+  (Story, context: { globals: { theme?: string } }) => {
     const selectedTheme = themePresetMap[context.globals.theme ?? 'medplumDefault'] ?? themePresetMap.medplumDefault;
     return (
       <MantineProvider theme={selectedTheme}>
