@@ -62569,6 +62569,7 @@
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
           "enum": [
             "awslambda",
+            "awslambdamicrovm",
             "vmcontext",
             "fission"
           ]
@@ -63475,7 +63476,8 @@
         "type": {
           "description": "The type of the AsyncJob.",
           "enum": [
-            "data-migration"
+            "data-migration",
+            "aws-lambda-microvm"
           ]
         },
         "dataVersion": {
