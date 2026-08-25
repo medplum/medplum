@@ -113,6 +113,22 @@ describe('claims utils', () => {
       expect(result.item).toHaveLength(1);
     });
 
+    test('bills through the billing organization when provided', () => {
+      const result = buildClaimFromEncounter({
+        patient,
+        encounter,
+        practitioner,
+        chargeItems,
+        billingOrganization: { reference: 'Organization/billing-org-1', display: 'Test Medical Practice' },
+      });
+
+      expect(result.provider).toEqual({ reference: 'Organization/billing-org-1', display: 'Test Medical Practice' });
+      // The practitioner remains the rendering provider on careTeam.
+      expect(result.careTeam?.[0]?.provider).toEqual(
+        expect.objectContaining({ reference: 'Practitioner/practitioner-1' })
+      );
+    });
+
     test('adds the rendering practitioner to careTeam as the primary provider', () => {
       const result = buildClaimFromEncounter({ patient, encounter, practitioner, chargeItems });
       expect(result.careTeam).toEqual([
