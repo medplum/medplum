@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { WithId } from '@medplum/core';
-import type { Encounter, Practitioner } from '@medplum/fhirtypes';
+import type { PatchOperation, WithId } from '@medplum/core';
+import type { Encounter, Organization, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -41,7 +41,12 @@ describe('VisitDetailsPanel', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <VisitDetailsPanel encounter={mockEncounter} onEncounterChange={vi.fn()} {...props} />
+            <VisitDetailsPanel
+              encounter={mockEncounter}
+              onEncounterChange={vi.fn()}
+              onBillingOrganizationChange={vi.fn()}
+              {...props}
+            />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -103,13 +108,13 @@ describe('VisitDetailsPanel', () => {
     // Find the ResourceInput searchbox (ResourceInput uses AsyncAutocomplete which renders a searchbox)
     await waitFor(
       () => {
-        const searchbox = screen.queryByRole('searchbox');
+        const searchbox = screen.queryByPlaceholderText('Search for practitioner');
         expect(searchbox).toBeInTheDocument();
       },
       { timeout: 3000 }
     );
 
-    const practitionerInput = screen.getByRole('searchbox');
+    const practitionerInput = screen.getByPlaceholderText('Search for practitioner');
 
     // Type to search for a practitioner using fireEvent.change (like PlanDefinitionBuilder)
     await act(async () => {
@@ -143,17 +148,105 @@ describe('VisitDetailsPanel', () => {
       fireEvent.click(smithOption);
     });
 
-    // Verify onEncounterChange was called with updated encounter
+    // Verify onEncounterChange was called with a participant patch
     await waitFor(
       () => {
         expect(onEncounterChange).toHaveBeenCalled();
         const call = onEncounterChange.mock.calls[onEncounterChange.mock.calls.length - 1];
-        const updatedEncounter = call[0] as Encounter;
-        expect(updatedEncounter.participant).toBeDefined();
-        expect(updatedEncounter.participant?.[0]?.individual?.reference).toBe('Practitioner/practitioner-2');
+        const ops = call[0] as PatchOperation[];
+        expect(ops).toEqual([
+          {
+            op: 'add',
+            path: '/participant',
+            value: [{ individual: expect.objectContaining({ reference: 'Practitioner/practitioner-2' }) }],
+          },
+        ]);
       },
       { timeout: 5000 }
     );
+  });
+
+  test('calls onBillingOrganizationChange when billing organization is changed', async () => {
+    const onBillingOrganizationChange = vi.fn();
+
+    const mockOrganization: Organization = {
+      resourceType: 'Organization',
+      id: 'org-1',
+      name: 'Test Medical Practice',
+      identifier: [{ system: 'http://hl7.org/fhir/sid/us-npi', value: '3564119220' }],
+    };
+
+    await medplum.createResource(mockOrganization);
+
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockOrganization] as any);
+
+    setup({ onBillingOrganizationChange });
+
+    await waitFor(
+      () => {
+        expect(screen.queryByPlaceholderText('Search for organization')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    const organizationInput = screen.getByPlaceholderText('Search for organization');
+
+    await act(async () => {
+      fireEvent.change(organizationInput, { target: { value: 'Test Medical' } });
+    });
+
+    // The search is restricted to provider organizations that have an NPI identifier
+    await waitFor(
+      () => {
+        expect(medplum.searchResources).toHaveBeenCalledWith(
+          'Organization',
+          expect.any(URLSearchParams),
+          expect.any(Object)
+        );
+        const calls = (medplum.searchResources as ReturnType<typeof vi.fn>).mock.calls;
+        const orgCall = calls.find((call) => call[0] === 'Organization');
+        const params = orgCall?.[1] as URLSearchParams;
+        expect(params.get('identifier')).toBe('http://hl7.org/fhir/sid/us-npi|');
+        expect(params.get('type')).toBe('http://terminology.hl7.org/CodeSystem/organization-type|prov');
+      },
+      { timeout: 3000 }
+    );
+
+    // Dropdown options show the organization name and its NPI
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/Test Medical Practice/i)).toBeInTheDocument();
+        expect(screen.queryByText(/NPI 3564119220/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Test Medical Practice/i));
+    });
+
+    await waitFor(
+      () => {
+        expect(onBillingOrganizationChange).toHaveBeenCalled();
+        const call = onBillingOrganizationChange.mock.calls[onBillingOrganizationChange.mock.calls.length - 1];
+        expect((call[0] as Organization).id).toBe('org-1');
+      },
+      { timeout: 5000 }
+    );
+  });
+
+  test('displays the default billing organization', async () => {
+    await medplum.createResource<Organization>({
+      resourceType: 'Organization',
+      id: 'org-default',
+      name: 'Default Billing Org',
+    });
+
+    setup({ billingOrganization: { reference: 'Organization/org-default' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Default Billing Org')).toBeInTheDocument();
+    });
   });
 
   test('calls onEncounterChange when check in time is changed', async () => {

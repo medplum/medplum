@@ -545,6 +545,10 @@ async function tryGetExternalUserInfo(
   idp: IdentityProvider,
   subjectToken: string
 ): Promise<JWTPayload | undefined> {
+  if (!idp.userInfoUrl) {
+    sendTokenError(res, 'invalid_request', 'Missing user info URL', 400);
+    return undefined;
+  }
   try {
     return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
@@ -576,7 +580,7 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
 
     const userInfoUrl = externalAuthConfig.userInfoUrl;
     if (userInfoUrl) {
-      return { userInfoUrl } as IdentityProvider;
+      return { userInfoUrl };
     }
   }
 

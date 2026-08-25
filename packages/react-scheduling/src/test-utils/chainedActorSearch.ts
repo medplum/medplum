@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { QueryTypes } from '@medplum/core';
 import { getDisplayString } from '@medplum/core';
 import type { Bundle, Resource, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
@@ -10,37 +11,39 @@ const ACTOR_CHAIN_PREFIX = 'actor:';
 /**
  * Answers the chained actor filters out of the in-memory repository.
  *
- * `MemoryRepository` matches a filter by looking its code up in the flat search
- * parameter table, so `actor:Practitioner.name` matches nothing — and returns an
- * empty bundle rather than an error, which would make every test below pass for
- * the wrong reason. The stub lifts the chained filters off the query, lets the
- * repository answer the rest, and applies them to what came back, so these tests
- * still run against the fixtures. It understands only the two filters the search
- * sends, not chained search in general.
+ * `MemoryRepository` looks a filter's code up in the flat search parameter table, so
+ * `actor:Practitioner.name` matches nothing — and answers with an empty bundle rather
+ * than an error, which a caller cannot tell from a search that found nobody. The stub
+ * lifts the chained filters off the query, lets the repository answer the rest, and
+ * applies them to what came back. It understands only the two filters
+ * `searchScheduleCandidates` sends, not chained search in general.
  *
  * @param medplum - The client to stub.
+ * @returns A function restoring the client's own `search`, for a caller sharing
+ *   one client across renders.
  */
-export function stubChainedActorSearch(medplum: MockClient): void {
+export function stubChainedActorSearch(medplum: MockClient): () => void {
+  const original = medplum.search;
   const search = medplum.search.bind(medplum);
-  medplum.search = (async (
-    resourceType: 'Schedule',
-    query: Record<string, string>,
-    options?: object
-  ): Promise<Bundle> => {
-    const criteria: Record<string, string> = {};
+  medplum.search = (async (resourceType: 'Schedule', query: QueryTypes, options?: object): Promise<Bundle> => {
+    // `searchResources` hands `search` a `URLSearchParams`, whose `Object.entries` is
+    // empty — reading keys off the query drops every filter.
+    const params = new URLSearchParams(query as never);
+    const criteria = new URLSearchParams();
     const chained: [string, string][] = [];
-    for (const [code, value] of Object.entries(query ?? {})) {
+    for (const [code, value] of params) {
       if (code.startsWith(ACTOR_CHAIN_PREFIX)) {
         chained.push([code.slice(ACTOR_CHAIN_PREFIX.length), value]);
       } else {
-        criteria[code] = value;
+        criteria.append(code, value);
       }
     }
 
-    const bundle = await search(resourceType, criteria, options);
     if (chained.length === 0) {
-      return bundle;
+      return search(resourceType, query, options);
     }
+
+    const bundle = await search(resourceType, criteria, options);
 
     const actors = new Map<string, Resource>();
     for (const entry of bundle.entry ?? []) {
@@ -59,6 +62,10 @@ export function stubChainedActorSearch(medplum: MockClient): void {
 
     return { ...bundle, entry: kept };
   }) as never;
+
+  return () => {
+    medplum.search = original;
+  };
 }
 
 /**
