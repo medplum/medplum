@@ -173,6 +173,20 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Device-device-name',
+        url: 'http://hl7.org/fhir/SearchParameter/Device-device-name',
+        name: 'device-name',
+        status: 'draft',
+        description: 'A server defined search that may match any of the string fields in Device.deviceName',
+        code: 'device-name',
+        base: ['Device'],
+        type: 'string',
+        expression: 'Device.deviceName.name | Device.type.coding.display | Device.type.text',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Device-status',
         url: 'http://hl7.org/fhir/SearchParameter/Device-status',
         name: 'status',
@@ -210,6 +224,20 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         base: ['Practitioner'],
         type: 'token',
         expression: 'Practitioner.active',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Practitioner-name',
+        url: 'http://hl7.org/fhir/SearchParameter/Practitioner-name',
+        name: 'name',
+        status: 'draft',
+        description: 'A server defined search that may match any of the string fields in HumanName',
+        code: 'name',
+        base: ['Practitioner'],
+        type: 'string',
+        expression: 'Practitioner.name',
       },
     },
   ],
