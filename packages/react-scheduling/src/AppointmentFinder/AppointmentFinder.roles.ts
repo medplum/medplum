@@ -48,6 +48,21 @@ export function isSchedulingActorType(value: string | undefined): value is Sched
 }
 
 /**
+ * Actor types whose schedules may be offered for booking.
+ *
+ * Does not include `PractitionerRole` to prevent double-booking
+ * a `Practitioner` who holds multiple roles. See `getSchedulingRole` for how
+ * `PractitionerRole` is still used to determine eligibility for a schedule.
+ */
+export const BOOKABLE_ACTOR_TYPES = ['Practitioner', 'Location', 'Device'] as const;
+
+export type BookableActorType = (typeof BOOKABLE_ACTOR_TYPES)[number];
+
+export function isBookableActorType(value: string | undefined): value is BookableActorType {
+  return BOOKABLE_ACTOR_TYPES.includes(value as BookableActorType);
+}
+
+/**
  * Returns the role an actor type is chosen as.
  * @param actorType - A `Schedule.actor` resource type.
  * @returns The role that actor fills.
@@ -68,4 +83,21 @@ export function getSchedulingRole(actorType: SchedulingActorType): SchedulingRol
 export function getActorRoleLabel(actor: Reference): string | undefined {
   const actorType = actor.reference?.split('/')[0];
   return isSchedulingActorType(actorType) ? ROLE_LABELS[getSchedulingRole(actorType)] : undefined;
+}
+
+/**
+ * Roles that must be filled before a search can run.
+ *
+ * Rooms and devices are left optional: a service may have room schedules
+ * configured without every booking needing to hold one.
+ */
+const REQUIRED_ROLES: ReadonlySet<SchedulingRole> = new Set(['provider']);
+
+/**
+ * Reports whether a role has to be filled.
+ * @param role - The role being filled.
+ * @returns Whether a search can run without it.
+ */
+export function isRoleRequired(role: SchedulingRole): boolean {
+  return REQUIRED_ROLES.has(role);
 }
