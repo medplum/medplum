@@ -20,6 +20,7 @@ export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
 
 // Hooks that load what the components display
 export * from './AppointmentFinder/useProposedAppointments';
+export * from './useSchedulingResources';
 
 // Helpers the components are built on, usable without them
 export * from './availability';

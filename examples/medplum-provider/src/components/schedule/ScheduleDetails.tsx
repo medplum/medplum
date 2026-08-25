@@ -6,13 +6,12 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, HealthcareService, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react';
-import { Calendar, getEffectiveAvailability } from '@medplum/react-scheduling';
+import { Calendar, getEffectiveAvailability, useSchedulingResources } from '@medplum/react-scheduling';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
-import { useSchedulingResources } from '../../hooks/useSchedulingResources';
 import type { Range } from '../../types/scheduling';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
@@ -39,7 +38,14 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const availableTime = getEffectiveAvailability(healthcareService, schedule);
 
-  const { slots, appointments, loading } = useSchedulingResources([schedule], range);
+  const { slots, appointments, loading, error } = useSchedulingResources([schedule], range);
+
+  // The hook reports a failed search rather than notifying; this app notifies.
+  useEffect(() => {
+    if (error) {
+      showErrorNotification(error);
+    }
+  }, [error]);
 
   const practitioner = schedule.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
 

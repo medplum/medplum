@@ -4,19 +4,12 @@ import type { QueryTypes, WithId } from '@medplum/core';
 import { getQueryString } from '@medplum/core';
 import type { Appointment, ResourceType, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { JSX, ReactNode } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { Range } from '../types/scheduling';
-import { showErrorNotification } from '../utils/notifications';
+import type { DateTimeRange } from './types';
 import { useSchedulingAppointments, useSchedulingResources, useSchedulingSlots } from './useSchedulingResources';
-
-// Mock the notification helper so error-path tests can assert on it without a
-// Mantine <Notifications> provider.
-vi.mock('../utils/notifications', () => ({
-  showErrorNotification: vi.fn(),
-}));
 
 const SCHEDULE_A: WithId<Schedule> = {
   resourceType: 'Schedule',
@@ -33,7 +26,7 @@ const SCHEDULE_C: WithId<Schedule> = {
   id: 'schedule-c',
   actor: [{ reference: 'Practitioner/pract-c' }],
 };
-const RANGE: Range = {
+const RANGE: DateTimeRange = {
   start: new Date('2024-01-01T00:00:00.000Z'),
   end: new Date('2024-01-31T00:00:00.000Z'),
 };
@@ -82,10 +75,10 @@ const wrapper = ({ children }: { children: ReactNode }): JSX.Element => (
 // Render any of the scheduling hooks with the shared provider, keeping `schedules`
 // and `range` as rerender-able props.
 function setup<T>(
-  hook: (schedules: WithId<Schedule>[], range: Range | undefined) => T,
+  hook: (schedules: WithId<Schedule>[], range: DateTimeRange | undefined) => T,
   schedules: WithId<Schedule>[],
-  range: Range | undefined
-): ReturnType<typeof renderHook<T, { schedules: WithId<Schedule>[]; range: Range | undefined }>> {
+  range: DateTimeRange | undefined
+): ReturnType<typeof renderHook<T, { schedules: WithId<Schedule>[]; range: DateTimeRange | undefined }>> {
   return renderHook(({ schedules, range }) => hook(schedules, range), {
     wrapper,
     initialProps: { schedules, range },
@@ -182,7 +175,7 @@ describe('useSchedulingSlots', () => {
 
       const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE);
 
-      await waitFor(() => expect(vi.mocked(showErrorNotification)).toHaveBeenCalled());
+      await waitFor(() => expect(result.current.error).toEqual(new Error('boom')));
       await waitFor(() => expect(result.current.loading).toBe(false));
     });
 
@@ -464,7 +457,7 @@ describe('useSchedulingAppointments', () => {
 
       const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE);
 
-      await waitFor(() => expect(vi.mocked(showErrorNotification)).toHaveBeenCalled());
+      await waitFor(() => expect(result.current.error).toEqual(new Error('boom')));
       await waitFor(() => expect(result.current.loading).toBe(false));
     });
 
@@ -670,6 +663,14 @@ describe('useSchedulingResources', () => {
       expect(result.current.slots).toEqual([slotA]);
       expect(result.current.appointments).toEqual([apptA]);
     });
+  });
+
+  test('surfaces a failed search from either underlying hook', async () => {
+    medplum.searchResources = vi.fn().mockRejectedValue(new Error('boom'));
+
+    const { result } = setup(useSchedulingResources, [SCHEDULE_A], RANGE);
+
+    await waitFor(() => expect(result.current.error).toEqual(new Error('boom')));
   });
 
   test('stays loading until both the slot and appointment fetches settle', async () => {

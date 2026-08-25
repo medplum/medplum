@@ -1,18 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isDefined } from '@medplum/core';
+import { getReferenceString, isDefined, isError, normalizeErrorString } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum, useResourceModified } from '@medplum/react';
+import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
-import type { Range } from '../types/scheduling';
-import { showErrorNotification } from '../utils/notifications';
+import type { DateTimeRange } from './types';
 
 // Whether an instant falls within the loaded range, matching the inclusive `ge`/`le`
 // bounds of the searches below. Used to keep created resources from a live update out of
 // state when they fall outside the range of the hook — a refetch wouldn't return
 // them, so appending them would drift from what the search reflects.
-function isWithinRange(instant: string | undefined, range: Range | undefined): boolean {
+function isWithinRange(instant: string | undefined, range: DateTimeRange | undefined): boolean {
   if (!instant || !range) {
     return false;
   }
@@ -20,20 +19,30 @@ function isWithinRange(instant: string | undefined, range: Range | undefined): b
   return time >= range.start.getTime() && time <= range.end.getTime();
 }
 
+function toError(reason: unknown): Error {
+  return isError(reason) ? reason : new Error(normalizeErrorString(reason), { cause: reason });
+}
+
 export interface UseSchedulingResourcesResult {
-  appointments: WithId<Appointment>[] | undefined;
-  slots: WithId<Slot>[] | undefined;
-  loading: boolean;
+  readonly appointments: WithId<Appointment>[] | undefined;
+  readonly slots: WithId<Slot>[] | undefined;
+  readonly loading: boolean;
+  /** Set when a search failed. What loaded before the failure is left in place. */
+  readonly error: Error | undefined;
 }
 
 export interface UseSchedulingSlotsResult {
-  slots: WithId<Slot>[] | undefined;
-  loading: boolean;
+  readonly slots: WithId<Slot>[] | undefined;
+  readonly loading: boolean;
+  /** Set when a search failed. What loaded before the failure is left in place. */
+  readonly error: Error | undefined;
 }
 
 export interface UseSchedulingAppointmentsResult {
-  appointments: WithId<Appointment>[] | undefined;
-  loading: boolean;
+  readonly appointments: WithId<Appointment>[] | undefined;
+  readonly loading: boolean;
+  /** Set when a search failed. What loaded before the failure is left in place. */
+  readonly error: Error | undefined;
 }
 
 /**
@@ -45,12 +54,17 @@ export interface UseSchedulingAppointmentsResult {
  *
  * @param schedules - The schedules whose Slots should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined.
- * @returns The loaded Slots (undefined until the first fetch resolves) and a loading flag.
+ * @returns The loaded Slots (undefined until the first fetch resolves), a loading flag, and
+ *   the error from a failed search.
  */
-export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range | undefined): UseSchedulingSlotsResult {
+export function useSchedulingSlots(
+  schedules: readonly WithId<Schedule>[],
+  range: DateTimeRange | undefined
+): UseSchedulingSlotsResult {
   const medplum = useMedplum();
   const [slots, setSlots] = useState<WithId<Slot>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>(undefined);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
   // `useResourceModified` handler both use this so the optimistic updates stay consistent
@@ -65,8 +79,7 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
   const rangeEnd = range?.end?.toISOString();
 
   // Keep the calendar's slots in sync with any Slot this client modifies, e.g. the
-  // slots created when booking a visit from the FindPane or soft-deleted when cancelling
-  // one from the appointment details drawer.
+  // slots written when booking a visit or soft-deleted when cancelling one.
   useResourceModified('Slot', (event) => {
     if (event.operation === 'delete') {
       // Deletes don't carry a resource, only the id of what went away.
@@ -122,8 +135,13 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
         ])
       )
     )
-      .then((results) => active && setSlots(results.flat()))
-      .catch((error: unknown) => active && showErrorNotification(error))
+      .then((results) => {
+        if (active) {
+          setSlots(results.flat());
+          setError(undefined);
+        }
+      })
+      .catch((reason: unknown) => active && setError(toError(reason)))
       .finally(() => {
         if (active) {
           setLoading(false);
@@ -139,6 +157,7 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
   return {
     slots,
     loading,
+    error,
   };
 }
 
@@ -152,15 +171,17 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
  * @param schedules - The schedules whose actors' Appointments should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined
  *   or none of the schedules have an actor.
- * @returns The loaded Appointments (undefined until the first fetch resolves) and a loading flag.
+ * @returns The loaded Appointments (undefined until the first fetch resolves), a loading
+ *   flag, and the error from a failed search.
  */
 export function useSchedulingAppointments(
-  schedules: WithId<Schedule>[],
-  range: Range | undefined
+  schedules: readonly WithId<Schedule>[],
+  range: DateTimeRange | undefined
 ): UseSchedulingAppointmentsResult {
   const medplum = useMedplum();
   const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>(undefined);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
   // `useResourceModified` handler both use this so the optimistic updates stay consistent
@@ -243,8 +264,9 @@ export function useSchedulingAppointments(
           byId.set(appointment.id, appointment);
         }
         setAppointments([...byId.values()]);
+        setError(undefined);
       })
-      .catch((error: unknown) => active && showErrorNotification(error))
+      .catch((reason: unknown) => active && setError(toError(reason)))
       .finally(() => {
         if (active) {
           setLoading(false);
@@ -260,6 +282,7 @@ export function useSchedulingAppointments(
   return {
     appointments,
     loading,
+    error,
   };
 }
 
@@ -271,12 +294,12 @@ export function useSchedulingAppointments(
  *
  * @param schedules - The schedules whose Slots and Appointments should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined.
- * @returns The loaded Slots and Appointments (each undefined until its first fetch resolves)
- *   and a combined loading flag.
+ * @returns The loaded Slots and Appointments (each undefined until its first fetch resolves),
+ *   a combined loading flag, and whichever search failed first.
  */
 export function useSchedulingResources(
-  schedules: WithId<Schedule>[],
-  range: Range | undefined
+  schedules: readonly WithId<Schedule>[],
+  range: DateTimeRange | undefined
 ): UseSchedulingResourcesResult {
   const slotsResult = useSchedulingSlots(schedules, range);
   const appointmentsResult = useSchedulingAppointments(schedules, range);
@@ -285,5 +308,6 @@ export function useSchedulingResources(
     slots: slotsResult.slots,
     appointments: appointmentsResult.appointments,
     loading: slotsResult.loading || appointmentsResult.loading,
+    error: slotsResult.error ?? appointmentsResult.error,
   };
 }
