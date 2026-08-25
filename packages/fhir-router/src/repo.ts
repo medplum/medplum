@@ -793,14 +793,25 @@ function parseChainedFilter(resourceType: string, filter: Filter): ChainedFilter
     return undefined;
   }
 
+  if (filter.operator !== Operator.EQUALS) {
+    throw new Error('MemoryRepository does not support this chained filter yet.');
+  }
+
   const left = filter.code.slice(0, dotIndex);
   const chainedKey = filter.code.slice(dotIndex + 1);
   const colonIndex = left.indexOf(':');
   const refCode = colonIndex < 0 ? left : left.slice(0, colonIndex);
 
   const searchParam = globalSchema.types[resourceType]?.searchParams?.[refCode];
+
   // With no explicit `:Type`, only an unambiguous (single-target) reference param can chain.
+  if (colonIndex === -1 && searchParam?.target?.length !== 1) {
+    throw new OperationOutcomeError(
+      badRequest(`Unable to identify next resource type for search parameter: ${resourceType}?${refCode}`)
+    );
+  }
   const targetType = colonIndex < 0 ? searchParam?.target?.[0] : left.slice(colonIndex + 1);
+
   if (!searchParam?.expression || !targetType) {
     return undefined;
   }

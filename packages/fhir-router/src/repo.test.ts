@@ -250,6 +250,20 @@ describe('MemoryRepository', () => {
       );
       expect(results).toHaveLength(0);
     });
+
+    test('emits an error when trying to chain through an ambiguous multi-target parameter', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: randomUUID() }] });
+      await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+
+      await expect(() =>
+        repo.searchResources<Observation>(parseSearchRequest(`Observation?subject.name=${randomUUID()}`))
+      ).rejects.toThrow('Unable to identify next resource type for search parameter: Observation?subject');
+    });
   });
 
   describe('searchByReference', () => {
