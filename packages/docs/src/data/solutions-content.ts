@@ -271,6 +271,8 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoSrc: '/img/logos/pictionhealth.png',
         logoHasName: true,
         logoScale: 1.35,
+        videoSrc: '/img/solutions/piction-clip.mp4',
+        screenshotAlt: 'Pictionhealth visit charge capture and claim submission',
         valueStatement:
           'Pictionhealth built a teledermatology EHR on Medplum that runs its full care model — asynchronous dermatology review through nurse-practitioner visits — with automated claims submission through a live Candid Health integration and lab ordering through Health Gorilla.',
       },
