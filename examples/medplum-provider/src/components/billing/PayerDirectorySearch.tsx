@@ -8,7 +8,13 @@ import { IconCheck, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { CandidPayerPage } from '../../utils/billing';
-import { formatPayerCategory, getPayerCategory, getPayerId, getPayerUuid, parsePayerSearchPage } from '../../utils/billing';
+import {
+  formatPayerCategory,
+  getPayerCategory,
+  getPayerId,
+  getPayerUuid,
+  parsePayerSearchPage,
+} from '../../utils/billing';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
 
 const SEARCH_PAGE_SIZE = 20;

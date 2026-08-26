@@ -107,9 +107,7 @@ export function getPayerId(org: Organization): string | undefined {
 }
 
 export function getPayerCategory(org: Organization): string | undefined {
-  return org.type
-    ?.flatMap((t) => t.coding ?? [])
-    .find((c) => c.system === CANDID_PAYER_CATEGORY_SYSTEM)?.code;
+  return org.type?.flatMap((t) => t.coding ?? []).find((c) => c.system === CANDID_PAYER_CATEGORY_SYSTEM)?.code;
 }
 
 const PAYER_CATEGORY_ACRONYMS = new Set(['BCBS', 'SNF', 'TPL']);
@@ -141,7 +139,11 @@ export function buildPayerRefreshOps(org: Organization, fresh: Organization): Pa
 
   let identifier = org.identifier;
   for (const system of CANDID_MANAGED_IDENTIFIER_SYSTEMS) {
-    identifier = upsertIdentifier(identifier, system, fresh.identifier?.find((id) => id.system === system)?.value ?? '');
+    identifier = upsertIdentifier(
+      identifier,
+      system,
+      fresh.identifier?.find((id) => id.system === system)?.value ?? ''
+    );
   }
 
   const extension = [

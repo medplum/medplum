@@ -164,11 +164,15 @@ describe('billing utils', () => {
 
   describe('isPayerNotFoundError', () => {
     test('matches the not-found error shapes from the candid-get-payers bot', () => {
-      expect(isPayerNotFoundError(new Error('Candid payer fetch (uuid-1) failed (EntityNotFoundError): {}'))).toBe(true);
+      expect(isPayerNotFoundError(new Error('Candid payer fetch (uuid-1) failed (EntityNotFoundError): {}'))).toBe(
+        true
+      );
       expect(isPayerNotFoundError(new Error('Candid payer fetch (uuid-1) failed (HTTP 404): {"message":"gone"}'))).toBe(
         true
       );
-      expect(isPayerNotFoundError(new Error('Candid payer fetch (uuid-1) failed (HTTP 401): unauthorized'))).toBe(false);
+      expect(isPayerNotFoundError(new Error('Candid payer fetch (uuid-1) failed (HTTP 401): unauthorized'))).toBe(
+        false
+      );
       expect(isPayerNotFoundError(new Error('network timeout'))).toBe(false);
     });
   });

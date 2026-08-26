@@ -118,8 +118,7 @@ export function PayerList(): JSX.Element {
     <Stack gap="sm">
       {botId === '' && (
         <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light">
-          The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported
-          here.
+          The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported here.
         </Alert>
       )}
 
