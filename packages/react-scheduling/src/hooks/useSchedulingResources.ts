@@ -4,15 +4,14 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import type { Range } from '../types/scheduling';
-import { showErrorNotification } from '../utils/notifications';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { DateTimeRange } from '../types';
 
 // Whether an instant falls within the loaded range, matching the inclusive `ge`/`le`
 // bounds of the searches below. Used to keep created resources from a live update out of
 // state when they fall outside the range of the hook — a refetch wouldn't return
 // them, so appending them would drift from what the search reflects.
-function isWithinRange(instant: string | undefined, range: Range | undefined): boolean {
+function isWithinRange(instant: string | undefined, range: DateTimeRange | undefined): boolean {
   if (!instant || !range) {
     return false;
   }
@@ -45,12 +44,28 @@ export interface UseSchedulingAppointmentsResult {
  *
  * @param schedules - The schedules whose Slots should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined.
+ * @param options - Optional parameters
+ * @param options.onError - Callback fired when fetching appointments fails
  * @returns The loaded Slots (undefined until the first fetch resolves) and a loading flag.
  */
-export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range | undefined): UseSchedulingSlotsResult {
+export function useSchedulingSlots(
+  schedules: WithId<Schedule>[],
+  range: DateTimeRange | undefined,
+  options?: { onError?: (error: unknown) => void }
+): UseSchedulingSlotsResult {
   const medplum = useMedplum();
   const [slots, setSlots] = useState<WithId<Slot>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+
+  const onErrorRef = useRef(options?.onError);
+
+  useEffect(() => {
+    onErrorRef.current = options?.onError;
+  }, [options?.onError]);
+
+  const handleError = useCallback((error: unknown) => {
+    onErrorRef.current?.(error);
+  }, []);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
   // `useResourceModified` handler both use this so the optimistic updates stay consistent
@@ -100,7 +115,7 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
   });
 
   useEffect(() => {
-    if (!rangeStart || !rangeEnd) {
+    if (scheduleRefsKey.length === 0 || !rangeStart || !rangeEnd) {
       return () => {};
     }
     let active = true;
@@ -123,7 +138,7 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
       )
     )
       .then((results) => active && setSlots(results.flat()))
-      .catch((error: unknown) => active && showErrorNotification(error))
+      .catch((error: unknown) => active && handleError(error))
       .finally(() => {
         if (active) {
           setLoading(false);
@@ -134,7 +149,7 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
       active = false;
       setLoading(false);
     };
-  }, [medplum, scheduleRefsKey, rangeStart, rangeEnd]);
+  }, [medplum, scheduleRefsKey, rangeStart, rangeEnd, handleError]);
 
   return {
     slots,
@@ -152,15 +167,28 @@ export function useSchedulingSlots(schedules: WithId<Schedule>[], range: Range |
  * @param schedules - The schedules whose actors' Appointments should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined
  *   or none of the schedules have an actor.
+ * @param options - Optional parameters
+ * @param options.onError - Callback fired when fetching appointments fails
  * @returns The loaded Appointments (undefined until the first fetch resolves) and a loading flag.
  */
 export function useSchedulingAppointments(
   schedules: WithId<Schedule>[],
-  range: Range | undefined
+  range: DateTimeRange | undefined,
+  options?: { onError?: (error: unknown) => void }
 ): UseSchedulingAppointmentsResult {
   const medplum = useMedplum();
   const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+
+  const onErrorRef = useRef(options?.onError);
+
+  useEffect(() => {
+    onErrorRef.current = options?.onError;
+  }, [options?.onError]);
+
+  const handleError = useCallback((error: unknown) => {
+    onErrorRef.current?.(error);
+  }, []);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
   // `useResourceModified` handler both use this so the optimistic updates stay consistent
@@ -244,7 +272,7 @@ export function useSchedulingAppointments(
         }
         setAppointments([...byId.values()]);
       })
-      .catch((error: unknown) => active && showErrorNotification(error))
+      .catch((error: unknown) => active && handleError(error))
       .finally(() => {
         if (active) {
           setLoading(false);
@@ -255,7 +283,7 @@ export function useSchedulingAppointments(
       active = false;
       setLoading(false);
     };
-  }, [medplum, actorRefsKey, rangeStart, rangeEnd]);
+  }, [medplum, actorRefsKey, rangeStart, rangeEnd, handleError]);
 
   return {
     appointments,
@@ -271,15 +299,18 @@ export function useSchedulingAppointments(
  *
  * @param schedules - The schedules whose Slots and Appointments should be loaded.
  * @param range - The date range to search within; no search runs while this is undefined.
+ * @param options - Optional parameters
+ * @param options.onError - Callback fired when fetching appointments fails
  * @returns The loaded Slots and Appointments (each undefined until its first fetch resolves)
  *   and a combined loading flag.
  */
 export function useSchedulingResources(
   schedules: WithId<Schedule>[],
-  range: Range | undefined
+  range: DateTimeRange | undefined,
+  options?: { onError?: (error: unknown) => void }
 ): UseSchedulingResourcesResult {
-  const slotsResult = useSchedulingSlots(schedules, range);
-  const appointmentsResult = useSchedulingAppointments(schedules, range);
+  const slotsResult = useSchedulingSlots(schedules, range, options);
+  const appointmentsResult = useSchedulingAppointments(schedules, range, options);
 
   return {
     slots: slotsResult.slots,

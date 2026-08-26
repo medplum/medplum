@@ -18,7 +18,6 @@ import {
   Ultrasound1Schedule,
   UltrasoundImagingService,
 } from '../stories/scheduling';
-import { stubChainedActorSearch } from '../test-utils/chainedActorSearch';
 import type { SchedulingRole } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import {
@@ -36,8 +35,7 @@ async function setupClient(): Promise<MockClient> {
   for (const resource of SchedulingFixtures) {
     await medplum.createResource(resource);
   }
-  stubChainedActorSearch(medplum);
-  // Over the stub, so `querySentTo` can read the criteria the field wrote.
+  // Spy added so `querySentTo` can read the search criteria
   vi.spyOn(medplum, 'search');
   return medplum;
 }
@@ -348,10 +346,19 @@ describe('narrowing to a location', () => {
 
   test('Keeps a room whose ancestry cannot be read', async () => {
     const medplum = await setupClient();
+    // The room itself is real — a Schedule whose actor is a dangling reference
+    // is dropped by the chained actor search before location narrowing ever
+    // sees it. It's the room's *parent* that is unreadable here.
+    await medplum.createResource<Location>({
+      resourceType: 'Location',
+      id: 'orphan-room',
+      name: 'Room 9',
+      partOf: { reference: 'Location/gone' },
+    });
     await medplum.createResource<Schedule>({
       ...DrRiveraSchedule,
       id: undefined,
-      actor: [{ reference: 'Location/deleted-room', display: 'Room 9' }],
+      actor: [{ reference: 'Location/orphan-room', display: 'Room 9' }],
     });
 
     const kept = await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: MainClinic });
