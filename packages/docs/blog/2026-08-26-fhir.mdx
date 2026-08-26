@@ -1,0 +1,91 @@
+---
+slug: traditional-fhir
+title: 'How Medplum thinks about FHIR'
+authors: maddyli
+tags: [fhir, traditional-ehr]
+---
+
+Most folks, before encountering Medplum, think of FHIR in one of two ways:
+
+- **As a read-mostly interface bolted onto a proprietary EHR.** Epic, Oracle Health, and exchange profiles like Da Vinci Payer Exchange all use
+  FHIR only at the boundary between systems. The real data lives in someone's proprietary tables; FHIR is the negotiated contract at the edge.
+
+- **As a FHIR repository you publish _into_.** HAPI, Aidbox, HealthLake, and the Azure or Google FHIR stores are often stood up alongside the
+  operational datastore that actually serves the application — a landing zone for exchange, analytics, or compliance, rather than the system of
+  record your app reads and writes on the hot path.
+
+In both models, FHIR sits off to the side, and a _separate_ database is doing the real work of running the application.
+
+So when developers come to Medplum, they usually ask something along these lines:
+
+- "How is the data handled and stored in the DB itself? How does that relate to FHIR?"
+- "If I point a SQL explorer at the Postgres database when running Medplum locally, will I be able to see what's happening?"
+- "Can I get direct access to the rows in the database when using your hosted service?"
+
+These are all very reasonable questions for developers doing due diligence on Medplum, and part of the beauty of open source is that you can
+inspect our implementation directly. We also think these questions come from a particular understanding of the relationship between FHIR and an EHR
+— and this post is about how that relationship is different in Medplum.
+
+{/* truncate */}
+
+## FHIR is the application's data model, not a layer on top of one
+
+The key difference is this: in Medplum, FHIR resources _are_ the operational, transactional data model of your application. There is no other database of record sitting behind them.
+
+A `Patient` you write is the same `Patient` your app reads, the same resource your access policies protect, the same one your Subscriptions fire on, and the same one your interoperability partners pull. One system of record, expressed as FHIR, all the way down.
+
+This is sometimes called "OLTP FHIR" — using FHIR for online transaction processing, the live read/write path of a real product, rather than only for export, analytics, or exchange. It's the part of Medplum that tends to surprise people, because the ecosystem has largely treated FHIR as something you project data _out to_, not something you build _on_.
+
+## What "the database is an implementation detail" means
+
+You interact with Medplum through the FHIR REST API, GraphQL, and the client SDKs — not through SQL. The unit you work with is the resource, and your query interface is FHIR search parameters. For example, you create a patient:
+
+```
+POST /fhir/R4/Patient
+```
+
+and you search for their recent labs:
+
+```
+GET /fhir/R4/Observation?subject=Patient/123&category=laboratory&_sort=-date
+```
+
+You never write a JOIN, manage an index, or run a migration to add a field. Medplum owns how resources are physically stored, indexed, versioned, and kept referentially consistent. The Postgres tables underneath are _how_ Medplum delivers that API — they aren't the contract you build against.
+
+That's what we mean when we say the database is an implementation detail: it's real, it's inspectable, and it's genuinely well worth understanding — but it isn't the surface your application touches.
+
+## Go ahead — point a SQL explorer at it
+
+When you self-host or run Medplum locally, connect to Postgres and look around. This is encouraged, especially if you care about how referential integrity and indexing actually work.
+
+What you'll find, at a high level:
+
+- A table per resource type, storing the full resource as JSONB.
+- Additional columns on that table, extracted from the resource for each indexed search parameter, so that FHIR search maps onto real indexes.
+- Companion history tables that back resource versioning and `_history`.
+- Lookup tables (for tokens, references, human names, and similar) that make search fast and referential integrity enforceable.
+
+> The specifics of columns and table layout are best read directly from the source or a running instance rather than memorized — see [self-hosting](/docs/self-hosting) to spin one up. _(TODO: confirm slug / point at the most relevant schema or architecture doc.)_
+
+One important caveat: this internal layout is Medplum's to evolve. It is not a stable, versioned API, and it can change between releases. Treat it as _read-for-understanding_, not _build-against_. If you find yourself writing application code that queries these tables directly, that's the signal to step back up to the FHIR API.
+
+And to answer the third question directly: on the hosted, managed service you don't get raw SQL or row-level access — the FHIR API is the interface. That's deliberate. It's exactly what lets Medplum manage storage, indexing, upgrades, and integrity on your behalf. If you want to see the rows, self-host or run locally, where the whole thing is yours to inspect.
+
+## What you stop having to do
+
+Because your data model already _is_ FHIR, a lot of work you'd normally own simply goes away:
+
+- No schema to design and no migrations to run as your data model evolves.
+- Search parameters instead of hand-rolled indexes.
+- Resource versioning and audit history built in.
+- Interoperability that's largely there by construction, because you were never modeling data in a private shape you'd later have to map to FHIR.
+
+## When the storage layer _does_ matter
+
+The abstraction isn't absolute, and we don't want to pretend it is. There are real situations where what's underneath matters — performance at scale, very large datasets, database sharding, and self-hosting operations. We have dedicated material for those cases _(TODO: link performance, scaling/sharding, and self-hosting ops docs)_.
+
+Worth calling out: for most teams building _on_ Medplum, figures like load-test results and uptime are reassurance during evaluation, not daily operational concerns — because you generally aren't the one carrying pager duty for the Medplum service. That distinction is itself the abstraction working as intended.
+
+## The short version
+
+The database is real, it's open, and it's worth kicking the tires on. It just isn't the surface you build on. Build on resources, access policies, Bots, and Subscriptions — and let Medplum keep the rows honest.
