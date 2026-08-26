@@ -1,8 +1,10 @@
 /* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-/* Dark "canvas": a 3x3 grid of landscape customer-logo tiles that flip to reveal
-   more customers. Reads the same in light and dark themes. */
+/* Purple "canvas": a 3x3 grid of landscape customer-logo tiles that flip to reveal
+   more customers. Reads the same in light and dark themes. Kept at grape-7 rather
+   than the darkest grape so the white tiles sit on it softly instead of punching
+   out of it. */
 .canvas {
   position: relative;
   width: 100%;
@@ -12,7 +14,7 @@
   border-radius: 24px;
   background:
     radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px) 0 0 / 22px 22px,
-    var(--oc-grape-9);
+    var(--oc-grape-7);
   border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
