@@ -44,7 +44,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
-  const [error, setError] = useState<unknown>();
+  const [schedulesLoadingError, setSchedulesLoadingError] = useState<unknown>();
 
   const [candidatesByRole, setCandidatesByRole] =
     useState<Readonly<Record<SchedulingRole, ScheduleCandidate[]>>>(EMPTY_CANDIDATES);
@@ -73,13 +73,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     )
       .then(([provider, room, device]) => {
         if (!controller.signal.aborted) {
-          setError(undefined);
+          setSchedulesLoadingError(undefined);
           setCandidatesByRole({ provider, room, device });
         }
       })
       .catch((err: unknown) => {
         if (!controller.signal.aborted) {
-          setError(err);
+          setSchedulesLoadingError(err);
         }
       })
       .finally(() => {
@@ -115,7 +115,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     slots,
     appointments,
     loading: resourcesLoading,
-  } = useSchedulingResources(schedules, range, { onError: setError });
+    error: resourcesError,
+  } = useSchedulingResources(schedules, range);
 
   const sources = useMemo((): MultiCalendarSource[] => {
     return activeCandidates.map((candidate) => {
@@ -147,6 +148,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     };
   };
 
+  const displayError = resourcesError ?? schedulesLoadingError;
+
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
       <div className={classes.sidebar}>
@@ -161,9 +164,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         />
       </div>
       <div className={classes.calendar}>
-        {error !== undefined && (
+        {displayError !== undefined && (
           <Alert color="red" mb="xs">
-            {normalizeErrorString(error)}
+            {normalizeErrorString(displayError)}
           </Alert>
         )}
         <MultiCalendar sources={sources} onRangeChange={setRange} loading={resourcesLoading} />
