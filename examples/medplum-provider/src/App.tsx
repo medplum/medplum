@@ -86,6 +86,7 @@ export function App(): JSX.Element | null {
   const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
   const membership = medplum.getProjectMembership();
   const hasScriptSure = hasScriptSureIdentifier(membership);
+  const hasBilling = project?.features?.includes('billing') ?? false;
 
   const [shlOpened, shlHandlers] = useDisclosure(false);
 
@@ -192,7 +193,7 @@ export function App(): JSX.Element | null {
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
-                  { icon: <IconReceipt2 />, label: 'Billing Setup', href: '/settings/billing' },
+                  ...(hasBilling ? [{ icon: <IconReceipt2 />, label: 'Billing Setup', href: '/settings/billing' }] : []),
                   ...(hasDoseSpot
                     ? [
                         {
@@ -304,7 +305,7 @@ export function App(): JSX.Element | null {
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               {/* Must precede the /:resourceType catch-alls below */}
-              <Route path="/settings/billing" element={<BillingSetupPage />} />
+              {hasBilling && <Route path="/settings/billing" element={<BillingSetupPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
