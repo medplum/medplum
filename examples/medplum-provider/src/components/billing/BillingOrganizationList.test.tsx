@@ -62,9 +62,7 @@ describe('BillingOrganizationList', () => {
   };
 
   test('lists provider organizations with details and flags missing NPIs', async () => {
-    const searchSpy = vi
-      .spyOn(medplum, 'searchResources')
-      .mockResolvedValue([completeOrg, orgWithoutNpi] as any);
+    const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue([completeOrg, orgWithoutNpi] as any);
 
     setup();
 

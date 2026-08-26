@@ -69,8 +69,8 @@ export function BillingOrganizationList(): JSX.Element {
       ))}
 
       <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
-        Candid requires the NPI and Tax ID entered here to match a provider registered in Candid with a payer
-        contract, set up offline in the Candid portal. Stedi needs no pre-registration.
+        Candid requires the NPI and Tax ID entered here to match a provider registered in Candid with a payer contract,
+        set up offline in the Candid portal. Stedi needs no pre-registration.
       </Alert>
 
       <BillingOrganizationModal

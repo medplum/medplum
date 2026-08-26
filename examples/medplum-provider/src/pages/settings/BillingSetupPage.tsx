@@ -13,8 +13,8 @@ export function BillingSetupPage(): JSX.Element {
         <div>
           <Title order={1}>Billing Setup</Title>
           <Text c="dimmed" mt={4}>
-            Claims are billed to a payer imported from the payer directory, under a billing provider with an NPI and
-            Tax ID. Incomplete entries here will fail at claim submission.
+            Claims are billed to a payer imported from the payer directory, under a billing provider with an NPI and Tax
+            ID. Incomplete entries here will fail at claim submission.
           </Text>
         </div>
         <Tabs defaultValue="billing-providers">

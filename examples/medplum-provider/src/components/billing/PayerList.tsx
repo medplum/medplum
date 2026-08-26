@@ -244,8 +244,7 @@ export function PayerList(): JSX.Element {
     <Stack gap="sm">
       {botId === '' && (
         <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light">
-          The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported
-          here.
+          The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported here.
         </Alert>
       )}
 
@@ -324,7 +323,11 @@ export function PayerList(): JSX.Element {
                   </Table.Tbody>
                 </Table>
                 <Group justify="space-between">
-                  <Button onClick={() => handleImport().catch(console.error)} disabled={selected.size === 0} loading={importing}>
+                  <Button
+                    onClick={() => handleImport().catch(console.error)}
+                    disabled={selected.size === 0}
+                    loading={importing}
+                  >
                     Import selected ({selected.size})
                   </Button>
                   <Pagination
@@ -350,9 +353,7 @@ export function PayerList(): JSX.Element {
           </Text>
         </Card>
       ) : (
-        importedPayers.map((payer) => (
-          <PayerCard key={payer.id} payer={payer} onClick={() => setDetailsPayer(payer)} />
-        ))
+        importedPayers.map((payer) => <PayerCard key={payer.id} payer={payer} onClick={() => setDetailsPayer(payer)} />)
       )}
 
       <Modal
