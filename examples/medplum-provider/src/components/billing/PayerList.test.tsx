@@ -121,12 +121,14 @@ describe('PayerList', () => {
     const user = userEvent.setup();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(payersBot);
-    const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(
-      makeSearchResult([
-        makeDirectoryPayer('uuid-cigna', '62308', 'CIGNA'),
-        makeDirectoryPayer('uuid-uhc', '87726', 'UNITED HEALTHCARE'),
-      ])
-    );
+    const executeSpy = vi
+      .spyOn(medplum, 'executeBot')
+      .mockResolvedValue(
+        makeSearchResult([
+          makeDirectoryPayer('uuid-cigna', '62308', 'CIGNA'),
+          makeDirectoryPayer('uuid-uhc', '87726', 'UNITED HEALTHCARE'),
+        ])
+      );
     const createSpy = vi.spyOn(medplum, 'createResource');
 
     setup();
