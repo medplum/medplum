@@ -134,12 +134,18 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
-  const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => ({
-    id: candidate.schedule.id,
-    label: getCandidateDisplay(candidate),
-    color: colorByScheduleId.get(candidate.schedule.id),
-    selected,
-  });
+  const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
+    const color = colorByScheduleId.get(candidate.schedule.id);
+    if (!color) {
+      throw new Error('Got candidate without resolved color');
+    }
+    return {
+      id: candidate.schedule.id,
+      label: getCandidateDisplay(candidate),
+      color,
+      selected,
+    };
+  };
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>

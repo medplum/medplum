@@ -8,11 +8,11 @@ import { CalendarsPanel } from './CalendarsPanel';
 function setup(overrides?: Partial<CalendarsPanelProps>): void {
   const props: CalendarsPanelProps = {
     providers: [
-      { id: 'prov-1', label: 'Lisa Caddy' },
-      { id: 'prov-2', label: 'Michelle Bryant', selected: false },
+      { id: 'prov-1', label: 'Lisa Caddy', color: 'blue' },
+      { id: 'prov-2', label: 'Michelle Bryant', color: 'teal', selected: false },
     ],
-    devices: [{ id: 'dev-1', label: 'Ultrasound Machine 1' }],
-    rooms: [{ id: 'room-1', label: 'Exam Room A' }],
+    devices: [{ id: 'dev-1', label: 'Ultrasound Machine 1', color: 'pink' }],
+    rooms: [{ id: 'room-1', label: 'Exam Room A', color: 'grape' }],
     onToggleProvider: vi.fn(),
     onToggleDevice: vi.fn(),
     onToggleRoom: vi.fn(),

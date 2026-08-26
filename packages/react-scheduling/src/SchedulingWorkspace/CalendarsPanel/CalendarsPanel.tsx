@@ -1,18 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MantineThemeColors } from '@mantine/core';
-import { Divider, Stack, Text, useMantineTheme } from '@mantine/core';
+import { Divider, Stack, Text } from '@mantine/core';
 import { IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useMemo } from 'react';
-import { resolveThemeColor } from '../../colors';
 import { CalendarRow } from './CalendarRow';
 import { SectionHeader } from './SectionHeader';
 
 export interface CalendarsPanelItem {
   readonly id: string;
   readonly label: string;
-  readonly color?: keyof MantineThemeColors;
+  readonly color: keyof MantineThemeColors;
   /** Defaults to true (selected/visible) when omitted. */
   readonly selected?: boolean;
   /** Only used for Providers & Staff, Devices, and Rooms rows (avatar variant); ignored for Locations and Service Types. */
@@ -43,11 +41,6 @@ export interface CalendarsPanelProps {
 export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   const { providers, devices, rooms, candidatesLoading, onToggleProvider, onToggleDevice, onToggleRoom, className } =
     props;
-  const theme = useMantineTheme();
-
-  const resolveColor = useMemo(() => {
-    return (item: CalendarsPanelItem, index: number): string => resolveThemeColor(theme, item.color, index);
-  }, [theme]);
 
   const renderEmpty = (label: string): JSX.Element => {
     return (
@@ -69,8 +62,8 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
           renderEmpty('providers or staff')
         ) : (
           <Stack gap={2}>
-            {providers.map((item, i) => (
-              <CalendarRow key={item.id} item={item} color={resolveColor(item, i)} onToggle={onToggleProvider} />
+            {providers.map((item) => (
+              <CalendarRow key={item.id} item={item} color={item.color} onToggle={onToggleProvider} />
             ))}
           </Stack>
         )}
@@ -82,8 +75,8 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
           renderEmpty('devices')
         ) : (
           <Stack gap={2}>
-            {devices.map((item, i) => (
-              <CalendarRow key={item.id} item={item} color={resolveColor(item, i)} onToggle={onToggleDevice} />
+            {devices.map((item) => (
+              <CalendarRow key={item.id} item={item} color={item.color} onToggle={onToggleDevice} />
             ))}
           </Stack>
         )}
@@ -95,11 +88,11 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
           renderEmpty('rooms')
         ) : (
           <Stack gap={2}>
-            {rooms.map((item, i) => (
+            {rooms.map((item) => (
               <CalendarRow
                 key={item.id}
                 item={item}
-                color={resolveColor(item, i)}
+                color={item.color}
                 onToggle={onToggleRoom}
                 icon={<IconMapPinFilled size={12} />}
               />
