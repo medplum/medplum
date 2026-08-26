@@ -101,6 +101,7 @@ medplum/
 │   ├── scriptsure-react      # ScriptSure React SDK
 │   └── server                # Backend API server
 ├── examples                  # Sample apps and bots
+│   └── medplum-provider      # Provider EHR starter app
 ├── charts                    # Helm charts
 ├── terraform                 # Terraform infra as code
 └── scripts                   # Helper bash scripts
