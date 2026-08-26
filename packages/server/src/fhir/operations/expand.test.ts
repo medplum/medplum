@@ -2288,6 +2288,12 @@ describe('Expand', () => {
         ],
       },
       {
+        name: 'Filter selects the matching translation among several',
+        valueSet: pagingValueSet,
+        query: 'filter=premier&displayLanguage=fr',
+        expected: [{ system: pagingSystem, code: 'P1', display: 'Article premier' }],
+      },
+      {
         name: 'Enumerated concepts exclude non-matching translations',
         valueSet: conceptValueSet,
         query: 'filter=toux&displayLanguage=fr',

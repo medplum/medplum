@@ -501,6 +501,18 @@ function buildDisplayMatch(filterText: string, tableName: string): Expression {
   );
 }
 
+function buildDisplayMatchRank(filterText: string, tableName: string): Expression {
+  return new Conjunction(
+    filterText.split(/\s+/g).map((word) => {
+      const pattern = `%${escapeLikeString(word)}%`;
+      return new Disjunction([
+        new Condition(new Column(tableName, 'display'), 'ILIKE', pattern), // Cheaper check first to short-circuit
+        new Condition(new Column(tableName, 'display'), 'UNACCENT_ILIKE', pattern),
+      ]);
+    })
+  );
+}
+
 /**
  * Anchors the query on canonical rows and attaches each code's translation in the requested language, replacing
  * the projected display with the translated one. Codes without a translation drop out of the expansion, since the
@@ -508,9 +520,15 @@ function buildDisplayMatch(filterText: string, tableName: string): Expression {
  * @param query - The expansion query, projecting the columns of `ExpansionRow`.
  * @param codeSystem - The CodeSystem being expanded (with resolved id).
  * @param displayLanguage - The requested display language.
+ * @param filterText - The `filter` parameter value, if any, used to choose among a code's designations.
  * @returns The column holding the translated display, for use in ordering.
  */
-function joinTranslation(query: SelectQuery, codeSystem: WithId<CodeSystem>, displayLanguage: string): Column {
+function joinTranslation(
+  query: SelectQuery,
+  codeSystem: WithId<CodeSystem>,
+  displayLanguage: string,
+  filterText?: string
+): Column {
   // Staying anchored on canonical rows keeps the property and hierarchy filters working against a single row per code
   const anchorAlias = query.effectiveTableName;
   query.where(new Column(anchorAlias, 'synonymOf'), '=', null);
@@ -521,9 +539,12 @@ function joinTranslation(query: SelectQuery, codeSystem: WithId<CodeSystem>, dis
     .column(new Column(innerAlias, 'language'))
     .where(new Column(innerAlias, 'system'), '=', codeSystem.id)
     .where(new Column(innerAlias, 'code'), '=', new Column(anchorAlias, 'code'))
-    .where(new Column(innerAlias, 'language'), '=', displayLanguage)
-    .orderBy(new Column(innerAlias, 'id'))
-    .limit(1);
+    .where(new Column(innerAlias, 'language'), '=', displayLanguage);
+
+  if (filterText && filterText.length >= 3) {
+    translation.orderByExpr(buildDisplayMatchRank(filterText, innerAlias), true);
+  }
+  translation.orderBy(new Column(innerAlias, 'id')).limit(1);
 
   const translationAlias = query.getNextJoinAlias();
   query.join('INNER JOIN LATERAL', translation, translationAlias, new Constant('true'));
@@ -651,7 +672,7 @@ function applyExpansionFilters(
 
   const tableAlias = query.effectiveTableName;
   const displayColumn = params.displayLanguage
-    ? joinTranslation(query, codeSystem, params.displayLanguage)
+    ? joinTranslation(query, codeSystem, params.displayLanguage, params.filter)
     : new Column(tableAlias, 'display');
 
   if (!params.displayLanguage && !params.includeDesignations) {
