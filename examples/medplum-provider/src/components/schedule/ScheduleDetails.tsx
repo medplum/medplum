@@ -6,13 +6,13 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString, isReference, isResourceWithId } from '@medplum/core';
 import type { Appointment, HealthcareService, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react';
+import type { DateTimeRange } from '@medplum/react-scheduling';
 import { Calendar, getEffectiveAvailability, useSchedulingResources } from '@medplum/react-scheduling';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
-import type { Range } from '../../types/scheduling';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { mergeOverlappingSlots } from '../../utils/slots';
@@ -30,9 +30,9 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
-  const [range, setRange] = useState<Range | undefined>(undefined);
+  const [range, setRange] = useState<DateTimeRange | undefined>(undefined);
 
-  const [appointmentSlot, setAppointmentSlot] = useState<Range>();
+  const [appointmentSlot, setAppointmentSlot] = useState<DateTimeRange>();
   const [appointmentDetails, setAppointmentDetails] = useState<WithId<Appointment> | undefined>(undefined);
   const [healthcareService, setHealthcareService] = useState<WithId<HealthcareService> | undefined>(undefined);
 
@@ -59,7 +59,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
   // When a date/time interval is selected, set the event object and open the
   // create appointment modal
   const handleSelectInterval = useCallback(
-    (slot: Range) => {
+    (slot: DateTimeRange) => {
       if (!practitioner) {
         showErrorNotification("Can't create visit without associated Practitioner");
         return;
