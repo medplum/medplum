@@ -1,10 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { sleep } from '@medplum/core';
-import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
-import { describe, expect, test, vi } from 'vitest';
-import { render, screen, userEvent } from '../test-utils/render';
-import type { DateTimeRange } from '../types';
+import type { Appointment, Slot } from '@medplum/fhirtypes';
+import { describe, expect, test } from 'vitest';
+import { render, screen } from '../test-utils/render';
 import { Calendar } from './Calendar';
 
 describe('Calendar', () => {
@@ -12,557 +10,80 @@ describe('Calendar', () => {
   const now = new Date();
   const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0, 0);
 
-  const createAppointment = (overrides: Partial<Appointment> = {}): Appointment => ({
-    resourceType: 'Appointment',
-    id: 'test-appointment-1',
-    status: 'booked',
-    start: new Date(baseDate.getTime()).toISOString(),
-    end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
-    participant: [
+  // This is a thin wrapper around CalendarBase, so we just test the happy path here.
+  test('rendering', () => {
+    const appointments: Appointment[] = [
       {
-        actor: {
-          reference: 'Patient/123',
-          display: 'John Doe',
-        },
-        status: 'accepted',
-      },
-      {
-        actor: {
-          reference: 'Practitioner/456',
-          display: 'Dr. Smith',
-        },
-        status: 'accepted',
-      },
-    ],
-    ...overrides,
-  });
-
-  const createSlot = (overrides: Partial<Slot> = {}): Slot => ({
-    resourceType: 'Slot',
-    id: 'test-slot-1',
-    status: 'free',
-    schedule: { reference: 'Schedule/1' },
-    start: new Date(baseDate.getTime()).toISOString(),
-    end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
-    ...overrides,
-  });
-
-  const setup = ({
-    slots = [],
-    appointments = [],
-    availableTime,
-    onSelectInterval,
-    onSelectSlot,
-    onSelectAppointment,
-    onDoubleClickAppointment,
-    onRangeChange,
-  }: {
-    slots?: Slot[];
-    appointments?: Appointment[];
-    availableTime?: HealthcareServiceAvailableTime[];
-    onSelectInterval?: () => void;
-    onSelectSlot?: (slot: Slot) => void;
-    onSelectAppointment?: (appointment: Appointment) => void;
-    onDoubleClickAppointment?: (appointment: Appointment) => void;
-    onRangeChange?: (range: DateTimeRange) => void;
-  } = {}): ReturnType<typeof render> => {
-    return render(
-      <Calendar
-        slots={slots}
-        appointments={appointments}
-        availableTime={availableTime}
-        onSelectInterval={onSelectInterval}
-        onSelectSlot={onSelectSlot}
-        onSelectAppointment={onSelectAppointment}
-        onDoubleClickAppointment={onDoubleClickAppointment}
-        onRangeChange={onRangeChange}
-      />
-    );
-  };
-
-  // Week view always lays out columns Sun..Sat regardless of which week is showing,
-  // so day-of-week behavior can be asserted by position without depending on "today".
-  const getWeekGridCells = (container: HTMLElement): Element[] =>
-    Array.from(container.querySelectorAll('[role="gridcell"][data-date]'));
-
-  describe('CalendarToolbar', () => {
-    test('renders toolbar with navigation buttons', async () => {
-      setup();
-
-      expect(screen.getByText('Today')).toBeInTheDocument();
-      expect(screen.getByLabelText('Next')).toBeInTheDocument();
-      expect(screen.getByLabelText('Previous')).toBeInTheDocument();
-    });
-
-    test('renders view switcher with Month, Week, Day options', async () => {
-      setup();
-      expect(screen.getByText('Month')).toBeInTheDocument();
-      expect(screen.getByText('Week')).toBeInTheDocument();
-      expect(screen.getByText('Day')).toBeInTheDocument();
-    });
-
-    test('displays current month/year in title for non-day views', async () => {
-      setup();
-
-      // Check for month/year format (e.g., "January 2024")
-      const title = screen.getByText(/\w+\s+\d{4}/);
-      expect(title).toBeInTheDocument();
-    });
-
-    test('navigates to previous period when clicking prev button', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-
-      expect(screen.getByText('Today')).toBeInTheDocument();
-      expect(onRangeChange).toHaveBeenCalled();
-
-      const initialCallCount = onRangeChange.mock.calls.length;
-
-      // Navigation should trigger a range change
-      await userEvent.click(screen.getByLabelText('Previous'));
-      expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-
-    test('navigates to next period when clicking next button', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-      expect(screen.getByText('Today')).toBeInTheDocument();
-      expect(onRangeChange).toHaveBeenCalled();
-
-      const initialCallCount = onRangeChange.mock.calls.length;
-
-      // Navigation should trigger a range change
-      await userEvent.click(screen.getByLabelText('Next'));
-      expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-
-    test('navigates to today when clicking today button', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-
-      // First navigate away from today
-      await userEvent.click(screen.getByLabelText('Previous'));
-
-      // Then click today
-      await userEvent.click(screen.getByText('Today'));
-
-      const today = new Date();
-      const range = onRangeChange.mock.lastCall?.[0];
-      expect(range.start.getTime()).toBeLessThanOrEqual(today.getTime());
-      expect(range.end.getTime()).toBeGreaterThan(today.getTime());
-    });
-
-    test('switches to day view and triggers range change', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-
-      expect(screen.getByText('Day')).toBeInTheDocument();
-      expect(onRangeChange).toHaveBeenCalled();
-
-      const initialCallCount = onRangeChange.mock.calls.length;
-
-      // Click on the Day option in the SegmentedControl
-      await userEvent.click(screen.getByText('Day'));
-
-      // Day view should trigger a range change with different range
-      expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-
-    test('switches between views', async () => {
-      setup();
-
-      const monthRadio = screen.getByLabelText<HTMLInputElement>('Month');
-      const weekRadio = screen.getByLabelText<HTMLInputElement>('Week');
-      const dayRadio = screen.getByLabelText<HTMLInputElement>('Day');
-      expect(monthRadio).toBeInTheDocument();
-      expect(weekRadio).toBeInTheDocument();
-      expect(dayRadio).toBeInTheDocument();
-
-      // defaults to Week view on first render — time grid has a "Timed" rowheader
-      expect(monthRadio).toHaveProperty('checked', false);
-      expect(weekRadio).toHaveProperty('checked', true);
-      expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
-      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
-
-      // Switch to month view — column headers become day names ("Sunday", "Monday", …)
-      await userEvent.click(screen.getByText('Month'));
-      expect(monthRadio).toHaveProperty('checked', true);
-      expect(weekRadio).toHaveProperty('checked', false);
-      expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.getByRole('columnheader', { name: 'Sunday' })).toBeInTheDocument();
-      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
-
-      // Switch back to week view — time grid returns
-      await userEvent.click(screen.getByText('Week'));
-      expect(monthRadio).toHaveProperty('checked', false);
-      expect(weekRadio).toHaveProperty('checked', true);
-      expect(dayRadio).toHaveProperty('checked', false);
-      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
-      expect(screen.getAllByRole('columnheader')).toHaveLength(7);
-
-      // Switch to day view — single column (one columnheader for the day), with "Timed" rowheader
-      await userEvent.click(screen.getByText('Day'));
-      expect(monthRadio).toHaveProperty('checked', false);
-      expect(weekRadio).toHaveProperty('checked', false);
-      expect(dayRadio).toHaveProperty('checked', true);
-      expect(screen.getByRole('rowheader', { name: 'Timed' })).toBeInTheDocument();
-      expect(screen.getAllByRole('columnheader')).toHaveLength(1);
-    });
-  });
-
-  describe('appointments', () => {
-    test('renders appointment with patient name', async () => {
-      const appointment = createAppointment();
-      setup({ appointments: [appointment] });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-    });
-
-    test('renders appointments without a patient', async () => {
-      const appointment = { ...createAppointment(), participant: [] };
-      setup({ appointments: [appointment] });
-      expect(screen.getByText(/No Patient/)).toBeInTheDocument();
-    });
-
-    test('filters out cancelled appointments', async () => {
-      const cancelledAppointment = createAppointment({
-        id: 'cancelled-1',
-        status: 'cancelled',
+        resourceType: 'Appointment',
+        id: 'test-appointment-1',
+        status: 'booked',
+        start: new Date(baseDate.getTime()).toISOString(),
+        end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
         participant: [
           {
             actor: {
-              reference: 'Patient/999',
-              display: 'Cancelled Patient',
+              reference: 'Patient/123',
+              display: 'John Doe',
+            },
+            status: 'accepted',
+          },
+          {
+            actor: {
+              reference: 'Practitioner/456',
+              display: 'Dr. Smith',
             },
             status: 'accepted',
           },
         ],
-      });
-      const bookedAppointment = createAppointment();
-
-      setup({ appointments: [cancelledAppointment, bookedAppointment] });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-      expect(screen.queryByText(/Cancelled Patient/)).not.toBeInTheDocument();
-    });
-
-    test.each(['booked', 'arrived', 'fulfilled', 'pending'] as const)(
-      'does not show status suffix for %s appointments',
-      async (status) => {
-        const bookedAppointment = createAppointment({ status });
-
-        setup({ appointments: [bookedAppointment] });
-        const appointmentText = screen.getByText(/John Doe/);
-        expect(appointmentText.textContent).not.toContain(status);
-      }
-    );
-
-    test.each(['waitlist', 'noshow'] as const)('shows status suffix for %s appointments', async (status) => {
-      const bookedAppointment = createAppointment({ status });
-
-      setup({ appointments: [bookedAppointment] });
-      const appointmentText = screen.getByText(/John Doe/);
-      expect(appointmentText.textContent).toContain(`(${status})`);
-    });
-
-    test('calls onSelectAppointment when clicking an appointment', async () => {
-      const appointment = createAppointment();
-      const onSelectAppointment = vi.fn();
-
-      setup({ appointments: [appointment], onSelectAppointment });
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-
-      await userEvent.click(screen.getByText(/John Doe/));
-      await expect(onSelectAppointment).toHaveBeenCalledWith(appointment);
-    });
-
-    test('renders multiple appointments', async () => {
-      const appointment1 = createAppointment({
-        id: 'apt-1',
-        participant: [{ actor: { reference: 'Patient/1', display: 'Alice Smith' }, status: 'accepted' }],
-      });
-      const appointment2 = createAppointment({
-        id: 'apt-2',
-        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
-        participant: [{ actor: { reference: 'Patient/2', display: 'Bob Jones' }, status: 'accepted' }],
-      });
-
-      setup({ appointments: [appointment1, appointment2] });
-      expect(screen.getByText(/Alice Smith/)).toBeInTheDocument();
-      expect(screen.getByText(/Bob Jones/)).toBeInTheDocument();
-    });
-  });
-
-  describe('slots', () => {
-    /* Slots are rendered as background events in week/day view */
-    test('renders slots as background events', async () => {
-      const slot = createSlot();
-      setup({ slots: [slot] });
-
-      expect(screen.getByText('Available')).toBeInTheDocument();
-    });
-
-    test('renders multiple slots', async () => {
-      const slot1 = createSlot({ id: 'slot-1', status: 'free' });
-      const slot2 = createSlot({
-        id: 'slot-2',
-        status: 'busy',
-        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
-      });
-      const slot3 = createSlot({
-        id: 'slot-3',
-        status: 'busy',
-        start: new Date(baseDate.getTime() + 120 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 150 * 60 * 1000).toISOString(),
-      });
-
-      setup({ slots: [slot1, slot2, slot3] });
-      expect(screen.queryAllByText('Available')).toHaveLength(1);
-      expect(screen.queryAllByText('Blocked')).toHaveLength(2);
-    });
-
-    test('calls onSelectSlot when clicking a Slot', async () => {
-      const onSelectSlot = vi.fn();
-      const slot = createSlot();
-      setup({ slots: [slot], onSelectSlot });
-
-      await userEvent.click(screen.getByText('Available'));
-      await expect(onSelectSlot).toHaveBeenCalledWith(slot);
-    });
-
-    test('calls onDoubleClickAppointment when double-clicking an appointment', async () => {
-      const onDoubleClickAppointment = vi.fn();
-      const appointment = createAppointment();
-      setup({ appointments: [appointment], onDoubleClickAppointment });
-
-      await userEvent.dblClick(screen.getByText(/John Doe/));
-      await expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
-    });
-
-    test('double-clicking an appointment does not also fire onSelectAppointment', async () => {
-      const onSelectAppointment = vi.fn();
-      const onDoubleClickAppointment = vi.fn();
-      const appointment = createAppointment();
-      setup({ appointments: [appointment], onSelectAppointment, onDoubleClickAppointment });
-
-      await userEvent.dblClick(screen.getByText(/John Doe/));
-      expect(onDoubleClickAppointment).toHaveBeenCalledWith(appointment);
-      expect(onSelectAppointment).not.toHaveBeenCalled();
-
-      // With onDoubleClickAppointment set, the single-click select is
-      // debounced (100ms) so the double-click handler can cancel it before it
-      // fires. Wait past the debounce window to confirm the pending select
-      // was cancelled, not merely delayed.
-      await sleep(150);
-      expect(onSelectAppointment).not.toHaveBeenCalled();
-    });
-
-    test('filters out entered-in-error slots', async () => {
-      const slot = createSlot({ status: 'entered-in-error' });
-      setup({ slots: [slot] });
-
-      expect(screen.queryByText('Available')).not.toBeInTheDocument();
-      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
-    });
-
-    test('shows busy slot not referenced by any appointment', async () => {
-      const busySlot = createSlot({ id: 'busy-slot-1', status: 'busy' });
-      setup({ slots: [busySlot] });
-
-      expect(screen.getByText('Blocked')).toBeInTheDocument();
-    });
-
-    test('hides slot referenced by appointment when start/end times match exactly', async () => {
-      const slotStart = new Date(baseDate.getTime()).toISOString();
-      const slotEnd = new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString();
-
-      const slot = createSlot({ id: 'linked-slot', status: 'busy', start: slotStart, end: slotEnd });
-      const appointment = createAppointment({
-        start: slotStart,
-        end: slotEnd,
-        slot: [{ reference: 'Slot/linked-slot' }],
-      });
-
-      setup({ slots: [slot], appointments: [appointment] });
-
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
-    });
-
-    test('shows slot referenced by appointment when start/end times differ', async () => {
-      // Example: "bufferAfter" slot may be referenced from appointment, but
-      // covers time after the appointment ends. This should be visible as a
-      // block on the calendar.
-      const appointmentStart = new Date(baseDate.getTime()).toISOString();
-      const appointmentEnd = new Date(baseDate.getTime() + 45 * 60 * 1000).toISOString();
-      const bufferAfterEnd = new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString();
-
-      const busySlot = createSlot({
-        id: 'linked-slot',
-        status: 'busy',
-        start: appointmentStart,
-        end: appointmentEnd,
-      });
-
-      const bufferSlot = createSlot({
-        id: 'buffer-after-slot',
-        status: 'busy',
-        start: appointmentEnd,
-        end: bufferAfterEnd,
-      });
-
-      const appointment = createAppointment({
-        start: appointmentStart,
-        end: appointmentEnd,
-        slot: [{ reference: 'Slot/linked-slot' }, { reference: 'Slot/buffer-after-slot' }],
-      });
-
-      setup({ slots: [busySlot, bufferSlot], appointments: [appointment] });
-
-      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-      expect(screen.getByText('Blocked')).toBeInTheDocument();
-    });
-
-    test('hides only the slot matching an appointment, shows unrelated slots', async () => {
-      const slotStart = new Date(baseDate.getTime()).toISOString();
-      const slotEnd = new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString();
-
-      const linkedSlot = createSlot({ id: 'linked-slot', status: 'busy', start: slotStart, end: slotEnd });
-      const freeSlot = createSlot({
-        id: 'free-slot',
-        status: 'free',
-        start: new Date(baseDate.getTime() + 60 * 60 * 1000).toISOString(),
-        end: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
-      });
-      const appointment = createAppointment({
-        start: slotStart,
-        end: slotEnd,
-        slot: [{ reference: 'Slot/linked-slot' }],
-      });
-
-      setup({ slots: [linkedSlot, freeSlot], appointments: [appointment] });
-
-      expect(screen.queryByText('Blocked')).not.toBeInTheDocument();
-      expect(screen.getByText('Available')).toBeInTheDocument();
-    });
-  });
-
-  describe('onRangeChange', () => {
-    test('calls onRangeChange on initial render', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-      expect(onRangeChange).toHaveBeenCalled();
-
-      const range = onRangeChange.mock.calls[0][0];
-      expect(range.start).toBeInstanceOf(Date);
-      expect(range.end).toBeInstanceOf(Date);
-      expect(range.end.getTime()).toBeGreaterThan(range.start.getTime());
-    });
-
-    test('calls onRangeChange when navigating', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-      expect(onRangeChange).toHaveBeenCalled();
-
-      const initialCallCount = onRangeChange.mock.calls.length;
-
-      // Navigate to next period
-      const nextButton = screen.getByLabelText('Next');
-      await userEvent.click(nextButton);
-
-      expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-
-    test('calls onRangeChange when switching views', async () => {
-      const onRangeChange = vi.fn();
-      setup({ onRangeChange });
-      expect(onRangeChange).toHaveBeenCalled();
-
-      const initialCallCount = onRangeChange.mock.calls.length;
-
-      // Switch to month view
-      await userEvent.click(screen.getByText('Month'));
-      expect(onRangeChange.mock.calls.length).toBeGreaterThan(initialCallCount);
-    });
-  });
-
-  describe('availableTime prop', () => {
-    test('renders no non-business-hours overlay when availableTime is not provided', async () => {
-      const { container } = setup();
-
-      expect(container.querySelectorAll('.nonBusinessHours')).toHaveLength(0);
-    });
-
-    test('highlights days outside availableTime, and both sides of the day for partial availability', async () => {
-      const { container } = setup({
-        availableTime: [{ daysOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-      });
-
-      const cells = getWeekGridCells(container);
-      expect(cells).toHaveLength(7);
-
-      // DayIndexer order is [sun, mon, tue, wed, thu, fri, sat]
-      const overlayCountsByDay = cells.map((cell) => cell.querySelectorAll('.nonBusinessHours').length);
-
-      // Monday has business hours in the middle of the day, so it is bounded by
-      // a non-business overlay both before 9am and after 5pm.
-      expect(overlayCountsByDay[1]).toBe(2);
-
-      // Every other day of the week has no availableTime entry at all, so the
-      // entire day is a single non-business overlay.
-      expect(overlayCountsByDay[0]).toBe(1);
-      expect(overlayCountsByDay[2]).toBe(1);
-      expect(overlayCountsByDay[3]).toBe(1);
-      expect(overlayCountsByDay[4]).toBe(1);
-      expect(overlayCountsByDay[5]).toBe(1);
-      expect(overlayCountsByDay[6]).toBe(1);
-    });
-
-    test('does not highlight a day marked allDay', async () => {
-      const { container } = setup({
-        availableTime: [{ daysOfWeek: ['fri'], allDay: true }],
-      });
-
-      const cells = getWeekGridCells(container);
-      const overlayCountsByDay = cells.map((cell) => cell.querySelectorAll('.nonBusinessHours').length);
-
-      // Friday is available all day, so it has no non-business overlay.
-      expect(overlayCountsByDay[5]).toBe(0);
-
-      // The rest of the week is still fully non-business.
-      expect(overlayCountsByDay[0]).toBe(1);
-      expect(overlayCountsByDay[1]).toBe(1);
-      expect(overlayCountsByDay[2]).toBe(1);
-      expect(overlayCountsByDay[3]).toBe(1);
-      expect(overlayCountsByDay[4]).toBe(1);
-      expect(overlayCountsByDay[6]).toBe(1);
-    });
-
-    test('combines multiple availableTime entries across days', async () => {
-      const { container } = setup({
-        availableTime: [
+      },
+      {
+        resourceType: 'Appointment',
+        id: 'test-appointment-2',
+        status: 'checked-in',
+        start: new Date(baseDate.getTime() + 90 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 120 * 60 * 1000).toISOString(),
+        participant: [
           {
-            daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
-            availableStartTime: '09:00:00',
-            availableEndTime: '17:00:00',
+            actor: {
+              reference: 'Patient/124',
+              display: 'Jane Williams',
+            },
+            status: 'accepted',
           },
-          { daysOfWeek: ['sat'], allDay: true },
+          {
+            actor: {
+              reference: 'Practitioner/456',
+              display: 'Dr. Smith',
+            },
+            status: 'accepted',
+          },
         ],
-      });
+      },
+    ];
 
-      const cells = getWeekGridCells(container);
-      const overlayCountsByDay = cells.map((cell) => cell.querySelectorAll('.nonBusinessHours').length);
+    const slots: Slot[] = [
+      {
+        resourceType: 'Slot',
+        id: 'test-slot-1',
+        status: 'free',
+        schedule: { reference: 'Schedule/1' },
+        start: new Date(baseDate.getTime() - 90 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime()).toISOString(),
+      },
+      {
+        resourceType: 'Slot',
+        id: 'test-slot-2',
+        status: 'busy-unavailable',
+        schedule: { reference: 'Schedule/1' },
+        start: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+        end: new Date(baseDate.getTime() + 40 * 60 * 1000).toISOString(),
+      },
+    ];
 
-      expect(overlayCountsByDay).toEqual([
-        1, // sun: not covered, fully non-business
-        2, // mon: bounded before/after business hours
-        2, // tue
-        2, // wed
-        2, // thu
-        2, // fri
-        0, // sat: allDay
-      ]);
-    });
+    render(<Calendar slots={slots} appointments={appointments} />);
+    expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    expect(screen.getByText(/Jane Williams/)).toBeInTheDocument();
+    expect(screen.getByText(/Available/)).toBeInTheDocument();
+    expect(screen.getByText(/Blocked/)).toBeInTheDocument();
   });
 });

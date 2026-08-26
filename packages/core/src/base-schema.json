@@ -4238,8 +4238,21 @@
   },
   "IdentityProvider": {
     "elements": {
+      "issuer": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
+      "jwksUrl": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
       "authorizeUrl": {
-        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4247,7 +4260,6 @@
         ]
       },
       "tokenUrl": {
-        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4262,7 +4274,6 @@
         ]
       },
       "userInfoUrl": {
-        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4284,7 +4295,6 @@
         ]
       },
       "clientId": {
-        "min": 1,
         "type": [
           {
             "code": "string"
@@ -4292,7 +4302,6 @@
         ]
       },
       "clientSecret": {
-        "min": 1,
         "type": [
           {
             "code": "string"

@@ -20,7 +20,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
       ca: proxyCaCert,
       cert: clientCert,
       key: clientKey,
-      rejectUnauthorized: false, // Ignore self-signed certificate errors
+      rejectUnauthorized: true, // Enforce TLS certificate verification
     },
   });
 

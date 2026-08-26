@@ -2,46 +2,61 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Grid, Group, Stack, Text, Textarea } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
-import type { Practitioner, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, Loading, Modal, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { WithId } from '@medplum/core';
+import { createReference, formatHumanName } from '@medplum/core';
+import type { Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import {
+  CodeInput,
+  DateTimeInput,
+  Loading,
+  Modal,
+  ResourceInput,
+  useMedplum,
+  useMedplumProfile,
+  useResource,
+} from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
+import { showErrorNotification } from '../../utils/notifications';
 import classes from './TaskDetailsModal.module.css';
 
-export const TaskDetailsModal = (): JSX.Element => {
-  const { patientId, encounterId, taskId } = useParams();
+export interface TaskDetailsModalProps {
+  /** The task to display and edit. */
+  task: WithId<Task> | Reference<Task>;
+  /** Called with the saved task after a successful update. */
+  onUpdateTask?: (task: WithId<Task>) => void;
+}
+
+export const TaskDetailsModal = (props: TaskDetailsModalProps): JSX.Element => {
+  const { task: taskProp, onUpdateTask } = props;
+  const { patientId, encounterId } = useParams();
   const patient = usePatient();
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const location = useLocation();
   const author = useMedplumProfile();
-  const [task, setTask] = useState<Task | undefined>(undefined);
-  const [isOpened, setIsOpened] = useState(true);
+  const taskResource = useResource(taskProp, showErrorNotification);
+  const [task, setTask] = useState<WithId<Task> | undefined>(undefined);
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [dueDate, setDueDate] = useState<string | undefined>();
   const [status, setStatus] = useState<Task['status'] | undefined>();
   const [note, setNote] = useState('');
 
-  useEffect(() => {
-    const fetchTask = async (): Promise<void> => {
-      const task = await medplum.readResource('Task', taskId as string);
-      setStatus(task.status);
-      setTask(task);
-      setDueDate(task.restriction?.period?.end);
-    };
+  // Closing returns to the encounter, keeping the search query so the visits list retains its pagination/sort.
+  const handleClose = (): void => {
+    navigate(`/Patient/${patientId}/Encounter/${encounterId}${location.search}`)?.catch(console.error);
+  };
 
-    fetchTask().catch((err) => {
-      notifications.show({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-  }, [medplum, taskId]);
+  useEffect(() => {
+    if (taskResource) {
+      setTask(taskResource);
+      setStatus(taskResource.status);
+      setDueDate(taskResource.restriction?.period?.end);
+    }
+  }, [taskResource]);
 
   const handleOnSubmit = async (): Promise<void> => {
     if (!task) {
@@ -83,14 +98,15 @@ export const TaskDetailsModal = (): JSX.Element => {
     }
 
     try {
-      await medplum.updateResource(updatedTask);
+      const savedTask = await medplum.updateResource(updatedTask);
       notifications.show({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Task updated',
       });
-      setTask(updatedTask);
-      navigate(`/Patient/${patientId}/Encounter/${encounterId}`)?.catch(console.error);
+      setTask(savedTask);
+      onUpdateTask?.(savedTask);
+      handleClose();
     } catch {
       notifications.show({
         color: 'red',
@@ -101,94 +117,91 @@ export const TaskDetailsModal = (): JSX.Element => {
     }
   };
 
-  if (!task) {
-    return <Loading />;
-  }
-
   return (
     <Modal
-      opened={isOpened}
-      onClose={() => {
-        navigate(-1)?.catch(console.error);
-        setIsOpened(false);
-      }}
+      opened
+      onClose={handleClose}
       size="xl"
       title={task?.code?.text}
       padding="md"
       bodyHeight="60vh"
       actions={
         <Group justify="flex-end">
-          <Button variant="filled" onClick={handleOnSubmit}>
+          <Button variant="filled" onClick={handleOnSubmit} disabled={!task}>
             Save Changes
           </Button>
         </Group>
       }
     >
-      <Grid h="100%">
-        <Grid.Col span={6} pr="lg">
-          <Stack gap="sm">
-            <Card p="md" radius="md" className={classes.taskDetails}>
-              <Stack gap="sm">
-                {task?.description && <Text>{task.description}</Text>}
-                {patient?.name && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Text>View Patient</Text>
-                    <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
-                      {formatHumanName(patient.name?.[0])}
-                    </Button>
-                  </div>
-                )}
-              </Stack>
-            </Card>
+      {!task ? (
+        <Loading />
+      ) : (
+        <Grid h="100%">
+          <Grid.Col span={6} pr="lg">
+            <Stack gap="sm">
+              <Card p="md" radius="md" className={classes.taskDetails}>
+                <Stack gap="sm">
+                  {task?.description && <Text>{task.description}</Text>}
+                  {patient?.name && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Text>View Patient</Text>
+                      <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
+                        {formatHumanName(patient.name?.[0])}
+                      </Button>
+                    </div>
+                  )}
+                </Stack>
+              </Card>
 
-            <ResourceInput<Practitioner>
-              name="practitioner"
-              resourceType="Practitioner"
-              label="Assigned to"
-              defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-              onChange={(value) => {
-                setPractitioner(value);
-              }}
-            />
-
-            <DateTimeInput
-              name="Due Date"
-              placeholder="End"
-              label="Due Date"
-              defaultValue={dueDate}
-              onChange={setDueDate}
-            />
-
-            {task?.status && (
-              <CodeInput
-                name="status"
-                label="Status"
-                binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
-                maxValues={1}
-                defaultValue={status}
+              <ResourceInput<Practitioner>
+                name="practitioner"
+                resourceType="Practitioner"
+                label="Assigned to"
+                defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
                 onChange={(value) => {
-                  if (value) {
-                    setStatus(value as typeof status);
-                  }
+                  setPractitioner(value);
                 }}
               />
-            )}
-          </Stack>
-        </Grid.Col>
 
-        <Grid.Col span={6} pr="md">
-          <Stack gap="sm">
-            <Text>Note</Text>
-            <Text c="dimmed">Optional free form details about this task</Text>
-            <Textarea
-              placeholder="Add note to this task"
-              minRows={3}
-              value={note}
-              onChange={(event) => setNote(event.currentTarget.value)}
-            />
-          </Stack>
-        </Grid.Col>
-      </Grid>
+              <DateTimeInput
+                name="Due Date"
+                placeholder="End"
+                label="Due Date"
+                defaultValue={dueDate}
+                onChange={setDueDate}
+              />
+
+              {task?.status && (
+                <CodeInput
+                  name="status"
+                  label="Status"
+                  binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
+                  maxValues={1}
+                  defaultValue={status}
+                  onChange={(value) => {
+                    if (value) {
+                      setStatus(value as typeof status);
+                    }
+                  }}
+                />
+              )}
+            </Stack>
+          </Grid.Col>
+
+          <Grid.Col span={6} pr="md">
+            <Stack gap="sm">
+              <Text>Note</Text>
+              <Text c="dimmed">Optional free form details about this task</Text>
+              <Textarea
+                placeholder="Add note to this task"
+                minRows={3}
+                value={note}
+                onChange={(event) => setNote(event.currentTarget.value)}
+              />
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      )}
     </Modal>
   );
 };

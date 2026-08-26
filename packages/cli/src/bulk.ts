@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import { EMPTY } from '@medplum/core';
+import { EMPTY, getRateLimitReset, getStatus, OperationOutcomeError, sleep } from '@medplum/core';
 import type { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { resolve } from 'node:path';
@@ -10,7 +10,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
 import { createMedplumClient } from './util/client';
-import { MedplumCommand, addSubcommand, getUnsupportedExtension, prettyPrint } from './utils';
+import { addSubcommand, getUnsupportedExtension, MedplumCommand, prettyPrint } from './utils';
 
 const bulkExportCommand = new MedplumCommand('export');
 const bulkImportCommand = new MedplumCommand('import');
@@ -110,15 +110,60 @@ async function importFile(
 }
 
 async function sendBatchEntries(entries: BundleEntry[], medplum: MedplumClient): Promise<void> {
-  const result = await medplum.executeBatch({
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: entries,
-  });
+  let pendingEntries = entries;
+  while (pendingEntries.length > 0) {
+    let result;
+    try {
+      result = await medplum.executeBatch(
+        {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: pendingEntries,
+        },
+        { maxRetries: 0 }
+      );
+    } catch (err) {
+      if (!(err instanceof OperationOutcomeError) || getStatus(err.outcome) !== 429) {
+        throw err;
+      }
+      await sleep(getRateLimitRetryDelay(err.outcome, medplum));
+      continue;
+    }
 
-  for (const resultEntry of result.entry ?? EMPTY) {
-    prettyPrint(resultEntry.response);
+    const retryEntries: BundleEntry[] = [];
+    for (let i = 0; i < pendingEntries.length; i++) {
+      const resultEntry = result.entry?.[i];
+      if (resultEntry?.response?.outcome && getStatus(resultEntry.response.outcome) === 429) {
+        retryEntries.push(pendingEntries[i]);
+      } else {
+        prettyPrint(resultEntry?.response);
+      }
+    }
+    if (retryEntries.length > 0) {
+      const rateLimitOutcome = result.entry?.find(
+        (entry) => entry.response?.outcome && getStatus(entry.response.outcome) === 429
+      )?.response?.outcome;
+      await sleep(getRateLimitRetryDelay(rateLimitOutcome, medplum));
+    }
+    pendingEntries = retryEntries;
   }
+}
+
+function getRateLimitRetryDelay(
+  outcome: NonNullable<BundleEntry['response']>['outcome'] | undefined,
+  medplum: MedplumClient
+): number {
+  const outcomeDelay = outcome && getRateLimitReset(outcome);
+  if (outcomeDelay !== undefined) {
+    return outcomeDelay;
+  }
+  return Math.max(
+    500,
+    ...medplum
+      .rateLimitStatus()
+      .filter((limit) => limit.remainingUnits === 0)
+      .map((limit) => limit.secondsUntilReset * 1000)
+  );
 }
 
 function parseResource(jsonString: string, addExtensionsForMissingValues: boolean): Resource {
