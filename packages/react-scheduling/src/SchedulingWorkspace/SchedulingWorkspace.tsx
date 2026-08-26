@@ -21,7 +21,6 @@ import type { SchedulingRole } from '../AppointmentFinder/AppointmentFinder.role
 import { SCHEDULING_ROLES } from '../AppointmentFinder/AppointmentFinder.roles';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { isSameDay } from '../AppointmentFinder/AppointmentFinder.times';
 import { resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
@@ -66,12 +65,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [range, setRange] = useState<DateTimeRange>();
 
-  // The day the calendar was clicked on, and whether the form's time search is open.
-  // The times render beside the form rather than under it, so the pane has to widen to
-  // hold them, and `onToggleTimeFinder` is what reports when.
-  const [bookingDay, setBookingDay] = useState<Date>();
-  // What the calendar marks: the slot that was clicked, kept until the pane closes. The
-  // day above is what the form is opened on, and only changes when the day does.
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
 
@@ -154,13 +147,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
-  const openBooking = useCallback((interval: DateTimeRange): void => {
-    setBookingSelection(interval);
-    setBookingDay((current) => (isSameDay(interval.start, current) ? current : interval.start));
-  }, []);
-
   const closeBooking = useCallback((): void => {
-    setBookingDay(undefined);
     setBookingSelection(undefined);
     setTimeFinderOpen(false);
   }, []);
@@ -216,19 +203,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading}
-          onSelectInterval={openBooking}
+          onSelectInterval={setBookingSelection}
           selection={bookingSelection}
         />
       </div>
-      {bookingDay && (
+      {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
           <Group justify="space-between" wrap="nowrap" mb="sm">
             <Title order={4}>Book appointment</Title>
             <CloseButton aria-label="Close booking form" onClick={closeBooking} />
           </Group>
           <AppointmentBookingForm
-            key={bookingDay.getTime()}
-            defaultStart={bookingDay}
+            key={bookingSelection.start.toDateString()}
+            defaultStart={bookingSelection.start}
             onToggleTimeFinder={setTimeFinderOpen}
             onBooked={finishBooking}
           />
