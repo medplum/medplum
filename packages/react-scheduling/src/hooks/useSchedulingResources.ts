@@ -115,7 +115,7 @@ export function useSchedulingSlots(
   });
 
   useEffect(() => {
-    if (!rangeStart || !rangeEnd) {
+    if (scheduleRefsKey.length === 0 || !rangeStart || !rangeEnd) {
       return () => {};
     }
     let active = true;
