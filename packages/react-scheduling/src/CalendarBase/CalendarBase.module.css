@@ -88,3 +88,11 @@
 .nonBusinessHours {
   background-color: light-dark(#0000000A, #FFFFFF2A);
 }
+
+:global(.dayGridMonth) .event {
+  background-color: var(--fc-event-color);
+
+  .eventInner {
+    color: var(--fc-event-contrast-color);
+  }
+}
