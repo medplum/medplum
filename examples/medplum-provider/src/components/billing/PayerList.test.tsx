@@ -10,14 +10,13 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { ORGANIZATION_TYPE_SYSTEM, PAYER_ORGANIZATION_TYPE } from '../../utils/billing';
 import {
+  CANDID_GET_PAYERS_BOT_IDENTIFIER,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
   CHC_PAYER_ID_SYSTEM,
-  ORGANIZATION_TYPE_SYSTEM,
-  PAYER_ORGANIZATION_TYPE,
-} from '../../utils/billing';
-import { CANDID_GET_PAYERS_BOT_IDENTIFIER } from '../../utils/candid';
+} from '../../utils/candid';
 import { PayerList } from './PayerList';
 
 const payersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-payers', name: 'Candid Get Payers' };
@@ -77,8 +76,7 @@ describe('PayerList', () => {
     setup();
 
     expect(await screen.findByText('AETNA')).toBeInTheDocument();
-    expect(screen.getByText('Imported payers')).toBeInTheDocument();
-    expect(screen.getByText('Payer ID 60054')).toBeInTheDocument();
+    expect(screen.getByText('60054')).toBeInTheDocument();
     expect(searchSpy).toHaveBeenCalledWith(
       'Organization',
       expect.objectContaining({ identifier: `${CANDID_PAYER_UUID_SYSTEM}|` })
@@ -92,7 +90,7 @@ describe('PayerList', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'View AETNA' }));
+    await user.click(await screen.findByText('AETNA'));
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'AETNA' })).toBeInTheDocument();
@@ -101,10 +99,13 @@ describe('PayerList', () => {
   });
 
   test('shows a notice and no search box when the payers bot is not deployed', async () => {
+    const user = userEvent.setup();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
     const searchOneSpy = vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
 
     setup();
+
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
 
     expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Search the payer directory')).not.toBeInTheDocument();
@@ -130,6 +131,7 @@ describe('PayerList', () => {
 
     setup();
 
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
     await user.type(await screen.findByLabelText('Search the payer directory'), 'cigna');
     await user.click(screen.getByRole('button', { name: /Search/ }));
 
@@ -160,6 +162,7 @@ describe('PayerList', () => {
 
     setup();
 
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
 
     expect(await screen.findByLabelText('Imported')).toBeInTheDocument();
@@ -186,6 +189,7 @@ describe('PayerList', () => {
 
     setup();
 
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
 
     expect(await screen.findByText('MEDICARE OF TEXAS')).toBeInTheDocument();
@@ -221,6 +225,7 @@ describe('PayerList', () => {
 
     setup();
 
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
     await user.click(await screen.findByText('AETNA'));
 
@@ -235,6 +240,35 @@ describe('PayerList', () => {
     expect(within(dialog).queryByRole('button', { name: /Refresh from directory/ })).not.toBeInTheDocument();
   });
 
+  test('shows a loader on the search button while a search is in flight, including re-searches', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(payersBot);
+    let resolveSearch: (result: Parameters) => void = () => {};
+    vi.spyOn(medplum, 'executeBot').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSearch = resolve;
+        }) as any
+    );
+
+    setup();
+
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    const searchButton = await screen.findByRole('button', { name: /Search/ });
+
+    await user.click(searchButton);
+    expect(searchButton).toHaveAttribute('data-loading');
+
+    resolveSearch(makeSearchResult([makeDirectoryPayer('uuid-cigna', '62308', 'CIGNA')]));
+    expect(await screen.findByText('CIGNA')).toBeInTheDocument();
+    expect(searchButton).not.toHaveAttribute('data-loading');
+
+    // Searching again with results on screen still shows the loader
+    await user.click(searchButton);
+    expect(searchButton).toHaveAttribute('data-loading');
+  });
+
   test('clears the search input, results, and selection with the in-field clear button', async () => {
     const user = userEvent.setup();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
@@ -245,6 +279,7 @@ describe('PayerList', () => {
 
     setup();
 
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
     const input = await screen.findByLabelText('Search the payer directory');
     // No clear button until there is something to clear
     expect(screen.queryByRole('button', { name: 'Clear search' })).not.toBeInTheDocument();
@@ -272,7 +307,7 @@ describe('PayerList', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'View AETNA' }));
+    await user.click(await screen.findByText('AETNA'));
     await user.click(await screen.findByRole('button', { name: /Refresh from directory/ }));
 
     await waitFor(() => {
@@ -298,7 +333,7 @@ describe('PayerList', () => {
 
     setup();
 
-    await user.click(await screen.findByRole('button', { name: 'View AETNA' }));
+    await user.click(await screen.findByText('AETNA'));
     await user.click(await screen.findByRole('button', { name: /Refresh from directory/ }));
 
     await waitFor(() => {
@@ -306,6 +341,28 @@ describe('PayerList', () => {
         { op: 'add', path: '/active', value: false },
       ]);
     });
+  });
+
+  test('paginates imported payers, 10 per page', async () => {
+    const user = userEvent.setup();
+    const manyPayers = Array.from({ length: 12 }, (_, i) => ({
+      ...makeDirectoryPayer(`uuid-${i}`, `id-${i}`, `PAYER ${String(i).padStart(2, '0')}`),
+      id: `org-${i}`,
+    }));
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue(manyPayers as any);
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(payersBot);
+
+    setup();
+
+    expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
+    expect(screen.getByText('PAYER 09')).toBeInTheDocument();
+    expect(screen.queryByText('PAYER 10')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '2' }));
+
+    expect(await screen.findByText('PAYER 10')).toBeInTheDocument();
+    expect(screen.getByText('PAYER 11')).toBeInTheDocument();
+    expect(screen.queryByText('PAYER 00')).not.toBeInTheDocument();
   });
 
   test('shows an inactive badge on payers no longer in the directory', async () => {
@@ -317,41 +374,46 @@ describe('PayerList', () => {
     expect(await screen.findByText('Inactive — not in payer directory')).toBeInTheDocument();
   });
 
-  test('navigates result pages with the pagination control, refetching only uncached pages', async () => {
+  test('navigates result pages with the pagination control, fetching new batches only when needed', async () => {
     const user = userEvent.setup();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(payersBot);
+    // 20 results fill display page 1; the next-page token makes page 2 reachable
+    const firstBatch = Array.from({ length: 20 }, (_, i) =>
+      makeDirectoryPayer(`uuid-${i}`, `${i}`, `PAYER ${String(i).padStart(2, '0')}`)
+    );
     const executeSpy = vi
       .spyOn(medplum, 'executeBot')
-      .mockResolvedValueOnce(makeSearchResult([makeDirectoryPayer('uuid-1', '1', 'PAYER ONE')], 'tok-2'))
-      .mockResolvedValueOnce(makeSearchResult([makeDirectoryPayer('uuid-2', '2', 'PAYER TWO')]));
+      .mockResolvedValueOnce(makeSearchResult(firstBatch, 'tok-2'))
+      .mockResolvedValueOnce(makeSearchResult([makeDirectoryPayer('uuid-20', '20', 'PAYER 20')]));
 
     setup();
 
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
     await user.click(await screen.findByRole('button', { name: /Search/ }));
-    expect(await screen.findByText('PAYER ONE')).toBeInTheDocument();
-    // One cached page plus one reachable via the next-page token
+    expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
+    // One loaded page plus one reachable via the next-page token
     expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '2' }));
 
-    expect(await screen.findByText('PAYER TWO')).toBeInTheDocument();
+    expect(await screen.findByText('PAYER 20')).toBeInTheDocument();
     // The table shows one page at a time
-    expect(screen.queryByText('PAYER ONE')).not.toBeInTheDocument();
+    expect(screen.queryByText('PAYER 00')).not.toBeInTheDocument();
     expect(executeSpy).toHaveBeenLastCalledWith(
       'bot-payers',
       expect.objectContaining({ pageToken: 'tok-2' }),
       'application/json'
     );
-    // No further pages beyond the two cached ones
+    // No further pages beyond the loaded ones
     expect(screen.queryByRole('button', { name: '3' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '1' }));
-    expect(await screen.findByText('PAYER ONE')).toBeInTheDocument();
+    expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '2' }));
-    expect(await screen.findByText('PAYER TWO')).toBeInTheDocument();
-    // Cached pages are not refetched: one search call + one page fetch total
+    expect(await screen.findByText('PAYER 20')).toBeInTheDocument();
+    // Loaded pages are not refetched: one search call + one batch fetch total
     expect(executeSpy).toHaveBeenCalledTimes(2);
   });
 });

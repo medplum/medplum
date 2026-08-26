@@ -1,96 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Checkbox, CloseButton, Group, Pagination, Stack, Table, Text, TextInput } from '@mantine/core';
-import { normalizeErrorString } from '@medplum/core';
-import type { Organization, Parameters } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import type { Organization } from '@medplum/fhirtypes';
 import { IconCheck, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import type { CandidPayerPage } from '../../utils/billing';
-import { formatPayerCategory, getPayerCategory, getPayerId, getPayerUuid, parsePayerSearchPage } from '../../utils/billing';
-import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-
-const SEARCH_PAGE_SIZE = 20;
+import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
+import { formatPayerCategory, getPayerCategory, getPayerId, getPayerUuid } from '../../utils/billing';
 
 export interface PayerDirectorySearchProps {
-  /** ID of the deployed candid-get-payers bot. */
-  readonly botId: string;
-  /** Candid payer UUIDs already imported, to mark results and block re-import. */
-  readonly importedUuids: Set<string>;
-  /** Called after an import attempt persists at least one payer. */
-  readonly onImported: () => void;
+  readonly directory: CandidPayerDirectory;
   /** Called when a search result row is tapped to view details. */
   readonly onSelectPayer: (payer: Organization) => void;
 }
 
 export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Element {
-  const { botId, importedUuids, onImported, onSelectPayer } = props;
-  const medplum = useMedplum();
+  const { directory, onSelectPayer } = props;
   const [searchTerm, setSearchTerm] = useState('');
-  // Candid pages by opaque token, so pages are cached as they are fetched and Previous/Next
-  // navigate the cache; only a step past the last cached page fetches.
-  const [pages, setPages] = useState<Organization[][] | undefined>(undefined);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [searching, setSearching] = useState(false);
-  const [importing, setImporting] = useState(false);
-
-  const fetchPage = async (pageToken?: string): Promise<CandidPayerPage> => {
-    const result = (await medplum.executeBot(
-      botId,
-      { searchTerm: searchTerm.trim(), limit: SEARCH_PAGE_SIZE, ...(pageToken && { pageToken }) },
-      'application/json'
-    )) as Parameters;
-    return parsePayerSearchPage(result);
-  };
 
   const handleSearch = async (): Promise<void> => {
-    setSearching(true);
-    try {
-      const page = await fetchPage();
-      setPages([page.items ?? []]);
-      setPageIndex(0);
-      setNextPageToken(page.nextPageToken);
-      setSelected(new Set());
-    } catch (error) {
-      showErrorNotification(error);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  // Candid pagination is token-based, so the pagination control only ever exposes one page
-  // beyond the cache; stepping onto it fetches with the stored token.
-  const handlePageChange = async (pageNumber: number): Promise<void> => {
-    const index = pageNumber - 1;
-    if (pages && index < pages.length) {
-      setPageIndex(index);
-      return;
-    }
-    if (!nextPageToken) {
-      return;
-    }
-    setSearching(true);
-    try {
-      const page = await fetchPage(nextPageToken);
-      setPages((prev) => [...(prev ?? []), page.items ?? []]);
-      setPageIndex((i) => i + 1);
-      setNextPageToken(page.nextPageToken);
-    } catch (error) {
-      showErrorNotification(error);
-    } finally {
-      setSearching(false);
-    }
+    await directory.search(searchTerm);
+    setSelected(new Set());
   };
 
   const handleClear = (): void => {
     setSearchTerm('');
-    setPages(undefined);
-    setPageIndex(0);
-    setNextPageToken(undefined);
     setSelected(new Set());
+    directory.clearSearch();
   };
 
   const toggleSelected = (payerUuid: string): void => {
@@ -106,33 +43,8 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
   };
 
   const handleImport = async (): Promise<void> => {
-    // The bot returns ready-to-persist Organizations, so import is a plain create.
-    const toImport = (pages ?? []).flat().filter((payer) => selected.has(getPayerUuid(payer) ?? ''));
-    if (toImport.length === 0) {
-      return;
-    }
-    setImporting(true);
-    const failures: string[] = [];
-    for (const payer of toImport) {
-      try {
-        await medplum.createResource(payer);
-      } catch (error) {
-        failures.push(`${payer.name}: ${normalizeErrorString(error)}`);
-      }
-    }
-    setImporting(false);
+    await directory.importPayers(selected);
     setSelected(new Set());
-    onImported();
-    const importedCount = toImport.length - failures.length;
-    if (importedCount > 0) {
-      showSuccessNotification({
-        title: 'Success',
-        message: `Imported ${importedCount} payer${importedCount === 1 ? '' : 's'}`,
-      });
-    }
-    if (failures.length > 0) {
-      showErrorNotification(new Error(`Failed to import ${failures.length} payer(s). ${failures.join('; ')}`));
-    }
   };
 
   return (
@@ -150,26 +62,28 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
               }
             }}
             rightSection={
-              (searchTerm || pages !== undefined) && <CloseButton aria-label="Clear search" onClick={handleClear} />
+              (searchTerm || directory.searchResults !== undefined) && (
+                <CloseButton aria-label="Clear search" onClick={handleClear} />
+              )
             }
             style={{ flex: 1 }}
           />
           <Button
             leftSection={<IconSearch size={16} />}
             onClick={() => handleSearch().catch(console.error)}
-            loading={searching && pages === undefined}
+            loading={directory.searching}
           >
             Search
           </Button>
         </Group>
 
-        {pages?.[0]?.length === 0 && (
+        {directory.searchResults?.length === 0 && (
           <Text c="dimmed" size="sm">
             No payers found. Try a different name or payer ID.
           </Text>
         )}
 
-        {!!pages?.[0]?.length && (
+        {!!directory.searchResults?.length && (
           <Stack gap="xs">
             <Table highlightOnHover>
               <Table.Thead>
@@ -182,9 +96,9 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {(pages[pageIndex] ?? []).map((payer) => {
+                {directory.searchResults.map((payer) => {
                   const payerUuid = getPayerUuid(payer) ?? '';
-                  const imported = importedUuids.has(payerUuid);
+                  const imported = directory.importedUuids.has(payerUuid);
                   const category = getPayerCategory(payer);
                   return (
                     <Table.Tr key={payerUuid} onClick={() => onSelectPayer(payer)} style={{ cursor: 'pointer' }}>
@@ -211,15 +125,15 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
               <Button
                 onClick={() => handleImport().catch(console.error)}
                 disabled={selected.size === 0}
-                loading={importing}
+                loading={directory.importing}
               >
                 Import selected ({selected.size})
               </Button>
               <Pagination
-                value={pageIndex + 1}
-                total={pages.length + (nextPageToken ? 1 : 0)}
-                onChange={(pageNumber) => handlePageChange(pageNumber).catch(console.error)}
-                disabled={searching}
+                value={directory.page}
+                total={directory.pageCount}
+                onChange={(pageNumber) => directory.setPage(pageNumber).catch(console.error)}
+                disabled={directory.searching || directory.fetchingPage}
               />
             </Group>
           </Stack>

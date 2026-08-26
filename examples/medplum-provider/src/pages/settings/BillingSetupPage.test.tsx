@@ -4,12 +4,14 @@ import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi } from 'vitest';
 import { BillingSetupPage } from './BillingSetupPage';
 
 describe('BillingSetupPage', () => {
-  test('renders the Candid payer directory', async () => {
+  test('renders enrolled payers and the payer directory as tabs, enrolled payers first', async () => {
+    const user = userEvent.setup();
     const medplum = new MockClient();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
     vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
@@ -24,7 +26,12 @@ describe('BillingSetupPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Candid Payer Directory')).toBeInTheDocument();
+    expect(screen.getByText('Billing Setup')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Enrolled Payers' })).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByText(/No payers imported yet/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+
+    expect(await screen.findByText(/payer directory bot is not deployed/)).toBeInTheDocument();
   });
 });

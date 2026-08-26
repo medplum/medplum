@@ -1,26 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Group, Stack, Text } from '@mantine/core';
+import { Alert, Badge, Button, Group, Stack, Tabs, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
-import { Modal, useMedplum } from '@medplum/react';
+import { Modal } from '@medplum/react';
 import { IconInfoCircle, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
+import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
+import { formatPayerCategory, getPayerCategory, getPayerId } from '../../utils/billing';
 import {
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
-  CANDID_PAYER_UUID_SYSTEM,
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
-  buildPayerRefreshOps,
-  formatPayerCategory,
-  getPayerCategory,
-  getPayerId,
-  getPayerUuid,
-  isPayerNotFoundError,
-} from '../../utils/billing';
-import { CANDID_GET_PAYERS_BOT_IDENTIFIER } from '../../utils/candid';
-import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
+} from '../../utils/candid';
 import { ImportedPayerList } from './ImportedPayerList';
 import { PayerDirectorySearch } from './PayerDirectorySearch';
 
@@ -37,102 +30,37 @@ const PAYER_SUPPORT_CAPABILITIES: { url: string; label: string }[] = [
 ];
 
 export function PayerList(): JSX.Element {
-  const medplum = useMedplum();
-  const [importedPayers, setImportedPayers] = useState<WithId<Organization>[]>([]);
-  const [reload, setReload] = useState(0);
-  // undefined = lookup pending, '' = bot not deployed
-  const [botId, setBotId] = useState<string | undefined>(undefined);
-  const [refreshing, setRefreshing] = useState(false);
+  const directory = useCandidPayerDirectory();
   // A search result (not yet persisted, no id) or an imported payer (with id, refreshable).
   const [detailsPayer, setDetailsPayer] = useState<Organization | undefined>(undefined);
 
-  useEffect(() => {
-    // Imported payers are recognized by the Candid payer UUID identifier stamped on import.
-    medplum
-      .searchResources('Organization', {
-        identifier: `${CANDID_PAYER_UUID_SYSTEM}|`,
-        _count: '100',
-        _sort: 'name',
-      })
-      .then(setImportedPayers)
-      .catch(showErrorNotification);
-  }, [medplum, reload]);
-
-  useEffect(() => {
-    medplum
-      .searchOne('Bot', {
-        identifier: `${CANDID_GET_PAYERS_BOT_IDENTIFIER.system}|${CANDID_GET_PAYERS_BOT_IDENTIFIER.value}`,
-      })
-      .then((bot) => setBotId(bot?.id ?? ''))
-      .catch(showErrorNotification);
-  }, [medplum]);
-
-  const importedUuids = useMemo(
-    () => new Set(importedPayers.map(getPayerUuid).filter(Boolean) as string[]),
-    [importedPayers]
-  );
-
   const handleRefresh = async (org: WithId<Organization>): Promise<void> => {
-    const payerUuid = getPayerUuid(org);
-    if (!botId || !payerUuid) {
-      return;
-    }
-    setRefreshing(true);
-    try {
-      const fresh = (await medplum.executeBot(botId, { payerUuid }, 'application/json')) as Organization;
-      const ops = buildPayerRefreshOps(org, fresh);
-      if (ops.length === 0) {
-        showSuccessNotification({ title: 'Refresh complete', message: 'Payer is up to date with the directory' });
-        return;
-      }
-      const updated = await medplum.patchResource('Organization', org.id, ops);
+    const updated = await directory.refreshPayer(org);
+    if (updated) {
       setDetailsPayer(updated);
-      setReload((r) => r + 1);
-      showSuccessNotification({ title: 'Refresh complete', message: 'Payer updated from the directory' });
-    } catch (error) {
-      if (!isPayerNotFoundError(error)) {
-        showErrorNotification(error);
-      } else if (org.active === false) {
-        showErrorNotification(new Error('This payer is still not in the Candid payer directory.'));
-      } else {
-        try {
-          // Deactivate rather than delete: claims and coverages may reference the payer.
-          const updated = await medplum.patchResource('Organization', org.id, [
-            { op: 'add', path: '/active', value: false },
-          ]);
-          setDetailsPayer(updated);
-          setReload((r) => r + 1);
-          showErrorNotification(
-            new Error('This payer is no longer in the Candid payer directory and has been marked inactive.')
-          );
-        } catch (patchError) {
-          showErrorNotification(patchError);
-        }
-      }
-    } finally {
-      setRefreshing(false);
     }
   };
 
   return (
     <Stack gap="sm">
-      {botId === '' && (
-        <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light">
-          The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported
-          here.
-        </Alert>
-      )}
-
-      {!!botId && (
-        <PayerDirectorySearch
-          botId={botId}
-          importedUuids={importedUuids}
-          onImported={() => setReload((r) => r + 1)}
-          onSelectPayer={setDetailsPayer}
-        />
-      )}
-
-      <ImportedPayerList payers={importedPayers} onSelectPayer={setDetailsPayer} />
+      <Tabs defaultValue="imported">
+        <Tabs.List>
+          <Tabs.Tab value="imported">Enrolled Payers</Tabs.Tab>
+          <Tabs.Tab value="directory">Candid Payer Directory</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="imported" pt="md">
+          <ImportedPayerList payers={directory.importedPayers} onSelectPayer={setDetailsPayer} />
+        </Tabs.Panel>
+        <Tabs.Panel value="directory" pt="md">
+          {directory.botId === '' && (
+            <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light">
+              The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported
+              here.
+            </Alert>
+          )}
+          {!!directory.botId && <PayerDirectorySearch directory={directory} onSelectPayer={setDetailsPayer} />}
+        </Tabs.Panel>
+      </Tabs>
 
       <Modal
         opened={detailsPayer !== undefined}
@@ -142,13 +70,13 @@ export function PayerList(): JSX.Element {
         actions={
           // Only an imported (persisted) payer can be refreshed
           detailsPayer?.id !== undefined &&
-          !!botId && (
+          !!directory.botId && (
             <Group justify="flex-start" style={{ width: '100%' }}>
               <Button
                 variant="outline"
                 leftSection={<IconRefresh size={16} />}
                 onClick={() => handleRefresh(detailsPayer as WithId<Organization>).catch(console.error)}
-                loading={refreshing}
+                loading={directory.refreshing}
               >
                 Refresh from directory
               </Button>

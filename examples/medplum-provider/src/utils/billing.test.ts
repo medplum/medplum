@@ -3,12 +3,6 @@
 import type { Organization, Parameters } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
-  CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
-  CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
-  CANDID_PAYER_CATEGORY_SYSTEM,
-  CANDID_PAYER_UUID_SYSTEM,
-  CHC_PAYER_ID_SYSTEM,
-  CMS_PAYER_ID_SYSTEM,
   ORGANIZATION_TYPE_SYSTEM,
   PAYER_ORGANIZATION_TYPE,
   buildPayerRefreshOps,
@@ -20,6 +14,14 @@ import {
   parsePayerSearchPage,
   upsertIdentifier,
 } from './billing';
+import {
+  CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
+  CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
+  CANDID_PAYER_CATEGORY_SYSTEM,
+  CANDID_PAYER_UUID_SYSTEM,
+  CHC_PAYER_ID_SYSTEM,
+  CMS_PAYER_ID_SYSTEM,
+} from './candid';
 
 // A payer Organization as the candid-get-payers bot builds it from Candid's payers.v4 API.
 function makeDirectoryPayer(overrides: Partial<Organization> = {}): Organization {

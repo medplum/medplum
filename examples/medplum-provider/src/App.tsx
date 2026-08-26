@@ -192,7 +192,7 @@ export function App(): JSX.Element | null {
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
-                  { icon: <IconReceipt2 />, label: 'Payer Directory', href: '/settings/billing' },
+                  { icon: <IconReceipt2 />, label: 'Billing Setup', href: '/settings/billing' },
                   ...(hasDoseSpot
                     ? [
                         {

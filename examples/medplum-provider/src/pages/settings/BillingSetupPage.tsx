@@ -9,7 +9,7 @@ export function BillingSetupPage(): JSX.Element {
   return (
     <Document>
       <Stack gap="lg">
-        <Title order={1}>Candid Payer Directory</Title>
+        <Title order={1}>Billing Setup</Title>
         <PayerList />
       </Stack>
     </Document>
