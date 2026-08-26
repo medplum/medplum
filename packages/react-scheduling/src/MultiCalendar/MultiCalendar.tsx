@@ -50,7 +50,7 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
 
   const eventSources = useMemo((): FhirEventSource[] => {
     return sources.map((source, i) => {
-      let colorName = source.color;
+      let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
 
       if (!colorName) {
         const extColor = getExtensionValue(source.schedule, SchedulingScheduleColorURI);
