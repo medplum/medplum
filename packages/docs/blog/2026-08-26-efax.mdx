@@ -1,0 +1,32 @@
+---
+slug: traditional-fhir
+title: 'How Medplum thinks about FHIR'
+authors: maddyli
+tags: [fhir, traditional-ehr]
+---
+
+Most folks before encountering Medplum think of FHIR in one of two ways:
+
+- As a read-only facade for traditional, proprietary EHRs: Epic, DaVinci Payer Exchange, etc all use FHIR only at the boundary, for interfacing.
+
+- As an OLAP backend landing area, alongside a workflow-serving datastore: HAPI, Aidbox, HealthLake, Azure/Google FHIR stores, published for data
+  exchange, analytics, or compliance
+
+As such, when devs come to Medplum, they usually ask a question along the following lines:
+
+- "How is the data is handled and stored in the DB itself? How does this relate to FHIR?"
+- "If I point a SQL Explorer at the Postgres database when running Medplum locally, will I be able to see what is happening?"
+- "Can I get direct access to the rows in the database when using your hosted service?"
+
+These are all very reasonable questions for developers doing due diligence on Medplum, and part of the beauty of open source is that developers
+can inspect our implementation directly! We also think that these questions come from a different understanding of the relationship between FHIR
+and an EHR, and we hope to explain Medplum's relationship with FHIR in this blog.
+
+{/* truncate */}
+
+## TODO: section
+
+TODO
+
+- [eFax integration docs](/docs/integration/efax)
+- [Messaging & Communications Decision Guide](/docs/decision-guides/messaging)
