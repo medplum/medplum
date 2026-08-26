@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react';
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DateTimeRange } from '../types';
 
 // Whether an instant falls within the loaded range, matching the inclusive `ge`/`le`
@@ -57,9 +57,15 @@ export function useSchedulingSlots(
   const [slots, setSlots] = useState<WithId<Slot>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  const handleError = useEffectEvent((error: unknown) => {
-    options?.onError?.(error);
-  });
+  const onErrorRef = useRef(options?.onError);
+
+  useEffect(() => {
+    onErrorRef.current = options?.onError;
+  }, [options?.onError]);
+
+  const handleError = useCallback((error: unknown) => {
+    onErrorRef.current?.(error);
+  }, []);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
   // `useResourceModified` handler both use this so the optimistic updates stay consistent
@@ -143,7 +149,7 @@ export function useSchedulingSlots(
       active = false;
       setLoading(false);
     };
-  }, [medplum, scheduleRefsKey, rangeStart, rangeEnd]);
+  }, [medplum, scheduleRefsKey, rangeStart, rangeEnd, handleError]);
 
   return {
     slots,
@@ -174,9 +180,15 @@ export function useSchedulingAppointments(
   const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  const handleError = useEffectEvent((error: unknown) => {
-    options?.onError?.(error);
-  });
+  const onErrorRef = useRef(options?.onError);
+
+  useEffect(() => {
+    onErrorRef.current = options?.onError;
+  }, [options?.onError]);
+
+  const handleError = useCallback((error: unknown) => {
+    onErrorRef.current?.(error);
+  }, []);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
   // `useResourceModified` handler both use this so the optimistic updates stay consistent
@@ -271,7 +283,7 @@ export function useSchedulingAppointments(
       active = false;
       setLoading(false);
     };
-  }, [medplum, actorRefsKey, rangeStart, rangeEnd]);
+  }, [medplum, actorRefsKey, rangeStart, rangeEnd, handleError]);
 
   return {
     appointments,
