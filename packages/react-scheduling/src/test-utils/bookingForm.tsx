@@ -13,7 +13,6 @@ import {
   SurgicalFixtures,
 } from '../stories/scheduling';
 import { clickAutocompleteOption, settleAutocomplete, typeInAutocomplete } from './asyncAutocomplete';
-import { stubChainedActorSearch } from './chainedActorSearch';
 import { act, fireEvent, screen, within } from './render';
 
 // Drives the booking form the way a user does, for the tests of both the proposal
@@ -33,7 +32,6 @@ export async function setupBookingClient(): Promise<MockClient> {
   ]) {
     await medplum.createResource(resource);
   }
-  stubChainedActorSearch(medplum);
   return medplum;
 }
 
