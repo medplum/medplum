@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { createTestProject, getSuperAdminAccessToken, withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -69,7 +69,7 @@ describe('Client admin', () => {
     const { project } = await createTestProject();
 
     // As a superadmin, create a new client
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post('/admin/projects/' + project.id + '/client')
       .set('Authorization', 'Bearer ' + superAdminAccessToken)

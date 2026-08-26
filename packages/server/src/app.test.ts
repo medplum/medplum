@@ -15,7 +15,7 @@ import { globalLogger } from './logger';
 import { generateAccessToken } from './oauth/keys';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
-import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
+import { createTestProject, deleteRedisKeys, getSuperAdminAccessToken, initTestAuth } from './test.setup';
 
 describe('App', () => {
   let stdOutSpy: MockInstance;
@@ -341,7 +341,7 @@ describe('App', () => {
     const app = express();
     const config = await loadTestConfig();
     await initApp(app, config);
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     config.database.queryTimeout = 1;
     await initApp(app, config);

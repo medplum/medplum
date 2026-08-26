@@ -6,7 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { createTestProject, getSuperAdminAccessToken } from '../../test.setup';
 
 describe('$explain', () => {
   const app = express();
@@ -15,7 +15,7 @@ describe('$explain', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { superAdmin: true } });
+    accessToken = await getSuperAdminAccessToken();
   });
 
   afterAll(async () => {

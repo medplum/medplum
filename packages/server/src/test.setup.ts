@@ -27,7 +27,7 @@ import type { QueryConfigValues, QueryResult, QueryResultRow } from 'pg';
 import { Client as PgClient } from 'pg';
 import request from 'supertest';
 import type { Mock, MockInstance } from 'vitest';
-import { vi } from 'vitest';
+import { inject, vi } from 'vitest';
 import type { ServerInviteResponse } from './admin/invite';
 import type * as App from './app';
 import type { MedplumRedisConfig } from './config/types';
@@ -222,6 +222,57 @@ export async function createTestClient(options?: TestProjectOptions): Promise<Wi
 
 export async function initTestAuth(options?: TestProjectOptions): Promise<string> {
   return (await createTestProject({ ...options, withAccessToken: true })).accessToken;
+}
+
+type SuperAdminTestProjectOptions = {
+  superAdmin: true;
+  withClient: true;
+  withAccessToken: true;
+  withRepo: true;
+};
+
+let superAdminTestProjectPromise: Promise<TestProjectResult<SuperAdminTestProjectOptions>> | undefined;
+
+/**
+ * Returns the Super Admin test project shared by every test file in the run.
+ * @returns The shared Super Admin `TestProjectResult`.
+ */
+export function getSuperAdminTestProject(): Promise<TestProjectResult<SuperAdminTestProjectOptions>> {
+  superAdminTestProjectPromise ??= (async () => {
+    const { getRepoForLogin } = await import('./fhir/accesspolicy');
+    const { getShardSystemRepo } = await import('./fhir/repo');
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+
+    const [project, client, membership, login] = await Promise.all([
+      systemRepo.readResource<Project>('Project', inject('superAdminProjectId')),
+      systemRepo.readResource<ClientApplication>('ClientApplication', inject('superAdminClientId')),
+      systemRepo.readResource<ProjectMembership>('ProjectMembership', inject('superAdminMembershipId')),
+      systemRepo.readResource<Login>('Login', inject('superAdminLoginId')),
+    ]);
+
+    const userConfig = { resourceType: 'UserConfiguration' } as const;
+    const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+
+    return {
+      project,
+      accessPolicy: undefined,
+      client,
+      membership,
+      login,
+      accessToken: inject('superAdminAccessToken'),
+      repo,
+    };
+  })();
+  return superAdminTestProjectPromise;
+}
+
+/**
+ * Returns an access token for the shared Super Admin test project. See `getSuperAdminTestProject`.
+ * @returns A Super Admin access token.
+ */
+export async function getSuperAdminAccessToken(): Promise<string> {
+  const { accessToken } = await getSuperAdminTestProject();
+  return accessToken;
 }
 
 export async function addTestUser(

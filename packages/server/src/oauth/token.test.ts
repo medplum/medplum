@@ -24,7 +24,7 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo, Repository } from '../fhir/repo';
-import { addTestUser, createTestProject, generateSelfSignedCert, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, generateSelfSignedCert, getSuperAdminTestProject, withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchStatus, mockFetchText } from '../test.setup.fetch';
 import { validateClientCert } from './cert';
 import { generateSecret, verifyJwt } from './keys';
@@ -2517,7 +2517,7 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await getSuperAdminTestProject();
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;

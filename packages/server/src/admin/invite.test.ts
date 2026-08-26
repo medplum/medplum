@@ -27,7 +27,13 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
-import { addTestUser, createTestProject, initTestAuth, setupRecaptchaMock, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  getSuperAdminAccessToken,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
 import { inviteUser } from './invite';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -655,7 +661,7 @@ describe('Admin Invite', () => {
     );
 
     // As a super admin, invite Bob to Alice's project
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
       .set('Authorization', 'Bearer ' + superAdminAccessToken)

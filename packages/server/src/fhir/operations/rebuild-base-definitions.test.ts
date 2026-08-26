@@ -9,7 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { r4ProjectId } from '../../constants';
-import { createTestProject } from '../../test.setup';
+import { createTestProject, getSuperAdminTestProject } from '../../test.setup';
 
 vi.mock('@medplum/definitions', async () => {
   const orig = await vi.importActual('@medplum/definitions');
@@ -36,11 +36,7 @@ describe('$rebuild-base-definitions', () => {
   });
 
   test('Parses input parameters', async () => {
-    const { accessToken, repo } = await createTestProject({
-      project: { superAdmin: true },
-      withAccessToken: true,
-      withRepo: true,
-    });
+    const { accessToken, repo } = await getSuperAdminTestProject();
 
     const url = 'http://hl7.org/fhir/SearchParameter/Patient-deceased';
     const originalParam = await repo.searchOne({

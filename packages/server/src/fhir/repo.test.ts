@@ -46,7 +46,14 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
-import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
+import {
+  bundleContains,
+  createTestProject,
+  getSuperAdminTestProject,
+  mockStdoutWrite,
+  spyOnQuery,
+  withTestContext,
+} from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
@@ -652,7 +659,7 @@ describe('FHIR Repo', () => {
 
   test('Super Admin update ignores submitted meta.author', () =>
     withTestContext(async () => {
-      const { client, repo } = await createTestProject({ withClient: true, withRepo: true, superAdmin: true });
+      const { client, repo } = await getSuperAdminTestProject();
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const patient = await repo.createResource<Patient>({
@@ -1480,7 +1487,7 @@ describe('FHIR Repo', () => {
     const expungeAccessCases: ExpungeAccessCase[] = [
       {
         name: 'Super Admin',
-        createRepo: async () => (await createTestProject({ withRepo: true, superAdmin: true })).repo,
+        createRepo: async () => (await getSuperAdminTestProject()).repo,
         canExpungeOtherProject: true,
       },
       {
@@ -2003,7 +2010,7 @@ describe('FHIR Repo', () => {
     }));
 
   test('__version column', async () => {
-    const { repo } = await createTestProject({ withRepo: true, superAdmin: true });
+    const { repo } = await getSuperAdminTestProject();
 
     await withTestContext(async () => {
       const patient = await repo.createResource<Patient>({
