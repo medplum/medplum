@@ -2,12 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PatchOperation } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
-import type { Address, ContactPoint, Identifier, Organization, Parameters } from '@medplum/fhirtypes';
+import type { Identifier, Organization, Parameters } from '@medplum/fhirtypes';
 
-export const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
-export const EIN_SYSTEM = 'http://hl7.org/fhir/sid/us-ein';
 export const ORGANIZATION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/organization-type';
-export const PROVIDER_ORGANIZATION_TYPE = 'prov';
 export const PAYER_ORGANIZATION_TYPE = 'pay';
 
 // Identifier systems the Candid bots use to resolve a payer Organization back to the Candid
@@ -47,52 +44,6 @@ const CANDID_SUPPORT_EXTENSION_URLS = [
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
 ];
 
-// Marker identifier stamped on organizations managed through the provider app's Billing Settings.
-// The billing organization list filters on it, so unrelated Organizations (payers, facilities,
-// synthetic data) never appear no matter how many exist in the project.
-export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
-export const BILLING_ORGANIZATION_IDENTIFIER_VALUE = 'billing-organization';
-
-/**
- * Validates an NPI: exactly 10 digits with a correct check digit.
- * The check digit is computed with the Luhn algorithm over the first 9 digits
- * prefixed with the "80840" health-industry identifier, per the CMS NPI spec.
- * @param npi - The candidate NPI string.
- * @returns True when the NPI is 10 digits and the check digit verifies.
- */
-export function isValidNpi(npi: string): boolean {
-  if (!/^\d{10}$/.test(npi)) {
-    return false;
-  }
-  const payload = '80840' + npi.slice(0, 9);
-  let sum = 0;
-  let double = true;
-  for (let i = payload.length - 1; i >= 0; i--) {
-    let digit = Number(payload[i]);
-    if (double) {
-      digit *= 2;
-      if (digit > 9) {
-        digit -= 9;
-      }
-    }
-    sum += digit;
-    double = !double;
-  }
-  const checkDigit = (10 - (sum % 10)) % 10;
-  return checkDigit === Number(npi[9]);
-}
-
-/**
- * Validates a billing phone number: 10 digits (after stripping formatting) whose
- * first digit is not 0 or 1. X12 submitters reject numbers starting with 0/1.
- * @param phone - The candidate phone string, formatting allowed.
- * @returns True when the phone is usable on a claim.
- */
-export function isValidBillingPhone(phone: string): boolean {
-  const digits = phone.replace(/\D/g, '');
-  return digits.length === 10 && !digits.startsWith('0') && !digits.startsWith('1');
-}
-
 /**
  * Returns a copy of the identifier list with the value for the given system
  * replaced (or appended). Identifiers with other systems are untouched, and
@@ -112,22 +63,6 @@ export function upsertIdentifier(
   const others = identifiers?.filter((id) => id.system !== system) ?? [];
   const existing = identifiers?.find((id) => id.system === system);
   const result = trimmed ? [...others, { ...existing, system, value: trimmed }] : others;
-  return result.length > 0 ? result : undefined;
-}
-
-/**
- * Returns a copy of the telecom list with the first phone entry's value replaced
- * (or a phone entry appended). Non-phone entries (email, fax) are untouched.
- * An empty value removes the phone entry.
- * @param telecom - The current telecom list.
- * @param phone - The new phone value; empty/whitespace removes the entry.
- * @returns The updated telecom list, or undefined when it would be empty.
- */
-export function upsertPhone(telecom: ContactPoint[] | undefined, phone: string): ContactPoint[] | undefined {
-  const trimmed = phone.trim();
-  const others = telecom?.filter((t) => t.system !== 'phone') ?? [];
-  const existing = telecom?.find((t) => t.system === 'phone');
-  const result = trimmed ? [...others, { ...existing, system: 'phone' as const, value: trimmed }] : others;
   return result.length > 0 ? result : undefined;
 }
 
@@ -251,54 +186,4 @@ function appendSyncOp(
  */
 export function isPayerNotFoundError(error: unknown): boolean {
   return /EntityNotFoundError|HTTP 404|not found/i.test(normalizeErrorString(error));
-}
-
-export interface BillingOrganizationFormValues {
-  name: string;
-  npi: string;
-  /** EIN; dashes accepted, stored digits-only. */
-  ein: string;
-  phone: string;
-  address?: Address;
-}
-
-/**
- * Applies billing form values onto an Organization, always stamping the
- * `prov` (Healthcare Provider) organization type so the org is discoverable by
- * billing pickers that filter on type. Identifiers with unrelated systems and
- * other existing fields are preserved.
- * @param organization - The existing Organization, or a bare `{resourceType: 'Organization'}` for create.
- * @param fields - The billing form values.
- * @returns The updated Organization resource (not persisted).
- */
-export function buildUpdatedOrganization(
-  organization: Organization,
-  fields: BillingOrganizationFormValues
-): Organization {
-  let identifier = upsertIdentifier(organization.identifier, NPI_SYSTEM, fields.npi);
-  identifier = upsertIdentifier(identifier, EIN_SYSTEM, fields.ein.replace(/\D/g, ''));
-  identifier = upsertIdentifier(identifier, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, BILLING_ORGANIZATION_IDENTIFIER_VALUE);
-
-  const hasProviderType = organization.type?.some((t) =>
-    t.coding?.some((c) => c.system === ORGANIZATION_TYPE_SYSTEM && c.code === PROVIDER_ORGANIZATION_TYPE)
-  );
-  const type = hasProviderType
-    ? organization.type
-    : [
-        ...(organization.type ?? []),
-        {
-          coding: [
-            { system: ORGANIZATION_TYPE_SYSTEM, code: PROVIDER_ORGANIZATION_TYPE, display: 'Healthcare Provider' },
-          ],
-        },
-      ];
-
-  return {
-    ...organization,
-    name: fields.name.trim(),
-    identifier,
-    type,
-    telecom: upsertPhone(organization.telecom, fields.phone),
-    address: fields.address ? [fields.address, ...(organization.address?.slice(1) ?? [])] : organization.address,
-  };
 }
