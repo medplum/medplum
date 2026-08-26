@@ -7,6 +7,8 @@ import type { Job, Queue } from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
+import type { DicomStudyJobData } from './dicom';
+import { execDicomStudyJob, getDicomQueue } from './dicom';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
@@ -161,4 +163,39 @@ export function mockFetchResponse(status: number, body: any, headers: Record<str
       ...headers,
     },
   });
+}
+
+/**
+ * Runs the deferred DICOM study work for everything enqueued so far.
+ *
+ * Study aggregates and the derived `ImagingStudy` are computed by a coalesced background job rather
+ * than during the STOW request, so a test that uploads instances and then reads counts has to drain
+ * that job first. Dispatch is drained on the way through, since that is what enqueues it.
+ */
+export async function execPendingDicomStudyJobs(): Promise<void> {
+  // Only DICOM instances, because the mock queue accumulates every dispatch job the file has ever
+  // enqueued and replaying an unrelated one can fail on a version that no longer resolves.
+  const dispatchQueue = getDispatchQueue();
+  if (dispatchQueue) {
+    for (const [, data] of (dispatchQueue.add as Mock).mock.calls) {
+      if (data?.resourceType === 'DicomInstance') {
+        await execDispatchJob({ id: 1, data } as unknown as Job);
+      }
+    }
+  }
+
+  const dicomQueue = getDicomQueue();
+  if (!dicomQueue) {
+    return;
+  }
+
+  // Instance and study jobs share the queue, so select on the job name.
+  const studyIds = new Set<string>(
+    (dicomQueue.add as Mock).mock.calls
+      .filter((call) => call[0] === 'DicomStudyJobData')
+      .map((call) => (call[1] as DicomStudyJobData).studyId)
+  );
+  for (const studyId of studyIds) {
+    await execDicomStudyJob({ id: 1, data: { studyId } } as unknown as Job<DicomStudyJobData>);
+  }
 }
