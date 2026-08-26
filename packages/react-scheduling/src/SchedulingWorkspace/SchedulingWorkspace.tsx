@@ -67,10 +67,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           role,
           query: '',
           signal: controller.signal,
+          count: 100,
         })
       )
     )
-      .then(([provider, room, device]) => setCandidatesByRole({ provider, room, device }))
+      .then(([provider, room, device]) => {
+        if (!controller.signal.aborted) {
+          setError(undefined);
+          setCandidatesByRole({ provider, room, device });
+        }
+      })
       .catch((err: unknown) => {
         if (!controller.signal.aborted) {
           setError(err);
