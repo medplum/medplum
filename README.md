@@ -63,13 +63,14 @@ We are also always excited to showcase [case studies](https://www.medplum.com/ca
 
 #### Opening Pull Requests
 
-If there is an open issue that you would like to implement, feel free to follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in! Our [Contributing documentation](https://medplum.com/docs/contributing) has
-all the information you need to get started.
+Every community pull request needs an associated GitHub issue. Medplum uses a [vouch](https://github.com/mitchellh/vouch) system: discuss the work on an issue first, wait for a maintainer to add the [`open-to-community`](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Aopen-to-community) label, then open a PR linked to that issue (`Fixes #…` / `Closes #…`, or GitHub's Development panel). Unlinked community PRs are closed automatically.
 
-We have two labels for open issues where we would welcome community PR's:
+If there is a labeled issue you would like to implement, follow the [local setup instructions](https://www.medplum.com/docs/contributing/local-dev-setup) and jump in. Our [Contributing documentation](https://medplum.com/docs/contributing) has the full process.
 
-- [Good first issue](https://github.com/medplum/medplum/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22): good issues for beginners and newcomers
-- [Open to commmunity](https://github.com/medplum/medplum/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22open%20to%20community%22): reasonably well-scoped issues open to community PR's
+Issues that are already a good fit:
+
+- [Good first issue](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22): beginner-friendly
+- [Open to community](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Aopen-to-community): reasonably well-scoped work we have invited community PRs for
 
 ## Folder structure
 
