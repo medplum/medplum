@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import {
   getExtensionValue,
   getReferenceString,
@@ -10,12 +11,17 @@ import {
 } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconCalendarCheck } from '@tabler/icons-react';
+import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
+import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { SchedulingRole } from '../AppointmentFinder/AppointmentFinder.roles';
 import { SCHEDULING_ROLES } from '../AppointmentFinder/AppointmentFinder.roles';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import { isSameDay } from '../AppointmentFinder/AppointmentFinder.times';
 import { resolveThemeColor } from '../colors';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
@@ -36,6 +42,10 @@ export interface SchedulingWorkspaceProps {
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
+ * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
+ *   in a pane on the right, with its time search opened on the day that was clicked.
+ *   The form writes the booking and announces what it wrote, which is what puts the
+ *   new appointment on the calendar beside it — a host supplies nothing for any of it.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -55,6 +65,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [deselectedRoomIds, setDeselectedRoomIds] = useState<ReadonlySet<string>>(new Set());
 
   const [range, setRange] = useState<DateTimeRange>();
+
+  // The day the calendar was clicked on, and whether the form's time search is open.
+  // The times render beside the form rather than under it, so the pane has to widen to
+  // hold them, and `onToggleTimeFinder` is what reports when.
+  const [bookingDay, setBookingDay] = useState<Date>();
+  // What the calendar marks: the slot that was clicked, kept until the pane closes. The
+  // day above is what the form is opened on, and only changes when the day does.
+  const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  const [timeFinderOpen, setTimeFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per schedulable role.
   useEffect(() => {
@@ -135,6 +154,30 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  const openBooking = useCallback((interval: DateTimeRange): void => {
+    setBookingSelection(interval);
+    setBookingDay((current) => (isSameDay(interval.start, current) ? current : interval.start));
+  }, []);
+
+  const closeBooking = useCallback((): void => {
+    setBookingDay(undefined);
+    setBookingSelection(undefined);
+    setTimeFinderOpen(false);
+  }, []);
+
+  const finishBooking = useCallback(
+    (booking: AppointmentBooking): void => {
+      closeBooking();
+      showNotification({
+        color: 'green',
+        icon: <IconCalendarCheck size={18} />,
+        title: 'Appointment booked',
+        message: describeBooking(booking.appointment),
+      });
+    },
+    [closeBooking]
+  );
+
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);
     if (!color) {
@@ -169,10 +212,51 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             {normalizeErrorString(displayError)}
           </Alert>
         )}
-        <MultiCalendar sources={sources} onRangeChange={setRange} loading={resourcesLoading} />
+        <MultiCalendar
+          sources={sources}
+          onRangeChange={setRange}
+          loading={resourcesLoading}
+          onSelectInterval={openBooking}
+          selection={bookingSelection}
+        />
       </div>
+      {bookingDay && (
+        <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
+          <Group justify="space-between" wrap="nowrap" mb="sm">
+            <Title order={4}>Book appointment</Title>
+            <CloseButton aria-label="Close booking form" onClick={closeBooking} />
+          </Group>
+          <AppointmentBookingForm
+            key={bookingDay.getTime()}
+            defaultStart={bookingDay}
+            onToggleTimeFinder={setTimeFinderOpen}
+            onBooked={finishBooking}
+          />
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Names the visit that was booked, for the notification announcing it.
+ * @param appointment - The appointment `$book` wrote.
+ * @returns Who it is for and when, as far as each is known.
+ */
+function describeBooking(appointment: Appointment): string {
+  const patient = (appointment.participant ?? []).find((participant) =>
+    participant.actor?.reference?.startsWith('Patient/')
+  );
+  const when = appointment.start
+    ? new Date(appointment.start).toLocaleString(undefined, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : undefined;
+  return [patient?.actor?.display, when].filter(Boolean).join(' · ');
 }
 
 function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {

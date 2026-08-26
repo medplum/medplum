@@ -69,6 +69,7 @@
     "@fullcalendar/react": "7.0.2",
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
+    "@mantine/notifications": "8.3.18",
     "@medplum/core": "5.1.32",
     "@medplum/definitions": "5.1.32",
     "@medplum/fhirtypes": "5.1.32",
@@ -93,6 +94,7 @@
   "peerDependencies": {
     "@mantine/core": "^8.0.0",
     "@mantine/hooks": "^8.0.0",
+    "@mantine/notifications": "^8.0.0",
     "@medplum/core": "5.1.32",
     "@medplum/fhirtypes": "5.1.32",
     "@medplum/react": "5.1.32",

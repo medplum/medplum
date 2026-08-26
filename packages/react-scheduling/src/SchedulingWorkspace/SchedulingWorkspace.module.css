@@ -18,4 +18,20 @@
   position: relative;
   flex: 1;
   min-width: 0;
+  overflow-x: auto;
+}
+
+/* The booking form, only present while a day is being booked. */
+.bookingPane {
+  flex-shrink: 0;
+  width: 320px;
+  overflow-y: auto;
+}
+
+.bookingPaneWide {
+  width: 760px;
+}
+
+.alert {
+  margin-bottom: var(--mantine-spacing-xs);
 }
