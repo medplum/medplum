@@ -60,10 +60,20 @@ without needing to clone the repository.
 
 ### Fixing a bug or implementing a new feature
 
-If you find a bug on Medplum and open a GitHub Pull Request that fixes it, we'll review it as soon as possible.
+Every community pull request needs an associated GitHub issue. Medplum uses a [vouch](https://github.com/mitchellh/vouch) system so we can discuss scope and approach before reviewing code.
 
-Before starting implementation of a new feature, open an issue first to discuss your plans and to ensure it fits into
-our roadmap and plans for the app.
+Please do not open a PR first. Instead:
+
+1. Find an existing issue, or [open a new one](https://github.com/medplum/medplum/issues/new) describing the bug or feature.
+2. Comment on the issue with your proposed approach. A maintainer will add the [`open-to-community`](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Aopen-to-community) label once there is enough context for a community PR to land.
+3. Open your PR and **link it to that issue** with `Fixes #…` or `Closes #…` in the description, or via GitHub's Development panel.
+
+PRs from contributors who are not yet vouched, and that are not linked to an `open-to-community` issue, are closed automatically. If that happens, link the PR to a labeled issue and reopen it.
+
+Issues that are already a good fit:
+
+- [Good first issue](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — beginner-friendly
+- [Open to community](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Aopen-to-community) — reasonably well-scoped work we have invited community PRs for
 
 **Ready to get started writing code?** First things first, you need to [clone the Medplum repository](./contributing/local-dev-setup).
 
