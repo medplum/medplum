@@ -4,7 +4,13 @@
 
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
-We unify auth, access control, data, and automation into a single tenant-isolated system for your apps—whether built with our components and SDK or forked from our pre-built apps. Medplum Bridge connects on-prem systems, integrations extend your apps' capabilities, and our compliance and security are built in.
+- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
+- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
+- **Medplum API** - FHIR-based API for sending, receiving, and manipulating data.
+- **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
+- **Medplum App** - Web application where you can view your data and perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
+- **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
+- **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
 
 ![Medplum Architecture](packages/docs/static/img/architecture.webp)
 
