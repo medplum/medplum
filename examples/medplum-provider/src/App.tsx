@@ -13,6 +13,7 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
+  IconReceipt2,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -35,6 +36,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { BillingSetupPage } from './pages/settings/BillingSetupPage';
 import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -190,6 +192,7 @@ export function App(): JSX.Element | null {
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
+                  { icon: <IconReceipt2 />, label: 'Billing Setup', href: '/settings/billing' },
                   ...(hasDoseSpot
                     ? [
                         {
@@ -300,6 +303,8 @@ export function App(): JSX.Element | null {
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
+              {/* Must precede the /:resourceType catch-alls below */}
+              <Route path="/settings/billing" element={<BillingSetupPage />} />
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

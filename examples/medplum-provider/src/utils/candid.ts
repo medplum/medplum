@@ -20,6 +20,12 @@ export const CANDID_GET_ENCOUNTER_BOT_IDENTIFIER = {
   value: 'get-encounter',
 };
 
+// Bot that searches the Candid Health payer directory.
+export const CANDID_GET_PAYERS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-get-payers',
+};
+
 // Identifier the send-to-candid bot writes onto the ClaimResponse; its presence marks the
 // claim as a Candid claim.
 export const CANDID_ENCOUNTER_ID_SYSTEM = 'https://candidhealth.com/encounter-id';
