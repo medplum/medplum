@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Notifications, notifications } from '@mantine/notifications';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
+import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
 import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
@@ -17,7 +17,7 @@ import {
   openTimeFinder,
   setupBookingClient,
 } from '../test-utils/bookingForm';
-import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 // A separate file from SchedulingWorkspace.test.tsx, whose own fixtures block installs
@@ -95,20 +95,10 @@ describe('SchedulingWorkspace booking', () => {
   afterEach(() => {
     restoreBook();
     restoreFind();
-    // The notification store outlives the render, so one test's toast would otherwise
-    // still be on screen for the next.
-    notifications.clean();
   });
 
-  function setup(): void {
-    // `Notifications` is the host's to mount, and the workspace raises one on a booking.
-    renderWithMedplum(
-      <>
-        <Notifications />
-        <SchedulingWorkspace />
-      </>,
-      medplum
-    );
+  function setup(onBooked?: (booking: AppointmentBooking) => void): void {
+    renderWithMedplum(<SchedulingWorkspace onBooked={onBooked} />, medplum);
   }
 
   test('Offers no booking form until the calendar is clicked', () => {
@@ -156,8 +146,9 @@ describe('SchedulingWorkspace booking', () => {
     expect(bookingPaneHeading()).not.toBeInTheDocument();
   });
 
-  test('Announces the booking it wrote', async () => {
-    setup();
+  test('Reports the booking it wrote to the host', async () => {
+    const onBooked = vi.fn();
+    setup(onBooked);
     await clickCalendar();
 
     await fillBooking();
@@ -165,10 +156,13 @@ describe('SchedulingWorkspace booking', () => {
 
     // The pane closes on success, and the appointment does not always turn up on the
     // calendar to speak for itself — it may fall outside the visible range, or onto a
-    // schedule that is deselected. So the booking says so itself.
-    const toast = await screen.findByRole('alert');
-    expect(within(toast).getByText('Appointment booked')).toBeInTheDocument();
-    expect(within(toast).getByText(/Jordan Reyes/)).toBeInTheDocument();
+    // schedule that is deselected. So the host is told what was booked, and announces
+    // it however it announces things.
+    expect(onBooked).toHaveBeenCalledTimes(1);
+    const booking = onBooked.mock.calls[0][0] as AppointmentBooking;
+    expect(booking.appointment.participant).toContainEqual(
+      expect.objectContaining({ actor: expect.objectContaining({ display: 'Jordan Reyes' }) })
+    );
   });
 
   test('Closes the form when dismissed', async () => {

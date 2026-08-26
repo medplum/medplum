@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import {
   getExtensionValue,
   getReferenceString,
@@ -11,7 +10,6 @@ import {
 } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconCalendarCheck } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -34,6 +32,7 @@ const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = 
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
+  readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
 }
 
 /**
@@ -44,12 +43,14 @@ export interface SchedulingWorkspaceProps {
  * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
  *   in a pane on the right, with its time search opened on the day that was clicked.
  *   The form writes the booking and announces what it wrote, which is what puts the
- *   new appointment on the calendar beside it — a host supplies nothing for any of it.
+ *   new appointment on the calendar beside it — a host supplies no data for any of it.
+ *   What was written is reported through `onBooked`, for a host that wants to say so.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
+  const { onBooked } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
@@ -153,16 +154,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   }, []);
 
   const finishBooking = useCallback(
-    (booking: AppointmentBooking): void => {
+    (booking: AppointmentBooking): void | Promise<void> => {
       closeBooking();
-      showNotification({
-        color: 'green',
-        icon: <IconCalendarCheck size={18} />,
-        title: 'Appointment booked',
-        message: describeBooking(booking.appointment),
-      });
+      return onBooked?.(booking);
     },
-    [closeBooking]
+    [closeBooking, onBooked]
   );
 
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
@@ -223,27 +219,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       )}
     </div>
   );
-}
-
-/**
- * Names the visit that was booked, for the notification announcing it.
- * @param appointment - The appointment `$book` wrote.
- * @returns Who it is for and when, as far as each is known.
- */
-function describeBooking(appointment: Appointment): string {
-  const patient = (appointment.participant ?? []).find((participant) =>
-    participant.actor?.reference?.startsWith('Patient/')
-  );
-  const when = appointment.start
-    ? new Date(appointment.start).toLocaleString(undefined, {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
-    : undefined;
-  return [patient?.actor?.display, when].filter(Boolean).join(' · ');
 }
 
 function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {
