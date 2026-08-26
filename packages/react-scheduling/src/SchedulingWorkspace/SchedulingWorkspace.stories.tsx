@@ -8,13 +8,10 @@ import { SchedulingWorkspace } from './SchedulingWorkspace';
 
 const STORY_FIXTURES = [...SchedulingFixtures, ...CalendarWeekFixtures, ...PatientFixtures];
 
-// `withFindStub` is left to the stories rather than set here: a story's own decorators
-// add to these rather than replacing them, so two stubs would both install and which one
-// answered would be an accident of effect ordering.
 export default {
   title: 'Medplum/SchedulingWorkspace',
   component: SchedulingWorkspace,
-  decorators: [withBookStub(), withFixtures(STORY_FIXTURES), withMockedDate],
+  decorators: [withBookStub(), withFindStub(), withFixtures(STORY_FIXTURES), withMockedDate],
   parameters: {
     // Default seeding includes a lot of cluttering Slot resources for Dr. Alice Smith; skip it.
     skipDefaultSeeding: true,
@@ -47,4 +44,3 @@ export const Basic = (): JSX.Element => (
     <SchedulingWorkspace />
   </div>
 );
-Basic.decorators = [withFindStub()];
