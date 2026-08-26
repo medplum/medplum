@@ -11,6 +11,10 @@ translation at ingest time would throw away exactly the attributes a viewer need
 study. Storing the DICOM shape natively means a DICOMweb response can be reconstructed faithfully,
 while the resources remain searchable and access-controlled like anything else in the project.
 
+An [`ImagingStudy`](#relationship-to-fhir-imagingstudy) is generated _alongside_ those resources, not
+instead of them, so the study is reachable from the rest of the chart without the DICOM shape being
+lost.
+
 ```mermaid
 flowchart TD
   Study["DicomStudy<br/><i>studyInstanceUid</i>"]
@@ -18,11 +22,15 @@ flowchart TD
   Instance["DicomInstance<br/><i>sopInstanceUid</i>"]
   Raw["Binary<br/><i>original .dcm file</i>"]
   Pixels["Binary[]<br/><i>pixel data, one per frame</i>"]
+  Imaging["ImagingStudy<br/><i>derived, chart-facing</i>"]
+  Endpoint["Endpoint<br/><i>WADO-RS</i>"]
 
   Study --> Series
   Series --> Instance
   Instance -- "raw" --> Raw
   Instance -- "pixelData" --> Pixels
+  Study -. "derived" .-> Imaging
+  Imaging -- "endpoint" --> Endpoint
 ```
 
 ## Resource types
@@ -69,7 +77,9 @@ One [`DicomSeries`](/docs/api/fhir/medplum/dicomseries) per Series Instance UID,
 
 ### DicomInstance
 
-One [`DicomInstance`](/docs/api/fhir/medplum/dicominstance) per stored SOP instance. Unlike study and series, instances are **not** created conditionally.
+One [`DicomInstance`](/docs/api/fhir/medplum/dicominstance) per stored SOP instance, created
+conditionally on `sopInstanceUid` so that re-uploading the same instance resolves the existing
+resource rather than duplicating it.
 
 | Field                   | DICOM tag                    | Notes                                                                      |
 | ----------------------- | ---------------------------- | -------------------------------------------------------------------------- |
@@ -102,18 +112,38 @@ Only the **first 100 KB** of each uploaded file is parsed for metadata during th
 That is far more than a DICOM header needs and it keeps ingest streaming rather than buffering whole
 studies in memory. The complete file is always preserved in the `raw` `Binary` regardless.
 
-## Pixel data extraction
+## Background processing
 
 Storing an instance does not extract its pixels inline — that would make every `C-STORE` wait on
-decoding. Instead, the create is dispatched to a background worker:
+decoding. The work is split across two queues, by how often it needs to run.
 
-1. A `DicomInstance` is created, or its `raw` reference changes.
-2. The `dicom` worker enqueues a job on the `DicomQueue` BullMQ queue (three attempts, exponential
-   backoff starting at one second).
-3. The worker reads the raw `Binary`, parses the full file, and splits `PixelData` into frames.
-4. Each frame is written as its own `Binary`, with `securityContext` set to the `DicomInstance` so it
-   inherits the instance's access control.
-5. `DicomInstance.pixelData` is patched with references to those binaries, in frame order.
+Both entry points feed the same queues. Whether an instance arrives through
+[STOW-RS](./dicomweb-api.md#stow-rs-store-instances) or as a `DicomInstance` created through the FHIR
+API, the same jobs run, so the two routes produce the same resources.
+
+Both run on the `DicomQueue` BullMQ queue, as two job types.
+
+**Instance job — once per instance.** Triggered when a `DicomInstance` is created or its `raw`
+reference changes (three attempts, exponential backoff starting at one second):
+
+1. The worker reads the raw `Binary` and parses the full file.
+2. Instance attributes read from the dataset — `rows`, `columns`, `bitsAllocated`, `numberOfFrames`,
+   and the rest — are patched onto the `DicomInstance`.
+3. `PixelData` is split into frames. Each frame is written as its own `Binary`, with
+   `securityContext` set to the `DicomInstance` so it inherits the instance's access control.
+4. `DicomInstance.pixelData` is patched with references to those binaries, in frame order.
+
+**Study job — once per study.** Enqueued for the parent study whenever an instance lands or is
+deleted, and deduplicated per study, so a five-hundred-instance upload recomputes the study about
+twice rather than five hundred times:
+
+1. Study-level aggregates — `modalitiesInStudy`, `numberOfStudyRelatedSeries`,
+   `numberOfStudyRelatedInstances` — are recomputed from the stored series and instances.
+2. `numberOfSeriesRelatedInstances` is recomputed for every series in the study.
+3. The study's [`ImagingStudy`](#relationship-to-fhir-imagingstudy) is created or refreshed.
+
+These are Q/R query keys the archive is responsible for computing, so the values a sender puts in its
+own headers are ignored rather than trusted. Until this job runs they are absent rather than wrong.
 
 The `Binary.contentType` of each frame is derived from the file's Transfer Syntax UID:
 
@@ -124,13 +154,14 @@ The `Binary.contentType` of each frame is derived from the file's Transfer Synta
 | `1.2.840.10008.1.2.4.201`, `.202`      | `image/jxl`                |
 | Anything else, including uncompressed  | `application/octet-stream` |
 
-Until the worker finishes, [frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames) returns
-`404` for that instance. Study and series queries work immediately.
+Until the instance job finishes, [frame retrieval](./dicomweb-api.md#wado-rs-retrieve-frames)
+returns `404` for that instance. Studies and series appear in query results immediately, because they
+are created during the upload itself; their instance counts fill in once the study job runs.
 
 The worker is named `dicom` and can be enabled or disabled per server instance through the
 `workers.enabled` configuration setting, like any other Medplum worker. A deployment that runs
 workers on dedicated hosts needs `dicom` enabled on at least one of them, or pixel data is never
-extracted.
+extracted, aggregate counts stay absent, and no `ImagingStudy` is created.
 
 ## Search parameters
 
@@ -159,13 +190,58 @@ parameters are `string` searches, and `study-date` is a `date` search.
 
 ## Relationship to FHIR ImagingStudy
 
-Medplum does not currently create an [`ImagingStudy`](/docs/api/fhir/resources/imagingstudy)
-alongside a `DicomStudy`, and `DicomStudy.patientId` holds the DICOM Patient ID string rather than a
-reference to a Medplum [`Patient`](/docs/api/fhir/resources/patient). Linking imaging into the chart
-is on the roadmap.
+Medplum generates an [`ImagingStudy`](/docs/api/fhir/resources/imagingstudy) for every `DicomStudy`,
+as part of the study job described above. It is a derived, chart-facing view: the DICOM resources
+remain the source of truth, and the `ImagingStudy` is what a `DiagnosticReport` cites and what a
+search by patient returns.
 
-In the meantime, a [Bot](/docs/bots) subscribed to `DicomStudy` creation can do the reconciliation
-your workflow needs — matching `patientId` against your MRN identifier system, creating an
-`ImagingStudy` that references both the `Patient` and the study's UIDs, and flagging studies whose
-patient could not be resolved for manual review. Doing it in a Bot rather than at ingest keeps the
-matching logic — which is highly site-specific — under your control.
+It is identified by the study's UID, so it converges rather than duplicating:
+
+```json
+{
+  "resourceType": "ImagingStudy",
+  "identifier": [{ "system": "urn:dicom:uid", "value": "urn:oid:1.2.826.0.1.3680043.10.543.2" }],
+  "status": "available",
+  "numberOfSeries": 2,
+  "numberOfInstances": 148,
+  "endpoint": [{ "reference": "Endpoint/..." }]
+}
+```
+
+`ImagingStudy.endpoint` points at an [`Endpoint`](/docs/api/fhir/resources/endpoint) with
+`connectionType` `dicom-wado-rs`, created once per project, whose `address` is this server's DICOMweb
+root. A client composes retrieve URLs from it:
+
+```
+{endpoint.address}/studies/{identifier}/series/{series.uid}/instances/{sopInstanceUid}
+```
+
+Series are listed on the `ImagingStudy`; individual instances are not. Enumerating every SOP instance
+would make the resource grow without bound on a large study, and viewers read the instance list from
+[`/series/{uid}/metadata`](./dicomweb-api.md#wado-rs-retrieve-series-metadata) anyway.
+
+### Which fields the server owns
+
+The study job rewrites only the fields it derives — `identifier`, `status`, `modality`, `started`,
+`endpoint`, `numberOfSeries`, `numberOfInstances`, and `series`. Everything else is yours to set:
+`basedOn`, `encounter`, `procedureReference`, `note`, `description`, and the rest survive every
+recompute. Resources the server maintains carry the tag `https://medplum.com/dicom|derived-from-dicom`.
+
+Two fields latch, so that a human correction is never undone by a later instance arriving:
+
+- **`subject`** — resolved by matching `DicomStudy.patientId` against `Patient.identifier` within the
+  same project. A single match becomes a real reference; zero or multiple matches leave a logical
+  reference carrying the DICOM Patient ID and name. A logical reference is upgraded to a real one
+  once exactly one `Patient` matches, but a real reference is **never** downgraded — so correcting
+  the patient by hand, or through a [Bot](/docs/bots), sticks.
+- **`status`** — `cancelled` and `entered-in-error` are preserved. Everything else follows the
+  instance count: `available` once the study has instances, `registered` before that.
+
+:::note Upgrading from an earlier version
+
+If you already create `ImagingStudy` resources in a Bot using the `urn:dicom:uid` identifier, the
+server will **adopt** them rather than create duplicates: the fields listed above start being
+recomputed, and everything else your Bot set is preserved. Bots that write to the server-owned fields
+should be retired, since their values will be overwritten on the next recompute.
+
+:::
