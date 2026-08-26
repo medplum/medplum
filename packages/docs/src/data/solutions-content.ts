@@ -270,9 +270,9 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoHasName: true,
         logoScale: 1.35,
         videoSrc: '/img/solutions/piction-clip.mp4',
-        screenshotAlt: 'Pictionhealth visit charge capture and claim submission',
+        screenshotAlt: 'Insurance eligibility, charge capture, and claim submission on a Medplum Provider encounter',
         valueStatement:
-          'Pictionhealth built a teledermatology EHR on Medplum that runs its full care model — asynchronous dermatology review through nurse-practitioner visits — with automated claims submission through a live Candid Health integration and lab ordering through Health Gorilla.',
+          'Pictionhealth runs its teledermatology care model on Medplum Provider out of the box, and bills payers through a live Candid Health integration. Insurance eligibility, charge capture, and claim submission all work off the encounter record, so a finished visit becomes a filed claim without a separate billing system.',
       },
     ],
   },
