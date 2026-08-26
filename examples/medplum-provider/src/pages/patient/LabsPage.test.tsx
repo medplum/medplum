@@ -167,14 +167,30 @@ describe('LabsPage', () => {
     });
   });
 
-  test('queries DiagnosticReport with status=final and default sort for the completed tab', async () => {
+  test('displays preliminary diagnostic reports in the completed tab', async () => {
+    const preliminaryReport: DiagnosticReport = {
+      ...completedReport,
+      id: 'report-2',
+      status: 'preliminary',
+      code: { text: 'Protein Electrophoresis' },
+    };
+    mockSearch([], [preliminaryReport]);
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Protein Electrophoresis')).toBeInTheDocument();
+    });
+  });
+
+  test('queries DiagnosticReport with completed statuses and default sort for the completed tab', async () => {
     mockSearch([], [completedReport]);
     setup();
 
     await waitFor(() => {
       const query = queryFor('DiagnosticReport');
       expect(query).toBeDefined();
-      expect(query).toContain('status=final');
+      // Commas are URL-encoded in the serialized query string.
+      expect(query).toContain('status=preliminary%2Cfinal%2Ccorrected%2Camended');
       expect(query).toContain('_sort=-_lastUpdated');
       // Reports legitimately reference their order via basedOn; the top-level
       // filter applies only to the Open (ServiceRequest) tab.
@@ -189,7 +205,7 @@ describe('LabsPage', () => {
     await waitFor(() => {
       const urlSearch = screen.getByTestId('location-search').textContent ?? '';
       expect(urlSearch).toContain('_sort=-_lastUpdated');
-      expect(urlSearch).toContain('status=final');
+      expect(urlSearch).toContain('status=preliminary%2Cfinal%2Ccorrected%2Camended');
     });
   });
 
