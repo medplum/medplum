@@ -224,7 +224,9 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
     botId,
     importedPayers,
     importedUuids,
-    searchResults: results ? results.slice(pageIndex * SEARCH_PAGE_SIZE, (pageIndex + 1) * SEARCH_PAGE_SIZE) : undefined,
+    searchResults: results
+      ? results.slice(pageIndex * SEARCH_PAGE_SIZE, (pageIndex + 1) * SEARCH_PAGE_SIZE)
+      : undefined,
     pageCount: results ? Math.ceil(results.length / SEARCH_PAGE_SIZE) + (nextPageToken ? 1 : 0) : 0,
     page: pageIndex + 1,
     searching,
