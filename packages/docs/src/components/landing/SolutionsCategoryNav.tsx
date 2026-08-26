@@ -99,6 +99,7 @@ export function SolutionsCategoryNav(): JSX.Element {
                 href={`#${category.id}`}
                 ref={isActiveCategory ? activePillRef : undefined}
                 className={`${styles.pill} ${isActiveCategory ? styles.pillActive : ''}`}
+                aria-current={isActiveCategory ? 'true' : undefined}
               >
                 {category.title}
               </a>
@@ -109,6 +110,7 @@ export function SolutionsCategoryNav(): JSX.Element {
                       key={customer.id}
                       href={`#${customer.id}`}
                       className={`${styles.subPill} ${activeCustomerId === customer.id ? styles.subPillActive : ''}`}
+                      aria-current={activeCustomerId === customer.id ? 'true' : undefined}
                     >
                       {customer.name}
                     </a>

@@ -3,9 +3,91 @@
 import Link from '@docusaurus/Link';
 import { IconArrowRight, IconPhoto } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useInView } from 'react-intersection-observer';
 import type { CustomerFeature } from '../../data/solutions-content';
 import styles from './SolutionsCustomerFeature.module.css';
 import { TestimonialHeader } from './TestimonialHeader';
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+function subscribeToReducedMotion(onChange: () => void): () => void {
+  const query = window.matchMedia(REDUCED_MOTION_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
+/**
+ * Reads the viewer's reduced-motion preference.
+ *
+ * The server render has no media queries to consult, so its snapshot says "no
+ * preference" and hydration corrects it. Anything gated on this must therefore be
+ * safe to start un-animated.
+ *
+ * @returns True when the viewer has asked for reduced motion.
+ */
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(
+    subscribeToReducedMotion,
+    () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
+    () => false
+  );
+}
+
+interface CustomerVideoProps {
+  readonly src: string;
+  readonly poster?: string;
+  readonly label: string;
+}
+
+/**
+ * A product clip that fetches and plays only once it scrolls into view, and stays on
+ * its poster frame for viewers who ask for reduced motion.
+ *
+ * Several of these sit below the fold. Autoplaying them all on load pulled megabytes
+ * of video, and ran that many decoders, before the reader had scrolled to any of
+ * them. `preload` cannot prevent that on its own, because `autoPlay` overrides it.
+ *
+ * @param props - The clip source, its poster still, and an accessible label.
+ * @returns The video element.
+ */
+function CustomerVideo(props: CustomerVideoProps): JSX.Element {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const { ref: inViewRef, inView } = useInView({ rootMargin: '200px 0px' });
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const shouldPlay = inView && !prefersReducedMotion;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+    if (shouldPlay) {
+      // Playback can still be refused (low power mode, for one), which leaves the
+      // poster up. That is the intended fallback, so the rejection is not an error.
+      video.play().catch(() => undefined);
+    } else {
+      video.pause();
+    }
+  }, [shouldPlay]);
+
+  return (
+    <video
+      ref={(node) => {
+        videoRef.current = node;
+        inViewRef(node);
+      }}
+      className={styles.screenshot}
+      src={props.src}
+      poster={props.poster}
+      aria-label={props.label}
+      muted
+      loop
+      playsInline
+      preload="none"
+    />
+  );
+}
 
 export interface SolutionsCustomerFeatureProps {
   readonly customer: CustomerFeature;
@@ -42,15 +124,10 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
           <span />
         </div>
         {customer.videoSrc ? (
-          <video
-            className={styles.screenshot}
+          <CustomerVideo
             src={customer.videoSrc}
-            aria-label={customer.screenshotAlt ?? `${customer.name} product demo`}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
+            poster={customer.posterSrc}
+            label={customer.screenshotAlt ?? `${customer.name} product demo`}
           />
         ) : customer.screenshotSrc ? (
           <img

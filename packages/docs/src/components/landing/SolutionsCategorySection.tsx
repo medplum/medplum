@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import {
-  IconBuildingBank,
   IconChartHistogram,
   IconChevronRight,
   IconExchange,
   IconFileTextSpark,
   IconFirstAidKit,
-  IconFlask,
   IconHeartRateMonitor,
   IconReceiptDollar,
   IconRocket,
@@ -20,12 +18,10 @@ import styles from './SolutionsCategorySection.module.css';
 import { SolutionsCustomerFeature } from './SolutionsCustomerFeature';
 
 const ICONS: Record<string, JSX.Element> = {
-  IconBuildingBank: <IconBuildingBank size={24} />,
   IconChartHistogram: <IconChartHistogram size={24} />,
   IconExchange: <IconExchange size={24} />,
   IconFileTextSpark: <IconFileTextSpark size={24} />,
   IconFirstAidKit: <IconFirstAidKit size={24} />,
-  IconFlask: <IconFlask size={24} />,
   IconHeartRateMonitor: <IconHeartRateMonitor size={24} />,
   IconReceiptDollar: <IconReceiptDollar size={24} />,
   IconRocket: <IconRocket size={20} />,

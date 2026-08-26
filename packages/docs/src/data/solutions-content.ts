@@ -31,8 +31,16 @@ export interface CustomerFeature {
   /** Height multiplier for the header logo, to even out wordmarks whose files
    * are shorter/narrower than their peers. */
   logoScale?: number;
-  /** A short autoplaying UI clip. Takes precedence over screenshotSrc when set. */
+  /**
+   * A short looping UI clip, played once it scrolls into view. Takes precedence over
+   * screenshotSrc when set.
+   */
   videoSrc?: string;
+  /**
+   * First-frame still for a videoSrc, shown before the clip loads and in place of it
+   * under prefers-reduced-motion. Always set this alongside videoSrc.
+   */
+  posterSrc?: string;
   screenshotSrc?: string;
   screenshotAlt?: string;
   valueStatement: string;
@@ -194,6 +202,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoSrc: '/img/logos/ultralight.svg',
         logoHasName: true,
         videoSrc: '/img/solutions/ultralight-clip.mp4',
+        posterSrc: '/img/solutions/ultralight-clip-poster.webp',
         screenshotAlt: 'Ultralight AI-native EHR biomarker dashboard with ambient scribing',
         valueStatement:
           'Ultralight is an AI-native EHR built on Medplum, with an ambient scribe and biomarker intelligence woven directly into the chart — turning documentation and longitudinal data into structured, actionable insight at the point of care.',
@@ -204,6 +213,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoSrc: '/img/logos/rad-ai.svg',
         logoHasName: true,
         videoSrc: '/img/solutions/rad-ai-clip.mp4',
+        posterSrc: '/img/solutions/rad-ai-clip-poster.webp',
         valueStatement:
           'Rad AI builds generative AI trusted by radiologists across thousands of healthcare facilities, using Medplum to ground its models in structured clinical data — automating reporting and follow-up so care teams move faster with less manual work.',
         caseStudyUrl: '/blog/radai-case-study',
@@ -224,6 +234,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoSrc: '/img/logos/color.svg',
         logoHasName: true,
         videoSrc: '/img/solutions/color-clip.mp4',
+        posterSrc: '/img/solutions/color-clip-poster.webp',
         screenshotAlt: 'Color Virtual Cancer Clinic walkthrough',
         valueStatement:
           "Color's Virtual Cancer Clinic serves nearly 200 employers, health plans and unions, providing full spectrum cancer care to their populations, from screening and early detection, through treatment and survivorship. To provide gold standard cancer care at this scale, Color utilizes Medplum to power a nationwide service platform that includes automated care pathways for record coordination, medical assessments, appointment scheduling, management of screening results and, crucially, follow up for 100% of Color patients.",
@@ -270,6 +281,7 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         logoHasName: true,
         logoScale: 1.35,
         videoSrc: '/img/solutions/piction-clip.mp4',
+        posterSrc: '/img/solutions/piction-clip-poster.webp',
         screenshotAlt: 'Insurance eligibility, charge capture, and claim submission on a Medplum Provider encounter',
         valueStatement:
           'Pictionhealth runs its teledermatology care model on Medplum Provider out of the box, and bills payers through a live Candid Health integration. Insurance eligibility, charge capture, and claim submission all work off the encounter record, so a finished visit becomes a filed claim without a separate billing system.',

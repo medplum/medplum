@@ -9,6 +9,14 @@
   scroll-margin-top: calc(var(--ifm-navbar-height) + 24px);
 }
 
+/* Below 996px the category nav becomes a sticky bar under the navbar, so these
+   anchor targets have to clear it too. */
+@media screen and (max-width: 996px) {
+  .feature {
+    scroll-margin-top: calc(var(--ifm-navbar-height) + var(--solutions-mobile-nav-height) + 24px);
+  }
+}
+
 .header {
   display: flex;
   align-items: center;

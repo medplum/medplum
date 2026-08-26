@@ -4,7 +4,7 @@
 .section {
   font-family: var(--landing-font-display);
   padding: 4rem 0;
-  /* Anchor jumps must clear the fixed navbar (plus the sticky nav on mobile). */
+  /* Anchor jumps must clear the fixed navbar. */
   scroll-margin-top: calc(var(--ifm-navbar-height) + 24px);
 }
 
@@ -161,6 +161,12 @@
 }
 
 @media screen and (max-width: 996px) {
+  /* The category nav is a sticky bar under the navbar at this width, so an anchor
+     jump has to clear both or the heading lands behind it. */
+  .section {
+    scroll-margin-top: calc(var(--ifm-navbar-height) + var(--solutions-mobile-nav-height) + 24px);
+  }
+
   /* Content column spans full width once the vertical nav collapses. */
   .container {
     padding: 0 var(--layout-padding-md);
