@@ -1,21 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Group, Stack, Tabs, Text } from '@mantine/core';
+import { Badge, Button, Group, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { Modal } from '@medplum/react';
-import { IconInfoCircle, IconRefresh } from '@tabler/icons-react';
+import { IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useState } from 'react';
-import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
+import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 import { formatPayerCategory, getPayerCategory, getPayerId } from '../../utils/billing';
 import {
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
 } from '../../utils/candid';
-import { ImportedPayerList } from './ImportedPayerList';
-import { PayerDirectorySearch } from './PayerDirectorySearch';
 
 const SUPPORT_STATE_LABELS: Record<string, { label: string; color: string }> = {
   SUPPORTED_ENROLLMENT_NOT_REQUIRED: { label: 'Supported', color: 'green' },
@@ -29,64 +26,50 @@ const PAYER_SUPPORT_CAPABILITIES: { url: string; label: string }[] = [
   { url: CANDID_REMITTANCE_SUPPORT_EXTENSION, label: 'Remittance' },
 ];
 
-export function PayerList(): JSX.Element {
-  const directory = useCandidPayerDirectory();
-  // A search result (not yet persisted, no id) or an imported payer (with id, refreshable).
-  const [detailsPayer, setDetailsPayer] = useState<Organization | undefined>(undefined);
+export interface PayerDetailsModalProps {
+  readonly directory: CandidPayerDirectory;
+  /** A search result (not yet persisted, no id) or an imported payer (with id, refreshable). */
+  readonly payer: Organization | undefined;
+  readonly onClose: () => void;
+  /** Called with the patched payer when a refresh changes it. */
+  readonly onPayerUpdated: (payer: Organization) => void;
+}
 
-  const handleRefresh = async (org: WithId<Organization>): Promise<void> => {
-    const updated = await directory.refreshPayer(org);
+export function PayerDetailsModal(props: PayerDetailsModalProps): JSX.Element {
+  const { directory, payer, onClose, onPayerUpdated } = props;
+
+  const handleRefresh = async (): Promise<void> => {
+    const updated = await directory.refreshPayer(payer as WithId<Organization>);
     if (updated) {
-      setDetailsPayer(updated);
+      onPayerUpdated(updated);
     }
   };
 
   return (
-    <Stack gap="sm">
-      <Tabs defaultValue="imported">
-        <Tabs.List>
-          <Tabs.Tab value="imported">Enrolled Payers</Tabs.Tab>
-          <Tabs.Tab value="directory">Candid Payer Directory</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="imported" pt="md">
-          <ImportedPayerList payers={directory.importedPayers} onSelectPayer={setDetailsPayer} />
-        </Tabs.Panel>
-        <Tabs.Panel value="directory" pt="md">
-          {directory.botId === '' && (
-            <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light">
-              The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported
-              here.
-            </Alert>
-          )}
-          {!!directory.botId && <PayerDirectorySearch directory={directory} onSelectPayer={setDetailsPayer} />}
-        </Tabs.Panel>
-      </Tabs>
-
-      <Modal
-        opened={detailsPayer !== undefined}
-        onClose={() => setDetailsPayer(undefined)}
-        title={detailsPayer?.name}
-        size="lg"
-        actions={
-          // Only an imported (persisted) payer can be refreshed
-          detailsPayer?.id !== undefined &&
-          !!directory.botId && (
-            <Group justify="flex-start" style={{ width: '100%' }}>
-              <Button
-                variant="outline"
-                leftSection={<IconRefresh size={16} />}
-                onClick={() => handleRefresh(detailsPayer as WithId<Organization>).catch(console.error)}
-                loading={directory.refreshing}
-              >
-                Refresh from directory
-              </Button>
-            </Group>
-          )
-        }
-      >
-        {detailsPayer && <PayerDetails payer={detailsPayer} />}
-      </Modal>
-    </Stack>
+    <Modal
+      opened={payer !== undefined}
+      onClose={onClose}
+      title={payer?.name}
+      size="lg"
+      actions={
+        // Only an imported (persisted) payer can be refreshed
+        payer?.id !== undefined &&
+        !!directory.botId && (
+          <Group justify="flex-start" style={{ width: '100%' }}>
+            <Button
+              variant="outline"
+              leftSection={<IconRefresh size={16} />}
+              onClick={() => handleRefresh().catch(console.error)}
+              loading={directory.refreshing}
+            >
+              Refresh from directory
+            </Button>
+          </Group>
+        )
+      }
+    >
+      {payer && <PayerDetails payer={payer} />}
+    </Modal>
   );
 }
 

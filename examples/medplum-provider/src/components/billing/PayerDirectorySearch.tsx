@@ -1,8 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Card, Checkbox, CloseButton, Group, Pagination, Stack, Table, Text, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Card,
+  Checkbox,
+  CloseButton,
+  Group,
+  Pagination,
+  Stack,
+  Table,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import type { Organization } from '@medplum/fhirtypes';
-import { IconCheck, IconSearch } from '@tabler/icons-react';
+import { IconCheck, IconInfoCircle, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
@@ -10,11 +22,10 @@ import { formatPayerCategory, getPayerCategory, getPayerId, getPayerUuid } from 
 
 export interface PayerDirectorySearchProps {
   readonly directory: CandidPayerDirectory;
-  /** Called when a search result row is tapped to view details. */
   readonly onSelectPayer: (payer: Organization) => void;
 }
 
-export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Element {
+export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Element | null {
   const { directory, onSelectPayer } = props;
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -46,6 +57,18 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
     await directory.importPayers(selected);
     setSelected(new Set());
   };
+
+  if (directory.botId === '') {
+    return (
+      <Alert icon={<IconInfoCircle size={16} />} color="yellow" variant="light">
+        The Candid payer directory bot is not deployed in this project, so payers cannot be searched or imported here.
+      </Alert>
+    );
+  }
+  if (!directory.botId) {
+    // Bot lookup still pending
+    return null;
+  }
 
   return (
     <Card withBorder p="md">
