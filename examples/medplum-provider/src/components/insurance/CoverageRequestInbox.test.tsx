@@ -4,7 +4,6 @@ import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type {
-  Bot,
   Bundle,
   Coverage,
   CoverageEligibilityRequest,
@@ -49,12 +48,6 @@ const mockPractitionerRole: WithId<PractitionerRole> = {
   id: 'role-alice',
   practitioner: createReference(DrAliceSmith),
   organization: createReference(TestOrganization),
-};
-
-const mockBot: WithId<Bot> = {
-  resourceType: 'Bot',
-  id: 'eligibility-bot',
-  name: 'Eligibility Bot',
 };
 
 const mockRequest: WithId<CoverageEligibilityRequest> = {
@@ -260,26 +253,8 @@ describe('CoverageRequestInbox', () => {
   // ── Check Eligibility button ────────────────────────────────────────────────
 
   describe('Check Eligibility button', () => {
-    test('shows error notification when the eligibility bot is not configured', async () => {
-      const user = userEvent.setup();
-      medplum.searchOne = vi.fn().mockResolvedValue(undefined) as typeof medplum.searchOne;
-      await setup(medplum, { coverageId: COVERAGE_ID });
-
-      await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
-
-      await waitFor(() =>
-        expect(screen.getByText(/To enable Insurance Eligibility please contact support/)).toBeInTheDocument()
-      );
-    });
-
     test('shows error notification when no PractitionerRole is found for the current user', async () => {
       const user = userEvent.setup();
-      medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Bot') {
-          return Promise.resolve(mockBot);
-        }
-        return Promise.resolve(undefined);
-      }) as typeof medplum.searchOne;
       await setup(medplum, { coverageId: COVERAGE_ID });
 
       await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
@@ -289,21 +264,18 @@ describe('CoverageRequestInbox', () => {
       );
     });
 
-    test('creates eligibility request and refreshes the list on success', async () => {
+    test('creates eligibility request, posts $submit, and refreshes the list on success', async () => {
       const user = userEvent.setup();
       const savedRequest: WithId<CoverageEligibilityRequest> = { ...mockRequest, id: 'req-new' };
 
       medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Bot') {
-          return Promise.resolve(mockBot);
-        }
         if (resourceType === 'PractitionerRole') {
           return Promise.resolve(mockPractitionerRole);
         }
         return Promise.resolve(undefined);
       }) as typeof medplum.searchOne;
       medplum.createResource = vi.fn().mockResolvedValue(savedRequest) as typeof medplum.createResource;
-      medplum.executeBot = vi.fn().mockResolvedValue({}) as typeof medplum.executeBot;
+      medplum.post = vi.fn().mockResolvedValue(mockResponse) as typeof medplum.post;
       medplum.search = vi
         .fn()
         .mockResolvedValueOnce(makeRequestBundle([]))
@@ -322,33 +294,24 @@ describe('CoverageRequestInbox', () => {
       });
 
       await waitFor(() => {
-        expect(medplum.executeBot).toHaveBeenCalledWith(
-          mockBot.id,
-          expect.objectContaining({ resourceType: 'CoverageEligibilityRequest' }),
-          'application/fhir+json'
+        expect(medplum.post).toHaveBeenCalledWith(
+          medplum.fhirUrl('CoverageEligibilityRequest', savedRequest.id, '$submit')
         );
       });
     });
 
-    test('still refreshes requests when the bot execution fails with a parseable error', async () => {
+    test('still refreshes requests when the $submit operation fails', async () => {
       const user = userEvent.setup();
-      const savedRequest: WithId<CoverageEligibilityRequest> = { ...mockRequest, id: 'req-bot-err' };
+      const savedRequest: WithId<CoverageEligibilityRequest> = { ...mockRequest, id: 'req-submit-err' };
 
       medplum.searchOne = vi.fn().mockImplementation((resourceType: string) => {
-        if (resourceType === 'Bot') {
-          return Promise.resolve(mockBot);
-        }
         if (resourceType === 'PractitionerRole') {
           return Promise.resolve(mockPractitionerRole);
         }
         return Promise.resolve(undefined);
       }) as typeof medplum.searchOne;
       medplum.createResource = vi.fn().mockResolvedValue(savedRequest) as typeof medplum.createResource;
-      medplum.executeBot = vi
-        .fn()
-        .mockRejectedValue(
-          new Error(JSON.stringify({ errorMessage: 'Payer unavailable' }))
-        ) as typeof medplum.executeBot;
+      medplum.post = vi.fn().mockRejectedValue(new Error('Payer unavailable')) as typeof medplum.post;
       medplum.search = vi.fn().mockResolvedValue(makeRequestBundle([savedRequest]));
 
       await setup(medplum, { coverageId: COVERAGE_ID });

@@ -208,10 +208,22 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 
   app.use(rateLimitHandler(config));
   app.use('/dicomweb/', dicomRouter);
-  app.use('/fhir/R4/Binary', binaryRouter);
+  app.use(
+    [
+      '/fhir/R4/Binary',
+      '/api/fhir/R4/Binary',
+      '/projects/:projectId/fhir/R4/Binary',
+      '/api/projects/:projectId/fhir/R4/Binary',
+    ],
+    binaryRouter
+  );
 
   // Handle async batch by enqueueing job
-  app.post('/fhir/R4', authenticateRequest, asyncBatchHandler(config));
+  app.post(
+    ['/fhir/R4', '/api/fhir/R4', '/projects/:projectId/fhir/R4', '/api/projects/:projectId/fhir/R4'],
+    authenticateRequest,
+    asyncBatchHandler(config)
+  );
 
   app.use(urlencoded({ extended: false }));
   app.use(text({ type: [ContentType.TEXT, ContentType.HL7_V2] }));
@@ -250,6 +262,8 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
     apiRouter.use('/mcp', mcpRouter);
   }
 
+  app.use('/api/projects/:projectId/', apiRouter);
+  app.use('/projects/:projectId/', apiRouter);
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
   app.use(errorHandler);

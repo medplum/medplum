@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, created, MedplumClient } from '@medplum/core';
+import { ContentType, created, MedplumClient, setRateLimitReset, tooManyRequests } from '@medplum/core';
 import type * as NodeStream from 'node:stream';
 import { ReadableStream } from 'node:stream/web';
 import type { Mock } from 'vitest';
@@ -357,6 +357,71 @@ describe('CLI Bulk Commands', () => {
       );
 
       expect(fetch).toHaveBeenCalled();
+    });
+
+    test('retries rate-limited entries without resending successful entries', async () => {
+      vi.useFakeTimers();
+      try {
+        const rateLimitOutcome = structuredClone(tooManyRequests);
+        setRateLimitReset(rateLimitOutcome, 1000);
+        fetch
+          .mockResolvedValueOnce({
+            status: 200,
+            headers: new Headers({ 'content-type': ContentType.FHIR_JSON }),
+            json: async () => ({
+              resourceType: 'Bundle',
+              type: 'transaction-response',
+              entry: [
+                { response: { outcome: created, status: '201' } },
+                ...testLineOutput.slice(1).map(() => ({ response: { outcome: rateLimitOutcome, status: '429' } })),
+              ],
+            }),
+          })
+          .mockResolvedValueOnce({
+            status: 200,
+            headers: new Headers({ 'content-type': ContentType.FHIR_JSON }),
+            json: async () => ({
+              resourceType: 'Bundle',
+              type: 'transaction-response',
+              entry: testLineOutput.slice(1).map(() => ({ response: { outcome: created, status: '201' } })),
+            }),
+          });
+
+        const importPromise = main(['node', 'index.js', 'bulk', 'import', 'Patient.json']);
+        await vi.advanceTimersByTimeAsync(1000);
+        await importPromise;
+
+        expect(fetch).toHaveBeenCalledTimes(2);
+        const retryBundle = JSON.parse(fetch.mock.calls[1][1].body);
+        expect(retryBundle.entry).toHaveLength(testLineOutput.length - 1);
+        expect(retryBundle.entry[0].resource.id).toBe('2222222');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    test('retries an outer 429 response', async () => {
+      vi.useFakeTimers();
+      try {
+        const rateLimitOutcome = structuredClone(tooManyRequests);
+        setRateLimitReset(rateLimitOutcome, 1000);
+        fetch.mockResolvedValueOnce({
+          status: 429,
+          headers: new Headers({
+            'content-type': ContentType.FHIR_JSON,
+            ratelimit: '"fhirInteractions";r=0;t=1',
+          }),
+          json: async () => rateLimitOutcome,
+        });
+
+        const importPromise = main(['node', 'index.js', 'bulk', 'import', 'Patient.json']);
+        await vi.advanceTimersByTimeAsync(1000);
+        await importPromise;
+
+        expect(fetch).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

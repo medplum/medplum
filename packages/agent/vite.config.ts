@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    name: '@medplum/agent',
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],

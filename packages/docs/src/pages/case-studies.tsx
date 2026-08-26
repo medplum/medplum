@@ -124,6 +124,31 @@ export default function CaseStudiesPage(): JSX.Element {
         <Section>
           <CardContainer>
             <ProfileCard
+              name="MediMind"
+              title="AI, hospital system, self-hosting"
+              imgUrl="/img/blog/medimind-icon.png"
+              webUrl="/blog/medimind-case-study"
+              youtubeUrl="https://youtu.be/v7lRW_ZYDmc"
+            />
+            <ProfileCard
+              name="Profile Health"
+              title="Genomics, AI, longevity"
+              imgUrl="/img/blog/profile-logo.png"
+              webUrl="/blog/profile-case-study"
+              youtubeUrl="https://youtu.be/nC96NbgYFS8"
+            />
+            <ProfileCard
+              name="Everself"
+              title="Scheduling, messaging, AI"
+              imgUrl="/img/blog/everself-logo.png"
+              webUrl="/blog/everself-case-study"
+              youtubeUrl="https://youtu.be/oyQv7C-tZZw"
+            />
+          </CardContainer>
+        </Section>
+        <Section>
+          <CardContainer>
+            <ProfileCard
               name="Chamber Cardio"
               title="EHR integrations, workflow"
               imgUrl="/img/blog/chamber-cardio-logo.jpeg"

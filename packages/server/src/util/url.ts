@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { concatUrls } from '@medplum/core';
 import ipaddr from 'ipaddr.js';
 import dns from 'node:dns';
 import type { Dispatcher } from 'undici';
@@ -17,6 +18,54 @@ const connector = buildConnector({});
 // The DOM RequestInit type used by built-in fetch does not include Undici's
 // dispatcher option, even though Node's fetch accepts it.
 type FetchInitWithDispatcher = RequestInit & { dispatcher?: Dispatcher };
+
+/**
+ * Returns the project ID from a project-scoped API path.
+ * @param url - Request URL, optionally including a query string.
+ * @returns The project ID, or undefined if the URL is not project scoped.
+ */
+export function getProjectIdFromUrl(url: string): string | undefined {
+  const segments = url.split('?', 1)[0].split('/');
+  const index = segments[1] === 'api' ? 2 : 1;
+  return segments[index] === 'projects' ? segments[index + 1] : undefined;
+}
+
+/**
+ * Removes the optional `/api` and `/projects/{projectId}` mount prefixes from a request URL.
+ * @param url - Request URL, optionally including a query string.
+ * @returns The normalized request path.
+ */
+export function getNormalizedPath(url: string): string {
+  const path = url.split('?', 1)[0];
+  const segments = path.split('/');
+  let index = 1;
+
+  if (segments[index] === 'api') {
+    index++;
+  }
+  if (segments[index] === 'projects' && segments[index + 1]) {
+    index += 2;
+  }
+
+  return '/' + segments.slice(index).join('/');
+}
+
+/**
+ * Adds the request's project scope to an internal server URL.
+ * @param requestUrl - The incoming request URL.
+ * @param baseUrl - The configured base URL for the target URL.
+ * @param targetUrl - The URL to scope. Defaults to the base URL.
+ * @returns The target URL with the request's project scope, if present.
+ */
+export function getProjectScopedUrl(requestUrl: string, baseUrl: string, targetUrl = baseUrl): string {
+  const projectId = getProjectIdFromUrl(requestUrl);
+  if (!projectId || !targetUrl.startsWith(baseUrl)) {
+    return targetUrl;
+  }
+
+  const projectBaseUrl = concatUrls(baseUrl, `projects/${projectId}/`);
+  return concatUrls(projectBaseUrl, targetUrl.substring(baseUrl.length));
+}
 
 export function createSafeConnect(connect: buildConnector.connector = connector): buildConnector.connector {
   return (options, callback) => {

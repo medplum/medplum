@@ -1026,6 +1026,44 @@ function buildNormalSearchFilterExpression(
   }
 }
 
+// Shared across all queries: the build functions below treat `impl` as read-only.
+const idImpl: ColumnSearchParameterImplementation = {
+  columnName: 'id',
+  type: SearchParameterType.UUID,
+  searchStrategy: 'column',
+  parsedExpression: parseFhirPath('id'),
+};
+
+const lastUpdatedImpl: ColumnSearchParameterImplementation = {
+  type: SearchParameterType.DATETIME,
+  columnName: 'lastUpdated',
+  searchStrategy: 'column',
+  parsedExpression: parseFhirPath('lastUpdated'),
+};
+
+const deletedImpl: ColumnSearchParameterImplementation = {
+  type: SearchParameterType.BOOLEAN,
+  columnName: 'deleted',
+  searchStrategy: 'column',
+  parsedExpression: parseFhirPath('deleted'),
+};
+
+const projectIdImpl: ColumnSearchParameterImplementation = {
+  columnName: 'projectId',
+  type: SearchParameterType.UUID,
+  array: false,
+  searchStrategy: 'column',
+  parsedExpression: parseFhirPath('projectId'),
+};
+
+const compartmentsImpl: ColumnSearchParameterImplementation = {
+  columnName: 'compartments',
+  type: SearchParameterType.UUID,
+  array: true,
+  searchStrategy: 'column',
+  parsedExpression: parseFhirPath('compartments'),
+};
+
 /**
  * Returns true if the search parameter code is a special search parameter.
  *
@@ -1048,38 +1086,11 @@ function trySpecialSearchParameter(
 ): Expression | undefined {
   switch (filter.code) {
     case '_id':
-      return buildIdSearchFilter(
-        table,
-        {
-          columnName: 'id',
-          type: SearchParameterType.UUID,
-          searchStrategy: 'column',
-          parsedExpression: parseFhirPath('id'),
-        },
-        filter
-      );
+      return buildIdSearchFilter(table, idImpl, filter);
     case '_lastUpdated':
-      return buildDateSearchFilter(
-        table,
-        {
-          type: SearchParameterType.DATETIME,
-          columnName: 'lastUpdated',
-          searchStrategy: 'column',
-          parsedExpression: parseFhirPath('lastUpdated'),
-        },
-        filter
-      );
+      return buildDateSearchFilter(table, lastUpdatedImpl, filter);
     case '_deleted':
-      return buildBooleanSearchFilter(
-        table,
-        {
-          type: SearchParameterType.BOOLEAN,
-          columnName: 'deleted',
-          searchStrategy: 'column',
-          parsedExpression: parseFhirPath('deleted'),
-        },
-        filter
-      );
+      return buildBooleanSearchFilter(table, deletedImpl, filter);
     case '_project': {
       if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
         if (
@@ -1094,30 +1105,10 @@ function trySpecialSearchParameter(
         }
       }
 
-      return buildIdSearchFilter(
-        table,
-        {
-          columnName: 'projectId',
-          type: SearchParameterType.UUID,
-          array: false,
-          searchStrategy: 'column',
-          parsedExpression: parseFhirPath('projectId'),
-        },
-        filter
-      );
+      return buildIdSearchFilter(table, projectIdImpl, filter);
     }
     case '_compartment': {
-      return buildIdSearchFilter(
-        table,
-        {
-          columnName: 'compartments',
-          type: SearchParameterType.UUID,
-          array: true,
-          searchStrategy: 'column',
-          parsedExpression: parseFhirPath('compartments'),
-        },
-        filter
-      );
+      return buildIdSearchFilter(table, compartmentsImpl, filter);
     }
     case '_filter': {
       const filterExpr = parseFilterParameter(filter.value);
