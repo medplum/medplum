@@ -5,7 +5,6 @@ import { IconArrowRight, IconPhoto } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import type { CustomerFeature } from '../../data/solutions-content';
 import styles from './SolutionsCustomerFeature.module.css';
-import { SolutionsLifeSciencesIllustration } from './SolutionsLifeSciencesIllustration';
 import { TestimonialHeader } from './TestimonialHeader';
 
 export interface SolutionsCustomerFeatureProps {
@@ -14,48 +13,35 @@ export interface SolutionsCustomerFeatureProps {
 
 export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): JSX.Element {
   const { customer } = props;
-  // An illustrative mockup has no customer name to show — a normal customer-name
-  // treatment (the big heading slot) doesn't fit a fabricated example.
-  const showName = !customer.illustrativeMockup && !(customer.logoSrc && customer.logoHasName);
+  const showName = !(customer.logoSrc && customer.logoHasName);
   return (
     <div id={customer.id} className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}>
       <div className={styles.header}>
-        {customer.illustrativeMockup ? (
-          <>
-            <span className={styles.illustrativeTitle}>What you could build</span>
-            <span className={styles.illustrativeTag}>Illustrative</span>
-          </>
-        ) : (
-          <>
-            {customer.logoSrc && (
-              <img
-                src={customer.logoSrc}
-                alt={customer.name}
-                className={styles.logo}
-                style={
-                  customer.logoScale
-                    ? { height: `${42 * customer.logoScale}px`, maxWidth: `${220 * customer.logoScale}px` }
-                    : undefined
-                }
-                loading="lazy"
-              />
-            )}
-            {showName && <span className={styles.name}>{customer.name}</span>}
-            {customer.isPlaceholder && (
-              <span className={styles.placeholderBadge}>Example &mdash; customer coming soon</span>
-            )}
-          </>
+        {customer.logoSrc && (
+          <img
+            src={customer.logoSrc}
+            alt={customer.name}
+            className={styles.logo}
+            style={
+              customer.logoScale
+                ? { height: `${42 * customer.logoScale}px`, maxWidth: `${220 * customer.logoScale}px` }
+                : undefined
+            }
+            loading="lazy"
+          />
+        )}
+        {showName && <span className={styles.name}>{customer.name}</span>}
+        {customer.isPlaceholder && (
+          <span className={styles.placeholderBadge}>Example &mdash; customer coming soon</span>
         )}
       </div>
-      <div className={`${styles.screenshotFrame} ${customer.illustrativeMockup ? styles.illustrativeFrame : ''}`}>
+      <div className={styles.screenshotFrame}>
         <div className={styles.browserBar}>
           <span />
           <span />
           <span />
         </div>
-        {customer.illustrativeMockup ? (
-          <SolutionsLifeSciencesIllustration />
-        ) : customer.videoSrc ? (
+        {customer.videoSrc ? (
           <video
             className={styles.screenshot}
             src={customer.videoSrc}

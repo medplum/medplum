@@ -40,8 +40,6 @@ export interface CustomerFeature {
   metrics?: CustomerMetric[];
   caseStudyUrl?: string;
   isPlaceholder?: boolean;
-  /** Renders a static illustrative mockup component instead of a screenshot/video/empty frame. */
-  illustrativeMockup?: boolean;
   /** CTA shown on a placeholder card, e.g. inviting a partner to build the category. */
   placeholderCta?: { label: string; url: string };
 }
@@ -297,26 +295,6 @@ export const SOLUTIONS_CATEGORIES: SolutionCategory[] = [
         valueStatement:
           'Flexpa connects applications to claims data with patient consent, aggregating the Patient Access APIs that CMS requires of 200+ payers into one normalized FHIR dataset — with Medplum as the self-hosted, multi-tenant FHIR store and API behind it.',
         caseStudyUrl: '/blog/flexpa-case-study',
-      },
-    ],
-  },
-  {
-    id: 'life-sciences',
-    title: 'Life Sciences',
-    tagline: 'Research infrastructure on the same record as care.',
-    description:
-      'Trial recruitment, consent, and longitudinal data capture on a FHIR-native platform — so research cohorts draw on real clinical data instead of a parallel system built to duplicate it.',
-    icon: 'IconFlask',
-    learnMoreUrl: '/solutions/life-sciences',
-    customers: [
-      {
-        id: 'life-sciences-illustrative',
-        name: 'Illustrative example',
-        illustrativeMockup: true,
-        valueStatement:
-          "No customer has built this on Medplum yet — here's what it could look like: trial eligibility screening against the clinical record, e-consent, and longitudinal outcome capture, all on FHIR from day one.",
-        isPlaceholder: true,
-        placeholderCta: { label: 'Partner with us to build this', url: 'mailto:hello@medplum.com' },
       },
     ],
   },
