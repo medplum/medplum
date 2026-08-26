@@ -16,6 +16,7 @@ We unify auth, access control, data, and automation into a single tenant-isolate
     - [Filing Issues](#filing-issues)
     - [Writing Docs or Case Studies](#writing-documentation-or-case-studies)
     - [Opening Pull Requests](#opening-pull-requests)
+- [Folder structure](#folder-structure)
 - [License](#license)
 
 ## Contributing
@@ -63,6 +64,47 @@ We have two labels for open issues where we would welcome community PR's:
 
 - [Good first issue](https://github.com/medplum/medplum/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22): good issues for beginners and newcomers
 - [Open to commmunity](https://github.com/medplum/medplum/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22open%20to%20community%22): reasonably well-scoped issues open to community PR's
+
+## Folder structure
+
+Medplum is an [npm workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces) monorepo. Application code lives in `packages/`; sample apps and bots live in `examples/`.
+
+```sh
+medplum/
+├── packages
+│   ├── agent                 # On-premise agent
+│   ├── app                   # Frontend web app
+│   ├── bot-layer             # AWS Lambda Layer for Bots
+│   ├── ccda                  # C-CDA / FHIR conversion
+│   ├── cdk                   # AWS CDK infra as code
+│   ├── cli                   # Command line interface
+│   ├── cli-wrapper           # npx wrapper for the CLI
+│   ├── core                  # Core shared library
+│   ├── create-medplum        # npm init medplum project starter
+│   ├── definitions           # Data definitions
+│   ├── docs                  # Documentation
+│   ├── dosespot-core         # DoseSpot SDK
+│   ├── dosespot-react        # DoseSpot React SDK
+│   ├── e2e                   # End-to-end tests
+│   ├── eslint-config         # Shared ESLint configuration
+│   ├── examples              # Example code used in documentation
+│   ├── fhir-router           # FHIR URL router
+│   ├── fhirtypes             # FHIR TypeScript definitions
+│   ├── generator             # Code generator utilities
+│   ├── graphiql              # Preconfigured GraphiQL
+│   ├── health-gorilla-core   # Health Gorilla SDK
+│   ├── health-gorilla-react  # Health Gorilla React SDK
+│   ├── hl7                   # HL7 client and server
+│   ├── mock                  # Mock FHIR data for testing
+│   ├── react                 # React component library
+│   ├── react-hooks           # React hooks library
+│   ├── scriptsure-react      # ScriptSure React SDK
+│   └── server                # Backend API server
+├── examples                  # Sample apps and bots
+├── charts                    # Helm charts
+├── terraform                 # Terraform infra as code
+└── scripts                   # Helper bash scripts
+```
 
 ## Thanks
 
