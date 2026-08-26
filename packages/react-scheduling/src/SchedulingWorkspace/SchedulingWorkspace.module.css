@@ -19,14 +19,3 @@
   flex: 1;
   min-width: 0;
 }
-
-.loader {
-  position: absolute;
-  top: var(--mantine-spacing-xs);
-  right: var(--mantine-spacing-xs);
-  z-index: 1;
-}
-
-.alert {
-  margin-bottom: var(--mantine-spacing-xs);
-}

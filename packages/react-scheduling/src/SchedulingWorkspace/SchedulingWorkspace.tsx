@@ -156,7 +156,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       </div>
       <div className={classes.calendar}>
         {error !== undefined && (
-          <Alert color="red" className={classes.alert}>
+          <Alert color="red" mb="xs">
             {normalizeErrorString(error)}
           </Alert>
         )}
