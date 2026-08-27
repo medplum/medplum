@@ -230,7 +230,6 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     }
   }, [selectable, selection]);
 
-
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
