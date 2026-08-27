@@ -119,22 +119,23 @@ function getActorCriteria(role: SchedulingRole, query: string): Record<string, s
 }
 
 /**
- * Finds the Schedules that can be booked for one role of a HealthcareService,
- * narrowed to the actors whose name matches what was typed.
+ * Finds the Schedules that can be booked for one role, narrowed to the actors
+ * whose name matches what was typed.
  * @param medplum - The Medplum client.
- * @param service - The HealthcareService being booked.
+ * @param service - The HealthcareService being booked, or undefined to search
+ *   unconstrained by service type — every active, bookable schedule for the role.
  * @param options - The role, the text typed, the site, an abort signal, and a page size.
  * @returns The matching schedules, each with its actor, by display name.
  */
 export async function searchScheduleCandidates(
   medplum: MedplumClient,
-  service: WithId<HealthcareService>,
+  service: WithId<HealthcareService> | undefined,
   options: SearchScheduleCandidatesOptions
 ): Promise<ScheduleCandidate[]> {
   const count = (options.count ?? DEFAULT_COUNT).toString();
   const actorCriteria = getActorCriteria(options.role, options.query);
 
-  const tokens = getServiceTypeTokens(service);
+  const tokens = service ? getServiceTypeTokens(service) : [];
   const typeCriteria = tokens.length > 0 ? { 'service-type': tokens.join(',') } : {};
 
   const bundle = await medplum.search(
@@ -177,10 +178,10 @@ function getServiceTypeTokens(service: HealthcareService): string[] {
 
 function toScheduleCandidate(
   schedule: WithId<Schedule>,
-  service: WithId<HealthcareService>,
+  service: WithId<HealthcareService> | undefined,
   actors: Map<string, WithId<Resource>>
 ): ScheduleCandidate | undefined {
-  if (schedule.active === false || !serviceTypeIncludesService(schedule.serviceType, service)) {
+  if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
     return undefined;
   }
 

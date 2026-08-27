@@ -303,6 +303,24 @@ describe('searchScheduleCandidates', () => {
     expect(await candidatesFor(medplum, untyped, 'provider')).toHaveLength(2);
   });
 
+  test('Lists every active, bookable schedule unconstrained by service type when no service is given', async () => {
+    const medplum = await setupSurgicalClient();
+
+    const candidates = await searchScheduleCandidates(medplum, undefined, { role: 'provider', query: '' });
+
+    // No `service-type` criteria sent, and schedules tied to different services
+    // (ultrasound imaging, surgery) are offered side by side.
+    expect(querySentTo(medplum)).not.toHaveProperty('service-type');
+    expect(providersOf(candidates)).toStrictEqual([
+      'Dr. Alice Smith',
+      'Dr. James Kim',
+      'Dr. Maria Martinez',
+      'Dr. Maya Rivera',
+      'Dr. Tunde Okafor',
+      'Dr. Wei Chen',
+    ]);
+  });
+
   test('Lists actors by name, which is the order a field offers them in', async () => {
     const medplum = await setupClient();
     await medplum.createResource<Schedule>({
