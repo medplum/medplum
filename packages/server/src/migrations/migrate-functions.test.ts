@@ -83,7 +83,11 @@ describe('migrate-functions', () => {
       await reindexConcurrently(client, results, 'INDEX', indexName);
 
       expect(results).toEqual([
-        { name: `REINDEX (VERBOSE) INDEX CONCURRENTLY ${escapeIdentifier(indexName)}`, durationMs: expect.any(Number) },
+        {
+          name: `REINDEX (VERBOSE) INDEX CONCURRENTLY ${escapeIdentifier(indexName)}`,
+          durationMs: expect.any(Number),
+          notices: expect.stringContaining('was reindexed'),
+        },
       ]);
     });
 
@@ -93,7 +97,11 @@ describe('migrate-functions', () => {
       await reindexConcurrently(client, results, 'TABLE', tableName);
 
       expect(results).toEqual([
-        { name: `REINDEX (VERBOSE) TABLE CONCURRENTLY ${escapedTableName}`, durationMs: expect.any(Number) },
+        {
+          name: `REINDEX (VERBOSE) TABLE CONCURRENTLY ${escapedTableName}`,
+          durationMs: expect.any(Number),
+          notices: expect.any(String),
+        },
       ]);
     });
 

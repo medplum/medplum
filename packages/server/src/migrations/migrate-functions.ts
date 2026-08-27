@@ -34,7 +34,21 @@ export async function reindexConcurrently(
     throw new Error(`Invalid PostgreSQL identifier: ${name}`);
   }
   const queryStr = `REINDEX (VERBOSE) ${target} CONCURRENTLY ${escapeIdentifier(name)}`;
-  await query(client, results, queryStr);
+  const notices: string[] = [];
+  const noticeListener = (notice: { message?: string }): void => {
+    if (notice.message) {
+      notices.push(notice.message);
+    }
+  };
+  client.on('notice', noticeListener);
+  try {
+    await query(client, results, queryStr);
+    if (notices.length > 0) {
+      results[results.length - 1].notices = notices.join('\n');
+    }
+  } finally {
+    client.removeListener('notice', noticeListener);
+  }
 }
 
 /**
