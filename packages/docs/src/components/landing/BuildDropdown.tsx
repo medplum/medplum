@@ -4,6 +4,7 @@ import { IconBook, IconChevronDown, IconCopy, IconTerminal2 } from '@tabler/icon
 import type { JSX } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import styles from './BuildDropdown.module.css';
+import { landingButtonClass } from './landingButtonClass';
 
 interface CopyRowProps {
   value: string;
@@ -43,7 +44,7 @@ function CopyRow({ value }: CopyRowProps): JSX.Element {
 
 interface BuildDropdownProps {
   /* When set, replaces the default trigger styling so the button can match a host page's
-     CTA (e.g. the products hero's primary button). The dropdown menu is unchanged. */
+     CTA (e.g. the products CTA's purple button). The dropdown menu is unchanged. */
   triggerClassName?: string;
   /* Overrides the trigger label. Defaults to "Build on the Platform". */
   label?: string;
@@ -74,7 +75,7 @@ export function BuildDropdown({
     <div className={styles.dropdownWrapper} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
         type="button"
-        className={triggerClassName ?? `${styles.dropdownTrigger}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`}
+        className={triggerClassName ?? landingButtonClass('white', { active: isOpen })}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >

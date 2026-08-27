@@ -82,6 +82,13 @@ export const Operator = {
     sql.append(' ILIKE ');
     sql.param(parameter as string);
   },
+  UNACCENT_ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${MedplumUnaccentFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(`) ILIKE ${MedplumUnaccentFn.name}(`);
+    sql.param(parameter as string);
+    sql.append(')');
+  },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),
   '>': simpleBinaryOperator('>'),
@@ -823,6 +830,11 @@ export class SelectQuery extends BaseQuery {
 
   column(column: Column | string): this {
     this.columns.push(getColumn(column, this.effectiveTableName));
+    return this;
+  }
+
+  clearColumns(): this {
+    this.columns.length = 0;
     return this;
   }
 

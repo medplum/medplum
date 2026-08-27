@@ -4,7 +4,6 @@ import type { Resource } from '@medplum/fhirtypes';
 import type { Decorator } from '@storybook/react';
 import { MockDateWrapper } from './MockDateWrapper';
 import { WithBookStub } from './WithBookStub';
-import { WithChainedActorSearch } from './WithChainedActorSearch';
 import { WithFindStub } from './WithFindStub';
 import { WithFixtures } from './WithFixtures';
 
@@ -52,15 +51,4 @@ export const withBookStub = (): Decorator => (Story) => (
   <WithBookStub>
     <Story />
   </WithBookStub>
-);
-
-/**
- * Answers the chained `actor:` filters the role fields search with, which the
- * in-memory repository cannot.
- * @returns The decorator.
- */
-export const withChainedActorSearch = (): Decorator => (Story) => (
-  <WithChainedActorSearch>
-    <Story />
-  </WithChainedActorSearch>
 );
