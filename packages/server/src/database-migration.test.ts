@@ -847,5 +847,72 @@ describe('Database migrations', () => {
         expect(res1.headers['content-location']).toBeDefined();
       });
     });
+
+    describe('Reindex database', () => {
+      test('Queues one or more concurrent reindex actions', async () => {
+        const queries = [
+          'REINDEX INDEX CONCURRENTLY "Patient_name_idx";',
+          'REINDEX TABLE CONCURRENTLY public."Observation"',
+        ];
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/reindex-database')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ queries });
+
+        expect(res).toHaveStatus(202);
+        expect(res.headers['content-location']).toBeDefined();
+        expect(queueAddSpy).toHaveBeenCalledTimes(1);
+        expect(queueAddSpy.mock.calls[0][1]).toMatchObject({
+          type: 'dynamic',
+          migrationActions: {
+            preDeploy: [],
+            postDeploy: queries.map((reindexSql) => ({ type: 'REINDEX_CONCURRENTLY', reindexSql })),
+          },
+        });
+      });
+
+      test.each([
+        {},
+        { queries: [] },
+        { queries: 'REINDEX INDEX CONCURRENTLY Patient_name_idx' },
+        { queries: [123] },
+        { queries: ['REINDEX INDEX Patient_name_idx'] },
+        { queries: ['REINDEX SCHEMA CONCURRENTLY public'] },
+        { queries: ['REINDEX DATABASE CONCURRENTLY medplum'] },
+        { queries: ['REINDEX SYSTEM CONCURRENTLY medplum'] },
+        { queries: ['REINDEX INDEX CONCURRENTLY Patient_name_idx; DROP TABLE Patient'] },
+        { queries: ['REINDEX TABLE CONCURRENTLY Patient -- comment'] },
+      ])('Rejects invalid input: %j', async (body) => {
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/reindex-database')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send(body);
+
+        expect(res).toHaveStatus(400);
+        expect(queueAddSpy).not.toHaveBeenCalled();
+      });
+
+      test('Rejects unexpected request properties', async () => {
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/reindex-database')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ queries: ['REINDEX INDEX CONCURRENTLY Patient_name_idx'], otherSql: 'DROP TABLE Patient' });
+
+        expect(res).toHaveStatus(400);
+        expect(queueAddSpy).not.toHaveBeenCalled();
+      });
+    });
   });
 });

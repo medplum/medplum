@@ -3,7 +3,7 @@
 import type { QueryResult, QueryResultRow } from 'pg';
 import { escapeIdentifier } from 'pg';
 import type { UpdateQuery } from '../fhir/sql';
-import { SqlBuilder } from '../fhir/sql';
+import { isValidPostgresIdentifier, SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
@@ -19,6 +19,37 @@ export async function query<R extends QueryResultRow = any>(
   const result = await client.query<R>(queryStr, params);
   results.push({ name: queryStr, durationMs: Date.now() - start });
   return result;
+}
+
+const REINDEX_CONCURRENTLY_REGEX = /^REINDEX\s+(?:INDEX|TABLE)\s+CONCURRENTLY\s+(\S+)$/i;
+
+export function isValidReindexConcurrentlyQuery(queryStr: unknown): boolean {
+  if (typeof queryStr !== 'string') {
+    return false;
+  }
+
+  const normalizedQuery = queryStr.trim().replace(/;$/, '');
+  const match = REINDEX_CONCURRENTLY_REGEX.exec(normalizedQuery);
+  if (!match) {
+    return false;
+  }
+
+  return match[1].split('.').every((identifier) => {
+    const unquotedIdentifier =
+      identifier.startsWith('"') && identifier.endsWith('"') ? identifier.slice(1, -1) : identifier;
+    return isValidPostgresIdentifier(unquotedIdentifier);
+  });
+}
+
+export async function reindexConcurrently(
+  client: DbClient,
+  results: MigrationActionResult[],
+  queryStr: string
+): Promise<void> {
+  if (!isValidReindexConcurrentlyQuery(queryStr)) {
+    throw new Error('Invalid REINDEX CONCURRENTLY query');
+  }
+  await query(client, results, queryStr);
 }
 
 /**

@@ -11,8 +11,10 @@ import {
   analyzeTable,
   batchedUpdate,
   idempotentCreateIndex,
+  isValidReindexConcurrentlyQuery,
   nonBlockingAddCheckConstraint,
   nonBlockingAlterColumnNotNull,
+  reindexConcurrently,
 } from './migrate-functions';
 import type { MigrationActionResult } from './types';
 
@@ -68,6 +70,47 @@ describe('migrate-functions', () => {
     // Create a test table
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER NOT NULL, name TEXT)`);
+  });
+
+  describe('reindexConcurrently', () => {
+    test.each([
+      'REINDEX INDEX CONCURRENTLY test_index',
+      'reindex table concurrently public."Test_Table";',
+      ' REINDEX INDEX CONCURRENTLY "public"."test_index" ',
+    ])('accepts %s', (queryStr) => {
+      expect(isValidReindexConcurrentlyQuery(queryStr)).toBe(true);
+    });
+
+    test.each([
+      'REINDEX INDEX test_index',
+      'REINDEX TABLE test_table',
+      'REINDEX SCHEMA CONCURRENTLY public',
+      'REINDEX DATABASE CONCURRENTLY medplum',
+      'REINDEX SYSTEM CONCURRENTLY medplum',
+      'REINDEX INDEX CONCURRENTLY test_index; DROP TABLE Test_Table',
+      'REINDEX INDEX CONCURRENTLY test_index -- comment',
+    ])('rejects %s', (queryStr) => {
+      expect(isValidReindexConcurrentlyQuery(queryStr)).toBe(false);
+    });
+
+    test('executes a valid query', async () => {
+      const indexName = 'Test_Table_id_idx';
+      await client.query(`CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapedTableName} (id)`);
+      const queryStr = `REINDEX INDEX CONCURRENTLY ${escapeIdentifier(indexName)}`;
+      const results: MigrationActionResult[] = [];
+
+      await reindexConcurrently(client, results, queryStr);
+
+      expect(results).toEqual([{ name: queryStr, durationMs: expect.any(Number) }]);
+    });
+
+    test('does not execute an invalid query', async () => {
+      const results: MigrationActionResult[] = [];
+      await expect(reindexConcurrently(client, results, 'REINDEX INDEX Test_Table_id_idx')).rejects.toThrow(
+        'Invalid REINDEX CONCURRENTLY query'
+      );
+      expect(results).toHaveLength(0);
+    });
   });
 
   describe('idempotentCreateIndex', () => {

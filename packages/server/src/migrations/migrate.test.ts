@@ -477,6 +477,7 @@ type MigrationActionTestCase = {
   executionCheck: (mocks: {
     mockQuery: MockInstance;
     mockAnalyzeTable: MockInstance;
+    mockReindexConcurrently: MockInstance;
     mockIdempotentCreateIndex: MockInstance;
     mockNonBlockingAlterColumnNotNull: MockInstance;
     mockNonBlockingAddCheckConstraint: MockInstance;
@@ -650,6 +651,19 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
     },
   },
   {
+    name: 'REINDEX_CONCURRENTLY',
+    action: { type: 'REINDEX_CONCURRENTLY', reindexSql: 'REINDEX INDEX CONCURRENTLY "Patient_name_idx"' },
+    builderExpected:
+      'await fns.reindexConcurrently(client, results, "REINDEX INDEX CONCURRENTLY \\"Patient_name_idx\\"");',
+    executionCheck: ({ mockReindexConcurrently, mockClient, results }) => {
+      expect(mockReindexConcurrently).toHaveBeenCalledWith(
+        mockClient,
+        results,
+        'REINDEX INDEX CONCURRENTLY "Patient_name_idx"'
+      );
+    },
+  },
+  {
     name: 'ADD_CONSTRAINT',
     action: {
       type: 'ADD_CONSTRAINT',
@@ -675,6 +689,7 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
   let mockClient: { query: Mock };
   let mockQuery: MockInstance;
   let mockAnalyzeTable: MockInstance;
+  let mockReindexConcurrently: MockInstance;
   let mockIdempotentCreateIndex: MockInstance;
   let mockNonBlockingAlterColumnNotNull: MockInstance;
   let mockNonBlockingAddCheckConstraint: MockInstance;
@@ -683,6 +698,7 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
     mockClient = { query: vi.fn() };
     mockQuery = vi.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
     mockAnalyzeTable = vi.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
+    mockReindexConcurrently = vi.spyOn(fns, 'reindexConcurrently').mockResolvedValue(undefined);
     mockIdempotentCreateIndex = vi.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
     mockNonBlockingAlterColumnNotNull = vi.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
     mockNonBlockingAddCheckConstraint = vi.spyOn(fns, 'nonBlockingAddCheckConstraint').mockResolvedValue(undefined);
@@ -766,6 +782,7 @@ async function callback(client: PoolClient, results: MigrationActionResult[]): P
     executionCheck({
       mockQuery,
       mockAnalyzeTable,
+      mockReindexConcurrently,
       mockIdempotentCreateIndex,
       mockNonBlockingAlterColumnNotNull,
       mockNonBlockingAddCheckConstraint,

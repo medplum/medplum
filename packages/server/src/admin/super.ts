@@ -31,6 +31,7 @@ import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
+import { isValidReindexConcurrentlyQuery } from '../migrations/migrate-functions';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
 import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
@@ -436,6 +437,50 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   const { baseUrl } = getConfig();
   sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
 });
+
+// POST to /admin/super/reindex-database
+// to rebuild one or more PostgreSQL indexes without blocking writes.
+superAdminRouter.post(
+  '/reindex-database',
+  [
+    body('queries').isArray({ min: 1 }).withMessage('queries must be a non-empty array'),
+    body('queries.*')
+      .isString()
+      .withMessage('Each query must be a string')
+      .bail()
+      .custom(isValidReindexConcurrentlyQuery)
+      .withMessage('Each query must be a single REINDEX INDEX CONCURRENTLY or REINDEX TABLE CONCURRENTLY statement'),
+    checkExact(),
+  ],
+  async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const migrationActions = {
+      preDeploy: [],
+      postDeploy: (req.body.queries as string[]).map((query) => ({
+        type: 'REINDEX_CONCURRENTLY' as const,
+        reindexSql: query.trim(),
+      })),
+    };
+
+    const exec = new AsyncJobExecutor(ctx.repo);
+    await exec.init(req.originalUrl);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  }
+);
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.

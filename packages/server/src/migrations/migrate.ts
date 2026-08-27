@@ -879,6 +879,10 @@ export async function executeMigrationActions(
         await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
+      case 'REINDEX_CONCURRENTLY': {
+        await fns.reindexConcurrently(client, results, action.reindexSql);
+        break;
+      }
       case 'ADD_CONSTRAINT': {
         await fns.nonBlockingAddCheckConstraint(
           client,
@@ -1039,6 +1043,10 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'REINDEX_CONCURRENTLY': {
+        b.appendNoWrap(`await fns.reindexConcurrently(client, results, ${JSON.stringify(action.reindexSql)});`);
         break;
       }
       case 'ADD_CONSTRAINT': {
