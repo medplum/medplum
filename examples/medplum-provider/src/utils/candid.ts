@@ -26,6 +26,25 @@ export const CANDID_GET_PAYERS_BOT_IDENTIFIER = {
   value: 'candid-get-payers',
 };
 
+// Bot that registers a Practitioner or Organization as a Candid organization provider and stamps
+// the Candid provider ID back onto the resource.
+export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-create-provider',
+};
+
+// Identifier the candid-create-provider bot writes onto the registered resource; its presence
+// means the provider exists in Candid.
+export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';
+
+// Candid requires isBilling/isRendering on every organization provider and FHIR has no native
+// field for them, so candid-create-provider reads them from these extensions and rejects a
+// resource that carries neither.
+export const CANDID_IS_BILLING_PROVIDER_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/is-billing-provider';
+export const CANDID_IS_RENDERING_PROVIDER_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/is-rendering-provider';
+
 // Identifier systems the Candid bots use to resolve a payer Organization back to the Candid
 // directory (see medplum-ee payer-lookup.ts). The Candid UUID is the preferred, unambiguous key.
 export const CANDID_PAYER_UUID_SYSTEM = 'https://www.joincandidhealth.com/payer-uuid';

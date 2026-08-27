@@ -7,10 +7,7 @@ import type { Encounter, Organization, Practitioner, Reference } from '@medplum/
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { DateTimeInput, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
-
-const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
-const ORGANIZATION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/organization-type';
-const PROVIDER_ORGANIZATION_TYPE = 'prov';
+import { NPI_SYSTEM, ORGANIZATION_TYPE_SYSTEM, PROVIDER_ORGANIZATION_TYPE } from '../../utils/billing';
 
 const OrganizationItem = (props: AsyncAutocompleteOption<Organization>): JSX.Element => {
   const npi = props.resource.identifier?.find((id) => id.system === NPI_SYSTEM)?.value;

@@ -51,7 +51,9 @@ export function ImportedPayerList(props: ImportedPayerListProps): JSX.Element {
                       {payer.name ?? payer.id}
                     </Text>
                   </Table.Td>
-                  <Table.Td>{getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM)}</Table.Td>
+                  <Table.Td>
+                    {getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM)}
+                  </Table.Td>
                   <Table.Td>{category && formatPayerCategory(category)}</Table.Td>
                   <Table.Td>
                     {payer.active === false && (
