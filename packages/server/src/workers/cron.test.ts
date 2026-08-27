@@ -522,7 +522,7 @@ describe('Cron resource', () => {
       // Cron.parameter.value[x] carries a deliberately narrow subset of Parameters.parameter's types
       const parameter: ParametersParameter[] = [{ name: 'dose', valueQuantity: { value: 5, unit: 'mg' } }];
       await expect(
-        repo.createResource<Cron>({ ...validCron(), parameter: parameter as CronParameter[] })
+        repo.createResource<Cron>({ ...validCron(), parameter: parameter })
       ).rejects.toThrow('Invalid additional property "valueQuantity"');
     }));
 
