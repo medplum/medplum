@@ -72,7 +72,7 @@ Each `Claim.item` (service line) requires:
 |-------|-------------|----------|
 | `productOrService` | CPT code (system: `http://www.ama-assn.org/go/cpt`) | Yes |
 | `servicedDate` | Date of service for this line. Falls back to `Claim.billablePeriod.start`, then `Claim.created` | No |
-| `unitPrice` | Charge amount in USD | Yes |
+| `unitPrice` | Charge amount in USD. Optional if a chargemaster entry exists in Candid for the CPT code — Candid will use the chargemaster amount and ignore this value if present. | No |
 | `quantity` | Number of units | Yes |
 | `locationCodeableConcept` | Place of service code (system: `https://www.cms.gov/Medicare/Coding/place-of-service-codes`). If omitted, the encounter defaults to `11` (Office). | No |
 | `encounter` | Reference to the Encounter resource | Yes |
