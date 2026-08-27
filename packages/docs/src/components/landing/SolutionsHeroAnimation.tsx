@@ -32,7 +32,7 @@ const TILES: readonly { readonly front: Logo; readonly back: Logo }[] = [
     front: { src: '/img/logos/develo.png', alt: 'Develo' },
     // The file carries a lot of internal whitespace around a two-line lockup, so
     // it renders small against its neighbours at the default caps.
-    back: { src: '/img/logos/chamber-cardio.jpg', alt: 'Chamber Cardio', scale: 1.15 },
+    back: { src: '/img/logos/chamber-cardio.webp', alt: 'Chamber Cardio', scale: 1.15 },
   },
   {
     front: { src: '/img/logos/everselflogo.png', alt: 'Everself' },

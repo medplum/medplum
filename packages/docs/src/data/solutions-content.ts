@@ -145,7 +145,7 @@ export const SOLUTIONS_CATEGORIES: readonly SolutionCategory[] = [
         name: 'Develo',
         logoSrc: '/img/logos/develo.png',
         logoHasName: true,
-        screenshotSrc: '/img/solutions/develo-screenshot.jpg',
+        screenshotSrc: '/img/solutions/develo-screenshot.webp',
         screenshotAlt: 'Develo pediatric EHR visit orders and diagnoses screen',
         valueStatement:
           'Develo built a full-featured pediatric EHR and CRM on Medplum — scheduling, charting, billing, and family engagement in one FHIR-native system, with AI-assisted documentation designed around how independent pediatric practices actually work.',
@@ -157,7 +157,7 @@ export const SOLUTIONS_CATEGORIES: readonly SolutionCategory[] = [
         logoSrc: '/img/logos/everselflogo.png',
         logoHasName: true,
         logoScale: 1.6,
-        screenshotSrc: '/img/solutions/everself-screenshot.png',
+        screenshotSrc: '/img/solutions/everself-screenshot.webp',
         screenshotAlt: 'Everself Orbit EHR patient timeline with integrated communications',
         valueStatement:
           'Everself built Orbit, a custom EHR on Medplum for its outpatient weight-loss programs, unifying scheduling, charting, messaging, labs, and device data across multiple sites into a single patient record — with a triaged inbox that helps a lean care team manage a growing patient panel.',
@@ -274,7 +274,7 @@ export const SOLUTIONS_CATEGORIES: readonly SolutionCategory[] = [
         name: 'Tia',
         logoSrc: '/img/logos/tia.svg',
         logoHasName: true,
-        screenshotSrc: '/img/solutions/tia-screenshot.png',
+        screenshotSrc: '/img/solutions/tia-screenshot.webp',
         screenshotAlt: 'Tia care team inbox, with work triaged by priority, status, and market',
         valueStatement:
           'Tia runs its own network of multi-disciplinary clinics — primary care, gynecology, mental health, and metabolic and skin health — on a custom EHR built on Medplum. Appointment scheduling, lab results, clinical follow-up, and billing questions all land in one prioritized work queue, filterable by assignee, type, status, and market, so nothing sits unowned as the clinic footprint grows.',
@@ -317,7 +317,7 @@ export const SOLUTIONS_CATEGORIES: readonly SolutionCategory[] = [
         logoSrc: '/img/logos/flexpa.svg',
         logoHasName: true,
         logoScale: 1.8,
-        screenshotSrc: '/img/solutions/flexpa-screenshot.png',
+        screenshotSrc: '/img/solutions/flexpa-screenshot.webp',
         screenshotAlt: 'Flexpa Link health plan picker, covering 200+ US payers',
         valueStatement:
           'Flexpa connects applications to claims data with patient consent, aggregating the Patient Access APIs that CMS requires of 200+ payers into one normalized FHIR dataset — with Medplum as the self-hosted, multi-tenant FHIR store and API behind it.',
