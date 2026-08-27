@@ -31,6 +31,18 @@
   cursor: pointer;
 }
 
+.selectableDay {
+  cursor: pointer;
+}
+
+.selectableDay:hover {
+  background-color: light-dark(#0000000a, #ffffff14);
+}
+
+.selectedRange {
+  background-color: light-dark(#228be62e, #4dabf73d);
+}
+
 /* Put more important title info first */
 .eventTitle { order: 1; }
 .eventTime { order: 2 }

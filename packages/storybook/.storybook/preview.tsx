@@ -1,5 +1,7 @@
 import { MantineProvider, useMantineColorScheme } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { Notifications } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -84,6 +86,7 @@ export const decorators: Decorator[] = [
     const selectedTheme = themePresetMap[context.globals.theme ?? 'medplumDefault'] ?? themePresetMap.medplumDefault;
     return (
       <MantineProvider theme={selectedTheme}>
+        <Notifications />
         <Story />
       </MantineProvider>
     );

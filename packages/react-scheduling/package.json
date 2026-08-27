@@ -69,6 +69,7 @@
     "@fullcalendar/react": "7.0.2",
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
+    "@mantine/notifications": "8.3.18",
     "@medplum/core": "5.1.32",
     "@medplum/definitions": "5.1.32",
     "@medplum/fhirtypes": "5.1.32",

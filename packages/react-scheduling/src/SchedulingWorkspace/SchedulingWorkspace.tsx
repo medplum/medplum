@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
 import {
   getExtensionValue,
   getReferenceString,
@@ -10,8 +10,11 @@ import {
 } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
+import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { SchedulingRole } from '../AppointmentFinder/AppointmentFinder.roles';
 import { SCHEDULING_ROLES } from '../AppointmentFinder/AppointmentFinder.roles';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
@@ -29,6 +32,7 @@ const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = 
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
+  readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
 }
 
 /**
@@ -36,11 +40,17 @@ export interface SchedulingWorkspaceProps {
  *
  * - Picks a color for each Schedule so that it can render consistently across
  *   those components.
+ * - Books from the calendar: clicking open time opens {@link AppointmentBookingForm}
+ *   in a pane on the right, with its time search opened on the day that was clicked.
+ *   The form writes the booking and announces what it wrote, which is what puts the
+ *   new appointment on the calendar beside it — a host supplies no data for any of it.
+ *   What was written is reported through `onBooked`, for a host that wants to say so.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
  */
 export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Element {
+  const { onBooked } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
 
@@ -55,6 +65,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [deselectedRoomIds, setDeselectedRoomIds] = useState<ReadonlySet<string>>(new Set());
 
   const [range, setRange] = useState<DateTimeRange>();
+
+  const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  const [timeFinderOpen, setTimeFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per schedulable role.
   useEffect(() => {
@@ -135,6 +148,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  const closeBooking = useCallback((): void => {
+    setBookingSelection(undefined);
+    setTimeFinderOpen(false);
+  }, []);
+
+  const finishBooking = useCallback(
+    (booking: AppointmentBooking): void | Promise<void> => {
+      closeBooking();
+      return onBooked?.(booking);
+    },
+    [closeBooking, onBooked]
+  );
+
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);
     if (!color) {
@@ -169,8 +195,28 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             {normalizeErrorString(displayError)}
           </Alert>
         )}
-        <MultiCalendar sources={sources} onRangeChange={setRange} loading={resourcesLoading} />
+        <MultiCalendar
+          sources={sources}
+          onRangeChange={setRange}
+          loading={resourcesLoading}
+          onSelectInterval={setBookingSelection}
+          selection={bookingSelection}
+        />
       </div>
+      {bookingSelection && (
+        <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
+          <Group justify="space-between" wrap="nowrap" mb="sm">
+            <Title order={4}>Book appointment</Title>
+            <CloseButton aria-label="Close booking form" onClick={closeBooking} />
+          </Group>
+          <AppointmentBookingForm
+            key={bookingSelection.start.toDateString()}
+            defaultStart={bookingSelection.start}
+            onToggleTimeFinder={setTimeFinderOpen}
+            onBooked={finishBooking}
+          />
+        </div>
+      )}
     </div>
   );
 }

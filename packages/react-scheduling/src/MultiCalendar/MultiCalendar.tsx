@@ -27,6 +27,7 @@ export interface MultiCalendarProps {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onRangeChange?: (range: DateTimeRange) => void;
+  selection?: DateTimeRange;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
