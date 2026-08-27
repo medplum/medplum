@@ -130,10 +130,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
   );
 
   // Omit any "entered-in-error" slots
-  const filteredSlots = useMemo(
-    () => (slots ?? []).filter((slot) => slot.status !== 'entered-in-error'),
-    [slots]
-  );
+  const filteredSlots = useMemo(() => (slots ?? []).filter((slot) => slot.status !== 'entered-in-error'), [slots]);
 
   // Omit any "cancelled" appointments
   const filteredAppointments = useMemo(
