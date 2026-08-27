@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isDefined } from '@medplum/core';
-import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
+import { getReferenceString, isDefined, normalizeOperationOutcome } from '@medplum/core';
+import type { Appointment, OperationOutcome, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DateTimeRange } from '../types';
@@ -23,16 +23,19 @@ export interface UseSchedulingResourcesResult {
   appointments: WithId<Appointment>[] | undefined;
   slots: WithId<Slot>[] | undefined;
   loading: boolean;
+  error: OperationOutcome | undefined;
 }
 
 export interface UseSchedulingSlotsResult {
   slots: WithId<Slot>[] | undefined;
   loading: boolean;
+  error: OperationOutcome | undefined;
 }
 
 export interface UseSchedulingAppointmentsResult {
   appointments: WithId<Appointment>[] | undefined;
   loading: boolean;
+  error: OperationOutcome | undefined;
 }
 
 /**
@@ -51,11 +54,12 @@ export interface UseSchedulingAppointmentsResult {
 export function useSchedulingSlots(
   schedules: WithId<Schedule>[],
   range: DateTimeRange | undefined,
-  options?: { onError?: (error: unknown) => void }
+  options?: { onError?: (error: OperationOutcome) => void }
 ): UseSchedulingSlotsResult {
   const medplum = useMedplum();
   const [slots, setSlots] = useState<WithId<Slot>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<OperationOutcome>();
 
   const onErrorRef = useRef(options?.onError);
 
@@ -64,7 +68,9 @@ export function useSchedulingSlots(
   }, [options?.onError]);
 
   const handleError = useCallback((error: unknown) => {
-    onErrorRef.current?.(error);
+    const outcome = normalizeOperationOutcome(error);
+    onErrorRef.current?.(outcome);
+    setError(outcome);
   }, []);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
@@ -137,7 +143,12 @@ export function useSchedulingSlots(
         ])
       )
     )
-      .then((results) => active && setSlots(results.flat()))
+      .then((results) => {
+        if (active) {
+          setSlots(results.flat());
+          setError(undefined);
+        }
+      })
       .catch((error: unknown) => active && handleError(error))
       .finally(() => {
         if (active) {
@@ -154,6 +165,7 @@ export function useSchedulingSlots(
   return {
     slots,
     loading,
+    error,
   };
 }
 
@@ -174,11 +186,12 @@ export function useSchedulingSlots(
 export function useSchedulingAppointments(
   schedules: WithId<Schedule>[],
   range: DateTimeRange | undefined,
-  options?: { onError?: (error: unknown) => void }
+  options?: { onError?: (error: OperationOutcome) => void }
 ): UseSchedulingAppointmentsResult {
   const medplum = useMedplum();
   const [appointments, setAppointments] = useState<WithId<Appointment>[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<OperationOutcome>();
 
   const onErrorRef = useRef(options?.onError);
 
@@ -187,7 +200,9 @@ export function useSchedulingAppointments(
   }, [options?.onError]);
 
   const handleError = useCallback((error: unknown) => {
-    onErrorRef.current?.(error);
+    const outcome = normalizeOperationOutcome(error);
+    onErrorRef.current?.(outcome);
+    setError(outcome);
   }, []);
 
   // The predicate that scopes this calendar's data. The FHIR search and the
@@ -264,6 +279,8 @@ export function useSchedulingAppointments(
         if (!active) {
           return;
         }
+        setError(undefined);
+
         // The same appointment can involve actors from more than one schedule, so dedupe
         // by id when combining the per-schedule results.
         const byId = new Map<string, WithId<Appointment>>();
@@ -288,6 +305,7 @@ export function useSchedulingAppointments(
   return {
     appointments,
     loading,
+    error,
   };
 }
 
@@ -307,7 +325,7 @@ export function useSchedulingAppointments(
 export function useSchedulingResources(
   schedules: WithId<Schedule>[],
   range: DateTimeRange | undefined,
-  options?: { onError?: (error: unknown) => void }
+  options?: { onError?: (error: OperationOutcome) => void }
 ): UseSchedulingResourcesResult {
   const slotsResult = useSchedulingSlots(schedules, range, options);
   const appointmentsResult = useSchedulingAppointments(schedules, range, options);
@@ -316,5 +334,6 @@ export function useSchedulingResources(
     slots: slotsResult.slots,
     appointments: appointmentsResult.appointments,
     loading: slotsResult.loading || appointmentsResult.loading,
+    error: slotsResult.error ?? appointmentsResult.error,
   };
 }

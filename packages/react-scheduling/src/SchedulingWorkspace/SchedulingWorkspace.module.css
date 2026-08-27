@@ -1,0 +1,21 @@
+/* SchedulingWorkspace.module.css */
+
+.root {
+  display: flex;
+  align-items: stretch;
+  gap: var(--mantine-spacing-md);
+  height: 100%;
+  width: 100%;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  width: 300px;
+  overflow-y: auto;
+}
+
+.calendar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}

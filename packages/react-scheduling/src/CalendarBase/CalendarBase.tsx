@@ -9,7 +9,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
+import { Button, Group, Loader, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -94,7 +94,7 @@ function slotsToEvents(
 export interface CalendarBaseProps extends Omit<
   React.ComponentProps<typeof FullCalendar>,
   // disallow specifying some FullCalendar props that we rely on
-  'controller' | 'headerToolbar' | 'datesSet' | 'eventDidMount' | 'businessHours' | 'plugins' | 'eventClick'
+  'controller' | 'headerToolbar' | 'datesSet' | 'eventDidMount' | 'businessHours' | 'plugins' | 'eventClick' | 'loading'
 > {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
@@ -106,6 +106,7 @@ export interface CalendarBaseProps extends Omit<
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
+  loading?: boolean;
 }
 
 // Some common calendar features:
@@ -125,6 +126,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onDoubleClickAppointment,
     onDoubleClickSlot,
     onSelectInterval,
+    loading,
     ...fullCalendarProps
   } = props;
 
@@ -231,7 +233,10 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
               <IconChevronRight size={12} />
             </Button>
           </Button.Group>
-          <Title order={4}>{controller.view?.title}</Title>
+          <Group>
+            <Title order={4}>{controller.view?.title}</Title>
+            {loading && <Loader size="sm" />}
+          </Group>
         </Group>
         <SegmentedControl
           size="xs"
