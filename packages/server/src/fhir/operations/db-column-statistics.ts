@@ -6,7 +6,7 @@ import type { Client, Pool } from 'pg';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
-import { isValidTableName } from '../sql';
+import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -53,7 +53,7 @@ export async function getColumnStatisticsHandler(req: FhirRequest): Promise<Fhir
 
   const params = parseInputParameters<{ tableName?: string }>(LookupOperation, req);
 
-  if (params.tableName && !isValidTableName(params.tableName)) {
+  if (params.tableName && !isValidPostgresIdentifier(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
   }
 

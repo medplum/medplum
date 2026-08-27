@@ -27,7 +27,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
-import { isValidTableName } from '../fhir/sql';
+import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
@@ -468,7 +468,7 @@ superAdminRouter.post(
     body('tableName')
       .isString()
       .withMessage('Table name must be a string')
-      .custom(isValidTableName)
+      .custom(isValidPostgresIdentifier)
       .withMessage('Table name must be a snake_cased_string'),
     body('settings')
       .isObject()
@@ -535,7 +535,7 @@ superAdminRouter.post(
     body('tableNames.*')
       .isString()
       .withMessage('Table name(s) must be a string')
-      .custom(isValidTableName)
+      .custom(isValidPostgresIdentifier)
       .withMessage('Table name(s) must be a snake_cased_string')
       .optional(),
     body('analyze').isBoolean().optional().default(false),
