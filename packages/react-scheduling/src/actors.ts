@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference } from '@medplum/core';
-import { assertNever, parseReference } from '@medplum/core';
+import { assertNever, getReferenceString, parseReference } from '@medplum/core';
 import type { Schedule } from '@medplum/fhirtypes';
 
 /**
@@ -70,6 +70,18 @@ export function getActorTypeLabel(resourceType: SchedulingActorType): string {
       return 'Related Person';
   }
   return assertNever(resourceType);
+}
+
+/**
+ * Names an actor a proposed appointment is held on.
+ * @param actor - The actor to name, as the proposal names them.
+ * @param names - What to call each actor, keyed by reference.
+ * @returns The resolved name, the name the proposal carries, or the bare
+ *   reference when nothing else identifies them.
+ */
+export function formatActorName(actor: SchedulingActor, names?: ReadonlyMap<string, string>): string {
+  const reference = getReferenceString(actor);
+  return (reference && names?.get(reference)) ?? actor.display ?? reference ?? '';
 }
 
 /**
