@@ -2,37 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import { IconArrowRight, IconPhoto } from '@tabler/icons-react';
-import type { JSX } from 'react';
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import clsx from 'clsx';
+import type { CSSProperties, JSX } from 'react';
+import { useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import type { CustomerFeature } from '../../data/solutions-content';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import styles from './SolutionsCustomerFeature.module.css';
 import { TestimonialHeader } from './TestimonialHeader';
-
-const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-
-function subscribeToReducedMotion(onChange: () => void): () => void {
-  const query = window.matchMedia(REDUCED_MOTION_QUERY);
-  query.addEventListener('change', onChange);
-  return () => query.removeEventListener('change', onChange);
-}
-
-/**
- * Reads the viewer's reduced-motion preference.
- *
- * The server render has no media queries to consult, so its snapshot says "no
- * preference" and hydration corrects it. Anything gated on this must therefore be
- * safe to start un-animated.
- *
- * @returns True when the viewer has asked for reduced motion.
- */
-function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(
-    subscribeToReducedMotion,
-    () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
-    () => false
-  );
-}
+import { WindowChrome } from './WindowChrome';
 
 interface CustomerVideoProps {
   readonly src: string;
@@ -89,6 +67,45 @@ function CustomerVideo(props: CustomerVideoProps): JSX.Element {
   );
 }
 
+interface CustomerMediaProps {
+  readonly customer: CustomerFeature;
+}
+
+/**
+ * The clip, screenshot, or placeholder inside a customer's browser frame.
+ *
+ * @param props - The customer whose media to render.
+ * @returns The clip, screenshot, or "coming soon" placeholder.
+ */
+function CustomerMedia(props: CustomerMediaProps): JSX.Element {
+  const { customer } = props;
+  if (customer.videoSrc) {
+    return (
+      <CustomerVideo
+        src={customer.videoSrc}
+        poster={customer.posterSrc}
+        label={customer.screenshotAlt ?? `${customer.name} product demo`}
+      />
+    );
+  }
+  if (customer.screenshotSrc) {
+    return (
+      <img
+        src={customer.screenshotSrc}
+        alt={customer.screenshotAlt ?? `${customer.name} product screenshot`}
+        className={styles.screenshot}
+        loading="lazy"
+      />
+    );
+  }
+  return (
+    <div className={styles.screenshotEmpty}>
+      <IconPhoto size={32} stroke={1.5} aria-hidden />
+      <span>Product screenshot coming soon</span>
+    </div>
+  );
+}
+
 export interface SolutionsCustomerFeatureProps {
   readonly customer: CustomerFeature;
 }
@@ -97,18 +114,14 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
   const { customer } = props;
   const showName = !(customer.logoSrc && customer.logoHasName);
   return (
-    <div id={customer.id} className={`${styles.feature} ${customer.isPlaceholder ? styles.placeholder : ''}`}>
+    <div id={customer.id} className={clsx(styles.feature, customer.isPlaceholder && styles.placeholder)}>
       <div className={styles.header}>
         {customer.logoSrc && (
           <img
             src={customer.logoSrc}
             alt={customer.name}
             className={styles.logo}
-            style={
-              customer.logoScale
-                ? { height: `${42 * customer.logoScale}px`, maxWidth: `${220 * customer.logoScale}px` }
-                : undefined
-            }
+            style={customer.logoScale ? ({ '--logo-scale': customer.logoScale } as CSSProperties) : undefined}
             loading="lazy"
           />
         )}
@@ -118,30 +131,8 @@ export function SolutionsCustomerFeature(props: SolutionsCustomerFeatureProps): 
         )}
       </div>
       <div className={styles.screenshotFrame}>
-        <div className={styles.browserBar}>
-          <span />
-          <span />
-          <span />
-        </div>
-        {customer.videoSrc ? (
-          <CustomerVideo
-            src={customer.videoSrc}
-            poster={customer.posterSrc}
-            label={customer.screenshotAlt ?? `${customer.name} product demo`}
-          />
-        ) : customer.screenshotSrc ? (
-          <img
-            src={customer.screenshotSrc}
-            alt={customer.screenshotAlt ?? `${customer.name} product screenshot`}
-            className={styles.screenshot}
-            loading="lazy"
-          />
-        ) : (
-          <div className={styles.screenshotEmpty}>
-            <IconPhoto size={32} stroke={1.5} aria-hidden />
-            <span>Product screenshot coming soon</span>
-          </div>
-        )}
+        <WindowChrome monochrome />
+        <CustomerMedia customer={customer} />
       </div>
       <div className={styles.text}>
         <p className={styles.valueStatement}>{customer.valueStatement}</p>

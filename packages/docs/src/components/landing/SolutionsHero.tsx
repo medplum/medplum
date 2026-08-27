@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import Link from '@docusaurus/Link';
 import { IconArrowRight } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { SOLUTIONS_HERO } from '../../data/solutions-content';
 import { BuildDropdown } from './BuildDropdown';
+import { LandingButton } from './LandingButton';
+import { landingButtonClass } from './landingButtonClass';
 import styles from './SolutionsHero.module.css';
 import { SolutionsHeroAnimation } from './SolutionsHeroAnimation';
 
@@ -16,10 +17,13 @@ export function SolutionsHero(): JSX.Element {
           <h1 className={styles.headline}>{SOLUTIONS_HERO.headline}</h1>
           <p className={styles.lead}>{SOLUTIONS_HERO.sub}</p>
           <div className={styles.cta}>
-            <Link to={SOLUTIONS_HERO.primaryCta.href} className={styles.purpleButton}>
+            <LandingButton to={SOLUTIONS_HERO.primaryCta.href} variant="purple" stretchMobile>
               {SOLUTIONS_HERO.primaryCta.label} <IconArrowRight size={16} />
-            </Link>
-            <BuildDropdown label={SOLUTIONS_HERO.secondaryCta.label} triggerClassName={styles.whiteButton} />
+            </LandingButton>
+            <BuildDropdown
+              label={SOLUTIONS_HERO.secondaryCta.label}
+              triggerClassName={landingButtonClass('white', { stretchMobile: true })}
+            />
           </div>
         </div>
         <div className={styles.visual}>

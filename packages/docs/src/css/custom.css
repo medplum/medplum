@@ -37,11 +37,23 @@
   --layout-padding-md: 1.5rem;
   --layout-padding-sm: 1rem;
 
-  /* Height of the solutions category nav once it collapses into a sticky horizontal
-     bar below 996px: 0.625rem padding top and bottom, a ~33px pill, two hairline
-     borders. Anchor targets on that page subtract it so headings don't land behind
-     the bar. Keep in sync with SolutionsCategoryNav.module.css. */
-  --solutions-mobile-nav-height: 56px;
+  /* The gutter for the current viewport, resolved from the three widths above.
+     Content columns read this one property instead of restating the breakpoints
+     (see LandingContainer.module.css), and a section that wants a different gutter
+     redefines it locally rather than fighting the cascade. */
+  --layout-gutter: var(--layout-padding);
+}
+
+@media screen and (max-width: 996px) {
+  :root {
+    --layout-gutter: var(--layout-padding-md);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  :root {
+    --layout-gutter: var(--layout-padding-sm);
+  }
 }
 
 *,

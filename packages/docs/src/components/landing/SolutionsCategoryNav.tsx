@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import clsx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { SOLUTIONS_CATEGORIES } from '../../data/solutions-content';
@@ -18,6 +19,28 @@ function isAtPageBottom(): boolean {
   return window.innerHeight + window.scrollY >= document.body.scrollHeight - 8;
 }
 
+/**
+ * Finds the last id in document order whose element has scrolled past the threshold line.
+ *
+ * @param ids - Anchor ids to consider, in document order.
+ * @param threshold - Distance from the top of the viewport that counts as "reached".
+ * @returns The reached id, or undefined if none has been reached yet.
+ */
+function findReachedId(ids: readonly string[], threshold: number): string | undefined {
+  let reached: string | undefined;
+  for (const id of ids) {
+    const element = document.getElementById(id);
+    if (element && element.getBoundingClientRect().top <= threshold) {
+      reached = id;
+    }
+  }
+  return reached;
+}
+
+function lastId(ids: readonly string[]): string | undefined {
+  return ids[ids.length - 1];
+}
+
 export function SolutionsCategoryNav(): JSX.Element {
   const [activeCategoryId, setActiveCategoryId] = useState<string | undefined>(SOLUTIONS_CATEGORIES[0]?.id);
   const [activeCustomerId, setActiveCustomerId] = useState<string | undefined>(undefined);
@@ -29,6 +52,7 @@ export function SolutionsCategoryNav(): JSX.Element {
   // nothing at all before the first scroll. Computing "last section whose top has crossed the
   // threshold line" (plus a bottom-of-page override) fixes all three.
   useEffect(() => {
+    const categoryIds = SOLUTIONS_CATEGORIES.map((category) => category.id);
     let ticking = false;
 
     const computeActive = (): void => {
@@ -36,33 +60,14 @@ export function SolutionsCategoryNav(): JSX.Element {
       const threshold = getNavbarHeight() + SCROLL_THRESHOLD_PX;
       const atBottom = isAtPageBottom();
 
-      let currentCategoryId = SOLUTIONS_CATEGORIES[0]?.id;
-      for (const category of SOLUTIONS_CATEGORIES) {
-        const section = document.getElementById(category.id);
-        if (section && section.getBoundingClientRect().top <= threshold) {
-          currentCategoryId = category.id;
-        }
-      }
-      if (atBottom) {
-        currentCategoryId = SOLUTIONS_CATEGORIES[SOLUTIONS_CATEGORIES.length - 1]?.id;
-      }
+      const categoryId = atBottom ? lastId(categoryIds) : (findReachedId(categoryIds, threshold) ?? categoryIds[0]);
 
-      const activeCategory = SOLUTIONS_CATEGORIES.find((category) => category.id === currentCategoryId);
-      let currentCustomerId: string | undefined;
-      if (activeCategory) {
-        for (const customer of activeCategory.customers) {
-          const el = document.getElementById(customer.id);
-          if (el && el.getBoundingClientRect().top <= threshold) {
-            currentCustomerId = customer.id;
-          }
-        }
-        if (atBottom) {
-          currentCustomerId = activeCategory.customers[activeCategory.customers.length - 1]?.id;
-        }
-      }
+      const customerIds =
+        SOLUTIONS_CATEGORIES.find((category) => category.id === categoryId)?.customers.map((customer) => customer.id) ??
+        [];
 
-      setActiveCategoryId(currentCategoryId);
-      setActiveCustomerId(currentCustomerId);
+      setActiveCategoryId(categoryId);
+      setActiveCustomerId(atBottom ? lastId(customerIds) : findReachedId(customerIds, threshold));
     };
 
     const onScroll = (): void => {
@@ -82,7 +87,8 @@ export function SolutionsCategoryNav(): JSX.Element {
   }, []);
 
   // Mobile: the category bar scrolls horizontally and can overflow, so keep the active
-  // pill visible as you scroll the page, rather than leaving it off-screen.
+  // pill visible as you scroll the page, rather than leaving it off-screen. On desktop
+  // the sidebar never overflows, so this is a no-op there.
   useEffect(() => {
     activePillRef.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }, [activeCategoryId]);
@@ -98,23 +104,26 @@ export function SolutionsCategoryNav(): JSX.Element {
               <a
                 href={`#${category.id}`}
                 ref={isActiveCategory ? activePillRef : undefined}
-                className={`${styles.pill} ${isActiveCategory ? styles.pillActive : ''}`}
+                className={clsx(styles.pill, isActiveCategory && styles.pillActive)}
                 aria-current={isActiveCategory ? 'true' : undefined}
               >
                 {category.title}
               </a>
               {isActiveCategory && category.customers.length > 0 && (
                 <div className={styles.subList}>
-                  {category.customers.map((customer) => (
-                    <a
-                      key={customer.id}
-                      href={`#${customer.id}`}
-                      className={`${styles.subPill} ${activeCustomerId === customer.id ? styles.subPillActive : ''}`}
-                      aria-current={activeCustomerId === customer.id ? 'true' : undefined}
-                    >
-                      {customer.name}
-                    </a>
-                  ))}
+                  {category.customers.map((customer) => {
+                    const isActiveCustomer = activeCustomerId === customer.id;
+                    return (
+                      <a
+                        key={customer.id}
+                        href={`#${customer.id}`}
+                        className={clsx(styles.subPill, isActiveCustomer && styles.subPillActive)}
+                        aria-current={isActiveCustomer ? 'true' : undefined}
+                      >
+                        {customer.name}
+                      </a>
+                    );
+                  })}
                 </div>
               )}
             </div>
