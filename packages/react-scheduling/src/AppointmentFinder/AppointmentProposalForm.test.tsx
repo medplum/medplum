@@ -20,7 +20,9 @@ import {
   AuthorizationValueSets,
   DIAGNOSIS_VALUE_SET,
   DiagnosisCodes,
+  DrRiveraSchedule,
   ElderJordanPatient,
+  ExamRoomASchedule,
   InfusionService,
   MainClinic,
   MRN_SYSTEM,
@@ -32,6 +34,7 @@ import {
   Ultrasound1Device,
   UltrasoundImagingService,
   UntypedMrnPatient,
+  withoutActorDisplay,
   YoungerJordanPatient,
 } from '../stories/scheduling';
 import {
@@ -296,6 +299,40 @@ describe('AppointmentProposalForm', () => {
       await settleAutocomplete();
 
       expect(await screen.findByText('No times are available for this selection.')).toBeInTheDocument();
+    });
+  });
+
+  describe('Naming the actors a time is offered by', () => {
+    test('Names them from their own resources when the Schedules never did', async () => {
+      // `$find` copies `Schedule.actor` into the times it offers, so a project that
+      // never wrote a `display` gets proposals naming bare references. The resources
+      // behind them were already read to offer the actors in the first place.
+      await medplum.updateResource(withoutActorDisplay(DrRiveraSchedule));
+      await medplum.updateResource(withoutActorDisplay(ExamRoomASchedule));
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/room/i, 'exam', 'Exam Room A');
+      await openTimeFinder();
+
+      const [group] = await screen.findAllByTestId(/^slot-group-/);
+      expect(within(group).getByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(within(group).getByText('Exam Room A')).toBeInTheDocument();
+      expect(within(group).queryByText(/^Practitioner\//)).not.toBeInTheDocument();
+      expect(within(group).queryByText(/^Location\//)).not.toBeInTheDocument();
+    });
+
+    test('Names them the same way under the chosen time', async () => {
+      await medplum.updateResource(withoutActorDisplay(DrRiveraSchedule));
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      expect(chosenTimeField()).toHaveAccessibleDescription('30 min visit · Provider: Dr. Maya Rivera');
     });
   });
 

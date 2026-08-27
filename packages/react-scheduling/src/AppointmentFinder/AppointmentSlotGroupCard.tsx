@@ -3,10 +3,9 @@
 import { Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
-import { ReferenceDisplay } from '@medplum/react';
 import type { JSX } from 'react';
 import type { SchedulingActor } from '../actors';
-import { getActorType, getActorTypeLabel } from '../actors';
+import { formatActorName, getActorType, getActorTypeLabel } from '../actors';
 import classes from './AppointmentFinder.module.css';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { formatZonedTime, isViewerTimezone } from './AppointmentFinder.times';
@@ -18,11 +17,17 @@ export interface AppointmentSlotGroupCardProps {
   readonly timezone?: string;
   /** The viewer's own timezone. */
   readonly viewerTimezone?: string;
+  /** What to call each actor, keyed by reference. */
+  readonly actorNames?: ReadonlyMap<string, string>;
   readonly selected?: Appointment;
   readonly disabled?: boolean;
 }
 
-function ActorLabel(props: { readonly actor: SchedulingActor }): JSX.Element {
+function ActorLabel(props: {
+  readonly actor: SchedulingActor;
+  /** What to call each actor, keyed by reference. */
+  readonly actorNames?: ReadonlyMap<string, string>;
+}): JSX.Element {
   const label = getActorTypeLabel(getActorType(props.actor));
   return (
     <Stack gap={2}>
@@ -30,7 +35,7 @@ function ActorLabel(props: { readonly actor: SchedulingActor }): JSX.Element {
         {label}
       </Text>
       <Text size="sm" fw={500}>
-        <ReferenceDisplay value={props.actor} link={false} />
+        {formatActorName(props.actor, props.actorNames)}
       </Text>
     </Stack>
   );
@@ -42,7 +47,7 @@ function ActorLabel(props: { readonly actor: SchedulingActor }): JSX.Element {
  * @returns The card.
  */
 export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): JSX.Element {
-  const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled } = props;
+  const { group, onSelectAppointment, timezone, viewerTimezone, actorNames, selected, disabled } = props;
 
   // Times are written with their zone only when that is not the zone the viewer is reading them in.
   const withTimezone = !isViewerTimezone(timezone, viewerTimezone);
@@ -52,7 +57,7 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <Group gap="lg" align="flex-start" wrap="wrap">
           {group.actors.map((actor) => (
-            <ActorLabel actor={actor} key={getReferenceString(actor) ?? actor.display} />
+            <ActorLabel actor={actor} actorNames={actorNames} key={getReferenceString(actor) ?? actor.display} />
           ))}
         </Group>
         {group.durationMinutes > 0 && (

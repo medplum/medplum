@@ -47,8 +47,8 @@ export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor
 export function getCandidateDisplay(candidate: ScheduleCandidate): string {
   const actor = getCandidateActor(candidate);
   return (
-    actor.display ??
     (candidate.actorResource && getDisplayString(candidate.actorResource)) ??
+    actor.display ??
     actor.reference ??
     `Schedule/${candidate.schedule.id}`
   );
@@ -488,6 +488,22 @@ export function getRequirements(selections: ActorSelections): ActorRequirement[]
  */
 function getFilledRequirements(selections: ActorSelections): ActorRequirement[] {
   return getRequirements(selections).filter((requirement) => requirement.candidates.length > 0);
+}
+
+/**
+ * Names every chosen actor, keyed by the reference an appointment names them by.
+ * @param selections - What has been chosen.
+ * @returns The name to show for each chosen actor.
+ */
+export function getActorDisplayNames(selections: ActorSelections): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const candidate of getSelectedCandidates(selections)) {
+    const reference = getReferenceString(getCandidateActor(candidate));
+    if (reference) {
+      names.set(reference, getCandidateDisplay(candidate));
+    }
+  }
+  return names;
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {
