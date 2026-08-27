@@ -422,7 +422,7 @@ const overbookingSchedule: Schedule =
           },
           {
             // Up to 8 appointments may occupy the same time. The default is 1 (no
-            // overbooking). Cannot be combined with bufferBefore / bufferAfter.
+            // overbooking). Do not use in conjunction with bufferBefore / bufferAfter.
             url: 'slotCapacity',
             valuePositiveInt: 8,
           },

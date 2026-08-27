@@ -275,7 +275,7 @@ By default each time holds a single appointment: once a `busy` Slot covers it, `
 
 :::info[Overbooking and buffers]
 
-Slots created to reserve time for `bufferBefore` or `bufferAfter` settings do not get `slotCapacity` applied to them. When combining these settings, the hard blocks created by the buffers would prevent a second appointment with the same settings from overbooking (as it could not overlay the buffer slots).
+Slots created to reserve time for `bufferBefore` or `bufferAfter` settings do not get `slotCapacity` applied to them. When combining these settings, the blocks created by the buffers would prevent a second appointment with the same settings from overbooking (as it could not overlay the buffer slots).
 
 :::
 
@@ -294,13 +294,9 @@ Each booking carries the overlap tolerance it was made under — its resolved `s
 
 - **A `slotCapacity: 1` booking is exclusive.** Nothing may overlap it — not even a higher-capacity service booked afterward. This holds regardless of order: whichever booking is placed first, an incompatible one is rejected.
 - **Overbooking only stacks among bookings that all permit it.** Two `slotCapacity: 2` bookings can share a time; a `slotCapacity: 2` and a `slotCapacity: 3` booking cap each other at 2 (the stricter of the two) while they overlap.
+- **A Slot without explicit capacity is exclusive.** Unqualified slots are treated as though they have `slotCapacity: 1`.
 
-Which slots count:
-
-- **`busy` (booked)** and **`busy-tentative` (held via [`$hold`](/docs/scheduling/appointment-hold))** Slots each consume one unit and carry a tolerance. A hold reserves its unit until it is confirmed, booked, or released.
-- **`busy-unavailable`** Slots (explicit blocks and buffer reservations) are hard blocks — they remove the time regardless of any capacity.
-
-`$find` keeps offering a time until it is full by this rule, and `$book` enforces the same limit atomically, so concurrent requests cannot push a time past capacity. The tolerance is recorded on each booked Slot by the server; an ordinary `slotCapacity: 1` booking is left unmarked, and any Slot without the marker is treated as exclusive.
+`$find` keeps offering a time until it is full by this rule, and `$book` enforces the same limit atomically, so concurrent requests cannot push a time past capacity. `$book` automatically applies the extension tracking this capacity to Slot resources it creates.
 
 When [booking across multiple Schedules at once](#example-3-location-specific-complex-surgical-scheduling), each Schedule's capacity applies independently: a time is offered only while **every** required Schedule still has room, so the Schedule with the least remaining capacity gates the result.
 
