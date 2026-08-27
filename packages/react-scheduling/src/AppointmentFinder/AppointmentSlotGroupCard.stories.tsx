@@ -35,7 +35,7 @@ const ULTRASOUND = { reference: 'Device/ultrasound-1', display: 'Ultrasound 1' }
  * @returns The group, as the picker would have grouped it.
  */
 function buildGroup(
-  actors: readonly { reference: string; display: string }[],
+  actors: readonly { reference: string; display?: string }[],
   durationMinutes = 30
 ): AppointmentSlotGroup {
   const appointments = TIMES.map((start) =>
@@ -49,15 +49,21 @@ function buildGroup(
  * @param props - The React props.
  * @param props.group - The times to offer.
  * @param props.disabled - Whether the times can be chosen.
+ * @param props.actorNames - What to call each actor, keyed by reference.
  * @returns The card.
  */
-function Card(props: { readonly group: AppointmentSlotGroup; readonly disabled?: boolean }): JSX.Element {
+function Card(props: {
+  readonly group: AppointmentSlotGroup;
+  readonly disabled?: boolean;
+  readonly actorNames?: ReadonlyMap<string, string>;
+}): JSX.Element {
   const [selected, setSelected] = useState<Appointment>();
   return (
     <Document>
       <AppointmentSlotGroupCard
         group={props.group}
         timezone={TIMEZONE}
+        actorNames={props.actorNames}
         selected={selected}
         disabled={props.disabled}
         onSelectAppointment={setSelected}
@@ -80,3 +86,32 @@ export const ATeam = (): JSX.Element => <Card group={buildGroup([CHEN_ROLE, EXAM
  * @returns The story.
  */
 export const Busy = (): JSX.Element => <Card group={buildGroup([RIVERA])} disabled />;
+
+/**
+ * What most projects actually store: Schedules that never named their actors, so
+ * `$find` offers times held by bare references. The names come from the
+ * Practitioner, Location and Device the form already loaded.
+ *
+ * @returns The story.
+ */
+export const UnnamedActors = (): JSX.Element => (
+  <Card
+    group={buildGroup([{ reference: RIVERA.reference }, { reference: EXAM_ROOM.reference }])}
+    actorNames={
+      new Map([
+        [RIVERA.reference, RIVERA.display],
+        [EXAM_ROOM.reference, EXAM_ROOM.display],
+      ])
+    }
+  />
+);
+
+/**
+ * The same times with nothing to name them by, which is the bug this replaced:
+ * a card headed by two UUIDs.
+ *
+ * @returns The story.
+ */
+export const UnresolvedActors = (): JSX.Element => (
+  <Card group={buildGroup([{ reference: RIVERA.reference }, { reference: EXAM_ROOM.reference }])} />
+);

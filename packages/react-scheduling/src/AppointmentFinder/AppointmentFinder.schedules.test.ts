@@ -91,14 +91,15 @@ async function setupSurgicalClient(): Promise<MockClient> {
  * practice.
  *
  * @param medplum - The client to create into.
- * @param display - The name the Schedule gives its actor.
+ * @param name - What the surgeon is called. On the Practitioner rather than on
+ *   the Schedule, since that is where a candidate is named from.
  * @param locations - Location references the role names, or undefined for a role
  *   that names none.
  */
-async function addSitedSurgeon(medplum: MockClient, display: string, locations?: string[]): Promise<void> {
+async function addSitedSurgeon(medplum: MockClient, name: string, locations?: string[]): Promise<void> {
   const practitioner = await medplum.createResource<Practitioner>({
     resourceType: 'Practitioner',
-    name: [{ given: ['Wei'], family: 'Chen', prefix: ['Dr.'] }],
+    name: [{ text: name }],
   });
   await medplum.createResource<PractitionerRole>({
     ...DrChenRole,
@@ -109,7 +110,7 @@ async function addSitedSurgeon(medplum: MockClient, display: string, locations?:
   await medplum.createResource<Schedule>({
     ...DrChenSchedule,
     id: undefined,
-    actor: [{ reference: `Practitioner/${practitioner.id}`, display }],
+    actor: [{ reference: `Practitioner/${practitioner.id}` }],
   });
 }
 
@@ -312,7 +313,7 @@ describe('searchScheduleCandidates', () => {
     // (ultrasound imaging, surgery) are offered side by side.
     expect(querySentTo(medplum)).not.toHaveProperty('service-type');
     expect(providersOf(candidates)).toStrictEqual([
-      'Dr. Alice Smith',
+      'Alice Smith',
       'Dr. James Kim',
       'Dr. Maria Martinez',
       'Dr. Maya Rivera',
@@ -323,10 +324,14 @@ describe('searchScheduleCandidates', () => {
 
   test('Lists actors by name, which is the order a field offers them in', async () => {
     const medplum = await setupClient();
+    const abbot = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Aaron'], family: 'Abbot', prefix: ['Dr.'] }],
+    });
     await medplum.createResource<Schedule>({
       ...DrRiveraSchedule,
       id: undefined,
-      actor: [{ reference: 'Practitioner/dr-rivera', display: 'Dr. Aaron Abbot' }],
+      actor: [{ reference: `Practitioner/${abbot.id}` }],
     });
 
     expect(providersOf(await candidatesFor(medplum, UltrasoundImagingService, 'provider'))).toStrictEqual([
@@ -391,23 +396,23 @@ describe('narrowing to a location', () => {
     // above but further up than that is unverifiable, not proven to be
     // elsewhere, so the same leniency applies as to one that cannot be read.
     const medplum = await setupClient();
-    for (const [id, parent] of [
-      ['wing-a', 'main-clinic'],
-      ['wing-b', 'wing-a'],
-      ['wing-c', 'wing-b'],
-      ['deep-room', 'wing-c'],
+    for (const [id, name, parent] of [
+      ['wing-a', 'Wing A', 'main-clinic'],
+      ['wing-b', 'Wing B', 'wing-a'],
+      ['wing-c', 'Wing C', 'wing-b'],
+      ['deep-room', 'Deep Room', 'wing-c'],
     ]) {
       await medplum.createResource<Location>({
         resourceType: 'Location',
         id,
-        name: id,
+        name,
         partOf: { reference: `Location/${parent}` },
       });
     }
     await medplum.createResource<Schedule>({
       ...DrRiveraSchedule,
       id: undefined,
-      actor: [{ reference: 'Location/deep-room', display: 'Deep Room' }],
+      actor: [{ reference: 'Location/deep-room' }],
     });
 
     const kept = await candidatesFor(medplum, UltrasoundImagingService, 'room', { location: MainClinic });
@@ -500,7 +505,7 @@ describe('narrowing to a location', () => {
     const medplum = await setupSurgicalClient();
     const practitioner = await medplum.createResource<Practitioner>({
       resourceType: 'Practitioner',
-      name: [{ given: ['Wei'], family: 'Chen', prefix: ['Dr.'] }],
+      name: [{ text: 'Dr. Wei Chen (moved)' }],
     });
     await medplum.createResource<PractitionerRole>({
       ...DrChenRole,
@@ -518,7 +523,7 @@ describe('narrowing to a location', () => {
     await medplum.createResource<Schedule>({
       ...DrChenSchedule,
       id: undefined,
-      actor: [{ reference: `Practitioner/${practitioner.id}`, display: 'Dr. Wei Chen (moved)' }],
+      actor: [{ reference: `Practitioner/${practitioner.id}` }],
     });
 
     const kept = await candidatesFor(medplum, SurgeryService, 'provider', { location: MainClinic });
@@ -684,9 +689,17 @@ describe('selections', () => {
 });
 
 describe('candidate fields', () => {
-  test('Names an actor by the Schedule display, then the resource, then the reference', () => {
+  test('Names an actor by the resource, then the Schedule display, then the reference', () => {
     const named = candidateOf(DrRiveraSchedule, 'Practitioner', 'Dr. Maya Rivera');
     expect(getCandidateDisplay(named)).toBe('Dr. Maya Rivera');
+
+    // The actor answers over the Schedule's copy of its name, which was written
+    // once and is not kept in step with the resource it was copied from.
+    const renamed: ScheduleCandidate = {
+      ...named,
+      actorResource: { resourceType: 'Practitioner', id: 'dr-rivera', name: [{ given: ['Maya'], family: 'Ross' }] },
+    };
+    expect(getCandidateDisplay(renamed)).toBe('Maya Ross');
 
     // A Schedule that does not name its actor falls back to the resource the
     // search included, and to the bare reference when it included none.

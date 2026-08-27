@@ -225,6 +225,19 @@ function buildSchedule(
   };
 }
 
+/**
+ * Strips the name a Schedule copied onto its actor.
+ *
+ * `Schedule.actor.display` is optional, and plenty of real projects never write
+ * it — which is the case where the name has to come from the actor itself.
+ *
+ * @param schedule - The schedule to strip.
+ * @returns The same schedule, naming its actor by reference alone.
+ */
+export function withoutActorDisplay(schedule: WithId<Schedule>): WithId<Schedule> {
+  return { ...schedule, actor: [{ reference: schedule.actor[0].reference }] };
+}
+
 export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitioner/dr-rivera', 'Dr. Maya Rivera');
 export const DrOkaforSchedule = buildSchedule('schedule-dr-okafor', 'Practitioner/dr-okafor', 'Dr. Tunde Okafor');
 export const Ultrasound1Schedule = buildSchedule(
