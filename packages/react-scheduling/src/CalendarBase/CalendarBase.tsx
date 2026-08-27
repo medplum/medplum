@@ -235,13 +235,13 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     if (!selectable || !api) {
       return;
     }
-    appliedSelection.current = selection;
-    if (selection) {
-      api.select(selection.start, selection.end);
+    if (startMs !== undefined && endMs !== undefined) {
+      appliedSelection.current = { start: new Date(startMs), end: new Date(endMs) };
+      api.select(startMs, endMs);
     } else {
+      appliedSelection.current = undefined;
       api.unselect();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the instants, see above
   }, [selectable, startMs, endMs]);
 
   return (
