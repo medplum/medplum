@@ -33,7 +33,7 @@ export async function reindexConcurrently(
   if (!isValidPostgresIdentifier(name)) {
     throw new Error(`Invalid PostgreSQL identifier: ${name}`);
   }
-  const queryStr = `REINDEX ${target} CONCURRENTLY ${escapeIdentifier(name)}`;
+  const queryStr = `REINDEX (VERBOSE) ${target} CONCURRENTLY ${escapeIdentifier(name)}`;
   await query(client, results, queryStr);
 }
 
