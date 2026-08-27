@@ -12,5 +12,4 @@ import * as fns from '../migrate-functions';
 export async function run(client: PoolClient): Promise<void> {
   const results: { name: string; durationMs: number }[] = [];
   await fns.query(client, results, `CREATE EXTENSION IF NOT EXISTS pgstattuple`);
-  await fns.query(client, results, `CREATE EXTENSION IF NOT EXISTS pageinspect`);
 }

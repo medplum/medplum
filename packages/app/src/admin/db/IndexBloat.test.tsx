@@ -11,6 +11,15 @@ import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render
 import { IndexBloat } from './IndexBloat';
 import { formatBytes } from './utils';
 
+vi.mock('./SearchableMultiSelect', () => ({
+  SearchableMultiSelect: ({ onChange }: { onChange: (value: string[]) => void }) => (
+    <button type="button" onClick={() => onChange(['Patient'])}>
+      Select Patient
+    </button>
+  ),
+}));
+vi.mock('./useAvailableTables', () => ({ useAvailableTables: vi.fn() }));
+
 describe('IndexBloat', () => {
   let medplum: MedplumClient;
   let fetch: Mock<FetchLike>;
@@ -36,7 +45,7 @@ describe('IndexBloat', () => {
       json: vi.fn(async () => ({
         resourceType: 'Parameters',
         parameter: [
-          makeIndexParameter('Patient', 'Patient_name_idx', 'gin', 500 * 1024 * 1024, 200 * 1024 * 1024, 40),
+          makeGinIndexParameter('Patient', 'Patient_name_idx', 500 * 1024 * 1024, 2.5),
           makeIndexParameter(
             'Observation',
             'Observation_date_idx',
@@ -63,21 +72,30 @@ describe('IndexBloat', () => {
   test('Runs only after Analyze and renders sorted results', async () => {
     setup();
 
-    expect(fetch).not.toHaveBeenCalled();
+    expect(getBloatRequests(fetch)).toHaveLength(0);
     expect(screen.getByText('Click Analyze to scan indexes for bloat.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
 
     await waitFor(() => expect(screen.getByText('Observation_date_idx')).toBeInTheDocument());
     expect(screen.getByText('Patient_name_idx')).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(String(fetch.mock.calls[0][0])).toContain(
-      'fhir/R4/$db-index-bloat?minBloatPercent=30&minBloatBytes=104857600'
-    );
+    expect(getBloatRequests(fetch)).toHaveLength(1);
+    expect(getBloatRequests(fetch)[0]).toContain('fhir/R4/$db-index-bloat?minBloatPercent=30&minIndexSize=104857600');
+    expect(screen.getByText('2.50')).toBeInTheDocument();
 
     const rows = screen.getAllByRole('row');
     expect(rows[1]).toHaveTextContent('Observation_date_idx');
     expect(rows[2]).toHaveTextContent('Patient_name_idx');
+  });
+
+  test('Filters analysis by selected tables', async () => {
+    setup();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select Patient' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
+
+    await waitFor(() => expect(getBloatRequests(fetch)).toHaveLength(1));
+    expect(getBloatRequests(fetch)[0]).toContain('tableName=Patient');
   });
 
   test('Shows an empty state', async () => {
@@ -89,7 +107,7 @@ describe('IndexBloat', () => {
     setup();
 
     fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
-    expect(await screen.findByText('No indexes exceed both thresholds.')).toBeInTheDocument();
+    expect(await screen.findByText('No indexes meet the selected thresholds.')).toBeInTheDocument();
   });
 
   test('Shows request errors', async () => {
@@ -137,4 +155,31 @@ function makeIndexParameter(
       { name: 'bloatPercent', valueDecimal: bloatPercent },
     ],
   };
+}
+
+function makeGinIndexParameter(
+  tableName: string,
+  indexName: string,
+  indexSize: number,
+  liveTuplesPerPage: number
+): object {
+  const allocatedPages = 500;
+  const liveTuples = allocatedPages * liveTuplesPerPage;
+  return {
+    name: 'index',
+    part: [
+      { name: 'schemaName', valueString: 'public' },
+      { name: 'tableName', valueString: tableName },
+      { name: 'indexName', valueString: indexName },
+      { name: 'indexType', valueCode: 'gin' },
+      { name: 'indexSize', valueDecimal: indexSize },
+      { name: 'liveTuples', valueDecimal: liveTuples },
+      { name: 'allocatedPages', valueDecimal: allocatedPages },
+      { name: 'liveTuplesPerPage', valueDecimal: liveTuplesPerPage },
+    ],
+  };
+}
+
+function getBloatRequests(fetch: Mock<FetchLike>): string[] {
+  return fetch.mock.calls.map((call) => String(call[0])).filter((url) => url.includes('$db-index-bloat'));
 }

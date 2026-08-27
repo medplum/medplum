@@ -1,6 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Group, NumberInput, Stack, Table, Text, Title, UnstyledButton } from '@mantine/core';
+import {
+  Alert,
+  Button,
+  Group,
+  InputWrapper,
+  NumberInput,
+  Stack,
+  Table,
+  Text,
+  Title,
+  UnstyledButton,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
@@ -8,6 +19,8 @@ import { useMedplum } from '@medplum/react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
+import { SearchableMultiSelect } from './SearchableMultiSelect';
+import { useAvailableTables } from './useAvailableTables';
 import { formatBytes } from './utils';
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;
@@ -18,30 +31,52 @@ interface IndexBloatInfo {
   indexName: string;
   indexType: string;
   indexSize: number;
-  estimatedBloatSize: number;
-  bloatPercent: number;
+  estimatedBloatSize?: number;
+  bloatPercent?: number;
+  liveTuples?: number;
+  allocatedPages?: number;
+  liveTuplesPerPage?: number;
 }
 
 type SortKey = keyof Pick<
   IndexBloatInfo,
-  'schemaName' | 'tableName' | 'indexName' | 'indexType' | 'indexSize' | 'estimatedBloatSize' | 'bloatPercent'
+  | 'schemaName'
+  | 'tableName'
+  | 'indexName'
+  | 'indexType'
+  | 'indexSize'
+  | 'estimatedBloatSize'
+  | 'bloatPercent'
+  | 'liveTuples'
+  | 'allocatedPages'
+  | 'liveTuplesPerPage'
 >;
 type SortDirection = 'asc' | 'desc';
 
 export function IndexBloat(): JSX.Element {
   const medplum = useMedplum();
+  const [tableNames, setTableNames] = useState<string[]>([]);
+  const [availableTables, setAvailableTables] = useState<string[]>([]);
   const [minBloatPercent, setMinBloatPercent] = useState<number | string>(30);
   const [minBloatMegabytes, setMinBloatMegabytes] = useState<number | string>(100);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [indexes, setIndexes] = useState<IndexBloatInfo[] | undefined>();
-  const [sortKey, setSortKey] = useState<SortKey>('estimatedBloatSize');
+  const [sortKey, setSortKey] = useState<SortKey>('indexSize');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  useAvailableTables({ medplum, onChange: setAvailableTables });
 
   const sortedIndexes = useMemo(() => {
     return [...(indexes ?? [])].sort((a, b) => {
       const aValue = a[sortKey];
       const bValue = b[sortKey];
+      if (aValue === undefined) {
+        return bValue === undefined ? 0 : 1;
+      }
+      if (bValue === undefined) {
+        return -1;
+      }
       const comparison =
         typeof aValue === 'number' && typeof bValue === 'number'
           ? aValue - bValue
@@ -57,8 +92,11 @@ export function IndexBloat(): JSX.Element {
 
     const query = new URLSearchParams({
       minBloatPercent: String(minBloatPercent),
-      minBloatBytes: String(Math.round(minBloatMegabytes * BYTES_PER_MEGABYTE)),
+      minIndexSize: String(Math.round(minBloatMegabytes * BYTES_PER_MEGABYTE)),
     });
+    if (tableNames.length > 0) {
+      query.set('tableName', tableNames.join(','));
+    }
     setError(undefined);
     setLoading(true);
     medplum
@@ -81,9 +119,13 @@ export function IndexBloat(): JSX.Element {
       setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDirection(
-        key === 'schemaName' || key === 'tableName' || key === 'indexName' || key === 'indexType' ? 'asc' : 'desc'
-      );
+      const sortsAscending =
+        key === 'schemaName' ||
+        key === 'tableName' ||
+        key === 'indexName' ||
+        key === 'indexType' ||
+        key === 'liveTuplesPerPage';
+      setSortDirection(sortsAscending ? 'asc' : 'desc');
     }
   };
 
@@ -99,13 +141,22 @@ export function IndexBloat(): JSX.Element {
       <div>
         <Title order={2}>Index bloat</Title>
         <Text c="dimmed" size="sm">
-          B-tree and GIN bloat values are estimates. Analysis reads index pages and may take time on a large database.
-          GIN estimates depend on statistics updated by VACUUM.
+          B-tree rows show an estimated bloat percentage. GIN rows show live tuples per allocated page; a low ratio on a
+          large index is a signal to consider REINDEX CONCURRENTLY. Live tuple estimates are updated by VACUUM and
+          ANALYZE.
         </Text>
       </div>
       <Group align="end">
+        <InputWrapper label="Table(s)">
+          <SearchableMultiSelect
+            data={availableTables}
+            onChange={setTableNames}
+            pillInputProps={{ w: 360 }}
+            inputProps={{ name: 'tables', placeholder: 'e.g. Observation' }}
+          />
+        </InputWrapper>
         <NumberInput
-          label="Minimum bloat"
+          label="Minimum B-tree bloat"
           suffix="%"
           value={minBloatPercent}
           onChange={setMinBloatPercent}
@@ -115,7 +166,7 @@ export function IndexBloat(): JSX.Element {
           w={180}
         />
         <NumberInput
-          label="Minimum reclaimable size"
+          label="Minimum index size"
           suffix=" MB"
           value={minBloatMegabytes}
           onChange={setMinBloatMegabytes}
@@ -135,9 +186,9 @@ export function IndexBloat(): JSX.Element {
       )}
 
       {indexes === undefined && !loading && <Text c="dimmed">Click Analyze to scan indexes for bloat.</Text>}
-      {indexes?.length === 0 && !loading && <Text c="dimmed">No indexes exceed both thresholds.</Text>}
+      {indexes?.length === 0 && !loading && <Text c="dimmed">No indexes meet the selected thresholds.</Text>}
       {indexes && indexes.length > 0 && (
-        <Table.ScrollContainer minWidth={900}>
+        <Table.ScrollContainer minWidth={1100}>
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>
@@ -177,14 +228,35 @@ export function IndexBloat(): JSX.Element {
                   onSort={toggleSort}
                 />
                 <SortableHeader
-                  label="Estimated bloat"
+                  label="GIN est. live tuples"
+                  sortKey="liveTuples"
+                  activeKey={sortKey}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableHeader
+                  label="GIN allocated pages"
+                  sortKey="allocatedPages"
+                  activeKey={sortKey}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableHeader
+                  label="GIN live tuples/page"
+                  sortKey="liveTuplesPerPage"
+                  activeKey={sortKey}
+                  direction={sortDirection}
+                  onSort={toggleSort}
+                />
+                <SortableHeader
+                  label="Est. B-tree bloat"
                   sortKey="estimatedBloatSize"
                   activeKey={sortKey}
                   direction={sortDirection}
                   onSort={toggleSort}
                 />
                 <SortableHeader
-                  label="Bloat"
+                  label="B-tree bloat"
                   sortKey="bloatPercent"
                   activeKey={sortKey}
                   direction={sortDirection}
@@ -200,8 +272,17 @@ export function IndexBloat(): JSX.Element {
                   <Table.Td>{index.indexName}</Table.Td>
                   <Table.Td>{index.indexType.toUpperCase()}</Table.Td>
                   <Table.Td>{formatBytes(index.indexSize)}</Table.Td>
-                  <Table.Td>{formatBytes(index.estimatedBloatSize)}</Table.Td>
-                  <Table.Td>{index.bloatPercent.toFixed(2)}%</Table.Td>
+                  <Table.Td>{index.liveTuples === undefined ? '—' : index.liveTuples.toLocaleString()}</Table.Td>
+                  <Table.Td>
+                    {index.allocatedPages === undefined ? '—' : index.allocatedPages.toLocaleString()}
+                  </Table.Td>
+                  <Table.Td>
+                    {index.liveTuplesPerPage === undefined ? '—' : index.liveTuplesPerPage.toFixed(2)}
+                  </Table.Td>
+                  <Table.Td>
+                    {index.estimatedBloatSize === undefined ? '—' : formatBytes(index.estimatedBloatSize)}
+                  </Table.Td>
+                  <Table.Td>{index.bloatPercent === undefined ? '—' : `${index.bloatPercent.toFixed(2)}%`}</Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -242,8 +323,11 @@ function parseIndexBloatInfo(parameter: ParametersParameter): IndexBloatInfo {
     indexName: getStringPart(parts, 'indexName'),
     indexType: getStringPart(parts, 'indexType'),
     indexSize: getNumberPart(parts, 'indexSize'),
-    estimatedBloatSize: getNumberPart(parts, 'estimatedBloatSize'),
-    bloatPercent: getNumberPart(parts, 'bloatPercent'),
+    estimatedBloatSize: getOptionalNumberPart(parts, 'estimatedBloatSize'),
+    bloatPercent: getOptionalNumberPart(parts, 'bloatPercent'),
+    liveTuples: getOptionalNumberPart(parts, 'liveTuples'),
+    allocatedPages: getOptionalNumberPart(parts, 'allocatedPages'),
+    liveTuplesPerPage: getOptionalNumberPart(parts, 'liveTuplesPerPage'),
   };
 }
 
@@ -254,4 +338,8 @@ function getStringPart(parts: ParametersParameter[], name: string): string {
 
 function getNumberPart(parts: ParametersParameter[], name: string): number {
   return parts.find((candidate) => candidate.name === name)?.valueDecimal ?? 0;
+}
+
+function getOptionalNumberPart(parts: ParametersParameter[], name: string): number | undefined {
+  return parts.find((candidate) => candidate.name === name)?.valueDecimal;
 }

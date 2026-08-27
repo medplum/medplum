@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Pool } from 'pg';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import {
   buildOutputParameters,
@@ -13,7 +14,7 @@ import {
 } from './utils/parameters';
 
 const DEFAULT_MIN_BLOAT_PERCENT = 30;
-const DEFAULT_MIN_BLOAT_BYTES = 100 * 1024 * 1024;
+const DEFAULT_MIN_INDEX_SIZE = 100 * 1024 * 1024;
 
 const operation = makeOperationDefinition(
   { scope: 'system' },
@@ -21,8 +22,9 @@ const operation = makeOperationDefinition(
     name: 'db-index-bloat',
     code: 'db-index-bloat',
     parameter: [
+      param('in', 'tableName', 'string', 0, '*'),
       param('in', 'minBloatPercent', 'decimal', 0, '1'),
-      param('in', 'minBloatBytes', 'decimal', 0, '1'),
+      param('in', 'minIndexSize', 'decimal', 0, '1'),
       param('out', 'index', undefined, 0, '*', [
         param('out', 'schemaName', 'string', 1, '1'),
         param('out', 'tableName', 'string', 1, '1'),
@@ -30,17 +32,16 @@ const operation = makeOperationDefinition(
         param('out', 'indexType', 'code', 1, '1'),
         param('out', 'analysisMethod', 'code', 1, '1'),
         param('out', 'indexSize', 'decimal', 1, '1'),
-        param('out', 'estimatedBloatSize', 'decimal', 1, '1'),
-        param('out', 'bloatPercent', 'decimal', 1, '1'),
+        param('out', 'estimatedBloatSize', 'decimal', 0, '1'),
+        param('out', 'bloatPercent', 'decimal', 0, '1'),
         param('out', 'fillFactor', 'integer', 0, '1'),
         param('out', 'avgLeafDensity', 'decimal', 0, '1'),
         param('out', 'leafFragmentation', 'decimal', 0, '1'),
         param('out', 'emptyPages', 'decimal', 0, '1'),
         param('out', 'deletedPages', 'decimal', 0, '1'),
-        param('out', 'totalPages', 'decimal', 0, '1'),
-        param('out', 'entryPages', 'decimal', 0, '1'),
-        param('out', 'dataPages', 'decimal', 0, '1'),
-        param('out', 'pendingPages', 'decimal', 0, '1'),
+        param('out', 'liveTuples', 'decimal', 0, '1'),
+        param('out', 'allocatedPages', 'decimal', 0, '1'),
+        param('out', 'liveTuplesPerPage', 'decimal', 0, '1'),
       ]),
     ],
   }
@@ -65,11 +66,8 @@ export interface GinIndexStatsRow {
   tableName: string;
   indexName: string;
   indexSize: string;
-  blockSize: string;
-  totalPages: string;
-  entryPages: string;
-  dataPages: string;
-  pendingPages: string;
+  liveTuples: string;
+  allocatedPages: string;
 }
 
 export interface IndexBloatInfo {
@@ -77,50 +75,58 @@ export interface IndexBloatInfo {
   tableName: string;
   indexName: string;
   indexType: 'btree' | 'gin';
-  analysisMethod: 'pgstatindex' | 'gin-metapage';
+  analysisMethod: 'pgstatindex' | 'catalog-density';
   indexSize: number;
-  estimatedBloatSize: number;
-  bloatPercent: number;
+  estimatedBloatSize?: number;
+  bloatPercent?: number;
   fillFactor?: number;
   avgLeafDensity?: number;
   leafFragmentation?: number;
   emptyPages?: number;
   deletedPages?: number;
-  totalPages?: number;
-  entryPages?: number;
-  dataPages?: number;
-  pendingPages?: number;
+  liveTuples?: number;
+  allocatedPages?: number;
+  liveTuplesPerPage?: number;
 }
 
 export async function dbIndexBloatHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const params = parseInputParameters<{ minBloatPercent?: number; minBloatBytes?: number }>(operation, req);
+  const params = parseInputParameters<{ tableName?: string; minBloatPercent?: number; minIndexSize?: number }>(
+    operation,
+    req
+  );
+  const tableNames: string[] = [];
+  for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? EMPTY) {
+    if (!isValidPostgresIdentifier(tableName)) {
+      throw new OperationOutcomeError(badRequest('Invalid tableName'));
+    }
+    tableNames.push(tableName);
+  }
   const minBloatPercent = params.minBloatPercent ?? DEFAULT_MIN_BLOAT_PERCENT;
-  const minBloatBytes = params.minBloatBytes ?? DEFAULT_MIN_BLOAT_BYTES;
-  validateThresholds(minBloatPercent, minBloatBytes);
+  const minIndexSize = params.minIndexSize ?? DEFAULT_MIN_INDEX_SIZE;
+  validateThresholds(minBloatPercent, minIndexSize);
 
   const client = getDatabasePool(DatabaseMode.WRITER);
-  const indexes = [
-    ...(await getBtreeIndexBloat(client, minBloatBytes)),
-    ...(await getGinIndexBloat(client, minBloatBytes)),
-  ]
-    .filter((index) => index.bloatPercent >= minBloatPercent && index.estimatedBloatSize >= minBloatBytes)
-    .sort((a, b) => b.estimatedBloatSize - a.estimatedBloatSize);
+  const btreeIndexes = (await getBtreeIndexBloat(client, minIndexSize, tableNames)).filter(
+    (index) => (index.bloatPercent ?? 0) >= minBloatPercent
+  );
+  const ginIndexes = await getGinIndexDensity(client, minIndexSize, tableNames);
+  const indexes = [...btreeIndexes, ...ginIndexes].sort((a, b) => b.indexSize - a.indexSize);
 
   return [allOk, buildOutputParameters(operation, { index: indexes })];
 }
 
-function validateThresholds(minBloatPercent: number, minBloatBytes: number): void {
+function validateThresholds(minBloatPercent: number, minIndexSize: number): void {
   if (!Number.isFinite(minBloatPercent) || minBloatPercent < 0 || minBloatPercent > 100) {
     throw new OperationOutcomeError(badRequest('minBloatPercent must be between 0 and 100'));
   }
-  if (!Number.isFinite(minBloatBytes) || minBloatBytes < 0 || !Number.isSafeInteger(minBloatBytes)) {
-    throw new OperationOutcomeError(badRequest('minBloatBytes must be a non-negative safe integer'));
+  if (!Number.isFinite(minIndexSize) || minIndexSize < 0 || !Number.isSafeInteger(minIndexSize)) {
+    throw new OperationOutcomeError(badRequest('minIndexSize must be a non-negative safe integer'));
   }
 }
 
-async function getBtreeIndexBloat(client: Pool, minIndexSize: number): Promise<IndexBloatInfo[]> {
+async function getBtreeIndexBloat(client: Pool, minIndexSize: number, tableNames: string[]): Promise<IndexBloatInfo[]> {
   const result = await client.query<BtreeIndexStatsRow>(
     `SELECT
       n.nspname AS "schemaName",
@@ -148,39 +154,39 @@ async function getBtreeIndexBloat(client: Pool, minIndexSize: number): Promise<I
       AND ix.indisvalid
       AND ix.indisready
       AND ix.indislive
-      AND pg_relation_size(i.oid) >= $1::bigint`,
-    [minIndexSize]
+      AND pg_relation_size(i.oid) >= $1::bigint
+      AND ($2::text[] IS NULL OR t.relname = ANY($2::text[]))`,
+    [minIndexSize, tableNames.length > 0 ? tableNames : null]
   );
   return result.rows.map(calculateBtreeBloat);
 }
 
-async function getGinIndexBloat(client: Pool, minIndexSize: number): Promise<IndexBloatInfo[]> {
+async function getGinIndexDensity(client: Pool, minIndexSize: number, tableNames: string[]): Promise<IndexBloatInfo[]> {
   const result = await client.query<GinIndexStatsRow>(
     `SELECT
       n.nspname AS "schemaName",
       t.relname AS "tableName",
       i.relname AS "indexName",
       pg_relation_size(i.oid)::text AS "indexSize",
-      current_setting('block_size')::text AS "blockSize",
-      stats.n_total_pages::text AS "totalPages",
-      stats.n_entry_pages::text AS "entryPages",
-      stats.n_data_pages::text AS "dataPages",
-      stats.n_pending_pages::text AS "pendingPages"
+      GREATEST(t.reltuples, 0)::bigint::text AS "liveTuples",
+      CEIL(
+        pg_relation_size(i.oid)::numeric / current_setting('block_size')::numeric
+      )::bigint::text AS "allocatedPages"
     FROM pg_index ix
       JOIN pg_class i ON i.oid = ix.indexrelid
       JOIN pg_class t ON t.oid = ix.indrelid
       JOIN pg_namespace n ON n.oid = t.relnamespace
       JOIN pg_am am ON am.oid = i.relam
-      CROSS JOIN LATERAL gin_metapage_info(get_raw_page(i.oid::regclass::text, 0)) stats
     WHERE n.nspname = 'public'
       AND am.amname = 'gin'
       AND ix.indisvalid
       AND ix.indisready
       AND ix.indislive
-      AND pg_relation_size(i.oid) >= $1::bigint`,
-    [minIndexSize]
+      AND pg_relation_size(i.oid) >= $1::bigint
+      AND ($2::text[] IS NULL OR t.relname = ANY($2::text[]))`,
+    [minIndexSize, tableNames.length > 0 ? tableNames : null]
   );
-  return result.rows.map(calculateGinBloat);
+  return result.rows.map(calculateGinDensity);
 }
 
 export function calculateBtreeBloat(row: BtreeIndexStatsRow): IndexBloatInfo {
@@ -214,29 +220,21 @@ export function calculateBtreeBloat(row: BtreeIndexStatsRow): IndexBloatInfo {
   };
 }
 
-export function calculateGinBloat(row: GinIndexStatsRow): IndexBloatInfo {
+export function calculateGinDensity(row: GinIndexStatsRow): IndexBloatInfo {
   const indexSize = Number(row.indexSize);
-  const blockSize = Number(row.blockSize);
-  const totalPages = Number(row.totalPages);
-  const entryPages = Number(row.entryPages);
-  const dataPages = Number(row.dataPages);
-  const pendingPages = Number(row.pendingPages);
-  const unusedPages = Math.max(0, totalPages - entryPages - dataPages - pendingPages - 1);
-  const estimatedBloatSize = Math.min(indexSize, unusedPages * blockSize);
+  const liveTuples = Number(row.liveTuples);
+  const allocatedPages = Number(row.allocatedPages);
 
   return {
     schemaName: row.schemaName,
     tableName: row.tableName,
     indexName: row.indexName,
     indexType: 'gin',
-    analysisMethod: 'gin-metapage',
+    analysisMethod: 'catalog-density',
     indexSize,
-    estimatedBloatSize,
-    bloatPercent: calculatePercent(estimatedBloatSize, indexSize),
-    totalPages,
-    entryPages,
-    dataPages,
-    pendingPages,
+    liveTuples,
+    allocatedPages,
+    liveTuplesPerPage: allocatedPages > 0 ? liveTuples / allocatedPages : 0,
   };
 }
 

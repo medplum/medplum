@@ -920,7 +920,6 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
-  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pageinspect;`);
   b.newLine();
 
   for (const action of actions) {

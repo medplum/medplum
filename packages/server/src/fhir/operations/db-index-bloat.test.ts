@@ -8,7 +8,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { initTestAuth } from '../../test.setup';
 import type { BtreeIndexStatsRow, GinIndexStatsRow } from './db-index-bloat';
-import { calculateBtreeBloat, calculateGinBloat } from './db-index-bloat';
+import { calculateBtreeBloat, calculateGinDensity } from './db-index-bloat';
 
 describe('$db-index-bloat', () => {
   const app = express();
@@ -18,17 +18,16 @@ describe('$db-index-bloat', () => {
     await initApp(app, config);
     const client = getDatabasePool(DatabaseMode.WRITER);
     await client.query('CREATE EXTENSION IF NOT EXISTS pgstattuple');
-    await client.query('CREATE EXTENSION IF NOT EXISTS pageinspect');
   });
 
   afterAll(async () => {
     await shutdownApp();
   });
 
-  test('Returns B-tree and GIN estimates', async () => {
+  test('Returns B-tree bloat and GIN density', async () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
     const res = await request(app)
-      .get('/fhir/R4/$db-index-bloat?minBloatPercent=0&minBloatBytes=0')
+      .get('/fhir/R4/$db-index-bloat?minBloatPercent=0&minIndexSize=0')
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res).toHaveStatus(200);
@@ -42,10 +41,34 @@ describe('$db-index-bloat', () => {
     ).toBe(true);
   });
 
+  test('Filters by table name', async () => {
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const res = await request(app)
+      .get('/fhir/R4/$db-index-bloat?tableName=Patient&minBloatPercent=0&minIndexSize=0')
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res).toHaveStatus(200);
+    const params = res.body as Parameters;
+    const indexes = params.parameter?.filter((parameter) => parameter.name === 'index') ?? [];
+    expect(indexes.length).toBeGreaterThan(0);
+    expect(
+      indexes.every((index) => index.part?.find((part) => part.name === 'tableName')?.valueString === 'Patient')
+    ).toBe(true);
+  });
+
+  test('Rejects invalid table names', async () => {
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const res = await request(app)
+      .get(`/fhir/R4/$db-index-bloat?tableName=${encodeURIComponent('Patient; DROP TABLE Patient')}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res).toHaveStatus(400);
+  });
+
   test('Rejects invalid thresholds', async () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
     const res = await request(app)
-      .get('/fhir/R4/$db-index-bloat?minBloatPercent=101&minBloatBytes=-1')
+      .get('/fhir/R4/$db-index-bloat?minBloatPercent=101&minIndexSize=-1')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(400);
   });
@@ -88,33 +111,36 @@ describe('Index bloat calculations', () => {
     });
   });
 
-  test('Calculates GIN bloat from unaccounted pages', () => {
-    const result = calculateGinBloat({
-      ...base,
-      totalPages: '10',
-      entryPages: '3',
-      dataPages: '2',
-      pendingPages: '1',
+  test('Calculates GIN live tuple density', () => {
+    const result = calculateGinDensity({
+      schemaName: base.schemaName,
+      tableName: base.tableName,
+      indexName: base.indexName,
+      indexSize: base.indexSize,
+      liveTuples: '900',
+      allocatedPages: '300',
     } satisfies GinIndexStatsRow);
 
     expect(result).toMatchObject({
       indexType: 'gin',
-      estimatedBloatSize: 300,
-      bloatPercent: 30,
-      pendingPages: 1,
+      liveTuples: 900,
+      allocatedPages: 300,
+      liveTuplesPerPage: 3,
     });
+    expect(result.estimatedBloatSize).toBeUndefined();
+    expect(result.bloatPercent).toBeUndefined();
   });
 
-  test('Clamps stale GIN metadata to zero bloat', () => {
-    const result = calculateGinBloat({
-      ...base,
-      totalPages: '2',
-      entryPages: '3',
-      dataPages: '2',
-      pendingPages: '1',
+  test('Handles an empty GIN index', () => {
+    const result = calculateGinDensity({
+      schemaName: base.schemaName,
+      tableName: base.tableName,
+      indexName: base.indexName,
+      indexSize: base.indexSize,
+      liveTuples: '0',
+      allocatedPages: '0',
     } satisfies GinIndexStatsRow);
 
-    expect(result.estimatedBloatSize).toBe(0);
-    expect(result.bloatPercent).toBe(0);
+    expect(result.liveTuplesPerPage).toBe(0);
   });
 });
