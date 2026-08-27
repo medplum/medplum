@@ -157,6 +157,10 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
 
+  function reindexDatabase(targets: DatabaseReindexTarget[]): void {
+    startAsyncJob(medplum, 'Reindexing Database', 'admin/super/reindex-database', { targets });
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -338,7 +342,86 @@ export function SuperAdminPage(): JSX.Element {
       </Modal>
       <Divider my="lg" />
       <RescopeUserWidget />
+      <Divider my="lg" />
+      <Title order={2}>Reindex Database</Title>
+      <p>
+        Rebuild one or more PostgreSQL table or index targets concurrently. The operation runs asynchronously and may
+        take a long time to complete.
+      </p>
+      <DatabaseReindexForm onSubmit={reindexDatabase} />
     </Document>
+  );
+}
+
+type DatabaseReindexTarget = { table: string } | { index: string };
+type DatabaseReindexFormTarget = { type: 'table' | 'index'; name: string };
+
+function DatabaseReindexForm({
+  onSubmit,
+}: {
+  readonly onSubmit: (targets: DatabaseReindexTarget[]) => void;
+}): JSX.Element {
+  const [targets, setTargets] = useState<DatabaseReindexFormTarget[]>([{ type: 'table', name: '' }]);
+
+  function updateTarget(index: number, update: Partial<DatabaseReindexFormTarget>): void {
+    setTargets((current) =>
+      current.map((target, targetIndex) => (targetIndex === index ? { ...target, ...update } : target))
+    );
+  }
+
+  function removeTarget(index: number): void {
+    setTargets((current) => current.filter((_target, targetIndex) => targetIndex !== index));
+  }
+
+  function handleSubmit(): void {
+    onSubmit(
+      targets.map((target) => (target.type === 'table' ? { table: target.name.trim() } : { index: target.name.trim() }))
+    );
+  }
+
+  return (
+    <Form onSubmit={handleSubmit}>
+      <Stack>
+        {targets.map((target, index) => (
+          <Group key={index} align="end" grow>
+            <NativeSelect
+              label={`Target type ${index + 1}`}
+              value={target.type}
+              data={[
+                { label: 'Table', value: 'table' },
+                { label: 'Index', value: 'index' },
+              ]}
+              onChange={(event) => updateTarget(index, { type: event.currentTarget.value as 'table' | 'index' })}
+            />
+            <TextInput
+              required
+              label={`Target name ${index + 1}`}
+              placeholder={target.type === 'table' ? 'Table name' : 'Index name'}
+              value={target.name}
+              onChange={(event) => updateTarget(index, { name: event.currentTarget.value })}
+            />
+            {targets.length > 1 && (
+              <Button type="button" variant="default" onClick={() => removeTarget(index)}>
+                Remove
+              </Button>
+            )}
+          </Group>
+        ))}
+        <Group>
+          <Button
+            type="button"
+            variant="default"
+            disabled={targets.length >= 10}
+            onClick={() => setTargets((current) => [...current, { type: 'table', name: '' }])}
+          >
+            Add Target
+          </Button>
+          <Button type="submit" disabled={targets.some((target) => !target.name.trim())}>
+            Reindex Database
+          </Button>
+        </Group>
+      </Stack>
+    </Form>
   );
 }
 
