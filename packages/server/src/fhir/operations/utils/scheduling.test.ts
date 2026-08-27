@@ -722,6 +722,38 @@ describe('intervalsExceedingCapacity', () => {
     const bookings = [bk(0, 4, 2), bk(2, 4, 2), bk(6, 10, 2), bk(6, 8, 2)];
     expect(intervalsExceedingCapacity(bookings, 2)).toEqual([iv(2, 4), iv(6, 8)]);
   });
+
+  // The intention of this test is to prevent hard failures like an infinite loop
+  // stemming from NaN values coming from these datetimes; this handling may change
+  // in the future to more gracefully handle this case.
+  test('it emits an error when a slot is using a leap second as a boundary', () => {
+    const slot: Slot = {
+      resourceType: 'Slot',
+      start: '2016-12-31T23:00:00.000Z',
+      end: '2016-12-31T23:59:60.000Z', // A leap second
+      status: 'busy',
+      schedule: { reference: 'Schedule/fake' },
+    };
+
+    expect(() => intervalsExceedingCapacity([slot], 2)).toThrow();
+
+    // slotCapacity=1 has a special case implementation, test it too.
+    expect(() => intervalsExceedingCapacity([slot], 1)).toThrow();
+  });
+
+  test(`it emits an error when Slot.end < Slot.start`, () => {
+    const slot: Slot = {
+      resourceType: 'Slot',
+      start: '2026-10-03T14:00:00.000Z',
+      end: '2026-10-03T12:00:00.000Z',
+      status: 'busy',
+      schedule: { reference: 'Schedule/fake' },
+    };
+    expect(() => intervalsExceedingCapacity([slot], 2)).toThrow();
+
+    // slotCapacity=1 has a special case implementation, test it too.
+    expect(() => intervalsExceedingCapacity([slot], 1)).toThrow();
+  });
 });
 
 describe('applyExistingSlots', () => {

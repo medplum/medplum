@@ -317,6 +317,26 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
 
 type CapacityEvent = { time: number; capacity: number; entering: boolean };
 
+// Performance optimization: a faster implementation of `intervalsExceedingCapacity`
+// for the common case of "slotCapacity=1" (i.e.  no overbooking allowed).
+function intervalsExceedingCapacityOne(slots: Slot[]): Interval[] {
+  const result: Interval[] = [];
+  for (const slot of slots) {
+    if (slot.status !== 'free' && slot.status !== 'entered-in-error') {
+      const start = new Date(slot.start);
+      const end = new Date(slot.end);
+      if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
+        throw new Error('Got Slot with invalid start or end time');
+      }
+      if (end < start) {
+        throw new Error('Got Slot with start time before end time');
+      }
+      result.push({ start, end });
+    }
+  }
+  return normalizeIntervals(result);
+}
+
 // Builds the sorted start/end events for a sweep over `slots`' booked (non-free, non-error) time.
 function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
   const events: CapacityEvent[] = [];
@@ -325,11 +345,20 @@ function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
       continue;
     }
 
+    // FHIR dateTime type allows leap seconds like "2016-12-31T23:59:60"; In JS this
+    // is read as an invalid date whose value is `NaN`. For now we are disallowing
+    // using such times as boundaries in scheduling to keep things simple.
+    const start = new Date(slot.start).valueOf();
+    const end = new Date(slot.end).valueOf();
+    if (Number.isNaN(start) || Number.isNaN(end)) {
+      throw new Error('Got Slot with invalid start or end time');
+    }
+    if (end < start) {
+      throw new Error('Got Slot with start time before end time');
+    }
+
     const capacity = getSlotCapacity(slot);
-    events.push(
-      { time: new Date(slot.start).valueOf(), capacity, entering: true },
-      { time: new Date(slot.end).valueOf(), capacity, entering: false }
-    );
+    events.push({ time: start, capacity, entering: true }, { time: end, capacity, entering: false });
   }
   return events.sort((a, b) => a.time - b.time);
 }
@@ -351,16 +380,8 @@ export function intervalsExceedingCapacity(slots: Slot[], candidateCapacity: num
     throw new Error(`Invalid capacity; must be at least 1, got ${candidateCapacity}`);
   }
 
-  // Optimization for common case: if we are searching at capacity 1 (no overbooking), every
-  // busy slot blocks its full time
   if (candidateCapacity === 1) {
-    const result: Interval[] = [];
-    for (const slot of slots) {
-      if (slot.status !== 'free' && slot.status !== 'entered-in-error') {
-        result.push({ start: new Date(slot.start), end: new Date(slot.end) });
-      }
-    }
-    return normalizeIntervals(result);
+    return intervalsExceedingCapacityOne(slots);
   }
 
   // Sweep the booking start/end instants in time order. `open` holds the capacities
