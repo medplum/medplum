@@ -90,26 +90,34 @@ function getNextVersion(dir: string = SCHEMA_DIR): number {
   return lastVersion + 1;
 }
 
-function rewriteMigrationExports(dir: string): void {
+export function buildMigrationExports(versions: number[]): string {
   const b = new FileBuilder();
   b.append(
     '// organize-imports-ignore - https://github.com/simonhaenisch/prettier-plugin-organize-imports?tab=readme-ov-file#skip-files'
   );
   b.newLine();
-  const filenamesWithoutExt = getMigrationFilenames(dir)
-    .map(getVersionFromFilename)
-    .sort((a, b) => a - b)
-    .map((version) => `v${version}`);
-  for (const filename of filenamesWithoutExt) {
-    b.append(`export * as ${filename} from './${filename}';`);
-    if (filename === 'v9') {
+
+  let previousDigits = 0;
+  for (const version of versions) {
+    const digits = version.toString().length;
+    if (previousDigits && digits !== previousDigits) {
       b.append('/* CAUTION: LOAD-BEARING COMMENT */');
       b.append(
         '/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */'
       );
     }
+    b.append(`export * as v${version} from './v${version}';`);
+    previousDigits = digits;
   }
-  writeFileSync(`${dir}/index.ts`, b.toString(), { flag: 'w' });
+
+  return b.toString();
+}
+
+function rewriteMigrationExports(dir: string): void {
+  const versions = getMigrationFilenames(dir)
+    .map(getVersionFromFilename)
+    .sort((a, b) => a - b);
+  writeFileSync(`${dir}/index.ts`, buildMigrationExports(versions), { flag: 'w' });
 }
 
 export function addDataMigrationToManifest(version: string): void {
