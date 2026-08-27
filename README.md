@@ -12,8 +12,6 @@ Medplum is a developer platform that enables flexible and rapid development of h
 - **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
 - **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
 
-![Medplum Architecture](packages/docs/static/img/architecture.webp)
-
 ## Contents
 
 - [Contributing](#contributing)
