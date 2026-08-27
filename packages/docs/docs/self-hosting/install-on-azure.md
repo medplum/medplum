@@ -191,7 +191,7 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
     "tokenUrl": "http://localhost:8103/oauth2/token",
     "userInfoUrl": "http://localhost:8103/oauth2/userinfo",
     "appBaseUrl": "http://localhost:3000/",
-    "binaryStorage": "file:./binary/",
+    "binaryStorage": "azure:YOUR_STORAGE_ACCOUNT:YOUR_BINARY_CONTAINER",
     "storageBaseUrl": "http://localhost:8103/storage/",
     "supportEmail": "\"Medplum\" <support@medplum.com>",
     "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
@@ -227,8 +227,11 @@ Create a JSON file containing your secret data. Save it as secret_data.json.
 ```
 
 - Replace **YOUR_DB_HOST** and **YOUR_REDIS_HOST** with your database's hostnames or IP addresses and Redis instances.
+- Replace **YOUR_STORAGE_ACCOUNT** and **YOUR_BINARY_CONTAINER** with the Azure Storage account and blob container used for Medplum Binary resources. `binaryStorage` uses the format `azure:<storage-account-name>:<container-name>`.
+- The Medplum server authenticates to Azure Blob Storage using its managed identity. That identity needs permission to read, write, delete, and generate user delegation SAS URLs for the container.
+- This blob container stores runtime Binary resource contents. It is separate from the storage account used later to serve frontend static files through Azure CDN.
+- `storageBaseUrl` in this example keeps the Medplum `/storage/` proxy. For direct SAS URLs, see [Set up presigned URLs](/docs/self-hosting/presigned-urls).
 - Ensure the JSON content is correctly formatted and that any variables or placeholders are replaced with actual values.
-- See [Set up presigned URLs](/docs/self-hosting/presigned-urls) to set up presigned URLs
 
 **3\. Create a secret in the Key Vault:**
 
