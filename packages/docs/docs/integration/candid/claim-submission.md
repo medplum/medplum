@@ -57,6 +57,7 @@ flowchart TD
 | `patient` | Reference to the Patient | Yes |
 | `provider` | Reference to the billing provider: an Organization for organization billing (the common case), or a Practitioner for individual billing | Yes |
 | `careTeam` | Care team member with role `primary` (system: `http://terminology.hl7.org/CodeSystem/claimcareteamrole`) referencing the rendering Practitioner | Yes* |
+| `careTeam` | Optional: care team member with role `referral` referencing the referring Practitioner. Required by some payers (e.g. Medicare MNT). The Practitioner can be a contained resource with just a name and NPI — no stored resource needed for external referrers. | No |
 | `billablePeriod.start` | Preferred date of service when service lines carry no individual `servicedDate` | No |
 | `created` | Fallback date of service when `billablePeriod.start` is also absent | No |
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |

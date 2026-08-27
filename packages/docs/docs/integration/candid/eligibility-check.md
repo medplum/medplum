@@ -49,6 +49,7 @@ flowchart TD
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
 | `servicedDate` | Date of service for the eligibility check | No |
 | `servicedPeriod.start` | Alternative to `servicedDate` | No |
+| `item[].category` | X12 service type code to check (system: `https://x12.org/codes/service-type-codes`, e.g. `55` for Medical Nutrition Therapy). Defaults to `30` (Health Benefit Plan Coverage) when omitted. | No |
 
 ### Coverage
 
