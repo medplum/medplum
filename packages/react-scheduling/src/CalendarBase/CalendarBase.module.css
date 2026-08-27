@@ -39,7 +39,7 @@
   background-color: light-dark(#0000000a, #ffffff14);
 }
 
-.selectedSlot {
+.selectedRange {
   background-color: light-dark(#228be62e, #4dabf73d);
 }
 

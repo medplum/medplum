@@ -313,7 +313,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         nonBusinessHoursClass={cx(props.nonBusinessHoursClass, classes.nonBusinessHours)}
         dayLaneClass={cx(props.dayLaneClass, selectable && classes.selectableDay)}
         dayCellClass={cx(props.dayCellClass, selectable && classes.selectableDay)}
-        highlightClass={cx(props.highlightClass, classes.selectedSlot)}
+        highlightClass={cx(props.highlightClass, classes.selectedRange)}
       />
     </div>
   );
