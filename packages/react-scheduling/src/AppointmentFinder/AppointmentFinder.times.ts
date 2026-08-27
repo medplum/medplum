@@ -70,7 +70,7 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
 }
 
 export interface FormatZonedTimeOptions {
-  // Names the zone alongside the time, e.g. "12:30 PM EST". 
+  // Names the zone alongside the time, e.g. "12:30 PM EST".
   readonly withTimezone?: boolean;
 }
 
@@ -400,7 +400,7 @@ function startOfZonedDay(year: number, month: number, day: number, timezone: str
 export function getZonedDayRange(day: Date, timezone?: string): Required<DateRange> {
   const now = new Date();
   const opens = startOfZonedDay(day.getFullYear(), day.getMonth() + 1, day.getDate(), timezone) ?? day;
-  // If the day is already under way, start from now rather than from the beginning to prevent 
+  // If the day is already under way, start from now rather than from the beginning to prevent
   // getting back times from `$find` that have already passed
   const start = opens > now ? opens : now;
 
