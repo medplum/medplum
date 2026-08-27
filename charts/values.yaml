@@ -58,7 +58,7 @@ deployment:
   replicaCount: 1
   image:
     repository: medplum/medplum-server
-    tag: '5.1.33'
+    tag: '5.1.34'
   env:
     # - name: SQL_DEBUG
     #   value: '*'
