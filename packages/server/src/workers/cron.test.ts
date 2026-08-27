@@ -483,7 +483,7 @@ describe('Cron resource', () => {
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
 
-  test('execBot runs the target bot as onBehalfOf with the Cron parameter list', () =>
+  test('execBot runs the target bot as onBehalfOf with the Cron as input', () =>
     withTestContext(async () => {
       const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
       const membership = await systemRepo.createResource<ProjectMembership>({
@@ -513,7 +513,7 @@ describe('Cron resource', () => {
       expect(args.bot.id).toStrictEqual(bot.id);
       expect(args.runAs.id).toStrictEqual(membership.id);
       expect(args.runAs.profile).toMatchObject(createReference(practitioner));
-      expect(args.input).toStrictEqual({ resourceType: 'Parameters', parameter });
+      expect(args.input).toMatchObject({ resourceType: 'Cron', id: cron.id, parameter });
       executeBotSpy.mockRestore();
     }));
 
@@ -521,28 +521,9 @@ describe('Cron resource', () => {
     withTestContext(async () => {
       // Cron.parameter.value[x] carries a deliberately narrow subset of Parameters.parameter's types
       const parameter: ParametersParameter[] = [{ name: 'dose', valueQuantity: { value: 5, unit: 'mg' } }];
-      await expect(repo.createResource<Cron>({ ...validCron(), parameter: parameter })).rejects.toThrow(
+      await expect(repo.createResource<Cron>({ ...validCron(), parameter })).rejects.toThrow(
         'Invalid additional property "valueQuantity"'
       );
-    }));
-
-  test('execBot passes the Cron itself when it has no parameter list', () =>
-    withTestContext(async () => {
-      const cron = await repo.createResource<Cron>({
-        resourceType: 'Cron',
-        active: true,
-        cronString: '* * * * *',
-        targetReference: createReference(bot),
-        onBehalfOf: createReference(botMembership),
-      });
-
-      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
-
-      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
-
-      const args = executeBotSpy.mock.calls[0][0];
-      expect(args.input).toMatchObject({ resourceType: 'Cron', id: cron.id });
-      executeBotSpy.mockRestore();
     }));
 
   test('execBot rejects an onBehalfOf membership in another project', () =>

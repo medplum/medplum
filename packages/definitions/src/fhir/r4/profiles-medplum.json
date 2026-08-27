@@ -10827,7 +10827,7 @@
             "id" : "Cron.parameter",
             "path" : "Cron.parameter",
             "short" : "Input passed to the target",
-            "definition" : "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+            "definition" : "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. The target is always invoked with the whole Cron resource, so these parameters arrive alongside the schedule that produced them.",
             "min" : 0,
             "max" : "*",
             "base" : {
@@ -10910,21 +10910,6 @@
             "type" : [{
               "code" : "Resource"
             }]
-          },
-          {
-            "id" : "Cron.parameter.part",
-            "path" : "Cron.parameter.part",
-            "short" : "Named part of a multi-part parameter",
-            "definition" : "A named part of a multi-part parameter.",
-            "comment" : "Only one level of nested parameters is allowed.",
-            "min" : 0,
-            "max" : "*",
-            "base" : {
-              "path" : "Cron.parameter.part",
-              "min" : 0,
-              "max" : "*"
-            },
-            "contentReference" : "#Cron.parameter"
           },
           {
             "id" : "Cron.cronString",

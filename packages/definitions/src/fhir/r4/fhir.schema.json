@@ -65737,7 +65737,7 @@
           "$ref": "#/definitions/Reference"
         },
         "parameter": {
-          "description": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+          "description": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. The target is always invoked with the whole Cron resource, so these parameters arrive alongside the schedule that produced them.",
           "items": {
             "$ref": "#/definitions/CronParameter"
           },
@@ -65766,7 +65766,7 @@
       ]
     },
     "CronParameter": {
-      "description": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+      "description": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. The target is always invoked with the whole Cron resource, so these parameters arrive alongside the schedule that produced them.",
       "properties": {
         "name": {
           "description": "The name of the parameter (reference to the operation definition).",
@@ -65799,13 +65799,6 @@
         "resource": {
           "description": "If the parameter is a whole resource.",
           "$ref": "#/definitions/Resource"
-        },
-        "part": {
-          "description": "A named part of a multi-part parameter.",
-          "items": {
-            "$ref": "#/definitions/CronParameter"
-          },
-          "type": "array"
         }
       },
       "additionalProperties": false,

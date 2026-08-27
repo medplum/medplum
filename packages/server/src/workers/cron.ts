@@ -2,16 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type {
-  Bot,
-  Cron,
-  Parameters,
-  Project,
-  ProjectMembership,
-  Resource,
-  ResourceType,
-  Timing,
-} from '@medplum/fhirtypes';
+import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
@@ -282,7 +273,8 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
       throw new Error('Cron onBehalfOf membership belongs to a different project');
     }
 
-    input = cron.parameter ? ({ resourceType: 'Parameters', parameter: cron.parameter } satisfies Parameters) : cron;
+    // The whole Cron goes to the target, so a bot reads its parameters alongside the schedule
+    input = cron;
   } else {
     bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
     runAs = await findProjectMembership(bot.meta?.project as string, createReference(bot));

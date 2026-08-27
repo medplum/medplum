@@ -35,7 +35,7 @@ Requires the `cron` project feature.
 | `targetReference` | The Bot to execute.                                                                              |
 | `cronString`      | The schedule, as a five-field cron expression. Required.                                         |
 | `endTime`         | The point after which the job stops running.                                                     |
-| `parameter`       | Input passed to the Bot as a `Parameters` resource. Absent passes the `Cron` itself.             |
+| `parameter`       | Input for the Bot, which always receives the whole `Cron` resource, parameters included.         |
 
 ```json
 {

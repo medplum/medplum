@@ -210,7 +210,7 @@
       "min": 0,
       "max": "*",
       "short": "Input passed to the target",
-      "definition": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. When absent, the Cron resource itself is passed as the input.",
+      "definition": "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. The target is always invoked with the whole Cron resource, so these parameters arrive alongside the schedule that produced them.",
       "comment": "",
       "inherited": false
     },
@@ -277,22 +277,6 @@
       "short": "If parameter is a whole resource",
       "definition": "If the parameter is a whole resource.",
       "comment": "When resolving references in resources, the operation definition may specify how references may be resolved between parameters. If a reference cannot be resolved between the parameters, the application should fall back to it's general resource resolution methods.",
-      "inherited": false
-    },
-    {
-      "name": "part",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": ""
-        }
-      ],
-      "path": "Cron.parameter.part",
-      "min": 0,
-      "max": "*",
-      "short": "Named part of a multi-part parameter",
-      "definition": "A named part of a multi-part parameter.",
-      "comment": "Only one level of nested parameters is allowed.",
       "inherited": false
     },
     {

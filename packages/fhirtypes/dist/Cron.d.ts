@@ -109,8 +109,9 @@ export interface Cron {
 
   /**
    * Input passed to the target each time the scheduled job runs, with the
-   * same structure as Parameters.parameter. When absent, the Cron resource
-   * itself is passed as the input.
+   * same structure as Parameters.parameter. The target is always invoked
+   * with the whole Cron resource, so these parameters arrive alongside the
+   * schedule that produced them.
    */
   parameter?: CronParameter[];
 
@@ -137,8 +138,9 @@ export interface Cron {
 
 /**
  * Input passed to the target each time the scheduled job runs, with the
- * same structure as Parameters.parameter. When absent, the Cron resource
- * itself is passed as the input.
+ * same structure as Parameters.parameter. The target is always invoked
+ * with the whole Cron resource, so these parameters arrive alongside the
+ * schedule that produced them.
  */
 export interface CronParameter {
 
@@ -181,11 +183,6 @@ export interface CronParameter {
    * If the parameter is a whole resource.
    */
   resource?: Resource;
-
-  /**
-   * A named part of a multi-part parameter.
-   */
-  part?: CronParameter[];
 }
 
 /**
