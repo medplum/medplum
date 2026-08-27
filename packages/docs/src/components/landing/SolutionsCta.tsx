@@ -18,10 +18,10 @@ export function SolutionsCta(): JSX.Element {
         <h2 className={styles.headline}>{SOLUTIONS_CTA.headline}</h2>
         <p className={styles.body}>{SOLUTIONS_CTA.body}</p>
         <div className={styles.buttons}>
-          <LandingButton to={SOLUTIONS_CTA.primaryCta.href} variant="purple" stretchMobile>
+          <LandingButton to={SOLUTIONS_CTA.primaryCta.href} variant="purple">
             {SOLUTIONS_CTA.primaryCta.label}
           </LandingButton>
-          <LandingButton to={SOLUTIONS_CTA.secondaryCta.href} variant="white" stretchMobile>
+          <LandingButton to={SOLUTIONS_CTA.secondaryCta.href} variant="white">
             {SOLUTIONS_CTA.secondaryCta.label}
           </LandingButton>
         </div>

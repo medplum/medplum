@@ -6,8 +6,11 @@ import styles from './LandingButton.module.css';
 export type LandingButtonVariant = 'purple' | 'white';
 
 export interface LandingButtonOptions {
-  /** When true, the button fills the row's width at the smallest breakpoint. */
-  readonly stretchMobile?: boolean;
+  /**
+   * Renders the hover treatment without the pointer, for a control that is engaged
+   * (e.g. a dropdown trigger whose menu is open).
+   */
+  readonly active?: boolean;
 }
 
 /**
@@ -17,9 +20,9 @@ export interface LandingButtonOptions {
  * element, as `BuildDropdown` does with the `<button>` trigger it owns.
  *
  * @param variant - Primary (purple) or secondary (white) treatment.
- * @param options - Responsive opt-ins.
+ * @param options - State opt-ins.
  * @returns The className to apply.
  */
 export function landingButtonClass(variant: LandingButtonVariant, options?: LandingButtonOptions): string {
-  return clsx(styles.button, styles[variant], options?.stretchMobile && styles.stretchMobile);
+  return clsx(styles.button, styles[variant], options?.active && styles[`${variant}Active`]);
 }

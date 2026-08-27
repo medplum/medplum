@@ -29,7 +29,11 @@
   color: #fff;
 }
 
-.purple:hover {
+/* `*Active` mirrors the matching `:hover` rule for controls that are visually engaged
+   without the pointer over them — a dropdown trigger whose menu is open. Kept adjacent
+   to the hover rule so the pair can't drift. */
+.purple:hover,
+.purpleActive {
   background: var(--oc-grape-9);
   color: #fff;
 }
@@ -41,7 +45,8 @@
   box-shadow: var(--landing-shadow-cta-white);
 }
 
-.white:hover {
+.white:hover,
+.whiteActive {
   background: #fff;
   color: var(--oc-grape-8);
 }
@@ -51,16 +56,8 @@
   color: var(--oc-gray-2);
 }
 
-[data-theme='dark'] .white:hover {
+[data-theme='dark'] .white:hover,
+[data-theme='dark'] .whiteActive {
   background: var(--landing-surface-elevated);
   color: var(--oc-grape-5);
-}
-
-/* Opt-in for button rows that stack into a single column on phones. Lives here rather
-   than in each caller because a BuildDropdown trigger is wrapped in the dropdown's own
-   div, so the row's `align-items: stretch` never reaches it. */
-@media screen and (max-width: 600px) {
-  .stretchMobile {
-    width: 100%;
-  }
 }

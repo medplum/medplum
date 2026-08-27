@@ -20,9 +20,9 @@ export interface LandingButtonProps extends LandingButtonOptions {
  * @returns The link element.
  */
 export function LandingButton(props: LandingButtonProps): JSX.Element {
-  const { to, variant, children, stretchMobile, ...rest } = props;
+  const { to, variant, children, ...rest } = props;
   return (
-    <Link {...rest} to={to} className={landingButtonClass(variant, { stretchMobile })}>
+    <Link {...rest} to={to} className={landingButtonClass(variant)}>
       {children}
     </Link>
   );
