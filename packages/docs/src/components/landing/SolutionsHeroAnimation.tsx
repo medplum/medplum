@@ -17,12 +17,14 @@ interface Logo {
 }
 
 // Each tile holds two faces and flips once from front to back, then back again, on a
-// slow cadence. Fronts are always customers featured below on the page
-// (solutions-content.ts), so the hero matches what the page highlights; backs fill in
-// with other real Medplum customers not otherwise featured on /solutions. Keep that
-// invariant when editing: nine fronts, nine featured customers. Thirty Madison is
-// deliberately excluded from this set (a customer that's since moved off Medplum
-// shouldn't be shown as a logo here).
+// slow cadence. Fronts are usually customers featured below on the page
+// (solutions-content.ts), so the hero matches what the page highlights; when a
+// category section doesn't have nine featured customers to draw from, a front can
+// instead be any other real Medplum customer with a published case study (see
+// SOLUTIONS_MORE_CASE_STUDIES) so the grid still reads as nine real logos. Backs
+// fill in with other real Medplum customers not otherwise shown as a front. Thirty
+// Madison is deliberately excluded from this set (a customer that's since moved off
+// Medplum shouldn't be shown as a logo here).
 //
 // Tile order below is also flip order: the 3-column grid lays these out
 // left-to-right/top-to-bottom, and the per-tile animationDelay below increases
@@ -47,7 +49,7 @@ const TILES: readonly { readonly front: Logo; readonly back: Logo }[] = [
     back: { src: '/img/logos/medimind.svg', alt: 'MediMind' },
   },
   {
-    front: { src: '/img/logos/ultralight.svg', alt: 'Ultralight' },
+    front: { src: '/img/blog/rewind-logo.png', alt: 'Rewind' },
     back: { src: '/img/logos/profile-health.svg', alt: 'Profile Health' },
   },
   {

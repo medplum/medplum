@@ -212,17 +212,6 @@ export const SOLUTIONS_CATEGORIES: readonly SolutionCategory[] = [
     icon: IconFileTextSpark,
     customers: [
       {
-        id: 'ultralight',
-        name: 'Ultralight',
-        logoSrc: '/img/logos/ultralight.svg',
-        logoHasName: true,
-        videoSrc: '/img/solutions/ultralight-clip.mp4',
-        posterSrc: '/img/solutions/ultralight-clip-poster.webp',
-        screenshotAlt: 'Ultralight AI-native EHR biomarker dashboard with ambient scribing',
-        valueStatement:
-          'Ultralight is an AI-native EHR built on Medplum, with an ambient scribe and biomarker intelligence woven directly into the chart — turning documentation and longitudinal data into structured, actionable insight at the point of care.',
-      },
-      {
         id: 'rad-ai',
         name: 'Rad AI',
         logoSrc: '/img/logos/rad-ai.svg',
