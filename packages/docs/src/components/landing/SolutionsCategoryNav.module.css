@@ -10,7 +10,6 @@
 }
 
 .label {
-  font-family: var(--landing-font-display);
   font-size: var(--landing-label-size);
   font-weight: var(--landing-label-weight);
   text-transform: uppercase;
@@ -30,6 +29,42 @@
   flex-direction: column;
 }
 
+.pill,
+.subPill {
+  font-weight: 500;
+  border-radius: var(--landing-radius-media);
+  text-decoration: none;
+  transition: all var(--landing-transition);
+}
+
+.pill:hover,
+.subPill:hover {
+  text-decoration: none;
+}
+
+.pill {
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.875rem;
+  color: var(--landing-color-body);
+}
+
+.pill:hover {
+  background: var(--landing-surface-muted);
+  color: var(--landing-color-heading);
+}
+
+.pillActive,
+.pillActive:hover {
+  background: var(--oc-grape-0);
+  color: var(--oc-grape-9);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .pillActive,
+[data-theme='dark'] .pillActive:hover {
+  background: var(--oc-grape-1);
+}
+
 .subList {
   display: flex;
   flex-direction: column;
@@ -38,20 +73,14 @@
 }
 
 .subPill {
-  font-family: var(--landing-font-display);
   font-size: 0.8125rem;
-  font-weight: 500;
   padding: 0.375rem 0.75rem;
-  border-radius: var(--landing-radius-media);
   color: var(--landing-color-muted);
-  text-decoration: none;
-  transition: all var(--landing-transition);
   border-left: 2px solid var(--landing-divider);
 }
 
 .subPill:hover {
   color: var(--landing-color-heading);
-  text-decoration: none;
 }
 
 .subPillActive {
@@ -64,45 +93,16 @@
   color: var(--oc-grape-4);
 }
 
-.pill {
-  font-family: var(--landing-font-display);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  padding: 0.5rem 0.875rem;
-  border-radius: var(--landing-radius-media);
-  color: var(--landing-color-body);
-  text-decoration: none;
-  transition: all var(--landing-transition);
-}
-
-.pill:hover {
-  background: var(--landing-surface-muted);
-  color: var(--landing-color-heading);
-  text-decoration: none;
-}
-
-.pillActive {
-  background: var(--oc-grape-0);
-  color: var(--oc-grape-9);
-  font-weight: 600;
-}
-
-.pillActive:hover {
-  background: var(--oc-grape-0);
-  color: var(--oc-grape-9);
-}
-
-[data-theme='dark'] .pillActive,
-[data-theme='dark'] .pillActive:hover {
-  background: var(--oc-grape-1);
-  color: var(--oc-grape-9);
-}
-
-/* On narrow screens the sidebar collapses into a horizontal sticky bar. */
+/* On narrow screens the sidebar collapses into a horizontal sticky bar. Its height is
+   pinned to --solutions-mobile-nav-height (see solutions.module.css) rather than left to
+   its contents, because the page's anchor offsets subtract that same value — measuring
+   one and declaring the other is how the two drift apart. */
 @media screen and (max-width: 996px) {
   .nav {
     top: var(--ifm-navbar-height);
     z-index: 10;
+    height: var(--solutions-mobile-nav-height);
+    box-sizing: border-box;
     padding-top: 0;
     background: var(--landing-surface);
     border-top: 1px solid var(--landing-divider);
@@ -113,11 +113,16 @@
     display: none;
   }
 
+  /* Matches the content column's width and gutter (composes: can't be used inside a
+     media query, and at desktop widths .inner is a plain vertical list). */
   .inner {
-    flex-direction: row;
     max-width: var(--layout-max-width);
-    margin: 0 auto;
-    padding: 0.625rem var(--layout-padding-md);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+    box-sizing: border-box;
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
     gap: 0.5rem;
     overflow-x: auto;
     scrollbar-width: none;
@@ -141,11 +146,5 @@
      stays a flat, horizontally-scrolling list of category pills. */
   .subList {
     display: none;
-  }
-}
-
-@media screen and (max-width: 600px) {
-  .inner {
-    padding: 0.625rem var(--layout-padding-sm);
   }
 }

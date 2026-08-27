@@ -1,38 +1,38 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import clsx from 'clsx';
 import type { CSSProperties, JSX } from 'react';
 import { useInView } from 'react-intersection-observer';
 import styles from './SolutionsHeroAnimation.module.css';
 
 interface Logo {
-  src: string;
-  alt: string;
-  /** Multiplier on the default size caps, for art that sits small in its frame or
+  readonly src: string;
+  readonly alt: string;
+  /**
+   * Multiplier on the default size caps, for art that sits small in its frame or
    * whose portrait aspect leaves the landscape tile underfilled. Above ~1.19 the
-   * logo starts eating into the face's padding, which is intentional headroom. */
-  scale?: number;
+   * logo starts eating into the face's padding, which is intentional headroom.
+   */
+  readonly scale?: number;
 }
 
-const PLACEHOLDER = 'placeholder' as const;
-type Face = Logo | typeof PLACEHOLDER;
-
-// Each tile holds at most two faces and flips once from front to back, then back
-// again, on a slow cadence. Fronts are always customers featured below on the
-// page (solutions-content.ts), so the hero matches what the page highlights;
-// backs fill in with other real Medplum customers not otherwise featured on
-// /solutions. Keep that invariant when editing: nine fronts, nine featured
-// customers. Thirty Madison is deliberately excluded from this set (a customer
-// that's since moved off Medplum shouldn't be shown as a logo here).
+// Each tile holds two faces and flips once from front to back, then back again, on a
+// slow cadence. Fronts are always customers featured below on the page
+// (solutions-content.ts), so the hero matches what the page highlights; backs fill in
+// with other real Medplum customers not otherwise featured on /solutions. Keep that
+// invariant when editing: nine fronts, nine featured customers. Thirty Madison is
+// deliberately excluded from this set (a customer that's since moved off Medplum
+// shouldn't be shown as a logo here).
 //
 // Tile order below is also flip order: the 3-column grid lays these out
 // left-to-right/top-to-bottom, and the per-tile animationDelay below increases
 // with array index, so the wave sweeps the grid in reading order, then loops.
-const TILES: { front: Logo; back: Face }[] = [
+const TILES: readonly { readonly front: Logo; readonly back: Logo }[] = [
   {
     front: { src: '/img/logos/develo.png', alt: 'Develo' },
     // The file carries a lot of internal whitespace around a two-line lockup, so
     // it renders small against its neighbours at the default caps.
-    back: { src: '/img/logos/chamber-cardio.jpg', alt: 'Chamber Cardio', scale: 1.15 },
+    back: { src: '/img/logos/chamber-cardio.webp', alt: 'Chamber Cardio', scale: 1.15 },
   },
   {
     front: { src: '/img/logos/everselflogo.png', alt: 'Everself' },
@@ -68,21 +68,6 @@ const TILES: { front: Logo; back: Face }[] = [
   },
 ];
 
-function Face({ face }: { face: Face }): JSX.Element {
-  if (face === PLACEHOLDER) {
-    return <span className={styles.placeholder}>+ more</span>;
-  }
-  return (
-    <img
-      src={face.src}
-      alt={face.alt}
-      className={styles.logo}
-      style={face.scale ? { maxWidth: `${100 * face.scale}%`, maxHeight: `${84 * face.scale}%` } : undefined}
-      loading="eager"
-    />
-  );
-}
-
 // One full lap = both halves of the wave: every tile flips to its back face one
 // at a time, all of them hold on the back, then every tile flips home again in
 // the same order. The `flip` keyframes put the turn home at the 50% mark, so a
@@ -94,15 +79,31 @@ const START_DELAY_S = 0.5;
 // with room to spare, so the last tile lands before the first one turns back:
 // the +2 buys that margin (~2s here) instead of finishing exactly on the beat.
 const STAGGER_S = FLIP_PERIOD_S / (2 * TILES.length + 2);
+// Gap between neighbouring tiles' entrances.
+const POP_IN_STAGGER_MS = 60;
+
+function Face({ logo, back }: { readonly logo: Logo; readonly back?: boolean }): JSX.Element {
+  return (
+    <div className={clsx(styles.face, back && styles.faceBack)}>
+      <img
+        src={logo.src}
+        alt={logo.alt}
+        className={styles.logo}
+        style={logo.scale ? ({ '--logo-scale': logo.scale } as CSSProperties) : undefined}
+        loading="eager"
+      />
+    </div>
+  );
+}
 
 export function SolutionsHeroAnimation(): JSX.Element {
   const { ref, inView } = useInView({ triggerOnce: true, rootMargin: '0px 0px -10% 0px' });
 
   return (
-    <div className={`${styles.canvas} ${inView ? styles.in : ''}`} ref={ref} aria-hidden="true">
+    <div className={clsx(styles.canvas, inView && styles.in)} ref={ref} aria-hidden="true">
       <div className={styles.grid}>
         {TILES.map((tile, i) => (
-          <div key={i} className={styles.tile} style={{ animationDelay: `${i * 60}ms` }}>
+          <div key={tile.front.src} className={styles.tile} style={{ animationDelay: `${i * POP_IN_STAGGER_MS}ms` }}>
             <div
               className={styles.tileInner}
               style={
@@ -114,12 +115,8 @@ export function SolutionsHeroAnimation(): JSX.Element {
                 } as CSSProperties
               }
             >
-              <div className={styles.face}>
-                <Face face={tile.front} />
-              </div>
-              <div className={`${styles.face} ${styles.faceBack}`}>
-                <Face face={tile.back} />
-              </div>
+              <Face logo={tile.front} />
+              <Face logo={tile.back} back />
             </div>
           </div>
         ))}

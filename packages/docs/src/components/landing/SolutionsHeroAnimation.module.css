@@ -68,20 +68,13 @@
   transform: rotateY(180deg);
 }
 
-/* Logos fill the tile as fully as their files allow; per-logo scale (inline)
-   compensates for files that carry extra whitespace. */
+/* Logos fill the tile as fully as their files allow; --logo-scale (set inline per
+   logo) compensates for files that carry extra whitespace. Leaving the caps under
+   100% is what keeps the face's padding as headroom. */
 .logo {
-  max-width: 100%;
-  max-height: 84%;
+  max-width: calc(100% * var(--logo-scale, 1));
+  max-height: calc(84% * var(--logo-scale, 1));
   object-fit: contain;
-}
-
-.placeholder {
-  font-family: var(--landing-font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: rgba(var(--oc-grape-8-rgb), 0.45);
 }
 
 @keyframes popIn {

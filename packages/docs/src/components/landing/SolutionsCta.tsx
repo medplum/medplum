@@ -8,6 +8,7 @@ import {
   SOLUTIONS_MORE_CASE_STUDIES,
   SOLUTIONS_MORE_CASE_STUDIES_HEADING,
 } from '../../data/solutions-content';
+import { LandingButton } from './LandingButton';
 import styles from './SolutionsCta.module.css';
 
 export function SolutionsCta(): JSX.Element {
@@ -17,12 +18,12 @@ export function SolutionsCta(): JSX.Element {
         <h2 className={styles.headline}>{SOLUTIONS_CTA.headline}</h2>
         <p className={styles.body}>{SOLUTIONS_CTA.body}</p>
         <div className={styles.buttons}>
-          <Link to={SOLUTIONS_CTA.primaryCta.href} className={styles.purpleButton}>
+          <LandingButton to={SOLUTIONS_CTA.primaryCta.href} variant="purple">
             {SOLUTIONS_CTA.primaryCta.label}
-          </Link>
-          <Link to={SOLUTIONS_CTA.secondaryCta.href} className={styles.whiteButton}>
+          </LandingButton>
+          <LandingButton to={SOLUTIONS_CTA.secondaryCta.href} variant="white">
             {SOLUTIONS_CTA.secondaryCta.label}
-          </Link>
+          </LandingButton>
         </div>
 
         <div className={styles.moreStudies}>

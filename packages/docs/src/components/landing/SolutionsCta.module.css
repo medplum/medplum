@@ -11,6 +11,10 @@
   position: relative;
 }
 
+[data-theme='dark'] .section {
+  background: var(--oc-gray-9);
+}
+
 /* Soft seam into the CTA band. Kept INSIDE the section's own top edge (fading the
    page surface down into the band) rather than extending above it — the sticky
    category nav occupies the region just above this section at full scroll, and an
@@ -28,14 +32,10 @@
 }
 
 .inner {
-  max-width: var(--layout-max-width);
-  margin: 0 auto;
-  padding: 0 var(--layout-padding);
-  text-align: left;
+  composes: container from './LandingContainer.module.css';
 }
 
 .headline {
-  font-family: var(--landing-font-display);
   font-weight: var(--landing-section-weight);
   font-size: var(--landing-section-size);
   line-height: var(--landing-section-leading);
@@ -46,7 +46,6 @@
 }
 
 .body {
-  font-family: var(--landing-font-display);
   font-size: var(--landing-lead-size);
   line-height: var(--landing-lead-leading);
   font-weight: var(--landing-lead-weight);
@@ -58,49 +57,7 @@
 .buttons {
   display: flex;
   gap: var(--landing-stack-gap);
-  justify-content: flex-start;
   flex-wrap: wrap;
-}
-
-.whiteButton,
-.purpleButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--landing-btn-gap);
-  font-family: inherit;
-  font-weight: var(--landing-btn-weight);
-  font-size: var(--landing-btn-size);
-  padding: var(--landing-btn-padding);
-  border-radius: var(--landing-btn-radius);
-  border: none;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--landing-transition);
-  text-align: center;
-  justify-content: center;
-}
-
-.whiteButton {
-  background: #fff;
-  color: var(--landing-color-heading);
-  box-shadow: var(--landing-shadow-cta-white);
-}
-
-.whiteButton:hover {
-  background: #fff;
-  color: var(--oc-grape-8);
-  text-decoration: none;
-}
-
-.purpleButton {
-  background: var(--oc-grape-8);
-  color: #fff;
-}
-
-.purpleButton:hover {
-  background: var(--oc-grape-9);
-  color: #fff;
-  text-decoration: none;
 }
 
 /* --- More customer stories: logo strip --- */
@@ -109,6 +66,10 @@
   margin-top: 4rem;
   padding-top: 2rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .moreStudies {
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .moreHeader {
@@ -121,7 +82,6 @@
 }
 
 .moreHeading {
-  font-family: var(--landing-font-display);
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -134,7 +94,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-family: var(--landing-font-display);
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--oc-grape-8);
@@ -144,6 +103,14 @@
 .moreLink:hover {
   color: var(--oc-grape-9);
   text-decoration: none;
+}
+
+[data-theme='dark'] .moreLink {
+  color: var(--oc-grape-4);
+}
+
+[data-theme='dark'] .moreLink:hover {
+  color: var(--oc-grape-3);
 }
 
 .logoStrip {
@@ -187,31 +154,6 @@
   border-color: var(--oc-grape-6);
 }
 
-.logoName {
-  font-family: var(--landing-font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: center;
-  color: var(--landing-color-heading);
-}
-
-[data-theme='dark'] .section {
-  background: var(--oc-gray-9);
-}
-
-[data-theme='dark'] .moreStudies {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme='dark'] .moreLink {
-  color: var(--oc-grape-4);
-}
-
-[data-theme='dark'] .moreLink:hover {
-  color: var(--oc-grape-3);
-}
-
 [data-theme='dark'] .logoMark {
   border-color: var(--oc-grape-7);
 }
@@ -220,47 +162,30 @@
   border-color: var(--oc-grape-5);
 }
 
+.logoName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--landing-color-heading);
+}
+
 [data-theme='dark'] .logoName {
   color: var(--oc-gray-2);
 }
 
-[data-theme='dark'] .whiteButton {
-  background: var(--landing-surface-elevated);
-  color: var(--oc-gray-2);
-  box-shadow: var(--landing-shadow-cta-white);
-}
-
-[data-theme='dark'] .whiteButton:hover {
-  background: var(--landing-surface-elevated);
-  color: var(--oc-grape-5);
-}
-
-@media (max-width: 996px) {
-  .inner {
-    padding: 0 var(--layout-padding-md);
-  }
-
+@media screen and (max-width: 996px) {
   .section {
     padding: 4rem 0 3rem;
   }
 
   .body {
-    width: 90%;
-    max-width: none;
+    max-width: 90%;
   }
 }
 
-@media (max-width: 600px) {
-  .inner {
-    padding: 0 var(--layout-padding-sm);
-  }
-
+@media screen and (max-width: 600px) {
   .buttons {
     flex-direction: column;
-    width: 100%;
-  }
-
-  .buttons > a {
-    width: 100%;
   }
 }
