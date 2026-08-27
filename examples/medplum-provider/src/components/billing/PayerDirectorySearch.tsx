@@ -142,7 +142,9 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
                         />
                       </Table.Td>
                       <Table.Td>{payer.name}</Table.Td>
-                      <Table.Td>{getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM)}</Table.Td>
+                      <Table.Td>
+                        {getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM)}
+                      </Table.Td>
                       <Table.Td>{category && formatPayerCategory(category)}</Table.Td>
                       <Table.Td>
                         {imported && <IconCheck size={16} color="var(--mantine-color-green-6)" aria-label="Imported" />}
