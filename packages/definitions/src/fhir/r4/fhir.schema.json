@@ -65772,25 +65772,9 @@
           "description": "The name of the parameter (reference to the operation definition).",
           "$ref": "#/definitions/string"
         },
-        "valueBase64Binary": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/base64Binary"
-        },
         "valueBoolean": {
           "description": "If the parameter is a data type.",
           "$ref": "#/definitions/boolean"
-        },
-        "valueCanonical": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/canonical"
-        },
-        "valueCode": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/code"
-        },
-        "valueDate": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/date"
         },
         "valueDateTime": {
           "description": "If the parameter is a data type.",
@@ -65800,177 +65784,17 @@
           "description": "If the parameter is a data type.",
           "$ref": "#/definitions/decimal"
         },
-        "valueId": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/id"
-        },
-        "valueInstant": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/instant"
-        },
         "valueInteger": {
           "description": "If the parameter is a data type.",
           "$ref": "#/definitions/integer"
-        },
-        "valueMarkdown": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/markdown"
-        },
-        "valueOid": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/oid"
-        },
-        "valuePositiveInt": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/positiveInt"
         },
         "valueString": {
           "description": "If the parameter is a data type.",
           "$ref": "#/definitions/string"
         },
-        "valueTime": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/time"
-        },
-        "valueUnsignedInt": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/unsignedInt"
-        },
-        "valueUri": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/uri"
-        },
-        "valueUrl": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/url"
-        },
-        "valueUuid": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/uuid"
-        },
-        "valueAddress": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Address"
-        },
-        "valueAge": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Age"
-        },
-        "valueAnnotation": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Annotation"
-        },
-        "valueAttachment": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Attachment"
-        },
-        "valueCodeableConcept": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/CodeableConcept"
-        },
-        "valueCoding": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Coding"
-        },
-        "valueContactPoint": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/ContactPoint"
-        },
-        "valueCount": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Count"
-        },
-        "valueDistance": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Distance"
-        },
-        "valueDuration": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Duration"
-        },
-        "valueHumanName": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/HumanName"
-        },
-        "valueIdentifier": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Identifier"
-        },
-        "valueMoney": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Money"
-        },
-        "valuePeriod": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Period"
-        },
-        "valueQuantity": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Quantity"
-        },
-        "valueRange": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Range"
-        },
-        "valueRatio": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Ratio"
-        },
         "valueReference": {
           "description": "If the parameter is a data type.",
           "$ref": "#/definitions/Reference"
-        },
-        "valueSampledData": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/SampledData"
-        },
-        "valueSignature": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Signature"
-        },
-        "valueTiming": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Timing"
-        },
-        "valueContactDetail": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/ContactDetail"
-        },
-        "valueContributor": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Contributor"
-        },
-        "valueDataRequirement": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/DataRequirement"
-        },
-        "valueExpression": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Expression"
-        },
-        "valueParameterDefinition": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/ParameterDefinition"
-        },
-        "valueRelatedArtifact": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/RelatedArtifact"
-        },
-        "valueTriggerDefinition": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/TriggerDefinition"
-        },
-        "valueUsageContext": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/UsageContext"
-        },
-        "valueDosage": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Dosage"
-        },
-        "valueMeta": {
-          "description": "If the parameter is a data type.",
-          "$ref": "#/definitions/Meta"
         },
         "resource": {
           "description": "If the parameter is a whole resource.",

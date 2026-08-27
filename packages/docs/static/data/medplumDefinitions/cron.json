@@ -235,19 +235,7 @@
       "depth": 2,
       "types": [
         {
-          "datatype": "base64Binary"
-        },
-        {
           "datatype": "boolean"
-        },
-        {
-          "datatype": "canonical"
-        },
-        {
-          "datatype": "code"
-        },
-        {
-          "datatype": "date"
         },
         {
           "datatype": "dateTime"
@@ -256,163 +244,13 @@
           "datatype": "decimal"
         },
         {
-          "datatype": "id"
-        },
-        {
-          "datatype": "instant"
-        },
-        {
           "datatype": "integer"
-        },
-        {
-          "datatype": "markdown"
-        },
-        {
-          "datatype": "oid"
-        },
-        {
-          "datatype": "positiveInt"
         },
         {
           "datatype": "string"
         },
         {
-          "datatype": "time"
-        },
-        {
-          "datatype": "unsignedInt"
-        },
-        {
-          "datatype": "uri"
-        },
-        {
-          "datatype": "url"
-        },
-        {
-          "datatype": "uuid"
-        },
-        {
-          "datatype": "Address",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Age",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Annotation",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Attachment",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "CodeableConcept",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Coding",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "ContactPoint",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Count",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Distance",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Duration",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "HumanName",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Identifier",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Money",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Period",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Quantity",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Range",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Ratio",
-          "documentLocation": "datatype"
-        },
-        {
           "datatype": "Reference",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "SampledData",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Signature",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Timing",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "ContactDetail",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Contributor",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "DataRequirement",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Expression",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "ParameterDefinition",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "RelatedArtifact",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "TriggerDefinition",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "UsageContext",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Dosage",
-          "documentLocation": "datatype"
-        },
-        {
-          "datatype": "Meta",
           "documentLocation": "datatype"
         }
       ],

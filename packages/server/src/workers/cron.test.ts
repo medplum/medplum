@@ -6,6 +6,7 @@ import type {
   Bot,
   Cron,
   CronParameter,
+  ParametersParameter,
   Practitioner,
   Project,
   ProjectMembership,
@@ -514,6 +515,15 @@ describe('Cron resource', () => {
       expect(args.runAs.profile).toMatchObject(createReference(practitioner));
       expect(args.input).toStrictEqual({ resourceType: 'Parameters', parameter });
       executeBotSpy.mockRestore();
+    }));
+
+  test('A parameter value outside the supported types is rejected', () =>
+    withTestContext(async () => {
+      // Cron.parameter.value[x] carries a deliberately narrow subset of Parameters.parameter's types
+      const parameter: ParametersParameter[] = [{ name: 'dose', valueQuantity: { value: 5, unit: 'mg' } }];
+      await expect(
+        repo.createResource<Cron>({ ...validCron(), parameter: parameter as CronParameter[] })
+      ).rejects.toThrow('Invalid additional property "valueQuantity"');
     }));
 
   test('execBot passes the Cron itself when it has no parameter list', () =>
