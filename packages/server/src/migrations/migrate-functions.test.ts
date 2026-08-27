@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Client, Pool } from 'pg';
+import type { PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import type { PgQueryable } from '../fhir/sql';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
 import {
   addCheckConstraint,
@@ -23,7 +24,7 @@ interface IndexInfo {
   is_live: boolean;
   index_definition: string;
 }
-async function getTableIndexes(client: Client | Pool, tableName: string): Promise<IndexInfo[]> {
+async function getTableIndexes(client: PgQueryable, tableName: string): Promise<IndexInfo[]> {
   return client
     .query<IndexInfo>(
       `SELECT
@@ -50,15 +51,17 @@ async function getTableIndexes(client: Client | Pool, tableName: string): Promis
 
 describe('migrate-functions', () => {
   let config: MedplumServerConfig;
-  let client: Pool;
+  let client: PoolClient;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initDatabase(config);
-    client = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    client = await pool.connect();
   });
 
   afterAll(async () => {
+    client.release();
     await closeDatabase();
   });
 

@@ -6,7 +6,6 @@ import type { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } 
 import type { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import type { MockedFunction, MockInstance } from 'vitest';
 import { vi } from 'vitest';
@@ -15,6 +14,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
+import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import type {
@@ -57,7 +57,7 @@ const mockGetPostDeployVersion = vi.fn<typeof migrationSql.getPostDeployVersion>
 
 const mockMarkPostDeployMigrationCompleted = vi
   .fn<typeof migrationSql.markPostDeployMigrationCompleted>()
-  .mockImplementation(async (_pool: Pool | PoolClient, dataVersion: number) => {
+  .mockImplementation(async (_client: PgQueryable, dataVersion: number) => {
     if (!Number.isInteger(dataVersion)) {
       throw new Error('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
     }

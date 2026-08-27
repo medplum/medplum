@@ -14,12 +14,13 @@ import {
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import assert from 'node:assert';
+import type { PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
-import type { SqlFunctionDefinition } from '../fhir/sql';
+import type { PgQueryable, SqlFunctionDefinition } from '../fhir/sql';
 import { getSearchParamColumnType, MedplumUnaccentFn, TokenArrayToTextFn } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import * as fns from './migrate-functions';
@@ -36,7 +37,6 @@ import {
 import type {
   CheckConstraintDefinition,
   ColumnDefinition,
-  DbClient,
   IndexDefinition,
   IndexType,
   MigrationAction,
@@ -63,7 +63,7 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 }
 
 export type BuildMigrationOptions = {
-  dbClient: DbClient;
+  dbClient: PgQueryable;
   dropUnmatchedIndexes?: boolean;
   analyzeResourceTables?: boolean;
   writeSchema?: boolean;
@@ -166,12 +166,12 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
   return { tables, functions };
 }
 
-async function getTableNames(db: DbClient): Promise<string[]> {
+async function getTableNames(db: PgQueryable): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: DbClient, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: PgQueryable, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
@@ -180,7 +180,7 @@ async function getTableDefinition(db: DbClient, name: string): Promise<TableDefi
   };
 }
 
-async function getIndexes(db: DbClient, tableName: string): Promise<IndexDefinition[]> {
+async function getIndexes(db: PgQueryable, tableName: string): Promise<IndexDefinition[]> {
   const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=$1`, [tableName]);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
@@ -190,7 +190,7 @@ export function parseIndexName(indexdef: string): string | undefined {
 }
 
 export async function getCheckConstraints(
-  db: DbClient,
+  db: PgQueryable,
   tableName: string
 ): Promise<(CheckConstraintDefinition & { valid: boolean })[]> {
   const rs = await db.query<{
@@ -812,7 +812,7 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
 }
 
 export async function executeMigrationActions(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   actions: MigrationAction[]
 ): Promise<void> {

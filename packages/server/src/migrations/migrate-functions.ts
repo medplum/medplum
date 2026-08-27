@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { QueryResult, QueryResultRow } from 'pg';
+import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { escapeIdentifier } from 'pg';
 import type { UpdateQuery } from '../fhir/sql';
 import { isValidPostgresIdentifier, SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
-import type { CheckConstraintDefinition, DbClient, MigrationActionResult } from './types';
+import type { CheckConstraintDefinition, MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   queryStr: string,
   params?: any[]
@@ -22,7 +22,7 @@ export async function query<R extends QueryResultRow = any>(
 }
 
 export async function reindexConcurrently(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   target: 'INDEX' | 'TABLE',
   name: string
@@ -44,13 +44,13 @@ export async function reindexConcurrently(
  * index that could take many minutes to complete is interrupted due to a server deployment or the worker
  * performing the migration is interrupted/crashes for any other reason.
  *
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param results - The list of action results to push operations performed.
  * @param indexName - The name of the index to create.
  * @param createIndexSql - The SQL to create the index.
  */
 export async function idempotentCreateIndex(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   indexName: string,
   createIndexSql: string
@@ -93,7 +93,7 @@ export async function idempotentCreateIndex(
 }
 
 export async function analyzeTable(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string
 ): Promise<void> {
@@ -109,14 +109,14 @@ export async function analyzeTable(
  * Adds a constraint to a table without blocking concurrent updates.
  * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
  *
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param actions - The list of action results to push operations performed.
  * @param tableName - The name of the table to add the constraint to.
  * @param constraintName - The name of the constraint to add.
  * @param constraintExpression - The expression for the constraint.
  */
 export async function nonBlockingAddCheckConstraint(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
@@ -156,7 +156,7 @@ export async function nonBlockingAddCheckConstraint(
 }
 
 async function getExistingConstraint(
-  client: DbClient,
+  client: PoolClient,
   tableName: string,
   constraintName: string
 ): Promise<CheckConstraintDefinition | undefined> {
@@ -168,13 +168,13 @@ async function getExistingConstraint(
  * Non-blocking alter column NOT NULL utilizing a temporary table constraint. Throws if any rows contain NULL values.
  * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
  *
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param actions - The list of action results to push operations performed.
  * @param tableName - The name of the table to analyze.
  * @param columnName - The name of the column to analyze.
  */
 export async function nonBlockingAlterColumnNotNull(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   columnName: string
@@ -236,7 +236,7 @@ export function getCheckConstraintQuery(
 }
 
 export async function addCheckConstraint(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
@@ -248,13 +248,13 @@ export async function addCheckConstraint(
 
 /**
  * Updates rows in batches to avoid locking the table.
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param actions - The list of action results to push operations performed.
  * @param updateQuery - The update query to execute. The query must include a RETURNING clause and return no rows when there are no rows to update.
  * @param maxIterations - The maximum number of iterations to perform, Infinity is valid.
  */
 export async function batchedUpdate(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   updateQuery: UpdateQuery,
   maxIterations: number
