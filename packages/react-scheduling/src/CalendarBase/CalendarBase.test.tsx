@@ -469,4 +469,83 @@ describe('CalendarBase', () => {
       ]);
     });
   });
+
+  describe('selection', () => {
+    // A day the week view is already showing, so the highlight has somewhere to land.
+    const visibleDay = (container: HTMLElement, index: number): { start: Date; end: Date } => {
+      const date = getWeekGridCells(container)[index].getAttribute('data-date');
+      const start = new Date(`${date}T10:00:00`);
+      return { start, end: new Date(start.getTime() + 30 * 60 * 1000) };
+    };
+
+    const highlightedDays = (container: HTMLElement): number[] =>
+      getWeekGridCells(container).flatMap((cell, index) => (cell.querySelector('.selectedRange') ? [index] : []));
+
+    test('draws nothing until there is a selection', async () => {
+      const { container } = setup({ eventSources: [], onSelectInterval: vi.fn() });
+
+      expect(highlightedDays(container)).toEqual([]);
+    });
+
+    test('highlights an interval it was mounted with', async () => {
+      // The week view opens on today, so a highlight there is one the calendar is
+      // already showing — and mounting is the first chance it has to draw one.
+      const { container } = setup({
+        eventSources: [],
+        onSelectInterval: vi.fn(),
+        selection: { start: baseDate, end: new Date(baseDate.getTime() + 30 * 60 * 1000) },
+      });
+
+      expect(container.querySelectorAll('.selectedRange').length).toBeGreaterThan(0);
+    });
+
+    test('highlights the interval it is given, without reporting it back', async () => {
+      const onSelectInterval = vi.fn();
+      const { container, rerender } = setup({ eventSources: [], onSelectInterval });
+      const wednesday = visibleDay(container, 3);
+
+      rerender(<CalendarBase eventSources={[]} onSelectInterval={onSelectInterval} selection={wednesday} />);
+
+      expect(highlightedDays(container)).toEqual([3]);
+      // The calendar reports a selection it made itself through the same callback as
+      // a click, and a host that stored it would hand it straight back.
+      expect(onSelectInterval).not.toHaveBeenCalled();
+    });
+
+    test('moves the highlight when the selection changes', async () => {
+      const onSelectInterval = vi.fn();
+      const { container, rerender } = setup({ eventSources: [], onSelectInterval });
+      const wednesday = visibleDay(container, 3);
+      const friday = visibleDay(container, 5);
+
+      rerender(<CalendarBase eventSources={[]} onSelectInterval={onSelectInterval} selection={wednesday} />);
+      rerender(<CalendarBase eventSources={[]} onSelectInterval={onSelectInterval} selection={friday} />);
+
+      // Moved, not added: one time is chosen at a time.
+      expect(highlightedDays(container)).toEqual([5]);
+      expect(onSelectInterval).not.toHaveBeenCalled();
+    });
+
+    test('takes the highlight down when the selection is cleared', async () => {
+      const onSelectInterval = vi.fn();
+      const { container, rerender } = setup({ eventSources: [], onSelectInterval });
+      const wednesday = visibleDay(container, 3);
+
+      rerender(<CalendarBase eventSources={[]} onSelectInterval={onSelectInterval} selection={wednesday} />);
+      rerender(<CalendarBase eventSources={[]} onSelectInterval={onSelectInterval} selection={undefined} />);
+
+      expect(highlightedDays(container)).toEqual([]);
+    });
+
+    test('ignores a selection on a calendar nothing can be selected on', async () => {
+      const { container, rerender } = setup({ eventSources: [] });
+      const wednesday = visibleDay(container, 3);
+
+      rerender(<CalendarBase eventSources={[]} selection={wednesday} />);
+
+      // No `onSelectInterval`, so the calendar is not selectable at all, and a
+      // highlight nobody can move or clear is worse than none.
+      expect(highlightedDays(container)).toEqual([]);
+    });
+  });
 });

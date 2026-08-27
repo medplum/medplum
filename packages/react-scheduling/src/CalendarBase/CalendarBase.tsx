@@ -20,7 +20,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { DateTimeRange } from '../types';
 import classes from './CalendarBase.module.css';
-import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
+import { availableTimeToBusinessHoursEntry, filterBookedSlots, isSameRange } from './CalendarBase.utils';
 
 export interface FhirEventSource {
   schedule?: WithId<Schedule>;
@@ -222,13 +222,27 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
 
   const selectable = Boolean(onSelectInterval);
 
-  // Necessary because `unselectAuto` is false
+  // FullCalendar owns the highlight and only a pointer gesture ever sets it, so the
+  // prop has to be pushed in. Keyed on the instants rather than the object: a host
+  // reporting the interval back hands over a fresh pair of `Date`s each time, and
+  // clearing is its own case only because `unselectAuto` is false.
   const calendarRef = useRef<CalendarRef>(null);
+  const appliedSelection = useRef<DateTimeRange | undefined>(undefined);
+  const startMs = selection?.start.getTime();
+  const endMs = selection?.end.getTime();
   useEffect(() => {
-    if (selectable && !selection) {
-      calendarRef.current?.getApi().unselect();
+    const api = calendarRef.current?.getApi();
+    if (!selectable || !api) {
+      return;
     }
-  }, [selectable, selection]);
+    appliedSelection.current = selection;
+    if (selection) {
+      api.select(selection.start, selection.end);
+    } else {
+      api.unselect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the instants, see above
+  }, [selectable, startMs, endMs]);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
@@ -280,6 +294,9 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         selectable={selectable}
         unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {
+          if (isSameRange(appliedSelection.current, eventInfo)) {
+            return;
+          }
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
         }}
         {...fullCalendarProps}
@@ -299,7 +316,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         eventClick={eventClick}
         eventClass={(evt) =>
           cx(props.eventClass, classes.event, {
-            [classes.interactiveEvent]: evt.isInteractive,
+            [classes.clickable]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
           })
         }
@@ -310,8 +327,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         backgroundEventInnerClass={cx(props.backgroundEventInnerClass, classes.backgroundEventInner)}
         listItemEventBeforeClass={cx(props.listItemEventBeforeClass, classes.listItemEventBefore)}
         nonBusinessHoursClass={cx(props.nonBusinessHoursClass, classes.nonBusinessHours)}
-        dayLaneClass={cx(props.dayLaneClass, selectable && classes.selectableDay)}
-        dayCellClass={cx(props.dayCellClass, selectable && classes.selectableDay)}
+        dayLaneClass={cx(props.dayLaneClass, selectable && classes.clickable)}
+        dayCellClass={cx(props.dayCellClass, selectable && classes.clickable)}
         highlightClass={cx(props.highlightClass, classes.selectedRange)}
       />
     </div>
