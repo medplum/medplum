@@ -15,6 +15,11 @@ export interface AppointmentDayTimesProps {
   readonly onSelectAppointment: (appointment: Appointment) => void;
   /** IANA timezone the times are read in. Defaults to the browser's. */
   readonly timezone?: string;
+  /**
+   * The viewer's own IANA timezone, which decides whether the times need their zone named beside
+   * them. Defaults to the browser's.
+   */
+  readonly viewerTimezone?: string;
   readonly selected?: Appointment;
 }
 
@@ -28,7 +33,7 @@ export interface AppointmentDayTimesProps {
  * @returns The day's heading and its times.
  */
 export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Element {
-  const { date, groups, onSelectAppointment, timezone, selected } = props;
+  const { date, groups, onSelectAppointment, timezone, viewerTimezone, selected } = props;
 
   return (
     <Stack gap="xs">
@@ -39,6 +44,7 @@ export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Elemen
           key={group.key}
           group={group}
           timezone={timezone}
+          viewerTimezone={viewerTimezone}
           selected={selected}
           onSelectAppointment={onSelectAppointment}
         />

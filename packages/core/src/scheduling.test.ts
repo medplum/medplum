@@ -5,6 +5,7 @@ import {
   clearScheduleParameter,
   extractServiceTypeReferences,
   getScheduleParameters,
+  getScheduleTimezones,
   getSchedulingTimezone,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
@@ -234,6 +235,52 @@ describe('getSchedulingTimezone', () => {
       valueCode: 'America/New_York',
     });
     expect(getSchedulingTimezone(serviceWithTimezone, schedule, actor)).toBe('America/New_York');
+  });
+});
+
+describe('getScheduleTimezones', () => {
+  const actor: Practitioner = {
+    resourceType: 'Practitioner',
+    extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Los_Angeles' }],
+  };
+
+  test('reads the timezone the Schedule sets, without being told which service', () => {
+    const schedule = scheduleWith();
+    schedulingParameters(schedule)[0].extension?.push({ url: 'timezone', valueCode: 'America/New_York' });
+
+    expect(getScheduleTimezones(schedule, actor)).toEqual(['America/New_York']);
+  });
+
+  test('reports every zone once when a Schedule keeps different hours per service', () => {
+    const schedule = scheduleWith();
+    schedulingParameters(schedule)[0].extension?.push({ url: 'timezone', valueCode: 'America/New_York' });
+    schedule.extension?.push({
+      url: SchedulingParametersURI,
+      extension: [
+        { url: 'service', valueReference: { reference: 'HealthcareService/service-2' } },
+        { url: 'timezone', valueCode: 'America/Chicago' },
+      ],
+    });
+    schedule.extension?.push({
+      url: SchedulingParametersURI,
+      extension: [
+        { url: 'service', valueReference: { reference: 'HealthcareService/service-3' } },
+        { url: 'timezone', valueCode: 'America/New_York' },
+      ],
+    });
+
+    expect(getScheduleTimezones(schedule, actor)).toEqual(['America/New_York', 'America/Chicago']);
+  });
+
+  test('falls back to the actor when the Schedule names none', () => {
+    expect(getScheduleTimezones(scheduleWith(), actor)).toEqual(['America/Los_Angeles']);
+  });
+
+  test('answers nothing rather than guessing when neither says', () => {
+    // A Schedule inheriting its zone from the HealthcareService lands here, since no service is in
+    // play to read it off. Callers are documented to treat that as unknown, not as the browser's.
+    expect(getScheduleTimezones(scheduleWith())).toEqual([]);
+    expect(getScheduleTimezones(scheduleWith(), { resourceType: 'Practitioner' })).toEqual([]);
   });
 });
 

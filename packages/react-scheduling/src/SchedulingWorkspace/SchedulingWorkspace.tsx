@@ -26,7 +26,10 @@ import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
+import type { CalendarTimezoneNoticeCalendar } from './CalendarTimezoneNotice';
+import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
+import { useScheduleTimezones } from './useScheduleTimezones';
 
 const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = { provider: [], room: [], device: [] };
 
@@ -148,6 +151,17 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  const timezonesByScheduleId = useScheduleTimezones(activeCandidates);
+  const timezoneCalendars = useMemo((): CalendarTimezoneNoticeCalendar[] => {
+    return activeCandidates.flatMap((candidate) =>
+      (timezonesByScheduleId.get(candidate.schedule.id) ?? []).map((timezone) => ({
+        id: `${candidate.schedule.id}/${timezone}`,
+        label: getCandidateDisplay(candidate),
+        timezone,
+      }))
+    );
+  }, [activeCandidates, timezonesByScheduleId]);
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setTimeFinderOpen(false);
@@ -195,6 +209,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             {normalizeErrorString(displayError)}
           </Alert>
         )}
+        <CalendarTimezoneNotice calendars={timezoneCalendars} at={range?.start} />
         <MultiCalendar
           sources={sources}
           onRangeChange={setRange}

@@ -38,6 +38,7 @@ import {
   finderButton,
   hasPill,
   isBefore,
+  lastFindEnd,
   lastFindStart,
   MONDAY_MORNING,
   openRoleField,
@@ -376,8 +377,37 @@ describe('AppointmentProposalForm', () => {
           timeZone: SITE_TIMEZONE,
           hour: 'numeric',
           minute: '2-digit',
+          // The runner is not on the site's clock, so the zone is named beside the time.
+          timeZoneName: 'short',
         }).format(start)
       );
+    });
+
+    test('Names the zone on the time that is about to be booked', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      // The last time read before booking says which clock it is on, like the times offered.
+      expect(chosenTimeField()?.value).toMatch(/\bE[DS]T$/);
+    });
+
+    test('Asks for the day as the site keeps it, not as the booker does', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      await chooseDay('18');
+
+      // Bounded on the runner's clock this would run 00:00Z to 23:59Z, which is 8pm on the
+      // 17th to 8pm on the 18th at the site: the clinic's morning missed, and its evening
+      // fetched under the following day's heading.
+      expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
+      expect(lastFindEnd(get)).toBe('2026-08-19T03:59:59.999Z');
     });
 
     test('Records the instant the site-local time stands for', async () => {

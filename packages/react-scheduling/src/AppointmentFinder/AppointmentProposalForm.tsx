@@ -26,8 +26,13 @@ import type { SchedulingRole } from './AppointmentFinder.roles';
 import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
-import type { DateRange } from './AppointmentFinder.times';
-import { endOfDay, getDurationMinutes, getFindWindowError, groupAppointmentsByDay } from './AppointmentFinder.times';
+import {
+  getDurationMinutes,
+  getFindWindowError,
+  getZonedDayRange,
+  groupAppointmentsByDay,
+  isViewerTimezone,
+} from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -118,7 +123,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>({});
-  const [range, setRange] = useState<DateRange>(() => oneDay(defaultStart ?? new Date()));
+  const [searchDay, setSearchDay] = useState<Date>(() => defaultStart ?? new Date());
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
@@ -132,11 +137,21 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
-  const windowError = getFindWindowError(range);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
   const searching = finding && !selectionError;
+
+  // The first actor's schedule answers for all of them: every actor in one search
+  // shares the scheduling parameters, or `$find` rejects the request.
+  const timezone = useMemo(() => {
+    const [first] = getSelectedCandidates(selections);
+    return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
+  }, [service, selections]);
+
+  const range = useMemo(() => getZonedDayRange(searchDay, timezone), [searchDay, timezone]);
+
+  const windowError = getFindWindowError(range);
 
   // Nothing is searched until the time search is open, so the answers above cost no
   // request per keystroke.
@@ -146,13 +161,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   );
 
   const search = useProposedAppointments({ service, combinations, range });
-
-  // The first actor's schedule answers for all of them: every actor in one search
-  // shares the scheduling parameters, or `$find` rejects the request.
-  const timezone = useMemo(() => {
-    const [first] = getSelectedCandidates(selections);
-    return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
-  }, [service, selections]);
 
   const days = useMemo(() => groupAppointmentsByDay(search.appointments, timezone), [search.appointments, timezone]);
 
@@ -214,7 +222,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   function chooseDay(date: Date): void {
-    setRange(oneDay(date));
+    setSearchDay(date);
     setChosen(undefined);
   }
 
@@ -299,7 +307,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              selected={range.start}
+              selected={searchDay}
               onChangeMonth={setMonth}
               onClick={chooseDay}
             />
@@ -550,24 +558,10 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
 }
 
 /**
- * Returns the range covering the bookable part of one day.
- *
- * `$find` treats `start` as a hard floor, so a day already under way starts from now
- * rather than midnight: the calendar hands back local midnight, and asking from there
- * would offer times that have already passed.
- *
- * @param date - Any instant during the day.
- * @returns The day from now at the earliest, both ends closed, as `$find` requires.
- */
-function oneDay(date: Date): DateRange {
-  const now = new Date();
-  const start = date > now ? date : now;
-  return { start, end: endOfDay(start) };
-}
-
-/**
  * Writes an instant as the day and time it falls on at the site, not on the
  * booker's own clock.
+ *
+ * Names the zone when the site does not keep the booker's.
  *
  * @param value - The chosen start time.
  * @param timezone - IANA timezone the visit is scheduled in.
@@ -581,5 +575,6 @@ function formatZonedDateTime(value: Date, timezone: string | undefined): string 
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: isViewerTimezone(timezone, value) ? undefined : 'short',
   }).format(value);
 }

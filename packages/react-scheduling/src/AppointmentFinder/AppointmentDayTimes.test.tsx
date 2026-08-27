@@ -30,10 +30,43 @@ describe('AppointmentDayTimes', () => {
 
     expect(screen.getByText('Monday, July 27')).toBeInTheDocument();
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '9:30 AM' }));
+      // Named with its zone, because the runner is not on Eastern time.
+      fireEvent.click(screen.getByRole('button', { name: '9:30 AM EDT' }));
     });
 
     expect(onSelectAppointment).toHaveBeenCalledTimes(1);
+  });
+
+  test('Leaves the zone off times the viewer already reads on their own clock', () => {
+    const [day] = groupAppointmentsByDay([buildProposedAppointment({ start: MORNING })], EASTERN);
+
+    render(
+      <AppointmentDayTimes
+        date={day.date}
+        groups={day.groups}
+        timezone={EASTERN}
+        viewerTimezone={EASTERN}
+        onSelectAppointment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: '9:00 AM' })).toBeInTheDocument();
+  });
+
+  test("Names the zone when the site does not keep the viewer's time", () => {
+    const [day] = groupAppointmentsByDay([buildProposedAppointment({ start: MORNING })], EASTERN);
+
+    render(
+      <AppointmentDayTimes
+        date={day.date}
+        groups={day.groups}
+        timezone={EASTERN}
+        viewerTimezone="America/Los_Angeles"
+        onSelectAppointment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: '9:00 AM EDT' })).toBeInTheDocument();
   });
 
   test('Says so on a day that offers nothing', () => {

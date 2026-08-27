@@ -210,11 +210,24 @@ export function isBefore(first: Element, second: Element): boolean {
  * @returns The `start` parameter, or undefined when nothing was asked.
  */
 export function lastFindStart(get: MockInstance<MedplumClient['get']>): string | undefined {
+  return lastFindParam(get, 'start');
+}
+
+/**
+ * The `end` of the window the last `$find` asked for.
+ * @param get - The spy on the client's `get`.
+ * @returns The `end` search parameter, or undefined when nothing was searched.
+ */
+export function lastFindEnd(get: MockInstance<MedplumClient['get']>): string | undefined {
+  return lastFindParam(get, 'end');
+}
+
+function lastFindParam(get: MockInstance<MedplumClient['get']>, name: string): string | undefined {
   const urls = get.mock.calls
     .map(([url]) => String(url))
     .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
   const last = urls.at(-1);
-  return last ? (new URL(last, 'https://example.com').searchParams.get('start') ?? undefined) : undefined;
+  return last ? (new URL(last, 'https://example.com').searchParams.get(name) ?? undefined) : undefined;
 }
 
 /**

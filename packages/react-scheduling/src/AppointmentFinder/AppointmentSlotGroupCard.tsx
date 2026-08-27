@@ -8,13 +8,15 @@ import type { JSX } from 'react';
 import classes from './AppointmentFinder.module.css';
 import { getActorRoleLabel } from './AppointmentFinder.roles';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
-import { formatZonedTime } from './AppointmentFinder.times';
+import { formatZonedTime, isViewerTimezone } from './AppointmentFinder.times';
 
 export interface AppointmentSlotGroupCardProps {
   readonly group: AppointmentSlotGroup;
   readonly onSelectAppointment: (appointment: Appointment) => void;
   /** IANA timezone the times are shown in. Defaults to the browser's. */
   readonly timezone?: string;
+  /** The viewer's own IANA timezone. Defaults to the browser's. */
+  readonly viewerTimezone?: string;
   readonly selected?: Appointment;
   readonly disabled?: boolean;
 }
@@ -25,7 +27,11 @@ export interface AppointmentSlotGroupCardProps {
  * @returns The card.
  */
 export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): JSX.Element {
-  const { group, onSelectAppointment, timezone, selected, disabled } = props;
+  const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled } = props;
+
+  // Times are written with their zone only when that is not the zone the viewer is reading them in.
+  const firstStart = group.appointments.find((appointment) => appointment.start)?.start;
+  const withTimezone = !!firstStart && !isViewerTimezone(timezone, new Date(firstStart), viewerTimezone);
 
   return (
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
@@ -61,7 +67,7 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
               disabled={disabled}
               onClick={() => onSelectAppointment(appointment)}
             >
-              {appointment.start ? formatZonedTime(new Date(appointment.start), timezone) : ''}
+              {appointment.start ? formatZonedTime(new Date(appointment.start), timezone, { withTimezone }) : ''}
             </Button>
           );
         })}

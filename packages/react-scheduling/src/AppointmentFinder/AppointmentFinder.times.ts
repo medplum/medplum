@@ -69,17 +69,24 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
   };
 }
 
+export interface FormatZonedTimeOptions {
+  // Names the zone alongside the time, e.g. "12:30 PM EST". 
+  readonly withTimezone?: boolean;
+}
+
 /**
  * Formats an instant's time of day in a given timezone (e.g. "12:30 PM").
  * @param date - The instant to format.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @param options - Whether to name the zone as well.
  * @returns The formatted time.
  */
-export function formatZonedTime(date: Date, timezone?: string): string {
+export function formatZonedTime(date: Date, timezone?: string, options?: FormatZonedTimeOptions): string {
   return new Intl.DateTimeFormat(undefined, {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: options?.withTimezone ? 'short' : undefined,
   }).format(date);
 }
 
@@ -103,6 +110,48 @@ function getTimezoneOffsetMs(instant: Date, timezone: string): number {
   // No zone is offset by part of a minute, so comparing whole minutes is enough
   // and avoids having to format seconds.
   return Date.UTC(year, month - 1, day, hour, minute) - Math.floor(instant.getTime() / 60000) * 60000;
+}
+
+/**
+ * The IANA timezone the browser is set to.
+ * @returns The viewer's own timezone identifier.
+ */
+export function getBrowserTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/**
+ * Names a timezone the short way it is written beside a time, e.g. "EST" or "GMT+2".
+ * @param at - The instant to read it at, which is what decides between EST and EDT.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The zone's short name.
+ */
+export function formatTimezoneLabel(at: Date, timezone?: string): string {
+  const parts = new Intl.DateTimeFormat(undefined, { timeZone: timezone, timeZoneName: 'short' }).formatToParts(at);
+  return parts.find((part) => part.type === 'timeZoneName')?.value ?? '';
+}
+
+/**
+ * Whether two timezones give the same clock reading.
+ * @param left - IANA timezone identifier. Undefined means the browser's.
+ * @param right - IANA timezone identifier. Undefined means the browser's.
+ * @param at - The instant to compare them at.
+ * @returns True when a clock in either zone reads the same at that instant.
+ */
+export function hasSameClock(left: string | undefined, right: string | undefined, at: Date): boolean {
+  const browser = getBrowserTimezone();
+  return getTimezoneOffsetMs(at, left ?? browser) === getTimezoneOffsetMs(at, right ?? browser);
+}
+
+/**
+ * Whether times in a timezone read the same as on the viewer's own clock.
+ * @param timezone - IANA timezone the times are in, or undefined when it could not be resolved.
+ * @param at - The instant being shown.
+ * @param viewer - The viewer's IANA timezone. Defaults to the browser's, and exists to be passed in.
+ * @returns True when the zone need not be spelled out.
+ */
+export function isViewerTimezone(timezone: string | undefined, at: Date, viewer?: string): boolean {
+  return !timezone || hasSameClock(timezone, viewer, at);
 }
 
 /**
@@ -326,6 +375,39 @@ export function addDays(date: Date, days: number): Date {
 export interface DateRange {
   readonly start?: Date;
   readonly end?: Date;
+}
+
+/**
+ * Local midnight opening a calendar date at the site.
+ * @param year - The calendar year.
+ * @param month - The calendar month, 1-12.
+ * @param day - The day of the month. Out-of-range values roll over, so `day + 1` names the next day.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The instant the day begins there. Undefined only where `parseZonedTime` rejects the time
+ * it is handed, which a literal `00:00` cannot be.
+ */
+function startOfZonedDay(year: number, month: number, day: number, timezone: string | undefined): Date | undefined {
+  return parseZonedTime(new Date(year, month - 1, day), '00:00', timezone);
+}
+
+/**
+ * The window `$find` is asked for: one calendar day at the site, never starting in the past.
+ * @param day - The day to search, as local midnight. Bound to the site's timezone.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's, which reproduces the
+ * behaviour of a viewer sitting in the same zone as the site.
+ * @returns The day from now at the earliest, both ends closed, as `$find` requires.
+ */
+export function getZonedDayRange(day: Date, timezone?: string): Required<DateRange> {
+  const now = new Date();
+  const opens = startOfZonedDay(day.getFullYear(), day.getMonth() + 1, day.getDate(), timezone) ?? day;
+  // If the day is already under way, start from now rather than from the beginning to prevent 
+  // getting back times from `$find` that have already passed
+  const start = opens > now ? opens : now;
+
+  const parts = getZonedParts(start, timezone);
+  const nextMidnight = startOfZonedDay(parts.year, parts.month, parts.day + 1, timezone);
+  // The instant before the next day begins
+  return { start, end: nextMidnight ? new Date(nextMidnight.getTime() - 1) : endOfDay(start) };
 }
 
 /**

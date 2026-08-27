@@ -140,4 +140,33 @@ describe('SchedulingWorkspace', () => {
       expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
     });
   });
+
+  describe('saying which clock the calendar is drawn on', () => {
+    test('names the calendars scheduled somewhere other than the viewer', async () => {
+      // The fixtures' visit types are held in Eastern time and the runner is not, which is the
+      // situation the notice exists for: the grid below it is drawn on the runner's clock.
+      const medplum = await setupClient();
+      renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+      const notice = await screen.findByTestId('calendar-timezone-notice');
+      expect(notice).toHaveTextContent('Calendar shown in your local time');
+      expect(notice).toHaveTextContent(/Dr\. Maya Rivera \(E[DS]T\)/);
+      expect(notice).toHaveTextContent(/scheduled in other time zones\.$/);
+    });
+
+    test('stops naming a calendar once it is deselected', async () => {
+      const medplum = await setupClient();
+      renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+      await screen.findByTestId('calendar-timezone-notice');
+      await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+
+      await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
+
+      // A calendar that is not on the grid is not one the grid is misreporting.
+      await waitFor(() =>
+        expect(screen.getByTestId('calendar-timezone-notice')).not.toHaveTextContent('Dr. Maya Rivera')
+      );
+    });
+  });
 });
