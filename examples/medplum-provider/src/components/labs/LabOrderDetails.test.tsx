@@ -399,6 +399,20 @@ describe('LabOrderDetails', () => {
       });
     });
 
+    test('defaults to report tab when a preliminary report exists on an active order', async () => {
+      const preliminaryReport: DiagnosticReport = { ...mockDiagnosticReport, status: 'preliminary' };
+      medplum.searchResources = vi.fn().mockResolvedValue([preliminaryReport]);
+
+      await act(async () => {
+        setup({ order: mockActiveServiceRequest });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Report')).toBeInTheDocument();
+        expect(screen.queryByText('Progress Tracker')).not.toBeInTheDocument();
+      });
+    });
+
     test('switches to order details tab when clicked', async () => {
       const user = userEvent.setup();
       medplum.readResource = vi.fn().mockResolvedValue(mockPractitioner);
@@ -519,7 +533,6 @@ describe('LabOrderDetails', () => {
 
     test('marks steps as completed based on available data', async () => {
       fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([mockLabOrderRequisitionDoc]);
-      medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
       await act(async () => {
         setup({ order: mockActiveServiceRequest });

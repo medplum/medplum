@@ -60,15 +60,15 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
-    order.status !== 'completed' ? 'progress' : 'report'
-  );
+  // The user's explicit tab choice, if any; otherwise the tab follows whether a
+  // report has arrived yet (a preliminary report can exist while the order's own
+  // status is still 'active', so this must not be keyed off order.status).
+  const [manualDetailTab, setManualDetailTab] = useState<'report' | 'progress' | 'order' | null>(null);
 
   const canRevoke = order.status === 'draft' || order.status === 'active' || order.status === 'on-hold';
 
   // A revoked order has no progress to track, so only Order Details is shown.
   const isRevoked = order.status === 'revoked';
-  const detailTab = isRevoked ? 'order' : activeDetailTab;
 
   const handleRevoke = useCallback(async (): Promise<void> => {
     try {
@@ -97,6 +97,9 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
 
   // Get the primary diagnostic report for this order
   const primaryReport = diagnosticReports.length > 0 ? diagnosticReports[0] : undefined;
+
+  const defaultDetailTab = primaryReport ? 'report' : 'progress';
+  const detailTab = isRevoked ? 'order' : manualDetailTab ?? defaultDetailTab;
 
   // Progress tracker logic
   const getProgressSteps = useMemo((): ProgressStep[] => {
@@ -404,15 +407,13 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
             <Group justify="space-between" align="center">
               <Tabs
                 value={detailTab}
-                onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+                onChange={(value) => setManualDetailTab(value as 'report' | 'progress' | 'order')}
                 variant="unstyled"
                 className="pill-tabs"
               >
                 <Tabs.List>
                   {!isRevoked && (
-                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
-                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                    </Tabs.Tab>
+                    <Tabs.Tab value={defaultDetailTab}>{primaryReport ? 'Report' : 'Progress Tracker'}</Tabs.Tab>
                   )}
                   <Tabs.Tab value="order">Order Details</Tabs.Tab>
                 </Tabs.List>
