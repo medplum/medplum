@@ -21,34 +21,19 @@ export async function query<R extends QueryResultRow = any>(
   return result;
 }
 
-const REINDEX_CONCURRENTLY_REGEX = /^REINDEX\s+(?:INDEX|TABLE)\s+CONCURRENTLY\s+(\S+)$/i;
-
-export function isValidReindexConcurrentlyQuery(queryStr: unknown): boolean {
-  if (typeof queryStr !== 'string') {
-    return false;
-  }
-
-  const normalizedQuery = queryStr.trim().replace(/;$/, '');
-  const match = REINDEX_CONCURRENTLY_REGEX.exec(normalizedQuery);
-  if (!match) {
-    return false;
-  }
-
-  return match[1].split('.').every((identifier) => {
-    const unquotedIdentifier =
-      identifier.startsWith('"') && identifier.endsWith('"') ? identifier.slice(1, -1) : identifier;
-    return isValidPostgresIdentifier(unquotedIdentifier);
-  });
-}
-
 export async function reindexConcurrently(
   client: DbClient,
   results: MigrationActionResult[],
-  queryStr: string
+  target: 'INDEX' | 'TABLE',
+  name: string
 ): Promise<void> {
-  if (!isValidReindexConcurrentlyQuery(queryStr)) {
-    throw new Error('Invalid REINDEX CONCURRENTLY query');
+  if (target !== 'INDEX' && target !== 'TABLE') {
+    throw new Error(`Invalid REINDEX target: ${target}`);
   }
+  if (!isValidPostgresIdentifier(name)) {
+    throw new Error(`Invalid PostgreSQL identifier: ${name}`);
+  }
+  const queryStr = `REINDEX ${target} CONCURRENTLY ${escapeIdentifier(name)}`;
   await query(client, results, queryStr);
 }
 

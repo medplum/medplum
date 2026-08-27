@@ -850,10 +850,7 @@ describe('Database migrations', () => {
 
     describe('Reindex database', () => {
       test('Queues one or more concurrent reindex actions', async () => {
-        const queries = [
-          'REINDEX INDEX CONCURRENTLY "Patient_name_idx";',
-          'REINDEX TABLE CONCURRENTLY public."Observation"',
-        ];
+        const targets = [{ index: 'Patient_name_idx' }, { table: 'Observation' }];
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
@@ -861,7 +858,7 @@ describe('Database migrations', () => {
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
-          .send({ queries });
+          .send({ targets });
 
         expect(res).toHaveStatus(202);
         expect(res.headers['content-location']).toBeDefined();
@@ -870,22 +867,27 @@ describe('Database migrations', () => {
           type: 'dynamic',
           migrationActions: {
             preDeploy: [],
-            postDeploy: queries.map((reindexSql) => ({ type: 'REINDEX_CONCURRENTLY', reindexSql })),
+            postDeploy: [
+              { type: 'REINDEX_CONCURRENTLY', target: 'INDEX', name: 'Patient_name_idx' },
+              { type: 'REINDEX_CONCURRENTLY', target: 'TABLE', name: 'Observation' },
+            ],
           },
         });
       });
 
       test.each([
         {},
-        { queries: [] },
-        { queries: 'REINDEX INDEX CONCURRENTLY Patient_name_idx' },
-        { queries: [123] },
-        { queries: ['REINDEX INDEX Patient_name_idx'] },
-        { queries: ['REINDEX SCHEMA CONCURRENTLY public'] },
-        { queries: ['REINDEX DATABASE CONCURRENTLY medplum'] },
-        { queries: ['REINDEX SYSTEM CONCURRENTLY medplum'] },
-        { queries: ['REINDEX INDEX CONCURRENTLY Patient_name_idx; DROP TABLE Patient'] },
-        { queries: ['REINDEX TABLE CONCURRENTLY Patient -- comment'] },
+        { targets: [] },
+        { targets: Array.from({ length: 11 }, (_, index) => ({ table: `Table${index}` })) },
+        { targets: 'Patient_name_idx' },
+        { targets: [123] },
+        { targets: [{}] },
+        { targets: [{ table: 'Patient', index: 'Patient_id_idx' }] },
+        { targets: [{ schema: 'public' }] },
+        { targets: [{ table: 123 }] },
+        { targets: [{ index: 123 }] },
+        { targets: [{ table: 'Patient History' }] },
+        { targets: [{ index: 'Patient_id_idx; DROP TABLE Patient' }] },
       ])('Rejects invalid input: %j', async (body) => {
         const queueAddSpy = getQueueAddSpy();
 
@@ -908,7 +910,7 @@ describe('Database migrations', () => {
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
-          .send({ queries: ['REINDEX INDEX CONCURRENTLY Patient_name_idx'], otherSql: 'DROP TABLE Patient' });
+          .send({ targets: [{ index: 'Patient_name_idx' }], otherSql: 'DROP TABLE Patient' });
 
         expect(res).toHaveStatus(400);
         expect(queueAddSpy).not.toHaveBeenCalled();

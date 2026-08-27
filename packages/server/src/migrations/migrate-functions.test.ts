@@ -11,7 +11,6 @@ import {
   analyzeTable,
   batchedUpdate,
   idempotentCreateIndex,
-  isValidReindexConcurrentlyQuery,
   nonBlockingAddCheckConstraint,
   nonBlockingAlterColumnNotNull,
   reindexConcurrently,
@@ -73,41 +72,40 @@ describe('migrate-functions', () => {
   });
 
   describe('reindexConcurrently', () => {
-    test.each([
-      'REINDEX INDEX CONCURRENTLY test_index',
-      'reindex table concurrently public."Test_Table";',
-      ' REINDEX INDEX CONCURRENTLY "public"."test_index" ',
-    ])('accepts %s', (queryStr) => {
-      expect(isValidReindexConcurrentlyQuery(queryStr)).toBe(true);
-    });
-
-    test.each([
-      'REINDEX INDEX test_index',
-      'REINDEX TABLE test_table',
-      'REINDEX SCHEMA CONCURRENTLY public',
-      'REINDEX DATABASE CONCURRENTLY medplum',
-      'REINDEX SYSTEM CONCURRENTLY medplum',
-      'REINDEX INDEX CONCURRENTLY test_index; DROP TABLE Test_Table',
-      'REINDEX INDEX CONCURRENTLY test_index -- comment',
-    ])('rejects %s', (queryStr) => {
-      expect(isValidReindexConcurrentlyQuery(queryStr)).toBe(false);
-    });
-
-    test('executes a valid query', async () => {
+    test('reindexes an index', async () => {
       const indexName = 'Test_Table_id_idx';
       await client.query(`CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapedTableName} (id)`);
-      const queryStr = `REINDEX INDEX CONCURRENTLY ${escapeIdentifier(indexName)}`;
       const results: MigrationActionResult[] = [];
 
-      await reindexConcurrently(client, results, queryStr);
+      await reindexConcurrently(client, results, 'INDEX', indexName);
 
-      expect(results).toEqual([{ name: queryStr, durationMs: expect.any(Number) }]);
+      expect(results).toEqual([
+        { name: `REINDEX INDEX CONCURRENTLY ${escapeIdentifier(indexName)}`, durationMs: expect.any(Number) },
+      ]);
     });
 
-    test('does not execute an invalid query', async () => {
+    test('reindexes a table', async () => {
       const results: MigrationActionResult[] = [];
-      await expect(reindexConcurrently(client, results, 'REINDEX INDEX Test_Table_id_idx')).rejects.toThrow(
-        'Invalid REINDEX CONCURRENTLY query'
+
+      await reindexConcurrently(client, results, 'TABLE', tableName);
+
+      expect(results).toEqual([
+        { name: `REINDEX TABLE CONCURRENTLY ${escapedTableName}`, durationMs: expect.any(Number) },
+      ]);
+    });
+
+    test('does not execute an invalid identifier', async () => {
+      const results: MigrationActionResult[] = [];
+      await expect(
+        reindexConcurrently(client, results, 'INDEX', 'Test_Table_id_idx; DROP TABLE Patient')
+      ).rejects.toThrow('Invalid PostgreSQL identifier');
+      expect(results).toHaveLength(0);
+    });
+
+    test('does not execute an invalid target', async () => {
+      const results: MigrationActionResult[] = [];
+      await expect(reindexConcurrently(client, results, 'SCHEMA' as 'INDEX', 'public')).rejects.toThrow(
+        'Invalid REINDEX target'
       );
       expect(results).toHaveLength(0);
     });

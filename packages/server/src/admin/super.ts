@@ -31,7 +31,6 @@ import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
-import { isValidReindexConcurrentlyQuery } from '../migrations/migrate-functions';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
 import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
@@ -443,13 +442,27 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
 superAdminRouter.post(
   '/reindex-database',
   [
-    body('queries').isArray({ min: 1 }).withMessage('queries must be a non-empty array'),
-    body('queries.*')
-      .isString()
-      .withMessage('Each query must be a string')
+    body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
+    body('targets.*')
+      .isObject({ strict: true })
+      .withMessage('Each target must be an object')
       .bail()
-      .custom(isValidReindexConcurrentlyQuery)
-      .withMessage('Each query must be a single REINDEX INDEX CONCURRENTLY or REINDEX TABLE CONCURRENTLY statement'),
+      .custom((target) => Object.keys(target).length === 1 && ('table' in target || 'index' in target))
+      .withMessage('Each target must contain exactly one of table or index'),
+    body('targets.*.table')
+      .optional()
+      .isString()
+      .withMessage('Table name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid table name'),
+    body('targets.*.index')
+      .optional()
+      .isString()
+      .withMessage('Index name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid index name'),
     checkExact(),
   ],
   async (req: Request, res: Response) => {
@@ -464,10 +477,11 @@ superAdminRouter.post(
 
     const migrationActions = {
       preDeploy: [],
-      postDeploy: (req.body.queries as string[]).map((query) => ({
-        type: 'REINDEX_CONCURRENTLY' as const,
-        reindexSql: query.trim(),
-      })),
+      postDeploy: (req.body.targets as ReindexTarget[]).map((target) =>
+        'table' in target
+          ? { type: 'REINDEX_CONCURRENTLY' as const, target: 'TABLE' as const, name: target.table }
+          : { type: 'REINDEX_CONCURRENTLY' as const, target: 'INDEX' as const, name: target.index }
+      ),
     };
 
     const exec = new AsyncJobExecutor(ctx.repo);
@@ -481,6 +495,8 @@ superAdminRouter.post(
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   }
 );
+
+type ReindexTarget = { table: string } | { index: string };
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.

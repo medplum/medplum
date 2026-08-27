@@ -880,7 +880,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
-        await fns.reindexConcurrently(client, results, action.reindexSql);
+        await fns.reindexConcurrently(client, results, action.target, action.name);
         break;
       }
       case 'ADD_CONSTRAINT': {
@@ -1046,7 +1046,9 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
-        b.appendNoWrap(`await fns.reindexConcurrently(client, results, ${JSON.stringify(action.reindexSql)});`);
+        b.appendNoWrap(
+          `await fns.reindexConcurrently(client, results, '${action.target}', ${JSON.stringify(action.name)});`
+        );
         break;
       }
       case 'ADD_CONSTRAINT': {

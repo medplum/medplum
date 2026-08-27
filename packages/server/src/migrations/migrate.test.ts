@@ -652,15 +652,10 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
   },
   {
     name: 'REINDEX_CONCURRENTLY',
-    action: { type: 'REINDEX_CONCURRENTLY', reindexSql: 'REINDEX INDEX CONCURRENTLY "Patient_name_idx"' },
-    builderExpected:
-      'await fns.reindexConcurrently(client, results, "REINDEX INDEX CONCURRENTLY \\"Patient_name_idx\\"");',
+    action: { type: 'REINDEX_CONCURRENTLY', target: 'INDEX', name: 'Patient_name_idx' },
+    builderExpected: 'await fns.reindexConcurrently(client, results, \'INDEX\', "Patient_name_idx");',
     executionCheck: ({ mockReindexConcurrently, mockClient, results }) => {
-      expect(mockReindexConcurrently).toHaveBeenCalledWith(
-        mockClient,
-        results,
-        'REINDEX INDEX CONCURRENTLY "Patient_name_idx"'
-      );
+      expect(mockReindexConcurrently).toHaveBeenCalledWith(mockClient, results, 'INDEX', 'Patient_name_idx');
     },
   },
   {
