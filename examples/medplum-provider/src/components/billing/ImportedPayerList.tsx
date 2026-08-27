@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Card, Group, Pagination, Stack, Table, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { getIdentifier } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { formatPayerCategory, getPayerCategory, getPayerId } from '../../utils/billing';
+import { formatPayerCategory, getPayerCategory } from '../../utils/billing';
+import { CHC_PAYER_ID_SYSTEM, CMS_PAYER_ID_SYSTEM } from '../../utils/candid';
 
 const PAGE_SIZE = 10;
 
@@ -49,7 +51,7 @@ export function ImportedPayerList(props: ImportedPayerListProps): JSX.Element {
                       {payer.name ?? payer.id}
                     </Text>
                   </Table.Td>
-                  <Table.Td>{getPayerId(payer)}</Table.Td>
+                  <Table.Td>{getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM)}</Table.Td>
                   <Table.Td>{category && formatPayerCategory(category)}</Table.Td>
                   <Table.Td>
                     {payer.active === false && (

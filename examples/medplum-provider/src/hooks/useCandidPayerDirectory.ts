@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { normalizeErrorString } from '@medplum/core';
+import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Organization, Parameters } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { CandidPayerPage } from '../utils/billing';
-import { buildPayerRefreshOps, getPayerUuid, isPayerNotFoundError, parsePayerSearchPage } from '../utils/billing';
+import { buildPayerRefreshOps, isPayerNotFoundError, parsePayerSearchPage } from '../utils/billing';
 import { CANDID_GET_PAYERS_BOT_IDENTIFIER, CANDID_PAYER_UUID_SYSTEM } from '../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../utils/notifications';
 
@@ -85,7 +85,8 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
   }, [medplum]);
 
   const importedUuids = useMemo(
-    () => new Set(importedPayers.map(getPayerUuid).filter(Boolean) as string[]),
+    () =>
+      new Set(importedPayers.map((org) => getIdentifier(org, CANDID_PAYER_UUID_SYSTEM)).filter(Boolean) as string[]),
     [importedPayers]
   );
 
@@ -130,10 +131,11 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
     setFetchingPage(true);
     try {
       const page = await fetchPage(activeTerm, nextPageToken);
-      const merged = loaded + (page.items?.length ?? 0);
-      setResults((prev) => [...(prev ?? []), ...(page.items ?? [])]);
+      const fetched = page.items ?? [];
+      const merged = loaded + fetched.length;
+      setResults((prev) => [...(prev ?? []), ...fetched]);
       setPageIndex(Math.min(index, Math.max(Math.ceil(merged / SEARCH_PAGE_SIZE) - 1, 0)));
-      setNextPageToken(page.nextPageToken);
+      setNextPageToken(fetched.length > 0 ? page.nextPageToken : undefined);
     } catch (error) {
       showErrorNotification(error);
     } finally {
@@ -150,7 +152,7 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
 
   const importPayers = async (uuids: Set<string>): Promise<void> => {
     // The bot returns ready-to-persist Organizations, so import is a plain create.
-    const toImport = (results ?? []).filter((payer) => uuids.has(getPayerUuid(payer) ?? ''));
+    const toImport = (results ?? []).filter((payer) => uuids.has(getIdentifier(payer, CANDID_PAYER_UUID_SYSTEM) ?? ''));
     if (toImport.length === 0) {
       return;
     }
@@ -178,7 +180,7 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
   };
 
   const refreshPayer = async (org: WithId<Organization>): Promise<WithId<Organization> | undefined> => {
-    const payerUuid = getPayerUuid(org);
+    const payerUuid = getIdentifier(org, CANDID_PAYER_UUID_SYSTEM);
     if (!botId || !payerUuid) {
       return undefined;
     }

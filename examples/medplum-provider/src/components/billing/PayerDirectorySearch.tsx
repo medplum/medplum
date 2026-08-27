@@ -13,12 +13,14 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
+import { getIdentifier } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { IconCheck, IconInfoCircle, IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
-import { formatPayerCategory, getPayerCategory, getPayerId, getPayerUuid } from '../../utils/billing';
+import { formatPayerCategory, getPayerCategory } from '../../utils/billing';
+import { CANDID_PAYER_UUID_SYSTEM, CHC_PAYER_ID_SYSTEM, CMS_PAYER_ID_SYSTEM } from '../../utils/candid';
 
 export interface PayerDirectorySearchProps {
   readonly directory: CandidPayerDirectory;
@@ -80,7 +82,7 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') {
+              if (event.key === 'Enter' && !directory.searching) {
                 handleSearch().catch(console.error);
               }
             }}
@@ -119,22 +121,28 @@ export function PayerDirectorySearch(props: PayerDirectorySearchProps): JSX.Elem
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {directory.searchResults.map((payer) => {
-                  const payerUuid = getPayerUuid(payer) ?? '';
-                  const imported = directory.importedUuids.has(payerUuid);
+                {directory.searchResults.map((payer, index) => {
+                  // The UUID is how a payer is selected and imported, so an entry without one
+                  // cannot be imported; index keeps such rows from colliding on a shared key.
+                  const payerUuid = getIdentifier(payer, CANDID_PAYER_UUID_SYSTEM);
+                  const imported = !!payerUuid && directory.importedUuids.has(payerUuid);
                   const category = getPayerCategory(payer);
                   return (
-                    <Table.Tr key={payerUuid} onClick={() => onSelectPayer(payer)} style={{ cursor: 'pointer' }}>
+                    <Table.Tr
+                      key={payerUuid ?? `row-${index}`}
+                      onClick={() => onSelectPayer(payer)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <Table.Td onClick={(event) => event.stopPropagation()}>
                         <Checkbox
                           aria-label={`Select ${payer.name}`}
-                          checked={imported || selected.has(payerUuid)}
-                          disabled={imported}
-                          onChange={() => toggleSelected(payerUuid)}
+                          checked={imported || (!!payerUuid && selected.has(payerUuid))}
+                          disabled={imported || !payerUuid}
+                          onChange={() => payerUuid && toggleSelected(payerUuid)}
                         />
                       </Table.Td>
                       <Table.Td>{payer.name}</Table.Td>
-                      <Table.Td>{getPayerId(payer)}</Table.Td>
+                      <Table.Td>{getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM)}</Table.Td>
                       <Table.Td>{category && formatPayerCategory(category)}</Table.Td>
                       <Table.Td>
                         {imported && <IconCheck size={16} color="var(--mantine-color-green-6)" aria-label="Imported" />}

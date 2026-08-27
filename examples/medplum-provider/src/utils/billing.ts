@@ -12,7 +12,6 @@ import {
   CANDID_REMITTANCE_PAYER_ID_SYSTEM,
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
   CHC_PAYER_ID_SYSTEM,
-  CMS_PAYER_ID_SYSTEM,
 } from './candid';
 
 export const ORGANIZATION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/organization-type';
@@ -76,22 +75,6 @@ export function parsePayerSearchPage(result: Parameters): CandidPayerPage {
       .map((p) => p.resource as Organization),
     nextPageToken: result.parameter?.find((p) => p.name === 'nextPageToken')?.valueString,
   };
-}
-
-export function getPayerUuid(org: Organization): string | undefined {
-  return org.identifier?.find((id) => id.system === CANDID_PAYER_UUID_SYSTEM)?.value;
-}
-
-/**
- * Reads the claims payer ID, falling back to the legacy CMS system for payers imported before v4.
- * @param org - The payer Organization.
- * @returns The claims payer ID, or undefined when the Organization has neither identifier.
- */
-export function getPayerId(org: Organization): string | undefined {
-  return (
-    org.identifier?.find((id) => id.system === CHC_PAYER_ID_SYSTEM)?.value ??
-    org.identifier?.find((id) => id.system === CMS_PAYER_ID_SYSTEM)?.value
-  );
 }
 
 export function getPayerCategory(org: Organization): string | undefined {

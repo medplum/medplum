@@ -2,16 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Button, Group, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
+import { getIdentifier } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { Modal } from '@medplum/react';
 import { IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
-import { formatPayerCategory, getPayerCategory, getPayerId } from '../../utils/billing';
+import { formatPayerCategory, getPayerCategory } from '../../utils/billing';
 import {
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
+  CHC_PAYER_ID_SYSTEM,
+  CMS_PAYER_ID_SYSTEM,
 } from '../../utils/candid';
 
 const SUPPORT_STATE_LABELS: Record<string, { label: string; color: string }> = {
@@ -94,7 +97,7 @@ function PayerDetails(props: { payer: Organization }): JSX.Element {
           <Text size="xs" c="dimmed">
             Payer ID
           </Text>
-          <Text>{getPayerId(payer) ?? '—'}</Text>
+          <Text>{getIdentifier(payer, CHC_PAYER_ID_SYSTEM) ?? getIdentifier(payer, CMS_PAYER_ID_SYSTEM) ?? '—'}</Text>
         </div>
         <div>
           <Text size="xs" c="dimmed">

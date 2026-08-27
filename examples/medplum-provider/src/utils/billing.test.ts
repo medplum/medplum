@@ -8,8 +8,6 @@ import {
   buildPayerRefreshOps,
   formatPayerCategory,
   getPayerCategory,
-  getPayerId,
-  getPayerUuid,
   isPayerNotFoundError,
   parsePayerSearchPage,
   upsertIdentifier,
@@ -199,18 +197,7 @@ describe('billing utils', () => {
     });
   });
 
-  describe('payer Organization getters', () => {
-    test('reads the Candid UUID and claims payer ID', () => {
-      const payer = makeDirectoryPayer();
-      expect(getPayerUuid(payer)).toBe('uuid-1');
-      expect(getPayerId(payer)).toBe('60054');
-    });
-
-    test('falls back to the legacy CMS payer ID for pre-v4 imports', () => {
-      const legacy = makeDirectoryPayer({ identifier: [{ system: CMS_PAYER_ID_SYSTEM, value: '62308' }] });
-      expect(getPayerId(legacy)).toBe('62308');
-    });
-
+  describe('getPayerCategory', () => {
     test('reads the payer category from Organization.type', () => {
       const payer = makeDirectoryPayer({
         type: [

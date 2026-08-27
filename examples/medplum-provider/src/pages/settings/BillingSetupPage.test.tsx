@@ -284,6 +284,49 @@ describe('BillingSetupPage', () => {
     expect(searchButton).toHaveAttribute('data-loading');
   });
 
+  test('does not start a second search when Enter is pressed while one is in flight', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(payersBot);
+    const executeSpy = vi.spyOn(medplum, 'executeBot').mockImplementation(() => new Promise(() => {}) as any);
+
+    setup();
+
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    const input = await screen.findByLabelText('Search the payer directory');
+
+    await user.type(input, 'cigna{Enter}');
+    await user.type(input, '{Enter}');
+
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('retires the extra page when the directory has no further results', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(payersBot);
+    const firstBatch = Array.from({ length: 20 }, (_, i) =>
+      makeDirectoryPayer(`uuid-${i}`, `${i}`, `PAYER ${String(i).padStart(2, '0')}`)
+    );
+    vi.spyOn(medplum, 'executeBot')
+      .mockResolvedValueOnce(makeSearchResult(firstBatch, 'tok-2'))
+      .mockResolvedValue(makeSearchResult([], 'tok-3'));
+
+    setup();
+
+    await user.click(screen.getByRole('tab', { name: 'Candid Payer Directory' }));
+    await user.click(await screen.findByRole('button', { name: /Search/ }));
+    expect(await screen.findByText('PAYER 00')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '2' }));
+
+    // Nothing came back, so the page-2 button is gone instead of repeating the empty fetch
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '2' })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('PAYER 00')).toBeInTheDocument();
+  });
+
   test('clears the search input, results, and selection with the in-field clear button', async () => {
     const user = userEvent.setup();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
