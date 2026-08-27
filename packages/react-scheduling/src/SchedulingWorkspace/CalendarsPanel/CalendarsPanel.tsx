@@ -11,10 +11,9 @@ export interface CalendarsPanelItem {
   readonly id: string;
   readonly label: string;
   readonly color: keyof MantineThemeColors;
+  readonly imageUrl?: string;
   /** Defaults to true (selected/visible) when omitted. */
   readonly selected?: boolean;
-  /** Only used for Providers & Staff, Devices, and Rooms rows (avatar variant); ignored for Locations and Service Types. */
-  readonly imageUrl?: string;
 }
 
 export interface CalendarsPanelProps {

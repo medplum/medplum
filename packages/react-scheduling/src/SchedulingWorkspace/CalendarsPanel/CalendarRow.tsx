@@ -14,10 +14,10 @@ export interface CalendarRowProps {
 }
 
 export function CalendarRow(props: CalendarRowProps): JSX.Element {
-  const { item, icon, color, onToggle } = props;
+  const { item, icon, onToggle } = props;
   const selected = item.selected ?? true;
   const interactive = !!onToggle;
-  const muted = !selected;
+  const color = selected ? props.color : 'gray';
 
   return (
     <UnstyledButton
@@ -30,17 +30,11 @@ export function CalendarRow(props: CalendarRowProps): JSX.Element {
     >
       <Group gap="sm" wrap="nowrap">
         {icon ? (
-          <ThemeIcon variant="filled" color={muted ? 'gray' : color} radius="sm" size={20} className={classes.icon}>
+          <ThemeIcon variant="filled" color={color} radius="sm" size={20} className={classes.icon}>
             {icon}
           </ThemeIcon>
         ) : (
-          <Avatar
-            src={muted ? undefined : item.imageUrl}
-            name={item.label}
-            color={muted ? 'gray' : color}
-            radius="xl"
-            size={28}
-          />
+          <Avatar src={item.imageUrl} name={item.label} color={color} radius="xl" size={28} />
         )}
         <Text truncate c={selected ? undefined : 'dimmed'}>
           {item.label}
