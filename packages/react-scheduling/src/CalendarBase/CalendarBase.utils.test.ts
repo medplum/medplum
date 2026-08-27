@@ -3,7 +3,7 @@
 import { createReference } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
-import { availableTimeToBusinessHoursEntry, filterBookedSlots, isSameRange } from './CalendarBase.utils';
+import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
 
 describe('availableTimeToBusinessHoursEntry', () => {
   test('converts a simple weekday range', () => {
@@ -141,31 +141,5 @@ describe('filterBookedSlots', () => {
     ];
 
     expect(filterBookedSlots(slots, appointments)).toEqual([slots[0], slots[2]]);
-  });
-});
-
-describe('isSameRange', () => {
-  const start = new Date(2026, 7, 18, 9, 0, 0);
-  const end = new Date(2026, 7, 18, 9, 30, 0);
-
-  test('matches the same instants across different Date objects', () => {
-    expect(isSameRange({ start, end }, { start: new Date(start), end: new Date(end) })).toBe(true);
-  });
-
-  test('tells a different start apart', () => {
-    expect(isSameRange({ start, end }, { start: new Date(2026, 7, 18, 9, 15, 0), end })).toBe(false);
-  });
-
-  test('tells a different end apart', () => {
-    expect(isSameRange({ start, end }, { start, end: new Date(2026, 7, 18, 10, 0, 0) })).toBe(false);
-  });
-
-  test('counts two absent ranges as the same', () => {
-    expect(isSameRange(undefined, undefined)).toBe(true);
-  });
-
-  test('tells an absent range from a present one', () => {
-    expect(isSameRange(undefined, { start, end })).toBe(false);
-    expect(isSameRange({ start, end }, undefined)).toBe(false);
   });
 });

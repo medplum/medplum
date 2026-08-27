@@ -20,7 +20,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { DateTimeRange } from '../types';
 import classes from './CalendarBase.module.css';
-import { availableTimeToBusinessHoursEntry, filterBookedSlots, isSameRange } from './CalendarBase.utils';
+import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
 
 export interface FhirEventSource {
   schedule?: WithId<Schedule>;
@@ -227,7 +227,6 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   // reporting the interval back hands over a fresh pair of `Date`s each time, and
   // clearing is its own case only because `unselectAuto` is false.
   const calendarRef = useRef<CalendarRef>(null);
-  const appliedSelection = useRef<DateTimeRange | undefined>(undefined);
   const startMs = selection?.start.getTime();
   const endMs = selection?.end.getTime();
   useEffect(() => {
@@ -236,10 +235,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
       return;
     }
     if (startMs !== undefined && endMs !== undefined) {
-      appliedSelection.current = { start: new Date(startMs), end: new Date(endMs) };
       api.select(startMs, endMs);
     } else {
-      appliedSelection.current = undefined;
       api.unselect();
     }
   }, [selectable, startMs, endMs]);
@@ -294,7 +291,9 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         selectable={selectable}
         unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {
-          if (isSameRange(appliedSelection.current, eventInfo)) {
+          // `api.select` above comes back through here with a null `jsEvent`; only a
+          // pointer gesture is news to the host.
+          if (!eventInfo.jsEvent) {
             return;
           }
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });

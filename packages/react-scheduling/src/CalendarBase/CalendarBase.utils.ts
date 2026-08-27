@@ -3,7 +3,6 @@
 import type { BusinessHoursInput } from '@fullcalendar/react';
 import { EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Slot } from '@medplum/fhirtypes';
-import type { DateTimeRange } from '../types';
 
 const DayIndexer = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -67,21 +66,4 @@ export function filterBookedSlots(slots: Slot[], appointments: Appointment[]): S
     }
     return true;
   });
-}
-
-/**
- * Reports whether two intervals cover the same instants.
- *
- * By value, because the same interval arrives as a fresh pair of `Date`s every time
- * it is reported or re-rendered, and nothing downstream cares which object it is.
- *
- * @param a - One interval, if there is one.
- * @param b - The other interval, if there is one.
- * @returns True when both are absent, or both run from and to the same instants.
- */
-export function isSameRange(a: DateTimeRange | undefined, b: DateTimeRange | undefined): boolean {
-  if (!a || !b) {
-    return !a && !b;
-  }
-  return a.start.getTime() === b.start.getTime() && a.end.getTime() === b.end.getTime();
 }
