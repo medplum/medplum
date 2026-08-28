@@ -148,7 +148,7 @@ export function hasSameClock(left: string | undefined, right: string | undefined
  * @param timezone - IANA timezone the times are in, or undefined when it could not be resolved.
  * @param at - The instant being shown.
  * @param viewer - The viewer's IANA timezone. Defaults to the browser's
- * @returns True when the zone need not be spelled out.
+ * @returns True when the times read the same on the viewer's own clock.
  */
 export function isViewerTimezone(timezone: string | undefined, at: Date, viewer?: string): boolean {
   return !timezone || hasSameClock(timezone, viewer, at);
