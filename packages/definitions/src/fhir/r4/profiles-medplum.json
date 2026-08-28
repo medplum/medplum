@@ -10785,6 +10785,22 @@
             }]
           },
           {
+            "id" : "Cron.identifier",
+            "path" : "Cron.identifier",
+            "short" : "An identifier for this cron job",
+            "definition" : "An identifier for this cron job.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Cron.identifier",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Identifier"
+            }]
+          },
+          {
             "id" : "Cron.active",
             "path" : "Cron.active",
             "short" : "Whether the job is registered with the scheduler",

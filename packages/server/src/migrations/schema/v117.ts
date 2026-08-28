@@ -27,6 +27,9 @@ export async function run(client: PoolClient): Promise<void> {
   "___tag" UUID[],
   "___tagText" TEXT[],
   "___tagSort" TEXT,
+  "__identifier" UUID[],
+  "__identifierText" TEXT[],
+  "__identifierSort" TEXT,
   "onBehalfOf" TEXT,
   "target" TEXT,
   "___compartmentIdentifierSort" TEXT,
@@ -45,6 +48,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___sharedTokensTextTrgm_idx" ON "Cron" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron____tag_idx" ON "Cron" USING gin ("___tag")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron____tagTextTrgm_idx" ON "Cron" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___idnt_idx" ON "Cron" USING gin ("__identifier")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___idntTextTrgm_idx" ON "Cron" USING gin (token_array_to_text("__identifierText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_onBehalfOf_idx" ON "Cron" ("onBehalfOf")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_target_idx" ON "Cron" ("target")`);
   await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Cron_History" (

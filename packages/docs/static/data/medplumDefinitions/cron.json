@@ -160,6 +160,23 @@
       "base": "DomainResource"
     },
     {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Cron.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this cron job",
+      "definition": "An identifier for this cron job.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "active",
       "depth": 1,
       "types": [
@@ -336,6 +353,12 @@
     }
   ],
   "searchParameters": [
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "The identifier of the cron job",
+      "expression": "Cron.identifier"
+    },
     {
       "name": "on-behalf-of",
       "type": "reference",

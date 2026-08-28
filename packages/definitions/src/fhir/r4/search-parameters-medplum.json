@@ -2424,6 +2424,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Cron-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Cron-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Cron-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the cron job",
+        "code": "identifier",
+        "base": ["Cron"],
+        "type": "token",
+        "expression": "Cron.identifier"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Cron-on-behalf-of",
       "resource": {
         "resourceType": "SearchParameter",

@@ -7,6 +7,7 @@
 
 import type { Bot } from './Bot.d.ts';
 import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
 import type { ProjectMembership } from './ProjectMembership.d.ts';
@@ -93,6 +94,11 @@ export interface Cron {
    * modifierExtension itself).
    */
   modifierExtension?: Extension[];
+
+  /**
+   * An identifier for this cron job.
+   */
+  identifier?: Identifier[];
 
   /**
    * Whether the scheduled job runs. Setting this to false unregisters the

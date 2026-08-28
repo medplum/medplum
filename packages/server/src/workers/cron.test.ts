@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
+import { createReference, parseSearchRequest } from '@medplum/core';
 import type {
   AuditEvent,
   Bot,
@@ -440,6 +440,23 @@ describe('Cron resource', () => {
         { pattern: '0 */3 * * *' },
         { data: { resourceType: 'Cron', cronId: cron.id } }
       );
+    }));
+
+  test('Search by identifier', () =>
+    withTestContext(async () => {
+      const value = randomUUID();
+      const cron = await repo.createResource<Cron>({
+        ...validCron(),
+        identifier: [{ system: 'https://example.com/cron', value }],
+      });
+
+      const matches = await repo.searchResources<Cron>(
+        parseSearchRequest(`Cron?identifier=https://example.com/cron|${value}`)
+      );
+      expect(matches.map((c) => c.id)).toStrictEqual([cron.id]);
+
+      const others = await repo.searchResources<Cron>(parseSearchRequest(`Cron?identifier=${randomUUID()}`));
+      expect(others).toHaveLength(0);
     }));
 
   test('Deleting a Cron removes the job', () =>

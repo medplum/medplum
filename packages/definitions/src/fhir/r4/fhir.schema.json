@@ -65728,6 +65728,13 @@
           },
           "type": "array"
         },
+        "identifier": {
+          "description": "An identifier for this cron job.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
         "active": {
           "description": "Whether the scheduled job runs. Setting this to false unregisters the job while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
           "$ref": "#/definitions/boolean"
