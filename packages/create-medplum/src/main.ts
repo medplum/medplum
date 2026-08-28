@@ -128,15 +128,16 @@ async function promptForConfig(): Promise<ProjectConfig> {
 }
 
 // Fixed, unwriteable directories we trust to hold developer tools (git, gh, npm).
-// We resolve executables against this list and pin the child-process PATH to it,
-// so the tools never rely on PATH resolution and a writable directory injected
-// into the ambient PATH cannot shadow them (CWE-426 / CWE-427, SonarCloud S4036).
+// They are searched before the ambient PATH when resolving a tool, and are used
+// to pin the child-process PATH. Tools are always invoked by absolute path, so a
+// writable directory injected into PATH cannot silently shadow them
+// (CWE-426 / CWE-427, SonarCloud S4036).
 function trustedBinDirs(): string[] {
   // The directory of the running Node runtime, where npm/npx are installed.
   const dirs = [path.dirname(process.execPath)];
   if (process.platform === 'win32') {
-    const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
-    const programFiles = process.env.ProgramFiles ?? 'C:\\Program Files';
+    const systemRoot = process.env.SystemRoot ?? String.raw`C:\Windows`;
+    const programFiles = process.env.ProgramFiles ?? String.raw`C:\Program Files`;
     dirs.push(
       path.join(systemRoot, 'System32'),
       systemRoot,
@@ -149,11 +150,15 @@ function trustedBinDirs(): string[] {
   return dirs;
 }
 
-// Resolves a command to its absolute path using only the trusted directories.
-// Throws if the command is not found, which callers use to detect missing tools.
+// Resolves a command to its absolute path. Trusted, unwriteable directories are
+// searched first; if the tool lives elsewhere (e.g. a scoop/asdf/volta shim or
+// ~/.local/bin) we fall back to the ambient PATH so a valid install still works.
+// Either way an absolute path is returned, so invocation never relies on PATH
+// resolution. Throws if not found, which callers use to detect missing tools.
 function resolveExecutable(command: string): string {
   const extensions = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : [''];
-  for (const dir of trustedBinDirs()) {
+  const ambientDirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
+  for (const dir of [...trustedBinDirs(), ...ambientDirs]) {
     for (const extension of extensions) {
       const candidate = path.join(dir, command + extension);
       if (fs.existsSync(candidate)) {
@@ -161,17 +166,19 @@ function resolveExecutable(command: string): string {
       }
     }
   }
-  throw new Error(`Could not find "${command}" in a trusted directory. Please ensure it is installed.`);
+  throw new Error(`Could not find "${command}". Please ensure it is installed and on your PATH.`);
 }
 
-// Runs a trusted tool by its resolved absolute path, with the child-process PATH
-// pinned to the trusted directories so no lookup ever hits the ambient PATH.
+// Runs a trusted tool by its resolved absolute path. The child-process PATH is
+// pinned to the trusted directories (plus the tool's own directory) rather than
+// the ambient PATH, so nothing the tool spawns falls back to a writable location.
 function runTool(command: string, args: string, options: { cwd?: string } = {}): void {
   const executable = resolveExecutable(command);
+  const pathDirs = [path.dirname(executable), ...trustedBinDirs()];
   cp.execSync(`"${executable}" ${args}`, {
     cwd: options.cwd,
     stdio: 'inherit',
-    env: { ...process.env, PATH: trustedBinDirs().join(path.delimiter) },
+    env: { ...process.env, PATH: [...new Set(pathDirs)].join(path.delimiter) },
   });
 }
 

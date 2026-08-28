@@ -78,6 +78,50 @@ describe('Medplum initializer', () => {
     expect(console.log).toHaveBeenCalledWith('Successfully created project medplum-provider!');
   });
 
+  test('Prints manual instructions when the GitHub CLI is missing', async () => {
+    console.log = vi.fn();
+    // `gh` is not found in any directory; `git`/`npm` still resolve normally.
+    vi.mocked(fs.existsSync).mockImplementation((p) => !/[\\/]gh(\.[a-z]+)?$/i.test(String(p)));
+    vi.mocked(fs.readFileSync).mockReturnValue('MEDPLUM_BASE_URL=https://api.medplum.com/\n');
+    vi.mocked(readline.createInterface).mockReturnValue(
+      mockReadline(
+        '1', // Choose project #1 - Provider (default)
+        '', // Choose project name - use default
+        '', // Choose server URL - use default
+        'y', // Create a GitHub repository
+        'private' // Repository visibility
+      )
+    );
+    await main();
+    // Falls back to printing the manual command rather than aborting
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('gh repo create medplum-provider --private --source=. --remote=origin --push')
+    );
+    expect(console.log).toHaveBeenCalledWith('Successfully created project medplum-provider!');
+  });
+
+  test('Resolves tools on Windows', async () => {
+    console.log = vi.fn();
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    try {
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue('MEDPLUM_BASE_URL=https://api.medplum.com/\n');
+      vi.mocked(readline.createInterface).mockReturnValue(
+        mockReadline(
+          '1', // Choose project #1 - Provider (default)
+          '', // Choose project name - use default
+          '', // Choose server URL - use default
+          'n' // Do not create a GitHub repository
+        )
+      );
+      await main();
+      expect(console.log).toHaveBeenCalledWith('Successfully created project medplum-provider!');
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
+
   test('Cleanup on git error', async () => {
     console.log = vi.fn();
     console.error = vi.fn();
