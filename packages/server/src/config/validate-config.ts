@@ -4,6 +4,7 @@
 import type { ILogger } from '@medplum/core';
 import isISO8601 from 'validator/lib/isISO8601.js';
 import { getWarehouseSyncPostgresTableNames } from '../data-warehouse/config';
+import { getCapabilityStatementConfigErrors } from './capabilitystatement';
 import { globalLogger } from '../logger';
 import type { MedplumDataWarehouseConfig, MedplumServerConfig } from './types';
 
@@ -99,4 +100,20 @@ export function warnInvalidDataWarehouseConfig(config: MedplumServerConfig, logg
   logger.warn('Data warehouse sync is enabled but configuration is invalid; sync worker will not start', {
     errors,
   });
+}
+
+/**
+ * Throws when the CapabilityStatement configuration is invalid.
+ *
+ * Unlike the data warehouse config, this fails startup rather than warning. The CapabilityStatement is a
+ * conformance claim: continuing with an unrestricted statement would advertise interactions that the
+ * implementer explicitly asked to hide, which is the outcome the setting exists to prevent.
+ *
+ * @param config - The server configuration to validate.
+ */
+export function validateCapabilityStatementConfig(config: MedplumServerConfig): void {
+  const errors = getCapabilityStatementConfigErrors(config.capabilityStatement);
+  if (errors.length > 0) {
+    throw new Error(`Invalid CapabilityStatement configuration: ${errors.join('; ')}`);
+  }
 }

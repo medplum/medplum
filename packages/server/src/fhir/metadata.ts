@@ -4,6 +4,7 @@ import type { InternalTypeSchema } from '@medplum/core';
 import {
   concatUrls,
   ContentType,
+  deepClone,
   getAllDataTypes,
   getSearchParameters,
   HTTP_TERMINOLOGY_HL7_ORG,
@@ -21,6 +22,12 @@ import type {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import {
+  applyCapabilityStatementOverlay,
+  getResourceInteractions,
+  getSystemInteractions,
+  isResourceTypeAdvertised,
+} from '../config/capabilitystatement';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.
@@ -188,7 +195,12 @@ export function getCapabilityStatement(): CapabilityStatement {
   return capabilityStatement;
 }
 
-function buildCapabilityStatement(): CapabilityStatement {
+/**
+ * Builds the CapabilityStatement from the server configuration.
+ * Exported for testing; use {@link getCapabilityStatement} to read the cached statement.
+ * @returns The generated CapabilityStatement.
+ */
+export function buildCapabilityStatement(): CapabilityStatement {
   const name = 'medplum';
   const version = MEDPLUM_VERSION;
   const config = getConfig();
@@ -196,8 +208,8 @@ function buildCapabilityStatement(): CapabilityStatement {
   const fhirBaseUrl = concatUrls(baseUrl, 'fhir/R4/');
   const metadataUrl = concatUrls(fhirBaseUrl, 'metadata');
 
-  return {
-    ...baseStmt,
+  const statement: CapabilityStatement = {
+    ...deepClone(baseStmt),
     url: metadataUrl,
     software: {
       name,
@@ -209,6 +221,8 @@ function buildCapabilityStatement(): CapabilityStatement {
     },
     rest: buildRest(config),
   };
+
+  return applyCapabilityStatementOverlay(statement, config.capabilityStatement?.overlay);
 }
 
 function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
@@ -216,8 +230,8 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
     {
       mode: 'server',
       security: buildSecurity(config),
-      resource: buildResourceTypes(),
-      interaction: [{ code: 'transaction' }, { code: 'batch' }],
+      resource: buildResourceTypes(config),
+      interaction: getSystemInteractions(config.capabilityStatement),
       searchParam: supportedSearchParams,
       extension: [
         // See: https://build.fhir.org/ig/HL7/fhircast-docs/CapabilityStatement-fhircast-capabilitystatement-example.json
@@ -268,30 +282,24 @@ function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecu
   };
 }
 
-function buildResourceTypes(): CapabilityStatementRestResource[] {
+function buildResourceTypes(config: MedplumServerConfig): CapabilityStatementRestResource[] {
+  const csConfig = config.capabilityStatement;
   return Object.entries(getAllDataTypes())
     .filter(
       ([resourceType, typeSchema]) =>
         isResourceType(resourceType) &&
         typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/') &&
-        typeSchema.version === '4.0.1'
+        typeSchema.version === '4.0.1' &&
+        isResourceTypeAdvertised(resourceType, csConfig)
     )
     .map(
       ([resourceType, typeSchema]) =>
         ({
           type: resourceType as ResourceType,
           profile: typeSchema.url,
-          supportedProfile: supportedProfiles[resourceType] || undefined,
-          interaction: [
-            { code: 'read' }, // Read the current state of the resource.
-            { code: 'vread' }, // Read the state of a specific version of the resource.
-            { code: 'update' }, // Update an existing resource by its id.
-            { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
-            { code: 'delete' }, // Delete a resource.
-            { code: 'history-instance' }, // Retrieve the change history for a particular resource.
-            { code: 'create' }, // Create a new resource with a server assigned id.
-            { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
-          ],
+          supportedProfile:
+            csConfig?.supportedProfiles === false ? undefined : supportedProfiles[resourceType] || undefined,
+          interaction: getResourceInteractions(resourceType, csConfig),
           versioning: 'versioned',
           readHistory: true,
           updateCreate: false,

@@ -11,7 +11,7 @@ import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import { addDefaults, isArrayConfig, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
-import { warnInvalidDataWarehouseConfig } from './validate-config';
+import { validateCapabilityStatementConfig, warnInvalidDataWarehouseConfig } from './validate-config';
 
 let cachedConfig: ServerConfig | undefined = undefined;
 
@@ -66,6 +66,7 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
 
   const withDefaults = addDefaults(config);
   warnInvalidDataWarehouseConfig(withDefaults);
+  validateCapabilityStatementConfig(withDefaults);
   cachedConfig = withDefaults;
   return cachedConfig;
 }

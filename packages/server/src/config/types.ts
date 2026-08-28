@@ -241,6 +241,47 @@ export interface MedplumServerConfig {
    * as they are necesary for system functionality.
    */
   enabledSearchParameters?: string[];
+
+  /**
+   * Optional customizations to the server generated CapabilityStatement.
+   */
+  capabilityStatement?: MedplumCapabilityStatementConfig;
+}
+
+export interface MedplumCapabilityStatementConfig {
+  /**
+   * Partial CapabilityStatement merged over the server generated statement.
+   * Top level fields replace the generated values.
+   * `resourceType` and `rest` cannot be set here; use the filters below to restrict `rest`.
+   */
+  overlay?: Record<string, unknown>;
+
+  /**
+   * Optional allowlist of advertised resource types. Cannot be combined with `excludeResourceTypes`.
+   */
+  includeResourceTypes?: string[];
+
+  /**
+   * Optional denylist of advertised resource types. Cannot be combined with `includeResourceTypes`.
+   */
+  excludeResourceTypes?: string[];
+
+  /**
+   * Optional advertised interactions, keyed by resource type.
+   * The `*` key sets the default for resource types that are not listed explicitly.
+   * An empty array advertises no interactions for that resource type.
+   */
+  interactions?: Record<string, string[]>;
+
+  /**
+   * Optional advertised system level interactions, such as `transaction` and `batch`.
+   */
+  systemInteractions?: string[];
+
+  /**
+   * Whether to advertise `supportedProfile` for each resource type. Defaults to true.
+   */
+  supportedProfiles?: boolean;
 }
 
 export interface SubscriptionAutoDisableTrigger {

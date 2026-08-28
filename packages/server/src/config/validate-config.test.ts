@@ -16,11 +16,17 @@ vi.mock('../data-warehouse/config', () => ({
 let getDataWarehouseConfigErrors: typeof ValidateConfig.getDataWarehouseConfigErrors;
 let isDataWarehouseSyncOperational: typeof ValidateConfig.isDataWarehouseSyncOperational;
 let warnInvalidDataWarehouseConfig: typeof ValidateConfig.warnInvalidDataWarehouseConfig;
+let validateCapabilityStatementConfig: typeof ValidateConfig.validateCapabilityStatementConfig;
 
 beforeAll(async () => {
   vi.resetModules();
-  ({ getDataWarehouseConfigErrors, isDataWarehouseSyncOperational, warnInvalidDataWarehouseConfig } =
-    await import('./validate-config'));
+  ({
+    getDataWarehouseConfigErrors,
+    isDataWarehouseSyncOperational,
+    warnInvalidDataWarehouseConfig,
+    validateCapabilityStatementConfig,
+  } = await import('./validate-config'));
+  (await import('../fhir/structure')).loadStructureDefinitions();
 });
 
 function baseServerConfig(overrides?: Partial<MedplumServerConfig>): MedplumServerConfig {
@@ -312,5 +318,50 @@ describe('warnInvalidDataWarehouseConfig', () => {
       'Data warehouse sync is enabled but configuration is invalid; sync worker will not start',
       expect.objectContaining({ errors: expect.any(Array) })
     );
+  });
+});
+
+describe('validateCapabilityStatementConfig', () => {
+  test('does not throw when capabilityStatement is absent', () => {
+    expect(() => validateCapabilityStatementConfig(baseServerConfig())).not.toThrow();
+  });
+
+  test('does not throw when configuration is valid', () => {
+    expect(() =>
+      validateCapabilityStatementConfig(
+        baseServerConfig({
+          capabilityStatement: {
+            includeResourceTypes: ['Patient'],
+            interactions: { '*': ['read', 'search-type'] },
+          },
+        })
+      )
+    ).not.toThrow();
+  });
+
+  test('throws when configuration is invalid', () => {
+    expect(() =>
+      validateCapabilityStatementConfig(
+        baseServerConfig({
+          capabilityStatement: { includeResourceTypes: ['Patinet'] },
+        })
+      )
+    ).toThrow(
+      'Invalid CapabilityStatement configuration: capabilityStatement.includeResourceTypes contains unknown resource type(s): Patinet'
+    );
+  });
+
+  test('joins multiple errors', () => {
+    expect(() =>
+      validateCapabilityStatementConfig(
+        baseServerConfig({
+          capabilityStatement: {
+            includeResourceTypes: ['Patient'],
+            excludeResourceTypes: ['Observation'],
+            systemInteractions: ['nope'],
+          },
+        })
+      )
+    ).toThrow(/cannot both be set; .*unsupported interaction\(s\): nope/);
   });
 });
