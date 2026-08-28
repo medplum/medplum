@@ -228,27 +228,6 @@ export function getSchedulingTimezone(
 }
 
 /**
- * Every timezone a Schedule names for itself, across all the services it holds parameters for,
- * falling back to the actor's standard FHIR timezone extension when it names none.
- * @param schedule - Schedule to inspect
- * @param actor - Optional Schedule actor used as a timezone fallback
- * @returns The distinct IANA timezone identifiers found, in document order
- */
-export function getScheduleTimezones(schedule: Schedule, actor?: Resource): string[] {
-  const scheduleTimezones = (schedule.extension ?? [])
-    .filter((extension) => extension.url === SchedulingParametersURI)
-    .flatMap((parameters) => getExtensions(parameters, 'timezone'))
-    .map((subextension) => subextension.valueCode)
-    .filter(isDefined);
-  if (scheduleTimezones.length > 0) {
-    return [...new Set(scheduleTimezones)];
-  }
-
-  const actorTimezone = actor && getExtensionValue(actor, TimezoneExtensionURI);
-  return typeof actorTimezone === 'string' ? [actorTimezone] : [];
-}
-
-/**
  * Converts a HealthcareService into the CodeableConcept values used by
  * `Schedule.serviceType` and `Appointment.serviceType`, which encode an R4
  * approximation of `CodeableReference<HealthcareService>`.

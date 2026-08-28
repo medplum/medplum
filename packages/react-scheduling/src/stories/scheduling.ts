@@ -183,12 +183,16 @@ export const DrRiveraPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-rivera',
   name: [{ given: ['Maya'], family: 'Rivera', prefix: ['Dr.'] }],
+  // The zone a calendar is drawn in is read off its actor, so the provider carries it too.
+  extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
 };
 
 export const DrOkaforPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'dr-okafor',
   name: [{ given: ['Tunde'], family: 'Okafor', prefix: ['Dr.'] }],
+  // Central, matching the override on his Schedule: a second zone for the notice to name.
+  extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Chicago' }],
 };
 
 export const Ultrasound1Device: WithId<Device> = {

@@ -7,6 +7,7 @@ import {
   isDefined,
   normalizeErrorString,
   SchedulingScheduleColorURI,
+  TimezoneExtensionURI,
 } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
@@ -29,7 +30,6 @@ import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import type { CalendarTimezoneNoticeCalendar } from './CalendarTimezoneNotice';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
-import { useScheduleTimezones } from './useScheduleTimezones';
 
 const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = { provider: [], room: [], device: [] };
 
@@ -151,16 +151,22 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
-  const timezonesByScheduleId = useScheduleTimezones(activeCandidates);
+  /*
+   * A calendar's zone is read off its actor alone. A Schedule can also carry a zone per
+   * service in its scheduling parameters, but nothing here names a service to pick between
+   * them, and while a Schedule holds a single actor the actor's own zone is the one those
+   * parameters are expected to agree with anyway.
+   */
   const timezoneCalendars = useMemo((): CalendarTimezoneNoticeCalendar[] => {
-    return activeCandidates.flatMap((candidate) =>
-      (timezonesByScheduleId.get(candidate.schedule.id) ?? []).map((timezone) => ({
-        id: `${candidate.schedule.id}/${timezone}`,
-        label: getCandidateDisplay(candidate),
-        timezone,
-      }))
-    );
-  }, [activeCandidates, timezonesByScheduleId]);
+    const calendars: CalendarTimezoneNoticeCalendar[] = [];
+    for (const candidate of activeCandidates) {
+      const timezone = candidate.actorResource && getExtensionValue(candidate.actorResource, TimezoneExtensionURI);
+      if (typeof timezone === 'string') {
+        calendars.push({ id: candidate.schedule.id, label: getCandidateDisplay(candidate), timezone });
+      }
+    }
+    return calendars;
+  }, [activeCandidates]);
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);

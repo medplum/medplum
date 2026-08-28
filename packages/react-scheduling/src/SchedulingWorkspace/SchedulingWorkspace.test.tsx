@@ -143,8 +143,8 @@ describe('SchedulingWorkspace', () => {
 
   describe('saying which clock the calendar is drawn on', () => {
     test('names the calendars scheduled somewhere other than the viewer', async () => {
-      // The fixtures' visit types are held in Eastern time and the runner is not, which is the
-      // situation the notice exists for: the grid below it is drawn on the runner's clock.
+      // The fixtures' providers are scheduled in Eastern time and the runner is not, which is the
+      // situation the notice exists for: the grid above it is drawn on the runner's clock.
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
