@@ -31,7 +31,7 @@ describe('Medplum initializer', () => {
     );
     // Cloning uses HTTPS so no SSH key is required
     expect(cp.execSync).toHaveBeenCalledWith(
-      expect.stringContaining('git clone https://github.com/medplum/medplum-provider.git'),
+      expect.stringContaining('clone https://github.com/medplum/medplum-provider.git'),
       expect.anything()
     );
     expect(console.log).toHaveBeenCalledWith('Successfully created project medplum-provider!');
@@ -72,7 +72,7 @@ describe('Medplum initializer', () => {
     );
     await main();
     expect(cp.execSync).toHaveBeenCalledWith(
-      expect.stringContaining('gh repo create medplum-provider --public --source=. --remote=origin --push'),
+      expect.stringContaining('repo create medplum-provider --public --source=. --remote=origin --push'),
       expect.anything()
     );
     expect(console.log).toHaveBeenCalledWith('Successfully created project medplum-provider!');
