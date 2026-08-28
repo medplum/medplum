@@ -216,13 +216,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Alert>
         )}
         <MultiCalendar
+          className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading}
           onSelectInterval={setBookingSelection}
           selection={bookingSelection}
         />
-        <CalendarTimezoneNotice calendars={timezoneCalendars} />
+        <CalendarTimezoneNotice className={classes.timezoneNotice} calendars={timezoneCalendars} />
       </div>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>

@@ -21,6 +21,7 @@ export interface CalendarTimezoneNoticeProps {
   readonly calendars: readonly CalendarTimezoneNoticeCalendar[];
   /** The viewer's own IANA timezone. Defaults to the browser's. */
   readonly viewerTimezone?: string;
+  readonly className?: string;
 }
 
 /**
@@ -29,7 +30,7 @@ export interface CalendarTimezoneNoticeProps {
  * @returns The notice, or nothing when no calendar is on another clock.
  */
 export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.Element | null {
-  const { calendars, viewerTimezone } = props;
+  const { calendars, viewerTimezone, className } = props;
 
   const elsewhere = calendars.filter((calendar) => !isViewerTimezone(calendar.timezone, viewerTimezone));
   if (elsewhere.length === 0) {
@@ -39,7 +40,7 @@ export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.
   const viewerLabel = formatTimezoneLabel(viewerTimezone);
 
   return (
-    <Group gap={6} wrap="nowrap" align="center" mt="xs" data-testid="calendar-timezone-notice">
+    <Group gap={6} wrap="nowrap" align="center" mt="xs" className={className} data-testid="calendar-timezone-notice">
       <IconInfoCircle size={14} stroke={1.8} />
       <Text size="xs" c="dimmed">
         Calendar shown in your local time ({viewerLabel}). {describeElsewhere(elsewhere)}
