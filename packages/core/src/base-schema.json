@@ -4245,6 +4245,13 @@
           }
         ]
       },
+      "audience": {
+        "type": [
+          {
+            "code": "string"
+          }
+        ]
+      },
       "jwksUrl": {
         "type": [
           {
