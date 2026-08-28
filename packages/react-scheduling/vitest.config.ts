@@ -6,12 +6,12 @@ import { defineConfig } from 'vitest/config';
 import { medplumAliases } from '../../vitest.config';
 
 /*
- * Pin the runner's timezone. This package renders times in one zone and reads them in another
+ * Default the runner's timezone. This package renders times in one zone and reads them in another
  * throughout, and several tests turn on the two differing, so a suite that inherits whatever zone
  * the machine is set to is a different suite on a laptop than on CI. UTC is what CI already runs
- * in, so this only makes a local run agree with it.
+ * in, so this only makes a local run agree with it by default.
  */
-process.env.TZ = 'UTC';
+process.env.TZ ??= 'UTC';
 
 export default defineConfig({
   plugins: [
