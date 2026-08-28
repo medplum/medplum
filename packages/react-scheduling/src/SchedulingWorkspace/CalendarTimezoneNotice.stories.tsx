@@ -35,4 +35,6 @@ export const SeveralCalendarsElsewhere = (): JSX.Element => (
  * disambiguate and the notice renders nothing at all.
  * @returns Nothing.
  */
-export const NothingToSay = (): JSX.Element => <CalendarTimezoneNotice timezones={[PACIFIC]} viewerTimezone={PACIFIC} />;
+export const NothingToSay = (): JSX.Element => (
+  <CalendarTimezoneNotice timezones={[PACIFIC]} viewerTimezone={PACIFIC} />
+);

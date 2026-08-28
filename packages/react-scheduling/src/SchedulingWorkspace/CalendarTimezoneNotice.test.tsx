@@ -16,9 +16,7 @@ describe('CalendarTimezoneNotice', () => {
   test('Names the viewer’s zone when a calendar is kept in another', () => {
     render(<CalendarTimezoneNotice timezones={[EASTERN]} viewerTimezone={PACIFIC} />);
 
-    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent(
-      'Calendar shown in your local time (PT).'
-    );
+    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent('Calendar shown in your local time (PT).');
   });
 
   test('Says nothing when every calendar shares the viewer’s zone, even with several of them', () => {
@@ -30,9 +28,7 @@ describe('CalendarTimezoneNotice', () => {
   test('Still warns when only one of several calendars is kept elsewhere', () => {
     render(<CalendarTimezoneNotice timezones={[EASTERN, PACIFIC]} viewerTimezone={PACIFIC} />);
 
-    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent(
-      'Calendar shown in your local time (PT).'
-    );
+    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent('Calendar shown in your local time (PT).');
   });
 
   test('Warns for a zone that shares the viewer’s clock for part of the year', () => {
@@ -40,8 +36,6 @@ describe('CalendarTimezoneNotice', () => {
     // change under the reader twice a year.
     render(<CalendarTimezoneNotice timezones={['America/Phoenix']} viewerTimezone={PACIFIC} />);
 
-    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent(
-      'Calendar shown in your local time (PT).'
-    );
+    expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent('Calendar shown in your local time (PT).');
   });
 });
