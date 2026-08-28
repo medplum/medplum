@@ -216,7 +216,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectInterval={setBookingSelection}
           selection={bookingSelection}
         />
-        <CalendarTimezoneNotice calendars={timezoneCalendars} at={range?.start} />
+        <CalendarTimezoneNotice calendars={timezoneCalendars} />
       </div>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>

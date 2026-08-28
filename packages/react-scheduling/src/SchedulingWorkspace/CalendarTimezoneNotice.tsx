@@ -3,11 +3,7 @@
 import { Group, Text } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import {
-  formatTimezoneLabel,
-  getBrowserTimezone,
-  isViewerTimezone,
-} from '../AppointmentFinder/AppointmentFinder.times';
+import { formatTimezoneLabel, isViewerTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** How many calendars are named before the rest are counted instead. */
 const MAX_NAMED = 3;
@@ -23,8 +19,6 @@ export interface CalendarTimezoneNoticeCalendar {
 export interface CalendarTimezoneNoticeProps {
   /** The calendars on show whose timezone is known. Exclude any whose timezone is unknown. */
   readonly calendars: readonly CalendarTimezoneNoticeCalendar[];
-  /** The instant to read the zones at, to account for daylight saving changes. */
-  readonly at?: Date;
   /** The viewer's own IANA timezone. Defaults to the browser's. */
   readonly viewerTimezone?: string;
 }
@@ -36,20 +30,19 @@ export interface CalendarTimezoneNoticeProps {
  */
 export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.Element | null {
   const { calendars, viewerTimezone } = props;
-  const at = props.at ?? new Date();
 
-  const elsewhere = calendars.filter((calendar) => !isViewerTimezone(calendar.timezone, at, viewerTimezone));
+  const elsewhere = calendars.filter((calendar) => !isViewerTimezone(calendar.timezone, viewerTimezone));
   if (elsewhere.length === 0) {
     return null;
   }
 
-  const viewerLabel = formatTimezoneLabel(viewerTimezone ?? getBrowserTimezone());
+  const viewerLabel = formatTimezoneLabel(viewerTimezone);
 
   return (
     <Group gap={6} wrap="nowrap" align="center" mt="xs" data-testid="calendar-timezone-notice">
       <IconInfoCircle size={14} stroke={1.8} />
       <Text size="xs" c="dimmed">
-        Calendar shown in your local time ({viewerLabel}). {describeElsewhere(elsewhere, at)}
+        Calendar shown in your local time ({viewerLabel}). {describeElsewhere(elsewhere)}
       </Text>
     </Group>
   );
@@ -58,10 +51,9 @@ export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.
 /**
  * Names the calendars kept on another clock, counting the rest once the list would run long.
  * @param elsewhere - The calendars on another clock, at least one.
- * @param at - The instant to name their zones at.
  * @returns The sentence naming them.
  */
-function describeElsewhere(elsewhere: readonly CalendarTimezoneNoticeCalendar[], at: Date): string {
+function describeElsewhere(elsewhere: readonly CalendarTimezoneNoticeCalendar[]): string {
   const named = elsewhere
     .slice(0, MAX_NAMED)
     .map((calendar) => `${calendar.label} (${formatTimezoneLabel(calendar.timezone)})`);

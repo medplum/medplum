@@ -12,9 +12,6 @@ export default {
 
 const PACIFIC = 'America/Los_Angeles';
 
-/** A summer instant, so the zones below read as their daylight saving selves. */
-const AT = new Date('2026-07-27T16:00:00.000Z');
-
 const calendars: CalendarTimezoneNoticeCalendar[] = [
   { id: 'rivera', label: 'Dr. Maya Rivera', timezone: 'America/New_York' },
   { id: 'okafor', label: 'Dr. Tunde Okafor', timezone: 'America/Chicago' },
@@ -27,7 +24,7 @@ const calendars: CalendarTimezoneNoticeCalendar[] = [
  * @returns The notice.
  */
 export const OneCalendarElsewhere = (): JSX.Element => (
-  <CalendarTimezoneNotice calendars={calendars.slice(0, 1)} at={AT} viewerTimezone={PACIFIC} />
+  <CalendarTimezoneNotice calendars={calendars.slice(0, 1)} viewerTimezone={PACIFIC} />
 );
 
 /**
@@ -35,7 +32,7 @@ export const OneCalendarElsewhere = (): JSX.Element => (
  * @returns The notice.
  */
 export const SeveralCalendarsElsewhere = (): JSX.Element => (
-  <CalendarTimezoneNotice calendars={calendars} at={AT} viewerTimezone={PACIFIC} />
+  <CalendarTimezoneNotice calendars={calendars} viewerTimezone={PACIFIC} />
 );
 
 /**
@@ -46,7 +43,6 @@ export const SeveralCalendarsElsewhere = (): JSX.Element => (
 export const NothingToSay = (): JSX.Element => (
   <CalendarTimezoneNotice
     calendars={[{ id: 'rivera', label: 'Dr. Maya Rivera', timezone: PACIFIC }]}
-    at={AT}
     viewerTimezone={PACIFIC}
   />
 );

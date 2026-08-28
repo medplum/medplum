@@ -15,7 +15,6 @@ import {
   getFindWindowError,
   getZonedDayRange,
   groupAppointmentsByDay,
-  hasSameClock,
   isViewerTimezone,
   parseDayKey,
   parseZonedTime,
@@ -280,33 +279,20 @@ describe('formatTimezoneLabel', () => {
   });
 });
 
-describe('hasSameClock', () => {
-  const summer = new Date('2026-07-27T13:30:00.000Z');
-  const winter = new Date('2026-01-27T14:30:00.000Z');
-
-  test('Two names for one clock are the same clock', () => {
-    expect(hasSameClock('America/Toronto', EASTERN, summer)).toBe(true);
-    expect(hasSameClock('Asia/Calcutta', 'Asia/Kolkata', summer)).toBe(true);
-  });
-
-  test('Zones that agree in winter and part in summer are judged at the instant', () => {
-    // Arizona keeps standard time all year, so it shares Pacific's clock only while daylight
-    // saving is in effect. Comparing the identifiers would get this wrong in both directions.
-    expect(hasSameClock(ARIZONA, PACIFIC, summer)).toBe(true);
-    expect(hasSameClock(ARIZONA, PACIFIC, winter)).toBe(false);
-  });
-});
-
 describe('isViewerTimezone', () => {
-  const summer = new Date('2026-07-27T13:30:00.000Z');
-
   test('Answers against the viewer it is given', () => {
-    expect(isViewerTimezone(EASTERN, summer, EASTERN)).toBe(true);
-    expect(isViewerTimezone(EASTERN, summer, PACIFIC)).toBe(false);
+    expect(isViewerTimezone(EASTERN, EASTERN)).toBe(true);
+    expect(isViewerTimezone(EASTERN, PACIFIC)).toBe(false);
+  });
+
+  test('Judges by identifier, not by the clock the zones happen to share', () => {
+    // Arizona keeps standard time all year, so it reads the same as Pacific for half of it.
+    // Naming the zone regardless keeps the rule one a reader can state.
+    expect(isViewerTimezone(ARIZONA, PACIFIC)).toBe(false);
   });
 
   test("An unresolved zone is the viewer's own, since that is what gets displayed", () => {
-    expect(isViewerTimezone(undefined, summer, PACIFIC)).toBe(true);
+    expect(isViewerTimezone(undefined, PACIFIC)).toBe(true);
   });
 });
 

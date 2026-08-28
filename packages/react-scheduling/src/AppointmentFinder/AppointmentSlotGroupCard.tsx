@@ -30,8 +30,7 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
   const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled } = props;
 
   // Times are written with their zone only when that is not the zone the viewer is reading them in.
-  const firstStart = group.appointments.find((appointment) => appointment.start)?.start;
-  const withTimezone = !!firstStart && !isViewerTimezone(timezone, new Date(firstStart), viewerTimezone);
+  const withTimezone = !isViewerTimezone(timezone, viewerTimezone);
 
   return (
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>

@@ -171,26 +171,18 @@ export function formatTimezoneLabel(timezone?: string): string {
 }
 
 /**
- * Whether two timezones give the same clock reading.
- * @param left - IANA timezone identifier. Undefined means the browser's.
- * @param right - IANA timezone identifier. Undefined means the browser's.
- * @param at - The instant to compare them at.
- * @returns True when a clock in either zone reads the same at that instant.
- */
-export function hasSameClock(left: string | undefined, right: string | undefined, at: Date): boolean {
-  const browser = getBrowserTimezone();
-  return getTimezoneOffsetMs(at, left ?? browser) === getTimezoneOffsetMs(at, right ?? browser);
-}
-
-/**
- * Whether times in a timezone read the same as on the viewer's own clock.
+ * Whether a timezone is the viewer's own.
+ *
+ * Zones are compared by identifier rather than by the clock they happen to read at some
+ * instant, so the answer does not change over a daylight saving boundary and is the same
+ * for every time on the page.
+ *
  * @param timezone - IANA timezone the times are in, or undefined when it could not be resolved.
- * @param at - The instant being shown.
  * @param viewer - The viewer's IANA timezone. Defaults to the browser's
- * @returns True when the times read the same on the viewer's own clock.
+ * @returns True when the zone is the viewer's, or when there is no zone to compare.
  */
-export function isViewerTimezone(timezone: string | undefined, at: Date, viewer?: string): boolean {
-  return !timezone || hasSameClock(timezone, viewer, at);
+export function isViewerTimezone(timezone: string | undefined, viewer?: string): boolean {
+  return !timezone || timezone === (viewer ?? getBrowserTimezone());
 }
 
 /**
