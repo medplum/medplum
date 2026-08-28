@@ -24,9 +24,8 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('No messages in the last 30 minutes', async () => {
-    const medplum = new MockClient();
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
-
     await medplum.executeBatch(noMessagesInLast30Minutes);
 
     const result = await handler(medplum);
@@ -35,9 +34,8 @@ describe('Create Respond to Message Task', async () => {
   });
 
   test('Messages in the last 30 minutes not sent by patients', async () => {
-    const medplum = new MockClient();
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
-
     await medplum.executeBatch(messagesNotSentByPatients);
 
     const result = await handler(medplum);
@@ -45,11 +43,9 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
   });
 
-  // Skipping until chained search is implemented in MockClient
-  test.skip('Messages part of thread that already has active task', async () => {
-    const medplum = new MockClient();
+  test('Messages part of thread that already has active task', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
-
     await medplum.executeBatch(threadsWithTasks);
 
     const result = await handler(medplum);
@@ -57,11 +53,9 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('Task already exists for this thread.');
   });
 
-  // Skipping until chained search is implemented in MockClient
-  test.skip('Assign task to care coordinator queue', async () => {
-    const medplum = new MockClient();
+  test('Assign task to care coordinator queue', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
-
     await medplum.executeBatch(assignToQueueBatch);
 
     const result = await handler(medplum);
@@ -70,11 +64,9 @@ describe('Create Respond to Message Task', async () => {
     expect(console.log).toHaveBeenCalledWith('Assigned to care coordinator queue');
   });
 
-  // Skipping until chained search is implemented in MockClient
-  test.skip('Assign to practitioner who previously responded to thread', async () => {
-    const medplum = new MockClient();
+  test('Assign to practitioner who previously responded to thread', async () => {
+    const medplum = new MockClient({ seedDefaultData: false });
     console.log = vi.fn();
-
     await medplum.executeBatch(assignToPractitionerBatch);
 
     const result = await handler(medplum);

@@ -13,6 +13,7 @@ import {
   IconMail,
   IconPill,
   IconPrinter,
+  IconReceipt2,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -20,7 +21,6 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
-import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
@@ -29,8 +29,7 @@ import { ScriptSurePracticeProvider } from './scriptsure/ScriptSurePractice';
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 const PROVIDER_HIDE_GET_STARTED_SETTING = 'hideGetStarted';
 
-import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
-import { EncounterModal } from './pages/encounter/EncounterModal';
+import { EncountersPage } from './pages/encounter/EncountersPage';
 import { FaxPage } from './pages/fax/FaxPage';
 import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
@@ -62,6 +61,7 @@ import { ResourceSchedulingPage } from './pages/resource/ResourceSchedulingPage'
 import { SchedulePage } from './pages/schedule/SchedulePage';
 import { ScheduleSettingsPage } from './pages/schedule/ScheduleSettingsPage';
 import { SearchPage } from './pages/SearchPage';
+import { BillingSetupPage } from './pages/settings/BillingSetupPage';
 import { SignInPage } from './pages/SignInPage';
 import { SmartHealthLinkImportModal } from './pages/smart/SmartHealthLinkImportModal';
 import { SmartHealthLinkImportPage } from './pages/smart/SmartHealthLinkImportPage';
@@ -85,6 +85,7 @@ export function App(): JSX.Element | null {
   const { hasAccess: hasDoseSpot } = useDoseSpotAccess();
   const membership = medplum.getProjectMembership();
   const hasScriptSure = hasScriptSureIdentifier(membership);
+  const hasBilling = project?.features?.includes('billing') ?? false;
 
   const [shlOpened, shlHandlers] = useDisclosure(false);
 
@@ -191,6 +192,9 @@ export function App(): JSX.Element | null {
                     : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
+                  ...(hasBilling
+                    ? [{ icon: <IconReceipt2 />, label: 'Billing Settings', href: '/Settings/Billing' }]
+                    : []),
                   ...(hasDoseSpot
                     ? [
                         {
@@ -244,10 +248,8 @@ export function App(): JSX.Element | null {
               />
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
-                <Route path="Encounter/new" element={<EncounterModal />} />
-                <Route path="Encounter/:encounterId" element={<EncounterChartPage />}>
-                  <Route path="Task/:taskId" element={<TaskDetailsModal />} />
-                </Route>
+                <Route path="Encounter" element={<EncountersPage />} />
+                <Route path="Encounter/:encounterId/Task?/:taskId?" element={<EncountersPage />} />
                 <Route path="edit" element={<EditTab />} />
                 <Route path="Communication" element={<CommunicationTab />} />
                 <Route path="Communication/:messageId" element={<CommunicationTab />} />
@@ -302,6 +304,8 @@ export function App(): JSX.Element | null {
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
+              {/* Must precede the /:resourceType catch-alls below */}
+              {hasBilling && <Route path="/Settings/Billing/:tab?" element={<BillingSetupPage />} />}
               <Route path="/smart-health-link" element={<SmartHealthLinkImportPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

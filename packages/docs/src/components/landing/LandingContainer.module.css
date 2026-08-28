@@ -1,0 +1,23 @@
+/* SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/**
+ * The centered, max-width content column shared by the marketing sections. Compose it
+ * instead of restating the same five declarations in every module:
+ *
+ *   .inner {
+ *     composes: container from './LandingContainer.module.css';
+ *     ...section-specific rules...
+ *   }
+ *
+ * The responsive gutter comes from --layout-gutter (custom.css), so there are no
+ * breakpoints to duplicate here and a consumer can widen or drop the gutter by
+ * redefining that property rather than out-specifying this rule.
+ */
+.container {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  margin-inline: auto;
+  padding-inline: var(--layout-gutter);
+  box-sizing: border-box;
+}

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "5.1.30",
+  "version": "5.1.36",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -51,9 +51,9 @@
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
     "@mdx-js/react": "3.1.1",
-    "@medplum/core": "5.1.30",
-    "@medplum/fhirtypes": "5.1.30",
-    "@medplum/mock": "5.1.30",
+    "@medplum/core": "5.1.36",
+    "@medplum/fhirtypes": "5.1.36",
+    "@medplum/mock": "5.1.36",
     "@svgr/webpack": "8.1.0",
     "@tabler/icons-react": "3.46.0",
     "clsx": "2.1.1",

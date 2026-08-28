@@ -1,17 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
+import { createReference, HL7_V2_0203, SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
   Bundle,
+  CodeableConcept,
   Device,
   HealthcareService,
+  Identifier,
   Location,
+  Patient,
   Practitioner,
   PractitionerRole,
   Schedule,
+  Slot,
 } from '@medplum/fhirtypes';
 
 /** Who an appointment can be held on, as FHIR allows. */
@@ -26,7 +30,20 @@ type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
  * through the `service-type-reference` extension on its `serviceType`.
  */
 
-const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
+export const APPOINTMENT_TYPE_SYSTEM = 'http://example.org/appointment-types';
+
+/**
+ * Declares a fixture a room or a bed.
+ *
+ * Leave the clinics without one: the element is optional, and a Location omitting it
+ * must still be offered as a site.
+ *
+ * @param code - The `location-physical-type` code the Location declares.
+ * @returns The concept to record it as.
+ */
+function physicalType(code: 'ro' | 'bd'): CodeableConcept {
+  return { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/location-physical-type', code }] };
+}
 
 export const MainClinic: WithId<Location> = {
   resourceType: 'Location',
@@ -40,7 +57,17 @@ export const ExamRoomA: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-a',
   name: 'Exam Room A',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/main-clinic' },
+};
+
+/** A bed in that room: the other thing a site is never one of. */
+export const ExamRoomABed: WithId<Location> = {
+  resourceType: 'Location',
+  id: 'exam-room-a-bed-1',
+  name: 'Exam Room A Bed 1',
+  physicalType: physicalType('bd'),
+  partOf: { reference: 'Location/exam-room-a' },
 };
 
 export const SecondFloor: WithId<Location> = {
@@ -55,6 +82,7 @@ export const ExamRoomB: WithId<Location> = {
   resourceType: 'Location',
   id: 'exam-room-b',
   name: 'Exam Room B',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/second-floor' },
 };
 
@@ -69,6 +97,7 @@ export const SatelliteRoom: WithId<Location> = {
   resourceType: 'Location',
   id: 'satellite-room',
   name: 'Satellite Exam Room',
+  physicalType: physicalType('ro'),
   partOf: { reference: 'Location/satellite-clinic' },
 };
 
@@ -79,22 +108,25 @@ export interface SchedulableServiceOptions {
   readonly category: string;
   readonly durationMinutes: number;
   readonly alignmentMinutes: number;
-  /** The sites holding it. */
-  readonly locationIds: readonly string[];
+  /** The sites holding it, omitted entirely by a visit type held nowhere in particular. */
+  readonly locationIds?: readonly string[];
 }
 
 /**
- * Builds a service `$find` can produce times for: typed, sited, and carrying the
- * `SchedulingParameters` a booking needs.
+ * Builds a service `$find` can produce times for: typed, optionally sited, and
+ * carrying the `SchedulingParameters` a booking needs.
  * @param options - What the visit is, how long it runs, and where it is held.
  * @returns The service.
  */
 export function buildSchedulableService(options: SchedulableServiceOptions): WithId<HealthcareService> {
+  const locationIds = options.locationIds ?? [];
   return {
     resourceType: 'HealthcareService',
     id: options.id,
     name: options.name,
-    location: options.locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    ...(locationIds.length > 0 && {
+      location: locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
+    }),
     type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
     extension: [
       {
@@ -116,6 +148,19 @@ export const UltrasoundImagingService = buildSchedulableService({
   durationMinutes: 30,
   alignmentMinutes: 15,
   locationIds: ['main-clinic'],
+});
+
+/**
+ * A visit type naming no location: offered at every site, kept across every site change.
+ * Its name has to sort between the sited ones — that is what makes the merged list's
+ * order evidence of a sort rather than one search appended to the other.
+ */
+export const TelehealthService = buildSchedulableService({
+  id: 'telehealth-consult',
+  name: 'Telehealth Consult',
+  category: 'Telehealth',
+  durationMinutes: 20,
+  alignmentMinutes: 20,
 });
 
 /** A service with no SchedulingParameters, which must never be offered. */
@@ -204,9 +249,10 @@ export const SatelliteRoomSchedule = buildSchedule(
  * A second service, for the harder case: one booking that needs a surgeon, an
  * anesthesiologist and a room, all free at once.
  *
- * Its providers are modelled as PractitionerRole rather than Practitioner, which
- * is what lets a scheduler read the list as surgeons or anesthesiologists — a
- * plain Practitioner says nothing about which it is.
+ * Its providers hold both a Practitioner and a PractitionerRole, split the way
+ * scheduling reads them: the schedule is held on the Practitioner, so one human
+ * has one calendar, while the role carries the specialty and the site that decide
+ * whether that human is eligible at all.
  */
 const PRACTITIONER_ROLE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/practitioner-role';
 
@@ -262,17 +308,12 @@ export const DrKimRole = buildSurgicalRole('role-dr-kim', 'dr-kim', ANESTHESIA);
 
 export const DrMartinezSchedule = buildSchedule(
   'schedule-dr-martinez',
-  'PractitionerRole/role-dr-martinez',
+  'Practitioner/dr-martinez',
   'Dr. Maria Martinez',
   SURGERY
 );
-export const DrChenSchedule = buildSchedule(
-  'schedule-dr-chen',
-  'PractitionerRole/role-dr-chen',
-  'Dr. Wei Chen',
-  SURGERY
-);
-export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'PractitionerRole/role-dr-kim', 'Dr. James Kim', SURGERY);
+export const DrChenSchedule = buildSchedule('schedule-dr-chen', 'Practitioner/dr-chen', 'Dr. Wei Chen', SURGERY);
+export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'Practitioner/dr-kim', 'Dr. James Kim', SURGERY);
 export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/or-3', 'Operating Room 3', SURGERY);
 
 export const SurgicalFixtures = [
@@ -293,11 +334,13 @@ export const SurgicalFixtures = [
 export const SchedulingFixtures = [
   MainClinic,
   ExamRoomA,
+  ExamRoomABed,
   SecondFloor,
   ExamRoomB,
   SatelliteClinic,
   SatelliteRoom,
   UltrasoundImagingService,
+  TelehealthService,
   WalkInService,
   DrRiveraPractitioner,
   DrOkaforPractitioner,
@@ -384,3 +427,144 @@ export function buildFindBundle(appointments: readonly Appointment[]): Bundle<Ap
     entry: appointments.map((resource) => ({ resource })),
   };
 }
+
+/**
+ * A provider whose only role names the clinic's second floor rather than the clinic,
+ * so a provider field booking at the clinic leaves them out while Exam Room B, on
+ * that same floor, is offered.
+ *
+ * Kept out of `SchedulingFixtures` so it does not change the option counts the actor
+ * and schedule tests assert on.
+ */
+export const DrOseiPractitioner: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'dr-osei',
+  name: [{ given: ['Ama'], family: 'Osei', prefix: ['Dr.'] }],
+};
+
+export const DrOseiRole: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-dr-osei',
+  practitioner: { reference: 'Practitioner/dr-osei' },
+  healthcareService: [{ reference: 'HealthcareService/ultrasound-imaging' }],
+  location: [{ reference: 'Location/second-floor' }],
+};
+
+export const DrOseiSchedule = buildSchedule('schedule-dr-osei', 'Practitioner/dr-osei', 'Dr. Ama Osei');
+
+export const SubClinicProviderFixtures = [DrOseiPractitioner, DrOseiRole, DrOseiSchedule];
+
+/** A project's own medical record number system, for identifiers carrying no type. */
+export const MRN_SYSTEM = 'http://example.org/mrn';
+
+// Patients for the field that has to tell one from another. Two of them share a
+// name, which is the case the option row exists to answer: a name alone cannot
+// separate them, so the row carries a birth date and a medical record number.
+// One has none on file, and must still be listed rather than hidden.
+function buildPatient(id: string, given: string, family: string, birthDate: string, mrn?: Identifier): WithId<Patient> {
+  return {
+    resourceType: 'Patient',
+    id,
+    name: [{ given: [given], family }],
+    birthDate,
+    identifier: mrn ? [mrn] : undefined,
+  };
+}
+
+/** Typed as a medical record number, which is how it is read without configuration. */
+export const ElderJordanPatient = buildPatient('jordan-elder', 'Jordan', 'Reyes', '1961-04-02', {
+  type: { coding: [{ system: HL7_V2_0203, code: 'MR' }] },
+  value: 'MRN-0041',
+});
+
+/** Same name, different person, and no medical record number on file. */
+export const YoungerJordanPatient = buildPatient('jordan-younger', 'Jordan', 'Reyes', '1994-11-30');
+
+/** Identified only by the system that issued it, which is what `mrnSystem` names. */
+export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield', '1978-06-14', {
+  system: MRN_SYSTEM,
+  value: 'MRN-0099',
+});
+
+export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
+
+/**
+ * Appointments and Slots for the calendar view, dated within the week of Monday,
+ * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
+ * always renders Sun May 3 through Sat May 9.
+ */
+
+/**
+ * A same-day imaging visit needing the provider, the device, and the room together.
+ *
+ * Carries a `Patient` participant even though nothing here books against one: the
+ * calendar titles an appointment event with the patient's name, so without one it
+ * would just read "No Patient".
+ */
+export const RiveraImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-rivera-imaging-tue',
+  status: 'booked',
+  start: '2020-05-05T17:00:00Z',
+  end: '2020-05-05T17:30:00Z',
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+    { status: 'accepted', actor: createReference(Ultrasound1Device) },
+    { status: 'accepted', actor: createReference(ExamRoomA) },
+  ],
+};
+
+export const OkaforImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-okafor-imaging-wed',
+  status: 'booked',
+  start: '2020-05-06T18:00:00Z',
+  end: '2020-05-06T18:30:00Z',
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
+    { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
+    { status: 'accepted', actor: createReference(Ultrasound2Device) },
+    { status: 'accepted', actor: createReference(ExamRoomB) },
+  ],
+};
+
+/** Open availability outside the booked visits, on the pinned "today." */
+export const RiveraFreeSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-rivera-free-mon',
+  status: 'free',
+  start: '2020-05-04T14:00:00Z',
+  end: '2020-05-04T16:00:00Z',
+  schedule: createReference(DrRiveraSchedule),
+  comment: 'Open for same-day imaging consults',
+};
+
+/** Blocked time, shown distinctly from a booked appointment. */
+export const ExamRoomABlockedSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-exam-room-a-blocked-thu',
+  status: 'busy-unavailable',
+  start: '2020-05-07T15:00:00Z',
+  end: '2020-05-07T17:00:00Z',
+  schedule: createReference(ExamRoomASchedule),
+  comment: 'Equipment maintenance',
+};
+
+/** Availability at the satellite site, for when the location filter is switched. */
+export const SatelliteRoomFreeSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-satellite-room-free-fri',
+  status: 'free',
+  start: '2020-05-08T13:00:00Z',
+  end: '2020-05-08T15:00:00Z',
+  schedule: createReference(SatelliteRoomSchedule),
+};
+
+export const CalendarWeekFixtures = [
+  RiveraImagingAppointment,
+  OkaforImagingAppointment,
+  RiveraFreeSlot,
+  ExamRoomABlockedSlot,
+  SatelliteRoomFreeSlot,
+];

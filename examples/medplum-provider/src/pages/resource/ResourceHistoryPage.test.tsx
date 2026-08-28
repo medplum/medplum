@@ -26,6 +26,8 @@ describe('ResourceHistoryPage', () => {
             <Notifications />
             <Routes>
               <Route path="/:resourceType/:id/history" element={<ResourceHistoryPage />} />
+              <Route path="/:resourceType/history" element={<ResourceHistoryPage />} />
+              <Route path="/history" element={<ResourceHistoryPage />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -72,18 +74,29 @@ describe('ResourceHistoryPage', () => {
   });
 
   test('Returns null when resourceType is missing', async () => {
-    setup('/123/history');
-    await waitFor(() => {
-      expect(screen.queryByText('History')).not.toBeInTheDocument();
-    });
+    setup('/history');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
   });
 
   test('Returns null when id is missing', async () => {
     setup('/Practitioner/history');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.queryByText('History')).not.toBeInTheDocument();
+  test('Renders history table', async () => {
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ family: 'Test' }],
     });
+
+    setup(`/Practitioner/${practitioner.id}/history`);
+
+    expect(await screen.findByText('Author')).toBeInTheDocument();
+    expect(screen.getByText('Date')).toBeInTheDocument();
+    expect(screen.getByText('Version')).toBeInTheDocument();
+    expect(screen.getByText(practitioner.meta?.versionId as string)).toBeInTheDocument();
   });
 
   test('Renders with different resource types', async () => {

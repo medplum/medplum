@@ -26,7 +26,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { incrementCounter } from '../otel/otel';
+import { BASE_METRIC_OPTIONS, incrementCounter } from '../otel/otel';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -107,8 +107,9 @@ const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
 // Entry-level throughput, counted here because no other queue has a sub-job unit of work; whole jobs
-// are counted for every queue as `jobsCompleted` (see `trackJobMetrics`). Only the re-entrant path
-// contributes, since the legacy path hands the whole bundle to the router in a single call.
+// are counted for every queue as `jobsCompleted` (see `trackJobMetrics`). Both paths contribute, but the
+// legacy path hands the whole bundle to the router in one call, so its entries land as a single burst at
+// job end rather than ticking up as they process.
 const PROCESSED_ENTRIES_METRIC = 'medplum.batch.entriesProcessed';
 
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
@@ -349,7 +350,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
       await processor.processNextEntry();
       sinceCheckpoint++;
-      incrementCounter(PROCESSED_ENTRIES_METRIC);
+      incrementCounter(PROCESSED_ENTRIES_METRIC, BASE_METRIC_OPTIONS);
 
       if (sinceCheckpoint >= checkpointEntries || Date.now() - lastCheckpointTime >= checkpointIntervalMs) {
         await checkpoint();
@@ -557,6 +558,7 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
       if (!bundle.entry) {
         return;
       }
+      incrementCounter(PROCESSED_ENTRIES_METRIC, BASE_METRIC_OPTIONS, bundle.entry.length);
 
       let errors = 0;
       for (const entry of bundle.entry) {

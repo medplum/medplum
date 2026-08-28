@@ -299,6 +299,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ClientApplication-identity-provider-issuer",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ClientApplication-identity-provider-issuer",
+        "url": "https://medplum.com/fhir/SearchParameter/ClientApplication-identity-provider-issuer",
+        "version": "4.0.1",
+        "name": "identity-provider-issuer",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The issuer of the client application's identity provider",
+        "code": "identity-provider-issuer",
+        "base": ["ClientApplication"],
+        "type": "string",
+        "expression": "ClientApplication.identityProvider.issuer"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/JsonWebKey-active",
       "resource": {
         "resourceType": "SearchParameter",
@@ -2386,6 +2403,24 @@
         "base": ["DicomInstance"],
         "type": "string",
         "expression": "DicomInstance.instanceNumber"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/PractitionerRole-davinci-pdex-network",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "PractitionerRole-davinci-pdex-network",
+        "url": "https://medplum.com/fhir/SearchParameter/PractitionerRole-davinci-pdex-network",
+        "version": "4.0.1",
+        "name": "davinci-pdex-network",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Select roles where the practitioner is a member of the specified health insurance provider network",
+        "code": "network",
+        "base": ["PractitionerRole"],
+        "type": "reference",
+        "target": ["Organization"],
+        "expression": "PractitionerRole.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference').value"
       }
     }
   ]
