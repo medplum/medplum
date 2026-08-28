@@ -18,7 +18,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(
     client,
     results,
-    `CREATE STATISTICS IF NOT EXISTS "Coding_Property_property_value_stat" ON "property", "value" FROM "Coding_Property"`
+    `CREATE STATISTICS IF NOT EXISTS "Coding_Property_property_value_stat" (mcv) ON "property", "value" FROM "Coding_Property"`
   );
 
   // The default target of 100 has ~30% error; increasing to 1000 captures ~450 MCV pairs for ~5% error, at the cost of a slower ANALYZE
