@@ -4,7 +4,6 @@ import type { InternalTypeSchema } from '@medplum/core';
 import {
   concatUrls,
   ContentType,
-  deepClone,
   getAllDataTypes,
   getSearchParameters,
   HTTP_TERMINOLOGY_HL7_ORG,
@@ -20,14 +19,13 @@ import type {
   CapabilityStatementRestSecurity,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { getConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
 import {
-  applyCapabilityStatementOverlay,
   getResourceInteractions,
   getSystemInteractions,
   isResourceTypeAdvertised,
 } from '../config/capabilitystatement';
+import { getConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.
@@ -208,8 +206,8 @@ export function buildCapabilityStatement(): CapabilityStatement {
   const fhirBaseUrl = concatUrls(baseUrl, 'fhir/R4/');
   const metadataUrl = concatUrls(fhirBaseUrl, 'metadata');
 
-  const statement: CapabilityStatement = {
-    ...deepClone(baseStmt),
+  return {
+    ...baseStmt,
     url: metadataUrl,
     software: {
       name,
@@ -220,9 +218,8 @@ export function buildCapabilityStatement(): CapabilityStatement {
       url: fhirBaseUrl,
     },
     rest: buildRest(config),
+    ...config.capabilityStatement?.overlay,
   };
-
-  return applyCapabilityStatementOverlay(statement, config.capabilityStatement?.overlay);
 }
 
 function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {

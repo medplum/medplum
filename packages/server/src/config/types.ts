@@ -251,8 +251,8 @@ export interface MedplumServerConfig {
 export interface MedplumCapabilityStatementConfig {
   /**
    * Partial CapabilityStatement merged over the server generated statement.
-   * Top level fields replace the generated values.
-   * `resourceType` and `rest` cannot be set here; use the filters below to restrict `rest`.
+   * Top level fields replace the generated values wholesale, so setting `rest` here replaces the
+   * generated `rest` entirely; prefer the filters below to restrict it.
    */
   overlay?: Record<string, unknown>;
 
