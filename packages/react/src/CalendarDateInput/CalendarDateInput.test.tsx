@@ -154,6 +154,29 @@ describe('CalendarDateInput', () => {
     expect(screen.getByRole('button', { name: '10' }).className).toContain('available');
   });
 
+  test('Marks the day named rather than the ends when a range is on show around it', () => {
+    const month = getStartMonth();
+
+    render(
+      <CalendarDateInput
+        availableDates={[]}
+        month={month}
+        selected={dayOf(month, 10)}
+        range={{ start: dayOf(month, 10), end: dayOf(month, 12) }}
+        allowUnavailableDates
+        onChangeMonth={vi.fn()}
+        onClick={vi.fn()}
+      />
+    );
+
+    // The band is what is on show; only the day named was picked, and the far end of
+    // the stretch is not a second thing to take hold of.
+    expect(screen.getByRole('button', { name: '10' }).className).toContain('selected');
+    expect(screen.getByRole('button', { name: '12' }).className).not.toContain('selected');
+    expect(cellOf('12').className).toContain('inRange');
+    expect(screen.getByRole('button', { name: '12' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('Bands a range whose ends carry a time of day', () => {
     const month = getStartMonth();
     const start = dayOf(month, 10);

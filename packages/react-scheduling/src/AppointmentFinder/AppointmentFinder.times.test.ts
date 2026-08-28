@@ -91,6 +91,29 @@ describe('groupAppointmentsByDay', () => {
     expect(day.date.getMonth()).toBe(6);
     expect(day.date.getDate()).toBe(27);
   });
+
+  test('Lists every day searched, including the ones offering nothing', () => {
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 29, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-27', '2026-07-28', '2026-07-29']);
+    expect(days[0].groups).toHaveLength(1);
+    expect(days[1].groups).toStrictEqual([]);
+    expect(days[2].groups).toStrictEqual([]);
+  });
+
+  test('Keeps a day that offered times outside the days searched', () => {
+    // The window is asked for in whole local days and the times are read at the site,
+    // so a search can be answered with a day at either edge of the one asked about.
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-26T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 27, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-26', '2026-07-27']);
+  });
 });
 
 describe('keys and durations', () => {

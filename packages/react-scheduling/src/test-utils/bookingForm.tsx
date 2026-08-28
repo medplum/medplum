@@ -133,12 +133,29 @@ export async function openTimeFinder(): Promise<void> {
 }
 
 /**
+ * A day in the time search's calendar.
+ * @param dayOfMonth - The number the cell is labelled with.
+ * @returns The button for that day.
+ */
+export function dayCell(dayOfMonth: string): HTMLElement {
+  return screen.getByRole('button', { name: dayOfMonth });
+}
+
+/**
  * Clicks a day in the time search's calendar.
  * @param dayOfMonth - The number the cell is labelled with.
  */
 export async function chooseDay(dayOfMonth: string): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: dayOfMonth }));
+    fireEvent.click(dayCell(dayOfMonth));
+  });
+  await settleAutocomplete();
+}
+
+/** Asks for the next couple of days under the ones already on screen. */
+export async function showMoreDays(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /show more days/i }));
   });
   await settleAutocomplete();
 }
@@ -205,16 +222,25 @@ export function isBefore(first: Element, second: Element): boolean {
 }
 
 /**
+ * What the most recent `$find` asked for.
+ * @param get - A spy on the client's `get`.
+ * @returns The search parameters, or undefined when nothing was asked.
+ */
+export function lastFindParams(get: MockInstance<MedplumClient['get']>): URLSearchParams | undefined {
+  const urls = get.mock.calls
+    .map(([url]) => String(url))
+    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
+  const last = urls.at(-1);
+  return last ? new URL(last, 'https://example.com').searchParams : undefined;
+}
+
+/**
  * The `start` the most recent `$find` asked for.
  * @param get - A spy on the client's `get`.
  * @returns The `start` parameter, or undefined when nothing was asked.
  */
 export function lastFindStart(get: MockInstance<MedplumClient['get']>): string | undefined {
-  const urls = get.mock.calls
-    .map(([url]) => String(url))
-    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
-  const last = urls.at(-1);
-  return last ? (new URL(last, 'https://example.com').searchParams.get('start') ?? undefined) : undefined;
+  return lastFindParams(get)?.get('start') ?? undefined;
 }
 
 /**

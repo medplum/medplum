@@ -33,11 +33,13 @@ import {
   chooseSite,
   chosenTimeField,
   clickBook,
+  dayCell,
   field,
   fillBooking,
   finderButton,
   hasPill,
   isBefore,
+  lastFindParams,
   lastFindStart,
   MONDAY_MORNING,
   openRoleField,
@@ -46,6 +48,7 @@ import {
   removePill,
   searchField,
   setupBookingClient,
+  showMoreDays,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen, waitFor, within } from '../test-utils/render';
 import type { AppointmentProposalFormProps } from './AppointmentProposalForm';
@@ -159,9 +162,10 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
-      // One group, not two: `$find` intersects the schedules it is given.
+      // One set of actors, not two: `$find` intersects the schedules it is given. A
+      // card per day carries that same set, so the days are what there is more than one of.
       const groups = await screen.findAllByTestId(/^slot-group-/);
-      expect(groups).toHaveLength(1);
+      expect(new Set(groups.map((group) => group.dataset.testid)).size).toBe(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Dr. Tunde Okafor')).toBeInTheDocument();
     });
@@ -296,7 +300,7 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
 
       const groups = await screen.findAllByTestId(/^slot-group-/);
-      expect(groups).toHaveLength(1);
+      expect(new Set(groups.map((group) => group.dataset.testid)).size).toBe(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Exam Room A')).toBeInTheDocument();
     });
@@ -355,6 +359,119 @@ describe('AppointmentProposalForm', () => {
       expect(start).toBeDefined();
       // Local midnight would be 07:00Z on this clock; the floor must not go back there.
       expect(new Date(start as string).getTime()).toBeGreaterThanOrEqual(MONDAY_MORNING.getTime());
+    });
+  });
+
+  describe('Showing several days at a time', () => {
+    test('Offers the picked day and the two days after it', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      // One day's times are often too few to choose between, and the two days after it
+      // are then a look away rather than a click away.
+      expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
+      expect(screen.getByText(/Tuesday, August 18/)).toBeInTheDocument();
+      expect(screen.getByText(/Wednesday, August 19/)).toBeInTheDocument();
+    });
+
+    test('Asks about the three days at once, with a page wide enough for all of them', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      const params = lastFindParams(get) as URLSearchParams;
+      expect(new Date(params.get('end') as string).getDate()).toBe(19);
+      // `$find` pages a whole window at once, so twenty times would be spent inside the
+      // first day and the two after it would come back empty.
+      expect(Number(params.get('_count'))).toBeGreaterThan(20);
+    });
+
+    test('Adds the next two days under the ones already on screen', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+
+      await showMoreDays();
+
+      expect(await screen.findByText(/Thursday, August 20/)).toBeInTheDocument();
+      expect(screen.getByText(/Friday, August 21/)).toBeInTheDocument();
+      // Appended rather than replaced: the days already answered stay where they were,
+      // and a time picked from one of them stays picked.
+      expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
+    });
+
+    test('Asks only about the days it is adding', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+
+      await showMoreDays();
+
+      // Asking again for the days already answered would cost a request per click to be
+      // told what is already on screen.
+      const start = new Date(lastFindStart(get) as string);
+      expect(start.getDate()).toBe(20);
+      expect(start.getHours()).toBe(0);
+    });
+
+    test('Names a day that offers nothing, so nothing is missing but the days nobody asked about', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      // A Friday, and after it a weekend the clinic keeps no hours on. Dropping those
+      // two would make asking for them look like it did nothing at all.
+      await chooseDay('21');
+
+      expect(await screen.findByText(/Saturday, August 22/)).toBeInTheDocument();
+      expect(screen.getByText(/Sunday, August 23/)).toBeInTheDocument();
+      expect(screen.getAllByText('No times are offered on this day.')).toHaveLength(2);
+    });
+
+    test('Marks the days on show against the calendar, the picked day apart', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+
+      // Which days the times below belong to is otherwise only in their headings.
+      expect(dayCell('17').className).toContain('selected');
+      expect(dayCell('18').className).not.toContain('selected');
+      expect(dayCell('18').closest('td')?.className).toContain('inRange');
+      expect(dayCell('20').closest('td')?.className).not.toContain('inRange');
+
+      await showMoreDays();
+
+      await waitFor(() => expect(dayCell('20').closest('td')?.className).toContain('inRange'));
+      expect(dayCell('17').className).toContain('selected');
+    });
+
+    test('Puts the added days away when the named resources change', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+      await showMoreDays();
+      expect(await screen.findByText(/Friday, August 21/)).toBeInTheDocument();
+
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+
+      // The times on screen are what one provider offered, not times the pair of them
+      // share, so the days go back to the first three and are searched again.
+      await waitFor(() => expect(screen.queryByText(/Friday, August 21/)).not.toBeInTheDocument());
+      expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
     });
   });
 

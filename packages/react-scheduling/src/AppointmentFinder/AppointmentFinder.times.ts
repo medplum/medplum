@@ -12,6 +12,13 @@ export const MAX_FIND_WINDOW_DAYS = 31;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * The most days one listing will name, however many were searched. A search that
+ * grows a couple of days at a time can outrun a single `$find` window, so the bound
+ * is a year rather than that operation's own.
+ */
+const MAX_LISTED_DAYS = 366;
+
 export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 
 /** A calendar day's worth of available times, split by the actors offering them. */
@@ -165,17 +172,23 @@ export function filterByTimeOfDay(
  *
  * @param appointments - Proposed appointments from `$find`.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @param searched - Days to list whether or not they offer anything, so a day that was
+ *   asked about and came back empty says so rather than going missing. Read as calendar
+ *   days on the reader's own clock, which is the calendar a day is picked from.
  * @returns Days in ascending order, each holding its groups.
  */
-export function groupAppointmentsByDay(appointments: readonly Appointment[], timezone?: string): AppointmentDay[] {
+export function groupAppointmentsByDay(
+  appointments: readonly Appointment[],
+  timezone?: string,
+  searched?: DateRange
+): AppointmentDay[] {
   const days = new Map<string, Map<string, Appointment[]>>();
 
   for (const appointment of appointments) {
     if (!appointment.start) {
       continue;
     }
-    const { year, month, day } = getZonedParts(new Date(appointment.start), timezone);
-    const dayKey = `${year}-${pad(month)}-${pad(day)}`;
+    const dayKey = getZonedDayKey(new Date(appointment.start), timezone);
 
     let groups = days.get(dayKey);
     if (!groups) {
@@ -189,6 +202,13 @@ export function groupAppointmentsByDay(appointments: readonly Appointment[], tim
       group.push(appointment);
     } else {
       groups.set(groupKey, [appointment]);
+    }
+  }
+
+  for (const day of enumerateDateRange(searched ?? {}, MAX_LISTED_DAYS)) {
+    const key = getDayKey(day.getFullYear(), day.getMonth() + 1, day.getDate());
+    if (!days.has(key)) {
+      days.set(key, new Map());
     }
   }
 
@@ -260,6 +280,28 @@ export function getDurationMinutes(appointment: Appointment | undefined): number
  */
 export function getAppointmentKey(appointment: Appointment): string {
   return `${appointment.start}/${appointment.end}/${getActorGroupKey(appointment)}`;
+}
+
+/**
+ * Keys the calendar day an instant falls on in a timezone.
+ * @param date - The instant to read.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The day as `YYYY-MM-DD`.
+ */
+function getZonedDayKey(date: Date, timezone: string | undefined): string {
+  const { year, month, day } = getZonedParts(date, timezone);
+  return getDayKey(year, month, day);
+}
+
+/**
+ * Writes a calendar date as the key days are held under.
+ * @param year - The full year.
+ * @param month - The month, from 1.
+ * @param day - The day of the month.
+ * @returns The day as `YYYY-MM-DD`.
+ */
+function getDayKey(year: number, month: number, day: number): string {
+  return `${year}-${pad(month)}-${pad(day)}`;
 }
 
 /**
