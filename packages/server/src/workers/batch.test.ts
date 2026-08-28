@@ -6,7 +6,7 @@ import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Worker } from 'bullmq';
 import { randomUUID } from 'node:crypto';
-import type { Mock } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
 import { loadTestConfig } from '../config/loader';
@@ -19,7 +19,8 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import * as otel from '../otel/otel';
+import * as otelModule from '../otel/otel';
+import { BASE_METRIC_OPTIONS } from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
@@ -460,6 +461,58 @@ describe('Batch worker', () => {
         const finished = await readAsyncJob(asyncJob.id);
         expect(finished.status).toStrictEqual('error');
         writeSpy.mockRestore();
+      }));
+  });
+
+  // The hostname attribute is asserted because a dashboard grouping by host shows no series without it.
+  describe('entriesProcessed metric', () => {
+    const METRIC = 'medplum.batch.entriesProcessed';
+    let counterSpy: MockInstance<typeof otelModule.incrementCounter>;
+
+    beforeEach(() => {
+      counterSpy = vi.spyOn(otelModule, 'incrementCounter');
+    });
+
+    function entriesProcessedCalls(): Parameters<typeof otelModule.incrementCounter>[] {
+      return counterSpy.mock.calls.filter((call) => call[0] === METRIC);
+    }
+
+    test('Re-entrant path counts one entry at a time', () =>
+      withTestContext(async () => {
+        const { job } = await setupReentrantJob(multiEntryBundle(3));
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        const calls = entriesProcessedCalls();
+        expect(calls).toHaveLength(3);
+        for (const call of calls) {
+          expect(call[1]).toStrictEqual(BASE_METRIC_OPTIONS);
+          expect(call[2]).toBeUndefined();
+        }
+      }));
+
+    test('Legacy path counts the whole bundle in a single call', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        const job = makeLegacyJob({ asyncJob, bundle: multiEntryBundle(2), authState });
+
+        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
+
+        expect(entriesProcessedCalls()).toStrictEqual([[METRIC, BASE_METRIC_OPTIONS, 2]]);
+      }));
+
+    test('Legacy path counts nothing when the batch request fails', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        const job = makeLegacyJob({
+          asyncJob,
+          bundle: { resourceType: 'Bundle', type: 'pergola' as Bundle['type'] },
+          authState,
+        });
+
+        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
+
+        expect(entriesProcessedCalls()).toHaveLength(0);
       }));
   });
 

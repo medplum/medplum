@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Client, Pool, PoolClient } from 'pg';
 import type { SqlFunctionDefinition } from '../fhir/sql';
-
-export type DbClient = Client | Pool | PoolClient;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -75,6 +72,7 @@ export type MigrationAction =
   | { type: 'ALTER_COLUMN_TYPE'; tableName: string; columnName: string; columnType: string }
   | { type: 'CREATE_INDEX'; indexName: string; createIndexSql: string }
   | { type: 'DROP_INDEX'; indexName: string }
+  | { type: 'REINDEX_CONCURRENTLY'; target: 'INDEX' | 'TABLE'; name: string }
   | { type: 'ADD_CONSTRAINT'; tableName: string; constraintName: string; constraintExpression: string }
   | { type: 'ANALYZE_TABLE'; tableName: string };
 
