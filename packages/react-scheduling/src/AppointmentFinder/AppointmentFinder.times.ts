@@ -41,6 +41,30 @@ interface ZonedParts {
 }
 
 /**
+ * Built formatters, keyed by the arguments that built them. Constructing an
+ * `Intl.DateTimeFormat` is far more expensive than formatting with one, and a calendar
+ * renders enough times per page to make that cost show. The option sets here are fixed
+ * and the zones are those of the calendars on show, so the cache stays small.
+ */
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * Returns the formatter for a set of options, building it the first time it is asked for.
+ * @param locale - BCP 47 locale tag, or undefined for the viewer's own.
+ * @param options - The formatter's options.
+ * @returns The shared formatter.
+ */
+function getFormatter(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale ?? ''}|${JSON.stringify(options)}`;
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+/**
  * Breaks an instant into calendar parts in a given timezone.
  *
  * @param date - The instant to read.
@@ -48,7 +72,7 @@ interface ZonedParts {
  * @returns The year, month, day, and hour in that timezone.
  */
 function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
-  const parts = new Intl.DateTimeFormat('en-US', {
+  const parts = getFormatter('en-US', {
     timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
@@ -82,7 +106,7 @@ export interface FormatZonedTimeOptions {
  * @returns The formatted time.
  */
 export function formatZonedTime(date: Date, timezone?: string, options?: FormatZonedTimeOptions): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return getFormatter(undefined, {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
@@ -96,7 +120,7 @@ export function formatZonedTime(date: Date, timezone?: string, options?: FormatZ
  * @returns The formatted day.
  */
 export function formatDayHeading(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
+  return getFormatter(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
 }
 
 /**
@@ -117,7 +141,7 @@ function getTimezoneOffsetMs(instant: Date, timezone: string): number {
  * @returns The viewer's own timezone identifier.
  */
 export function getBrowserTimezone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return getFormatter(undefined, {}).resolvedOptions().timeZone;
 }
 
 /**
@@ -127,7 +151,7 @@ export function getBrowserTimezone(): string {
  * @returns The zone's short name.
  */
 export function formatTimezoneLabel(at: Date, timezone?: string): string {
-  const parts = new Intl.DateTimeFormat(undefined, { timeZone: timezone, timeZoneName: 'short' }).formatToParts(at);
+  const parts = getFormatter(undefined, { timeZone: timezone, timeZoneName: 'short' }).formatToParts(at);
   return parts.find((part) => part.type === 'timeZoneName')?.value ?? '';
 }
 
