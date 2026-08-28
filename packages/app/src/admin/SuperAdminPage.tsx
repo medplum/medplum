@@ -18,7 +18,14 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, forbidden, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  createReference,
+  forbidden,
+  generateId,
+  getReferenceString,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
 import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
@@ -354,14 +361,16 @@ export function SuperAdminPage(): JSX.Element {
 }
 
 type DatabaseReindexTarget = { table: string } | { index: string };
-type DatabaseReindexFormTarget = { type: 'table' | 'index'; name: string };
+type DatabaseReindexFormTarget = { id: string; type: 'table' | 'index'; name: string };
 
 function DatabaseReindexForm({
   onSubmit,
 }: {
   readonly onSubmit: (targets: DatabaseReindexTarget[]) => void;
 }): JSX.Element {
-  const [targets, setTargets] = useState<DatabaseReindexFormTarget[]>([{ type: 'table', name: '' }]);
+  const [targets, setTargets] = useState<DatabaseReindexFormTarget[]>(() => [
+    { id: generateId(), type: 'table', name: '' },
+  ]);
 
   function updateTarget(index: number, update: Partial<DatabaseReindexFormTarget>): void {
     setTargets((current) =>
@@ -383,7 +392,7 @@ function DatabaseReindexForm({
     <Form onSubmit={handleSubmit}>
       <Stack>
         {targets.map((target, index) => (
-          <Group key={index} align="end" grow>
+          <Group key={target.id} align="end" grow>
             <NativeSelect
               label={`Target type ${index + 1}`}
               value={target.type}
@@ -412,7 +421,7 @@ function DatabaseReindexForm({
             type="button"
             variant="default"
             disabled={targets.length >= 10}
-            onClick={() => setTargets((current) => [...current, { type: 'table', name: '' }])}
+            onClick={() => setTargets((current) => [...current, { id: generateId(), type: 'table', name: '' }])}
           >
             Add Target
           </Button>
