@@ -127,7 +127,7 @@ export function addDataMigrationToManifest(version: string): void {
   writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n');
 }
 
-function getMigrationFilenames(dir: string = SCHEMA_DIR): string[] {
+export function getMigrationFilenames(dir: string = SCHEMA_DIR): string[] {
   return readdirSync(dir).filter((filename) => /^v\d+\.ts$/.test(filename));
 }
 
