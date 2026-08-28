@@ -42,7 +42,7 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
 
     return await processEventStream(response.EventStream, responseStream);
   } catch (err) {
-    return { success: false, logResult: normalizeLambdaExecutionError(err, name) };
+    return { success: false, logResult: normalizeLambdaExecutionError(err, bot) };
   }
 }
 
