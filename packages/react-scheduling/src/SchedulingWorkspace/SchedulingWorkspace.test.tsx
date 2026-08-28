@@ -142,31 +142,29 @@ describe('SchedulingWorkspace', () => {
   });
 
   describe('saying which clock the calendar is drawn on', () => {
-    test('names the calendars scheduled somewhere other than the viewer', async () => {
-      // The fixtures' providers are scheduled in Eastern time and the runner is not, which is the
-      // situation the notice exists for: the grid above it is drawn on the runner's clock.
+    test('warns when a calendar is scheduled somewhere other than the viewer', async () => {
+      // The fixtures' providers are scheduled in Eastern and Central time and the runner is not,
+      // which is the situation the notice exists for: the grid above it is drawn on the runner's clock.
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
       const notice = await screen.findByTestId('calendar-timezone-notice');
       expect(notice).toHaveTextContent('Calendar shown in your local time');
-      expect(notice).toHaveTextContent('Dr. Maya Rivera (ET)');
-      expect(notice).toHaveTextContent(/scheduled in other time zones\.$/);
     });
 
-    test('stops naming a calendar once it is deselected', async () => {
+    test('stops warning once every calendar kept elsewhere is deselected', async () => {
       const medplum = await setupClient();
       renderWithMedplum(<SchedulingWorkspace />, medplum);
 
       await screen.findByTestId('calendar-timezone-notice');
       await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument());
 
       await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
+      await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
 
-      // A calendar that is not on the grid is not one the grid is misreporting.
-      await waitFor(() =>
-        expect(screen.getByTestId('calendar-timezone-notice')).not.toHaveTextContent('Dr. Maya Rivera')
-      );
+      // Neither calendar left on the grid is drawn on another clock, so there is nothing to warn about.
+      await waitFor(() => expect(screen.queryByTestId('calendar-timezone-notice')).toBeNull());
     });
   });
 });

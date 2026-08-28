@@ -27,7 +27,6 @@ import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
-import type { CalendarTimezoneNoticeCalendar } from './CalendarTimezoneNotice';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
 
@@ -157,15 +156,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
    * them, and while a Schedule holds a single actor the actor's own zone is the one those
    * parameters are expected to agree with anyway.
    */
-  const timezoneCalendars = useMemo((): CalendarTimezoneNoticeCalendar[] => {
-    const calendars: CalendarTimezoneNoticeCalendar[] = [];
+  const timezones = useMemo((): string[] => {
+    const zones: string[] = [];
     for (const candidate of activeCandidates) {
       const timezone = candidate.actorResource && getExtensionValue(candidate.actorResource, TimezoneExtensionURI);
       if (typeof timezone === 'string') {
-        calendars.push({ id: candidate.schedule.id, label: getCandidateDisplay(candidate), timezone });
+        zones.push(timezone);
       }
     }
-    return calendars;
+    return zones;
   }, [activeCandidates]);
 
   const closeBooking = useCallback((): void => {
@@ -223,7 +222,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onSelectInterval={setBookingSelection}
           selection={bookingSelection}
         />
-        <CalendarTimezoneNotice className={classes.timezoneNotice} calendars={timezoneCalendars} />
+        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} />
       </div>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>

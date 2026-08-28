@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import type { CalendarTimezoneNoticeCalendar } from './CalendarTimezoneNotice';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 
 export default {
@@ -12,27 +11,23 @@ export default {
 
 const PACIFIC = 'America/Los_Angeles';
 
-const calendars: CalendarTimezoneNoticeCalendar[] = [
-  { id: 'rivera', label: 'Dr. Maya Rivera', timezone: 'America/New_York' },
-  { id: 'okafor', label: 'Dr. Tunde Okafor', timezone: 'America/Chicago' },
-  { id: 'ultrasound', label: 'Ultrasound 1', timezone: 'America/Denver' },
-  { id: 'room-a', label: 'Exam Room A', timezone: 'America/New_York' },
-];
-
 /**
  * One calendar kept somewhere else, seen from Pacific time.
  * @returns The notice.
  */
-export const OneCalendarElsewhere = (): JSX.Element => (
-  <CalendarTimezoneNotice calendars={calendars.slice(0, 1)} viewerTimezone={PACIFIC} />
+export const CalendarElsewhere = (): JSX.Element => (
+  <CalendarTimezoneNotice timezones={['America/New_York']} viewerTimezone={PACIFIC} />
 );
 
 /**
- * Enough of them that the tail is counted rather than named.
+ * Several calendars, some kept elsewhere. The notice still just names the viewer's own zone.
  * @returns The notice.
  */
 export const SeveralCalendarsElsewhere = (): JSX.Element => (
-  <CalendarTimezoneNotice calendars={calendars} viewerTimezone={PACIFIC} />
+  <CalendarTimezoneNotice
+    timezones={['America/New_York', 'America/Chicago', 'America/Denver', 'America/New_York']}
+    viewerTimezone={PACIFIC}
+  />
 );
 
 /**
@@ -40,9 +35,4 @@ export const SeveralCalendarsElsewhere = (): JSX.Element => (
  * disambiguate and the notice renders nothing at all.
  * @returns Nothing.
  */
-export const NothingToSay = (): JSX.Element => (
-  <CalendarTimezoneNotice
-    calendars={[{ id: 'rivera', label: 'Dr. Maya Rivera', timezone: PACIFIC }]}
-    viewerTimezone={PACIFIC}
-  />
-);
+export const NothingToSay = (): JSX.Element => <CalendarTimezoneNotice timezones={[PACIFIC]} viewerTimezone={PACIFIC} />;
