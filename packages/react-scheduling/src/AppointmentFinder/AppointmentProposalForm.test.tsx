@@ -377,7 +377,8 @@ describe('AppointmentProposalForm', () => {
           timeZone: SITE_TIMEZONE,
           hour: 'numeric',
           minute: '2-digit',
-          // The runner is not on the site's clock, so the zone is named beside the time.
+          // The viewer under the test runner does not share the site's timezone, so the zone is
+          // named beside the time.
           timeZoneName: 'short',
         }).format(start)
       );
