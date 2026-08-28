@@ -6,7 +6,7 @@ sidebar_position: 2
 
 :::info[Enterprise feature]
 
-Snowflake sync is part of Medplum Enterprise. A Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
+Synchronization to [Snowflake](https://www.snowflake.com/) is part of [Medplum Enterprise](https://www.medplum.com/enterprise). A Medplum team member creates and enables the pipeline for your project and uses [Secure Data Sharing](https://docs.snowflake.com/en/user-guide/data-sharing-intro) to share the data with you. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started, or see [pricing](/pricing).
 
 :::
 
@@ -21,15 +21,15 @@ Snowflake is one of several options. The sync writes open Iceberg tables rather 
 ```mermaid
 flowchart LR
   A["Medplum FHIR Datastore"] --> B["Sync worker"]
-  B --> C["Iceberg tables in Amazon S3"]
+  B --> C["Amazon S3 Tables (Iceberg)"]
   C --> D["Snowflake"]
 ```
 
-1. A sync worker runs on a schedule you choose. It reads from a read replica, so production traffic is not affected.
+1. A sync worker runs every five minutes. It reads from a read replica, so production traffic is not affected.
 2. Each run writes only the resource versions created or changed since the previous run.
 3. Snowflake attaches to the Iceberg catalog and queries the tables directly.
 
-Freshness is set by the schedule. Hourly is a common starting point. This pipeline is not built for sub-minute latency: to react to individual resources in real time, use [Bots](/docs/bots) and [Subscriptions](/docs/subscriptions).
+This pipeline is not built for sub-minute latency: to react to individual resources in real time, use [Bots](/docs/bots) and [Subscriptions](/docs/subscriptions).
 
 ## Table layout
 
@@ -44,13 +44,13 @@ Medplum writes one table per FHIR resource type, named after the resource type i
 
 Every table has the same five columns.
 
-| Column         | Type      | Description                                                    |
-| -------------- | --------- | -------------------------------------------------------------- |
-| `id`           | string    | Resource id. Stable across every version of the resource.       |
-| `version_id`   | string    | `meta.versionId` for this row.                                  |
-| `content`      | string    | The complete FHIR resource as JSON.                             |
-| `last_updated` | timestamp | `meta.lastUpdated` for this row.                                |
-| `project_id`   | string    | The Medplum project that owns the resource.                     |
+| Column         | Type          | Description                                                    |
+| -------------- |---------------| -------------------------------------------------------------- |
+| `id`           | `UUID`        | Resource id. Stable across every version of the resource.       |
+| `version_id`   | `UUID`        | `meta.versionId` for this row.                                  |
+| `content`      | `VARIANT`     | The complete FHIR resource as JSON.                             |
+| `last_updated` | `TIMESTAMPTZ` | `meta.lastUpdated` for this row.                                |
+| `project_id`   | `UUID`        | The Medplum project that owns the resource.                     |
 
 Two things to know about the shape:
 
@@ -60,7 +60,7 @@ Two things to know about the shape:
 
 ## Querying in Snowflake
 
-Parse `content` into a `VARIANT` and use Snowflake's [semi-structured operators](https://docs.snowflake.com/en/user-guide/querying-semistructured) to read into it.
+`content` type is `VARIANT`, and therefore you can use Snowflake's [semi-structured operators](https://docs.snowflake.com/en/user-guide/querying-semistructured) to read into it.
 
 ### Current version of each resource
 
@@ -73,7 +73,7 @@ select
   version_id,
   last_updated,
   project_id,
-  try_parse_json(content) as resource
+  content as resource
 from patient_history
 qualify row_number() over (partition by id order by last_updated desc) = 1;
 ```
@@ -121,7 +121,7 @@ create or replace view observation_current as
 select
   id,
   last_updated,
-  try_parse_json(content) as resource
+  content as resource
 from observation_history
 qualify row_number() over (partition by id order by last_updated desc) = 1;
 
@@ -144,7 +144,7 @@ Reports like this are only as good as the coding in the underlying data. Use [Bo
 
 ### Multiple projects
 
-If your organization runs more than one Medplum project, filter on `project_id`. Build it into the view so that every downstream query inherits the scope:
+If your organization runs more than one Medplum project, you might want filter on `project_id`. By default, all your projects are shared with Snowflake.  Build it into the view so that every downstream query inherits the scope:
 
 ```sql
 create or replace view patient_current as
@@ -164,18 +164,15 @@ A Medplum team member configures the sync. To open the request, send us:
 | Sync schedule       | Hourly is a good default. Set it by how fresh your reports need to be.                            |
 | Resource types      | All types by default. You can name an include list or an exclude list, but not both.              |
 | Backfill start date | The earliest `meta.lastUpdated` to export. Omit it to load all history.                           |
+| Snowflake account locator | [your data sharing identifier](https://docs.snowflake.com/en/user-guide/admin-account-identifier#label-account-name-data-sharing) |
 
 `AuditEvent` is worth a decision rather than a default. It is often the largest history table in a project, and it answers a different set of questions than clinical reporting does. Either exclude it or give it its own schedule.
 
-On the Snowflake side, your team does three things:
+On the Snowflake side, your team does the following things:
 
-1. [Configure a catalog integration for Amazon S3 Tables](https://docs.snowflake.com/en/user-guide/tables-iceberg-configure-catalog-integration-rest-s3tables) with `CATALOG_API_TYPE = AWS_S3TABLES`, pointing `CATALOG_NAME` at the table bucket ARN.
-2. Create a catalog-linked database on that integration. Snowflake discovers the namespace and its tables on its own and stays in sync, so resource types added to the sync later show up without further work.
-3. Grant access on the database to the roles that will query it.
+1. Accept a [Snowflake private listing](https://docs.snowflake.com/en/collaboration/collaboration-listings-about) from Medplum
+2. Configure roles and access controls, as per your requirements
 
-No external volume is required. S3 Tables uses catalog-vended credentials, which covers storage access as part of the catalog integration.
-
-Self-hosted deployments configure the same pipeline through the `dataWarehouse` block in [server config](/docs/self-hosting/server-config#datawarehouse).
 
 ## Access control and compliance
 
