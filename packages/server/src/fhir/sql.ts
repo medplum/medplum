@@ -1395,12 +1395,8 @@ export const MedplumUnaccentFn: SqlFunctionDefinition = {
     AS $function$SELECT public.unaccent('public.unaccent', normalize($1, NFC))$function$`,
 };
 
-export function isValidTableName(tableName: string): boolean {
-  return /^\w+$/.test(tableName);
-}
-
-export function isValidColumnName(columnName: string): boolean {
-  return /^\w+$/.test(columnName);
+export function isValidPostgresIdentifier(identifier: string): boolean {
+  return /^\w+$/.test(identifier);
 }
 
 export function replaceNullWithUndefinedInRows(rows: any[]): void {

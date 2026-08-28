@@ -11,8 +11,7 @@ import {
   InsertQuery,
   IsNull,
   isPoolClient,
-  isValidColumnName,
-  isValidTableName,
+  isValidPostgresIdentifier,
   MAX_INDEX_DATA_BYTES,
   Negation,
   periodToRangeString,
@@ -487,23 +486,19 @@ describe('SqlBuilder', () => {
   });
 });
 
-test('isValidTableName', () => {
-  expect(isValidTableName('Observation')).toStrictEqual(true);
-  expect(isValidTableName('Observation_History')).toStrictEqual(true);
-  expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
-  expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
-  expect(isValidTableName('Observation History')).toStrictEqual(false);
-});
+test('isValidPostgresIdentifier', () => {
+  expect(isValidPostgresIdentifier('Observation')).toStrictEqual(true);
+  expect(isValidPostgresIdentifier('Observation_History')).toStrictEqual(true);
+  expect(isValidPostgresIdentifier('Observation_Token_text_idx_tsv')).toStrictEqual(true);
+  expect(isValidPostgresIdentifier('id')).toStrictEqual(true);
+  expect(isValidPostgresIdentifier('ID')).toStrictEqual(true);
+  expect(isValidPostgresIdentifier('lastUpdated')).toStrictEqual(true);
+  expect(isValidPostgresIdentifier('__version')).toStrictEqual(true);
 
-test('isValidColumnName', () => {
-  expect(isValidColumnName('id')).toStrictEqual(true);
-  expect(isValidColumnName('ID')).toStrictEqual(true);
-  expect(isValidColumnName('lastUpdated')).toStrictEqual(true);
-  expect(isValidColumnName('__version')).toStrictEqual(true);
-
-  expect(isValidColumnName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
-  expect(isValidColumnName('last-updated')).toStrictEqual(false);
-  expect(isValidColumnName('')).toStrictEqual(false);
+  expect(isValidPostgresIdentifier('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+  expect(isValidPostgresIdentifier('Observation History')).toStrictEqual(false);
+  expect(isValidPostgresIdentifier('last-updated')).toStrictEqual(false);
+  expect(isValidPostgresIdentifier('')).toStrictEqual(false);
 });
 
 test('debug', async () => {
