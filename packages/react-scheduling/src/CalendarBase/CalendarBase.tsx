@@ -220,7 +220,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
 
   const businessHours = availableTime?.flatMap(availableTimeToBusinessHoursEntry);
 
-  const selectable = Boolean(onSelectInterval);
+  const selectable = Boolean(onSelectInterval || selection);
 
   // FullCalendar owns the highlight and only a pointer gesture ever sets it, so the
   // prop has to be pushed in. Keyed on the instants rather than the object: a host
@@ -231,7 +231,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
   const endMs = selection?.end.getTime();
   useEffect(() => {
     const api = calendarRef.current?.getApi();
-    if (!selectable || !api) {
+    if (!api) {
       return;
     }
     if (startMs !== undefined && endMs !== undefined) {
@@ -239,7 +239,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     } else {
       api.unselect();
     }
-  }, [selectable, startMs, endMs]);
+  }, [startMs, endMs]);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>

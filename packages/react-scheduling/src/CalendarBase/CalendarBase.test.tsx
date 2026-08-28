@@ -537,15 +537,15 @@ describe('CalendarBase', () => {
       expect(highlightedDays(container)).toEqual([]);
     });
 
-    test('ignores a selection on a calendar nothing can be selected on', async () => {
+    test('shows a selection even without an onSelectInterval handler', async () => {
       const { container, rerender } = setup({ eventSources: [] });
       const wednesday = visibleDay(container, 3);
 
       rerender(<CalendarBase eventSources={[]} selection={wednesday} />);
 
-      // No `onSelectInterval`, so the calendar is not selectable at all, and a
-      // highlight nobody can move or clear is worse than none.
-      expect(highlightedDays(container)).toEqual([]);
+      // A `selection` prop should be respected on its own — the host isn't required
+      // to also wire up click-to-select just to get a highlight rendered.
+      expect(highlightedDays(container)).toEqual([3]);
     });
   });
 });
