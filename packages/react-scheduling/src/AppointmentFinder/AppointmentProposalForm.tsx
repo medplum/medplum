@@ -142,8 +142,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // closes the search however it was lost.
   const searching = finding && !selectionError;
 
-  // The first actor's schedule answers for all of them: every actor in one search
-  // shares the scheduling parameters, or `$find` rejects the request.
+  // `$find` applies each Schedule's own parameters, so the actors in one search need not
+  // agree on a timezone. The first one is taken as the exemplar for what to display:
+  // the times themselves are real instants either way, only their labelling is at stake.
   const timezone = useMemo(() => {
     const [first] = getSelectedCandidates(selections);
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
