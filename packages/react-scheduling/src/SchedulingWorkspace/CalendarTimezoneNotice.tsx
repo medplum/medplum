@@ -43,7 +43,7 @@ export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.
     return null;
   }
 
-  const viewerLabel = formatTimezoneLabel(at, viewerTimezone ?? getBrowserTimezone());
+  const viewerLabel = formatTimezoneLabel(viewerTimezone ?? getBrowserTimezone());
 
   return (
     <Group gap={6} wrap="nowrap" align="center" mt="xs" data-testid="calendar-timezone-notice">
@@ -64,7 +64,7 @@ export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.
 function describeElsewhere(elsewhere: readonly CalendarTimezoneNoticeCalendar[], at: Date): string {
   const named = elsewhere
     .slice(0, MAX_NAMED)
-    .map((calendar) => `${calendar.label} (${formatTimezoneLabel(at, calendar.timezone)})`);
+    .map((calendar) => `${calendar.label} (${formatTimezoneLabel(calendar.timezone)})`);
   const remaining = elsewhere.length - named.length;
   if (remaining > 0) {
     named.push(`${remaining} ${remaining === 1 ? 'other' : 'others'}`);

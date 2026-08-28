@@ -257,26 +257,26 @@ describe('formatZonedTime', () => {
 
   test('Names the zone only when asked to', () => {
     expect(formatZonedTime(summer, EASTERN)).toBe('9:30 AM');
-    expect(formatZonedTime(summer, EASTERN, { withTimezone: true })).toBe('9:30 AM EDT');
+    expect(formatZonedTime(summer, EASTERN, { withTimezone: true })).toBe('9:30 AM ET');
   });
 
-  test('Reads the abbreviation off the instant, so daylight saving decides it', () => {
-    // The same zone, the same wall-clock time, and a different name for the zone on each side of
-    // the changeover. Nothing here can be cached against the zone alone.
-    expect(formatZonedTime(winter, EASTERN, { withTimezone: true })).toBe('9:30 AM EST');
+  test('Names the zone the same way on either side of a daylight saving change', () => {
+    // The generic name spares the reader "EDT" in July and "EST" in January for what they
+    // think of as one zone.
+    expect(formatZonedTime(winter, EASTERN, { withTimezone: true })).toBe('9:30 AM ET');
   });
 });
 
 describe('formatTimezoneLabel', () => {
-  const summer = new Date('2026-07-27T13:30:00.000Z');
-
   test('Writes the zone the short way', () => {
-    expect(formatTimezoneLabel(summer, EASTERN)).toBe('EDT');
-    expect(formatTimezoneLabel(summer, PACIFIC)).toBe('PDT');
+    expect(formatTimezoneLabel(EASTERN)).toBe('ET');
+    expect(formatTimezoneLabel(PACIFIC)).toBe('PT');
   });
 
-  test('Falls back to an offset for a zone with no abbreviation', () => {
-    expect(formatTimezoneLabel(summer, 'Europe/Paris')).toBe('GMT+2');
+  test('Uses the standard abbreviation for a zone that never changes', () => {
+    // Arizona keeps standard time all year, so there is nothing for a generic name to
+    // generalise over and the abbreviation stands on its own.
+    expect(formatTimezoneLabel(ARIZONA)).toBe('MST');
   });
 });
 

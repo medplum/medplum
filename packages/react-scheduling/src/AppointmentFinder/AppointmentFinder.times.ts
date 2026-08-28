@@ -94,7 +94,7 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
 }
 
 export interface FormatZonedTimeOptions {
-  // Names the zone alongside the time, e.g. "12:30 PM EST".
+  /** Names the zone alongside the time, e.g. "12:30 PM ET". */
   readonly withTimezone?: boolean;
 }
 
@@ -110,7 +110,7 @@ export function formatZonedTime(date: Date, timezone?: string, options?: FormatZ
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: options?.withTimezone ? 'short' : undefined,
+    timeZoneName: options?.withTimezone ? TIMEZONE_NAME_STYLE : undefined,
   }).format(date);
 }
 
@@ -145,13 +145,28 @@ export function getBrowserTimezone(): string {
 }
 
 /**
- * Names a timezone the short way it is written beside a time, e.g. "EST" or "GMT+2".
- * @param at - The instant to read it at, which is what decides between EST and EDT.
+ * How a zone is named beside a time. The generic style says "ET" rather than picking
+ * between "EST" and "EDT", so a zone reads the same whichever side of a daylight saving
+ * change the time falls on.
+ */
+const TIMEZONE_NAME_STYLE = 'shortGeneric' as const;
+
+/**
+ * Any instant will do: the generic zone name does not vary over the year, but
+ * `formatToParts` still needs a date to format.
+ */
+const TIMEZONE_LABEL_INSTANT = new Date(0);
+
+/**
+ * Names a timezone the short way it is written beside a time, e.g. "ET" or "GMT+2".
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
  * @returns The zone's short name.
  */
-export function formatTimezoneLabel(at: Date, timezone?: string): string {
-  const parts = getFormatter(undefined, { timeZone: timezone, timeZoneName: 'short' }).formatToParts(at);
+export function formatTimezoneLabel(timezone?: string): string {
+  const parts = getFormatter(undefined, {
+    timeZone: timezone,
+    timeZoneName: TIMEZONE_NAME_STYLE,
+  }).formatToParts(TIMEZONE_LABEL_INSTANT);
   return parts.find((part) => part.type === 'timeZoneName')?.value ?? '';
 }
 

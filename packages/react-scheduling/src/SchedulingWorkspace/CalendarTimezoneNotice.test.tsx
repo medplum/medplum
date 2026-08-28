@@ -44,7 +44,7 @@ describe('CalendarTimezoneNotice', () => {
     );
 
     expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent(
-      'Calendar shown in your local time (PDT). Dr. Alice Smith (EDT) is scheduled in other time zones.'
+      'Calendar shown in your local time (PT). Dr. Alice Smith (ET) is scheduled in other time zones.'
     );
   });
 
@@ -58,7 +58,7 @@ describe('CalendarTimezoneNotice', () => {
     );
 
     const notice = screen.getByTestId('calendar-timezone-notice');
-    expect(notice).toHaveTextContent('Dr. Alice Smith (EDT) is scheduled');
+    expect(notice).toHaveTextContent('Dr. Alice Smith (ET) is scheduled');
     expect(notice).not.toHaveTextContent('Dr. Bob Jones');
   });
 
@@ -78,7 +78,7 @@ describe('CalendarTimezoneNotice', () => {
     );
 
     expect(screen.getByTestId('calendar-timezone-notice')).toHaveTextContent(
-      'Dr. Alice Smith (EDT), Room 3 (CDT), Ultrasound 1 (MDT) and 2 others are scheduled in other time zones.'
+      'Dr. Alice Smith (ET), Room 3 (CT), Ultrasound 1 (MT) and 2 others are scheduled in other time zones.'
     );
   });
 

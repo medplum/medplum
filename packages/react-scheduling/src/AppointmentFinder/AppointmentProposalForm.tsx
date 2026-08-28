@@ -576,6 +576,6 @@ function formatZonedDateTime(value: Date, timezone: string | undefined): string 
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: isViewerTimezone(timezone, value) ? undefined : 'short',
+    timeZoneName: isViewerTimezone(timezone, value) ? undefined : 'shortGeneric',
   }).format(value);
 }

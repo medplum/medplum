@@ -379,7 +379,7 @@ describe('AppointmentProposalForm', () => {
           minute: '2-digit',
           // The viewer under the test runner does not share the site's timezone, so the zone is
           // named beside the time.
-          timeZoneName: 'short',
+          timeZoneName: 'shortGeneric',
         }).format(start)
       );
     });
@@ -392,7 +392,7 @@ describe('AppointmentProposalForm', () => {
       await chooseFirstOfferedTime();
 
       // The last time read before booking says which clock it is on, like the times offered.
-      expect(chosenTimeField()?.value).toMatch(/\bE[DS]T$/);
+      expect(chosenTimeField()?.value).toMatch(/\bET$/);
     });
 
     test('Asks for the day as the site keeps it, not as the booker does', async () => {

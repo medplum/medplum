@@ -31,7 +31,7 @@ describe('AppointmentDayTimes', () => {
     expect(screen.getByText('Monday, July 27')).toBeInTheDocument();
     await act(async () => {
       // Named with its zone, because the runner is not on Eastern time.
-      fireEvent.click(screen.getByRole('button', { name: '9:30 AM EDT' }));
+      fireEvent.click(screen.getByRole('button', { name: '9:30 AM ET' }));
     });
 
     expect(onSelectAppointment).toHaveBeenCalledTimes(1);
@@ -66,7 +66,7 @@ describe('AppointmentDayTimes', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: '9:00 AM EDT' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '9:00 AM ET' })).toBeInTheDocument();
   });
 
   test('Says so on a day that offers nothing', () => {

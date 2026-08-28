@@ -150,7 +150,7 @@ describe('SchedulingWorkspace', () => {
 
       const notice = await screen.findByTestId('calendar-timezone-notice');
       expect(notice).toHaveTextContent('Calendar shown in your local time');
-      expect(notice).toHaveTextContent(/Dr\. Maya Rivera \(E[DS]T\)/);
+      expect(notice).toHaveTextContent('Dr. Maya Rivera (ET)');
       expect(notice).toHaveTextContent(/scheduled in other time zones\.$/);
     });
 
