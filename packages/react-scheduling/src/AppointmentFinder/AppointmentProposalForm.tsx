@@ -31,6 +31,8 @@ import {
   addDays,
   endOfDay,
   enumerateDateRange,
+  formatDateRange,
+  formatDayLabel,
   getDurationMinutes,
   getFindWindowError,
   groupAppointmentsByDay,
@@ -61,6 +63,15 @@ const MORE_DAYS = 2;
 
 /** Times to ask for per day searched. */
 const TIMES_PER_DAY = 20;
+
+/**
+ * What the calendar's gestures do, said beneath it because neither leaves a mark on it
+ * to be found by.
+ */
+const DAY_GESTURE_HINT = 'drag or shift-click to search more days';
+
+/** Joins phrases sharing a line. Presentational: neither phrase it separates carries it. */
+const HINT_SEPARATOR = ' · ';
 
 export interface AppointmentProposalFormProps {
   /** Pre-fills where the visit is, for a host that already knows. */
@@ -195,8 +206,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // Every day asked about, the calendar and the times reading off the same stretch.
   const shownDays = useMemo(
-    () => ({ start: daySearch.from, end: daySearch.range.end }),
-    [daySearch.from, daySearch.range.end]
+    () => ({ start: daySearch.first.start, end: daySearch.range.end }),
+    [daySearch.first.start, daySearch.range.end]
   );
 
   // Including the days offering nothing: a day that goes missing is indistinguishable
@@ -283,6 +294,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setDaySearch(openDaySearch(date));
     setChosen(undefined);
   }
+
+  /**
+   * Searches the stretch of days a drag or a shift-click asked for, all at once.
+   *
+   * Held stable, unlike {@link chooseDay}: the calendar listens for the end of a drag
+   * on the window while one is under way, and re-subscribes whenever this changes.
+   */
+  const chooseRange = useCallback((start: Date, end: Date): void => {
+    setDaySearch(openRangeSearch(start, end));
+    setChosen(undefined);
+  }, []);
 
   /**
    * Puts the days after the ones on screen up for searching too.
@@ -377,11 +399,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              selected={daySearch.from}
+              selected={daySearch.picked}
               range={shownDays}
               onChangeMonth={setMonth}
               onClick={chooseDay}
+              onSelectRange={chooseRange}
             />
+            <Text size="xs" c="dimmed">
+              {getSearchedDaysHint(shownDays)}
+            </Text>
             {windowError && <Alert color="yellow">{windowError}</Alert>}
           </Stack>
         )}
@@ -643,14 +669,33 @@ interface SearchWindow {
 
 /** The days on offer, and the times the ones already answered came back with. */
 interface DaySearch {
-  /** Where the search opened: the day that was picked, or now if that day is under way. */
-  readonly from: Date;
+  /** The one day that was picked, or undefined when a stretch of days was picked instead. */
+  readonly picked: Date | undefined;
+  /** The window the search opened on, which is what putting the added days away goes back to. */
+  readonly first: SearchWindow;
   /** The days being asked about now, which is the newest window alone. */
   readonly range: SearchWindow;
   /** Times the earlier windows offered, kept on screen while a further one is out. */
   readonly found: readonly Appointment[];
   /** Whether days beyond the first window have been asked for. */
   readonly extended: boolean;
+}
+
+function floorToNow(date: Date): Date {
+  const now = new Date();
+  return date > now ? date : now;
+}
+
+/**
+ * Opens the search on a stretch of days, asking about all of them at once.
+ * @param start - Any instant during the first day of the stretch.
+ * @param end - Any instant during its last day.
+ * @returns The first window, with nothing found yet.
+ */
+function openRangeSearch(start: Date, end: Date): DaySearch {
+  const from = floorToNow(start);
+  const window = { start: from, end: endOfDay(end > from ? end : from) };
+  return { picked: undefined, first: window, range: window, found: [], extended: false };
 }
 
 /**
@@ -669,22 +714,13 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
 /**
  * Opens the search on a day, asking about it and the two days after it.
  *
- * `$find` treats `start` as a hard floor, so a day already under way starts from now
- * rather than midnight: the calendar hands back local midnight, and asking from there
- * would offer times that have already passed.
- *
  * @param date - Any instant during the day to open on.
  * @returns The first window, with nothing found yet.
  */
 function openDaySearch(date: Date): DaySearch {
-  const now = new Date();
-  const from = date > now ? date : now;
-  return {
-    from,
-    range: { start: from, end: endOfDay(addDays(from, DAYS_SHOWN - 1)) },
-    found: [],
-    extended: false,
-  };
+  const from = floorToNow(date);
+  const window = { start: from, end: endOfDay(addDays(from, DAYS_SHOWN - 1)) };
+  return { picked: from, first: window, range: window, found: [], extended: false };
 }
 
 /**
@@ -700,15 +736,20 @@ function nextWindow(range: SearchWindow): SearchWindow {
 
 /**
  * Puts the added days away, for an answer that changes what every day offers.
- *
- * Only when days were added: rebuilding the first window moves its floor to now,
- * which is a different search and so another request for the same days.
- *
  * @param previous - The day search as it stands.
  * @returns The day search, back to its first window.
  */
 function collapseDays(previous: DaySearch): DaySearch {
-  return previous.extended ? openDaySearch(previous.from) : previous;
+  return previous.extended ? { ...previous, range: previous.first, found: [], extended: false } : previous;
+}
+
+/**
+ * The line under the calendar: which days are being searched, and how to ask for others.
+ * @param range - The days being searched.
+ * @returns The line to show beneath the calendar.
+ */
+function getSearchedDaysHint(range: SearchWindow): string {
+  return [formatDateRange(range, formatDayLabel), DAY_GESTURE_HINT].filter(isDefined).join(HINT_SEPARATOR);
 }
 
 /**

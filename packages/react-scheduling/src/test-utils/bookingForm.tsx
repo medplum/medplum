@@ -152,6 +152,59 @@ export async function chooseDay(dayOfMonth: string): Promise<void> {
   await settleAutocomplete();
 }
 
+/**
+ * Drags across the calendar, which asks for the stretch of days the drag covered.
+ *
+ * One step per act, because the days the drag has reached are read back out of state
+ * on the next render. The release goes to the window, where the calendar listens for
+ * it: a drag is let go of wherever the pointer has got to, which need not be a day.
+ *
+ * @param daysOfMonth - The numbers the cells are labelled with, in the order dragged over.
+ */
+export async function dragDays(...daysOfMonth: string[]): Promise<void> {
+  for (const [index, day] of daysOfMonth.entries()) {
+    await act(async () => {
+      if (index === 0) {
+        fireEvent.pointerDown(dayCell(day));
+      }
+      fireEvent.pointerOver(dayCell(day));
+    });
+  }
+  await act(async () => {
+    fireEvent.pointerUp(window);
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Shift-clicks a day, which moves the nearer end of the days on show to it.
+ *
+ * Pressed and released as well as clicked: the press is what a shift-click has to
+ * survive, since it is the same press that begins a drag.
+ *
+ * @param dayOfMonth - The number the cell is labelled with.
+ */
+export async function shiftChooseDay(dayOfMonth: string): Promise<void> {
+  await act(async () => {
+    fireEvent.pointerDown(dayCell(dayOfMonth), { shiftKey: true });
+  });
+  await act(async () => {
+    fireEvent.pointerUp(window);
+  });
+  await act(async () => {
+    fireEvent.click(dayCell(dayOfMonth), { shiftKey: true });
+  });
+  await settleAutocomplete();
+}
+
+/** Pages the calendar on to the next month. */
+export async function showNextMonth(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /next month/i }));
+  });
+  await settleAutocomplete();
+}
+
 /** Asks for the next couple of days under the ones already on screen. */
 export async function showMoreDays(): Promise<void> {
   await act(async () => {
@@ -222,15 +275,23 @@ export function isBefore(first: Element, second: Element): boolean {
 }
 
 /**
+ * Every `$find` the form has asked for, in the order it asked.
+ * @param get - A spy on the client's `get`.
+ * @returns The request urls.
+ */
+export function findRequests(get: MockInstance<MedplumClient['get']>): string[] {
+  return get.mock.calls
+    .map(([url]) => String(url))
+    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
+}
+
+/**
  * What the most recent `$find` asked for.
  * @param get - A spy on the client's `get`.
  * @returns The search parameters, or undefined when nothing was asked.
  */
 export function lastFindParams(get: MockInstance<MedplumClient['get']>): URLSearchParams | undefined {
-  const urls = get.mock.calls
-    .map(([url]) => String(url))
-    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
-  const last = urls.at(-1);
+  const last = findRequests(get).at(-1);
   return last ? new URL(last, 'https://example.com').searchParams : undefined;
 }
 

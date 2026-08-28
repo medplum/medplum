@@ -7,6 +7,7 @@ import {
   enumerateDateRange,
   filterByTimeOfDay,
   formatDateRange,
+  formatDayLabel,
   formatZonedTime,
   getActorGroupKey,
   getAppointmentKey,
@@ -244,6 +245,21 @@ describe('formatDateRange', () => {
 
   test('Says nothing when neither end was asked for', () => {
     expect(formatDateRange({})).toBeUndefined();
+  });
+
+  test('Names the days however the caller asks them to be named', () => {
+    // Beside headings that already carry the weekday, saying it again says the same
+    // thing twice.
+    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) }, formatDayLabel)).toBe(
+      'July 27 – July 30'
+    );
+    expect(formatDateRange({ start: new Date(2026, 6, 27) }, formatDayLabel)).toBe('From July 27');
+  });
+});
+
+describe('formatDayLabel', () => {
+  test('Names a day without its weekday', () => {
+    expect(formatDayLabel(new Date(2026, 6, 27))).toBe('July 27');
   });
 });
 
