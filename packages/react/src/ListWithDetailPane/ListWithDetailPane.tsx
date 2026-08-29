@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
 import type { Resource } from '@medplum/fhirtypes';
+import { useStabilizedCallback } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ListWithDetailPane.module.css';
 import { ListWithDetailPaneSkeleton } from './ListWithDetailPaneSkeleton';
@@ -133,20 +134,17 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     onPageChange,
   } = props;
 
-  // Latest-ref pattern: consumers routinely pass onSelectFirst as an inline arrow, and a
-  // changing identity must not refire the auto-select effect (firing on every render
-  // would loop with consumers that navigate on select).
-  const onSelectFirstRef = useRef(onSelectFirst);
-  useEffect(() => {
-    onSelectFirstRef.current = onSelectFirst;
-  });
+  // Consumers routinely pass onSelectFirst as an inline arrow, and a changing identity must not
+  // refire the auto-select effect (firing on every render would loop with consumers that
+  // navigate on select).
+  const selectFirst = useStabilizedCallback(onSelectFirst);
 
   // Auto-select the first item when a load settles with items and no selection intended.
   useEffect(() => {
     if (!loading && selectedKey === undefined && items.length > 0) {
-      onSelectFirstRef.current?.(items[0]);
+      selectFirst(items[0]);
     }
-  }, [loading, selectedKey, items]);
+  }, [loading, selectedKey, items, selectFirst]);
 
   let headerLeft: ReactNode = <span />;
   if (tabs) {
