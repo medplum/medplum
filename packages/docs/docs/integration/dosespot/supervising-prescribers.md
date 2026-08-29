@@ -6,12 +6,12 @@ sidebar_position: 5
 
 DoseSpot models mid-level prescribers such as nurse practitioners and physician assistants as a **Prescribing Agent Clinician** (role `5`) who prescribes on behalf of a supervising **Prescribing Clinician** (role `1`). [Prescriber enrollment](./enroll-user) creates the clinicians but does not attach the supervisor.
 
-Use `dosespot-set-supervising-prescriber-bot` after both clinicians are enrolled to add or remove this relationship for the project's configured DoseSpot clinic. This workflow does not apply to Proxy Clinicians (role `6`).
+After both clinicians are enrolled, call the `$dosespot-set-supervising-prescriber` FHIR operation to add or remove this relationship for the project's configured DoseSpot clinic. The DoseSpot deployment installs an `OperationDefinition` that routes this operation to the `dosespot-set-supervising-prescriber-bot`. This workflow does not apply to Proxy Clinicians (role `6`).
 
 :::note[Prerequisites]
-Before executing the bot:
+Before calling the operation:
 
-1. Restrict access to a trusted administrative caller. The bot has `runAsUser: true`, so it inherits the caller's Medplum access, while authenticating to DoseSpot with the admin `DOSESPOT_USER_ID` secret.
+1. Restrict access to a trusted administrative caller. The underlying bot has `runAsUser: true`, so it inherits the caller's Medplum access, while authenticating to DoseSpot with the admin `DOSESPOT_USER_ID` secret. The caller must be able to read the bot referenced by the `OperationDefinition`.
 2. Enroll both Practitioners in DoseSpot. Each must have a DoseSpot clinician ID on their `ProjectMembership`.
 3. Verify that the supervisor is a Prescribing Clinician (role `1`) and the supervisee is a Prescribing Agent Clinician (role `5`). The bot does not independently validate role eligibility.
 :::
@@ -20,37 +20,40 @@ Before executing the bot:
 
 1. Enroll the supervisor as a Prescribing Clinician (role `1`).
 2. Enroll the supervisee as a Prescribing Agent Clinician (role `5`).
-3. Run the bot to attach the supervisor for `DOSESPOT_CLINIC_ID`.
-4. To clear the relationship for that clinic, run the bot again with `action: "remove"`.
+3. Call the operation to attach the supervisor for `DOSESPOT_CLINIC_ID`.
+4. To clear the relationship for that clinic, call the operation again with `action: "remove"`.
 
-The relationship is stored in DoseSpot. The bot does not create or update a FHIR resource representing the relationship in Medplum.
+The relationship is stored in DoseSpot. The operation does not create or update a FHIR resource representing the relationship in Medplum.
 
-## Bot Input Parameters
+## Operation Input Parameters
 
 | Parameter | Required | Type | Description |
 | --- | --- | --- | --- |
-| `practitionerId` | Yes | `string` | The FHIR Practitioner ID of the supervisee (the Prescribing Agent) |
-| `supervisorPractitionerId` | Yes | `string` | The FHIR Practitioner ID of the supervisor. Required on both `add` and `remove`; the bot resolves this clinician even when removing |
+| `practitionerId` | Yes | `id` | The Medplum Practitioner ID of the supervisee (the Prescribing Agent) |
+| `supervisorPractitionerId` | Yes | `id` | The Medplum Practitioner ID of the supervisor. Required on both `add` and `remove`; the operation resolves this clinician even when removing |
 | `action` | No | `"add"` \| `"remove"` | `"add"` sets the supervisor (default). `"remove"` clears the supervisor relationship for the configured clinic |
+
+Pass the bare IDs from the two Medplum `Practitioner` resources, without a `Practitioner/` prefix. This operation does not accept a Patient ID.
 
 ## Add a Supervisor
 
 ```typescript
-const result = await medplum.executeBot(
-  { system: 'https://www.medplum.com/bots', value: 'dosespot-set-supervising-prescriber-bot' },
+import type { Parameters } from '@medplum/fhirtypes';
+
+const result = await medplum.post<Parameters>(
+  medplum.fhirUrl('Practitioner', '$dosespot-set-supervising-prescriber'),
   {
     practitionerId: 'supervisee-practitioner-id',
     supervisorPractitionerId: 'supervisor-practitioner-id',
   }
 );
-// result.clinicianId            - DoseSpot clinician ID of the supervisee
-// result.supervisorClinicianId  - DoseSpot clinician ID of the supervisor
-// result.clinicId               - clinic the relationship was set on
-// result.action                 - "add"
+
+// The response is a FHIR Parameters resource.
+console.log(result.parameter);
 ```
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
+curl 'https://api.medplum.com/fhir/R4/Practitioner/$dosespot-set-supervising-prescriber' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -63,8 +66,10 @@ curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
 ## Remove a Supervisor
 
 ```typescript
-const result = await medplum.executeBot(
-  { system: 'https://www.medplum.com/bots', value: 'dosespot-set-supervising-prescriber-bot' },
+import type { Parameters } from '@medplum/fhirtypes';
+
+const result = await medplum.post<Parameters>(
+  medplum.fhirUrl('Practitioner', '$dosespot-set-supervising-prescriber'),
   {
     practitionerId: 'supervisee-practitioner-id',
     supervisorPractitionerId: 'supervisor-practitioner-id',
@@ -74,7 +79,7 @@ const result = await medplum.executeBot(
 ```
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
+curl 'https://api.medplum.com/fhir/R4/Practitioner/$dosespot-set-supervising-prescriber' \
   -X POST \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
@@ -89,19 +94,21 @@ curl 'https://api.medplum.com/fhir/R4/Bot/YOUR_BOT_ID/$execute' \
 DoseSpot clears whichever supervisor currently exists for `DOSESPOT_CLINIC_ID`. `supervisorPractitionerId` is still required and must resolve to an enrolled clinician, but DoseSpot does not verify that identity when clearing the relationship.
 :::
 
-## Bot Response
+## Operation Response
+
+The operation returns a FHIR `Parameters` resource. Each field below appears as a named entry in `Parameters.parameter`; primitive values use the corresponding FHIR `value[x]` property. The nested `result` parameter contains the raw DoseSpot result as `part` entries.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `practitionerId` | `string` | The supervisee Practitioner ID |
-| `supervisorPractitionerId` | `string` | The supplied supervisor Practitioner ID |
-| `clinicianId` | `number` | The supervisee's DoseSpot clinician ID |
-| `supervisorClinicianId` | `number` | The supplied supervisor's DoseSpot clinician ID |
-| `clinicId` | `number` | The DoseSpot clinic the relationship was set or cleared on |
-| `action` | `"add"` \| `"remove"` | The action that was performed |
-| `result` | `DoseSpotResultResponse` | The raw DoseSpot API result |
+| `practitionerId` | `valueId` | The supervisee Practitioner ID |
+| `supervisorPractitionerId` | `valueId` | The supplied supervisor Practitioner ID |
+| `clinicianId` | `valueInteger` | The supervisee's DoseSpot clinician ID |
+| `supervisorClinicianId` | `valueInteger` | The supplied supervisor's DoseSpot clinician ID |
+| `clinicId` | `valueInteger` | The DoseSpot clinic the relationship was set or cleared on |
+| `action` | `valueCode` | The action that was performed: `"add"` or `"remove"` |
+| `result` | `part` | The raw DoseSpot `ResultCode` and `ResultDescription` |
 
-On `remove`, the supervisor fields identify the supervisor supplied to the bot. They do not confirm which supervisor relationship DoseSpot cleared.
+On `remove`, the supervisor parameters identify the supervisor supplied to the operation. They do not confirm which supervisor relationship DoseSpot cleared.
 
 ## Troubleshooting
 
