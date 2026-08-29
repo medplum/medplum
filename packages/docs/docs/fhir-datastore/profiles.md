@@ -26,6 +26,13 @@ correctly-coded entries: one systolic pressure measurement, and one diastolic me
 this profile contains just one measurement, or uses an incorrect code for either component, it will be rejected by the
 server. This helps ensure data quality by preventing data that does not match the expected schema from being written.
 
+Profile constraints are not limited to cardinality and required codes. A `StructureDefinition` can include any
+[FHIRPath](https://hl7.org/fhirpath/) expression in `constraint.expression`. FHIRPath includes
+[`matches()`](https://hl7.org/fhirpath/#matchesregex-string-boolean) for regular expressions, so a profile can require
+that a string field matches a pattern. Element `maxLength` covers a simple length cap, for example a 100-character
+limit on `Patient.name.given`; use a FHIRPath `matches(...)` constraint when the rule is a character class or another
+pattern.
+
 [profiling]: http://hl7.org/fhir/profiling.html
 [us-core-bp]: http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure
 [us-core]: https://www.hl7.org/fhir/us/core/#us-core-profiles
