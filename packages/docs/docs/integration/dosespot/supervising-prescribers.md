@@ -6,14 +6,20 @@ sidebar_position: 5
 
 DoseSpot models mid-level prescribers such as nurse practitioners and physician assistants as a **Prescribing Agent Clinician** (role `5`) who prescribes on behalf of a supervising **Prescribing Clinician** (role `1`). [Prescriber enrollment](./enroll-user) creates the clinicians but does not attach the supervisor.
 
-After both clinicians are enrolled, call the `$dosespot-set-supervising-prescriber` FHIR operation to add or remove this relationship for the project's configured DoseSpot clinic. The DoseSpot deployment installs an `OperationDefinition` that routes this operation to the `dosespot-set-supervising-prescriber-bot`. This workflow does not apply to Proxy Clinicians (role `6`).
+After both clinicians are enrolled, use this operation to add or remove their supervising-prescriber relationship for the project's configured DoseSpot clinic:
+
+```text
+POST /fhir/R4/Practitioner/$dosespot-set-supervising-prescriber
+```
+
+The request identifies the supervisee and supervisor by their Medplum Practitioner IDs and optionally specifies whether to add or remove the relationship. This workflow does not apply to Proxy Clinicians (role `6`).
 
 :::note[Prerequisites]
 Before calling the operation:
 
-1. Restrict access to a trusted administrative caller. The underlying bot has `runAsUser: true`, so it inherits the caller's Medplum access, while authenticating to DoseSpot with the admin `DOSESPOT_USER_ID` secret. The caller must be able to read the bot referenced by the `OperationDefinition`.
+1. Restrict access to a trusted administrative caller with permission to invoke this operation.
 2. Enroll both Practitioners in DoseSpot. Each must have a DoseSpot clinician ID on their `ProjectMembership`.
-3. Verify that the supervisor is a Prescribing Clinician (role `1`) and the supervisee is a Prescribing Agent Clinician (role `5`). The bot does not independently validate role eligibility.
+3. Verify that the supervisor is a Prescribing Clinician (role `1`) and the supervisee is a Prescribing Agent Clinician (role `5`). The operation does not independently validate role eligibility.
 :::
 
 ## Workflow
