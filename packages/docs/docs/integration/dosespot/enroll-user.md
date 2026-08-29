@@ -14,7 +14,7 @@ This guide explains how to enroll a new prescriber in DoseSpot. Medplum provides
 | **Admin-driven** | `dosespot-enroll-prescriber-bot` | IT admin enrolls each provider manually; full control over each step |
 | **Self-service** | `dosespot-self-enroll-prescriber-bot` | Provider enrolls themselves the first time they open the DoseSpot iFrame; no back-and-forth with admin |
 
-Both bots support full EPCS enrollment (IDP + TFA). The self-service bot auto-advances through each registration stage on each call, while the admin bot requires explicit `initIdp`/`initTfa` flags.
+Both enrollment bots support full EPCS enrollment (IDP + TFA). The self-service bot auto-advances through each registration stage on each call, while the admin bot requires explicit `initIdp`/`initTfa` flags.
 
 ## Admin-Driven Enrollment (dosespot-enroll-prescriber-bot)
 
@@ -212,7 +212,7 @@ Full Practitioner resource example (with DEA)
 | `2`   | Reporting Clinician         | Can view and report on prescriptions; cannot prescribe   |
 | `3`   | EPCS Coordinator            | Coordinates EPCS enrollment for other clinicians         |
 | `4`   | Clinician Admin             | Clinic administrator; can invite and manage other users  |
-| `5`   | Prescribing Agent Clinician | Prescribes on behalf of a supervising prescriber         |
+| `5`   | Prescribing Agent Clinician | Prescribes on behalf of a supervising prescriber. After enrollment, [configure a supervising prescriber](/docs/integration/dosespot/supervising-prescribers). |
 | `6`   | Proxy Clinician             | Proxy access to act on behalf of another clinician       |
 
 
@@ -530,4 +530,6 @@ The bot runs as the authenticated provider (`runAsUser: true`) and resolves the 
 
 The `nextSteps` array contains user-facing instructions that your app should display to guide the provider through any remaining steps in the iFrame.
 
-
+:::tip[Next: Configure a Supervising Prescriber]
+After enrolling a Prescribing Agent Clinician (role `5`) and their supervising Prescribing Clinician (role `1`), [configure the supervising prescriber relationship](/docs/integration/dosespot/supervising-prescribers).
+:::
