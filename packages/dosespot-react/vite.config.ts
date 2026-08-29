@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../vitest.config.ts';
 
 export default defineConfig({
   resolve: {

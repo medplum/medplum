@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import { copyFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../vitest.config.ts';
 
 if (!existsSync(resolve(import.meta.dirname, '.env'))) {
   copyFileSync(resolve(import.meta.dirname, '.env.defaults'), resolve(import.meta.dirname, '.env'));

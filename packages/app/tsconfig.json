@@ -3,6 +3,7 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "lib": ["esnext", "dom", "dom.iterable"],
     "types": ["node", "vitest/globals", "vite/client"],
     "paths": {

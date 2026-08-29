@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import type { TestSpecification } from 'vitest/node';
 import { BaseSequencer } from 'vitest/node';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../vitest.config.ts';
 import packageJson from './package.json' with { type: 'json' };
 
-const serverDir = dirname(fileURLToPath(import.meta.url));
+const serverDir = import.meta.dirname;
 
 /**
  * Matches the Jest custom sequencer: run seed.test.ts first, then alphabetical order.

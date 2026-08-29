@@ -1,25 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
-const repoDir = dirname(fileURLToPath(import.meta.url));
+const packagesDir = resolve(import.meta.dirname, 'packages');
 
-// resolve to the submodules for much easier testing
-export const medplumAliases = {
-  '@medplum/ccda': resolve(repoDir, 'packages/ccda/src'),
-  '@medplum/core': resolve(repoDir, 'packages/core/src'),
-  '@medplum/definitions': resolve(repoDir, 'packages/definitions/src'),
-  '@medplum/dosespot-core': resolve(repoDir, 'packages/dosespot-core/src'),
-  '@medplum/fhir-router': resolve(repoDir, 'packages/fhir-router/src'),
-  '@medplum/health-gorilla-core': resolve(repoDir, 'packages/health-gorilla-core/src'),
-  '@medplum/hl7': resolve(repoDir, 'packages/hl7/src'),
-  '@medplum/mock': resolve(repoDir, 'packages/mock/src'),
-  '@medplum/react': resolve(repoDir, 'packages/react/src'),
-  '@medplum/react-hooks': resolve(repoDir, 'packages/react-hooks/src'),
-};
+/**
+ * Resolve to the submodules for much easier testing.
+ *
+ * A package is aliased when it has a `src/index.ts` entry point. That excludes the apps and
+ * tooling packages (app, docs, graphiql, storybook, eslint-config, fhirtypes), which have no
+ * source entry point to alias to.
+ */
+export const medplumAliases = Object.fromEntries(
+  readdirSync(packagesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(join(packagesDir, entry.name, 'src', 'index.ts')))
+    .map((entry) => {
+      const packageDir = join(packagesDir, entry.name);
+      const { name } = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'));
+      return [name, join(packageDir, 'src')];
+    })
+    .sort(([a], [b]) => a.localeCompare(b))
+);
 
 export default defineConfig({
   resolve: {
@@ -27,7 +30,7 @@ export default defineConfig({
   },
   test: {
     projects: [
-      'packages/*/vite{,st}.config.ts',
+      'packages/*/vite{,st}.config.{ts,mts}',
       // app keeps dev (vite.config.ts) and test (vitest.config.ts) configs separate
       '!packages/app/vite.config.ts',
       'examples/*/vite{,st}.config.ts',

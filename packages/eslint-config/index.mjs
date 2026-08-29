@@ -143,7 +143,7 @@ export const coreConfig = {
  * @type {import("@eslint/config-helpers").ConfigWithExtends}
  */
 export const tsConfig = {
-  files: ['**/*.ts', '**/*.tsx'],
+  files: ['**/*.ts', '**/*.mts', '**/*.tsx'],
   extends: [
     tseslint.configs.recommended,
     {
@@ -320,7 +320,7 @@ export const medplumEslintConfig = [
    * we don't need type checking for vite.config.ts or vitest.config.ts files
    */
   {
-    files: ['**/vite.config.ts', '**/vitest.config.ts'],
+    files: ['**/vite.config.{ts,mts}', '**/vitest.config.{ts,mts}'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 ];
