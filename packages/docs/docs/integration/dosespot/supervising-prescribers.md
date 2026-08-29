@@ -39,9 +39,22 @@ The relationship is stored in DoseSpot. The operation does not create or update 
 | `supervisorPractitionerId` | Yes | `id` | The Medplum Practitioner ID of the supervisor. Required on both `add` and `remove`; the operation resolves this clinician even when removing |
 | `action` | No | `"add"` \| `"remove"` | `"add"` sets the supervisor (default). `"remove"` clears the supervisor relationship for the configured clinic |
 
-Pass the bare IDs from the two Medplum `Practitioner` resources, without a `Practitioner/` prefix. This operation does not accept a Patient ID.
+Send these fields as a plain JSON object. Pass the bare IDs from the two Medplum `Practitioner` resources, without a `Practitioner/` prefix. This operation does not accept a Patient ID. The response uses a FHIR `Parameters` resource, as described in [Operation Response](#operation-response).
 
 ## Add a Supervisor
+
+### Medplum CLI
+
+The Medplum CLI supplies the FHIR base URL and authentication from the selected profile:
+
+```bash
+medplum post -p <profile> 'Practitioner/$dosespot-set-supervising-prescriber' '{
+  "practitionerId": "supervisee-practitioner-id",
+  "supervisorPractitionerId": "supervisor-practitioner-id"
+}'
+```
+
+### TypeScript
 
 ```typescript
 import type { Parameters } from '@medplum/fhirtypes';
@@ -58,6 +71,8 @@ const result = await medplum.post<Parameters>(
 console.log(result.parameter);
 ```
 
+### cURL
+
 ```bash
 curl 'https://api.medplum.com/fhir/R4/Practitioner/$dosespot-set-supervising-prescriber' \
   -X POST \
@@ -71,6 +86,18 @@ curl 'https://api.medplum.com/fhir/R4/Practitioner/$dosespot-set-supervising-pre
 
 ## Remove a Supervisor
 
+### Medplum CLI
+
+```bash
+medplum post -p <profile> 'Practitioner/$dosespot-set-supervising-prescriber' '{
+  "practitionerId": "supervisee-practitioner-id",
+  "supervisorPractitionerId": "supervisor-practitioner-id",
+  "action": "remove"
+}'
+```
+
+### TypeScript
+
 ```typescript
 import type { Parameters } from '@medplum/fhirtypes';
 
@@ -83,6 +110,8 @@ const result = await medplum.post<Parameters>(
   }
 );
 ```
+
+### cURL
 
 ```bash
 curl 'https://api.medplum.com/fhir/R4/Practitioner/$dosespot-set-supervising-prescriber' \
