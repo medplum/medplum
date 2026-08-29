@@ -63444,7 +63444,8 @@
         "type": {
           "description": "The type of the AsyncJob.",
           "enum": [
-            "data-migration"
+            "data-migration",
+            "aws-lambda-microvm"
           ]
         },
         "dataVersion": {
