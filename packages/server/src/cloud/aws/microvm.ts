@@ -142,7 +142,9 @@ export async function executeMicrovmBot(context: BotExecutionContext): Promise<B
         maximumDurationInSeconds: bot.timeout,
         runHookPayload: JSON.stringify({ ...buildLambdaPayload(context), asyncJob: createReference(asyncJob) }),
         ingressNetworkConnectors: [`arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:ALL_INGRESS`],
-        egressNetworkConnectors: [`arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:INTERNET_EGRESS`],
+        egressNetworkConnectors: [
+          `arn:aws:lambda:${region}:aws:network-connector:aws-network-connector:INTERNET_EGRESS`,
+        ],
         idlePolicy: {
           autoResumeEnabled: true,
           maxIdleDurationSeconds: 900,

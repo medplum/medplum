@@ -52,7 +52,11 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
     case 'cancelled':
       break;
     default:
-      return [badRequest(`AsyncJob cannot be cancelled if status is not 'accepted' or 'active', job had status '${job.status}'`)];
+      return [
+        badRequest(
+          `AsyncJob cannot be cancelled if status is not 'accepted' or 'active', job had status '${job.status}'`
+        ),
+      ];
   }
   return [allOk];
 }
