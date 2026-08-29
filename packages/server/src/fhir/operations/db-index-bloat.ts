@@ -127,7 +127,7 @@ async function getBtreeIndexBloat(
     `WITH btree_indexes AS (
       SELECT
         n.nspname AS "schemaName", t.relname AS "tableName", i.relname AS "indexName",
-        i.oid AS "indexOid", t.oid AS "tableOid", GREATEST(i.reltuples, 0) AS "indexTuples",
+        i.oid AS "indexOid", t.oid AS "tableOid", i.reltuples AS "indexTuples",
         pg_relation_size(i.oid) AS "indexSize",
         COALESCE(
           (SELECT option_value::integer FROM pg_options_to_table(i.reloptions) WHERE option_name = 'fillfactor'),
@@ -144,6 +144,7 @@ async function getBtreeIndexBloat(
         AND ix.indisvalid
         AND ix.indisready
         AND ix.indislive
+        AND i.reltuples >= 0
         AND pg_relation_size(i.oid) >= $1::bigint
         AND ($2::text[] IS NULL OR t.relname = ANY($2::text[]))
     ), index_columns AS (
@@ -179,7 +180,7 @@ async function getBtreeIndexBloat(
           AND attribute.attnum = columns."statsAttributeNumber"
         JOIN pg_class stats_relation ON stats_relation.oid = columns."statsRelationOid"
         JOIN pg_namespace stats_namespace ON stats_namespace.oid = stats_relation.relnamespace
-        JOIN pg_stats stats
+        LEFT JOIN pg_stats stats
           ON stats.schemaname = stats_namespace.nspname
           AND stats.tablename = stats_relation.relname
           AND stats.attname = attribute.attname
