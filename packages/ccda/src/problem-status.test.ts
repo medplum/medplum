@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Condition } from '@medplum/fhirtypes';
 import { convertCcdaToFhir } from './ccda-to-fhir';
+import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import { convertXmlToCcda } from './xml';
 
 /**
@@ -154,6 +155,64 @@ describe('Condition clinical status', () => {
         createProblemDocument({ actStatusCode: 'active', problemStatusCode: '999999999' })
       );
       expect(condition.clinicalStatus?.coding?.[0]?.code).toBe('active');
+    });
+  });
+
+  describe('Round trip', () => {
+    test('resolved survives import -> export -> re-import', () => {
+      // Import: completed concern act + effectiveTime high => resolved.
+      const bundle = convertCcdaToFhir(
+        convertXmlToCcda(createProblemDocument({ actStatusCode: 'completed', observationHigh: '20240601' }))
+      );
+      const condition = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')?.resource as Condition;
+      expect(condition.clinicalStatus?.coding?.[0]?.code).toBe('resolved');
+      expect(condition.abatementDateTime).toBe('2024-06-01T00:00:00Z');
+
+      // Export: resolved => completed concern act carrying the end date.
+      const exported = convertFhirToCcda(bundle);
+      const act = exported.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0];
+      expect(act?.statusCode?.['@_code']).toBe('completed');
+      expect(act?.effectiveTime?.[0]?.high?.['@_value']).toBeDefined();
+
+      // Re-import: still resolved.
+      const reimported = convertCcdaToFhir(exported);
+      const condition2 = reimported.entry?.find((e) => e.resource?.resourceType === 'Condition')
+        ?.resource as Condition;
+      expect(condition2.clinicalStatus?.coding?.[0]?.code).toBe('resolved');
+    });
+
+    test('inactive survives import -> export -> re-import', () => {
+      // Import: completed concern act without an effectiveTime high => inactive.
+      const bundle = convertCcdaToFhir(convertXmlToCcda(createProblemDocument({ actStatusCode: 'completed' })));
+      const condition = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')?.resource as Condition;
+      expect(condition.clinicalStatus?.coding?.[0]?.code).toBe('inactive');
+
+      // Export: inactive => completed concern act without an end date.
+      const exported = convertFhirToCcda(bundle);
+      const act = exported.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0];
+      expect(act?.statusCode?.['@_code']).toBe('completed');
+      expect(act?.effectiveTime?.[0]?.high).toBeUndefined();
+
+      // Re-import: still inactive.
+      const reimported = convertCcdaToFhir(exported);
+      const condition2 = reimported.entry?.find((e) => e.resource?.resourceType === 'Condition')
+        ?.resource as Condition;
+      expect(condition2.clinicalStatus?.coding?.[0]?.code).toBe('inactive');
+    });
+
+    test('active survives import -> export -> re-import', () => {
+      const bundle = convertCcdaToFhir(convertXmlToCcda(createProblemDocument({ actStatusCode: 'active' })));
+      const condition = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')?.resource as Condition;
+      expect(condition.clinicalStatus?.coding?.[0]?.code).toBe('active');
+
+      const exported = convertFhirToCcda(bundle);
+      const act = exported.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0];
+      expect(act?.statusCode?.['@_code']).toBe('active');
+
+      const reimported = convertCcdaToFhir(exported);
+      const condition2 = reimported.entry?.find((e) => e.resource?.resourceType === 'Condition')
+        ?.resource as Condition;
+      expect(condition2.clinicalStatus?.coding?.[0]?.code).toBe('active');
     });
   });
 });

@@ -140,7 +140,7 @@ describe('Condition Entry Functions', () => {
       expect(act?.statusCode?.['@_code']).toBe('active'); // Default status
     });
 
-    test('should handle condition with clinical status', () => {
+    test('should map inactive clinical status to a completed concern act', () => {
       const condition: Condition = {
         id: 'condition-1',
         resourceType: 'Condition',
@@ -156,7 +156,90 @@ describe('Condition Entry Functions', () => {
       const result = createProblemEntry(converter, condition);
 
       const act = result.act?.[0];
-      expect(act?.statusCode?.['@_code']).toBe('inactive');
+      expect(act?.statusCode?.['@_code']).toBe('completed');
+    });
+
+    test('should map resolved clinical status to a completed concern act with an end date', () => {
+      const condition: Condition = {
+        id: 'condition-1',
+        resourceType: 'Condition',
+        subject: createReference(patient),
+        clinicalStatus: {
+          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'resolved' }],
+        },
+        recordedDate: '2024-01-01',
+        abatementDateTime: '2024-06-01',
+        code: {
+          coding: [{ system: 'http://snomed.info/sct', code: '233604007', display: 'Pneumonia' }],
+        },
+      };
+
+      const result = createProblemEntry(converter, condition);
+
+      const act = result.act?.[0];
+      expect(act?.statusCode?.['@_code']).toBe('completed');
+      expect(act?.effectiveTime?.[0]?.low?.['@_value']).toBe('20240101');
+      expect(act?.effectiveTime?.[0]?.high?.['@_value']).toBe('20240601');
+    });
+
+    test('should not emit a concern act end date for an active condition', () => {
+      const condition: Condition = {
+        id: 'condition-1',
+        resourceType: 'Condition',
+        subject: createReference(patient),
+        clinicalStatus: {
+          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
+        },
+        recordedDate: '2024-01-01',
+        abatementDateTime: '2024-06-01',
+        code: {
+          coding: [{ system: 'http://snomed.info/sct', code: '233604007', display: 'Pneumonia' }],
+        },
+      };
+
+      const result = createProblemEntry(converter, condition);
+
+      const act = result.act?.[0];
+      expect(act?.statusCode?.['@_code']).toBe('active');
+      expect(act?.effectiveTime?.[0]?.high).toBeUndefined();
+    });
+
+    test('should emit negationInd on the problem observation for a refuted condition', () => {
+      const condition: Condition = {
+        id: 'condition-1',
+        resourceType: 'Condition',
+        subject: createReference(patient),
+        verificationStatus: {
+          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'refuted' }],
+        },
+        code: {
+          coding: [{ system: 'http://snomed.info/sct', code: '233604007', display: 'Pneumonia' }],
+        },
+      };
+
+      const result = createProblemEntry(converter, condition);
+
+      const observation = result.act?.[0]?.entryRelationship?.[0]?.observation?.[0];
+      expect(observation?.['@_negationInd']).toBe('true');
+    });
+
+    test('should not emit negationInd for a confirmed condition', () => {
+      const condition: Condition = {
+        id: 'condition-1',
+        resourceType: 'Condition',
+        subject: createReference(patient),
+        verificationStatus: {
+          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-verification', code: 'confirmed' }],
+        },
+        code: {
+          coding: [{ system: 'http://snomed.info/sct', code: '233604007', display: 'Pneumonia' }],
+        },
+      };
+
+      const result = createProblemEntry(converter, condition);
+
+      const observation = result.act?.[0]?.entryRelationship?.[0]?.observation?.[0];
+      expect(observation?.['@_negationInd']).toBeUndefined();
     });
 
     test('should handle condition with dates', () => {
@@ -252,7 +335,7 @@ describe('Condition Entry Functions', () => {
       expect(act?.entryRelationship).toEqual([]);
     });
 
-    test('should handle health concern with clinical status', () => {
+    test('should map inactive clinical status to a completed health concern act', () => {
       const condition: Condition = {
         id: 'condition-1',
         resourceType: 'Condition',
@@ -268,7 +351,7 @@ describe('Condition Entry Functions', () => {
       const result = createHealthConcernEntry(converter, condition);
 
       const act = result.act?.[0];
-      expect(act?.statusCode?.['@_code']).toBe('inactive');
+      expect(act?.statusCode?.['@_code']).toBe('completed');
     });
 
     test('should handle health concern with evidence observations', () => {

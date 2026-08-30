@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Condition } from '@medplum/fhirtypes';
 import { convertCcdaToFhir } from './ccda-to-fhir';
+import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import { convertXmlToCcda } from './xml';
 
 /**
@@ -109,5 +110,51 @@ describe('Problem Observation negationInd', () => {
   test('negationInd="false" is treated as not negated', () => {
     const condition = convertToCondition(createProblemDocument({ observationNegationInd: 'false' }));
     expect(condition.verificationStatus?.coding?.[0]?.code).toBe('confirmed');
+  });
+
+  test('negationInd="1" (xs:boolean) produces refuted verification status', () => {
+    const condition = convertToCondition(createProblemDocument({ observationNegationInd: '1' }));
+    expect(condition.verificationStatus?.coding?.[0]?.code).toBe('refuted');
+  });
+
+  test('negationInd="0" (xs:boolean) is treated as not negated', () => {
+    const condition = convertToCondition(createProblemDocument({ observationNegationInd: '0' }));
+    expect(condition.verificationStatus?.coding?.[0]?.code).toBe('confirmed');
+  });
+
+  describe('Round trip', () => {
+    test('refuted survives import -> export -> re-import', () => {
+      // Import: negated problem observation => refuted.
+      const bundle = convertCcdaToFhir(convertXmlToCcda(createProblemDocument({ observationNegationInd: 'true' })));
+      const condition = bundle.entry?.find((e) => e.resource?.resourceType === 'Condition')?.resource as Condition;
+      expect(condition.verificationStatus?.coding?.[0]?.code).toBe('refuted');
+
+      // Export: refuted => negationInd="true" on the problem observation.
+      const exported = convertFhirToCcda(bundle);
+      const observation =
+        exported.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+          ?.observation?.[0];
+      expect(observation?.['@_negationInd']).toBe('true');
+
+      // Re-import: still refuted.
+      const reimported = convertCcdaToFhir(exported);
+      const condition2 = reimported.entry?.find((e) => e.resource?.resourceType === 'Condition')
+        ?.resource as Condition;
+      expect(condition2.verificationStatus?.coding?.[0]?.code).toBe('refuted');
+    });
+
+    test('confirmed conditions export without negationInd', () => {
+      const bundle = convertCcdaToFhir(convertXmlToCcda(createProblemDocument()));
+      const exported = convertFhirToCcda(bundle);
+      const observation =
+        exported.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+          ?.observation?.[0];
+      expect(observation?.['@_negationInd']).toBeUndefined();
+
+      const reimported = convertCcdaToFhir(exported);
+      const condition = reimported.entry?.find((e) => e.resource?.resourceType === 'Condition')
+        ?.resource as Condition;
+      expect(condition.verificationStatus?.coding?.[0]?.code).toBe('confirmed');
+    });
   });
 });

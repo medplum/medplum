@@ -18,11 +18,50 @@ import {
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_PROBLEMS_SECTION,
   mapCodeableConceptToCcdaValue,
-  PROBLEM_STATUS_MAPPER,
 } from '../../systems';
 import type { CcdaEntry, CcdaEntryRelationship } from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import { createTextFromExtensions, mapEffectivePeriod, mapIdentifiers } from '../utils';
+
+/**
+ * Maps a FHIR `Condition.clinicalStatus` to a C-CDA concern act `statusCode`.
+ *
+ * Per C-CDA R2.1, the Problem Concern Act statusCode is drawn from the
+ * ProblemAct statusCode value set (2.16.840.1.113883.11.20.9.19:
+ * active | suspended | aborted | completed) and reflects whether the concern
+ * is still being tracked, not the clinical course of the problem itself.
+ * A condition that is no longer active ("inactive" or "resolved") is a closed
+ * concern, for which "completed" is the normal terminal state; "suspended"
+ * and "aborted" describe exceptional interruptions of the tracking workflow
+ * and are not implied by any FHIR condition-clinical code. Everything else
+ * ("active", "recurrence", "relapse", "remission", or an absent/unrecognized
+ * status) exports as an "active" concern, preserving the previous default.
+ *
+ * This mirrors the import direction, which maps "completed" back to
+ * "resolved" when an effectiveTime high is asserted and "inactive" otherwise.
+ *
+ * @param condition - The FHIR Condition.
+ * @returns The C-CDA concern act statusCode value.
+ */
+function mapClinicalStatusToConcernActStatus(condition: Condition): 'active' | 'completed' {
+  switch (condition.clinicalStatus?.coding?.[0]?.code) {
+    case 'inactive':
+    case 'resolved':
+      return 'completed';
+    default:
+      return 'active';
+  }
+}
+
+/**
+ * Returns true if the FHIR Condition is refuted (ruled out).
+ *
+ * @param condition - The FHIR Condition.
+ * @returns True if `Condition.verificationStatus` contains the "refuted" code.
+ */
+function isConditionRefuted(condition: Condition): boolean {
+  return !!condition.verificationStatus?.coding?.some((coding) => coding.code === 'refuted');
+}
 
 export function createConditionEntry(
   converter: FhirToCcdaConverter,
@@ -40,6 +79,7 @@ export function createConditionEntry(
 }
 
 export function createProblemEntry(converter: FhirToCcdaConverter, problem: Condition): CcdaEntry {
+  const concernStatus = mapClinicalStatusToConcernActStatus(problem);
   return {
     act: [
       {
@@ -52,9 +92,14 @@ export function createProblemEntry(converter: FhirToCcdaConverter, problem: Cond
           '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
         },
         statusCode: {
-          '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(problem.clinicalStatus?.coding?.[0]?.code, 'active'),
+          '@_code': concernStatus,
         },
-        effectiveTime: mapEffectivePeriod(problem.recordedDate, undefined),
+        // A closed concern carries its end date, so that the import direction
+        // ("completed" + effectiveTime high => resolved) can round-trip it.
+        effectiveTime: mapEffectivePeriod(
+          problem.recordedDate,
+          concernStatus === 'completed' ? problem.abatementDateTime : undefined
+        ),
         entryRelationship: [
           {
             '@_typeCode': 'SUBJ',
@@ -62,6 +107,7 @@ export function createProblemEntry(converter: FhirToCcdaConverter, problem: Cond
               {
                 '@_classCode': 'OBS',
                 '@_moodCode': 'EVN',
+                '@_negationInd': isConditionRefuted(problem) ? 'true' : undefined,
                 templateId: [
                   { '@_root': OID_PROBLEM_OBSERVATION },
                   { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
@@ -169,10 +215,7 @@ export function createHealthConcernEntry(converter: FhirToCcdaConverter, healthC
           '@_displayName': 'Health Concern',
         },
         statusCode: {
-          '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
-            healthConcern.clinicalStatus?.coding?.[0]?.code,
-            'active'
-          ),
+          '@_code': mapClinicalStatusToConcernActStatus(healthConcern),
         },
         effectiveTime: mapEffectivePeriod(healthConcern.recordedDate, undefined),
         entryRelationship,

@@ -607,7 +607,7 @@ class CcdaToFhirConverter {
     // Per C-CDA R2.1, negationInd="true" on the Problem Observation means the problem
     // was ruled out, i.e. the condition was refuted.
     // The negation indicator may also appear on the wrapping Problem Concern Act.
-    if (act['@_negationInd'] === 'true' || observation['@_negationInd'] === 'true') {
+    if (isNegationIndTrue(act['@_negationInd']) || isNegationIndTrue(observation['@_negationInd'])) {
       return {
         coding: [
           {
@@ -1561,6 +1561,18 @@ class CcdaToFhirConverter {
       },
     ];
   }
+}
+
+/**
+ * Returns true if a `negationInd` attribute value asserts negation.
+ * `negationInd` is an XML Schema `xs:boolean`, so "1" is a valid true value
+ * alongside "true".
+ *
+ * @param value - The raw negationInd attribute value.
+ * @returns True if the value asserts negation.
+ */
+function isNegationIndTrue(value: string | undefined): boolean {
+  return value === 'true' || value === '1';
 }
 
 function nodeToString(node: CcdaText | string | undefined): string | undefined {
