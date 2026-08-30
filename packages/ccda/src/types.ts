@@ -161,6 +161,7 @@ export interface CcdaProcedure {
 export interface CcdaAct {
   '@_classCode': string;
   '@_moodCode': string;
+  '@_negationInd'?: string;
   templateId?: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;

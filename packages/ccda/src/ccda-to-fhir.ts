@@ -529,14 +529,7 @@ class CcdaToFhirConverter {
           },
         ],
       },
-      verificationStatus: {
-        coding: [
-          {
-            system: CONDITION_VERIFICATION_CODE_SYSTEM,
-            code: 'confirmed',
-          },
-        ],
-      },
+      verificationStatus: this.createConditionVerificationStatus(act, observation),
       category: [
         {
           coding: [
@@ -560,6 +553,30 @@ class CcdaToFhirConverter {
     result.extension = this.mapTextReference(observation.text);
 
     return result;
+  }
+
+  private createConditionVerificationStatus(act: CcdaAct, observation: CcdaObservation): CodeableConcept {
+    // Per C-CDA R2.1, negationInd="true" on the Problem Observation means the problem
+    // was ruled out, i.e. the condition was refuted.
+    // The negation indicator may also appear on the wrapping Problem Concern Act.
+    if (act['@_negationInd'] === 'true' || observation['@_negationInd'] === 'true') {
+      return {
+        coding: [
+          {
+            system: CONDITION_VER_STATUS_CODE_SYSTEM,
+            code: 'refuted',
+          },
+        ],
+      };
+    }
+    return {
+      coding: [
+        {
+          system: CONDITION_VERIFICATION_CODE_SYSTEM,
+          code: 'confirmed',
+        },
+      ],
+    };
   }
 
   private processCarePlanAct(act: CcdaAct): Resource | undefined {
