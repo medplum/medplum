@@ -640,6 +640,21 @@ export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
   ]
 );
 
+// Problem Status observation (2.16.840.1.113883.10.20.22.4.6) value
+// C-CDA uses SNOMED CT codes from the Problem Status value set (2.16.840.1.113883.3.88.12.80.68)
+// FHIR uses: https://hl7.org/fhir/R4/valueset-condition-clinical.html
+export const PROBLEM_STATUS_OBSERVATION_MAPPER = new EnumMapper<string, string>(
+  {
+    ccdaSystemOid: OID_SNOMED_CT_CODE_SYSTEM,
+    fhirSystemUrl: CLINICAL_CONDITION_CODE_SYSTEM,
+  },
+  [
+    { ccdaValue: '55561003', fhirValue: 'active', displayName: 'Active' },
+    { ccdaValue: '73425007', fhirValue: 'inactive', displayName: 'Inactive' },
+    { ccdaValue: '413322009', fhirValue: 'resolved', displayName: 'Resolved' },
+  ]
+);
+
 // FHIR Immunization Status: https://hl7.org/fhir/R4/valueset-immunization-status.html
 // C-CDA Act Status: https://terminology.hl7.org/5.5.0/ValueSet-v3-ActStatus.html
 export const IMMUNIZATION_STATUS_MAPPER = new EnumMapper<

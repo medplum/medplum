@@ -58,6 +58,7 @@ import {
   OID_PLAN_OF_CARE_SECTION,
   OID_PROBLEMS_SECTION_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_ENTRIES_REQUIRED,
+  OID_PROBLEM_STATUS_OBSERVATION,
   OID_PROBLEMS_SECTION_V2_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
@@ -86,7 +87,7 @@ import {
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
   PARTICIPATION_CODE_SYSTEM,
-  PROBLEM_STATUS_MAPPER,
+  PROBLEM_STATUS_OBSERVATION_MAPPER,
   PROCEDURE_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_CONDITION_URL,
@@ -521,14 +522,7 @@ class CcdaToFhirConverter {
       meta: {
         profile: [US_CORE_CONDITION_URL],
       },
-      clinicalStatus: {
-        coding: [
-          {
-            system: CLINICAL_CONDITION_CODE_SYSTEM,
-            code: PROBLEM_STATUS_MAPPER.mapCcdaToFhirWithDefault(act.statusCode?.['@_code'], 'active'),
-          },
-        ],
-      },
+      clinicalStatus: this.createConditionClinicalStatus(act, observation),
       verificationStatus: this.createConditionVerificationStatus(act, observation),
       category: [
         {
@@ -553,6 +547,60 @@ class CcdaToFhirConverter {
     result.extension = this.mapTextReference(observation.text);
 
     return result;
+  }
+
+  private createConditionClinicalStatus(act: CcdaAct, observation: CcdaObservation): CodeableConcept {
+    return {
+      coding: [
+        {
+          system: CLINICAL_CONDITION_CODE_SYSTEM,
+          code: this.mapConditionClinicalStatusCode(act, observation),
+        },
+      ],
+    };
+  }
+
+  private mapConditionClinicalStatusCode(act: CcdaAct, observation: CcdaObservation): string {
+    // The Problem Status observation (2.16.840.1.113883.10.20.22.4.6, LOINC 33999-4),
+    // when present, is the most direct statement of the problem's clinical status,
+    // so it takes precedence over the status inferred from the Problem Concern Act.
+    const problemStatus = this.getProblemStatusObservationValue(observation);
+    if (problemStatus) {
+      return problemStatus;
+    }
+
+    // Otherwise, infer the clinical status from the Problem Concern Act statusCode.
+    // Per C-CDA R2.1, the concern act statusCode reflects whether the concern is still
+    // being tracked, while the nested Problem Observation statusCode is always
+    // "completed" (the state of the recording act itself), so it is not used here.
+    switch (act.statusCode?.['@_code']) {
+      case 'active':
+        return 'active';
+      case 'suspended':
+      case 'aborted':
+        return 'inactive';
+      case 'completed':
+        // A closed concern with a known end date is resolved; otherwise inactive.
+        return act.effectiveTime?.[0]?.high?.['@_value'] || observation.effectiveTime?.[0]?.high?.['@_value']
+          ? 'resolved'
+          : 'inactive';
+      default:
+        return 'active';
+    }
+  }
+
+  private getProblemStatusObservationValue(observation: CcdaObservation): string | undefined {
+    for (const relationship of observation.entryRelationship ?? EMPTY) {
+      for (const child of relationship.observation ?? EMPTY) {
+        if (child.templateId?.some((templateId) => templateId['@_root'] === OID_PROBLEM_STATUS_OBSERVATION)) {
+          const code = (child.value as CcdaCode | undefined)?.['@_code'];
+          if (code) {
+            return PROBLEM_STATUS_OBSERVATION_MAPPER.mapCcdaToFhir(code);
+          }
+        }
+      }
+    }
+    return undefined;
   }
 
   private createConditionVerificationStatus(act: CcdaAct, observation: CcdaObservation): CodeableConcept {
