@@ -1,18 +1,24 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
+description: Start a Patient360 retrieval, follow its Task, and understand what arrives in the Medplum chart.
 tags: [integration, hie]
 ---
 
 # Retrieve Patient Records from an HIE
 
-The Health Gorilla Patient360 integration retrieves a patient's longitudinal record and imports
-supported FHIR R4 resources into the patient's Medplum chart. Retrieval is available as the
+A new patient may arrive with years of history that your team cannot see yet. A Patient360 retrieval
+asks participating exchange networks for that history and brings the supported results into the
+patient's existing Medplum chart.
+
+Because the network search runs asynchronously, your application starts it once, follows a FHIR
+`Task`, and lets clinicians know when the chart is ready to review. Retrieval is available as the
 `$health-gorilla-hie-p360` [custom operation](/docs/api/fhir/operations/custom-operations) on a saved
 [`Patient`](/docs/api/fhir/resources/patient).
 
-:::note[]
-Patient360 access must be enabled for your project by Medplum before you call this operation. See the
-[HIE onboarding requirements](/docs/integration/health-information-exchange#onboarding-requirements).
+:::info[Before you begin]
+Patient360 must be enabled for your project by Medplum, and your test patient must have complete
+matching demographics. If you are still planning the rollout, start with
+[Getting Started](/docs/integration/health-information-exchange/getting-started).
 :::
 
 ## Patient matching requirements
@@ -50,7 +56,10 @@ the request body are not used.
 }
 ```
 
-Use synthetic data only in a sandbox. Do not submit production patient data to a sandbox environment.
+:::caution[Keep production data out of sandbox]
+Use synthetic or explicitly approved test data. Do not submit production patient data to a sandbox
+environment.
+:::
 
 ## Start a retrieval
 
@@ -72,9 +81,16 @@ The operation returns an [`OperationOutcome`](/docs/api/fhir/resources/operation
 that the retrieval started. This response does not contain the outside records. Patient360 runs
 asynchronously, and the associated `Task` records progress until ingestion completes.
 
+:::tip[Design for asynchronous completion]
+Treat the initial `OperationOutcome` as an acknowledgement, not the final result. Show progress from
+the `Task`, subscribe to Task changes, or refresh the chart after the Task reaches a terminal state.
+:::
+
+:::warning[One retrieval at a time]
 Each retrieval is a metered network request. If the patient already has a retrieval with status
 `in-progress` or `on-hold`, the operation returns the existing request instead of starting another
 billable retrieval.
+:::
 
 ## Track retrieval status
 
@@ -86,12 +102,12 @@ GET [base]/fhir/R4/Task?patient=Patient/{id}&code=https://www.medplum.com/integr
 
 The integration uses these statuses:
 
-- `in-progress`: Patient360 accepted the request, the result is still being prepared, or Medplum will
-  retry after a transient processing error.
-- `on-hold`: manual review is required. Do not start another retrieval until the open request is
-  resolved, because the original network request may already be billable.
-- `completed`: Patient360 finished and all supported resources were written to Medplum.
-- `failed`: Patient360 rejected the request or its result expired.
+| Status        | What it means                                                                                                | What your application should do                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `in-progress` | Patient360 accepted the request, is preparing the result, or Medplum will retry a transient processing error | Keep showing progress; do not start another retrieval         |
+| `on-hold`     | Manual review is required                                                                                    | Alert the operational team and do not start another retrieval |
+| `completed`   | Patient360 finished and all supported resources were written to Medplum                                      | Refresh the chart and begin clinical review                   |
+| `failed`      | Patient360 rejected the request or its result expired                                                        | Show the failure and follow the operational escalation path   |
 
 If the completion webhook is early or missed, a scheduled recovery process retries open requests.
 Applications can poll the `Task`, subscribe to Task changes, or refresh the patient's chart after the
@@ -99,6 +115,7 @@ Task reaches a terminal status.
 
 ## Imported resources
 
+:::info[What can land in the chart]
 Patient360 can import the following resource types when they are present in the returned record:
 
 - `AllergyIntolerance`, `Condition`, `ClinicalImpression`, `CarePlan`, and `Goal`
@@ -107,6 +124,7 @@ Patient360 can import the following resource types when they are present in the 
 - `Encounter`, `Procedure`, and `Immunization`
 - `DocumentReference` and `Coverage`
 - `CareTeam`, `Practitioner`, `Organization`, and `Location`
+  :::
 
 The existing Medplum `Patient` remains authoritative. The Health Gorilla patient is not imported as a
 second patient; references to it are rewritten to the existing local patient. `Composition` and
@@ -130,9 +148,11 @@ data from being sent back to the exchange as new content.
 
 ## Attachment handling
 
+:::caution[Attachment bodies are not imported]
 Patient360 imports attachment metadata such as content type, language, title, declared size, hash, and
 creation time when supplied. It removes both `Attachment.data` and `Attachment.url` before writing the
 resource, and it does not create a `Binary` for Patient360 content.
+:::
 
 This means a `DocumentReference` can show that an outside document exists without making the document
 body available in Medplum. Design the clinical workflow so users can distinguish metadata-only
@@ -147,6 +167,12 @@ the patient's compartment merely because an `Encounter` references it.
 
 Before production, test the actual AccessPolicy for each application role against every imported
 resource type your workflow displays.
+
+:::warning[Check standalone referenced resources]
+A user may be able to read an imported `Encounter` but not the standalone `Practitioner`, `Organization`,
+or `Location` it references. Test those resources directly instead of assuming the encounter grants
+access.
+:::
 
 ## Troubleshooting
 
@@ -164,6 +190,7 @@ resource type your workflow displays.
 ## Related reading
 
 - [HIE overview](/docs/integration/health-information-exchange)
+- [Getting Started](/docs/integration/health-information-exchange/getting-started)
 - [Share clinical data](/docs/integration/health-information-exchange/sharing-clinical-data)
 - [FHIR Task](/docs/api/fhir/resources/task)
 - [Subscriptions](/docs/subscriptions)

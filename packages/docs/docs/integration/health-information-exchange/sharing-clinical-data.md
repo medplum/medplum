@@ -1,19 +1,21 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
+description: Prepare an encounter and share customer-authored clinical data back through Health Gorilla.
 tags: [integration, hie]
 ---
 
 # Share Clinical Data with an HIE
 
-HIE share-back sends clinical data authored by your organization from Medplum to Health Gorilla as a
-FHIR R4 transaction. Share-back supports data reciprocity: organizations that retrieve outside records
-also contribute new treatment information to the longitudinal network record.
+An HIE becomes more useful when every participant contributes the care it provides. After an encounter
+is clinically complete, Medplum can share your organization's supported chart data with Health Gorilla
+so the next treating clinician has a more complete longitudinal record.
 
-Medplum deploys the `write-back-hie` Bot as part of an approved HIE implementation. The Bot receives a
-saved [`Encounter`](/docs/api/fhir/resources/encounter), resolves the patient and related chart data,
-validates supported resources, and submits one transaction to Health Gorilla.
+Patient360-sourced data is automatically left out, preventing exchange records from being echoed back
+as your own. The `write-back-hie` Bot receives a saved
+[`Encounter`](/docs/api/fhir/resources/encounter), resolves the patient and related chart data,
+validates supported resources, and submits a FHIR R4 transaction to Health Gorilla.
 
-:::note[]
+:::caution[Sandbox validation required]
 Complete sandbox validation with Medplum and Health Gorilla before enabling automated production
 share-back. Network approval can depend on review of the clinical completeness and coding in a sample
 submission.
@@ -32,10 +34,14 @@ Each run starts from `Encounter.subject` and can include:
 - A `Provenance` resource that identifies the resources included in that submission.
 
 The Bot finds the practitioner from `Encounter.participant` first, then falls back to
-`Patient.generalPractitioner`. Clinical impressions are selected for the triggering encounter. Other
-supported clinical resources are selected from the patient's chart, not only from the encounter.
-Review this scope when designing the trigger so your organization intentionally shares the applicable
-longitudinal history.
+`Patient.generalPractitioner`.
+
+:::warning[Review the patient-wide scope]
+Clinical impressions are selected for the triggering encounter, but other supported clinical resources
+come from the patient's longitudinal chart—not only from that encounter. During bundle construction,
+supported clinical resources are linked to the triggering encounter. Review the resulting scope with
+your clinical team before automating share-back.
+:::
 
 Patient360-sourced resources are excluded. Share-back also excludes its own request and response
 archives, preventing outside data and operational records from being echoed back to the network.
@@ -66,7 +72,23 @@ You can invoke the deployed Bot directly or trigger it from a reviewed workflow.
 tightly scoped [Subscription](/docs/subscriptions) when an encounter reaches the agreed completion
 state.
 
-The exact Bot ID is project-specific. It can also be resolved by this identifier:
+The exact Bot ID is project-specific. The Medplum SDK can resolve it by identifier:
+
+```ts
+const encounter = await medplum.readResource('Encounter', encounterId);
+const outcome = await medplum.executeBot(
+  {
+    system: 'https://www.medplum.com/integrations/bot-identifier',
+    value: 'health-gorilla-labs/write-back-hie',
+  },
+  encounter
+);
+```
+
+<details>
+<summary>FHIR REST example</summary>
+
+The Bot identifier is:
 
 ```text
 https://www.medplum.com/integrations/bot-identifier|health-gorilla-labs/write-back-hie
@@ -96,6 +118,14 @@ Replace the placeholder with an encounter class code verified by your clinical o
 Use values from your saved encounter in production; the example is illustrative and not a clinical
 coding recommendation.
 
+</details>
+
+:::tip[Repeat runs update identified resources]
+Share-back conditionally updates resources using their Medplum source references, so a repeat run does
+not accumulate duplicate copies of those resources. Each run still creates a new `Provenance` because
+each submission is a distinct event.
+:::
+
 ## Validation and exclusions
 
 Share-back validates each resource before building the transaction. A resource missing a FHIR element
@@ -111,9 +141,12 @@ Additional limits protect the transaction:
   be downloaded and is no larger than 5 MB.
 - A document with no usable attachment content is excluded.
 
+:::info[What the outcome tells you]
 The returned [`OperationOutcome`](/docs/api/fhir/resources/operationoutcome) summarizes the number of
-entries sent, references rewritten, and resources excluded. Any failed entry in Health Gorilla's
+entries sent, references rewritten, and resources excluded. A successful transaction can still contain
+warnings for individual resources that were not ready to send. Any failed entry in Health Gorilla's
 transaction response is returned as an error.
+:::
 
 ## Idempotency and audit records
 
@@ -140,6 +173,7 @@ to the patient and excluded from future share-back.
 ## Related reading
 
 - [HIE overview](/docs/integration/health-information-exchange)
+- [Getting Started](/docs/integration/health-information-exchange/getting-started)
 - [Retrieve patient records](/docs/integration/health-information-exchange/retrieving-patient-records)
 - [FHIR transaction bundles](/docs/fhir-datastore/fhir-batch-requests)
 - [Binary data and attachments](/docs/fhir-datastore/binary-data)
