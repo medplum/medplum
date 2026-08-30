@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "5.1.31",
+  "version": "5.1.36",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -28,7 +28,7 @@
   },
   "overrides": {
     "@metriport/shared": {
-      "@medplum/core": "5.1.31"
+      "@medplum/core": "5.1.36"
     },
     "@microsoft/api-documenter": {
       "js-yaml": "4.3.1"

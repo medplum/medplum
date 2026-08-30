@@ -286,6 +286,48 @@ describe('SuperAdminPage', () => {
     startAsyncRequestSpy.mockRestore();
   });
 
+  test('Reindex database', async () => {
+    setup();
+    const startAsyncRequestSpy = vi.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({
+      resourceType: 'AsyncJob',
+      id: '123',
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Target name 1 *'), { target: { value: 'Observation' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Add Target' }));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Target type 2'), { target: { value: 'index' } });
+      fireEvent.change(screen.getByLabelText('Target name 2 *'), { target: { value: 'Patient_name_idx' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reindex Database' }));
+    });
+
+    expect(screen.getByText('View AsyncJob')).toBeInTheDocument();
+    expect(startAsyncRequestSpy).toHaveBeenCalledWith('admin/super/reindex-database', {
+      method: 'POST',
+      pollStatusOnAccepted: true,
+      body: JSON.stringify({ targets: [{ table: 'Observation' }, { index: 'Patient_name_idx' }] }),
+    });
+    startAsyncRequestSpy.mockRestore();
+  });
+
+  test('Reindex database limits targets to 10', async () => {
+    setup();
+    const addTargetButton = screen.getByRole('button', { name: 'Add Target' });
+
+    await act(async () => {
+      for (let i = 1; i < 10; i++) {
+        fireEvent.click(addTargetButton);
+      }
+    });
+
+    expect(screen.getAllByLabelText(/Target type \d+/)).toHaveLength(10);
+    expect(addTargetButton).toBeDisabled();
+  });
+
   test('Reload cron resources', async () => {
     setup();
 
