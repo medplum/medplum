@@ -141,9 +141,17 @@ const integerKeys = new Set([
   'fhirSearchMinLimit',
 
   'database.maxConnections',
+  'database.minConnections',
+  'database.maxConnectionUses',
+  'database.idleTimeoutMs',
+  'database.connectionTimeoutMs',
   'database.port',
   'database.queryTimeout',
   'readonlyDatabase.maxConnections',
+  'readonlyDatabase.minConnections',
+  'readonlyDatabase.maxConnectionUses',
+  'readonlyDatabase.idleTimeoutMs',
+  'readonlyDatabase.connectionTimeoutMs',
   'readonlyDatabase.port',
   'readonlyDatabase.queryTimeout',
 

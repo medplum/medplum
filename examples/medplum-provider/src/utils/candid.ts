@@ -20,6 +20,35 @@ export const CANDID_GET_ENCOUNTER_BOT_IDENTIFIER = {
   value: 'get-encounter',
 };
 
+// Bot that searches the Candid Health payer directory.
+export const CANDID_GET_PAYERS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-get-payers',
+};
+
+// Identifier systems the Candid bots use to resolve a payer Organization back to the Candid
+// directory (see medplum-ee payer-lookup.ts). The Candid UUID is the preferred, unambiguous key.
+export const CANDID_PAYER_UUID_SYSTEM = 'https://www.joincandidhealth.com/payer-uuid';
+export const CHC_PAYER_ID_SYSTEM = 'https://www.joincandidhealth.com/chc-payerid';
+// Legacy system stamped by imports before the bot moved to Candid's payers.v4 API; kept only as
+// a display fallback for previously imported payers.
+export const CMS_PAYER_ID_SYSTEM = 'https://www.cms.gov/payer-id';
+
+// Capability-specific payer ID systems stamped by the candid-get-payers bot (Candid payers.v4).
+export const CANDID_ELIGIBILITY_PAYER_ID_SYSTEM = 'https://www.joincandidhealth.com/eligibility-payerid';
+export const CANDID_REMITTANCE_PAYER_ID_SYSTEM = 'https://www.joincandidhealth.com/remittance-payerid';
+
+// Coding system for Candid's payer category (e.g. MEDICARE, BCBS), stamped in Organization.type.
+export const CANDID_PAYER_CATEGORY_SYSTEM = 'https://www.joincandidhealth.com/payer-category';
+
+// Extensions carrying the best support state per capability across Candid's clearinghouses.
+export const CANDID_ELIGIBILITY_SUPPORT_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/eligibility-support';
+export const CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/professional-claims-support';
+export const CANDID_REMITTANCE_SUPPORT_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/remittance-support';
+
 // Identifier the send-to-candid bot writes onto the ClaimResponse; its presence marks the
 // claim as a Candid claim.
 export const CANDID_ENCOUNTER_ID_SYSTEM = 'https://candidhealth.com/encounter-id';

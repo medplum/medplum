@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Bot, Bundle, Coverage, CoverageEligibilityRequest } from '@medplum/fhirtypes';
+import type { Bundle, Coverage, CoverageEligibilityRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -51,12 +51,6 @@ const mockRequest: WithId<CoverageEligibilityRequest> = {
   patient: { reference: 'Patient/patient-123' },
   insurer: { display: 'United Healthcare', reference: 'Organization/org-1' },
   insurance: [{ focal: true, coverage: { reference: 'Coverage/coverage-456' } }],
-};
-
-const mockBot: WithId<Bot> = {
-  resourceType: 'Bot',
-  id: 'bot-1',
-  name: 'Eligibility Bot',
 };
 
 function setup(medplum: MockClient): ReturnType<typeof render> {
@@ -113,26 +107,8 @@ describe('CoveragePage', () => {
   });
 
   describe('Check Eligibility button', () => {
-    test('shows error notification when bot is not available', async () => {
-      vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
-      setup(medplum);
-
-      const button = await screen.findByRole('button', { name: 'Check Eligibility' });
-      button.click();
-
-      await waitFor(() =>
-        expect(notifications.show).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: 'To enable Insurance Eligibility please contact support.',
-          })
-        )
-      );
-    });
-
     test('shows error notification when no PractitionerRole found', async () => {
-      vi.spyOn(medplum, 'searchOne')
-        .mockResolvedValueOnce(mockBot) // Bot lookup
-        .mockResolvedValueOnce(undefined); // PractitionerRole lookup
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(undefined);
       setup(medplum);
 
       const button = await screen.findByRole('button', { name: 'Check Eligibility' });

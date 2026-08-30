@@ -30,6 +30,8 @@ When designing your analytics program, it can be useful to consider the followin
 
 A common pattern for ad-hoc reports is to first ingest FHIR resources into the data warehouse as raw JSON, and then flatten the relevant fields in a second ETL stage.
 
+Medplum Enterprise can run this synchronization for you on a schedule, writing FHIR resources to open Apache Iceberg tables that Snowflake, Amazon Athena, Amazon Redshift, and other engines read directly. See [Snowflake](/docs/analytics/snowflake) for the table layout, query patterns, and how to get set up.
+
 Analytics pipelines should use the [FHIR Bulk Data Export API](/docs/api/fhir/operations/bulk-fhir.mdx) to extract FHIR resources into a data lake. The [FHIR Datastore](/docs/fhir-datastore) supports bulk export.
 
 Analytics workflows often require de-identified or redacted data for compliance reasons. [Access Policies](/docs/access/access-policies) are common for this purpose.

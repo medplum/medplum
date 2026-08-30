@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import { vi } from 'vitest';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
+import type { PgQueryable } from './fhir/sql';
 import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import type * as MigrationDataV1 from './migrations/data/v1';
@@ -60,11 +61,7 @@ describe('markPostDeployMigrationCompleted', () => {
     await closeDatabase();
   });
 
-  async function setDataVersionState(
-    client: Pool | PoolClient,
-    dataVersion: number,
-    firstBoot: boolean
-  ): Promise<void> {
+  async function setDataVersionState(client: PgQueryable, dataVersion: number, firstBoot: boolean): Promise<void> {
     await client.query('UPDATE "DatabaseMigration" SET "dataVersion" = $1, "firstBoot" = $2 WHERE "id" = $3', [
       dataVersion,
       firstBoot,

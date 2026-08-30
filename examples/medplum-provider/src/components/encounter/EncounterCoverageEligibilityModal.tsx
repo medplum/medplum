@@ -18,10 +18,8 @@ import {
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
 import { createReference, formatDateTime, getReferenceString } from '@medplum/core';
 import type {
-  Bot,
   Coverage,
   CoverageEligibilityRequest,
   CoverageEligibilityResponse,
@@ -30,7 +28,7 @@ import type {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useResource, useSearchOne } from '@medplum/react';
-import { IconChevronDown, IconChevronUp, IconCircleOff } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { isSelfPayCoverage } from '../../utils/coverage';
@@ -50,9 +48,6 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
   const [coverages, setCoverages] = useState<Coverage[]>([]);
   const [coverageLoading, setCoverageLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [eligibilityBot] = useSearchOne('Bot', {
-    identifier: 'https://www.medplum.com/bots|eligibility',
-  });
 
   useEffect(() => {
     if (!opened || !patient?.id) {
@@ -94,7 +89,7 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
           {coverages
             .filter((c) => c.id === selectedId)
             .map((coverage) => (
-              <CoverageCard key={coverage.id} coverage={coverage} patient={patient} eligibilityBot={eligibilityBot} />
+              <CoverageCard key={coverage.id} coverage={coverage} patient={patient} />
             ))}
         </Stack>
       )}
@@ -105,11 +100,10 @@ export function EncounterCoverageEligibilityModal(props: EncounterCoverageEligib
 interface CoverageCardProps {
   coverage: Coverage;
   patient: Reference<Patient> | Patient;
-  eligibilityBot: Bot | undefined;
 }
 
 function CoverageCard(props: CoverageCardProps): JSX.Element {
-  const { coverage, patient: patientRef, eligibilityBot } = props;
+  const { coverage, patient: patientRef } = props;
   const patient = useResource(patientRef);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
@@ -158,7 +152,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
   }, [fetchLatestRequestAndResponse]);
 
   const handleCheckEligibility = async (): Promise<void> => {
-    if (!eligibilityBot || !practitionerRole || !coverage || !patient) {
+    if (!practitionerRole || !coverage || !patient) {
       return;
     }
     setCheckingEligibility(true);
@@ -176,27 +170,13 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
       const savedRequest = await medplum.createResource(requestBody);
       setLatestRequest(savedRequest);
       try {
-        await medplum.executeBot(eligibilityBot.id as string, savedRequest, 'application/fhir+json');
+        const response = await medplum.post<CoverageEligibilityResponse>(
+          medplum.fhirUrl('CoverageEligibilityRequest', savedRequest.id, '$submit')
+        );
+        setEligibilityResponse(response);
       } catch (err) {
-        let errorMessage: string | undefined;
-        try {
-          const parsed = JSON.parse((err as Error).message);
-          errorMessage = parsed?.errorMessage;
-          notifications.show({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: errorMessage,
-          });
-        } catch {
-          showErrorNotification(err);
-        }
+        showErrorNotification(err);
       }
-      const responses = await medplum.searchResources(
-        'CoverageEligibilityResponse',
-        new URLSearchParams({ request: getReferenceString(savedRequest), _count: '1' })
-      );
-      setEligibilityResponse(responses[0]);
     } finally {
       setCheckingEligibility(false);
     }
@@ -212,21 +192,9 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
           </Text>
         </Box>
         <Group gap="xs" style={{ flexShrink: 0 }}>
-          {eligibilityBot ? (
-            <Button
-              size="xs"
-              variant="light"
-              color="blue"
-              loading={checkingEligibility}
-              onClick={handleCheckEligibility}
-            >
-              Check Eligibility
-            </Button>
-          ) : (
-            <Button size="xs" variant="light" color="gray">
-              Contact Support
-            </Button>
-          )}
+          <Button size="xs" variant="light" color="blue" loading={checkingEligibility} onClick={handleCheckEligibility}>
+            Check Eligibility
+          </Button>
           <Badge color={getStatusColor(coverage.status)} variant="light">
             {capitalize(coverage.status ?? 'unknown')}
           </Badge>
@@ -265,9 +233,7 @@ function CoverageCard(props: CoverageCardProps): JSX.Element {
           <Box pt="md">
             {!benefitsLoading && !eligibilityResponse && (
               <Text size="sm" c="dimmed">
-                {eligibilityBot
-                  ? 'No eligibility check found. Click "Check Eligibility" to run a check.'
-                  : 'No eligibility check found. Contact support to enable eligibility checks.'}
+                No eligibility check found. Click "Check Eligibility" to run a check.
               </Text>
             )}
             {!benefitsLoading && eligibilityResponse?.outcome === 'error' && (

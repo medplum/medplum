@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Client, Pool } from 'pg';
+import type { PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import type { PgQueryable } from '../fhir/sql';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
 import {
   addCheckConstraint,
@@ -13,6 +14,7 @@ import {
   idempotentCreateIndex,
   nonBlockingAddCheckConstraint,
   nonBlockingAlterColumnNotNull,
+  reindexConcurrently,
 } from './migrate-functions';
 import type { MigrationActionResult } from './types';
 
@@ -22,7 +24,7 @@ interface IndexInfo {
   is_live: boolean;
   index_definition: string;
 }
-async function getTableIndexes(client: Client | Pool, tableName: string): Promise<IndexInfo[]> {
+async function getTableIndexes(client: PgQueryable, tableName: string): Promise<IndexInfo[]> {
   return client
     .query<IndexInfo>(
       `SELECT
@@ -49,15 +51,17 @@ async function getTableIndexes(client: Client | Pool, tableName: string): Promis
 
 describe('migrate-functions', () => {
   let config: MedplumServerConfig;
-  let client: Pool;
+  let client: PoolClient;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initDatabase(config);
-    client = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    client = await pool.connect();
   });
 
   afterAll(async () => {
+    client.release();
     await closeDatabase();
   });
 
@@ -68,6 +72,54 @@ describe('migrate-functions', () => {
     // Create a test table
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER NOT NULL, name TEXT)`);
+  });
+
+  describe('reindexConcurrently', () => {
+    test('reindexes an index', async () => {
+      const indexName = 'Test_Table_id_idx';
+      await client.query(`CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapedTableName} (id)`);
+      const results: MigrationActionResult[] = [];
+
+      await reindexConcurrently(client, results, 'INDEX', indexName);
+
+      expect(results).toEqual([
+        {
+          name: `REINDEX (VERBOSE) INDEX CONCURRENTLY ${escapeIdentifier(indexName)}`,
+          durationMs: expect.any(Number),
+          notices: expect.stringContaining('was reindexed'),
+        },
+      ]);
+    });
+
+    test('reindexes a table', async () => {
+      const results: MigrationActionResult[] = [];
+
+      await reindexConcurrently(client, results, 'TABLE', tableName);
+
+      expect(results).toEqual([
+        {
+          name: `REINDEX (VERBOSE) TABLE CONCURRENTLY ${escapedTableName}`,
+          durationMs: expect.any(Number),
+          notices: expect.any(String),
+        },
+      ]);
+    });
+
+    test('does not execute an invalid identifier', async () => {
+      const results: MigrationActionResult[] = [];
+      await expect(
+        reindexConcurrently(client, results, 'INDEX', 'Test_Table_id_idx; DROP TABLE Patient')
+      ).rejects.toThrow('Invalid PostgreSQL identifier');
+      expect(results).toHaveLength(0);
+    });
+
+    test('does not execute an invalid target', async () => {
+      const results: MigrationActionResult[] = [];
+      await expect(reindexConcurrently(client, results, 'SCHEMA' as 'INDEX', 'public')).rejects.toThrow(
+        'Invalid REINDEX target'
+      );
+      expect(results).toHaveLength(0);
+    });
   });
 
   describe('idempotentCreateIndex', () => {

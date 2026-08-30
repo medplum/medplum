@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Appointment,
@@ -311,15 +310,13 @@ describe('encounter utils', () => {
 
   describe('updateEncounterStatus', () => {
     test('updates encounter period and appointment status', async () => {
-      const encounter: WithId<Encounter> = {
+      const encounter = await medplum.createResource<Encounter>({
         resourceType: 'Encounter',
-        id: 'enc-1',
         status: 'planned',
         class: classification,
-      };
-      const appointment: WithId<Appointment> = {
+      });
+      const appointment = await medplum.createResource<Appointment>({
         resourceType: 'Appointment',
-        id: 'appt-1',
         status: 'booked',
         participant: [
           {
@@ -327,34 +324,35 @@ describe('encounter utils', () => {
             status: 'accepted',
           },
         ],
-      };
-      const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource) => resource as any);
+      });
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
 
       const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, 'in-progress');
 
-      expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ resourceType: 'Appointment', status: 'checked-in' })
-      );
-      expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ resourceType: 'Encounter', status: 'in-progress' })
-      );
+      expect(patchSpy).toHaveBeenCalledWith('Appointment', appointment.id, [
+        { op: 'replace', path: '/status', value: 'checked-in' },
+      ]);
+      expect(updatedEncounter.status).toBe('in-progress');
       expect(updatedEncounter.period?.start).toBeDefined();
 
       // Move to finished state
-      await updateEncounterStatus(medplum, updatedEncounter, appointment, 'finished');
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'fulfilled' }));
+      const finishedEncounter = await updateEncounterStatus(medplum, updatedEncounter, appointment, 'finished');
+      expect(patchSpy).toHaveBeenCalledWith('Appointment', appointment.id, [
+        { op: 'replace', path: '/status', value: 'fulfilled' },
+      ]);
+      expect(finishedEncounter.status).toBe('finished');
+      expect(finishedEncounter.period?.start).toBe(updatedEncounter.period?.start);
+      expect(finishedEncounter.period?.end).toBeDefined();
     });
 
     test('updates appointment status for cancellation', async () => {
-      const encounter: WithId<Encounter> = {
+      const encounter = await medplum.createResource<Encounter>({
         resourceType: 'Encounter',
-        id: 'enc-2',
         status: 'in-progress',
         class: classification,
-      };
-      const appointment: WithId<Appointment> = {
+      });
+      const appointment = await medplum.createResource<Appointment>({
         resourceType: 'Appointment',
-        id: 'appt-2',
         status: 'booked',
         participant: [
           {
@@ -362,12 +360,15 @@ describe('encounter utils', () => {
             status: 'accepted',
           },
         ],
-      };
-      const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource) => resource as any);
+      });
+      const patchSpy = vi.spyOn(medplum, 'patchResource');
 
-      await updateEncounterStatus(medplum, encounter, appointment, 'cancelled');
+      const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, 'cancelled');
 
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
+      expect(patchSpy).toHaveBeenCalledWith('Appointment', appointment.id, [
+        { op: 'replace', path: '/status', value: 'cancelled' },
+      ]);
+      expect(updatedEncounter.status).toBe('cancelled');
     });
   });
 });

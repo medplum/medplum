@@ -3,3 +3,24 @@
 .timeGrid {
   row-gap: var(--mantine-spacing-xs);
 }
+
+/* The form, and beside it the times once the search is open. Wraps rather than
+   scrolling sideways, so a narrow host stacks the two instead of clipping one. */
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-lg);
+  align-items: flex-start;
+}
+
+.form {
+  flex: 1 1 300px;
+  min-width: 0;
+  max-width: 420px;
+}
+
+/* Only present while the time search is open, which is what widens the panel. */
+.results {
+  flex: 1 1 380px;
+  min-width: 0;
+}

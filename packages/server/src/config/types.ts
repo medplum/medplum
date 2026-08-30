@@ -293,8 +293,13 @@ export interface MedplumDatabaseConfig {
    */
   disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
+  /** Minimum number of clients the pool retains and _not_ destroy via idleTimeoutMs. Default is 0 */
   minConnections?: number;
-  idleTimeoutMs?: number;
+  /** Maximum times a pool client can be used before being replaced. Active connection pruner. Default is Infinity */
+  maxConnectionUses?: number;
+  /** Duration a client must sit idle before being disconnected. Idle connection pruner. Default is 10,000ms */
+  idleTimeoutMs?: number; // idle pruner
+  /** Duration to wait before timing out when connecting a new client. Defaults to no timeout */
   connectionTimeoutMs?: number;
   disableConnectionConfiguration?: boolean;
 }

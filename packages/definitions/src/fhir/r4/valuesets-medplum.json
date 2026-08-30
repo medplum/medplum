@@ -180,6 +180,11 @@
             "definition": "AWS Textract"
           },
           {
+            "code": "billing",
+            "display": "Billing",
+            "definition": "Billing"
+          },
+          {
             "code": "bots",
             "display": "Bots",
             "definition": "Bots"

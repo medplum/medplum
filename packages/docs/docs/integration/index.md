@@ -135,7 +135,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.snowflake.com/">Snowflake</a></td>
       <td>Data warehouse</td>
       <td>Synchronize data to datawarehouse</td>
-      <td>Documentation coming soon</td>
+      <td><a href="/docs/analytics/snowflake">Snowflake sync</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Artificial Intelligence</strong></td>

@@ -12,10 +12,10 @@ import { act, render, screen } from '../test-utils/render';
 describe('DatabaseToolsPage', () => {
   let medplum: MockClient;
 
-  function setup(): void {
+  function setup(path = '/admin/super/db'): void {
     render(
       <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={['/admin/super/db']} initialIndex={0}>
+        <MemoryRouter initialEntries={[path]} initialIndex={0}>
           <MantineProvider>
             <Notifications />
             <AppRoutes />
@@ -54,5 +54,15 @@ describe('DatabaseToolsPage', () => {
   test('Array Column Padding tab exists', async () => {
     setup();
     expect(screen.getByRole('tab', { name: 'Array Column Padding' })).toBeInTheDocument();
+  });
+
+  test('Index Bloat tab exists', async () => {
+    setup();
+    expect(screen.getByRole('tab', { name: 'Index Bloat' })).toBeInTheDocument();
+  });
+
+  test('Index Bloat tab route', async () => {
+    setup();
+    expect(screen.getByRole('link', { name: 'Index Bloat' })).toHaveAttribute('href', '/admin/super/db/index-bloat');
   });
 });

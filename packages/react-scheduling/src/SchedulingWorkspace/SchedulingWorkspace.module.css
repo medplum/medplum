@@ -1,0 +1,37 @@
+/* SchedulingWorkspace.module.css */
+
+.root {
+  display: flex;
+  align-items: stretch;
+  gap: var(--mantine-spacing-md);
+  height: 100%;
+  width: 100%;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  width: 300px;
+  overflow-y: auto;
+}
+
+.calendar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* The booking form, only present while a day is being booked. */
+.bookingPane {
+  flex-shrink: 0;
+  width: 320px;
+  overflow-y: auto;
+}
+
+.bookingPaneWide {
+  width: 760px;
+}
+
+.alert {
+  margin-bottom: var(--mantine-spacing-xs);
+}

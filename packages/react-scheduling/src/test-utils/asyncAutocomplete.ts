@@ -19,6 +19,19 @@ export async function typeInAutocomplete(input: HTMLElement, text: string): Prom
 }
 
 /**
+ * Opens an autocomplete without typing, which searches on an empty query — the list a
+ * user sees on clicking the field.
+ * @param input - The autocomplete input element.
+ */
+export async function openAutocomplete(input: HTMLElement): Promise<void> {
+  await act(async () => {
+    fireEvent.focus(input);
+  });
+
+  await settleAutocomplete();
+}
+
+/**
  * Registers the fake timers an autocomplete needs, and drains them afterwards so a
  * pending debounce cannot fire into the next test.
  */

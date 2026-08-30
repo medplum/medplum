@@ -200,7 +200,7 @@ describe('Post-Deploy Migration Worker', () => {
     const executeMigrationActionsSpy = vi
       .spyOn(migrateModule, 'executeMigrationActions')
       .mockImplementation(async (_client, results) => {
-        results.push({ name: 'some-action', durationMs: 10 });
+        results.push({ name: 'some-action', durationMs: 10, notices: 'index "some_index" was reindexed' });
       });
 
     const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
@@ -246,7 +246,13 @@ describe('Post-Deploy Migration Worker', () => {
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
     expect(updatedAsyncJob.output?.parameter).toEqual([
-      { name: 'some-action', part: [{ name: 'durationMs', valueInteger: 10 }] },
+      {
+        name: 'some-action',
+        part: [
+          { name: 'durationMs', valueInteger: 10 },
+          { name: 'notices', valueString: 'index "some_index" was reindexed' },
+        ],
+      },
     ]);
 
     getPostDeployMigrationSpy.mockRestore();

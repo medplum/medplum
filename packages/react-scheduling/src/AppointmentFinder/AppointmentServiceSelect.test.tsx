@@ -4,10 +4,18 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
-import { MainClinic, SatelliteClinic, SchedulingFixtures, UltrasoundImagingService } from '../stories/scheduling';
+import type { MockInstance } from 'vitest';
+import {
+  buildSchedulableService,
+  MainClinic,
+  SatelliteClinic,
+  SchedulingFixtures,
+  UltrasoundImagingService,
+} from '../stories/scheduling';
 import {
   clickAutocompleteOption,
   installAutocompleteTimers,
+  openAutocomplete,
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
@@ -17,12 +25,42 @@ import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 
 const medplum = new MockClient();
 
-/** A second schedulable visit type, for reassigning the field to. */
+/**
+ * A second schedulable visit type at the main clinic, for reassigning the field to.
+ * Named to sort before the location-less one, so the merged list can interleave.
+ */
 const BARIATRIC_SURGERY: WithId<HealthcareService> = {
   ...UltrasoundImagingService,
   id: 'bariatric-surgery',
   name: 'Bariatric Surgery',
 };
+
+/** Held at the other site only. */
+const SATELLITE_ULTRASOUND = buildSchedulableService({
+  id: 'satellite-ultrasound',
+  name: 'Satellite Ultrasound',
+  category: 'Imaging',
+  durationMinutes: 45,
+  alignmentMinutes: 15,
+  locationIds: ['satellite-clinic'],
+});
+
+/** Named on no location and configured for nothing, so neither route may offer it. */
+const TELEHEALTH_CHAT: WithId<HealthcareService> = {
+  resourceType: 'HealthcareService',
+  id: 'telehealth-chat',
+  name: 'Telehealth Chat',
+};
+
+/** Held at a room inside the main clinic, rather than at the clinic itself. */
+const EXAM_ROOM_ULTRASOUND = buildSchedulableService({
+  id: 'exam-room-ultrasound',
+  name: 'Exam Room Ultrasound',
+  category: 'Imaging',
+  durationMinutes: 60,
+  alignmentMinutes: 15,
+  locationIds: ['exam-room-a'],
+});
 
 function setup(props: Partial<AppointmentServiceSelectProps> = {}, key?: string): RenderResult {
   return renderWithMedplum(<AppointmentServiceSelect key={key} onChange={vi.fn()} {...props} />, medplum);
@@ -32,9 +70,27 @@ function searchBox(): HTMLElement {
   return screen.getByPlaceholderText('Search visit types');
 }
 
+/**
+ * The criteria each `HealthcareService` request carried, in the order issued.
+ * @param searchResources - The spy on the client's search.
+ * @returns One entry per request issued.
+ */
+function serviceSearches(searchResources: MockInstance): URLSearchParams[] {
+  return searchResources.mock.calls
+    .filter((call) => call[0] === 'HealthcareService')
+    .map((call) => call[1] as URLSearchParams);
+}
+
 describe('AppointmentServiceSelect', () => {
   beforeAll(async () => {
-    for (const resource of SchedulingFixtures) {
+    const fixtures = [
+      ...SchedulingFixtures,
+      BARIATRIC_SURGERY,
+      SATELLITE_ULTRASOUND,
+      EXAM_ROOM_ULTRASOUND,
+      TELEHEALTH_CHAT,
+    ];
+    for (const resource of fixtures) {
       await medplum.createResource(resource);
     }
   });
@@ -76,25 +132,20 @@ describe('AppointmentServiceSelect', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ id: 'ultrasound-imaging' }));
   });
 
-  test('Leaves the ordering to the server, so the filter never reshuffles the list', async () => {
-    const searchResources = vi.spyOn(medplum, 'searchResources');
-    setup();
-
-    await typeInAutocomplete(searchBox(), 'Ultrasound');
-
-    const serviceSearch = searchResources.mock.calls.find((call) => call[0] === 'HealthcareService');
-    expect((serviceSearch?.[1] as URLSearchParams).get('_sort')).toBe('name');
-    searchResources.mockRestore();
-  });
-
   test('Narrows the services to a chosen location', async () => {
     const searchResources = vi.spyOn(medplum, 'searchResources');
     setup({ location: MainClinic });
 
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
-    const serviceSearch = searchResources.mock.calls.find((call) => call[0] === 'HealthcareService');
-    expect((serviceSearch?.[1] as URLSearchParams).get('location')).toBe('Location/main-clinic');
+    const searches = serviceSearches(searchResources);
+    expect(searches).toHaveLength(2);
+    expect(searches[0].get('location')).toBe('Location/main-clinic');
+    expect(searches[1].get('location:missing')).toBe('true');
+    expect(searches.map((params) => [params.get('name'), params.get('_count'), params.get('_sort')])).toEqual([
+      ['Ultrasound', '25', 'name'],
+      ['Ultrasound', '25', 'name'],
+    ]);
     expect(screen.getByText(/Showing visit types offered at/)).toBeInTheDocument();
     searchResources.mockRestore();
   });
@@ -107,10 +158,102 @@ describe('AppointmentServiceSelect', () => {
 
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
-    const serviceSearch = searchResources.mock.calls.find((call) => call[0] === 'HealthcareService');
-    expect((serviceSearch?.[1] as URLSearchParams).get('location')).toBe('Location/main-clinic');
-    expect(await screen.findByText(`Showing visit types offered at ${MainClinic.name}.`)).toBeInTheDocument();
+    expect(serviceSearches(searchResources)[0].get('location')).toBe('Location/main-clinic');
+    expect(
+      await screen.findByText(`Showing visit types offered at ${MainClinic.name}, plus those not tied to a site.`)
+    ).toBeInTheDocument();
     searchResources.mockRestore();
+  });
+
+  describe('Offering the visit types a chosen site can hold', () => {
+    test('Offers a visit type that names the chosen site', async () => {
+      setup({ location: MainClinic });
+
+      await typeInAutocomplete(searchBox(), 'Ultrasound');
+
+      expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
+    });
+
+    test('Offers a visit type that names no location, at every site in turn', async () => {
+      const { rerender } = setup({ location: MainClinic }, 'main');
+      await typeInAutocomplete(searchBox(), 'Telehealth');
+      expect(await screen.findByText('Telehealth Consult')).toBeInTheDocument();
+
+      rerender(<AppointmentServiceSelect key="satellite" onChange={vi.fn()} location={SatelliteClinic} />);
+      await typeInAutocomplete(searchBox(), 'Telehealth');
+
+      expect(await screen.findByText('Telehealth Consult')).toBeInTheDocument();
+    });
+
+    test('Leaves out a visit type held only somewhere else', async () => {
+      setup({ location: MainClinic });
+
+      await typeInAutocomplete(searchBox(), 'Ultrasound');
+
+      await screen.findByText('Ultrasound Imaging');
+      expect(screen.queryByText('Satellite Ultrasound')).not.toBeInTheDocument();
+    });
+
+    test('Leaves out a visit type held at a place inside the chosen site', async () => {
+      setup({ location: MainClinic });
+
+      await typeInAutocomplete(searchBox(), 'Ultrasound');
+
+      // No `partOf` walk: a visit type is tested against the site it names and nothing
+      // below it.
+      await screen.findByText('Ultrasound Imaging');
+      expect(screen.queryByText('Exam Room Ultrasound')).not.toBeInTheDocument();
+    });
+
+    test('Narrows nothing, and asks once, when no site is chosen', async () => {
+      const searchResources = vi.spyOn(medplum, 'searchResources');
+      setup();
+
+      await typeInAutocomplete(searchBox(), 'Ultrasound');
+
+      const searches = serviceSearches(searchResources);
+      expect(searches).toHaveLength(1);
+      expect(searches[0].get('location')).toBeNull();
+      expect(searches[0].get('location:missing')).toBeNull();
+      expect(await screen.findByText('Satellite Ultrasound')).toBeInTheDocument();
+      expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+      searchResources.mockRestore();
+    });
+
+    test('Finds nothing rather than falling back when a site can hold nothing', async () => {
+      setup({ location: SatelliteClinic });
+
+      await typeInAutocomplete(searchBox(), 'Imaging');
+
+      // Every visit type matching "Imaging" is held elsewhere, and the location-less one
+      // is named something else, so there is nothing left to offer.
+      await settleAutocomplete();
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+      expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
+    });
+
+    test('Reads as one list in name order, not two lists end to end', async () => {
+      setup({ location: MainClinic });
+
+      await openAutocomplete(searchBox());
+
+      // The location-less visit type lands between the two sited ones, which appending
+      // one search to the other could not produce.
+      expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+        expect.stringMatching(/^Bariatric Surgery/),
+        expect.stringMatching(/^Telehealth Consult/),
+        expect.stringMatching(/^Ultrasound Imaging/),
+      ]);
+    });
+
+    test('Does not smuggle in an unschedulable visit type by the location-less route', async () => {
+      setup({ location: MainClinic });
+
+      await typeInAutocomplete(searchBox(), 'Telehealth');
+
+      expect(await screen.findByText('Telehealth Consult')).toBeInTheDocument();
+      expect(screen.queryByText('Telehealth Chat')).not.toBeInTheDocument();
+    });
   });
 
   test('Starts on the visit type it was given', async () => {

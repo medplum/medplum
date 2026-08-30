@@ -5000,19 +5000,19 @@ describe('App', () => {
     expect(app.hl7Clients.size).toBe(1);
     expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
 
-    // Stop the HL7 server — this closes connections from the server side
-    await hl7Server.stop();
-
-    // Wait for the close to propagate (client removed from pool, but pool stays)
-    await sleep(200);
+    // Stop the HL7 server — this closes connections from the server side. Force the
+    // drain: the agent holds a keepAlive connection open, so `close()` would otherwise
+    // block on the 10s default and leave the rest of the test a thin slice of its budget.
+    await hl7Server.stop({ forceDrainTimeoutMs: 0 });
 
     // Pool should STILL be in hl7Clients — it is never removed by client errors
     expect(app.hl7Clients.size).toBe(1);
     expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
 
-    // The pool should have no clients (they were removed when the connection closed)
+    // The pool sheds its clients as the closes land — waited on rather than slept off,
+    // so a shed that never happens names itself instead of failing a later assertion.
     const pool = app.hl7Clients.get('mllp://localhost:57110') as Hl7ClientPool;
-    expect(pool.size()).toBe(0);
+    await waitFor(() => pool.size() === 0, 2000, 'pool sheds its clients after the server closes');
 
     // Restart the HL7 server
     const hl7Server2 = new Hl7Server((conn) => {

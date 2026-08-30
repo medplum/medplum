@@ -6,17 +6,17 @@ import { createReference } from '@medplum/core';
 import type { Patient, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import type { DateTimeRange } from '@medplum/react-scheduling';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { Range } from '../../types/scheduling';
 import { CreateVisit } from './CreateVisit';
 
 describe('CreateVisit', () => {
   let medplum: MockClient;
   let mockPatient: Patient;
-  let range: Range;
+  let range: DateTimeRange;
 
   beforeEach(async () => {
     medplum = new MockClient();
@@ -43,7 +43,7 @@ describe('CreateVisit', () => {
     });
   });
 
-  const setup = (appointmentSlot?: Range, schedule?: Schedule): ReturnType<typeof render> => {
+  const setup = (appointmentSlot?: DateTimeRange, schedule?: Schedule): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -166,7 +166,7 @@ describe('CreateVisit', () => {
         expect(screen.getByText(/Jan.*15.*2024/i)).toBeInTheDocument();
       });
 
-      const newSlot: Range = {
+      const newSlot: DateTimeRange = {
         start: new Date('2024-02-20T14:00:00Z'),
         end: new Date('2024-02-20T14:30:00Z'),
       };
