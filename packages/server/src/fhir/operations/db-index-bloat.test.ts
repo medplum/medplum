@@ -5,7 +5,6 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { DatabaseMode, getDatabasePool } from '../../database';
 import { initTestAuth } from '../../test.setup';
 import type { BtreeIndexStatsRow, GinIndexStatsRow } from './db-index-bloat';
 import { calculateBtreeBloat, calculateGinDensity } from './db-index-bloat';
@@ -16,8 +15,6 @@ describe('$db-index-bloat', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    const client = getDatabasePool(DatabaseMode.WRITER);
-    await client.query('CREATE EXTENSION IF NOT EXISTS pgstattuple');
   });
 
   afterAll(async () => {
@@ -39,6 +36,16 @@ describe('$db-index-bloat', () => {
     expect(
       indexes.some((index) => index.part?.some((part) => part.name === 'indexType' && part.valueCode === 'gin'))
     ).toBe(true);
+    const btreeIndex = indexes.find((index) =>
+      index.part?.some((part) => part.name === 'indexType' && part.valueCode === 'btree')
+    );
+    expect(btreeIndex?.part).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'analysisMethod', valueCode: 'catalog-estimate' }),
+        expect.objectContaining({ name: 'estimatedBloatSize' }),
+        expect.objectContaining({ name: 'bloatPercent' }),
+      ])
+    );
   });
 
   test('Filters by table name', async () => {
@@ -88,26 +95,21 @@ describe('Index bloat calculations', () => {
     tableName: 'Observation',
     indexName: 'Observation_test_idx',
     indexSize: '1000',
-    blockSize: '100',
   };
 
-  test('Calculates B-tree bloat from density and unused pages', () => {
+  test('Calculates B-tree bloat from the catalog estimate', () => {
     const result = calculateBtreeBloat({
       ...base,
       fillFactor: 90,
-      leafPages: '8',
-      emptyPages: '1',
-      deletedPages: '1',
-      avgLeafDensity: 45,
-      leafFragmentation: 12.5,
+      estimatedBloatSize: '600',
     } satisfies BtreeIndexStatsRow);
 
     expect(result).toMatchObject({
       indexType: 'btree',
+      analysisMethod: 'catalog-estimate',
       estimatedBloatSize: 600,
       bloatPercent: 60,
       fillFactor: 90,
-      avgLeafDensity: 45,
     });
   });
 
