@@ -333,6 +333,7 @@ describe('Database migrations', () => {
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[2]).toEqual({ deduplication: { id: 'v1' } });
       }));
 
     test('No pending data migration', () =>
@@ -842,6 +843,7 @@ describe('Database migrations', () => {
             postDeploy: [],
           },
         });
+        expect(queueAddSpy.mock.calls[0][2]).toBeUndefined();
 
         expect(res1).toHaveStatus(202);
         expect(res1.headers['content-location']).toBeDefined();
