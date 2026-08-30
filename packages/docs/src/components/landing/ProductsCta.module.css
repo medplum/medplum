@@ -68,45 +68,6 @@
 }
 
 /* Primary dropdown trigger (passed to BuildDropdown) + secondary link share one shape. */
-.startButton,
-.whiteButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--landing-btn-gap);
-  font-family: var(--landing-font-display);
-  font-weight: var(--landing-btn-weight);
-  font-size: var(--landing-btn-size);
-  padding: var(--landing-btn-padding);
-  border-radius: var(--landing-btn-radius);
-  border: none;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--landing-transition);
-  text-align: center;
-  justify-content: center;
-}
-
-.startButton {
-  background: var(--oc-grape-8);
-  color: #fff;
-}
-
-.startButton:hover {
-  background: var(--oc-grape-9);
-  color: #fff;
-}
-
-.whiteButton {
-  background: #fff;
-  color: var(--landing-color-heading);
-  box-shadow: var(--landing-shadow-cta-white);
-}
-
-.whiteButton:hover {
-  background: #fff;
-  color: var(--oc-grape-8);
-  text-decoration: none;
-}
 
 [data-theme='dark'] .section {
   background: var(--oc-gray-9);
@@ -116,16 +77,6 @@
   background: linear-gradient(to bottom, transparent, var(--oc-gray-9));
 }
 
-[data-theme='dark'] .whiteButton {
-  background: var(--landing-surface-elevated);
-  color: var(--oc-gray-2);
-  box-shadow: var(--landing-shadow-cta-white);
-}
-
-[data-theme='dark'] .whiteButton:hover {
-  background: var(--landing-surface-elevated);
-  color: var(--oc-grape-5);
-}
 
 [data-theme='dark'] .body {
   color: var(--landing-color-body-alt);

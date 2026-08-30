@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import Link from '@docusaurus/Link';
+import { LandingButton } from './LandingButton';
 import {
   IconCalendar,
   IconDatabase,
@@ -167,9 +167,12 @@ export function ProductsHero(): JSX.Element {
           <h1 className={styles.headline}>{HERO_HEADLINE}</h1>
           <p className={styles.lead}>{HERO_SUB}</p>
           <div className={styles.cta}>
-            <Link to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" className={styles.primaryButton}>
-              Book a Demo
-            </Link>
+            <LandingButton
+  to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a"
+  variant="purple"
+>
+  Book a Demo
+</LandingButton>
             <BuildDropdown />
           </div>
         </div>

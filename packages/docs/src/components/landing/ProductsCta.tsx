@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import Link from '@docusaurus/Link';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { BuildDropdown } from './BuildDropdown';
+import { LandingButton } from './LandingButton';
+import { landingButtonClass } from './landingButtonClass';
 import styles from './ProductsCta.module.css';
 import { WindowChrome } from './WindowChrome';
 
@@ -70,10 +71,11 @@ export function ProductsCta(): JSX.Element {
               model, auth, and APIs. You own the experience and we&apos;ll handle the infrastructure underneath.
             </p>
             <div className={styles.buttons}>
-              <BuildDropdown label="Start Building" triggerClassName={styles.startButton} />
-              <Link to="/case-studies" className={styles.whiteButton}>
-                View Case Studies
-              </Link>
+              <BuildDropdown label="Start Building" triggerClassName={landingButtonClass('purple')} />
+
+<LandingButton to="/case-studies" variant="white">
+  View Case Studies
+</LandingButton>
             </div>
           </div>
 

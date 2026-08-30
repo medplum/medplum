@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import Link from '@docusaurus/Link';
+// import Link from '@docusaurus/Link';
 import {
   IconApps,
   IconBrandOpenSource,
@@ -21,6 +21,7 @@ import { useNavbarScroll } from '../../hooks/useNavbarScroll';
 import { Card } from '../Card';
 import { BuildDropdown } from './BuildDropdown';
 import { Feature, FeatureGrid } from './FeatureGrid';
+import { LandingButton } from './LandingButton';
 import styles from './LandingPage.module.css';
 import { LogoScroller } from './LogoScroller';
 import { Section } from './Section';
@@ -28,7 +29,6 @@ import { SectionHeader } from './SectionHeader';
 import { SolutionAccordion } from './SolutionAccordion';
 import { StatsBento } from './StatsBento';
 import { TestimonialHeader } from './TestimonialHeader';
-
 export function LandingPage(): JSX.Element {
   useNavbarScroll();
 
@@ -45,11 +45,11 @@ export function LandingPage(): JSX.Element {
                 Start with our production-ready apps, then customize them to fit your needs.
               </p>
               <div className={styles.heroButtons}>
-                <Link to="/docs/provider" className={styles.purpleButton}>
-                  Explore the Provider App
-                </Link>
-                <BuildDropdown />
-              </div>
+  <LandingButton to="/docs/provider" variant="purple">
+    Explore the Provider App
+  </LandingButton>
+  <BuildDropdown />
+</div>
             </div>
             <div className={styles.heroImageContainer}>
               <img
@@ -248,13 +248,13 @@ export function LandingPage(): JSX.Element {
               compliant healthcare apps.
             </p>
             <div className={styles.heroButtons}>
-              <Link to="/docs" className={styles.ctaWhiteButton}>
-                See Documentation
-              </Link>
-              <Link to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" className={styles.purpleButton}>
-                Book a Demo
-              </Link>
-            </div>
+  <LandingButton to="/docs" variant="white">
+    See Documentation
+  </LandingButton>
+  <LandingButton to="https://cal.com/forms/9da7bfa2-40f5-461d-ad64-33d20bd32a7a" variant="purple">
+    Book a Demo
+  </LandingButton>
+</div>
           </div>
         </div>
       </Layout>

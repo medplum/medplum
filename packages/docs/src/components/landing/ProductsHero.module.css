@@ -73,28 +73,6 @@
   gap: var(--landing-stack-gap);
 }
 
-.primaryButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--landing-btn-gap);
-  font-family: inherit;
-  font-weight: var(--landing-btn-weight);
-  font-size: var(--landing-btn-size);
-  padding: var(--landing-btn-padding);
-  border-radius: var(--landing-btn-radius);
-  border: none;
-  background: var(--oc-grape-8);
-  color: #fff;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--landing-transition);
-}
-
-.primaryButton:hover {
-  background: var(--oc-grape-9);
-  color: #fff;
-  text-decoration: none;
-}
 
 /* ── Hero composition: browser window at centre, capability/foundation chips around it ──
    A fixed 600×500 design space, scaled fluidly. Chips are placed by percentage so they
