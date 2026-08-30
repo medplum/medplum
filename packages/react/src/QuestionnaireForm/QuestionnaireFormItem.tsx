@@ -49,9 +49,9 @@ import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomple
 const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
 const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;
 
-// See: https://www.hl7.org/fhir/extension-regex.html
+// See: https://www.hl7.org/fhir/R4/extension-regex.html
 const REGEX_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/regex`;
-// See: https://www.hl7.org/fhir/extension-entryformat.html
+// See: https://www.hl7.org/fhir/R4/extension-entryformat.html
 const ENTRY_FORMAT_EXTENSION_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/entryFormat`;
 
 export interface QuestionnaireFormItemProps {
