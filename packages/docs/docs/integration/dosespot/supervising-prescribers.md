@@ -1,18 +1,33 @@
 ---
 sidebar_position: 5
+description: Configure supervising prescribers after DoseSpot enrollment so prescribing agents can prescribe on behalf of an eligible supervising clinician.
 ---
 
 # Supervising Prescribers
 
-DoseSpot models mid-level prescribers such as nurse practitioners and physician assistants as a **Prescribing Agent Clinician** (role `5`) who prescribes on behalf of a supervising **Prescribing Clinician** (role `1`). [Prescriber enrollment](./enroll-user) creates the clinicians but does not attach the supervisor.
+Some prescribing workflows require a clinician—such as a nurse practitioner or physician assistant—to prescribe on behalf of a supervising clinician. After both clinicians are [enrolled in DoseSpot](./enroll-user), you can configure that relationship without enrolling either clinician again.
 
-After both clinicians are enrolled, use this operation to add or remove their supervising-prescriber relationship for the project's configured DoseSpot clinic:
+For example, when a newly enrolled nurse practitioner needs to prescribe under a medical director, assign the nurse practitioner as the supervisee and the medical director as the supervisor. If the medical director changes, remove the existing relationship and assign the replacement.
+
+:::tip[When to use this operation]
+Use this operation when you need to:
+
+- Complete setup for a newly enrolled clinician who requires supervision
+- Change a clinician's supervising prescriber
+- Remove a relationship that is no longer valid
+
+You do not need this workflow for independent Prescribing Clinicians or Proxy Clinicians.
+:::
+
+DoseSpot represents the supervisee as a **Prescribing Agent Clinician** (role `5`) and the supervisor as a **Prescribing Clinician** (role `1`). The relationship tells DoseSpot which supervising clinician the prescribing agent acts on behalf of for the configured clinic.
+
+Use this endpoint to add or remove the relationship:
 
 ```text
 POST /fhir/R4/Practitioner/$dosespot-set-supervising-prescriber
 ```
 
-The request identifies the supervisee and supervisor by their Medplum Practitioner IDs and optionally specifies whether to add or remove the relationship. This workflow does not apply to Proxy Clinicians (role `6`).
+The request identifies the supervisee and supervisor by their Medplum Practitioner IDs and optionally specifies whether to add or remove the relationship.
 
 :::note[Prerequisites]
 Before calling the operation:
