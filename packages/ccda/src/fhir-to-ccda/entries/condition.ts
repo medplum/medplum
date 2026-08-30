@@ -26,19 +26,12 @@ import { createTextFromExtensions, mapEffectivePeriod, mapIdentifiers } from '..
 /**
  * Maps a FHIR `Condition.clinicalStatus` to a C-CDA concern act `statusCode`.
  *
- * Per C-CDA R2.1, the Problem Concern Act statusCode is drawn from the
- * ProblemAct statusCode value set (2.16.840.1.113883.11.20.9.19:
- * active | suspended | aborted | completed) and reflects whether the concern
- * is still being tracked, not the clinical course of the problem itself.
- * A condition that is no longer active ("inactive" or "resolved") is a closed
- * concern, for which "completed" is the normal terminal state; "suspended"
- * and "aborted" describe exceptional interruptions of the tracking workflow
- * and are not implied by any FHIR condition-clinical code. Everything else
- * ("active", "recurrence", "relapse", "remission", or an absent/unrecognized
- * status) exports as an "active" concern, preserving the previous default.
- *
- * This mirrors the import direction, which maps "completed" back to
- * "resolved" when an effectiveTime high is asserted and "inactive" otherwise.
+ * The concern act statusCode (ProblemAct value set 2.16.840.1.113883.11.20.9.19) tracks the
+ * concern, not the clinical course. A no-longer-active condition is a closed concern, whose
+ * normal terminal state is "completed" — "suspended"/"aborted" are workflow interruptions and
+ * are not implied by any FHIR condition-clinical code. Must stay symmetric with the import
+ * direction, which maps "completed" to "resolved" when an effectiveTime high is asserted and
+ * "inactive" otherwise.
  *
  * @param condition - The FHIR Condition.
  * @returns The C-CDA concern act statusCode value.

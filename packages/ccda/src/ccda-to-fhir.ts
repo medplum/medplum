@@ -56,9 +56,9 @@ import {
   OID_NOTES_SECTION,
   OID_PAYERS_SECTION,
   OID_PLAN_OF_CARE_SECTION,
+  OID_PROBLEM_STATUS_OBSERVATION,
   OID_PROBLEMS_SECTION_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_ENTRIES_REQUIRED,
-  OID_PROBLEM_STATUS_OBSERVATION,
   OID_PROBLEMS_SECTION_V2_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
@@ -561,18 +561,16 @@ class CcdaToFhirConverter {
   }
 
   private mapConditionClinicalStatusCode(act: CcdaAct, observation: CcdaObservation): string {
-    // The Problem Status observation (2.16.840.1.113883.10.20.22.4.6, LOINC 33999-4),
-    // when present, is the most direct statement of the problem's clinical status,
-    // so it takes precedence over the status inferred from the Problem Concern Act.
+    // The Problem Status observation (2.16.840.1.113883.10.20.22.4.6, LOINC 33999-4) is the
+    // most direct statement of clinical status, so it takes precedence over the concern act.
     const problemStatus = this.getProblemStatusObservationValue(observation);
     if (problemStatus) {
       return problemStatus;
     }
 
-    // Otherwise, infer the clinical status from the Problem Concern Act statusCode.
-    // Per C-CDA R2.1, the concern act statusCode reflects whether the concern is still
-    // being tracked, while the nested Problem Observation statusCode is always
-    // "completed" (the state of the recording act itself), so it is not used here.
+    // Per C-CDA R2.1, the concern act statusCode tracks the concern, while the nested Problem
+    // Observation statusCode is the state of the recording act (conventionally "completed") and
+    // never the clinical status — so it is deliberately not consulted here.
     switch (act.statusCode?.['@_code']) {
       case 'active':
         return 'active';
@@ -580,7 +578,8 @@ class CcdaToFhirConverter {
       case 'aborted':
         return 'inactive';
       case 'completed':
-        // A closed concern with a known end date is resolved; otherwise inactive.
+        // Only a closed concern with an asserted end date is "resolved" — a document cannot
+        // assert abatement without a date, so completed-without-high maps to "inactive".
         return act.effectiveTime?.[0]?.high?.['@_value'] || observation.effectiveTime?.[0]?.high?.['@_value']
           ? 'resolved'
           : 'inactive';
@@ -604,9 +603,8 @@ class CcdaToFhirConverter {
   }
 
   private createConditionVerificationStatus(act: CcdaAct, observation: CcdaObservation): CodeableConcept {
-    // Per C-CDA R2.1, negationInd="true" on the Problem Observation means the problem
-    // was ruled out, i.e. the condition was refuted.
-    // The negation indicator may also appear on the wrapping Problem Concern Act.
+    // Per C-CDA R2.1, negationInd="true" means the problem was ruled out (refuted); the
+    // indicator may appear on the Problem Observation or the wrapping concern act.
     if (isNegationIndTrue(act['@_negationInd']) || isNegationIndTrue(observation['@_negationInd'])) {
       return {
         coding: [
@@ -1564,9 +1562,8 @@ class CcdaToFhirConverter {
 }
 
 /**
- * Returns true if a `negationInd` attribute value asserts negation.
- * `negationInd` is an XML Schema `xs:boolean`, so "1" is a valid true value
- * alongside "true".
+ * Returns true if a `negationInd` attribute asserts negation.
+ * `negationInd` is an XML Schema `xs:boolean`, so "1" is valid alongside "true".
  *
  * @param value - The raw negationInd attribute value.
  * @returns True if the value asserts negation.
