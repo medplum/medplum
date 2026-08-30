@@ -1,10 +1,16 @@
 ---
 sidebar_position: 4
-description: Prepare an encounter and share customer-authored clinical data back through Health Gorilla.
+description: Use the production-only HIE integration to share customer-authored clinical data through Health Gorilla.
 tags: [integration, hie]
 ---
 
 # Share Clinical Data with an HIE
+
+:::caution[Production-only integration]
+HIE share-back is available only in production at this time. Health Gorilla has not yet provided a
+sandbox workflow for end-to-end testing. Review the intended data scope before launch, then coordinate
+the first controlled production submission with Medplum before enabling automation.
+:::
 
 An HIE becomes more useful when every participant contributes the care it provides. After an encounter
 is clinically complete, Medplum can share your organization's supported chart data with Health Gorilla
@@ -14,12 +20,6 @@ Patient360-sourced data is automatically left out, preventing exchange records f
 as your own. The `write-back-hie` Bot receives a saved
 [`Encounter`](/docs/api/fhir/resources/encounter), resolves the patient and related chart data,
 validates supported resources, and submits a FHIR R4 transaction to Health Gorilla.
-
-:::caution[Sandbox validation required]
-Complete sandbox validation with Medplum and Health Gorilla before enabling automated production
-share-back. Network approval can depend on review of the clinical completeness and coding in a sample
-submission.
-:::
 
 ## What share-back sends
 
@@ -71,6 +71,12 @@ verification status of `refuted` or `entered-in-error` are also excluded.
 You can invoke the deployed Bot directly or trigger it from a reviewed workflow. For example, use a
 tightly scoped [Subscription](/docs/subscriptions) when an encounter reaches the agreed completion
 state.
+
+:::warning[Executing the Bot sends data to production]
+There is no sandbox or dry-run workflow. Review the patient-wide data scope before invoking the Bot,
+and manually coordinate the first live submission with Medplum. Enable an automated trigger only after
+the production outcome and archived request have been reviewed.
+:::
 
 The exact Bot ID is project-specific. The Medplum SDK can resolve it by identifier:
 
@@ -163,12 +169,16 @@ to the patient and excluded from future share-back.
 
 - Restrict Bot execution and any triggering Subscription to authorized project members.
 - Trigger share-back only after the encounter data is clinically ready.
-- Test the full resource and attachment scope with an approved sandbox patient.
+- Review the full resource and attachment scope with representative Medplum data before the first live
+  submission.
+- Coordinate the first production submission with Medplum, and keep automated triggers disabled until
+  the controlled validation is complete.
 - Review warnings in the `OperationOutcome`; a successful transaction can still exclude individual
   resources that were not ready to send.
 - Confirm that Patient360-tagged data is absent from the outgoing request archive.
 - Monitor Bot execution audit events and the request/response archives after go-live.
-- Revalidate the workflow after material changes to your chart model, coding, or document storage.
+- Coordinate another controlled production verification after material changes to your chart model,
+  coding, or document storage.
 
 ## Related reading
 

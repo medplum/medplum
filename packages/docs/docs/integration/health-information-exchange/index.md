@@ -1,10 +1,21 @@
 ---
 sidebar_position: 1
-description: Bring outside longitudinal records into Medplum and share new care data through Health Gorilla Patient360.
+description: Use the production-only Health Gorilla Patient360 integration to retrieve longitudinal records and share new care data.
 tags: [integration, hie]
 ---
 
 # Health Information Exchange (HIE)
+
+:::caution[Production-only integration]
+The HIE integration is available only in production at this time. Health Gorilla has not yet provided
+a sandbox workflow for Patient360 retrieval or HIE share-back, so end-to-end network testing is not
+available in a sandbox. Medplum coordinates approval, production enablement, and a controlled launch
+with your team.
+
+Access is currently limited to approved customers.
+[Contact the Medplum team](mailto:info+healthgorilla@medplum.com?subject=Health%20Information%20Exchange%20for%20Medplum)
+to talk through eligibility, scope, and implementation support.
+:::
 
 A patient's story rarely lives in one place. When a clinician is making a care decision, the most
 useful history may have been recorded by another practice, hospital, or health system.
@@ -12,13 +23,6 @@ useful history may have been recorded by another practice, hospital, or health s
 Medplum's Health Information Exchange integration brings that outside history into the Medplum chart
 through Health Gorilla Patient360. It also supports sharing new, customer-authored care data back to
 the exchange network, so the workflow is useful to both your team and the broader care community.
-
-:::caution[Medplum setup and network approval required]
-HIE is a managed integration currently available to approved customers. Health Gorilla and the
-applicable networks review each participating organization before access is enabled.
-[Contact the Medplum team](mailto:info+healthgorilla@medplum.com?subject=Health%20Information%20Exchange%20for%20Medplum)
-to talk through eligibility, scope, and implementation support.
-:::
 
 ## What the integration gives your team
 
@@ -58,7 +62,7 @@ is never returned to the network as though your organization authored it.
 
 - **New to the integration?** Start with
   [Getting Started](/docs/integration/health-information-exchange/getting-started) for onboarding, data
-  preparation, sandbox validation, and go-live planning.
+  preparation, pre-launch checks, and a controlled production rollout.
 - **Building the retrieval experience?** See
   [Retrieve Patient Records](/docs/integration/health-information-exchange/retrieving-patient-records)
   for patient matching, operation details, `Task` states, and the inbound data model.

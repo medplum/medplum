@@ -1,10 +1,16 @@
 ---
 sidebar_position: 3
-description: Start a Patient360 retrieval, follow its Task, and understand what arrives in the Medplum chart.
+description: Run a production-only Patient360 retrieval, follow its Task, and understand what arrives in Medplum.
 tags: [integration, hie]
 ---
 
 # Retrieve Patient Records from an HIE
+
+:::caution[Production-only integration]
+Patient360 retrieval is available only in production at this time. Health Gorilla has not yet provided
+a sandbox workflow for end-to-end testing. Coordinate enablement and the first controlled production
+retrieval with Medplum before exposing this operation to users.
+:::
 
 A new patient may arrive with years of history that your team cannot see yet. A Patient360 retrieval
 asks participating exchange networks for that history and brings the supported results into the
@@ -16,7 +22,7 @@ Because the network search runs asynchronously, your application starts it once,
 [`Patient`](/docs/api/fhir/resources/patient).
 
 :::info[Before you begin]
-Patient360 must be enabled for your project by Medplum, and your test patient must have complete
+Patient360 must be enabled for your production project by Medplum, and the patient must have complete
 matching demographics. If you are still planning the rollout, start with
 [Getting Started](/docs/integration/health-information-exchange/getting-started).
 :::
@@ -56,9 +62,9 @@ the request body are not used.
 }
 ```
 
-:::caution[Keep production data out of sandbox]
-Use synthetic or explicitly approved test data. Do not submit production patient data to a sandbox
-environment.
+:::warning[Each call is a live network request]
+There is no Patient360 sandbox workflow. Call this operation only after production enablement, for an
+authorized patient and the permitted treatment purpose. Each retrieval is a metered network request.
 :::
 
 ## Start a retrieval
@@ -165,8 +171,10 @@ patient-scoped [AccessPolicies](/docs/access/access-policies). Access does not p
 reference. For example, a standalone imported `Practitioner`, `Organization`, or `Location` is not in
 the patient's compartment merely because an `Encounter` references it.
 
-Before production, test the actual AccessPolicy for each application role against every imported
-resource type your workflow displays.
+Before enabling retrieval for clinical users, test the actual AccessPolicy for each application role
+against representative resources of every imported type your workflow displays. These access checks
+do not require a Patient360 network request. Confirm access again after the first controlled production
+retrieval.
 
 :::warning[Check standalone referenced resources]
 A user may be able to read an imported `Encounter` but not the standalone `Practitioner`, `Organization`,
