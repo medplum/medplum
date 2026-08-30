@@ -81,7 +81,7 @@ FHIR field names are camelCase, and Redshift lowercases attribute names in dot n
 SET enable_case_sensitive_identifier TO true;
 ```
 
-If you would rather not change the session setting, `JSON_EXTRACT_PATH_TEXT(JSON_SERIALIZE(content), 'birthDate')` reads the same field and is always case-sensitive.
+If you would rather not change the session setting, [`JSON_EXTRACT_PATH_TEXT`](https://docs.aws.amazon.com/redshift/latest/dg/JSON_EXTRACT_PATH_TEXT.html) reads the same field and is always case-sensitive. On the raw tables `content` is a JSON string, so read it directly with `JSON_EXTRACT_PATH_TEXT(content, 'birthDate')`. On the redacted views `content` is already `SUPER`, so serialize it first: `JSON_EXTRACT_PATH_TEXT(JSON_SERIALIZE(content), 'birthDate')`.
 
 ### Current version of each resource
 
@@ -103,6 +103,8 @@ from (
 where rn = 1
 with no schema binding;
 ```
+
+The view examples on this page read the raw tables. On the redacted views `content` is already `SUPER`, so drop `json_parse` and select `content` directly.
 
 Deleted resources still appear, as a tombstone version carrying `meta.deleted`. Filter them out when you want live resources only:
 
@@ -143,11 +145,12 @@ from patient_current p, p.resource.identifier i;
 
 ```sql
 create or replace view observation_current as
-select id, last_updated, resource
+select id, last_updated, project_id, resource
 from (
   select
     id,
     last_updated,
+    project_id,
     json_parse(content) as resource,
     row_number() over (partition by id order by last_updated desc) as rn
   from observation_history
@@ -327,12 +330,12 @@ The tables are open Iceberg, so the engine is your choice. Everything on this pa
 
 Tell us which engine you are using when you open the request and we will point the catalog at it.
 
-If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir.mdx) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
+If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
 
 ## See also
 
 - [Snowflake](/docs/analytics/snowflake) for the same pipeline read from Snowflake
 - [Analytics](/docs/analytics) for program design, coding systems, and standard measures
-- [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir.mdx)
+- [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir)
 - [Access Policies](/docs/access/access-policies)
 - [Server config: dataWarehouse](/docs/self-hosting/server-config#datawarehouse)
