@@ -43,7 +43,7 @@ Medplum shares one view per FHIR resource type, in the `SHARE_REDACTED` schema, 
 | Condition           | `condition_history`      |
 | ServiceRequest      | `servicerequest_history` |
 
-There is one view per resource type Medplum supports (165 by default). List what you have access to, and inspect any view's columns, with:
+There is one view per [FHIR resource type Medplum supports](https://www.medplum.com/docs/api/fhir/resources). List what you have access to, and inspect any view's columns, with:
 
 ```sql
 show views in schema share_redacted;
