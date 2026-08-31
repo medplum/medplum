@@ -475,17 +475,27 @@ superAdminRouter.post(
       return;
     }
 
+    const targets = req.body.targets as ReindexTarget[];
     const migrationActions = {
       preDeploy: [],
-      postDeploy: (req.body.targets as ReindexTarget[]).map((target) =>
+      postDeploy: targets.map((target) =>
         'table' in target
           ? { type: 'REINDEX_CONCURRENTLY' as const, target: 'TABLE' as const, name: target.table }
           : { type: 'REINDEX_CONCURRENTLY' as const, target: 'INDEX' as const, name: target.index }
       ),
     };
 
-    const exec = new AsyncJobExecutor(ctx.repo);
-    await exec.init(req.originalUrl);
+    const requestParams = new URLSearchParams();
+    for (const target of targets) {
+      if ('table' in target) {
+        requestParams.append('table', target.table);
+      } else {
+        requestParams.append('index', target.index);
+      }
+    }
+
+    const exec = new AsyncJobExecutor(ctx.systemRepo);
+    await exec.init(`${req.originalUrl}?${requestParams}`);
     await exec.run(async (asyncJob) => {
       const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
       await addPostDeployMigrationJobData(jobData);
