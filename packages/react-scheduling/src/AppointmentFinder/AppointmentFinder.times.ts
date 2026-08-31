@@ -41,6 +41,30 @@ interface ZonedParts {
 }
 
 /**
+ * Built formatters, keyed by the arguments that built them. Constructing an
+ * `Intl.DateTimeFormat` is far more expensive than formatting with one, and a calendar
+ * renders enough times per page to make that cost show. The option sets here are fixed
+ * and the zones are those of the calendars on show, so the cache stays small.
+ */
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * Returns the formatter for a set of options, building it the first time it is asked for.
+ * @param locale - BCP 47 locale tag, or undefined for the viewer's own.
+ * @param options - The formatter's options.
+ * @returns The shared formatter.
+ */
+function getFormatter(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale ?? ''}|${JSON.stringify(options)}`;
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
+
+/**
  * Breaks an instant into calendar parts in a given timezone.
  *
  * @param date - The instant to read.
@@ -48,7 +72,7 @@ interface ZonedParts {
  * @returns The year, month, day, and hour in that timezone.
  */
 function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
-  const parts = new Intl.DateTimeFormat('en-US', {
+  const parts = getFormatter('en-US', {
     timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
@@ -69,17 +93,24 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
   };
 }
 
+export interface FormatZonedTimeOptions {
+  /** Names the zone alongside the time, e.g. "12:30 PM ET". */
+  readonly withTimezone?: boolean;
+}
+
 /**
  * Formats an instant's time of day in a given timezone (e.g. "12:30 PM").
  * @param date - The instant to format.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @param options - Whether to name the zone as well.
  * @returns The formatted time.
  */
-export function formatZonedTime(date: Date, timezone?: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+export function formatZonedTime(date: Date, timezone?: string, options?: FormatZonedTimeOptions): string {
+  return getFormatter(undefined, {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: options?.withTimezone ? TIMEZONE_NAME_STYLE : undefined,
   }).format(date);
 }
 
@@ -89,7 +120,7 @@ export function formatZonedTime(date: Date, timezone?: string): string {
  * @returns The formatted day.
  */
 export function formatDayHeading(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
+  return getFormatter(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
 }
 
 /**
@@ -103,6 +134,55 @@ function getTimezoneOffsetMs(instant: Date, timezone: string): number {
   // No zone is offset by part of a minute, so comparing whole minutes is enough
   // and avoids having to format seconds.
   return Date.UTC(year, month - 1, day, hour, minute) - Math.floor(instant.getTime() / 60000) * 60000;
+}
+
+/**
+ * The IANA timezone the browser is set to.
+ * @returns The viewer's own timezone identifier.
+ */
+export function getBrowserTimezone(): string {
+  return getFormatter(undefined, {}).resolvedOptions().timeZone;
+}
+
+/**
+ * How a zone is named beside a time. The generic style says "ET" rather than picking
+ * between "EST" and "EDT", so a zone reads the same whichever side of a daylight saving
+ * change the time falls on.
+ */
+const TIMEZONE_NAME_STYLE = 'shortGeneric' as const;
+
+/**
+ * Any instant will do: the generic zone name does not vary over the year, but
+ * `formatToParts` still needs a date to format.
+ */
+const TIMEZONE_LABEL_INSTANT = new Date(0);
+
+/**
+ * Names a timezone the short way it is written beside a time, e.g. "ET" or "GMT+2".
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The zone's short name.
+ */
+export function formatTimezoneLabel(timezone?: string): string {
+  const parts = getFormatter(undefined, {
+    timeZone: timezone,
+    timeZoneName: TIMEZONE_NAME_STYLE,
+  }).formatToParts(TIMEZONE_LABEL_INSTANT);
+  return parts.find((part) => part.type === 'timeZoneName')?.value ?? '';
+}
+
+/**
+ * Whether a timezone is the viewer's own.
+ *
+ * Zones are compared by identifier rather than by the clock they happen to read at some
+ * instant, so the answer does not change over a daylight saving boundary and is the same
+ * for every time on the page.
+ *
+ * @param timezone - IANA timezone the times are in, or undefined when it could not be resolved.
+ * @param viewer - The viewer's IANA timezone. Defaults to the browser's
+ * @returns True when the zone is the viewer's, or when there is no zone to compare.
+ */
+export function isViewerTimezone(timezone: string | undefined, viewer?: string): boolean {
+  return !timezone || timezone === (viewer ?? getBrowserTimezone());
 }
 
 /**
@@ -326,6 +406,39 @@ export function addDays(date: Date, days: number): Date {
 export interface DateRange {
   readonly start?: Date;
   readonly end?: Date;
+}
+
+/**
+ * Local midnight opening a calendar date at the site.
+ * @param year - The calendar year.
+ * @param month - The calendar month, 1-12.
+ * @param day - The day of the month. Out-of-range values roll over, so `day + 1` names the next day.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The instant the day begins there. Undefined only where `parseZonedTime` rejects the time
+ * it is handed, which a literal `00:00` cannot be.
+ */
+function startOfZonedDay(year: number, month: number, day: number, timezone: string | undefined): Date | undefined {
+  return parseZonedTime(new Date(year, month - 1, day), '00:00', timezone);
+}
+
+/**
+ * The window `$find` is asked for: one calendar day at the site, never starting in the past.
+ * @param day - The day to search, as local midnight. Bound to the site's timezone.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's, which reproduces the
+ * behaviour of a viewer sitting in the same zone as the site.
+ * @returns The day from now at the earliest, both ends closed, as `$find` requires.
+ */
+export function getZonedDayRange(day: Date, timezone?: string): Required<DateRange> {
+  const now = new Date();
+  const opens = startOfZonedDay(day.getFullYear(), day.getMonth() + 1, day.getDate(), timezone) ?? day;
+  // If the day is already under way, start from now rather than from the beginning to prevent
+  // getting back times from `$find` that have already passed
+  const start = opens > now ? opens : now;
+
+  const parts = getZonedParts(start, timezone);
+  const nextMidnight = startOfZonedDay(parts.year, parts.month, parts.day + 1, timezone);
+  // The instant before the next day begins
+  return { start, end: nextMidnight ? new Date(nextMidnight.getTime() - 1) : endOfDay(start) };
 }
 
 /**

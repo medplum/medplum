@@ -16,9 +16,21 @@
 
 .calendar {
   position: relative;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
+}
+
+/* Shrink to fit, so the calendar's own 100% height does not push the notice out of view. */
+.multiCalendar {
+  flex: 1;
+  min-height: 0;
+}
+
+.timezoneNotice {
+  flex-shrink: 0;
 }
 
 /* The booking form, only present while a day is being booked. */

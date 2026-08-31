@@ -1,14 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import {
+  extractServiceTypeReferences,
   getExtensionValue,
   getReferenceString,
+  getSchedulingTimezone,
   isDefined,
   normalizeErrorString,
   SchedulingScheduleColorURI,
+  sortStringArray,
+  TimezoneExtensionURI,
 } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareService, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
@@ -26,6 +31,7 @@ import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
+import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
 
 const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = { provider: [], room: [], device: [] };
@@ -148,6 +154,80 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  // A Schedule naming exactly one service in its `serviceType` is unambiguous about which
+  // service's scheduling parameters apply; one naming several, or none, is not, so those
+  // fall back to the actor below instead of guessing between them.
+  const singleServiceReferenceByScheduleId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const candidate of activeCandidates) {
+      const refs = new Set(
+        extractServiceTypeReferences(candidate.schedule.serviceType)
+          .map((ref) => ref.reference)
+          .filter(isDefined)
+      );
+      if (refs.size === 1) {
+        map.set(candidate.schedule.id, [...refs][0]);
+      }
+    }
+    return map;
+  }, [activeCandidates]);
+
+  const serviceRefsKey = sortStringArray([...new Set(singleServiceReferenceByScheduleId.values())]).join(',');
+
+  const [servicesByReference, setServicesByReference] = useState<Map<string, WithId<HealthcareService>>>(new Map());
+
+  useEffect(() => {
+    if (serviceRefsKey.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing state to match an empty key
+      setServicesByReference(new Map());
+      return () => {};
+    }
+
+    let active = true;
+    const refs = serviceRefsKey.split(',');
+    Promise.all(refs.map((ref) => medplum.readReference<HealthcareService>({ reference: ref }).catch(() => undefined)))
+      .then((services) => {
+        if (!active) {
+          return;
+        }
+        const map = new Map<string, WithId<HealthcareService>>();
+        services.forEach((service, i) => {
+          if (service) {
+            map.set(refs[i], service);
+          }
+        });
+        setServicesByReference(map);
+      })
+      .catch(() => {
+        // Individual reads are already caught above; nothing else can reject here.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [medplum, serviceRefsKey]);
+
+  /*
+   * Follows the documented timezone resolution order (Schedule's per-service parameters,
+   * then the HealthcareService's own, then the actor) when a candidate's Schedule names
+   * exactly one service. Otherwise the zone is read off the actor alone, since nothing here
+   * names which of several services to prefer.
+   */
+  const timezones = useMemo((): string[] => {
+    const zones: string[] = [];
+    for (const candidate of activeCandidates) {
+      const serviceRef = singleServiceReferenceByScheduleId.get(candidate.schedule.id);
+      const service = serviceRef ? servicesByReference.get(serviceRef) : undefined;
+      const timezone = service
+        ? getSchedulingTimezone(service, candidate.schedule, candidate.actorResource)
+        : candidate.actorResource && getExtensionValue(candidate.actorResource, TimezoneExtensionURI);
+      if (typeof timezone === 'string') {
+        zones.push(timezone);
+      }
+    }
+    return zones;
+  }, [activeCandidates, singleServiceReferenceByScheduleId, servicesByReference]);
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setTimeFinderOpen(false);
@@ -196,12 +276,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Alert>
         )}
         <MultiCalendar
+          className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading}
           onSelectInterval={setBookingSelection}
           selection={bookingSelection}
         />
+        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} />
       </div>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
