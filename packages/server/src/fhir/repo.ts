@@ -86,6 +86,7 @@ import {
   CreateInteraction,
   DeleteInteraction,
   HistoryInteraction,
+  isReadOnlyAction,
   logAuditEvent,
   PatchInteraction,
   ReadInteraction,
@@ -2410,8 +2411,8 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if (isSystem) {
-      // Don't log system events.
+    if (isSystem && isReadOnlyAction(subtype)) {
+      // Don't log system read events.
       return;
     }
     let outcomeDesc: string | undefined = undefined;

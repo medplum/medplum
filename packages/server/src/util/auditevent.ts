@@ -168,6 +168,10 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction
   110123: undefined,
 };
 
+export function isReadOnlyAction(subtype: AuditEventSubtype): boolean {
+  return AuditEventActionLookup[subtype.code] === 'R';
+}
+
 /**
  * AuditEvent outcome code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
