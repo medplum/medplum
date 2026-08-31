@@ -10,7 +10,7 @@ import { withLongRunningDatabaseClient } from '../../migrations/migration-utils'
 import { getShardSystemRepo } from '../repo';
 import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
-import { isValidTableName } from '../sql';
+import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {
@@ -61,7 +61,7 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
   const config: GinIndexConfig = {};
 
   for (const table of params.tableName) {
-    if (!isValidTableName(table)) {
+    if (!isValidPostgresIdentifier(table)) {
       throw new OperationOutcomeError(badRequest('Invalid tableName'));
     }
   }

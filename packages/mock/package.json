@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "5.1.32",
+  "version": "5.1.36",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -56,10 +56,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@medplum/core": "5.1.32",
-    "@medplum/definitions": "5.1.32",
-    "@medplum/fhir-router": "5.1.32",
-    "@medplum/fhirtypes": "5.1.32",
+    "@medplum/core": "5.1.36",
+    "@medplum/definitions": "5.1.36",
+    "@medplum/fhir-router": "5.1.36",
+    "@medplum/fhirtypes": "5.1.36",
     "dataloader": "2.2.3"
   },
   "devDependencies": {

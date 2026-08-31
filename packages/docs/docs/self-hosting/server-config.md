@@ -282,7 +282,7 @@ Optional AWS CloudWatch Log Stream name for `AuditEvent` logs. Only applies if `
 
 ### registerEnabled
 
-Optional flag whether new user registration is enabled. See [Open Patient Registration](/docs/user-management/open-patient-registration) for more details.
+Optional flag whether new user registration is enabled. When `false`, the server rejects both new user registration (`/auth/newuser`) and new project creation (`/auth/newproject`). See [Open Patient Registration](/docs/user-management/open-patient-registration) for more details.
 
 **Default:** `true`
 
@@ -360,6 +360,14 @@ See [BullMQ Job Removal](https://docs.bullmq.io/guide/jobs/auto-removal).
 **Default:** `false`
 
 ### dataWarehouse
+
+:::info[Enterprise feature]
+
+Data Warehouse sync is part of Medplum Enterprise. On the Medplum hosted service, a Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started.
+
+See [Snowflake](/docs/analytics/snowflake) or [Amazon Redshift](/docs/analytics/redshift) for the tables this worker produces, how to query them, and what to send us to open a request.
+
+:::
 
 Optional configuration for the scheduled Data Warehouse sync worker. This worker runs incremental sync jobs via BullMQ on a fixed cron schedule.
 It uses `readonlyDatabase` connection settings when available; otherwise it falls back to `database`.
