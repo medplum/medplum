@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  ContentType,
+  createReference,
+  getReferenceString,
+  normalizeErrorString,
+} from '@medplum/core';
 import type {
   AccessPolicy,
   BundleEntry,
