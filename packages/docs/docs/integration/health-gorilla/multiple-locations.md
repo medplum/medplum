@@ -90,72 +90,9 @@ curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://ww
   }'
 ```
 
-### Assigning and Re-Assigning Practitioner Locations
+### Linking Practitioners to Locations
 
-You can assign a practitioner to a specific location—whether they're being enrolled for the first time or are already enrolled—by providing the location reference to the `sync-practitioner` bot. The same `location` parameter works for both cases: at initial enrollment it sets the practitioner's location, and for an already-enrolled practitioner it reassigns them, replacing their current location(s) with the one(s) provided.
-
-You can execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
-
-```bash {10-13}
-curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$sync-practitioner" \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "location",
-        "valueReference": {
-          "reference": "Organization/{practice-location-id}" // Reference to the practice location organization
-        }
-      }
-    ]
-  }'
-```
-
-Alternatively, you can execute the bot directly:
-
-```bash {10-13}
-curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://www.medplum.com/integrations/bot-identifier|health-gorilla-labs/sync-practitioner" \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "practitioner",
-        "valueReference": {
-          "reference": "Practitioner/{id}" // Reference to the practitioner
-        }
-      },
-      {
-        "name": "location",
-        "valueReference": {
-          "reference": "Organization/{practice-location-id}" // Reference to the practice location organization
-        }
-      }
-    ]
-  }'
-```
-
-:::info
-Passing `location` replaces the practitioner's full location list for that call. To link a practitioner to multiple locations at once, include all desired location references, not just the new one—repeat the `location` parameter once per location:
-
-```json
-{
-  "resourceType": "Parameters",
-  "parameter": [
-    { "name": "practitioner", "valueReference": { "reference": "Practitioner/{id}" } },
-    { "name": "location", "valueReference": { "reference": "Organization/{practice-location-id-1}" } },
-    { "name": "location", "valueReference": { "reference": "Organization/{practice-location-id-2}" } }
-  ]
-}
-```
-:::
-
-### Setting a Durable Default Location
-
-The `location` parameter above is a one-off override—it only applies to that specific call. For a durable default that's applied automatically on every sync, including automatically during order submission (which has no `location` parameter to pass), add a repeatable extension to the Medplum `Practitioner` resource listing their linked practice locations:
+Link a practitioner to one or more practice locations by adding a repeatable extension to their Medplum `Practitioner` resource — one entry per linked location:
 
 ```js
 {
@@ -173,4 +110,13 @@ The `location` parameter above is a one-off override—it only applies to that s
 }
 ```
 
-Each extension entry references a Medplum practice-location `Organization` (the same kind described above). The `sync-practitioner` bot reads this extension automatically whenever no explicit `location` parameter is passed—for initial enrollment, for manual re-sync, and for the automatic sync that runs on every lab order submission. An explicit `location` parameter, when passed, always takes precedence over the extension for that call.
+Each extension entry references a Medplum practice-location `Organization` (the same kind described above). This is a one-time setup step, not something to redo per order: once the extension is in place, the `sync-practitioner` bot reads it automatically on every sync—for initial enrollment, for manual re-sync, and for the automatic sync that runs on every lab order submission—so a practitioner's location is a durable fact you set once, not something you specify with each order. If a practitioner's locations change later, update the extension entries; the next sync (or the next order they place) reconciles Health Gorilla to match.
+
+To trigger a sync immediately after setting up the extension, rather than waiting for the practitioner's next order, execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
+
+```bash
+curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$sync-practitioner" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/fhir+json" \
+  -d '{}'
+```

@@ -443,8 +443,6 @@ Actions:
    - Requisition forms
    - Specimen labels
 
-The practitioner sync in step 1 always corrects the provider's credential suffix (`Practitioner.name[0].suffix`—e.g. `MD`, `NP`, `CNM`, shown on the eReq form) and location assignment (see [Multiple Locations](./multiple-locations)) if either differs from what Health Gorilla has on file. This happens automatically on every order submission—not just when the `sync-practitioner` bot is run directly.
-
 ### split-order Bot
 
 Some performing labs require a single multi-test order to be split into multiple requisitions before submission. That lab-side constraint is why the `split-order` bot exists: it is a Medplum preprocessing step that turns one parent order into the per-requisition orders Health Gorilla expects for those labs.
