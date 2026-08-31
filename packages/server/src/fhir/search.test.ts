@@ -5427,6 +5427,13 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v3Cursor}`)
         );
         expect(bundleContains(bundle3, task)).toBeDefined();
+
+        // A V3 cursor with an unparseable timestamp is treated as an invalid cursor, not an error
+        const malformedCursor = `3-not-a-time-${task.id}`;
+        const bundle4 = await repo.search(
+          parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${malformedCursor}`)
+        );
+        expect(bundleContains(bundle4, task)).toBeDefined();
       }));
 
     test('V3 cursor resumes within a lastUpdated tie', () =>

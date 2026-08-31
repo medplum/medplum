@@ -679,6 +679,9 @@ function parseV3Cursor(cursor: string): Cursor | undefined {
     return undefined;
   }
   const date = new Date(Number.parseInt(nextInstant, 10));
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
   return { version, nextInstant: date.toISOString(), nextId };
 }
 
