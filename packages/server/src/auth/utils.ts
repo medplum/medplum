@@ -63,6 +63,45 @@ export function getAllowedMfaMethods(project: Project | undefined): MfaMethod[] 
   return methods.length > 0 ? methods : ['totp'];
 }
 
+export function getAllowedEmailDomains(project: Project | undefined): string[] {
+  return (
+    project?.setting
+      ?.filter((s) => s.name === 'allowedEmailDomain')
+      .map((s) => s.valueString?.trim().toLowerCase())
+      .filter((domain): domain is string => !!domain) ?? []
+  );
+}
+
+/**
+ * Determines whether an email address is allowed to be used for a new user or invite.
+ *
+ * `blockedDomains` (typically the server-wide `blockedEmailDomains` config setting) always
+ * takes precedence: a blocked domain is rejected even if it also appears in the project's
+ * `allowedEmailDomain` setting.
+ * @param email - The email address to check.
+ * @param project - The project the email is being used with, if known.
+ * @param blockedDomains - Domains that are never allowed, regardless of project settings.
+ * @returns True if the email's domain is allowed.
+ */
+export function isEmailDomainAllowed(
+  email: string,
+  project: Project | undefined,
+  blockedDomains: string[] = []
+): boolean {
+  const atIndex = email.lastIndexOf('@');
+  const domain = atIndex === -1 ? '' : email.slice(atIndex + 1).toLowerCase();
+
+  if (blockedDomains.some((blocked) => blocked.trim().toLowerCase() === domain)) {
+    return false;
+  }
+
+  const allowedDomains = getAllowedEmailDomains(project);
+  if (allowedDomains.length === 0) {
+    return true;
+  }
+  return allowedDomains.includes(domain);
+}
+
 /**
  * Determines whether MFA is required for a user logging in to a project.
  *
