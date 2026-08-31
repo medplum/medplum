@@ -437,10 +437,10 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
 });
 
-// POST to /admin/super/reindex-database
+// POST to /admin/super/rebuild-index
 // to rebuild one or more PostgreSQL indexes without blocking writes.
 superAdminRouter.post(
-  '/reindex-database',
+  '/rebuild-index',
   [
     body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
     body('targets.*')
