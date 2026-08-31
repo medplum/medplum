@@ -14,7 +14,7 @@ Medplum synchronizes your FHIR data to [Apache Iceberg](https://iceberg.apache.o
 
 Use this for population health reporting, quality measure calculation, cohort analysis, and any workload that aggregates across large numbers of resources. [FHIR search](/docs/search/basic-search) is designed for clinical lookups on individual patients, not for aggregation across a population.
 
-Snowflake is one of several options. The sync writes open Iceberg tables rather than a Snowflake-specific format, so the same tables can be queried from Amazon Athena, Amazon Redshift, Apache Spark, or Trino. This page uses Snowflake for the examples. The setup on the Medplum side is the same for any of them — see [Other warehouses](#other-warehouses) for what differs in how the data is exposed.
+Snowflake is one of several options. The sync writes open Iceberg tables rather than a Snowflake-specific format, so the same tables can be queried from Amazon Redshift, Apache Spark, or Trino. This page uses Snowflake for the examples. The setup on the Medplum side is the same for any of them — see [Other warehouses](#other-warehouses) for what differs in how the data is exposed.
 
 ## How it works
 
@@ -82,6 +82,8 @@ All other views keep the full FHIR JSON.
 ## Querying in Snowflake
 
 `content` type is `VARIANT`, and therefore you can use Snowflake's [semi-structured operators](https://docs.snowflake.com/en/user-guide/querying-semistructured) to read into it.
+
+Want to try these queries before your own sync is live? [Download a synthetic data sample](/examples/medplum-synthetic-data-sample.zip) that contains synthetic FHIR resources shaped the same way real data lands in this pipeline.
 
 ### Recent resources
 
@@ -253,7 +255,7 @@ Two practices that follow from this:
 
 The tables are open Iceberg, so the engine is your choice. Everything on this page applies except the query syntax and the redaction: the schedule, the five columns, and the history semantics are the same. Other engines read the raw Iceberg tables directly rather than the redacted views Snowflake gets through the private listing — see [View layout](#view-layout) and [Redacted fields](#redacted-fields).
 
-- **Amazon Athena** and **Amazon Redshift** read S3 Tables through the AWS Glue Data Catalog integration.
+- **Amazon Redshift** reads S3 Tables through the AWS Glue Data Catalog integration.
 - **Apache Spark** and **Amazon EMR** read them through the S3 Tables catalog.
 - **Trino** connects to the [S3 Tables Iceberg REST endpoint](https://aws.amazon.com/blogs/storage/query-amazon-s3-tables-from-open-source-trino-using-apache-iceberg-rest-endpoint) using its Iceberg connector with SigV4 authentication.
 
