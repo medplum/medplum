@@ -235,10 +235,19 @@ On the Snowflake side, your team does the following things:
      ```
 2. Configure roles and access controls, as per your requirements
 
+If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
 
 ## Access control and compliance
 
-Access Policies stop at the warehouse boundary. Once a resource is in Snowflake, Medplum [Access Policies](/docs/access/access-policies) no longer apply to it, and Snowflake's own roles and grants are the only thing standing between a user and the data. Treat the warehouse as a PHI system: put it in scope for your BAA, your access reviews, and your audit logging.
+:::warning[Full replication, no Access Policies]
+
+The warehouse is a full copy of your FHIR data. Every resource and every version in the projects you name is replicated, with no filtering by user, role, or compartment on the way out. Medplum [Access Policies](/docs/access/access-policies) do not apply to it.
+
+Once the data lands in Snowflake, securing it is your responsibility. Your own roles, grants, and audit logging are the only controls on it.
+
+:::
+
+Treat the warehouse as a PHI system: put it in scope for your BAA, your access reviews, and your audit logging.
 
 Two practices that follow from this:
 
@@ -265,7 +274,8 @@ If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operati
 
 ## See also
 
+- [Amazon Redshift](/docs/analytics/redshift) for the same pipeline read from Redshift
 - [Analytics](/docs/analytics) for program design, coding systems, and standard measures
-- [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir.mdx)
+- [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir)
 - [Access Policies](/docs/access/access-policies)
 - [Server config: dataWarehouse](/docs/self-hosting/server-config#datawarehouse)
