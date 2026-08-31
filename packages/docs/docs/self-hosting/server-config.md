@@ -365,7 +365,7 @@ See [BullMQ Job Removal](https://docs.bullmq.io/guide/jobs/auto-removal).
 
 Data Warehouse sync is part of Medplum Enterprise. On the Medplum hosted service, a Medplum team member creates and enables the pipeline for your project. Contact us at [hello@medplum.com](mailto:hello@medplum.com) to get started.
 
-See [Snowflake](/docs/analytics/snowflake) for the tables this worker produces, how to query them, and what to send us to open a request.
+See [Snowflake](/docs/analytics/snowflake) or [Amazon Redshift](/docs/analytics/redshift) for the tables this worker produces, how to query them, and what to send us to open a request.
 
 :::
 

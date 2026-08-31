@@ -173,10 +173,19 @@ On the Snowflake side, your team does the following things:
 1. Accept a [Snowflake private listing](https://docs.snowflake.com/en/collaboration/collaboration-listings-about) from Medplum
 2. Configure roles and access controls, as per your requirements
 
+If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
 
 ## Access control and compliance
 
-Access Policies stop at the warehouse boundary. Once a resource is in Snowflake, Medplum [Access Policies](/docs/access/access-policies) no longer apply to it, and Snowflake's own roles and grants are the only thing standing between a user and the data. Treat the warehouse as a PHI system: put it in scope for your BAA, your access reviews, and your audit logging.
+:::warning[Full replication, no Access Policies]
+
+The warehouse is a full copy of your FHIR data. Every resource and every version in the projects you name is replicated, with no filtering by user, role, or compartment on the way out. Medplum [Access Policies](/docs/access/access-policies) do not apply to it.
+
+Once the data lands in Snowflake, securing it is your responsibility. Your own roles, grants, and audit logging are the only controls on it.
+
+:::
+
+Treat the warehouse as a PHI system: put it in scope for your BAA, your access reviews, and your audit logging.
 
 Two practices that follow from this:
 
@@ -189,21 +198,10 @@ Two practices that follow from this:
 - **It does not carry attachment bytes.** [Binary](/docs/api/fhir/resources/binary) resources sync as their FHIR JSON. The underlying file content stays in Medplum's storage service.
 - **It does not replace real-time workflows.** Anything that needs to happen within seconds of a resource changing belongs in a [Bot](/docs/bots).
 
-## Other warehouses
-
-The tables are open Iceberg, so the engine is your choice. Everything on this page applies except the query syntax: the schedule, the table layout, the five columns, and the history semantics are the same.
-
-- **Amazon Athena** and **Amazon Redshift** read S3 Tables through the AWS Glue Data Catalog integration.
-- **Apache Spark** and **Amazon EMR** read them through the S3 Tables catalog.
-- **Trino** connects to the [S3 Tables Iceberg REST endpoint](https://aws.amazon.com/blogs/storage/query-amazon-s3-tables-from-open-source-trino-using-apache-iceberg-rest-endpoint) using its Iceberg connector with SigV4 authentication.
-
-Tell us which engine you are using when you open the request and we will point the catalog at it.
-
-If you are not on Medplum Enterprise, the [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir.mdx) exports resources as NDJSON that you can stage and load yourself. It runs on demand rather than on a schedule, and you own the loading and the incremental logic.
-
 ## See also
 
+- [Amazon Redshift](/docs/analytics/redshift) for the same pipeline read from Redshift
 - [Analytics](/docs/analytics) for program design, coding systems, and standard measures
-- [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir.mdx)
+- [Bulk FHIR API](/docs/api/fhir/operations/bulk-fhir)
 - [Access Policies](/docs/access/access-policies)
 - [Server config: dataWarehouse](/docs/self-hosting/server-config#datawarehouse)

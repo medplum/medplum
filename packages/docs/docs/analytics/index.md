@@ -5,9 +5,8 @@ When designing a healthcare analytics program, data quality and integrity are cr
 The following features should be used in concert to build out an analytics program:
 
 1. Store data in the [FHIR Datastore](/docs/fhir-datastore) with emphasis on standard fields, especially on `Patient`, `Observation` and other common resources.
-2. Use [Bots](/docs/bots) and [Subscriptions](/docs/subscriptions) to help maintain quality and correctness in real time, for example, ensuring all `Encounter.type` are is tagged with the appropriate ontology, if not throw an error.
-3. Use [Access Policies](/docs/access/access-policies) to secure and de-identify data pipelines for privacy-aware analysis
-4. Use [Bots](/docs/bots) to synchronize with common tools, machine learning pipelines and more.
+2. Use [Bots](/docs/bots) and [Subscriptions](/docs/subscriptions) to help maintain quality and correctness in real time, for example, ensuring all `Encounter.type` is tagged with the appropriate ontology, if not throw an error.
+3. Export to a data warehouse for the workloads that aggregate across a whole population. Medplum synchronizes FHIR resources to [Snowflake](/docs/analytics/snowflake), [Amazon Redshift](/docs/analytics/redshift), and other engines that read open Apache Iceberg tables.
 
 Analytics on healthcare data generally have two broad areas of application: **retroactive analysis** of performance and quality metrics, and **predictive modeling** to make recommendations for future behavior.
 
@@ -19,34 +18,24 @@ On the predictive side, Clinical Decision Support (CDS) systems encode evidence-
 
 When designing your analytics program, it can be useful to consider the following categorization.
 
-| Program Type                                          | Application Area | Implementation Tools                                                                     |
-| ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
-| Ad-hoc clinical reports                               | Retrospective    | FHIR Datastore, including [Bulk](/docs/api/fhir/operations/bulk-fhir.mdx) and Batch APIs |
-| Healthcare standard reports (e.g. HEDIS, CMS Queries) | Retrospective    | Bots for data quality, dashboard apps to monitor                                         |
-| Clinical decision support                             | Prospective      | Bots to produce event driven scores, notifications                                       |
-| Machine Learning, predictive modeling                 | Prospective      | Bots to integrate with ML pipelines, TypeScript SDK for dashboarding                     |
+| Program Type                                          | Application Area | Implementation Tools                                                                                    |
+| ----------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| Ad-hoc clinical reports                               | Retrospective    | Data Warehouse: [Snowflake](/docs/analytics/snowflake), [Amazon Redshift](/docs/analytics/redshift)     |
+| Healthcare standard reports (e.g. HEDIS, CMS Queries) | Retrospective    | Data Warehouse: [Snowflake](/docs/analytics/snowflake), [Amazon Redshift](/docs/analytics/redshift)     |
+| Clinical decision support                             | Prospective      | [CDS Hooks](/docs/integration/cds-hooks)                                                                |
+| Machine Learning, predictive modeling                 | Prospective      | Data Warehouse combined with [`$ai`](/docs/ai/ai-operation), [MCP](/docs/ai/mcp) and [Bots](/docs/bots) |
 
 ## Ad-Hoc Clinical Reports
 
 A common pattern for ad-hoc reports is to first ingest FHIR resources into the data warehouse as raw JSON, and then flatten the relevant fields in a second ETL stage.
 
-Medplum Enterprise can run this synchronization for you on a schedule, writing FHIR resources to open Apache Iceberg tables that Snowflake, Amazon Athena, Amazon Redshift, and other engines read directly. See [Snowflake](/docs/analytics/snowflake) for the table layout, query patterns, and how to get set up.
-
-Analytics pipelines should use the [FHIR Bulk Data Export API](/docs/api/fhir/operations/bulk-fhir.mdx) to extract FHIR resources into a data lake. The [FHIR Datastore](/docs/fhir-datastore) supports bulk export.
-
-Analytics workflows often require de-identified or redacted data for compliance reasons. [Access Policies](/docs/access/access-policies) are common for this purpose.
-
-For machine learning applications, separate pipelines are recommended for training vs. inference. Training can be done as an offline batch process; inference as a serverless compute operation.
-
-Many healthcare analytics workflows require analyzing patients by cohort. Bots can be used to automatically enroll patients into cohorts using the `Group` resource.
-
-Converting resources to the [Parquet file format](https://gidon-16942.medium.com/apache-parquet-for-hl7-fhir-c23610131f8c) helps support queries that require large aggregates.
+Medplum Enterprise can run this synchronization for you on a schedule, writing FHIR resources to open Apache Iceberg tables that Snowflake, Amazon Redshift, Amazon Athena, and other engines read directly. See [Snowflake](/docs/analytics/snowflake) or [Amazon Redshift](/docs/analytics/redshift) for the table layout, query patterns, and how to get set up.
 
 ## Healthcare Standard Reports
 
 Healthcare standard reports rely on coding systems to classify conditions, procedures, drugs, and outcomes. These codes help create a standardized vocabulary between providers, labs, pharmacies, and payors to streamline operations, billing, and analysis.
 
-The U.S. healthcare system implements a number of different coding standards that have different specializations.
+The U.S. healthcare system implements a number of different coding standards that have different specializations. See [Commonly Used Terminologies](/docs/terminology/common-terminologies) for the FHIR `system` URLs and ValueSets behind each one, and [Terminologies and Coded Values](/docs/terminology) for how Medplum stores and expands them.
 
 - **RxNorm:** A code system of normalized drug names, organized into a hierarchical ontology to represent generics, branded drugs, single doses and drug packs.
 - **LOINC:** Clinical terminology relevant to clinical lab orders and results.
@@ -78,12 +67,14 @@ For Medplum-specific endpoint contracts and implementation guidance, see [CDS Ho
 
 For simple CDS such as [social determinants of health risk-scoring](https://www.ajmc.com/view/social-determinants-of-health-score-does-it-help-identify-those-at-higher-cardiovascular-risk) or [eGFR](https://www.kidneyfund.org/all-about-kidneys/tests/blood-test-egfr) calculation [bots](/docs/bots) combined with [subscriptions](/docs/subscriptions) are a very fast and pragmatic choice.
 
-## Machine Learning / Predictive Modeling
+## Machine Learning and AI
 
-In addition to rules-based guidelines, machine learning can be used to enhance clinical decision support, flag care gaps, and identify trends.
+Language models now cover much of what used to need a purpose-trained model: summarizing a chart, extracting structured data from a scanned document, drafting a note for review. Medplum exposes this through the [`$ai` operation](/docs/ai/ai-operation), which calls an LLM through the FHIR API and can return suggested FHIR operations rather than free text. [MCP](/docs/ai/mcp) gives an assistant scoped access to the same datastore, and [AWS Textract and Comprehend Medical](/docs/ai/aws) handle documents and faxes. Purpose-trained models still matter for risk scoring and forecasting, and they run the same way.
 
-As mentioned above, best practice is to train ML models offline, and then run inference on streaming data. Bots can be used to run machine learning inference, and standards such as [ONNX](https://onnx.ai/) allow developers to exchange model information between training and runtime environments in a language agnostic format. This means that models can be trained using tools like Pytorch or Tensorflow on GPUs, and deployed in Bots during runtime.
+Three things decide whether any of this reaches production:
 
-Another best practice for deploying predictive modeling in a clinical setting is to focus on model interpretability. In our experience, physicians are hesitant to adopt fully-automated, black-box models. Leveraging techniques that allow models to explain why they are making a decision and **keeping the physician in control of the final decision** can lead to much quicker adoption of ML systems.
+- **Training and evaluation sets come from the warehouse.** Assembling a cohort, holding out a test set, and scoring a model against it are aggregate queries, so they belong in [Snowflake](/docs/analytics/snowflake) or [Amazon Redshift](/docs/analytics/redshift). Inference belongs in a [Bot](/docs/bots), triggered by a [Subscription](/docs/subscriptions) when the resource being scored is written. Enroll the cohort itself with a [Group](/docs/api/fhir/resources/group).
+- **Scope what the model can touch.** An AI agent reads and writes through the same API as everything else, so [Access Policies](/docs/access/access-policies) decide what it can see and change. Set that boundary before the agent is useful, not after.
+- **Keep the clinician in control.** Physicians are slow to adopt models they cannot interrogate. Write the reasoning where it will actually be read: a [DetectedIssue](/docs/api/fhir/resources/detectedissue), a note on the order, or a `Communication` on the `Task` a reviewer picks up. A recommendation someone can accept or reject gets adopted faster than one that acts on its own.
 
-In addition to running ML models, Bots can be used to annotate medication and lab orders with reason codes and notes to help guide physicians on why an ML recommendation was made. The FHIR datastore also allows ML developers to build custom visualizations on top of the core data platform to explain their model’s reasoning.
+See [Build with AI on Medplum](/docs/ai) for the full picture.
