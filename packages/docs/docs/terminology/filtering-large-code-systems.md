@@ -89,7 +89,7 @@ Combine both to say "this subtree, only this term type":
 }
 ```
 
-## Step 3: Exclude header and non-selectable codes {#step-3-exclude-header-and-non-selectable-codes}
+## Step 3: Exclude header and non-selectable codes
 
 FHIR has a concept for codes that are valid but shouldn't be offered as new selections: a `notSelectable`
 property on the concept. `ValueSet/$expand?excludeNotForUI=true` strips these out of the result after
