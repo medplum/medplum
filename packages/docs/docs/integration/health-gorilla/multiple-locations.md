@@ -69,25 +69,15 @@ Each individual practice location is represented by an `Organization` resource t
 
 Bots are invoked via `POST /fhir/R4/Bot/$execute?identifier={system}|{value}`. Alternatively, you can use the corresponding OperationDefinition.
 
-### Syncing Locations
+### Creating a Practice Location
 
-To sync a practice location to Health Gorilla, you call the `sync-locations` bot. This creates the location in Health Gorilla and writes the `tl-...` ID back to the Medplum `Organization`.
+To create a practice location in Health Gorilla, execute the `health-gorilla-sync-location` OperationDefinition on the `Organization` resource. This also writes the `tl-...` ID back to the Medplum `Organization`.
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://www.medplum.com/integrations/bot-identifier|health-gorilla-labs/sync-locations" \
+curl -X POST "https://api.medplum.com/fhir/R4/Organization/\$health-gorilla-sync-location" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/fhir+json" \
-  -d '{
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "location",
-        "valueReference": {
-          "reference": "Organization/{medplum-org-id}" // Reference to the practice location organization
-        }
-      }
-    ]
-  }'
+  -d '{ "reference": "Organization/{medplum-org-id}" }'
 ```
 
 ### Linking Practitioners to Locations
@@ -115,7 +105,7 @@ Each extension entry references a Medplum practice-location `Organization` (the 
 To trigger a sync immediately after setting up the extension, rather than waiting for the practitioner's next order, execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$sync-practitioner" \
+curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$health-gorilla-sync-practitioner" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/fhir+json" \
   -d '{}'

@@ -19,7 +19,7 @@ The basic process is:
 To trigger the sync for a practitioner, you can execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$sync-practitioner" \
+curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$health-gorilla-sync-practitioner" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/fhir+json" \
   -d '{
