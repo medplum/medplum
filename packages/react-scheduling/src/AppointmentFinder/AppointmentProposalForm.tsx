@@ -19,6 +19,7 @@ import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/rea
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -76,6 +77,14 @@ export interface AppointmentProposalFormProps {
   /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
   /**
+   * Called with the time chosen, and with `undefined` once it is dropped.
+   *
+   * Every answer above the time drops it — a different day, a different provider —
+   * so a host pointing at the time on a calendar of its own takes the marker down
+   * rather than leaving it on a time nobody chose.
+   */
+  readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
+  /**
    * Performs the booking with the proposal the form assembled.
    *
    * Resolving marks the form booked, so it stops offering to book until an answer
@@ -112,6 +121,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
+    onChangeTime,
     onBook,
   } = props;
 
@@ -165,6 +175,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       onToggleTimeFinder?.(searching);
     }
   }, [searching, onToggleTimeFinder]);
+
+  // Same shape as above: the ref holds the last time reported, so mounting takes down
+  // no marker the host put up, and clearing a time nobody chose reports no drop.
+  const reportedTime = useRef<Appointment | undefined>(undefined);
+  useEffect(() => {
+    if (reportedTime.current !== chosen) {
+      reportedTime.current = chosen;
+      onChangeTime?.(toRange(chosen));
+    }
+  }, [chosen, onChangeTime]);
 
   const patientItem = useCallback(
     (option: AsyncAutocompleteOption<WithId<Patient>>) => (
@@ -547,6 +567,19 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
   return (
     getIdentifierByType(patient, MRN_IDENTIFIER_TYPE) ?? (mrnSystem ? getIdentifier(patient, mrnSystem) : undefined)
   );
+}
+
+/**
+ * Reads the interval a proposal runs over.
+ *
+ * @param appointment - The chosen proposal, if one has been chosen.
+ * @returns When the visit starts and ends, or undefined until a time is chosen.
+ */
+function toRange(appointment: Appointment | undefined): DateTimeRange | undefined {
+  if (!appointment?.start || !appointment.end) {
+    return undefined;
+  }
+  return { start: new Date(appointment.start), end: new Date(appointment.end) };
 }
 
 /**

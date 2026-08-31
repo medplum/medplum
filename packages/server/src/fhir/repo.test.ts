@@ -19,6 +19,7 @@ import {
 } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type {
+  AuditEvent,
   Binary,
   BundleEntry,
   Login,
@@ -44,7 +45,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
 import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
@@ -429,6 +430,34 @@ describe('FHIR Repo', () => {
       })
     );
   });
+
+  test('Includes numResults in search AuditEvent entity detail', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const prevLogAuditEvents = getConfig().logAuditEvents;
+      getConfig().logAuditEvents = true;
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+      try {
+        const family = randomUUID();
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+
+        writeSpy.mockClear();
+        await repo.search({
+          resourceType: 'Patient',
+          filters: [{ code: 'family', operator: Operator.EQUALS, value: family }],
+        });
+
+        const auditEventLog = writeSpy.mock.calls.map((call) => call[0] as string).find((s) => s.includes('search'));
+        expect(auditEventLog).toBeDefined();
+        const auditEvent = JSON.parse(auditEventLog as string) as AuditEvent;
+        expect(auditEvent.entity?.[0].detail).toStrictEqual([{ type: 'numResults', valueString: '2' }]);
+      } finally {
+        getConfig().logAuditEvents = prevLogAuditEvents;
+        writeSpy.mockRestore();
+      }
+    }));
 
   test('Logs mixed transaction access across repo and system repo', async () => {
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});

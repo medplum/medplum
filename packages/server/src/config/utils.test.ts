@@ -98,6 +98,14 @@ describe('utils', () => {
     });
   });
 
+  test('setValue stores blockedEmailDomains as comma-separated list', () => {
+    const config = {};
+    setValue(config, 'blockedEmailDomains', 'example.com,test.com');
+    expect(config).toEqual({
+      blockedEmailDomains: ['example.com', 'test.com'],
+    });
+  });
+
   test('setValue parses objects', () => {
     const config = {};
     const jsonData = '{"host":"smtp.example.com","port":587,"username":"username","password":"p@ssw0rd"}';
