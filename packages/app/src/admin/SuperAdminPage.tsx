@@ -165,7 +165,7 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function rebuildIndex(targets: DatabaseReindexTarget[]): void {
-    startAsyncJob(medplum, 'Reindexing Database', 'admin/super/rebuild-index', { targets });
+    startAsyncJob(medplum, 'Rebuilding indexes', 'admin/super/rebuild-index', { targets });
   }
 
   return (

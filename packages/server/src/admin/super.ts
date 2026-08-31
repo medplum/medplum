@@ -475,7 +475,7 @@ superAdminRouter.post(
       return;
     }
 
-    const targets = req.body.targets as ReindexTarget[];
+    const targets = req.body.targets as RebuildIndexTarget[];
     const migrationActions = {
       preDeploy: [],
       postDeploy: targets.map((target) =>
@@ -506,7 +506,7 @@ superAdminRouter.post(
   }
 );
 
-type ReindexTarget = { table: string } | { index: string };
+type RebuildIndexTarget = { table: string } | { index: string };
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.
