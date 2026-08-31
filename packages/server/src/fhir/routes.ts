@@ -47,6 +47,7 @@ import { tryCustomOperation } from './operations/custom';
 import { getColumnStatisticsHandler } from './operations/db-column-statistics';
 import { configureColumnStatisticsHandler } from './operations/db-configure-column-statistics';
 import { dbConfigureIndexesHandler } from './operations/db-configure-indexes';
+import { dbIndexBloatHandler } from './operations/db-index-bloat';
 import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
@@ -453,6 +454,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
+  router.add('GET', '/$db-index-bloat', dbIndexBloatHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
   router.add('GET', '/$get-ws-sub-stats', getWsSubStatsHandler);
