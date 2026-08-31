@@ -492,7 +492,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await openFinderOnThreeDays();
 
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
 
       // Reaching a week's worth of times otherwise costs a click for every two days
       // beyond the first three.
@@ -509,7 +509,7 @@ describe('AppointmentProposalForm', () => {
       await openFinderOnThreeDays();
       get.mockClear();
 
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
 
       // `$find` pages a window at once, so the five days are one request asked for a
       // page wide enough to hold all of them.
@@ -523,7 +523,7 @@ describe('AppointmentProposalForm', () => {
       setup(medplum);
       await openFinderOnThreeDays();
 
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
 
       // Unlike the days that merely come with a picked day, where only the day picked
       // is marked: here every day of the stretch was asked for.
@@ -583,7 +583,7 @@ describe('AppointmentProposalForm', () => {
     test('Adds days under a stretch that was picked', async () => {
       setup(medplum);
       await openFinderOnThreeDays();
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
       await screen.findByText(/Friday, August 21/);
 
       await showMoreDays();
@@ -596,7 +596,7 @@ describe('AppointmentProposalForm', () => {
     test('Puts the added days away back to the stretch that was picked, not to three days', async () => {
       setup(medplum);
       await openFinderOnThreeDays();
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
       await screen.findByText(/Friday, August 21/);
       await showMoreDays();
       expect(await screen.findByText(/Sunday, August 23/)).toBeInTheDocument();
@@ -616,7 +616,7 @@ describe('AppointmentProposalForm', () => {
       await chooseFirstOfferedTime();
       expect(chosenTimeField()).not.toBeNull();
 
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
 
       // The times on offer have changed, and a proposal carries the Slots it was
       // found for.
@@ -630,7 +630,7 @@ describe('AppointmentProposalForm', () => {
       // The gesture leaves no mark on the calendar to find it by.
       expect(screen.getByText(/August 17 – August 19 · drag or shift-click/)).toBeInTheDocument();
 
-      await dragDays('17', '18', '19', '20', '21');
+      await dragDays('17', '21');
 
       expect(await screen.findByText(/August 17 – August 21 · drag or shift-click/)).toBeInTheDocument();
     });

@@ -155,21 +155,27 @@ export async function chooseDay(dayOfMonth: string): Promise<void> {
 /**
  * Drags across the calendar, which asks for the stretch of days the drag covered.
  *
- * One step per act, because the days the drag has reached are read back out of state
- * on the next render. The release goes to the window, where the calendar listens for
- * it: a drag is let go of wherever the pointer has got to, which need not be a day.
+ * Only the two ends are travelled: a drag asks for the days between where it began and
+ * where it was let go, so the days passed over on the way change nothing but the band
+ * drawn mid-drag, which `CalendarDateInput` proves for itself. Don't restore a step per
+ * day here — it costs a render each and settles nothing.
  *
- * @param daysOfMonth - The numbers the cells are labelled with, in the order dragged over.
+ * One step per act, though, because the day a drag has reached is read back out of
+ * state on the next render: a press and a move inside one act would leave the move
+ * looking at a drag that had not begun, and the release would ask for a single day.
+ * The release goes to the window, where the calendar listens for it — a drag is let go
+ * of wherever the pointer has got to, which need not be a day.
+ *
+ * @param from - The number the cell the drag begins on is labelled with.
+ * @param to - The number the cell it is let go on is labelled with.
  */
-export async function dragDays(...daysOfMonth: string[]): Promise<void> {
-  for (const [index, day] of daysOfMonth.entries()) {
-    await act(async () => {
-      if (index === 0) {
-        fireEvent.pointerDown(dayCell(day));
-      }
-      fireEvent.pointerOver(dayCell(day));
-    });
-  }
+export async function dragDays(from: string, to: string): Promise<void> {
+  await act(async () => {
+    fireEvent.pointerDown(dayCell(from));
+  });
+  await act(async () => {
+    fireEvent.pointerOver(dayCell(to));
+  });
   await act(async () => {
     fireEvent.pointerUp(window);
   });
@@ -179,18 +185,13 @@ export async function dragDays(...daysOfMonth: string[]): Promise<void> {
 /**
  * Shift-clicks a day, which moves the nearer end of the days on show to it.
  *
- * Pressed and released as well as clicked: the press is what a shift-click has to
- * survive, since it is the same press that begins a drag.
+ * The click alone, since it is the click that carries the shift. Surviving the press a
+ * real one follows — the same press that would otherwise begin a drag — is the
+ * calendar's own concern, and is driven in `CalendarDateInput`'s tests.
  *
  * @param dayOfMonth - The number the cell is labelled with.
  */
 export async function shiftChooseDay(dayOfMonth: string): Promise<void> {
-  await act(async () => {
-    fireEvent.pointerDown(dayCell(dayOfMonth), { shiftKey: true });
-  });
-  await act(async () => {
-    fireEvent.pointerUp(window);
-  });
   await act(async () => {
     fireEvent.click(dayCell(dayOfMonth), { shiftKey: true });
   });
