@@ -176,6 +176,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     }
   }, [searching, onToggleTimeFinder]);
 
+  // Same shape as above: the ref holds the last time reported, so mounting takes down
+  // no marker the host put up, and clearing a time nobody chose reports no drop.
   const reportedTime = useRef<Appointment | undefined>(undefined);
   useEffect(() => {
     if (reportedTime.current !== chosen) {
