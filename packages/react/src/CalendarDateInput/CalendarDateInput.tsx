@@ -76,8 +76,7 @@ export function CalendarDateInput(props: CalendarDateInputProps): JSX.Element {
   // blinks down to the day pressed on the way to every click.
   const dragging = drag.range && !isSameDay(drag.range.start, drag.range.end) ? drag.range : undefined;
   const range = toDays(dragging ?? props.range);
-  // What is being dragged out is what is on show, rather than whatever was picked before
-  // the drag began.
+  // Suppressed only while actively dragging, so a static range still shows its picked day.
   const selected = dragging ? undefined : props.selected;
 
   const grid = useMemo(() => buildGrid(month, props.availableDates), [month, props.availableDates]);

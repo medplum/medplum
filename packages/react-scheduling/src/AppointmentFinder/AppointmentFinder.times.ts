@@ -13,9 +13,8 @@ export const MAX_FIND_WINDOW_DAYS = 31;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * The most days one listing will name, however many were searched. A search that
- * grows a couple of days at a time can outrun a single `$find` window, so the bound
- * is a year rather than that operation's own.
+ * The most days one listing will name. A search that grows a few days at a time can
+ * outrun a single `$find` window, so this is bounded independently, at roughly a year.
  */
 const MAX_LISTED_DAYS = 366;
 
@@ -181,9 +180,9 @@ export function filterByTimeOfDay(
  *
  * @param appointments - Proposed appointments from `$find`.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
- * @param searched - Days to list whether or not they offer anything, so a day that was
- *   asked about and came back empty says so rather than going missing. Read as calendar
- *   days on the reader's own clock, which is the calendar a day is picked from.
+ * @param searched - Days to list whether or not they offer anything, so a searched day
+ *   that came back empty still shows up rather than going missing. Read on the local
+ *   calendar, matching how a day is picked.
  * @returns Days in ascending order, each holding its groups.
  */
 export function groupAppointmentsByDay(

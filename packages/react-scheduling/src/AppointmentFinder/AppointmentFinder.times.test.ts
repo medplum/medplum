@@ -106,8 +106,8 @@ describe('groupAppointmentsByDay', () => {
   });
 
   test('Keeps a day that offered times outside the days searched', () => {
-    // The window is asked for in whole local days and the times are read at the site,
-    // so a search can be answered with a day at either edge of the one asked about.
+    // The search window is local days, but times are read in the site's own timezone,
+    // so a result can land a day off the searched edge.
     const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-26T13:00:00.000Z' })], EASTERN, {
       start: new Date(2026, 6, 27),
       end: new Date(2026, 6, 27, 23, 59, 59, 999),
@@ -248,8 +248,6 @@ describe('formatDateRange', () => {
   });
 
   test('Names the days however the caller asks them to be named', () => {
-    // Beside headings that already carry the weekday, saying it again says the same
-    // thing twice.
     expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) }, formatDayLabel)).toBe(
       'July 27 – July 30'
     );

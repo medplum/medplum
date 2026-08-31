@@ -169,8 +169,7 @@ describe('CalendarDateInput', () => {
       />
     );
 
-    // The band is what is on show; only the day named was picked, and the far end of
-    // the stretch is not a second thing to take hold of.
+    // Only the day named was picked; the far end of the band is not itself selectable.
     expect(screen.getByRole('button', { name: '10' }).className).toContain('selected');
     expect(screen.getByRole('button', { name: '12' }).className).not.toContain('selected');
     expect(cellOf('12').className).toContain('inRange');

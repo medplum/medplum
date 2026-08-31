@@ -185,9 +185,9 @@ export async function dragDays(from: string, to: string): Promise<void> {
 /**
  * Shift-clicks a day, which moves the nearer end of the days on show to it.
  *
- * The click alone, since it is the click that carries the shift. Surviving the press a
- * real one follows — the same press that would otherwise begin a drag — is the
- * calendar's own concern, and is driven in `CalendarDateInput`'s tests.
+ * Fires only the click, which is what carries the shift: surviving the press that a
+ * real shift-click follows (the same press that would otherwise start a drag) is
+ * `CalendarDateInput`'s own concern, and is covered by its own tests.
  *
  * @param dayOfMonth - The number the cell is labelled with.
  */

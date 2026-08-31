@@ -54,23 +54,17 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
 
-// Picking a day asks about the two after it as well: one day's times are often too
-// few to choose between, and the days after it are then a look away, not a click away.
+// Also searches the two days after the one picked: one day's times are often too
+// few to choose between.
 const DAYS_SHOWN = 3;
 
-/** Days each "Show more" adds under the ones already on screen. */
 const MORE_DAYS = 2;
 
-/** Times to ask for per day searched. */
 const TIMES_PER_DAY = 20;
 
-/**
- * What the calendar's gestures do, said beneath it because neither leaves a mark on it
- * to be found by.
- */
+// Shown beneath the calendar, since dragging or shift-clicking leaves no visible mark.
 const DAY_GESTURE_HINT = 'drag or shift-click to search more days';
 
-/** Joins phrases sharing a line. Presentational: neither phrase it separates carries it. */
 const HINT_SEPARATOR = ' · ';
 
 export interface AppointmentProposalFormProps {
@@ -196,29 +190,25 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
   }, [service, selections]);
 
-  // What the windows already answered offered, plus the one being answered now.
-  // While a further window is out the hook still holds the last one's times, which
-  // `found` is already carrying.
+  // While a further window is loading, `search.appointments` is that window's
+  // in-flight result, not yet part of `found`.
   const times = useMemo(
     () => (search.loading ? daySearch.found : [...daySearch.found, ...search.appointments]),
     [search.loading, search.appointments, daySearch.found]
   );
 
-  // Every day asked about, the calendar and the times reading off the same stretch.
   const shownDays = useMemo(
     () => ({ start: daySearch.first.start, end: daySearch.range.end }),
     [daySearch.first.start, daySearch.range.end]
   );
 
-  // Including the days offering nothing: a day that goes missing is indistinguishable
-  // from a day nobody looked at, which would make "Show more" look like it did nothing
-  // at all.
+  // Passing shownDays lists empty days too, so a day that came back with nothing still
+  // shows up rather than looking like nobody asked about it.
   const days = useMemo(() => groupAppointmentsByDay(times, timezone, shownDays), [times, timezone, shownDays]);
 
   const anyTimes = days.some((day) => day.groups.length > 0);
 
-  // Nothing to show yet rather than something to add to: the first window for these
-  // answers is still out, so the panel holds a spinner instead of days.
+  // A spinner rather than empty days: only while the first window is still out.
   const pending = search.loading && !daySearch.extended;
 
   // The ref holds what the host was last told, so mounting reports nothing and a
@@ -295,20 +285,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setChosen(undefined);
   }
 
-  /**
-   * Searches the stretch of days a drag or a shift-click asked for, all at once.
-   *
-   * Held stable, unlike {@link chooseDay}: the calendar listens for the end of a drag
-   * on the window while one is under way, and re-subscribes whenever this changes.
-   */
+  // Held stable, unlike `chooseDay`: the calendar listens for a drag's end on the
+  // window for as long as it's under way, and re-subscribes whenever this changes.
   const chooseRange = useCallback((start: Date, end: Date): void => {
     setDaySearch(openRangeSearch(start, end));
     setChosen(undefined);
   }, []);
 
-  /**
-   * Puts the days after the ones on screen up for searching too.
-   */
   function showMoreDays(): void {
     setDaySearch((previous) => ({
       ...previous,
@@ -460,8 +443,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             </Text>
           )}
           {!pending && !search.error && !windowError && (
-            // Nothing says how far ahead there is anything to find, so the days keep
-            // going as long as they are asked for.
+            // No signal for how far ahead there's anything to find, so this has no end state.
             <Button variant="subtle" loading={search.loading} onClick={showMoreDays}>
               Show more days
             </Button>
