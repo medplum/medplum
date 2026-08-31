@@ -3,7 +3,7 @@
 import { OperationOutcomeError } from '@medplum/core';
 import type { Project, User } from '@medplum/fhirtypes';
 import { MAX_PASSWORD_LENGTH } from '../constants';
-import { bcryptHashPassword, isEmailDomainAllowed, isMfaRequired } from './utils';
+import { bcryptHashPassword, isMfaRequired, isPractitionerEmailDomainAllowed } from './utils';
 
 describe('isMfaRequired', () => {
   function createMfaTestUser(mfaRequired?: boolean): User {
@@ -43,81 +43,81 @@ describe('isMfaRequired', () => {
   });
 });
 
-describe('isEmailDomainAllowed', () => {
+describe('isPractitionerEmailDomainAllowed', () => {
   function projectWithAllowedDomains(...domains: (string | undefined)[]): Project {
     return {
       resourceType: 'Project',
-      setting: domains.map((valueString) => ({ name: 'allowedEmailDomain', valueString })),
+      setting: domains.map((valueString) => ({ name: 'allowedPractitionerEmailDomain', valueString })),
     };
   }
 
   test('Allows any domain when project is unset', () => {
-    expect(isEmailDomainAllowed('user@acme.com', undefined)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', undefined)).toBe(true);
   });
 
   test('Allows any domain when project has no settings', () => {
-    expect(isEmailDomainAllowed('user@acme.com', { resourceType: 'Project' })).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', { resourceType: 'Project' })).toBe(true);
   });
 
   test('Allows any domain when project has unrelated settings only', () => {
     const project: Project = { resourceType: 'Project', setting: [{ name: 'mfaRequired', valueBoolean: true }] };
-    expect(isEmailDomainAllowed('user@acme.com', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', project)).toBe(true);
   });
 
   test('Allows a matching domain and rejects a non-matching one', () => {
     const project = projectWithAllowedDomains('acme.com');
-    expect(isEmailDomainAllowed('user@acme.com', project)).toBe(true);
-    expect(isEmailDomainAllowed('user@other.com', project)).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@other.com', project)).toBe(false);
   });
 
   test('Allows an email matching any of multiple repeated settings', () => {
     const project = projectWithAllowedDomains('acme.com', 'example.org');
-    expect(isEmailDomainAllowed('user@acme.com', project)).toBe(true);
-    expect(isEmailDomainAllowed('user@example.org', project)).toBe(true);
-    expect(isEmailDomainAllowed('user@other.com', project)).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@example.org', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@other.com', project)).toBe(false);
   });
 
   test('Does not allow subdomains of an allowed domain', () => {
     const project = projectWithAllowedDomains('acme.com');
-    expect(isEmailDomainAllowed('user@mail.acme.com', project)).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('user@mail.acme.com', project)).toBe(false);
   });
 
   test('Matches case-insensitively on both sides', () => {
     const project = projectWithAllowedDomains('Acme.COM');
-    expect(isEmailDomainAllowed('user@acme.com', project)).toBe(true);
-    expect(isEmailDomainAllowed('USER@ACME.COM', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('USER@ACME.COM', project)).toBe(true);
   });
 
   test('Ignores an empty or missing valueString', () => {
     const onlyEmpty = projectWithAllowedDomains('', undefined);
-    expect(isEmailDomainAllowed('user@anything.com', onlyEmpty)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@anything.com', onlyEmpty)).toBe(true);
 
     const mixed = projectWithAllowedDomains('', 'acme.com');
-    expect(isEmailDomainAllowed('user@acme.com', mixed)).toBe(true);
-    expect(isEmailDomainAllowed('user@other.com', mixed)).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', mixed)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@other.com', mixed)).toBe(false);
   });
 
   test('Trims whitespace around a configured domain', () => {
     const project = projectWithAllowedDomains(' acme.com ');
-    expect(isEmailDomainAllowed('user@acme.com', project)).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', project)).toBe(true);
   });
 
   test('Allows any domain when the blocked list is empty', () => {
-    expect(isEmailDomainAllowed('user@acme.com', undefined, [])).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', undefined, [])).toBe(true);
   });
 
   test('Rejects a domain on the blocked list even when the project has no restrictions', () => {
-    expect(isEmailDomainAllowed('user@blocked.com', undefined, ['blocked.com'])).toBe(false);
-    expect(isEmailDomainAllowed('user@acme.com', undefined, ['blocked.com'])).toBe(true);
+    expect(isPractitionerEmailDomainAllowed('user@blocked.com', undefined, ['blocked.com'])).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', undefined, ['blocked.com'])).toBe(true);
   });
 
   test('Rejects a blocked domain even when it is in the project allowed list', () => {
     const project = projectWithAllowedDomains('acme.com');
-    expect(isEmailDomainAllowed('user@acme.com', project, ['acme.com'])).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('user@acme.com', project, ['acme.com'])).toBe(false);
   });
 
   test('Matches blocked domains case-insensitively and trims whitespace', () => {
-    expect(isEmailDomainAllowed('USER@BLOCKED.COM', undefined, [' Blocked.COM '])).toBe(false);
+    expect(isPractitionerEmailDomainAllowed('USER@BLOCKED.COM', undefined, [' Blocked.COM '])).toBe(false);
   });
 });
 

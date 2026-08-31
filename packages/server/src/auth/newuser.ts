@@ -15,7 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword, isEmailDomainAllowed } from './utils';
+import { bcryptHashPassword, isPractitionerEmailDomainAllowed, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -66,6 +66,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   // If the user is a practitioner, then projectId should be undefined
   // If the user is a patient, then projectId must be set
   const email = req.body.email.toLowerCase();
+  const userReq = { ...req.body, email } as NewUserRequest;
 
   if (projectId && projectId !== 'new') {
     let project: Project;
@@ -75,7 +76,12 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       sendOutcome(res, normalizeOperationOutcome(err));
       return;
     }
-    if (!isEmailDomainAllowed(email, project, config.blockedEmailDomains)) {
+    const registrationOutcome = projectRegistrationAllowed(project);
+    if (registrationOutcome) {
+      sendOutcome(res, registrationOutcome);
+      return;
+    }
+    if (!isPractitionerEmailDomainAllowed(email, project, config.blockedEmailDomains)) {
       sendOutcome(res, badRequest('Email domain is not allowed for this project', 'email'));
       return;
     }
@@ -93,7 +99,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 
   try {
-    const user = await createUser({ ...req.body, email } as NewUserRequest);
+    const user = await createUser(userReq);
 
     const login = await tryLogin({
       authMethod: 'password',
