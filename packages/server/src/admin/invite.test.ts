@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import type { ProfileResource, WithId } from '@medplum/core';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type {
   AccessPolicy,
   BundleEntry,
   Patient,
   Practitioner,
+  Project,
   ProjectMembership,
   Reference,
   RelatedPerson,
@@ -2115,4 +2117,121 @@ describe('Admin Invite', () => {
 
       expect(membership.accessPolicy).toBeUndefined();
     }));
+  describe('Practitioner email domain allow list', () => {
+    async function createProjectWithAllowList(allowedPractitionerEmailDomain: string[]): Promise<WithId<Project>> {
+      const { project } = await createTestProject({ project: { allowedPractitionerEmailDomain } });
+      return project;
+    }
+
+    async function invitePractitioner(allowed: string[], emailDomain: string): Promise<WithId<ProfileResource>> {
+      const { profile } = await inviteUser({
+        project: await createProjectWithAllowList(allowed),
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@${emailDomain}`,
+        sendEmail: false,
+      });
+      return profile;
+    }
+
+    test.each<[string, string[], string]>([
+      ['an allowed domain', ['example.com', 'example.org'], 'example.org'],
+      ['an allowed domain in a different case', ['Example.COM'], 'EXAMPLE.com'],
+      ['any domain when the allow list is empty', [], 'anything.example'],
+    ])('Allows %s', (_desc, allowed, emailDomain) =>
+      withTestContext(async () => {
+        await expect(invitePractitioner(allowed, emailDomain)).resolves.toMatchObject({
+          resourceType: 'Practitioner',
+        });
+      })
+    );
+
+    // The subdomain case also guards against a naive `email.endsWith(domain)` implementation.
+    test.each<[string, string]>([
+      ['an unlisted domain', 'notexample.com'],
+      ['a subdomain of an allowed domain', 'mail.example.com'],
+    ])('Rejects %s', (_desc, emailDomain) =>
+      withTestContext(async () => {
+        await expect(invitePractitioner(['example.com'], emailDomain)).rejects.toThrow(
+          `Email address domain "${emailDomain}" is not allowed for Practitioner accounts`
+        );
+      })
+    );
+
+    test('Allows a Practitioner invited by externalId with no email', () =>
+      withTestContext(async () => {
+        const { profile } = await inviteUser({
+          project: await createProjectWithAllowList(['example.com']),
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          externalId: randomUUID(),
+          sendEmail: false,
+        });
+
+        expect(profile.resourceType).toBe('Practitioner');
+      }));
+
+    test('Does not restrict Patient invites', () =>
+      withTestContext(async () => {
+        const { profile } = await inviteUser({
+          project: await createProjectWithAllowList(['example.com']),
+          resourceType: 'Patient',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: `bob${randomUUID()}@gmail.com`,
+          sendEmail: false,
+        });
+
+        expect(profile.resourceType).toBe('Patient');
+      }));
+
+    test('Does not restrict RelatedPerson invites', () =>
+      withTestContext(async () => {
+        const project = await createProjectWithAllowList(['example.com']);
+        const systemRepo = await getProjectSystemRepo(project);
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { project: project.id },
+        });
+
+        const { profile } = await inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: `bob${randomUUID()}@gmail.com`,
+          patient: createReference(patient),
+          sendEmail: false,
+        });
+
+        expect(profile.resourceType).toBe('RelatedPerson');
+      }));
+
+    test('Returns HTTP 400 from the invite endpoint', () =>
+      withTestContext(async () => {
+        const { project, accessToken } = await createTestProject({
+          project: { allowedPractitionerEmailDomain: ['example.com'] },
+          membership: { admin: true },
+          withAccessToken: true,
+        });
+
+        const res = await request(app)
+          .post('/admin/projects/' + project.id + '/invite')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .type('json')
+          .send({
+            resourceType: 'Practitioner',
+            firstName: 'Bob',
+            lastName: 'Jones',
+            email: `bob${randomUUID()}@notexample.com`,
+          });
+
+        expect(res.status).toBe(400);
+        expect(res.body.issue[0].details.text).toContain(
+          'Email address domain "notexample.com" is not allowed for Practitioner accounts'
+        );
+      }));
+  });
 });

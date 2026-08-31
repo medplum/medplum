@@ -97,6 +97,8 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     request.email = request.email.toLowerCase();
   }
 
+  validatePractitionerEmailDomain(request);
+
   const { project, email } = request;
   let existingUser = false;
   let passwordResetUrl: string | undefined;
@@ -170,6 +172,32 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   return { user, profile, membership };
+}
+
+/**
+ * Enforces the project's Practitioner email domain allow list.
+ *
+ * Practitioners are generally staff of the organization that owns the project, so a project can
+ * restrict which email domains may be invited as one. Patients and RelatedPersons are deliberately
+ * exempt, since they legitimately arrive from any consumer email provider.
+ *
+ * Domains are compared exactly, so "example.com" does not permit "mail.example.com". Invites
+ * without an email address (externalId only) have nothing to match against and are always allowed.
+ * @param request - The invite request, with `email` already normalized to lower case.
+ */
+function validatePractitionerEmailDomain(request: ServerInviteRequest): void {
+  const allowedDomains = request.project.allowedPractitionerEmailDomain;
+  if (request.resourceType !== 'Practitioner' || !allowedDomains?.length || !request.email) {
+    return;
+  }
+
+  // An address with no "@" yields the whole string, which cannot match a domain, so it is rejected.
+  const domain = request.email.slice(request.email.lastIndexOf('@') + 1);
+  if (!allowedDomains.some((allowed) => allowed.trim().toLowerCase() === domain)) {
+    throw new OperationOutcomeError(
+      badRequest(`Email address domain "${domain}" is not allowed for Practitioner accounts in this project`)
+    );
+  }
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {

@@ -12360,6 +12360,17 @@
           ]
         },
         {
+          "id": "Project.allowedPractitionerEmailDomain",
+          "path": "Project.allowedPractitionerEmailDomain",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
           "id": "Project.exportedResourceType",
           "path": "Project.exportedResourceType",
           "min": 0,

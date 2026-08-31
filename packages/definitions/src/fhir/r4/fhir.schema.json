@@ -61535,6 +61535,13 @@
           },
           "type": "array"
         },
+        "allowedPractitionerEmailDomain": {
+          "description": "Email domains allowed for new Practitioner accounts. When present, an invite for a Practitioner with an email address outside of these domains is rejected. Domains are matched exactly and case-insensitively, so \"example.com\" does not allow \"mail.example.com\". This does not apply to Patient or RelatedPerson invites, or to invites without an email address.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
         "exportedResourceType": {
           "description": "The resource types exported by the project when linked",
           "items": {

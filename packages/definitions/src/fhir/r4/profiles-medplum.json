@@ -620,6 +620,19 @@
             }
           },
           {
+            "id": "Project.allowedPractitionerEmailDomain",
+            "path": "Project.allowedPractitionerEmailDomain",
+            "definition": "Email domains allowed for new Practitioner accounts. When present, an invite for a Practitioner with an email address outside of these domains is rejected. Domains are matched exactly and case-insensitively, so \"example.com\" does not allow \"mail.example.com\". This does not apply to Patient or RelatedPerson invites, or to invites without an email address.",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "string"}],
+            "base": {
+              "path": "Project.allowedPractitionerEmailDomain",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
             "id": "Project.exportedResourceType",
             "path": "Project.exportedResourceType",
             "definition": "The resource types exported by the project when linked",

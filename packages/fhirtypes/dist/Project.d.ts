@@ -195,6 +195,16 @@ export interface Project {
   defaultAccessPolicies?: ProjectDefaultAccessPolicies[];
 
   /**
+   * Email domains allowed for new Practitioner accounts. When present, an
+   * invite for a Practitioner with an email address outside of these
+   * domains is rejected. Domains are matched exactly and
+   * case-insensitively, so &quot;example.com&quot; does not allow
+   * &quot;mail.example.com&quot;. This does not apply to Patient or RelatedPerson
+   * invites, or to invites without an email address.
+   */
+  allowedPractitionerEmailDomain?: string[];
+
+  /**
    * The resource types exported by the project when linked
    */
   exportedResourceType?: ResourceType[];
