@@ -863,7 +863,8 @@ describe('Database migrations', () => {
         expect(res).toHaveStatus(202);
         expect(res.headers['content-location']).toBeDefined();
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
-        expect(queueAddSpy.mock.calls[0][1]).toMatchObject({
+        const jobData = queueAddSpy.mock.calls[0][1];
+        expect(jobData).toMatchObject({
           type: 'dynamic',
           migrationActions: {
             preDeploy: [],
@@ -873,6 +874,9 @@ describe('Database migrations', () => {
             ],
           },
         });
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+        expect(asyncJob.request).toBe('/admin/super/reindex-database?index=Patient_name_idx&table=Observation');
+        expect(asyncJob.meta?.project).toBeUndefined();
       });
 
       test.each([
