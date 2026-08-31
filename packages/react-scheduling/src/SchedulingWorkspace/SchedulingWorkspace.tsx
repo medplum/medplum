@@ -10,6 +10,7 @@ import {
   isDefined,
   normalizeErrorString,
   SchedulingScheduleColorURI,
+  sortStringArray,
   TimezoneExtensionURI,
 } from '@medplum/core';
 import type { Appointment, HealthcareService, Slot } from '@medplum/fhirtypes';
@@ -171,7 +172,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return map;
   }, [activeCandidates]);
 
-  const serviceRefsKey = [...new Set(singleServiceReferenceByScheduleId.values())].sort().join(',');
+  const serviceRefsKey = sortStringArray([...new Set(singleServiceReferenceByScheduleId.values())]).join(',');
 
   const [servicesByReference, setServicesByReference] = useState<Map<string, WithId<HealthcareService>>>(new Map());
 
