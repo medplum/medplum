@@ -177,7 +177,7 @@ export async function queuePostDeployMigration(
   // picked up before the transaction was committed.
   // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
   const jobData = migration.prepareJobData(asyncJob);
-  const result = await addPostDeployMigrationJobData(jobData);
+  const result = await addPostDeployMigrationJobData(jobData, { deduplication: { id: `v${version}` } });
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {
       version,
