@@ -24,6 +24,7 @@ import {
   getActorCombinations,
   getCandidateActor,
   getCandidateDisplay,
+  getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
   searchScheduleCandidates,
@@ -697,6 +698,22 @@ describe('selections', () => {
 
   test('Nothing chosen is nothing to hold a requested time on', () => {
     expect(getActorCombinations({})).toStrictEqual([]);
+  });
+
+  test('Hands over the chosen actors themselves, keyed as a proposal names them', () => {
+    const riveraResource: WithId<Practitioner> = {
+      resourceType: 'Practitioner',
+      id: 'dr-rivera',
+      name: [{ given: ['Maya'], family: 'Rivera', prefix: ['Dr.'] }],
+    };
+    const resources = getSelectedActorResources({
+      Practitioner: [{ ...RIVERA, actorResource: riveraResource }, OKAFOR],
+    });
+
+    expect(resources.get('Practitioner/schedule-dr-rivera')).toStrictEqual(riveraResource);
+    // A candidate the search could not include contributes nothing, rather than
+    // an entry that would have to be checked for emptiness downstream.
+    expect(resources.size).toBe(1);
   });
 });
 
