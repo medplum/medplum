@@ -117,6 +117,15 @@ selectable `ResourceType/id` in this identifier system:
 https://www.medplum.com/integrations/health-gorilla/source-reference
 ```
 
+An entry's clinical date, when available, is carried as a `valueDateTime` extension on `List.entry`:
+
+```text
+https://www.medplum.com/integrations/health-gorilla/p360-clinical-date
+```
+
+Do not use `List.entry.date` for this value. FHIR R4 reserves that field for working Lists, while the
+Patient360 inventory is an immutable snapshot.
+
 Use the identifier value for display and submission. Do not resolve or submit the absolute Health
 Gorilla URL in `List.entry.item.reference`. Required referenced resources are imported automatically,
 even when they are not separately selected.
@@ -145,6 +154,9 @@ Content-Type: application/fhir+json
 The reviewed version prevents stale inventory from being imported. If the Task or its manifest changes,
 discard the previous selection, reload every current manifest List, and ask the user to review again.
 Do not automatically retry conflicts or network failures.
+
+When either workflow reaches `completed`, refresh patient chart summaries so newly imported allergies,
+problems, medications, and other clinical records are immediately visible.
 
 ### Discard a selective retrieval
 

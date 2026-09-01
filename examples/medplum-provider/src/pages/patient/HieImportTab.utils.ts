@@ -17,6 +17,10 @@ export const HIE_TASK_POLL_INTERVAL_MS = 15_000;
 
 const P360_MODE_CODE = 'p360-mode';
 const P360_MANIFEST_CODE = 'p360-selection-manifest';
+const P360_CLINICAL_DATE_EXTENSION = `${P360_CODE_SYSTEM}/p360-clinical-date`;
+const P360_DIRECT_DEPENDENCY_EXTENSION = `${P360_CODE_SYSTEM}/p360-direct-dependency`;
+const P360_MANIFEST_SCHEMA_EXTENSION = `${P360_CODE_SYSTEM}/p360-manifest-schema`;
+const P360_MANIFEST_SCHEMA_VERSION = 'dependency-graph-v1';
 const P360_SELECTION_COUNT_CODE = 'p360-selection-count';
 const P360_IMPORTED_COUNT_CODE = 'p360-imported-count';
 const P360_IGNORED_COUNT_CODE = 'p360-ignored-count';
@@ -44,6 +48,15 @@ export interface P360InventoryItem {
   resourceType: string;
   label: string;
   clinicalDate?: string;
+  dependencies: string[];
+}
+
+export interface P360SelectionSummary {
+  selectedRootIds: string[];
+  requiredIds: string[];
+  totalIds: string[];
+  requiredBy: Map<string, string[]>;
+  requiredForRoot: Map<string, string[]>;
 }
 
 export function getP360Mode(task: Task): P360Mode | undefined {
@@ -114,6 +127,10 @@ export function parseP360InventoryLists(lists: readonly List[], patientId: strin
     ) {
       throw new Error(`List/${list.id ?? 'unknown'} is not a valid Patient360 selection manifest for this patient.`);
     }
+    const schemas = list.extension?.filter((extension) => extension.url === P360_MANIFEST_SCHEMA_EXTENSION) ?? [];
+    if (schemas.length !== 1 || schemas[0].valueString !== P360_MANIFEST_SCHEMA_VERSION) {
+      throw new Error(`List/${list.id ?? 'unknown'} does not carry a supported Patient360 dependency graph.`);
+    }
     for (const entry of list.entry ?? []) {
       const identifier = entry.item.identifier;
       const value = identifier?.value?.trim();
@@ -129,11 +146,102 @@ export function parseP360InventoryLists(lists: readonly List[], patientId: strin
       if (seen.has(value)) {
         throw new Error(`Patient360 inventory contains duplicate identifier ${value}.`);
       }
+      const clinicalDates =
+        entry.extension?.filter((extension) => extension.url === P360_CLINICAL_DATE_EXTENSION) ?? [];
+      if (clinicalDates.length > 1 || (clinicalDates.length === 1 && !clinicalDates[0].valueDateTime)) {
+        throw new Error(`Patient360 inventory entry ${value} contains an invalid clinical date.`);
+      }
+      const dependencies =
+        entry.extension
+          ?.filter((extension) => extension.url === P360_DIRECT_DEPENDENCY_EXTENSION)
+          .map((extension) => {
+            const dependency = extension.valueReference;
+            const dependencyId = dependency?.identifier?.value?.trim();
+            const dependencyMatch = dependencyId ? SOURCE_REFERENCE.exec(dependencyId) : undefined;
+            if (
+              dependency?.identifier?.system !== P360_SOURCE_REFERENCE_SYSTEM ||
+              !dependencyId ||
+              !dependencyMatch ||
+              dependency.type !== dependencyMatch[1]
+            ) {
+              throw new Error(`Patient360 inventory entry ${value} contains a malformed direct dependency.`);
+            }
+            return dependencyId;
+          }) ?? [];
+      if (new Set(dependencies).size !== dependencies.length) {
+        throw new Error(`Patient360 inventory entry ${value} contains duplicate direct dependencies.`);
+      }
       seen.add(value);
-      items.push({ identifier: value, resourceType, label, clinicalDate: entry.date });
+      items.push({
+        identifier: value,
+        resourceType,
+        label,
+        clinicalDate: clinicalDates[0]?.valueDateTime,
+        dependencies: dependencies.sort(),
+      });
+    }
+  }
+  const inventoryIds = new Set(items.map((item) => item.identifier));
+  for (const item of items) {
+    for (const dependency of item.dependencies) {
+      if (!inventoryIds.has(dependency)) {
+        throw new Error(`Patient360 inventory entry ${item.identifier} references missing dependency ${dependency}.`);
+      }
     }
   }
   return items;
+}
+
+export function getP360SelectionSummary(
+  items: readonly P360InventoryItem[],
+  selectedIds: readonly string[]
+): P360SelectionSummary {
+  const byId = new Map(items.map((item) => [item.identifier, item]));
+  const order = new Map(items.map((item, index) => [item.identifier, index]));
+  const selectedRootIds = [...new Set(selectedIds)].filter((id) => byId.has(id));
+  const selectedRoots = new Set(selectedRootIds);
+  const requiredBySets = new Map<string, Set<string>>();
+  const requiredForRoot = new Map<string, string[]>();
+  const sortByInventory = (left: string, right: string): number =>
+    (order.get(left) ?? Number.MAX_SAFE_INTEGER) - (order.get(right) ?? Number.MAX_SAFE_INTEGER);
+
+  for (const rootId of selectedRootIds) {
+    const root = byId.get(rootId);
+    if (!root) {
+      continue;
+    }
+    const visited = new Set<string>([rootId]);
+    const pending = [...root.dependencies];
+    const rootRequired = new Set<string>();
+    while (pending.length > 0) {
+      const dependencyId = pending.pop() as string;
+      if (visited.has(dependencyId)) {
+        continue;
+      }
+      visited.add(dependencyId);
+      const dependency = byId.get(dependencyId);
+      if (!dependency) {
+        throw new Error(`Patient360 inventory entry ${rootId} references missing dependency ${dependencyId}.`);
+      }
+      if (!selectedRoots.has(dependencyId)) {
+        rootRequired.add(dependencyId);
+        const roots = requiredBySets.get(dependencyId) ?? new Set<string>();
+        roots.add(rootId);
+        requiredBySets.set(dependencyId, roots);
+      }
+      pending.push(...dependency.dependencies);
+    }
+    requiredForRoot.set(rootId, [...rootRequired].sort(sortByInventory));
+  }
+
+  const requiredIds = [...requiredBySets.keys()].sort(sortByInventory);
+  return {
+    selectedRootIds,
+    requiredIds,
+    totalIds: [...selectedRootIds, ...requiredIds],
+    requiredBy: new Map([...requiredBySets].map(([id, roots]) => [id, [...roots].sort(sortByInventory)])),
+    requiredForRoot,
+  };
 }
 
 export function getP360IgnoredCount(task: Task): number | undefined {

@@ -30,7 +30,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router';
 import type { HealthGorillaHieImportEligibility } from '../../hooks/useHealthGorillaHieImportEligibility';
-import type { P360InventoryItem, P360Mode } from './HieImportTab.utils';
+import type { P360InventoryItem, P360Mode, P360SelectionSummary } from './HieImportTab.utils';
 import {
   formatP360Phase,
   formatTaskStatus,
@@ -41,6 +41,7 @@ import {
   getP360Mode,
   getP360Phase,
   getP360SelectedCount,
+  getP360SelectionSummary,
   getP360UnsupportedCount,
   getTaskStatusColor,
   HIE_TASK_POLL_INTERVAL_MS,
@@ -57,6 +58,7 @@ import {
 
 interface HieImportOutletContext {
   hieImportEligibility: HealthGorillaHieImportEligibility;
+  refreshPatientSidebar: () => void;
 }
 
 interface ActionFeedback {
@@ -74,6 +76,7 @@ interface InventoryState {
 
 interface PendingSelection {
   ids: string[];
+  requiredIds: string[];
   revisionKey: string;
   taskId: string;
   taskVersion: string;
@@ -81,7 +84,7 @@ interface PendingSelection {
 
 export function HieImportTab(): JSX.Element {
   const { patientId } = useParams() as { patientId: string };
-  const { hieImportEligibility } = useOutletContext<HieImportOutletContext>();
+  const { hieImportEligibility, refreshPatientSidebar } = useOutletContext<HieImportOutletContext>();
 
   if (hieImportEligibility.loading) {
     return (
@@ -107,11 +110,11 @@ export function HieImportTab(): JSX.Element {
     );
   }
 
-  return <EligibleHieImportTab key={patientId} patientId={patientId} />;
+  return <EligibleHieImportTab key={patientId} patientId={patientId} refreshPatientSidebar={refreshPatientSidebar} />;
 }
 
-function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
-  const { patientId } = props;
+function EligibleHieImportTab(props: { patientId: string; refreshPatientSidebar: () => void }): JSX.Element {
+  const { patientId, refreshPatientSidebar } = props;
   const medplum = useMedplum();
   const [latestTask, setLatestTask] = useState<Task>();
   const [taskLoading, setTaskLoading] = useState(true);
@@ -140,6 +143,8 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
   const inventoryLoadKeyRef = useRef('');
   const previousInventoryKeyRef = useRef('');
   const awaitingTaskBaselineRef = useRef('');
+  const observedTaskRef = useRef<{ id?: string; status: Task['status'] } | undefined>(undefined);
+  const patientSidebarRefreshPendingRef = useRef(false);
 
   const refreshLatestTask = useCallback(async (): Promise<Task | undefined> => {
     const generation = ++taskRefreshGenerationRef.current;
@@ -156,6 +161,18 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
       );
       const task = tasks[0];
       if (generation === taskRefreshGenerationRef.current) {
+        const observedTask = observedTaskRef.current;
+        const completedAfterImport =
+          task?.status === 'completed' &&
+          (patientSidebarRefreshPendingRef.current ||
+            (observedTask?.id === task.id && observedTask.status !== 'completed'));
+        observedTaskRef.current = task ? { id: task.id, status: task.status } : undefined;
+        if (completedAfterImport) {
+          patientSidebarRefreshPendingRef.current = false;
+          refreshPatientSidebar();
+        } else if (task && isTerminalTask(task)) {
+          patientSidebarRefreshPendingRef.current = false;
+        }
         setLatestTask(task);
         if (
           task &&
@@ -179,7 +196,7 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
       }
     }
     return undefined;
-  }, [medplum, patientId]);
+  }, [medplum, patientId, refreshPatientSidebar]);
 
   useEffect(() => {
     let cancelled = false;
@@ -275,6 +292,10 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
     }
     return [...groups.entries()];
   }, [inventory.items]);
+  const selectionSummary = useMemo(
+    () => getP360SelectionSummary(inventory.items, selectedIds),
+    [inventory.items, selectedIds]
+  );
 
   const openConsent = (mode: P360Mode): void => {
     setRequestedMode(mode);
@@ -320,6 +341,7 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
         failureTitle: 'HIE retrieval request failed',
       });
       if (isOk(outcome)) {
+        patientSidebarRefreshPendingRef.current = true;
         awaitingTaskBaselineRef.current = latestTask ? getTaskVersionKey(latestTask) : '';
         setAwaitingTask(true);
       }
@@ -352,14 +374,15 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
     if (
       !readySelectiveTask?.id ||
       !readySelectiveTask.meta?.versionId ||
-      selectedIds.length === 0 ||
+      selectionSummary.selectedRootIds.length === 0 ||
       inventory.loading ||
       inventory.outcome
     ) {
       return;
     }
     setPendingSelection({
-      ids: [...selectedIds],
+      ids: [...selectionSummary.selectedRootIds],
+      requiredIds: [...selectionSummary.requiredIds],
       revisionKey: inventoryKey,
       taskId: readySelectiveTask.id,
       taskVersion: readySelectiveTask.meta.versionId,
@@ -513,7 +536,29 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
         )}
         {taskOutcome && <OperationOutcomeAlert outcome={taskOutcome} title="Latest HIE import status unavailable" />}
 
-        <LatestTaskCard patientId={patientId} task={latestTask} loading={taskLoading} />
+        <LatestTaskCard
+          patientId={patientId}
+          task={latestTask}
+          loading={taskLoading}
+          selectionPanel={
+            readySelectiveTask ? (
+              <SelectionPanel
+                task={readySelectiveTask}
+                inventory={inventory}
+                groupedInventory={groupedInventory}
+                selectedIds={selectedIds}
+                selectionSummary={selectionSummary}
+                inventoryChanged={inventoryChanged}
+                submitting={selectionSubmitting || discardSubmitting}
+                onToggle={toggleSelection}
+                onSelectAll={() => setSelectedIds(inventory.items.map((item) => item.identifier))}
+                onClear={() => setSelectedIds([])}
+                onImport={openSelectionConfirmation}
+                onDiscard={openDiscard}
+              />
+            ) : undefined
+          }
+        />
 
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
           <RetrievalAction
@@ -540,22 +585,6 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
               : formatTaskStatus(latestTask.status).toLowerCase()}
             .
           </Text>
-        )}
-
-        {readySelectiveTask && (
-          <SelectionPanel
-            task={readySelectiveTask}
-            inventory={inventory}
-            groupedInventory={groupedInventory}
-            selectedIds={selectedIds}
-            inventoryChanged={inventoryChanged}
-            submitting={selectionSubmitting || discardSubmitting}
-            onToggle={toggleSelection}
-            onSelectAll={() => setSelectedIds(inventory.items.map((item) => item.identifier))}
-            onClear={() => setSelectedIds([])}
-            onImport={openSelectionConfirmation}
-            onDiscard={openDiscard}
-          />
         )}
       </Stack>
 
@@ -603,10 +632,21 @@ function EligibleHieImportTab(props: { patientId: string }): JSX.Element {
         withCloseButton={!selectionSubmitting}
       >
         <Stack gap="md">
-          <Text size="sm">
-            Import {pendingSelection?.ids.length ?? 0} selected{' '}
-            {(pendingSelection?.ids.length ?? 0) === 1 ? 'record' : 'records'} and all required referenced resources?
-          </Text>
+          <Text size="sm">Review the complete set of resources before importing.</Text>
+          <Stack gap={4}>
+            <Text size="sm">
+              {pendingSelection?.ids.length ?? 0} {(pendingSelection?.ids.length ?? 0) === 1 ? 'record' : 'records'}{' '}
+              selected
+            </Text>
+            <Text size="sm">
+              {pendingSelection?.requiredIds.length ?? 0} required supporting{' '}
+              {(pendingSelection?.requiredIds.length ?? 0) === 1 ? 'record' : 'records'}
+            </Text>
+            <Text size="sm" fw={600}>
+              {(pendingSelection?.ids.length ?? 0) + (pendingSelection?.requiredIds.length ?? 0)} total resources will
+              be imported
+            </Text>
+          </Stack>
           <Group justify="flex-end">
             <Button variant="default" onClick={closeSelectionConfirmation} disabled={selectionSubmitting}>
               Cancel
@@ -684,6 +724,7 @@ function SelectionPanel(props: {
   inventory: InventoryState;
   groupedInventory: [string, P360InventoryItem[]][];
   selectedIds: string[];
+  selectionSummary: P360SelectionSummary;
   inventoryChanged: boolean;
   submitting: boolean;
   onToggle: (identifier: string, checked: boolean) => void;
@@ -694,110 +735,148 @@ function SelectionPanel(props: {
 }): JSX.Element {
   const missingVersion = !props.task.id || !props.task.meta?.versionId;
   return (
-    <Paper withBorder p="md">
-      <Stack gap="md">
-        <div>
-          <Title order={3}>Choose records to import</Title>
-          <Text size="sm" c="dimmed" mt="xs">
-            Review the retrieved inventory. No clinical records are imported until you confirm a selection.
-          </Text>
-        </div>
-        {props.inventoryChanged && (
-          <Alert color="yellow" title="Inventory changed">
-            The Task or manifest was updated. Review the refreshed inventory before selecting records again.
-          </Alert>
-        )}
-        {props.inventory.loading && (
+    <Stack gap="md">
+      <div>
+        <Title order={3}>Choose records to import</Title>
+        <Text size="sm" c="dimmed" mt="xs">
+          Review the retrieved inventory. No clinical records are imported until you confirm a selection.
+        </Text>
+      </div>
+      {props.inventoryChanged && (
+        <Alert color="yellow" title="Inventory changed">
+          The Task or manifest was updated. Review the refreshed inventory before selecting records again.
+        </Alert>
+      )}
+      {props.inventory.loading && (
+        <Group>
+          <Loader size="sm" />
+          <Text size="sm">Loading selection inventory…</Text>
+        </Group>
+      )}
+      {!props.inventory.loading && props.inventory.outcome && (
+        <OperationOutcomeAlert outcome={props.inventory.outcome} title="Unable to load selection inventory" />
+      )}
+      {!props.inventory.loading && !props.inventory.outcome && (
+        <>
           <Group>
-            <Loader size="sm" />
-            <Text size="sm">Loading selection inventory…</Text>
+            <Button
+              variant="default"
+              size="xs"
+              onClick={props.onSelectAll}
+              disabled={props.inventory.items.length === 0 || props.submitting}
+            >
+              Select all
+            </Button>
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={props.onClear}
+              disabled={props.selectedIds.length === 0 || props.submitting}
+            >
+              Clear selection
+            </Button>
+            <Text size="sm">{props.selectedIds.length} selected</Text>
+            <Text size="sm" c="dimmed">
+              {props.selectionSummary.requiredIds.length} required · {props.selectionSummary.totalIds.length} total
+            </Text>
           </Group>
-        )}
-        {!props.inventory.loading && props.inventory.outcome && (
-          <OperationOutcomeAlert outcome={props.inventory.outcome} title="Unable to load selection inventory" />
-        )}
-        {!props.inventory.loading && !props.inventory.outcome && (
-          <>
-            <Group>
-              <Button
-                variant="default"
-                size="xs"
-                onClick={props.onSelectAll}
-                disabled={props.inventory.items.length === 0 || props.submitting}
-              >
-                Select all
-              </Button>
-              <Button
-                variant="subtle"
-                size="xs"
-                onClick={props.onClear}
-                disabled={props.selectedIds.length === 0 || props.submitting}
-              >
-                Clear selection
-              </Button>
-              <Text size="sm">{props.selectedIds.length} selected</Text>
-            </Group>
-            {props.groupedInventory.length === 0 ? (
-              <Text size="sm" c="dimmed">
-                No supported records are available to select.
-              </Text>
-            ) : (
-              props.groupedInventory.map(([resourceType, items]) => (
-                <Stack key={resourceType} gap="xs">
-                  <Text fw={600}>{resourceType}</Text>
-                  {items.map((item) => (
-                    <Checkbox
-                      key={item.identifier}
-                      checked={props.selectedIds.includes(item.identifier)}
-                      disabled={props.submitting}
-                      onChange={(event) => props.onToggle(item.identifier, event.currentTarget.checked)}
-                      label={
-                        <Group justify="space-between" gap="md" wrap="nowrap">
-                          <Text size="sm">{item.label}</Text>
-                          <Text size="xs" c="dimmed">
-                            {formatDateTime(item.clinicalDate) || 'Date unavailable'}
-                          </Text>
-                        </Group>
-                      }
-                    />
-                  ))}
-                </Stack>
-              ))
-            )}
-            <Alert color="blue">
-              Required referenced resources will be imported automatically, even if they are not separately selected.
-            </Alert>
-            {missingVersion && (
-              <Alert color="red">This Task is missing the ID or version required for an optimistic update.</Alert>
-            )}
-            <Group justify="space-between">
-              <Button
-                color="red"
-                variant="outline"
-                onClick={props.onDiscard}
-                disabled={missingVersion || props.submitting}
-              >
-                Discard retrieval
-              </Button>
-              <Button
-                onClick={props.onImport}
-                disabled={props.selectedIds.length === 0 || missingVersion || props.submitting}
-              >
-                Import selected records
-              </Button>
-            </Group>
-          </>
-        )}
-      </Stack>
-    </Paper>
+          {props.groupedInventory.length === 0 ? (
+            <Text size="sm" c="dimmed">
+              No supported records are available to select.
+            </Text>
+          ) : (
+            props.groupedInventory.map(([resourceType, items]) => (
+              <Stack key={resourceType} gap="xs">
+                <Text fw={600}>{resourceType}</Text>
+                {items.map((item) => {
+                  const explicitlySelected = props.selectedIds.includes(item.identifier);
+                  const requiredBy = props.selectionSummary.requiredBy.get(item.identifier) ?? [];
+                  const required = !explicitlySelected && requiredBy.length > 0;
+                  const requiredForRoot = props.selectionSummary.requiredForRoot.get(item.identifier) ?? [];
+                  return (
+                    <Stack key={item.identifier} gap={4}>
+                      <Checkbox
+                        checked={explicitlySelected || required}
+                        disabled={props.submitting || required}
+                        onChange={(event) => props.onToggle(item.identifier, event.currentTarget.checked)}
+                        label={
+                          <Group justify="space-between" gap="md" wrap="nowrap">
+                            <Group gap="xs" wrap="nowrap">
+                              <Text size="sm">{item.label}</Text>
+                              {required && <Badge size="xs">Required</Badge>}
+                            </Group>
+                            <Text size="xs" c="dimmed">
+                              {formatDateTime(item.clinicalDate) || 'Date unavailable'}
+                            </Text>
+                          </Group>
+                        }
+                      />
+                      {required && (
+                        <Text size="xs" c="dimmed" ml="xl">
+                          Required by {requiredBy.length} selected {requiredBy.length === 1 ? 'record' : 'records'}
+                        </Text>
+                      )}
+                      {explicitlySelected && requiredForRoot.length > 0 && (
+                        <details>
+                          <summary>Required records included automatically ({requiredForRoot.length})</summary>
+                          <Stack gap={2} mt="xs" ml="md">
+                            {requiredForRoot.map((dependencyId) => {
+                              const dependency = props.inventory.items.find(
+                                (candidate) => candidate.identifier === dependencyId
+                              );
+                              return (
+                                <Text key={dependencyId} size="xs" c="dimmed">
+                                  {dependency?.label ?? dependencyId} ({dependency?.resourceType ?? 'Resource'})
+                                </Text>
+                              );
+                            })}
+                          </Stack>
+                        </details>
+                      )}
+                    </Stack>
+                  );
+                })}
+              </Stack>
+            ))
+          )}
+          <Alert color="blue">
+            Required referenced resources will be imported automatically, even if they are not separately selected.
+          </Alert>
+          {missingVersion && (
+            <Alert color="red">This Task is missing the ID or version required for an optimistic update.</Alert>
+          )}
+          <Group justify="space-between">
+            <Button
+              color="red"
+              variant="outline"
+              onClick={props.onDiscard}
+              disabled={missingVersion || props.submitting}
+            >
+              Discard retrieval
+            </Button>
+            <Button
+              onClick={props.onImport}
+              disabled={props.selectedIds.length === 0 || missingVersion || props.submitting}
+            >
+              Import selected records
+            </Button>
+          </Group>
+        </>
+      )}
+    </Stack>
   );
 }
 
-function LatestTaskCard(props: { patientId: string; task: Task | undefined; loading: boolean }): JSX.Element {
-  const { patientId, task, loading } = props;
+function LatestTaskCard(props: {
+  patientId: string;
+  task: Task | undefined;
+  loading: boolean;
+  selectionPanel?: JSX.Element;
+}): JSX.Element {
+  const { patientId, task, loading, selectionPanel } = props;
   if (loading) {
     return (
-      <Paper withBorder p="md">
+      <Paper component="section" aria-label="Latest import" withBorder p="md">
         <Group>
           <Loader size="sm" />
           <Text size="sm">Loading latest HIE import status…</Text>
@@ -807,7 +886,7 @@ function LatestTaskCard(props: { patientId: string; task: Task | undefined; load
   }
   if (!task) {
     return (
-      <Paper withBorder p="md">
+      <Paper component="section" aria-label="Latest import" withBorder p="md">
         <Text fw={600}>Latest import</Text>
         <Text size="sm" c="dimmed" mt="xs">
           No previous Patient360 import was found for this patient.
@@ -831,7 +910,7 @@ function LatestTaskCard(props: { patientId: string; task: Task | undefined; load
     modeLabel = 'Selective';
   }
   return (
-    <Paper withBorder p="md">
+    <Paper component="section" aria-label="Latest import" withBorder p="md">
       <Stack gap="sm">
         <Group justify="space-between">
           <Text fw={600}>Latest import</Text>
@@ -853,6 +932,12 @@ function LatestTaskCard(props: { patientId: string; task: Task | undefined; load
           <Button component={Link} to={`/Patient/${patientId}/Task/${task.id}`} variant="subtle" px={0} w="fit-content">
             View Task
           </Button>
+        )}
+        {selectionPanel && (
+          <>
+            <Divider my="xs" />
+            {selectionPanel}
+          </>
         )}
       </Stack>
     </Paper>

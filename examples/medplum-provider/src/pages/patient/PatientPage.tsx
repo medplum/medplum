@@ -29,6 +29,7 @@ export function PatientPage(): JSX.Element {
   const membership = medplum.getProjectMembership();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
+  const [patientSummaryVersion, setPatientSummaryVersion] = useState(0);
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
   const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
@@ -48,7 +49,11 @@ export function PatientPage(): JSX.Element {
 
   const handleCloseLabsModal = useCallback(() => {
     setIsLabsModalOpen(false);
-  }, []);
+  }, [setIsLabsModalOpen]);
+
+  const refreshPatientSidebar = useCallback(() => {
+    setPatientSummaryVersion((version) => version + 1);
+  }, [setPatientSummaryVersion]);
 
   const sections = useMemo(
     () =>
@@ -81,6 +86,7 @@ export function PatientPage(): JSX.Element {
         <div className={classes.sidebar}>
           <ScrollArea className={classes.scrollArea}>
             <PatientSummary
+              key={patientSummaryVersion}
               patient={patient}
               onClickResource={(resource) =>
                 navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
@@ -104,7 +110,7 @@ export function PatientPage(): JSX.Element {
             </ScrollArea>
           </Paper>
           <div className={classes.contentBody}>
-            <Outlet context={{ hieImportEligibility }} />
+            <Outlet context={{ hieImportEligibility, refreshPatientSidebar }} />
           </div>
         </div>
       </div>

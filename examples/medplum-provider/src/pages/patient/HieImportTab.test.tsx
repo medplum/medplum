@@ -13,11 +13,12 @@ import { MemoryRouter, Outlet, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { HealthGorillaHieImportEligibility } from '../../hooks/useHealthGorillaHieImportEligibility';
 import { HieImportTab } from './HieImportTab';
-import type { P360Mode, P360Phase } from './HieImportTab.utils';
+import type { P360InventoryItem, P360Mode, P360Phase } from './HieImportTab.utils';
 import {
   formatP360Phase,
   getP360Mode,
   getP360Phase,
+  getP360SelectionSummary,
   isImportDisabled,
   isSelectiveTaskAwaitingSelection,
   isTerminalTask,
@@ -82,10 +83,23 @@ function manifestEntry(
   identifier: string,
   resourceType: ResourceType,
   label: string,
-  date = '2026-08-29T10:00:00Z'
+  date = '2026-08-29T10:00:00Z',
+  dependencies: string[] = []
 ): NonNullable<List['entry']>[number] {
   return {
-    date,
+    extension: [
+      {
+        url: `${P360_CODE_SYSTEM}/p360-clinical-date`,
+        valueDateTime: date,
+      },
+      ...dependencies.map((dependency) => ({
+        url: `${P360_CODE_SYSTEM}/p360-direct-dependency`,
+        valueReference: {
+          type: dependency.slice(0, dependency.indexOf('/')) as ResourceType,
+          identifier: { system: P360_SOURCE_REFERENCE_SYSTEM, value: dependency },
+        },
+      })),
+    ],
     item: {
       reference: `https://api.healthgorilla.com/fhir/R4/${identifier}`,
       type: resourceType,
@@ -101,6 +115,7 @@ function manifestList(id: string, entries: NonNullable<List['entry']>, overrides
     id,
     status: 'current',
     mode: 'snapshot',
+    extension: [{ url: `${P360_CODE_SYSTEM}/p360-manifest-schema`, valueString: 'dependency-graph-v1' }],
     code: codedType('p360-selection-manifest'),
     subject: { reference: 'Patient/patient-1' },
     entry: entries,
@@ -108,13 +123,27 @@ function manifestList(id: string, entries: NonNullable<List['entry']>, overrides
   };
 }
 
-function Parent(props: { eligibility: HealthGorillaHieImportEligibility }): JSX.Element {
-  return <Outlet context={{ hieImportEligibility: props.eligibility }} />;
+function Parent(props: {
+  eligibility: HealthGorillaHieImportEligibility;
+  refreshPatientSidebar: () => void;
+}): JSX.Element {
+  return (
+    <Outlet
+      context={{
+        hieImportEligibility: props.eligibility,
+        refreshPatientSidebar: props.refreshPatientSidebar,
+      }}
+    />
+  );
 }
 
 function setup(
   medplum: MockClient,
-  options?: { eligibility?: HealthGorillaHieImportEligibility; initialPath?: string }
+  options?: {
+    eligibility?: HealthGorillaHieImportEligibility;
+    initialPath?: string;
+    refreshPatientSidebar?: () => void;
+  }
 ): ReturnType<typeof render> {
   const initialPath = options?.initialPath ?? '/Patient/patient-1/hie-import';
   return render(
@@ -122,7 +151,15 @@ function setup(
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
           <Routes>
-            <Route path="/Patient/:patientId" element={<Parent eligibility={options?.eligibility ?? eligible} />}>
+            <Route
+              path="/Patient/:patientId"
+              element={
+                <Parent
+                  eligibility={options?.eligibility ?? eligible}
+                  refreshPatientSidebar={options?.refreshPatientSidebar ?? vi.fn()}
+                />
+              }
+            >
               <Route path="hie-import" element={<HieImportTab />} />
               <Route path="Task/:taskId" element={<div>Task detail destination</div>} />
             </Route>
@@ -150,6 +187,34 @@ describe('HieImportTab', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  test('dependency summaries terminate cycles and give explicit roots precedence', () => {
+    const items: P360InventoryItem[] = [
+      {
+        identifier: 'Observation/a',
+        resourceType: 'Observation',
+        label: 'A',
+        dependencies: ['Observation/b'],
+      },
+      {
+        identifier: 'Observation/b',
+        resourceType: 'Observation',
+        label: 'B',
+        dependencies: ['Observation/a'],
+      },
+    ];
+
+    expect(getP360SelectionSummary(items, ['Observation/a'])).toMatchObject({
+      selectedRootIds: ['Observation/a'],
+      requiredIds: ['Observation/b'],
+      totalIds: ['Observation/a', 'Observation/b'],
+    });
+    expect(getP360SelectionSummary(items, ['Observation/a', 'Observation/b'])).toMatchObject({
+      selectedRootIds: ['Observation/a', 'Observation/b'],
+      requiredIds: [],
+      totalIds: ['Observation/a', 'Observation/b'],
+    });
   });
 
   test('does not query tasks and explains a direct ineligible route', async () => {
@@ -329,6 +394,10 @@ describe('HieImportTab', () => {
     setup(medplum);
 
     expect(await screen.findByText('Hemoglobin')).toBeVisible();
+    const latestImport = screen.getByRole('region', { name: 'Latest import' });
+    expect(within(latestImport).getByRole('heading', { name: 'Choose records to import' })).toBeVisible();
+    expect(within(latestImport).getByText('Hemoglobin')).toBeVisible();
+    expect(within(latestImport).getByRole('button', { name: 'Import selected records' })).toBeDisabled();
     expect(screen.getByText('Condition')).toBeVisible();
     expect(screen.getByText('Observation')).toBeVisible();
     expect(screen.getByText('Hypertension')).toBeVisible();
@@ -364,23 +433,72 @@ describe('HieImportTab', () => {
     expect(importButton).toBeDisabled();
   });
 
+  test('shows transitive shared dependencies as checked, locked, and deduplicated', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([readyTask()] as any);
+    mockManifestReads(medplum, {
+      'manifest-1': manifestList('manifest-1', [
+        manifestEntry('Observation/root-1', 'Observation', 'Primary result', '2026-08-29T10:00:00Z', [
+          'Observation/supporting',
+        ]),
+        manifestEntry('Condition/root-2', 'Condition', 'Primary condition', '2026-08-28T10:00:00Z', [
+          'Organization/source-lab',
+        ]),
+        manifestEntry('Observation/supporting', 'Observation', 'Supporting result', '2026-08-27T10:00:00Z', [
+          'Organization/source-lab',
+        ]),
+        manifestEntry('Organization/source-lab', 'Organization', 'Source Laboratory'),
+      ]),
+    });
+    setup(medplum);
+
+    await user.click(await screen.findByRole('checkbox', { name: /Primary result/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Primary condition/ }));
+
+    const supporting = screen.getByRole('checkbox', { name: /Supporting result/ });
+    const organization = screen.getByRole('checkbox', { name: /Source Laboratory/ });
+    expect(supporting).toBeChecked();
+    expect(supporting).toBeDisabled();
+    expect(organization).toBeChecked();
+    expect(organization).toBeDisabled();
+    expect(screen.getByText('Required by 2 selected records')).toBeVisible();
+    expect(screen.getByText('2 selected')).toBeVisible();
+    expect(screen.getByText('2 required · 4 total')).toBeVisible();
+    expect(screen.getByText('Required records included automatically (2)')).toBeVisible();
+
+    await user.click(screen.getByRole('checkbox', { name: /Primary condition/ }));
+    expect(screen.getAllByText('Required by 1 selected record')).toHaveLength(2);
+    expect(screen.getByText('1 selected')).toBeVisible();
+    expect(screen.getByText('2 required · 3 total')).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(supporting).not.toBeChecked();
+    expect(supporting).toBeEnabled();
+    expect(organization).not.toBeChecked();
+    expect(organization).toBeEnabled();
+  });
+
   test('requires second confirmation and posts exact selected Parameters without absolute references', async () => {
     const user = userEvent.setup();
     vi.spyOn(medplum, 'searchResources').mockResolvedValue([readyTask()] as any);
     mockManifestReads(medplum, {
       'manifest-1': manifestList('manifest-1', [
-        manifestEntry('Observation/obs-1', 'Observation', 'Hemoglobin'),
-        manifestEntry('Condition/condition-1', 'Condition', 'Hypertension'),
+        manifestEntry('Observation/obs-1', 'Observation', 'Hemoglobin', '2026-08-29T10:00:00Z', [
+          'Organization/source-lab',
+        ]),
+        manifestEntry('Organization/source-lab', 'Organization', 'Source Laboratory'),
       ]),
     });
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue(allOk);
     setup(medplum);
 
-    await user.click(await screen.findByRole('button', { name: 'Select all' }));
+    await user.click(await screen.findByRole('checkbox', { name: /Hemoglobin/ }));
     await user.click(screen.getByRole('button', { name: 'Import selected records' }));
     expect(postSpy).not.toHaveBeenCalled();
     const dialog = await screen.findByRole('dialog', { name: 'Confirm selected records' });
-    expect(within(dialog).getByText(/Import 2 selected records/)).toHaveTextContent('Import 2 selected records');
+    await waitFor(() => expect(within(dialog).getByText('1 record selected')).toBeVisible());
+    expect(within(dialog).getByText('1 required supporting record')).toBeVisible();
+    expect(within(dialog).getByText('2 total resources will be imported')).toBeVisible();
     await user.click(within(dialog).getByRole('button', { name: 'Import selected records' }));
 
     await waitFor(() => expect(postSpy).toHaveBeenCalledTimes(1));
@@ -390,10 +508,58 @@ describe('HieImportTab', () => {
         { name: 'task', valueReference: { reference: 'Task/selective-task' } },
         { name: 'taskVersion', valueString: '7' },
         { name: 'selected', valueString: 'Observation/obs-1' },
-        { name: 'selected', valueString: 'Condition/condition-1' },
       ],
     });
     expect(JSON.stringify(postSpy.mock.calls[0][1])).not.toContain('api.healthgorilla.com');
+  });
+
+  test('refreshes the patient sidebar after a selected import completes', async () => {
+    const user = userEvent.setup();
+    const ready = readyTask();
+    const completed = p360Task('completed', 'selective', 'importing-selection', {
+      id: ready.id,
+      meta: { ...ready.meta, versionId: '8' },
+    });
+    vi.spyOn(medplum, 'searchResources')
+      .mockResolvedValueOnce([ready] as any)
+      .mockResolvedValue([completed] as any);
+    mockManifestReads(medplum, {
+      'manifest-1': manifestList('manifest-1', [manifestEntry('Observation/obs-1', 'Observation', 'Hemoglobin')]),
+    });
+    vi.spyOn(medplum, 'post').mockResolvedValue(allOk);
+    const refreshPatientSidebar = vi.fn();
+    setup(medplum, { refreshPatientSidebar });
+
+    await user.click(await screen.findByRole('checkbox', { name: /Hemoglobin/ }));
+    await user.click(screen.getByRole('button', { name: 'Import selected records' }));
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Confirm selected records' })).getByRole('button', {
+        name: 'Import selected records',
+      })
+    );
+
+    await waitFor(() => expect(refreshPatientSidebar).toHaveBeenCalledTimes(1));
+  });
+
+  test('refreshes the patient sidebar once when an asynchronous import-all Task completes', async () => {
+    const inProgress = p360Task('in-progress', 'all', 'retrieving', { id: 'import-all-task' });
+    const completed = p360Task('completed', 'all', 'retrieving', {
+      id: inProgress.id,
+      meta: { ...inProgress.meta, versionId: '8' },
+    });
+    const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue([inProgress] as any);
+    const refreshPatientSidebar = vi.fn();
+    setup(medplum, { refreshPatientSidebar });
+
+    expect(await screen.findByText('In Progress')).toBeVisible();
+    searchSpy.mockResolvedValue([completed] as any);
+    const subscriptionCallback = useSubscriptionMock.mock.calls[0][1] as () => void;
+    subscriptionCallback();
+
+    await waitFor(() => expect(refreshPatientSidebar).toHaveBeenCalledTimes(1));
+    subscriptionCallback();
+    await waitFor(() => expect(searchSpy).toHaveBeenCalledTimes(3));
+    expect(refreshPatientSidebar).toHaveBeenCalledTimes(1);
   });
 
   test('fails safely when inventory entries are duplicated across chunks', async () => {
@@ -405,6 +571,17 @@ describe('HieImportTab', () => {
     setup(medplum);
 
     expect(await screen.findByText(/duplicate identifier Observation\/obs-1/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Import selected records' })).not.toBeInTheDocument();
+  });
+
+  test('fails closed for a legacy manifest without the dependency graph schema', async () => {
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([readyTask()] as any);
+    const legacy = manifestList('manifest-1', [manifestEntry('Observation/obs-1', 'Observation', 'Hemoglobin')]);
+    legacy.extension = undefined;
+    mockManifestReads(medplum, { 'manifest-1': legacy });
+    setup(medplum);
+
+    expect(await screen.findByText(/does not carry a supported Patient360 dependency graph/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Import selected records' })).not.toBeInTheDocument();
   });
 
