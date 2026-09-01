@@ -23,6 +23,7 @@ export interface CalendarDateInputProps {
   /** Called with the day picked. */
   readonly onClick: (date: Date) => void;
   readonly month?: Date;
+  /** An extra day to mark as picked, alongside any `range`. Ignored while a drag is under way. */
   readonly selected?: Date;
   readonly allowUnavailableDates?: boolean;
   readonly earliestDate?: Date;
@@ -196,13 +197,10 @@ function toDays(range: DayRange): DayRange {
  * @param date - Local midnight of the day in question.
  * @param range - The stretch of days on show, if there is one.
  * @param selected - The single day chosen, if there is one.
- * @returns True when the day is one the calendar is anchored on.
+ * @returns True when the day is an end of the range on show, or the day named as picked.
  */
 function isAnchor(date: Date, range: DayRange, selected: Date | undefined): boolean {
-  if (range && !isSameDay(range.start, range.end)) {
-    return isSameDay(date, range.start) || isSameDay(date, range.end);
-  }
-  return !!selected && isSameDay(date, selected);
+  return isSameDay(date, selected) || (!!range && (isSameDay(date, range.start) || isSameDay(date, range.end)));
 }
 
 /**
@@ -213,10 +211,7 @@ function isAnchor(date: Date, range: DayRange, selected: Date | undefined): bool
  * @returns True when the day falls within what is chosen.
  */
 function isChosen(date: Date, range: DayRange, selected: Date | undefined): boolean {
-  if (range && !isSameDay(range.start, range.end)) {
-    return date >= range.start && date <= range.end;
-  }
-  return !!selected && isSameDay(date, selected);
+  return isAnchor(date, range, selected) || (!!range && date > range.start && date < range.end);
 }
 
 /**

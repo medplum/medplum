@@ -168,6 +168,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const daySearch = useDaySearch({ service, combinations, timezone, defaultStart, onDaysChanged: clearChosen });
   const { reset: resetDaySearch } = daySearch;
 
+  // The first window is back and nothing is holding the search up, so what it found —
+  // even if that is nothing — is what is on screen.
+  const settled = !daySearch.pending && !daySearch.error && !daySearch.windowError;
+
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
   const reported = useRef(false);
@@ -321,7 +325,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              selected={daySearch.picked}
               range={daySearch.shown}
               onChangeMonth={setMonth}
               onClick={daySearch.chooseDay}
@@ -376,16 +379,18 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 onSelectAppointment={chooseTime}
               />
             ))}
-          {!daySearch.pending && !daySearch.anyTimes && !daySearch.error && !daySearch.windowError && (
-            <Text c="dimmed" ta="center">
-              No times are available for this selection.
-            </Text>
-          )}
-          {!daySearch.pending && !daySearch.error && !daySearch.windowError && (
-            // No signal for how far ahead there's anything to find, so this has no end state.
-            <Button variant="subtle" loading={daySearch.loading} onClick={daySearch.showMoreDays}>
-              Show more days
-            </Button>
+          {settled && (
+            <>
+              {!daySearch.anyTimes && (
+                <Text c="dimmed" ta="center">
+                  No times are available for this selection.
+                </Text>
+              )}
+              {/* No signal for how far ahead there's anything to find, so this has no end state. */}
+              <Button variant="subtle" loading={daySearch.loading} onClick={daySearch.showMoreDays}>
+                Show more days
+              </Button>
+            </>
           )}
         </Stack>
       )}

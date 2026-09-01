@@ -38,6 +38,26 @@ export interface AppointmentDay {
   readonly groups: readonly AppointmentSlotGroup[];
 }
 
+// Building an `Intl.DateTimeFormat` costs far more than formatting with one, and a
+// stretch of days formats a time for every appointment on it, on every render.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * Returns a formatter for a set of options, building it the first time it is asked for.
+ * @param key - What tells one formatter apart from another.
+ * @param options - How to format, read only when the formatter is built.
+ * @param locale - The locale to build it in. Defaults to the browser's.
+ * @returns The cached formatter.
+ */
+function getFormatter(key: string, options: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat {
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
+
 interface ZonedParts {
   readonly year: number;
   readonly month: number;
@@ -54,15 +74,19 @@ interface ZonedParts {
  * @returns The year, month, day, and hour in that timezone.
  */
 function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date);
+  const parts = getFormatter(
+    `parts:${timezone ?? ''}`,
+    {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    },
+    'en-US'
+  ).formatToParts(date);
 
   const read = (type: Intl.DateTimeFormatPartTypes): number => Number(parts.find((p) => p.type === type)?.value);
 
@@ -82,7 +106,7 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
  * @returns The formatted time.
  */
 export function formatZonedTime(date: Date, timezone?: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return getFormatter(`time:${timezone ?? ''}`, {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
@@ -341,6 +365,15 @@ export function getNativeInputType(type: 'date' | 'time'): string {
 }
 
 /**
+ * Returns the first instant of a day, so that a range opens at the top of it.
+ * @param date - Any instant during the day.
+ * @returns Local midnight at the start of that day.
+ */
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
  * Returns the last instant of a day, so that a range covers the whole of it.
  * @param date - Any instant during the day.
  * @returns Local midnight less a millisecond, at the end of that day.
@@ -415,8 +448,19 @@ export function getFindWindowError(range: DateRange): string | undefined {
   if (!start || !end) {
     return undefined;
   }
-  const days = Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
-  return days > MAX_FIND_WINDOW_DAYS ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.` : undefined;
+  return getDayCount(start, end) > MAX_FIND_WINDOW_DAYS
+    ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`
+    : undefined;
+}
+
+/**
+ * Counts the days a window covers, a part of a day counting as a whole one.
+ * @param start - The first instant of the window.
+ * @param end - Its last instant.
+ * @returns The number of days the window reaches over.
+ */
+export function getDayCount(start: Date, end: Date): number {
+  return Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
 }
 
 /**

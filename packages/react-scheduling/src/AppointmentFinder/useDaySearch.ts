@@ -2,18 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import type { Appointment, HealthcareService } from '@medplum/fhirtypes';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { DateTimeRange } from '../types';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { AppointmentDay } from './AppointmentFinder.times';
-import {
-  addDays,
-  endOfDay,
-  enumerateDateRange,
-  getFindWindowError,
-  groupAppointmentsByDay,
-  isSameDay,
-} from './AppointmentFinder.times';
+import { addDays, endOfDay, getDayCount, groupAppointmentsByDay, startOfDay } from './AppointmentFinder.times';
 import { useProposedAppointments } from './useProposedAppointments';
 
 // How many days "Show more days" reaches further each time it is pressed.
@@ -38,8 +31,6 @@ export interface UseDaySearchOptions {
 export interface UseDaySearchResult {
   /** Every day on show, which is what the calendar marks. */
   readonly shown: DateTimeRange;
-  /** The day picked, or undefined when a stretch of days was picked instead. */
-  readonly picked: Date | undefined;
   /** The days on show, grouped by day and actor set, days that offered nothing included. */
   readonly days: readonly AppointmentDay[];
   /** Whether any day on show offered a time at all. */
@@ -82,22 +73,11 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
 
-  // Held in a ref so every handler below can be stable whatever the caller passes:
-  // `chooseRange` in particular is subscribed to a pointer drag already under way.
-  const onDaysChangedRef = useRef(onDaysChanged);
-  useEffect(() => {
-    onDaysChangedRef.current = onDaysChanged;
-  }, [onDaysChanged]);
-
-  const windowError = getFindWindowError(daySearch.range);
-
-  const dayCount = useMemo(() => enumerateDateRange(daySearch.range).length, [daySearch.range]);
-
   const search = useProposedAppointments({
     service,
     combinations,
     range: daySearch.range,
-    count: TIMES_PER_DAY * dayCount,
+    count: TIMES_PER_DAY * getDayCount(daySearch.range.start, daySearch.range.end),
   });
 
   const shown = useMemo(
@@ -115,10 +95,13 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     return { days: grouped, anyTimes: grouped.some((day) => day.groups.length > 0) };
   }, [search.loading, search.appointments, daySearch.found, timezone, shown]);
 
-  const chooseRange = useCallback((start: Date, end: Date): void => {
-    setDaySearch(openDaySearch(start, end));
-    onDaysChangedRef.current?.();
-  }, []);
+  const chooseRange = useCallback(
+    (start: Date, end: Date): void => {
+      setDaySearch(openDaySearch(start, end));
+      onDaysChanged?.();
+    },
+    [onDaysChanged]
+  );
 
   const chooseDay = useCallback((date: Date): void => chooseRange(date, date), [chooseRange]);
 
@@ -144,17 +127,14 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   return {
     shown,
-    // Read off the first window rather than the days on show, so a day picked stays
-    // marked as the one picked once "Show more days" has widened what is around it.
-    picked: isSameDay(daySearch.first.start, daySearch.first.end) ? daySearch.first.start : undefined,
     days,
     anyTimes,
-    // A spinner rather than empty days: only while the first window is still out, i.e.
-    // `range` hasn't yet been extended past `first`.
-    pending: search.loading && daySearch.range === daySearch.first,
+    // A spinner rather than empty days: only while the first window is still out, before
+    // "Show more days" has moved the search past it.
+    pending: search.loading && daySearch.range.start.getTime() === daySearch.first.start.getTime(),
     loading: search.loading,
     error: search.error,
-    windowError,
+    windowError: search.windowError,
     chooseDay,
     chooseRange,
     showMoreDays,
@@ -205,7 +185,6 @@ function openDaySearch(start: Date, end: Date = start): DaySearch {
  * @returns The window following it, opening at midnight of the next day.
  */
 function nextWindow(range: DateTimeRange): DateTimeRange {
-  const next = addDays(range.end, 1);
-  const start = new Date(next.getFullYear(), next.getMonth(), next.getDate());
+  const start = startOfDay(addDays(range.end, 1));
   return { start, end: endOfDay(addDays(start, MORE_DAYS - 1)) };
 }
