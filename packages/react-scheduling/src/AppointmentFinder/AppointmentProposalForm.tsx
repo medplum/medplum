@@ -10,7 +10,6 @@ import {
   getReferenceString,
   getSchedulingRequirements,
   getSchedulingTimezone,
-  isDefined,
   MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
   REQUIRES_DIAGNOSIS_CODE,
@@ -18,13 +17,20 @@ import {
   REQUIRES_PROCEDURE_CODE,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  HealthcareService,
+  Location,
+  Patient,
+  Resource,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { CalendarDateInput, ResourceInput, ValueSetAutocomplete } from '@medplum/react';
+import { CalendarDateInput, ResourceInput, ResourceName, ValueSetAutocomplete } from '@medplum/react';
 import { IconAlertCircle, IconCalendarSearch, IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { formatActorName, getActorType, getActorTypeLabel } from '../actors';
+import { getActorType, getActorTypeLabel } from '../actors';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
@@ -40,12 +46,12 @@ import {
 import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
   getActorCombinations,
-  getActorDisplayNames,
+  getSelectedActorResources,
   getSelectedCandidates,
   getSelectionError,
   getUnsatisfiableRows,
 } from './AppointmentFinder.schedules';
-import { getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
+import { getAppointmentActors, getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -193,14 +199,24 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // was offered from.
   const clearChosen = useCallback((): void => setChosen(undefined), []);
 
-  const daySearch = useDaySearch({ service, combinations, timezone, defaultStart, onResultsReplaced: clearChosen });
+  // The fields read these to offer the actors, so the times they hold can be
+  // headed by the actors themselves rather than by whatever `$find` copied off
+  // the Schedule.
+  const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
+
+  const daySearch = useDaySearch({
+    service,
+    combinations,
+    timezone,
+    defaultStart,
+    actorResources,
+    onResultsReplaced: clearChosen,
+  });
   const { reset: resetDaySearch } = daySearch;
 
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
-
-  const actorNames = useMemo(() => getActorDisplayNames(selections), [selections]);
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
@@ -343,7 +359,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
-          actorNames={actorNames}
+          actorResources={actorResources}
           searching={searching}
           blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
           onToggleFinder={toggleFinder}
@@ -451,7 +467,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 date={day.date}
                 groups={day.groups}
                 timezone={timezone}
-                actorNames={actorNames}
                 selected={chosen}
                 onSelectAppointment={chooseTime}
               />
@@ -491,8 +506,8 @@ interface ChosenTimeProps {
   readonly appointment: Appointment | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
-  /** What to call each actor, keyed by reference. */
-  readonly actorNames: ReadonlyMap<string, string>;
+  /** The chosen actors' own resources, keyed by reference. */
+  readonly actorResources: ReadonlyMap<string, WithId<Resource>>;
   readonly searching: boolean;
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
@@ -509,7 +524,7 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actorNames, searching, blockedBy, onToggleFinder } = props;
+  const { appointment, timezone, actorResources, searching, blockedBy, onToggleFinder } = props;
 
   return (
     <>
@@ -520,7 +535,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
           inputWrapperOrder={['label', 'input', 'description']}
-          description={<ChosenTimeCommitment appointment={appointment} actorNames={actorNames} />}
+          description={<ChosenTimeCommitment appointment={appointment} actorResources={actorResources} />}
         />
       )}
 
@@ -576,8 +591,8 @@ function BlockerMessage(props: BlockerMessageProps): JSX.Element {
 
 interface ChosenTimeCommitmentProps {
   readonly appointment: Appointment;
-  /** What to call each actor, keyed by reference. */
-  readonly actorNames: ReadonlyMap<string, string>;
+  /** The chosen actors' own resources, keyed by reference. */
+  readonly actorResources: ReadonlyMap<string, WithId<Resource>>;
 }
 
 /**
@@ -591,8 +606,8 @@ interface ChosenTimeCommitmentProps {
  * @returns The detail beneath the time.
  */
 function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
-  const { appointment, actorNames } = props;
-  const actors = (appointment.participant ?? []).map((participant) => participant.actor).filter(isDefined);
+  const { appointment, actorResources } = props;
+  const actors = getAppointmentActors(appointment, actorResources);
   const durationMinutes = getDurationMinutes(appointment);
 
   return (
@@ -601,9 +616,11 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
       {actors.map((actor, index) => {
         const actorLabel = getActorTypeLabel(getActorType(actor));
         return (
-          <Fragment key={getReferenceString(actor) ?? actor.display}>
+          <Fragment key={getReferenceString(actor) ?? index}>
             {(index > 0 || durationMinutes > 0) && ' · '}
-            {actorLabel}: {formatActorName(actor, actorNames)}
+            {actorLabel}:{' '}
+            {/* `inherit`: the description sets its own font size. */}
+            <ResourceName value={actor} link={false} inherit />
           </Fragment>
         );
       })}
