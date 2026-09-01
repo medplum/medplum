@@ -41,6 +41,7 @@ import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
 import { useProposedAppointments } from './useProposedAppointments';
+import type { DateTimeRange } from '../types';
 
 // Excludes what a room is rather than admitting what a site is: `physicalType` is
 // optional, so `physical-type=si,bu` would hide a Location that never declared one.
@@ -646,20 +647,14 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
   );
 }
 
-/** Days a search covers, both ends closed, as `$find` requires. */
-interface SearchWindow {
-  readonly start: Date;
-  readonly end: Date;
-}
-
 /** The days on offer, and the times the ones already answered came back with. */
 interface DaySearch {
   /** The one day that was picked, or undefined when a stretch of days was picked instead. */
   readonly picked: Date | undefined;
   /** The window the search opened on, which is what putting the added days away goes back to. */
-  readonly first: SearchWindow;
-  /** The days being asked about now, which is the newest window alone. */
-  readonly range: SearchWindow;
+  readonly first: DateTimeRange;
+  /** The days being asked about now, which is the newest window alone. Both ends closed, as `$find` requires. */
+  readonly range: DateTimeRange;
   /** Times the earlier windows offered, kept on screen while a further one is out. */
   readonly found: readonly Appointment[];
   /** Whether days beyond the first window have been asked for. */
@@ -713,7 +708,7 @@ function openDaySearch(date: Date): DaySearch {
  * @param range - The window last asked about.
  * @returns The window following it, opening at midnight of the next day.
  */
-function nextWindow(range: SearchWindow): SearchWindow {
+function nextWindow(range: DateTimeRange): DateTimeRange {
   const next = addDays(range.end, 1);
   const start = new Date(next.getFullYear(), next.getMonth(), next.getDate());
   return { start, end: endOfDay(addDays(start, MORE_DAYS - 1)) };
@@ -733,7 +728,7 @@ function resetDaySearch(previous: DaySearch): DaySearch {
  * @param range - The days being searched.
  * @returns The line to show beneath the calendar.
  */
-function getSearchedDaysHint(range: SearchWindow): string {
+function getSearchedDaysHint(range: DateTimeRange): string {
   return [formatDateRange(range, formatDayLabel), DAY_GESTURE_HINT].filter(isDefined).join(HINT_SEPARATOR);
 }
 
