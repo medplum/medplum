@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { getReferenceString, isDefined } from '@medplum/core';
-import type { Appointment, Reference } from '@medplum/fhirtypes';
-import type { SchedulingActor } from './AppointmentFinder.roles';
+import type { Appointment, Reference, Resource } from '@medplum/fhirtypes';
+import type { SchedulingActorValue } from './AppointmentFinder.roles';
 
 /**
  * The longest window `Appointment/$find` accepts. Requests wider than this are
@@ -18,7 +19,11 @@ export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 export interface AppointmentSlotGroup {
   /** Stable key derived from the actors, so React keys survive a refetch. */
   readonly key: string;
-  readonly actors: readonly SchedulingActor[];
+  /**
+   * Who the times are held on, as their own resources wherever the caller had
+   * them. See {@link getAppointmentActors}.
+   */
+  readonly actors: readonly SchedulingActorValue[];
   readonly durationMinutes: number;
   /** Sorted by start time. */
   readonly appointments: readonly Appointment[];
@@ -165,9 +170,15 @@ export function filterByTimeOfDay(
  *
  * @param appointments - Proposed appointments from `$find`.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @param actorResources - The actors' own resources, keyed by reference, for
+ *   whichever of them the caller has already read. See {@link getAppointmentActors}.
  * @returns Days in ascending order, each holding its groups.
  */
-export function groupAppointmentsByDay(appointments: readonly Appointment[], timezone?: string): AppointmentDay[] {
+export function groupAppointmentsByDay(
+  appointments: readonly Appointment[],
+  timezone?: string,
+  actorResources?: ReadonlyMap<string, WithId<Resource>>
+): AppointmentDay[] {
   const days = new Map<string, Map<string, Appointment[]>>();
 
   for (const appointment of appointments) {
@@ -198,19 +209,50 @@ export function groupAppointmentsByDay(appointments: readonly Appointment[], tim
       key: dayKey,
       date: parseDayKey(dayKey),
       groups: [...groups.entries()]
-        .map(([groupKey, groupAppointments]) => toSlotGroup(groupKey, groupAppointments))
+        .map(([groupKey, groupAppointments]) => toSlotGroup(groupKey, groupAppointments, actorResources))
         .sort((left, right) => left.key.localeCompare(right.key)),
     }));
 }
 
-function toSlotGroup(key: string, appointments: Appointment[]): AppointmentSlotGroup {
+function toSlotGroup(
+  key: string,
+  appointments: Appointment[],
+  actorResources: ReadonlyMap<string, WithId<Resource>> | undefined
+): AppointmentSlotGroup {
   const sorted = [...appointments].sort((left, right) => (left.start ?? '').localeCompare(right.start ?? ''));
   return {
     key,
-    actors: sorted[0]?.participant?.map((participant) => participant.actor).filter(isDefined) ?? [],
+    actors: getAppointmentActors(sorted[0], actorResources),
     durationMinutes: getDurationMinutes(sorted[0]),
     appointments: sorted,
   };
+}
+
+/**
+ * Reads who an appointment is held on, preferring each actor's own resource.
+ *
+ * `$find` copies `Schedule.actor` onto every time it offers, so a proposal names
+ * its actors by reference and by whatever `display` the Schedule carried — which
+ * may be absent, and is never revised. Anything already read is swapped in, so
+ * that whatever displays them has the resource itself to name them from.
+ *
+ * @param appointment - The proposed appointment, or undefined for none.
+ * @param actorResources - The actors' own resources, keyed by reference, for
+ *   whichever of them the caller has already read.
+ * @returns Each actor, as its resource where there is one and as the reference
+ *   the proposal carries where there is not.
+ */
+export function getAppointmentActors(
+  appointment: Appointment | undefined,
+  actorResources?: ReadonlyMap<string, WithId<Resource>>
+): SchedulingActorValue[] {
+  return (appointment?.participant ?? [])
+    .map((participant) => participant.actor)
+    .filter(isDefined)
+    .map((actor) => {
+      const reference = getReferenceString(actor);
+      return (reference ? actorResources?.get(reference) : undefined) ?? actor;
+    });
 }
 
 /**

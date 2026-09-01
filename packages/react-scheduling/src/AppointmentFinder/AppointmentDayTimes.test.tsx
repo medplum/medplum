@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { MockClient } from '@medplum/mock';
 import { buildProposedAppointment } from '../stories/scheduling';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
@@ -19,13 +20,14 @@ describe('AppointmentDayTimes', () => {
       EASTERN
     );
 
-    render(
+    renderWithMedplum(
       <AppointmentDayTimes
         date={day.date}
         groups={day.groups}
         timezone={EASTERN}
         onSelectAppointment={onSelectAppointment}
-      />
+      />,
+      new MockClient()
     );
 
     expect(screen.getByText('Monday, July 27')).toBeInTheDocument();
@@ -37,7 +39,10 @@ describe('AppointmentDayTimes', () => {
   });
 
   test('Says so on a day that offers nothing', () => {
-    render(<AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />);
+    renderWithMedplum(
+      <AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />,
+      new MockClient()
+    );
 
     expect(screen.getByText('Tuesday, July 28')).toBeInTheDocument();
     expect(screen.getByText('No times are offered on this day.')).toBeInTheDocument();

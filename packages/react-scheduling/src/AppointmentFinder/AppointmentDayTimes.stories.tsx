@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Appointment } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Appointment, Resource } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { withMockedDate } from '../stories/decorators';
-import { buildProposedAppointment } from '../stories/scheduling';
+import { buildProposedAppointment, DrOkaforPractitioner, DrRiveraPractitioner } from '../stories/scheduling';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
@@ -22,23 +23,29 @@ const TIMEZONE = 'America/New_York';
 
 const DAY = new Date(2020, 4, 5);
 
-const RIVERA = { reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' };
-const OKAFOR = { reference: 'Practitioner/dr-okafor', display: 'Dr. Ada Okafor' };
-
 /**
  * Builds a day's times.
+ *
+ * `$find` names an actor by reference, so the resources go in separately, the way
+ * the booking form hands over whatever its fields fetched.
+ *
  * @param offers - Who is offering, and at what times on the clinic's own clock.
  * @returns The times, as the picker would have grouped them.
  */
 function buildGroups(
-  offers: readonly { actor: { reference: string; display: string }; times: string[] }[]
+  offers: readonly { actor: WithId<Resource>; times: string[] }[]
 ): readonly AppointmentSlotGroup[] {
+  const referenceOf = (actor: WithId<Resource>): string => `${actor.resourceType}/${actor.id}`;
   const appointments: Appointment[] = offers.flatMap((offer) =>
     offer.times.map((time) =>
-      buildProposedAppointment({ start: `2020-05-05T${time}:00.000Z`, actorReferences: [offer.actor] })
+      buildProposedAppointment({
+        start: `2020-05-05T${time}:00.000Z`,
+        actorReferences: [{ reference: referenceOf(offer.actor) }],
+      })
     )
   );
-  return groupAppointmentsByDay(appointments, TIMEZONE)[0].groups;
+  const resources = new Map(offers.map((offer) => [referenceOf(offer.actor), offer.actor]));
+  return groupAppointmentsByDay(appointments, TIMEZONE, resources)[0].groups;
 }
 
 /**
@@ -63,7 +70,7 @@ function Day(props: { readonly groups: readonly AppointmentSlotGroup[] }): JSX.E
 }
 
 export const OneProvider = (): JSX.Element => (
-  <Day groups={buildGroups([{ actor: RIVERA, times: ['13:00', '13:30', '14:00', '15:00'] }])} />
+  <Day groups={buildGroups([{ actor: DrRiveraPractitioner, times: ['13:00', '13:30', '14:00', '15:00'] }])} />
 );
 
 /**
@@ -77,8 +84,8 @@ export const OneProvider = (): JSX.Element => (
 export const SeveralProviders = (): JSX.Element => (
   <Day
     groups={buildGroups([
-      { actor: RIVERA, times: ['13:00', '13:30', '14:00', '15:00'] },
-      { actor: OKAFOR, times: ['14:00', '17:00', '17:30'] },
+      { actor: DrRiveraPractitioner, times: ['13:00', '13:30', '14:00', '15:00'] },
+      { actor: DrOkaforPractitioner, times: ['14:00', '17:00', '17:30'] },
     ])}
   />
 );

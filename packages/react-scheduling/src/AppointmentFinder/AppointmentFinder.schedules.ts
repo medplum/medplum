@@ -447,19 +447,26 @@ export function getSelectedCandidates(selections: ActorSelections): ScheduleCand
 }
 
 /**
- * Names every chosen actor, keyed by the reference an appointment names them by.
+ * Collects the chosen actors' own resources, keyed by the reference a proposed
+ * appointment names them by.
+ *
+ * The fields read these to offer the actors in the first place, so displaying a
+ * chosen one costs nothing further. Reading them back off the client's cache is
+ * not an option: a search's cached entries are dropped when its request is
+ * aborted, which is what every keystroke in an `AsyncAutocomplete` does.
+ *
  * @param selections - What has been chosen.
- * @returns The name to show for each chosen actor.
+ * @returns The resource behind each chosen actor the search was able to include.
  */
-export function getActorDisplayNames(selections: ActorSelections): Map<string, string> {
-  const names = new Map<string, string>();
+export function getSelectedActorResources(selections: ActorSelections): Map<string, WithId<Resource>> {
+  const resources = new Map<string, WithId<Resource>>();
   for (const candidate of getSelectedCandidates(selections)) {
     const reference = getReferenceString(getCandidateActor(candidate));
-    if (reference) {
-      names.set(reference, getCandidateDisplay(candidate));
+    if (reference && candidate.actorResource) {
+      resources.set(reference, candidate.actorResource);
     }
   }
-  return names;
+  return resources;
 }
 
 function toScheduleReference(candidate: ScheduleCandidate): Reference<Schedule> {

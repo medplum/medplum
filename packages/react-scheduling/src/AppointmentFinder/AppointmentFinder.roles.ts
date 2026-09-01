@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
-import type { Reference, Schedule } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { isResource } from '@medplum/core';
+import type { Resource, Schedule } from '@medplum/fhirtypes';
 
 /** Resource types that may appear in `Schedule.actor`. */
 export const SCHEDULING_ACTOR_TYPES = ['Practitioner', 'PractitionerRole', 'Location', 'Device'] as const;
@@ -13,6 +14,17 @@ export type SchedulingActorType = (typeof SCHEDULING_ACTOR_TYPES)[number];
  * accepts as a participant, so an actor can be carried straight across.
  */
 export type SchedulingActor = Schedule['actor'][number];
+
+/**
+ * An actor a proposed time is held on: the actor's own resource where whoever
+ * offered the time had already fetched it, and the reference the proposal
+ * carries otherwise.
+ *
+ * `Schedule.actor.display` is a copy written once and never kept in step with
+ * the resource it names, so the resource answers wherever there is one. Both
+ * shapes are what `<ResourceName>` accepts, which is what does the answering.
+ */
+export type SchedulingActorValue = SchedulingActor | WithId<Resource>;
 
 /**
  * The parts of an appointment a user chooses, in the order they are asked about.
@@ -73,29 +85,17 @@ export function getSchedulingRole(actorType: SchedulingActorType): SchedulingRol
 }
 
 /**
- * Names the role an actor is filling, from its own reference.
+ * Names the role an actor is filling, from its own resource type.
  *
  * Needed where an actor is shown away from the field it was chosen in, which is
  * the only thing that would otherwise say which role it answers.
  *
- * @param actor - A reference to a scheduling actor.
- * @returns The role's label, or undefined for a reference of another type.
+ * @param actor - A scheduling actor, as a reference or as itself.
+ * @returns The role's label, or undefined for an actor of another type.
  */
-export function getActorRoleLabel(actor: Reference): string | undefined {
-  const actorType = actor.reference?.split('/')[0];
+export function getActorRoleLabel(actor: SchedulingActorValue): string | undefined {
+  const actorType = isResource(actor) ? actor.resourceType : actor.reference?.split('/')[0];
   return isSchedulingActorType(actorType) ? ROLE_LABELS[getSchedulingRole(actorType)] : undefined;
-}
-
-/**
- * Names an actor a proposed appointment is held on.
- * @param actor - The actor to name, as the proposal names them.
- * @param names - What to call each actor, keyed by reference.
- * @returns The resolved name, the name the proposal carries, or the bare
- *   reference when nothing else identifies them.
- */
-export function formatActorName(actor: Reference, names?: ReadonlyMap<string, string>): string {
-  const reference = getReferenceString(actor);
-  return (reference && names?.get(reference)) ?? actor.display ?? reference ?? '';
 }
 
 /**

@@ -3,9 +3,10 @@
 import { Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
+import { ResourceName } from '@medplum/react';
 import type { JSX } from 'react';
 import classes from './AppointmentFinder.module.css';
-import { formatActorName, getActorRoleLabel } from './AppointmentFinder.roles';
+import { getActorRoleLabel } from './AppointmentFinder.roles';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { formatZonedTime } from './AppointmentFinder.times';
 
@@ -14,8 +15,6 @@ export interface AppointmentSlotGroupCardProps {
   readonly onSelectAppointment: (appointment: Appointment) => void;
   /** IANA timezone the times are shown in. Defaults to the browser's. */
   readonly timezone?: string;
-  /** What to call each actor, keyed by reference. */
-  readonly actorNames?: ReadonlyMap<string, string>;
   readonly selected?: Appointment;
   readonly disabled?: boolean;
 }
@@ -26,24 +25,29 @@ export interface AppointmentSlotGroupCardProps {
  * @returns The card.
  */
 export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): JSX.Element {
-  const { group, onSelectAppointment, timezone, actorNames, selected, disabled } = props;
+  const { group, onSelectAppointment, timezone, selected, disabled } = props;
 
   return (
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <Group gap="lg" align="flex-start" wrap="wrap">
-          {group.actors.map((actor) => (
-            <Stack key={getReferenceString(actor) ?? actor.display} gap={2}>
-              {getActorRoleLabel(actor) && (
-                <Text size="xs" c="dimmed" tt="uppercase">
-                  {getActorRoleLabel(actor)}
+          {group.actors.map((actor, index) => {
+            const roleLabel = getActorRoleLabel(actor);
+            return (
+              <Stack key={getReferenceString(actor) ?? index} gap={2}>
+                {roleLabel && (
+                  <Text size="xs" c="dimmed" tt="uppercase">
+                    {roleLabel}
+                  </Text>
+                )}
+                <Text size="sm" fw={500}>
+                  {/* Not `ReferenceDisplay`, which prints `Reference.display` without
+                      ever reading the resource behind it. */}
+                  <ResourceName value={actor} link={false} inherit />
                 </Text>
-              )}
-              <Text size="sm" fw={500}>
-                {formatActorName(actor, actorNames)}
-              </Text>
-            </Stack>
-          ))}
+              </Stack>
+            );
+          })}
         </Group>
         {group.durationMinutes > 0 && (
           <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>

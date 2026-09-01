@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Reference } from '@medplum/fhirtypes';
-import { buildProposedAppointment } from '../stories/scheduling';
-import { fireEvent, render, screen } from '../test-utils/render';
+import type { WithId } from '@medplum/core';
+import type { Reference, Resource } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA } from '../stories/scheduling';
+import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 import { AppointmentSlotGroupCard } from './AppointmentSlotGroupCard';
@@ -16,28 +18,30 @@ const LATER = '2026-07-27T13:30:00.000Z';
 const RIVERA = 'Practitioner/dr-rivera';
 const EXAM_ROOM = 'Location/exam-room-a';
 
-function buildGroup(actors: readonly Reference[]): AppointmentSlotGroup {
+/**
+ * Builds a group of times, as the picker would have grouped them.
+ * @param actors - Who the times are held on, as `$find` names them.
+ * @param resources - The actors' own resources the caller had already read.
+ * @returns The group.
+ */
+function buildGroup(actors: readonly Reference[], resources: readonly WithId<Resource>[] = []): AppointmentSlotGroup {
   const appointments = [MORNING, LATER].map((start) =>
     buildProposedAppointment({ start, actorReferences: actors as { reference: string }[] })
   );
-  return groupAppointmentsByDay(appointments, EASTERN)[0].groups[0];
+  const byReference = new Map(resources.map((resource) => [`${resource.resourceType}/${resource.id}`, resource]));
+  return groupAppointmentsByDay(appointments, EASTERN, byReference)[0].groups[0];
+}
+
+function setup(group: AppointmentSlotGroup, onSelectAppointment = vi.fn()): void {
+  renderWithMedplum(
+    <AppointmentSlotGroupCard group={group} timezone={EASTERN} onSelectAppointment={onSelectAppointment} />,
+    new MockClient()
+  );
 }
 
 describe('AppointmentSlotGroupCard', () => {
   test('Names each actor by its role and the resource behind it', () => {
-    render(
-      <AppointmentSlotGroupCard
-        group={buildGroup([{ reference: RIVERA }, { reference: EXAM_ROOM }])}
-        timezone={EASTERN}
-        actorNames={
-          new Map([
-            [RIVERA, 'Dr. Maya Rivera'],
-            [EXAM_ROOM, 'Exam Room A'],
-          ])
-        }
-        onSelectAppointment={vi.fn()}
-      />
-    );
+    setup(buildGroup([{ reference: RIVERA }, { reference: EXAM_ROOM }], [DrRiveraPractitioner, ExamRoomA]));
 
     expect(screen.getByText('Provider')).toBeInTheDocument();
     expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument();
@@ -45,45 +49,36 @@ describe('AppointmentSlotGroupCard', () => {
     expect(screen.getByText('Exam Room A')).toBeInTheDocument();
   });
 
-  test('A resolved name beats the one the proposal carries', () => {
-    render(
-      <AppointmentSlotGroupCard
-        group={buildGroup([{ reference: RIVERA, display: 'Maya Rivera' }])}
-        timezone={EASTERN}
-        actorNames={new Map([[RIVERA, 'Dr. Maya Rivera']])}
-        onSelectAppointment={vi.fn()}
-      />
-    );
+  test('The resource beats the name the proposal carries', () => {
+    // `$find` copies `Schedule.actor` onto every proposal, display and all, and
+    // that copy was written once and never revised.
+    setup(buildGroup([{ reference: RIVERA, display: 'Maya Rivera' }], [DrRiveraPractitioner]));
 
     expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument();
     expect(screen.queryByText('Maya Rivera')).not.toBeInTheDocument();
   });
 
-  test('Falls back to the name the proposal carries, then to the bare reference', () => {
-    render(
+  test('Reads an actor it was given no resource for', async () => {
+    const medplum = new MockClient();
+    await medplum.createResource(DrRiveraPractitioner);
+
+    renderWithMedplum(
       <AppointmentSlotGroupCard
-        group={buildGroup([{ reference: RIVERA, display: 'Dr. Maya Rivera' }, { reference: EXAM_ROOM }])}
+        group={buildGroup([{ reference: RIVERA, display: 'Maya Rivera' }])}
         timezone={EASTERN}
         onSelectAppointment={vi.fn()}
-      />
+      />,
+      medplum
     );
 
-    expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument();
-    expect(screen.getByText(EXAM_ROOM)).toBeInTheDocument();
+    expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
   });
 
   test('Offers each time, and hands back the one that was clicked', () => {
     const onSelectAppointment = vi.fn();
-    const group = buildGroup([{ reference: RIVERA }]);
+    const group = buildGroup([{ reference: RIVERA }], [DrRiveraPractitioner]);
 
-    render(
-      <AppointmentSlotGroupCard
-        group={group}
-        timezone={EASTERN}
-        actorNames={new Map([[RIVERA, 'Dr. Maya Rivera']])}
-        onSelectAppointment={onSelectAppointment}
-      />
-    );
+    setup(group, onSelectAppointment);
 
     expect(screen.getByText('30 min visit')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '9:30 AM' }));
