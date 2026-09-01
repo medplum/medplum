@@ -333,6 +333,7 @@ describe('Database migrations', () => {
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[2]).toEqual({ deduplication: { id: 'v1' } });
       }));
 
     test('No pending data migration', () =>
@@ -842,19 +843,20 @@ describe('Database migrations', () => {
             postDeploy: [],
           },
         });
+        expect(queueAddSpy.mock.calls[0][2]).toBeUndefined();
 
         expect(res1).toHaveStatus(202);
         expect(res1.headers['content-location']).toBeDefined();
       });
     });
 
-    describe('Reindex database', () => {
+    describe('Rebuild index', () => {
       test('Queues one or more concurrent reindex actions', async () => {
         const targets = [{ index: 'Patient_name_idx' }, { table: 'Observation' }];
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
-          .post('/admin/super/reindex-database')
+          .post('/admin/super/rebuild-index')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
@@ -875,7 +877,7 @@ describe('Database migrations', () => {
           },
         });
         const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-        expect(asyncJob.request).toBe('/admin/super/reindex-database?index=Patient_name_idx&table=Observation');
+        expect(asyncJob.request).toBe('/admin/super/rebuild-index?index=Patient_name_idx&table=Observation');
         expect(asyncJob.meta?.project).toBeUndefined();
       });
 
@@ -896,7 +898,7 @@ describe('Database migrations', () => {
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
-          .post('/admin/super/reindex-database')
+          .post('/admin/super/rebuild-index')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
@@ -910,7 +912,7 @@ describe('Database migrations', () => {
         const queueAddSpy = getQueueAddSpy();
 
         const res = await request(app)
-          .post('/admin/super/reindex-database')
+          .post('/admin/super/rebuild-index')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')

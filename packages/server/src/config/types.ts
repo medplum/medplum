@@ -230,7 +230,7 @@ export interface MedplumServerConfig {
 
   /**
    * Optional list of email domains that are blocked server-wide, regardless of
-   * any project-level `allowedEmailDomain` setting (e.g. disposable email providers).
+   * any project-level `allowedPractitionerEmailDomain` setting (e.g. disposable email providers).
    * Matched case-insensitively against the domain portion of the email address.
    */
   blockedEmailDomains?: string[];

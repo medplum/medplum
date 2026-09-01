@@ -437,10 +437,10 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
 });
 
-// POST to /admin/super/reindex-database
+// POST to /admin/super/rebuild-index
 // to rebuild one or more PostgreSQL indexes without blocking writes.
 superAdminRouter.post(
-  '/reindex-database',
+  '/rebuild-index',
   [
     body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
     body('targets.*')
@@ -475,7 +475,7 @@ superAdminRouter.post(
       return;
     }
 
-    const targets = req.body.targets as ReindexTarget[];
+    const targets = req.body.targets as RebuildIndexTarget[];
     const migrationActions = {
       preDeploy: [],
       postDeploy: targets.map((target) =>
@@ -506,7 +506,7 @@ superAdminRouter.post(
   }
 );
 
-type ReindexTarget = { table: string } | { index: string };
+type RebuildIndexTarget = { table: string } | { index: string };
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.

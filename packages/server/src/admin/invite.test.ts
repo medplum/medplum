@@ -47,7 +47,7 @@ async function addAllowedEmailDomain(project: WithId<Project>, domain: string): 
   return withTestContext(() =>
     systemRepo.updateResource<Project>({
       ...project,
-      setting: [...(project.setting ?? []), { name: 'allowedEmailDomain', valueString: domain }],
+      setting: [...(project.setting ?? []), { name: 'allowedPractitionerEmailDomain', valueString: domain }],
     })
   );
 }
