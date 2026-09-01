@@ -36,6 +36,7 @@ import {
   getDurationMinutes,
   getFindWindowError,
   groupAppointmentsByDay,
+  isSameDay,
 } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
@@ -54,10 +55,6 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
-
-// Also searches the two days after the one picked: one day's times are often too
-// few to choose between.
-const DAYS_SHOWN = 3;
 
 const MORE_DAYS = 2;
 
@@ -204,6 +201,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [daySearch.first.start, daySearch.range.end]
   );
 
+  // Read off the first window rather than the days on show, so a day picked stays marked
+  // as the one picked once "Show more days" has widened what is on show around it.
+  const picked = getPickedDay(daySearch);
+
   // Passing shownDays lists empty days too, so a day that came back with nothing still
   // shows up rather than looking like nobody asked about it.
   const days = useMemo(() => groupAppointmentsByDay(times, timezone, shownDays), [times, timezone, shownDays]);
@@ -290,7 +291,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Held stable, unlike `chooseDay`: the calendar listens for a drag's end on the
   // window for as long as it's under way, and re-subscribes whenever this changes.
   const chooseRange = useCallback((start: Date, end: Date): void => {
-    setDaySearch(openRangeSearch(start, end));
+    setDaySearch(openDaySearch(start, end));
     setChosen(undefined);
   }, []);
 
@@ -387,7 +388,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              selected={daySearch.picked}
+              selected={picked}
               range={shownDays}
               onChangeMonth={setMonth}
               onClick={chooseDay}
@@ -650,8 +651,6 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
 
 /** The days on offer, and the times the ones already answered came back with. */
 interface DaySearch {
-  /** The one day that was picked, or undefined when a stretch of days was picked instead. */
-  readonly picked: Date | undefined;
   /** The window the search opened on, which is what putting the added days away goes back to. */
   readonly first: DateTimeRange;
   /** The days being asked about now, which is the newest window alone. Both ends closed, as `$find` requires. */
@@ -669,14 +668,17 @@ function floorToNow(date: Date): Date {
 
 /**
  * Opens the search on a stretch of days, asking about all of them at once.
+ *
+ * A day picked on its own is a stretch of one, so a click and a drag open the same way.
+ *
  * @param start - Any instant during the first day of the stretch.
- * @param end - Any instant during its last day.
+ * @param end - Any instant during its last day. Defaults to the first day.
  * @returns The first window, with nothing found yet.
  */
-function openRangeSearch(start: Date, end: Date): DaySearch {
+function openDaySearch(start: Date, end: Date = start): DaySearch {
   const from = floorToNow(start);
   const window = { start: from, end: endOfDay(end > from ? end : from) };
-  return { picked: undefined, first: window, range: window, found: [], extended: false };
+  return { first: window, range: window, found: [], extended: false };
 }
 
 /**
@@ -693,15 +695,16 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
 }
 
 /**
- * Opens the search on a day, asking about it and the two days after it.
+ * Returns the day picked, when a day was picked rather than a stretch of them.
  *
- * @param date - Any instant during the day to open on.
- * @returns The first window, with nothing found yet.
+ * A one-day first window means a click: `CalendarDateInput` only reports a range once a
+ * drag has crossed a day, so a drag that stayed put arrives as an ordinary click.
+ *
+ * @param search - The day search as it stands.
+ * @returns The day picked, or undefined when a stretch of days was picked instead.
  */
-function openDaySearch(date: Date): DaySearch {
-  const from = floorToNow(date);
-  const window = { start: from, end: endOfDay(addDays(from, DAYS_SHOWN - 1)) };
-  return { picked: from, first: window, range: window, found: [], extended: false };
+function getPickedDay(search: DaySearch): Date | undefined {
+  return isSameDay(search.first.start, search.first.end) ? search.first.start : undefined;
 }
 
 /**
@@ -721,7 +724,7 @@ function nextWindow(range: DateTimeRange): DateTimeRange {
  * @returns The day search, back to its first window.
  */
 function resetDaySearch(previous: DaySearch): DaySearch {
-  return { picked: previous.picked, first: previous.first, range: previous.first, found: [], extended: false };
+  return { first: previous.first, range: previous.first, found: [], extended: false };
 }
 
 /**
