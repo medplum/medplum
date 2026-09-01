@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { QueryResult } from 'pg';
-import type { SqlFunctionDefinition } from '../fhir/sql';
-import type { ColumnDefinition, DbClient, IndexDefinition, IndexType } from './types';
+import type { PgQueryable, SqlFunctionDefinition } from '../fhir/sql';
+import type { ColumnDefinition, IndexDefinition, IndexType } from './types';
 import { IndexTypes } from './types';
 
 export const TableNameAbbreviations: Record<string, string | undefined> = {
@@ -190,7 +190,7 @@ export function normalizeColumnType(colType: string): string {
 }
 
 export async function getColumns(
-  db: DbClient,
+  db: PgQueryable,
   tableName: string
 ): Promise<(ColumnDefinition & { primaryKey: boolean; notNull: boolean })[]> {
   // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
@@ -227,7 +227,7 @@ export async function getColumns(
   }));
 }
 
-export async function getFunctionDefinition(db: DbClient, name: string): Promise<SqlFunctionDefinition | undefined> {
+export async function getFunctionDefinition(db: PgQueryable, name: string): Promise<SqlFunctionDefinition | undefined> {
   let result: QueryResult<{ pg_get_functiondef: string }>;
   try {
     result = await db.query(`SELECT pg_catalog.pg_get_functiondef($1::regproc::oid);`, [name]);

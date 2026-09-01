@@ -24,6 +24,7 @@ vi.mock('../../utils/documentReference', () => ({
   fetchLabOrderRequisitionDocuments: vi.fn(),
   getHealthGorillaRequisitionId: vi.fn(),
   resolvePresentedFormAttachments: vi.fn(),
+  resolveDerivedFromAttachments: vi.fn(),
 }));
 
 const mockPatient: WithId<Patient> = {
@@ -251,6 +252,7 @@ describe('LabOrderDetails', () => {
   let fetchLabOrderRequisitionDocumentsMock: any;
   let getHealthGorillaRequisitionIdMock: any;
   let resolvePresentedFormAttachmentsMock: any;
+  let resolveDerivedFromAttachmentsMock: any;
 
   beforeEach(async () => {
     medplum = new MockClient();
@@ -260,11 +262,13 @@ describe('LabOrderDetails', () => {
     fetchLabOrderRequisitionDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderRequisitionDocuments);
     getHealthGorillaRequisitionIdMock = vi.mocked(documentReferenceUtils.getHealthGorillaRequisitionId);
     resolvePresentedFormAttachmentsMock = vi.mocked(documentReferenceUtils.resolvePresentedFormAttachments);
+    resolveDerivedFromAttachmentsMock = vi.mocked(documentReferenceUtils.resolveDerivedFromAttachments);
 
     // Setup default mocks
     fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([]);
     getHealthGorillaRequisitionIdMock.mockReturnValue('HG-REQ-12345');
     resolvePresentedFormAttachmentsMock.mockImplementation(async (_medplum: unknown, forms: unknown) => forms ?? []);
+    resolveDerivedFromAttachmentsMock.mockResolvedValue([]);
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
@@ -823,6 +827,60 @@ describe('LabOrderDetails', () => {
       await waitFor(() => {
         expect(screen.getByText(expectedText)).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Status change', () => {
+    test('revokes an open order from the status menu', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      medplum.patchResource = vi.fn().mockResolvedValue({ ...mockActiveServiceRequest, status: 'revoked' });
+
+      await act(async () => {
+        setup({ onChange });
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Active' }));
+      await user.click(await screen.findByText('Revoked'));
+
+      await waitFor(() => {
+        expect(medplum.patchResource).toHaveBeenCalledWith('ServiceRequest', 'service-request-123', [
+          { op: 'replace', path: '/status', value: 'revoked' },
+        ]);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ status: 'revoked' }));
+      });
+    });
+
+    test('revoked order shows only order details, without the progress tracker', async () => {
+      const revokedOrder: ServiceRequest = {
+        ...mockActiveServiceRequest,
+        status: 'revoked',
+      };
+
+      await act(async () => {
+        setup({ order: revokedOrder });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Order Date')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('tab', { name: 'Progress Tracker' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Order Sent')).not.toBeInTheDocument();
+    });
+
+    test('completed order status cannot be changed', async () => {
+      const user = userEvent.setup();
+      medplum.patchResource = vi.fn();
+
+      await act(async () => {
+        setup({ order: mockCompletedServiceRequest });
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Completed' }));
+
+      expect(screen.queryByText('Revoked')).not.toBeInTheDocument();
+      expect(medplum.patchResource).not.toHaveBeenCalled();
     });
   });
 

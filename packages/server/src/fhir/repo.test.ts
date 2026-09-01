@@ -18,6 +18,7 @@ import {
 } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type {
+  AuditEvent,
   Binary,
   BundleEntry,
   Login,
@@ -43,13 +44,16 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
+import { getBinaryStorageKey } from '../storage/base';
+import { getBinaryStorage } from '../storage/loader';
 import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
@@ -390,9 +394,8 @@ describe('FHIR Repo', () => {
         layer: 'cache',
         operation: 'read',
         source: 'repo.getCacheEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
       })
     );
   });
@@ -416,12 +419,39 @@ describe('FHIR Repo', () => {
         layer: 'sql',
         operation: 'read',
         source: 'search.getSearchEntries',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
-        resourceTypes: expect.toContainExactly(['Patient', 'Project']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
       })
     );
   });
+
+  test('Includes numResults in search AuditEvent entity detail', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const prevLogAuditEvents = getConfig().logAuditEvents;
+      getConfig().logAuditEvents = true;
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+      try {
+        const family = randomUUID();
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+
+        writeSpy.mockClear();
+        await repo.search({
+          resourceType: 'Patient',
+          filters: [{ code: 'family', operator: Operator.EQUALS, value: family }],
+        });
+
+        const auditEventLog = writeSpy.mock.calls.map((call) => call[0] as string).find((s) => s.includes('search'));
+        expect(auditEventLog).toBeDefined();
+        const auditEvent = JSON.parse(auditEventLog as string) as AuditEvent;
+        expect(auditEvent.entity?.[0].detail).toStrictEqual([{ type: 'numResults', valueString: '2' }]);
+      } finally {
+        getConfig().logAuditEvents = prevLogAuditEvents;
+        writeSpy.mockRestore();
+      }
+    }));
 
   test('Logs mixed transaction access across repo and system repo', async () => {
     const infoSpy = vi.spyOn(getLogger(), 'info').mockImplementation(() => {});
@@ -444,8 +474,8 @@ describe('FHIR Repo', () => {
       expect.objectContaining({
         scope: 'transaction',
         status: 'committed',
-        specialResourceTypes: expect.toContainExactly(['Project']),
-        otherResourceTypes: expect.toContainExactly(['Patient']),
+        globalResourceTypes: expect.toContainExactly(['Project']),
+        projectResourceTypes: expect.toContainExactly(['Patient']),
         readResourceTypes: expect.toContainExactly(['Patient', 'Project']),
         writeResourceTypes: expect.toContainExactly([]),
       })
@@ -818,7 +848,7 @@ describe('FHIR Repo', () => {
 
       expect(repo.getSystemRepo().getConfig().skipBackgroundJobs).toBe(true);
       expect(
-        getShardSystemRepo('test-shard', undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
+        getShardSystemRepo(PLACEHOLDER_SHARD_ID, undefined, { skipBackgroundJobs: true }).getConfig().skipBackgroundJobs
       ).toBe(true);
 
       const addBackgroundJobsSpy = vi.spyOn(workersModule, 'addBackgroundJobs').mockResolvedValue(undefined);
@@ -1146,6 +1176,26 @@ describe('FHIR Repo', () => {
       expect(entries[1].resource).toBeUndefined();
       expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
+    }));
+
+  test('readVersion returns an unshared resource', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      const versionId = patient.meta?.versionId as string;
+
+      // Callers mutate the result of readVersion in place rather than cloning it first,
+      // so each read must return structure that is not shared with any cache or other reader.
+      const first = await systemRepo.readVersion<Patient>('Patient', patient.id, versionId);
+      const second = await systemRepo.readVersion<Patient>('Patient', patient.id, versionId);
+      expect(first).not.toBe(second);
+      expect(first.name).not.toBe(second.name);
+      expect(first.name?.[0]).not.toBe(second.name?.[0]);
+
+      (first.name as object[])[0] = { family: 'Mutated' };
+      expect(second.name?.[0]?.family).toStrictEqual('Smith');
     }));
 
   test('Restore deleted resource', () =>
@@ -1549,6 +1599,53 @@ describe('FHIR Repo', () => {
           );
         }));
     });
+
+    test('Expunge Binary deletes the stored object for every version', () =>
+      withTestContext(async () => {
+        const storage = getBinaryStorage();
+        const deleteFile = vi.spyOn(storage, 'deleteFile');
+
+        try {
+          // Each write stores its own object, so a two-version Binary has two stored objects.
+          const created = await systemRepo.createResource<Binary>({
+            resourceType: 'Binary',
+            contentType: 'text/plain',
+            data: Buffer.from('expunge me').toString('base64'),
+          });
+          const updated = await systemRepo.updateResource<Binary>({
+            ...created,
+            data: Buffer.from('expunge me too').toString('base64'),
+          });
+
+          const firstKey = getBinaryStorageKey(created.id, created.meta?.versionId);
+          const secondKey = getBinaryStorageKey(updated.id, updated.meta?.versionId);
+          expect(firstKey).not.toStrictEqual(secondKey);
+          await expect(storage.readFile(firstKey)).resolves.toBeDefined();
+          await expect(storage.readFile(secondKey)).resolves.toBeDefined();
+
+          await systemRepo.expungeResource('Binary', created.id);
+
+          const deletedKeys = deleteFile.mock.calls.map(([key]) => key);
+          expect(deletedKeys).toContain(firstKey);
+          expect(deletedKeys).toContain(secondKey);
+          await expect(storage.readFile(firstKey)).rejects.toThrow();
+          await expect(storage.readFile(secondKey)).rejects.toThrow();
+        } finally {
+          deleteFile.mockRestore();
+        }
+      }));
+
+    test('Expunge non-Binary does not touch binary storage', () =>
+      withTestContext(async () => {
+        const deleteFile = vi.spyOn(getBinaryStorage(), 'deleteFile');
+        try {
+          const patient = await createPatient(systemRepo);
+          await systemRepo.expungeResource('Patient', patient.id);
+          expect(deleteFile).not.toHaveBeenCalled();
+        } finally {
+          deleteFile.mockRestore();
+        }
+      }));
   });
 
   test('Expunge too many IDs', async () => {

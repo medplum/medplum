@@ -15,7 +15,10 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
-import { addExpansionItems } from './expand';
+import { repoAccess } from '../repository/access-tracker';
+import type { PgQueryable } from '../sql';
+import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
+import { abstractProperty } from './utils/terminology';
 
 describe('Expand', () => {
   const app = express();
@@ -101,6 +104,24 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(400);
     expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('null byte');
+  });
+
+  test('Filter token limit', async () => {
+    const url = 'http://hl7.org/fhir/ValueSet/observation-codes';
+    const acceptedFilter = Array(10).fill('rate').join(' ');
+    const accepted = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=${encodeURIComponent(acceptedFilter)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(accepted).toHaveStatus(200);
+
+    const rejectedFilter = Array(11).fill('rate').join(' ');
+    const rejected = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=${encodeURIComponent(rejectedFilter)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(rejected).toHaveStatus(400);
+    expect((rejected.body as OperationOutcome).issue?.[0].details?.text).toContain(
+      'Filter value cannot contain more than 10 tokens'
+    );
   });
 
   test('Success', async () => {
@@ -624,6 +645,43 @@ describe('Expand', () => {
     expect(coding.display).toStrictEqual('Correct coding');
   });
 
+  test('Does not leak extended metadata when multiple ValueSets share a URL', async () => {
+    const url = 'https://example.com/vs-' + randomUUID();
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url,
+      compose: { include: [{ system: LOINC, concept: [{ code: '1-8', display: 'Test' }] }] },
+    };
+
+    const { accessToken: linkedAccessToken, project: linkedProject } = await createTestProject({
+      withAccessToken: true,
+    });
+    const linkedRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + linkedAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(linkedRes).toHaveStatus(201);
+
+    accessToken = await initTestAuth({ project: { link: [{ project: createReference(linkedProject) }] } });
+    const ownRes = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(ownRes).toHaveStatus(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(200);
+    expect(res.body.id).toStrictEqual(ownRes.body.id);
+    expect(res.body.meta.project).toBeUndefined();
+    expect(res.body.meta.author).toBeUndefined();
+    expect(res.body.meta.compartment).toBeUndefined();
+  });
+
   test('Expands ValueSet with explicit concepts from fragment CodeSystem', async () => {
     const csUrl = 'http://example.com/fragment-cs-' + randomUUID();
 
@@ -821,6 +879,334 @@ describe('Expand', () => {
 
       const system = codeSystem.url;
       expect(expansion.contains).toContainExactly([{ system, code: 'PET', display: 'pet' }]);
+    });
+  });
+
+  describe('Code prefix filter', () => {
+    // Flat CodeSystem for prefix/exact/escaping tests. Displays are deliberately Greek letters so
+    // they never contain the code-shaped filter strings — this isolates the code-matching branch
+    // from the display ILIKE branch.
+    const flatCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'HT', display: 'Alpha' },
+        { code: 'HTX', display: 'Beta' },
+        { code: 'HTXY', display: 'Gamma' },
+        { code: 'A_B', display: 'Delta' },
+        { code: 'AXB', display: 'Epsilon' },
+      ],
+    };
+    const flatValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: flatCodeSystem.url }] },
+    };
+
+    // Hierarchical CodeSystem for prefix-with-hierarchy tests. Codes share the 'MED' prefix so a
+    // prefix filter is meaningful; displays again avoid the filter substrings.
+    const hierarchyCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'MED',
+          display: 'Alpha',
+          concept: [
+            { code: 'MED100', display: 'Beta' },
+            { code: 'MED200', display: 'Gamma' },
+          ],
+        },
+      ],
+    };
+
+    const isaValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [{ system: hierarchyCodeSystem.url, filter: [{ property: 'code', op: 'is-a', value: 'MED' }] }],
+      },
+    };
+    const descendentValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: {
+        include: [
+          { system: hierarchyCodeSystem.url, filter: [{ property: 'code', op: 'descendent-of', value: 'MED' }] },
+        ],
+      },
+    };
+
+    // CodeSystem with a synonym (designation) to exercise the canonical-only code branch. The code
+    // 'SYN100' matches a 'SYN' prefix; its synonym display 'Zeta' is code-shaped-free so it only ever
+    // matches the display branch — never the code branch.
+    const synonymCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [{ code: 'SYN100', display: 'Alpha', designation: [{ value: 'Zeta' }] }],
+    };
+    const synonymValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: synonymCodeSystem.url }] },
+    };
+
+    // CodeSystem whose codes all share the 'ORD' prefix and whose displays are code-shaped-free, so a
+    // filter of 'ORD' matches every code by prefix while every row ties on display similarity (0) and
+    // none is an exact code match. With no discriminating sort key, the result order is arbitrary; this
+    // system exists to prove the deterministic code tiebreaker. Codes are inserted out of order so a
+    // pass-through of physical/insertion order would NOT be code-ascending.
+    const orderingCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      concept: [
+        { code: 'ORD30', display: 'Alpha' },
+        { code: 'ORD10', display: 'Beta' },
+        { code: 'ORD50', display: 'Gamma' },
+        { code: 'ORD20', display: 'Delta' },
+        { code: 'ORD40', display: 'Epsilon' },
+      ],
+    };
+    const orderingValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      status: 'active',
+      compose: { include: [{ system: orderingCodeSystem.url }] },
+    };
+
+    beforeAll(async () => {
+      for (const resource of [
+        flatCodeSystem,
+        hierarchyCodeSystem,
+        synonymCodeSystem,
+        orderingCodeSystem,
+        flatValueSet,
+        isaValueSet,
+        descendentValueSet,
+        synonymValueSet,
+        orderingValueSet,
+      ]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+      }
+    });
+
+    test.each([
+      {
+        name: 'Prefix match on code (>= 3 chars)',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'HTX',
+        expected: [
+          { code: 'HTX', display: 'Beta' },
+          { code: 'HTXY', display: 'Gamma' },
+        ],
+      },
+      {
+        name: 'Prefix match on code is case-insensitive',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'htx',
+        expected: [
+          { code: 'HTX', display: 'Beta' },
+          { code: 'HTXY', display: 'Gamma' },
+        ],
+      },
+      {
+        // Only the exact code 'HT' — the prefix siblings HTX/HTXY must NOT be returned below 3 chars.
+        name: 'Short filter (< 3 chars) falls back to exact code match',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'HT',
+        expected: [{ code: 'HT', display: 'Alpha' }],
+      },
+      {
+        // The underscore must be treated literally, so 'AXB' (which would match if '_' were a
+        // wildcard) is excluded.
+        name: 'Escapes LIKE wildcards in code prefix filter',
+        valueSet: flatValueSet.url,
+        system: flatCodeSystem.url,
+        filter: 'A_B',
+        expected: [{ code: 'A_B', display: 'Delta' }],
+      },
+      {
+        name: 'Code prefix with is-a includes ancestor and matching descendants',
+        valueSet: isaValueSet.url,
+        system: hierarchyCodeSystem.url,
+        filter: 'med',
+        expected: [
+          { code: 'MED', display: 'Alpha' },
+          { code: 'MED100', display: 'Beta' },
+          { code: 'MED200', display: 'Gamma' },
+        ],
+      },
+      {
+        name: 'Code prefix narrows an is-a hierarchy expansion',
+        valueSet: isaValueSet.url,
+        system: hierarchyCodeSystem.url,
+        filter: 'med2',
+        expected: [{ code: 'MED200', display: 'Gamma' }],
+      },
+      {
+        // 'MED' matches the prefix but must be excluded because descendent-of is strict.
+        name: 'Code prefix with descendent-of excludes the ancestor',
+        valueSet: descendentValueSet.url,
+        system: hierarchyCodeSystem.url,
+        filter: 'med',
+        expected: [
+          { code: 'MED100', display: 'Beta' },
+          { code: 'MED200', display: 'Gamma' },
+        ],
+      },
+      {
+        // The code branch surfaces the canonical row only; synonyms share the canonical code and are
+        // redundant there, so the synonym display 'Zeta' is not attached as a designation.
+        name: 'Code prefix branch matches canonical rows only, not synonyms',
+        valueSet: synonymValueSet.url,
+        system: synonymCodeSystem.url,
+        filter: 'SYN',
+        expected: [{ code: 'SYN100', display: 'Alpha' }],
+      },
+      {
+        // The display branch is unchanged (non-partial index), so a filter matching only the
+        // synonym's display still finds the code.
+        name: 'Display branch still matches synonym rows',
+        valueSet: synonymValueSet.url,
+        system: synonymCodeSystem.url,
+        filter: 'zeta',
+        expected: [{ code: 'SYN100', display: 'Zeta' }],
+      },
+    ])('$name', async ({ valueSet, system, filter, expected }) => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${valueSet}&filter=${encodeURIComponent(filter)}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      expect(res.body.expansion).toMatchObject<Partial<ValueSetExpansion>>({
+        contains: expected.map((coding) => ({ system, ...coding })),
+      });
+    });
+
+    test('Exact code match ranks ahead of longer prefix match', async () => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${flatValueSet.url}&filter=HTX`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+      const contains = (res.body.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
+      const codes = contains.map((c) => c.code);
+      expect(codes.indexOf('HTX')).toBeGreaterThanOrEqual(0);
+      expect(codes.indexOf('HTX')).toBeLessThan(codes.indexOf('HTXY'));
+    });
+
+    test('Sort order is deterministic when rows tie on relevance', async () => {
+      // Every 'ORD' code ties on the relevance keys (no exact match, display similarity 0), so only a
+      // stable tiebreaker can pin the order. Expect ascending code order, and identical order across
+      // repeated requests.
+      const expectedCodes = ['ORD10', 'ORD20', 'ORD30', 'ORD40', 'ORD50'];
+      const fetchCodes = async (): Promise<(string | undefined)[]> => {
+        const res = await request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${orderingValueSet.url}&filter=ORD`)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res).toHaveStatus(200);
+        return (res.body.expansion.contains as ValueSetExpansionContains[]).map((c) => c.code);
+      };
+      expect(await fetchCodes()).toStrictEqual(expectedCodes);
+      // Stable across repeated identical queries.
+      expect(await fetchCodes()).toStrictEqual(expectedCodes);
+    });
+
+    test('Pagination is stable across offset windows', async () => {
+      // A deterministic sort is what makes offset-based paging safe: consecutive windows must partition
+      // the full result with no skipped or duplicated codes.
+      const page = async (offset: number, count: number): Promise<(string | undefined)[]> => {
+        const res = await request(app)
+          .get(`/fhir/R4/ValueSet/$expand?url=${orderingValueSet.url}&filter=ORD&offset=${offset}&count=${count}`)
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res).toHaveStatus(200);
+        return (res.body.expansion.contains as ValueSetExpansionContains[]).map((c) => c.code);
+      };
+      const paged = [...(await page(0, 2)), ...(await page(2, 2)), ...(await page(4, 2))];
+      expect(paged).toStrictEqual(['ORD10', 'ORD20', 'ORD30', 'ORD40', 'ORD50']);
+    });
+  });
+
+  describe('Cost-based parent-filter strategy', () => {
+    const system = 'http://example.com/CodeSystem/' + randomUUID();
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'example',
+      url: system,
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'PAR',
+          display: 'parent alpha',
+          concept: [
+            { code: 'CHD', display: 'child alpha' },
+            { code: 'PET', display: 'pet beta' },
+          ],
+        },
+      ],
+    };
+
+    let stored: WithId<CodeSystem>;
+    let db: PgQueryable;
+
+    beforeAll(async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(codeSystem);
+      expect(res).toHaveStatus(201);
+      stored = res.body as WithId<CodeSystem>;
+
+      await withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+        db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'test' }));
+        await hydrateCodeSystemProperties(db, stored);
+      });
+    });
+
+    test('countCandidatesBounded returns min(actual, limit)', async () => {
+      // 'alpha' matches PAR + CHD (2). PET does not.
+      expect(await countCandidatesBounded(db, stored, 'alpha', 10)).toBe(2);
+      expect(await countCandidatesBounded(db, stored, 'alpha', 1)).toBe(1); // bounded
+      expect(await countCandidatesBounded(db, stored, 'zzz', 10)).toBe(0);
+    });
+
+    test('descendant and ancestor strategies return identical members', async () => {
+      const include = { system, filter: [{ property: 'concept', op: 'is-a' as const, value: 'PAR' }] };
+      const params = { filter: 'alpha' };
+
+      const ancestorQuery = expansionQuery(include, stored, params, 'ancestor');
+      const descendantQuery = expansionQuery(include, stored, params, 'descendant');
+      if (!ancestorQuery || !descendantQuery) {
+        throw new Error('expected both strategies to build a query');
+      }
+      const ancestorRows = await ancestorQuery.execute(db);
+      const descendantRows = await descendantQuery.execute(db);
+
+      const codes = (rows: { code: string }[]): string[] => rows.map((r) => r.code).sort();
+      expect(codes(ancestorRows)).toEqual(['CHD', 'PAR']);
+      expect(codes(descendantRows)).toEqual(codes(ancestorRows));
     });
   });
 
@@ -1456,13 +1842,62 @@ describe('Expand', () => {
     expect(vsRes).toHaveStatus(201);
 
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=ID`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=accepted`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { code: 'MSG_INVALID_ID', display: 'ID not accepted', system: codeSystem.url },
+    ]);
+  });
+
+  test('Short filter (< 3 chars) does not match display substrings', async () => {
+    // Below 3 characters the display-substring branch is dropped (the trigram index can't serve a sub-trigram
+    // substring), so a 2-char filter matches only exact codes, never display substrings.
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'complete',
+      status: 'active',
+      concept: [
+        { code: 'HT', display: 'Alpha' },
+        { code: 'HTX', display: 'Beta' }, // display contains 'et' but code does not
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    expect(
+      await request(app)
+        .post('/fhir/R4/CodeSystem')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(codeSystem)
+    ).toHaveStatus(201);
+    expect(
+      await request(app)
+        .post('/fhir/R4/ValueSet')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send(valueSet)
+    ).toHaveStatus(201);
+
+    // 'et' is a substring of display 'Beta' (code HTX) but of no code → no matches.
+    const displayOnly = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=et`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(displayOnly).toHaveStatus(200);
+    expect((displayOnly.body.expansion as ValueSetExpansion).contains ?? []).toHaveLength(0);
+
+    // The exact 2-char code 'HT' still matches.
+    const codeMatch = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=HT`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(codeMatch).toHaveStatus(200);
+    expect((codeMatch.body.expansion as ValueSetExpansion).contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'HT', display: 'Alpha', system: codeSystem.url },
     ]);
   });
 
@@ -1546,5 +1981,416 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + superAdminToken);
     expect(res).toHaveStatus(200);
     expect(res.body.expansion.contains[0].display).toStrictEqual('ClientApplication');
+  });
+
+  describe('Display language', () => {
+    const flatSystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const flatCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: flatSystem,
+      concept: [
+        {
+          code: 'FVR',
+          display: 'Fever',
+          designation: [
+            { language: 'fr', value: 'Fièvre' },
+            { language: 'es', value: 'Fiebre' },
+          ],
+        },
+        { code: 'NOFR', display: 'Fieval English-only term' },
+        { code: 'LYMPH', display: 'Naïve lymphocyte' },
+        { code: 'TOUX', display: 'Cough', designation: [{ language: 'fr', value: 'Toux' }] },
+        { code: 'RHUME', display: 'Cold', designation: [{ language: 'fr', value: 'Rhume' }] },
+      ],
+    };
+    const flatValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: flatSystem }] },
+    };
+
+    // Enumerated concepts: FVR and TOUX take their translation from the CodeSystem, while RHUME carries an
+    // inline designation that differs from it ('Rhume'), so the two sources can be told apart
+    const conceptValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: flatSystem,
+            concept: [
+              { code: 'FVR', display: 'Fever' },
+              { code: 'TOUX', display: 'Cough' },
+              { code: 'RHUME', display: 'Cold', designation: [{ language: 'fr', value: 'Rhume sévère' }] },
+            ],
+          },
+        ],
+      },
+    };
+
+    // Stored full expansion, so filtering happens in memory rather than in SQL
+    const preExpandedValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      expansion: {
+        timestamp: '2024-05-02T06:30:00.000Z',
+        total: 3,
+        contains: [
+          { system: flatSystem, code: 'LYMPH', display: 'Naïve lymphocyte' },
+          { system: flatSystem, code: 'TCELL', display: 'Naive T cell' },
+          { system: flatSystem, code: 'TOUX', display: 'Cough' },
+        ],
+      },
+    };
+
+    const hierarchySystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const hierarchyCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: hierarchySystem,
+      hierarchyMeaning: 'is-a',
+      concept: [
+        {
+          code: 'SYMPTOM',
+          display: 'Symptom',
+          designation: [{ language: 'fr', value: 'Symptôme' }],
+          concept: [
+            { code: 'FVR', display: 'Fever', designation: [{ language: 'fr', value: 'Fièvre' }] },
+            { code: 'COUGH', display: 'Cough', designation: [{ language: 'fr', value: 'Toux' }] },
+          ],
+        },
+      ],
+    };
+    const isaValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: {
+        include: [{ system: hierarchySystem, filter: [{ property: 'concept', op: 'is-a', value: 'SYMPTOM' }] }],
+      },
+    };
+    const descendentValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: {
+        include: [
+          { system: hierarchySystem, filter: [{ property: 'concept', op: 'descendent-of', value: 'SYMPTOM' }] },
+        ],
+      },
+    };
+
+    const abstractSystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const abstractCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: abstractSystem,
+      property: [{ code: 'notSelectable', uri: abstractProperty, type: 'boolean' }],
+      concept: [
+        {
+          code: 'GRP',
+          display: 'Grouper',
+          designation: [{ language: 'fr', value: 'Groupeur' }],
+          property: [{ code: 'notSelectable', valueBoolean: true }],
+        },
+        { code: 'LEAF', display: 'Leaf', designation: [{ language: 'fr', value: 'Feuille' }] },
+      ],
+    };
+    const abstractValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: abstractSystem }] },
+    };
+
+    const propertySystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const propertyCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: propertySystem,
+      property: [{ code: 'status', type: 'code' }],
+      concept: [
+        {
+          code: 'ACT',
+          display: 'Active thing',
+          designation: [{ language: 'fr', value: 'Chose active' }],
+          property: [{ code: 'status', valueCode: 'active' }],
+        },
+        {
+          code: 'RET',
+          display: 'Retired thing',
+          designation: [{ language: 'fr', value: 'Chose retirée' }],
+          property: [{ code: 'status', valueCode: 'retired' }],
+        },
+      ],
+    };
+    const propertyValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: propertySystem, filter: [{ property: 'status', op: '=', value: 'active' }] }] },
+    };
+
+    const pagingSystem = 'http://example.com/CodeSystem/' + randomUUID();
+    const pagingCodeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      status: 'active',
+      content: 'complete',
+      url: pagingSystem,
+      concept: [
+        {
+          code: 'P1',
+          display: 'Item one',
+          designation: [
+            { language: 'fr', value: 'Article un' },
+            { language: 'fr', value: 'Article premier' },
+          ],
+        },
+        { code: 'P2', display: 'Item two', designation: [{ language: 'fr', value: 'Article deux' }] },
+        { code: 'P3', display: 'Item three', designation: [{ language: 'fr', value: 'Article trois' }] },
+        { code: 'P4', display: 'Item four', designation: [{ language: 'fr', value: 'Article quatre' }] },
+      ],
+    };
+    const pagingValueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: pagingSystem }] },
+    };
+
+    let storedHierarchy: WithId<CodeSystem>;
+    let db: PgQueryable;
+
+    beforeAll(async () => {
+      for (const resource of [
+        flatCodeSystem,
+        hierarchyCodeSystem,
+        abstractCodeSystem,
+        propertyCodeSystem,
+        pagingCodeSystem,
+        flatValueSet,
+        conceptValueSet,
+        preExpandedValueSet,
+        isaValueSet,
+        descendentValueSet,
+        abstractValueSet,
+        propertyValueSet,
+        pagingValueSet,
+      ]) {
+        const res = await request(app)
+          .post(`/fhir/R4/${resource.resourceType}`)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send(resource);
+        expect(res).toHaveStatus(201);
+        if (resource === hierarchyCodeSystem) {
+          storedHierarchy = res.body as WithId<CodeSystem>;
+        }
+      }
+
+      await withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+        db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'test' }));
+        await hydrateCodeSystemProperties(db, storedHierarchy);
+      });
+    });
+
+    test.each([
+      {
+        name: 'Unaccented filter matches accented translation',
+        valueSet: flatValueSet,
+        query: 'filter=fiev&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'FVR', display: 'Fièvre' }],
+      },
+      {
+        name: 'Unaccented filter matches accented display without displayLanguage',
+        valueSet: flatValueSet,
+        query: 'filter=naive',
+        expected: [{ system: flatSystem, code: 'LYMPH', display: 'Naïve lymphocyte' }],
+      },
+      {
+        name: 'Without displayLanguage, only untranslated displays match',
+        valueSet: flatValueSet,
+        query: 'filter=fiev',
+        expected: [{ system: flatSystem, code: 'NOFR', display: 'Fieval English-only term' }],
+      },
+      {
+        name: 'Translations in other languages do not match',
+        valueSet: flatValueSet,
+        query: 'filter=fiev&displayLanguage=es',
+        expected: [],
+      },
+      {
+        name: 'Filter matches the requested language',
+        valueSet: flatValueSet,
+        query: 'filter=fieb&displayLanguage=es',
+        expected: [{ system: flatSystem, code: 'FVR', display: 'Fiebre' }],
+      },
+      {
+        name: 'Code prefix filter with displayLanguage',
+        valueSet: flatValueSet,
+        query: 'filter=FVR&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'FVR', display: 'Fièvre' }],
+      },
+      {
+        // RHUME's inline designation takes precedence over the CodeSystem's 'Rhume'
+        name: 'Enumerated concepts resolve the translated display',
+        valueSet: conceptValueSet,
+        query: 'displayLanguage=fr',
+        expected: [
+          { system: flatSystem, code: 'FVR', display: 'Fièvre' },
+          { system: flatSystem, code: 'TOUX', display: 'Toux' },
+          { system: flatSystem, code: 'RHUME', display: 'Rhume sévère' },
+        ],
+      },
+      {
+        name: 'Enumerated concepts filter on the translated display',
+        valueSet: conceptValueSet,
+        query: 'filter=vre&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'FVR', display: 'Fièvre' }],
+      },
+      {
+        name: 'Unaccented filter matches accented translation of an enumerated concept',
+        valueSet: conceptValueSet,
+        query: 'filter=fiev&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'FVR', display: 'Fièvre' }],
+      },
+      {
+        name: 'Unaccented filter matches an accented inline designation',
+        valueSet: conceptValueSet,
+        query: 'filter=sever&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'RHUME', display: 'Rhume sévère' }],
+      },
+      {
+        name: 'Unaccented filter matches accented display in a stored expansion',
+        valueSet: preExpandedValueSet,
+        query: 'filter=naive',
+        expected: [
+          { system: flatSystem, code: 'LYMPH', display: 'Naïve lymphocyte' },
+          { system: flatSystem, code: 'TCELL', display: 'Naive T cell' },
+        ],
+      },
+      {
+        name: 'Accented filter matches unaccented display in a stored expansion',
+        valueSet: preExpandedValueSet,
+        query: 'filter=na%C3%AFve',
+        expected: [
+          { system: flatSystem, code: 'LYMPH', display: 'Naïve lymphocyte' },
+          { system: flatSystem, code: 'TCELL', display: 'Naive T cell' },
+        ],
+      },
+      {
+        name: 'Filter selects the matching translation among several',
+        valueSet: pagingValueSet,
+        query: 'filter=premier&displayLanguage=fr',
+        expected: [{ system: pagingSystem, code: 'P1', display: 'Article premier' }],
+      },
+      {
+        name: 'Enumerated concepts exclude non-matching translations',
+        valueSet: conceptValueSet,
+        query: 'filter=toux&displayLanguage=fr',
+        expected: [{ system: flatSystem, code: 'TOUX', display: 'Toux' }],
+      },
+      {
+        name: 'Enumerated concepts do not match the untranslated display',
+        valueSet: conceptValueSet,
+        query: 'filter=cough&displayLanguage=fr',
+        expected: [],
+      },
+      {
+        name: 'is-a filter with displayLanguage',
+        valueSet: isaValueSet,
+        query: 'displayLanguage=fr',
+        expected: [
+          { system: hierarchySystem, code: 'COUGH', display: 'Toux' },
+          { system: hierarchySystem, code: 'FVR', display: 'Fièvre' },
+          { system: hierarchySystem, code: 'SYMPTOM', display: 'Symptôme' },
+        ],
+      },
+      {
+        name: 'descendent-of filter with displayLanguage',
+        valueSet: descendentValueSet,
+        query: 'displayLanguage=fr',
+        expected: [
+          { system: hierarchySystem, code: 'COUGH', display: 'Toux' },
+          { system: hierarchySystem, code: 'FVR', display: 'Fièvre' },
+        ],
+      },
+      {
+        name: 'is-a filter with displayLanguage and text filter',
+        valueSet: isaValueSet,
+        query: 'filter=fiev&displayLanguage=fr',
+        expected: [{ system: hierarchySystem, code: 'FVR', display: 'Fièvre' }],
+      },
+      {
+        name: 'excludeNotForUI with displayLanguage',
+        valueSet: abstractValueSet,
+        query: 'displayLanguage=fr&excludeNotForUI=true',
+        expected: [{ system: abstractSystem, code: 'LEAF', display: 'Feuille' }],
+      },
+      {
+        name: 'Property filter with displayLanguage',
+        valueSet: propertyValueSet,
+        query: 'displayLanguage=fr',
+        expected: [{ system: propertySystem, code: 'ACT', display: 'Chose active' }],
+      },
+    ])('$name', async ({ valueSet, query, expected }) => {
+      const res = await request(app)
+        .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&${query}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+
+      const contains = (res.body.expansion as ValueSetExpansion).contains ?? [];
+      // Sorted, since an expansion without a text filter has no deterministic order
+      const byCode = (a: ValueSetExpansionContains, b: ValueSetExpansionContains): number =>
+        (a.code as string).localeCompare(b.code as string);
+      expect([...contains].sort(byCode)).toStrictEqual<ValueSetExpansionContains[]>([...expected].sort(byCode));
+    });
+
+    test('Ancestor and descendant strategies agree under displayLanguage', async () => {
+      const include = {
+        system: hierarchySystem,
+        filter: [{ property: 'concept', op: 'is-a' as const, value: 'SYMPTOM' }],
+      };
+      const params = { filter: 'fiev', displayLanguage: 'fr' };
+
+      const ancestorQuery = expansionQuery(include, storedHierarchy, params, 'ancestor');
+      const descendantQuery = expansionQuery(include, storedHierarchy, params, 'descendant');
+      if (!ancestorQuery || !descendantQuery) {
+        throw new Error('expected both strategies to build a query');
+      }
+      const ancestorRows = await ancestorQuery.execute(db);
+      const descendantRows = await descendantQuery.execute(db);
+
+      expect(ancestorRows.map((r) => [r.code, r.display])).toStrictEqual([['FVR', 'Fièvre']]);
+      expect(descendantRows.map((r) => [r.code, r.display])).toStrictEqual(
+        ancestorRows.map((r) => [r.code, r.display])
+      );
+    });
+
+    test('Paging counts codes, not translation rows', async () => {
+      // P1 has two French designations; a page of 2 must still hold 2 distinct codes
+      const res = await request(app)
+        .get(
+          `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(pagingValueSet.url as string)}&filter=article&displayLanguage=fr&count=2`
+        )
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+
+      const contains = (res.body.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
+      expect(contains).toHaveLength(2);
+      expect(new Set(contains.map((c) => c.code)).size).toBe(2);
+      for (const entry of contains) {
+        expect(entry.display).toMatch(/^Article /);
+      }
+    });
   });
 });

@@ -215,6 +215,31 @@ describe('ResourceDiffTable', () => {
     expect(operations).toHaveLength(1);
   });
 
+  test('Combine patch operations on array add from empty array', async () => {
+    const original: Patient = {
+      resourceType: 'Patient',
+      id: '123',
+      meta: { versionId: '456' },
+      name: [{ family: 'Smith', given: ['John'] }],
+      identifier: [],
+    };
+
+    const revised: Patient = {
+      ...original,
+      meta: { versionId: '457' },
+      identifier: [
+        { system: 'http://example.com/foo', value: '123' },
+        { system: 'http://example.com/bar', value: '456' },
+      ],
+    };
+
+    await act(async () => {
+      setup({ original, revised });
+    });
+
+    expect(await screen.findByText('Replace identifier')).toBeInTheDocument();
+  });
+
   test('Change attachment URL', async () => {
     const original: Patient = {
       resourceType: 'Patient',

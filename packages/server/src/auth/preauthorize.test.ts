@@ -120,4 +120,40 @@ describe('Pre-authorize', () => {
     expect(res.body.expiresAt).toBeDefined();
     expect(res.body.code).toBeUndefined();
   });
+
+  test('Succeeds when on-behalf-of user cannot read ClientApplication', async () => {
+    // AccessPolicy that allows Patient only — no ClientApplication.
+    // Minting must not depend on the target user's ability to read ClientApplication.
+    const restrictedAccount = await withTestContext(() =>
+      addTestUser(project, {
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient' }],
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(restrictedAccount.profile))
+      .type('json')
+      .send({ clientId: client.id });
+    expect(res).toHaveStatus(200);
+    expect(res.body.preAuthorizedCode).toBeDefined();
+    expect(res.body.expiresAt).toBeDefined();
+  });
+
+  test('Rejects ClientApplication from another project', async () => {
+    const other = await withTestContext(() => createTestProject({ withClient: true }));
+
+    const res = await request(app)
+      .post('/auth/preauthorize')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+      .type('json')
+      .send({ clientId: other.client.id });
+    expect(res).toHaveStatus(404);
+    expect(res.body).toMatchObject(notFound);
+  });
 });

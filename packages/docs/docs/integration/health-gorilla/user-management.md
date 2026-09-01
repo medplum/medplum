@@ -12,13 +12,14 @@ The basic process is:
 2. **Check and Enroll**: It checks if the practitioner is already enrolled in your Health Gorilla tenant. If not, it searches the Health Gorilla NPI registry and automatically enrolls them as a clinical user.
 3. **Sync Identifiers**: The Health Gorilla ID and login details are saved back to the Medplum `Practitioner`. Health Gorilla ID consistency is validated on every sync.
 4. **Sync Lab Account Numbers**: Physician-level lab account numbers (AN identifiers) are resolved and merged into the Health Gorilla `PractitionerRole`.
+5. **Sync Practitioner Credentials**: `Practitioner.name[0].suffix` (e.g. `MD`, `NP`, `CNM`) is the credential that gets displayed on the eReq form. On sync, it's compared against what Health Gorilla currently has on file and corrected if it differs. This also runs automatically during order submission, so a corrected suffix takes effect on the next order without needing to run this bot directly.
 
 ### Bot Call Pattern
 
 To trigger the sync for a practitioner, you can execute the `sync-practitioner` OperationDefinition on the `Practitioner` resource:
 
 ```bash
-curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$sync-practitioner" \
+curl -X POST "https://api.medplum.com/fhir/R4/Practitioner/{id}/\$health-gorilla-sync-practitioner" \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/fhir+json" \
   -d '{
@@ -46,7 +47,7 @@ curl -X POST "https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://ww
   }'
 ```
 
-:::info Multiple Locations
+:::info[Multiple Locations]
 If you are operating a Management Services Organization (MSO) or a practice with multiple locations, the sync process involves additional steps for mapping lab account numbers to specific practice locations. See the [Multiple Locations](./multiple-locations) guide for more details.
 :::
 

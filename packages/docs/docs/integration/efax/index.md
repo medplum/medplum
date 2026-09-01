@@ -11,16 +11,23 @@ Medplum provides a first-party integration with eFax Corporate to send and recei
 This integration requires setup by the Medplum team. [Contact us](mailto:info+efax@medplum.com?subject=eFax%20Integration%20for%20Medplum) to enable eFax for your project.
 :::
 
+:::tip[Planning this integration?]
+The [Messaging & Communications Decision Guide](/docs/decision-guides/messaging) walks through requirements questions and FHIR modeling decisions for messaging — thread structure, routing, and external channels — use it alongside these docs.
+:::
+
 ## Overview
 
 The eFax integration allows you to:
+
 - **Send faxes** from FHIR `Communication` resources via the `$send-efax` operation
-- **Receive faxes** and store them as `Communication` resources via the `$receive-efax` operation  
-- **Test connectivity** to verify your eFax API configuration
+- **Receive faxes** and store them as `Communication` resources via the `$receive-efax` operation
+- **Sync outbound delivery status** from eFax onto those `Communication` resources via the `$sync-efax-status` operation
+- **Test connectivity** to verify your eFax API credentials via the connection-test bot
 
 ## Prerequisites
 
 Before using the eFax integration, you must have:
+
 - The eFax integration enabled on your Medplum project (contact the Medplum team)
 - eFax API credentials configured as project secrets
 
@@ -30,12 +37,11 @@ Before using the eFax integration, you must have:
 
 The following secrets must be configured in your Medplum project:
 
-| Secret Name | Description |
-|-------------|-------------|
-| `eFaxAppId` | Your eFax application ID |
-| `eFaxApiKey` | Your eFax API key |
-| `eFaxUserId` | Default eFax user ID for system-level operations |
-
+| Secret Name  | Description                                                    |
+| ------------ | -------------------------------------------------------------- |
+| `eFaxAppId`  | eFax application ID for the group (authenticates API requests) |
+| `eFaxApiKey` | eFax API key for the group (authenticates API requests)        |
+| `eFaxUserId` | Default eFax user ID for system-level operations               |
 
 ## FHIR Operations
 
@@ -45,10 +51,10 @@ Poll for and receive faxes from eFax, creating `Communication` resources for eac
 
 For the simplest setup, if you only need one fax number, **we recommend calling `/fhir/R4/Communication/$receive-efax`** to start.
 
-| Endpoint | Use Case | User ID Source |
-|----------|----------|----------------|
-| `POST /fhir/R4/Communication/$receive-efax` | Clinic-wide shared fax | Project secret `eFaxUserId` |
-| `POST /fhir/R4/Organization/{id}/$receive-efax` | Department/location fax | Organization's eFax identifier |
+| Endpoint                                        | Use Case                    | User ID Source                 |
+| ----------------------------------------------- | --------------------------- | ------------------------------ |
+| `POST /fhir/R4/Communication/$receive-efax`     | Clinic-wide shared fax      | Project secret `eFaxUserId`    |
+| `POST /fhir/R4/Organization/{id}/$receive-efax` | Department/location fax     | Organization's eFax identifier |
 | `POST /fhir/R4/Practitioner/{id}/$receive-efax` | Individual practitioner fax | Practitioner's eFax identifier |
 
 ### Resource Configuration
@@ -73,24 +79,25 @@ For practitioners or organizations to send/receive faxes, add their eFax user ID
 }
 ```
 
-
 ### `$send-efax` - Send a Fax
 
 Send a fax from a `Communication` resource.
 
-| Endpoint | Description |
-|----------|-------------|
+| Endpoint                                 | Description                              |
+| ---------------------------------------- | ---------------------------------------- |
 | `POST /fhir/R4/Communication/$send-efax` | Send a fax from a Communication resource |
 
 **Request Body:** A `Communication` resource with:
+
 - `medium` containing code `FAXWRIT` from system `http://terminology.hl7.org/CodeSystem/v3-ParticipationMode`
 - `payload` with either a `contentReference` to a `DocumentReference` (recommended) or an inline `contentAttachment` containing the document to fax (PDF, JPEG, or PNG)
-- `sender` reference to a Practitioner with eFax identifier
+- `sender` reference to a Practitioner or Organization. If that resource has `identifier[system=https://efax.com]`, that user ID is used; otherwise the project secret `eFaxUserId` is used
 - `recipient` reference(s) to resources with fax numbers in their `telecom`
 
 Recipient fax numbers must be in **E.164** format: a leading `+` followed by the country calling code and the subscriber number (for example, `+1` for US/Canada, then the number: `+15551234567`). eFax requires this country code; a local number without it may fail or route incorrectly.
 
 When sending a fax, you need to create multiple FHIR resources:
+
 1. **Binary**: The document to fax (PDF, image) - created via `medplum.createAttachment()`
 2. **DocumentReference**: Tracks the uploaded document in the chart, wrapping the attachment
 3. **Organization**: The recipient with fax number
@@ -103,12 +110,12 @@ import { createReference } from '@medplum/core';
 import type { Communication, DocumentReference, Organization, Practitioner } from '@medplum/fhirtypes';
 
 // Assuming you have a MedplumClient instance and the sender's Practitioner profile
-const profile = await medplum.getProfile() as Practitioner;
+const profile = (await medplum.getProfile()) as Practitioner;
 
 // Step 1: Upload the file and persist it as a DocumentReference (creates a Binary resource)
 // so the faxed document is tracked in the chart, not just embedded on the Communication.
 const attachment = await medplum.createAttachment({
-  data: file,  // File object from input
+  data: file, // File object from input
   contentType: file.type,
   filename: file.name,
 });
@@ -152,8 +159,10 @@ const communication = await medplum.createResource<Communication>({
 // Step 4: Call the $send-efax operation
 await medplum.post(medplum.fhirUrl('Communication', '$send-efax'), communication);
 
-console.log('Fax sent successfully!');
+console.log('Fax submitted. Communication stays in-progress until $sync-efax-status runs.');
 ```
+
+`$send-efax` **submits** the fax to eFax. On success it stores the eFax `fax_id` on `Communication.identifier` (`system` `https://efax.com`) and leaves `status` as `in-progress`. It does **not** wait for delivery. See [Outbound fax status](#outbound-fax-status) below.
 
 The recipient `Organization` (or `Practitioner`, `RelatedPerson`, etc.) must store the destination fax in `telecom` using E.164 (country code required), for example:
 
@@ -173,6 +182,56 @@ The recipient `Organization` (or `Practitioner`, `RelatedPerson`, etc.) must sto
   ]
 }
 ```
+
+### `$sync-efax-status` - Sync outbound delivery status
+
+Poll eFax for outbound transmission status and update matching `Communication` resources.
+
+eFax delivery is **not** pushed into Medplum in real time. After `$send-efax`, you must either invoke `$sync-efax-status` or schedule the sync bot (cron on a bot **in your project**) so Communications move from `in-progress` to a terminal status.
+
+| Endpoint                          | Description                                               | Request body                                               |
+| --------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
+| `POST /fhir/R4/$sync-efax-status` | Poll eFax outbound notifications and patch Communications | Optional FHIR `Parameters` with `period` (`start` / `end`) |
+
+**Example request body** (optional time window):
+
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "period",
+      "valuePeriod": {
+        "start": "2026-01-01T00:00:00Z",
+        "end": "2026-01-31T23:59:59Z"
+      }
+    }
+  ]
+}
+```
+
+The operation returns an `OperationOutcome`. A JSON summary of `updated` / `skipped` / `failed` fax IDs is on extension `https://efax.com/sync-status-outcome`.
+
+Skipped reasons:
+
+| Reason                    | Meaning                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `communication_not_found` | No Communication with `identifier` `https://efax.com                                                                                        | {fax_id}` |
+| `unknown_efax_user`       | The notification's eFax `user_id` is not the project `eFaxUserId` and not on any Practitioner or Organization `https://efax.com` identifier |
+
+## Outbound fax status
+
+| eFax `transmission_status` | `Communication.status` | Meaning                                   |
+| -------------------------- | ---------------------- | ----------------------------------------- |
+| `NEW`                      | `in-progress`          | Accepted by eFax, not yet transmitting    |
+| `INPROGRESS`               | `in-progress`          | Transmitting                              |
+| `COMPLETE`                 | `completed`            | Delivered                                 |
+| `ERROR`                    | `stopped`              | Failed (see `https://efax.com/fax-error`) |
+| `CANCELED`                 | `not-done`             | Canceled                                  |
+
+Successful send also sets `https://efax.com/fax-status` to the raw eFax status when sync runs.
+
+If the fax is delivered in the eFax portal but the Communication is still `in-progress`, invoke `$sync-efax-status` (or wait for cron). Seeing the fax on the eFax side does not update Medplum by itself.
 
 ## Communication Resource Structure
 
@@ -281,17 +340,27 @@ The samples below show the `Communication` resource only. For outbound sends, th
 }
 ```
 
+## Troubleshooting
+
+**Connection test succeeds, send or receive returns 403.**  
+The connection test only exchanges App ID + API key for a token. Send and receive also send `user-id`. Confirm `eFaxUserId` and any `https://efax.com` identifier on the sender are the eFax portal **user** ID for a user in that same group, with API access (and send permission for outbound).
+
+**Communication stays `in-progress` after the fax is delivered.**  
+Call `POST /fhir/R4/$sync-efax-status`. Check the outcome extension: `COMPLETE` should map to `completed`; `INPROGRESS` means eFax is not finished; `communication_not_found` / `unknown_efax_user` means the `fax_id` or user ID is not aligned.
+
+**Receive cannot find a user ID.**  
+System-level `$receive-efax` requires project secret `eFaxUserId`. Type-level calls require `identifier[system=https://efax.com]` on that Organization or Practitioner.
+
 ## Supported Document Types
 
 The following content types are supported for sending faxes:
 
-| Content Type | Extension |
-|--------------|-----------|
-| `application/pdf` | .pdf |
-| `image/jpeg` | .jpg, .jpeg |
-| `image/png` | .png |
+| Content Type      | Extension   |
+| ----------------- | ----------- |
+| `application/pdf` | .pdf        |
+| `image/jpeg`      | .jpg, .jpeg |
+| `image/png`       | .png        |
 
 ## Example Application
 
 See the [medplum-efax-demo](https://github.com/medplum/medplum/tree/main/examples/medplum-efax-demo) example for a complete React application demonstrating the eFax integration.
-

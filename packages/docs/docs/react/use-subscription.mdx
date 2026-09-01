@@ -15,7 +15,7 @@ given callback when an event notification is triggered.
 Subscriptions created with this hook are lightweight, share a single WebSocket connection per instance of `MedplumClient`, and are automatically
 untracked and cleaned up when the containing component is no longer mounted.
 
-:::info Access Policy Requirements
+:::info[Access Policy Requirements]
 Users must have permission to create `Subscription` resources and read access to the subscribed resource types. See [WebSocket Subscriptions access policy](/docs/access/access-policies#websocket-subscriptions-usesubscription-hook) for details.
 :::
 

@@ -66,14 +66,18 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const { result, countResult } = await repo.withStatementTimeout({ timeoutMs: 0 }, async () => {
-    const result = await repo.executeSql<{ 'QUERY PLAN': string[] }>(
-      selectQuery,
-      repoAccess.sqlRead(getSearchResourceTypes(searchReq), { source: 'dbExplainHandler' })
-    );
-    const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
-    return { result, countResult };
-  });
+  const searchResourceTypes = getSearchResourceTypes(searchReq);
+  const { result, countResult } = await repo.withStatementTimeout(
+    { timeoutMs: 0, resourceTypes: searchResourceTypes },
+    async () => {
+      const result = await repo.executeSql<{ 'QUERY PLAN': string[] }>(
+        selectQuery,
+        repoAccess.sqlRead(searchResourceTypes, { source: 'dbExplainHandler' })
+      );
+      const countResult = params.count ? await getCount(repo, searchReq, { forceAccurate: true }) : undefined;
+      return { result, countResult };
+    }
+  );
 
   let explain: string;
   if (params.format === 'json') {
@@ -86,7 +90,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
   const output = buildOutputParameters(operation, {
     query,
     parameters,
-    explain,
+    explain: escapeUnicode(explain),
     countEstimate: countResult?.estimate,
     countAccurate: countResult?.accurate,
   });

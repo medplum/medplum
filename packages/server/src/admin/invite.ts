@@ -29,8 +29,9 @@ import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
+import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
@@ -55,6 +56,12 @@ export const inviteValidator = makeValidationMiddleware([
     .optional()
     .matches(/^Patient\/[^/]+$/)
     .withMessage('Patient must be a reference to a Patient resource'),
+  body('password')
+    .optional()
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    .isByteLength({ max: MAX_PASSWORD_LENGTH })
+    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
@@ -91,6 +98,16 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   const { project, email } = request;
+  const invitedBySuperAdmin = tryGetRequestContext()?.authState?.project?.superAdmin;
+  if (
+    email &&
+    !invitedBySuperAdmin &&
+    request.resourceType === 'Practitioner' &&
+    !isPractitionerEmailDomainAllowed(email, project, getConfig().blockedEmailDomains)
+  ) {
+    throw new OperationOutcomeError(badRequest('Email domain is not allowed for this project', 'email'));
+  }
+
   let existingUser = false;
   let passwordResetUrl: string | undefined;
 
@@ -98,55 +115,49 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   const userResource = await makeUserResource(request);
   let user: WithId<User>;
   if (email) {
-    const { resource: result, outcome } = await systemRepo.withTransaction(
-      async (txRepo) => {
-        // If inviting with an email address, check for existing memberships
-        // tied to this project/email combination that are at a different scope
-        // than the one we would create. This avoids confusion of someone
-        // having separate server-scoped and project-scoped user records.
-        //
-        // This check is bypassed if the caller explicitly passes `forceNewMembership: true`
-        if (!request.forceNewMembership) {
-          const projectFilter = userResource.project
-            ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
-            : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
+    // If inviting with an email address, check for existing memberships
+    // tied to this project/email combination that are at a different scope
+    // than the one we would create. This avoids confusion of someone
+    // having separate server-scoped and project-scoped user records.
+    //
+    // This check is bypassed if the caller explicitly passes `forceNewMembership: true`.
+    // It is intentionally separate from the conditional create: the ProjectMembership
+    // is created later in the invite flow, so wrapping only this check and User creation
+    // in a larger transaction does not make the cross-resource invariant atomic.
+    if (!request.forceNewMembership) {
+      const projectFilter = userResource.project
+        ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
+        : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
 
-          const existingMemberships = await txRepo.searchResources<ProjectMembership>({
-            resourceType: 'ProjectMembership',
-            filters: [
-              { code: 'user:User.email', operator: Operator.EXACT, value: email },
-              { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
-              projectFilter,
-            ],
-          });
+      const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        filters: [
+          { code: 'user:User.email', operator: Operator.EXACT, value: email },
+          { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
+          projectFilter,
+        ],
+      });
 
-          if (existingMemberships.length > 0) {
-            throw new OperationOutcomeError(conflict('User is already a member of this project'));
-          }
-        }
-
-        const searchRequest: SearchRequest<User> = {
-          resourceType: 'User',
-          filters: [
-            {
-              code: 'email',
-              operator: Operator.EXACT,
-              value: email,
-            },
-            userResource.project
-              ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
-              : { code: 'project', operator: Operator.MISSING, value: 'true' },
-          ],
-        };
-
-        return txRepo.conditionalCreate(userResource, searchRequest);
-      },
-      {
-        resourceTypes: ['ProjectMembership', 'User'],
-        source: 'inviteUser.upsertUser',
-        serializable: true,
+      if (existingMemberships.length > 0) {
+        throw new OperationOutcomeError(conflict('User is already a member of this project'));
       }
-    );
+    }
+
+    const searchRequest: SearchRequest<User> = {
+      resourceType: 'User',
+      filters: [
+        {
+          code: 'email',
+          operator: Operator.EXACT,
+          value: email,
+        },
+        userResource.project
+          ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
+          : { code: 'project', operator: Operator.MISSING, value: 'true' },
+      ],
+    };
+
+    const { resource: result, outcome } = await systemRepo.conditionalCreate(userResource, searchRequest);
     user = result;
     existingUser = !isCreated(outcome);
   } else {
@@ -443,15 +454,36 @@ async function upsertProjectMembership(
     return createProjectMembership(systemRepo, user, project, profile, partialMembership);
   }
 
+  const membershipSearch: SearchRequest<ProjectMembership> = {
+    resourceType: 'ProjectMembership',
+    filters: [
+      { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
+      { code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) },
+    ],
+  };
+
+  if (!request.upsert) {
+    const { resource: membership, outcome } = await systemRepo.conditionalCreate<ProjectMembership>(
+      {
+        ...partialMembership,
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(user),
+        profile: createReference(profile),
+      },
+      membershipSearch
+    );
+    if (!isCreated(outcome)) {
+      throw new OperationOutcomeError(conflict('User is already a member of this project'));
+    }
+    return membership;
+  }
+
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
   const membership = await systemRepo.withTransaction(
     async (txRepo) => {
       const existingMembership = await searchForExistingMembership(txRepo, user, project);
       if (existingMembership) {
-        if (!request.upsert) {
-          throw new OperationOutcomeError(conflict('User is already a member of this project'));
-        }
-
         if (existingMembership.profile?.reference !== getReferenceString(profile)) {
           throw new OperationOutcomeError(
             conflict('User is already a member of this project with a different profile')

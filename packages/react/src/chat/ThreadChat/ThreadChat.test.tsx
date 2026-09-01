@@ -8,7 +8,6 @@ import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mo
 // eslint-disable-next-line import/named
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import type { ThreadChatProps } from './ThreadChat';
 import { ThreadChat } from './ThreadChat';
@@ -146,9 +145,7 @@ describe('ThreadChat', () => {
   ): Promise<{ rerender: (props: ThreadChatProps) => Promise<void> }> {
     const { rerender: _rerender } = await act(async () =>
       render(<ThreadChat {...props} />, ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
-        </MemoryRouter>
+        <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
       ))
     );
     return {
@@ -420,6 +417,12 @@ describe('ThreadChat', () => {
         status: 'in-progress',
       })
     );
+
+    // The thread header is touched with the message's sent time, so thread lists
+    // sorted by -_lastUpdated order by latest message activity.
+    const sentMessage = onMessageSent.mock.calls[0][0] as Communication;
+    const updatedThread = await defaultMedplum.readResource('Communication', thread.id as string);
+    expect(updatedThread.sent).toBe(sentMessage.sent);
   });
 
   test('Not rendered when no profile', async () => {

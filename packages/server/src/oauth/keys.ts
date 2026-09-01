@@ -73,26 +73,36 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
 }
 
 /*
- * Signing algorithms.
+ * JWT signing algorithms.
  *
- * For the first 4 years of this project, we only supported RS256:
- * RS256 (RSA Signature with SHA-256): An asymmetric algorithm, which means that there are two keys:
- * one public key and one private key that must be kept secret. The server has the private key used to
- * generate the signature, and the consumer of the JWT retrieves a public key from the metadata
- * endpoints provided by the server and uses it to validate the JWT signature.
+ * For the first 4 years of this project, Medplum only supported RS256:
  *
- * Due to customer requests for FAPI 2 compliance, we are now expanding to support ES256:
- * ES256 (ECDSA using P-256 and SHA-256): An asymmetric algorithm using elliptic curve cryptography.
- * Like RS256, it uses a public/private key pair, but offers better performance characteristics,
- * smaller key sizes, and faster signature generation while providing equivalent security to 2048-bit RSA.
+ *   RS256 (RSA Signature with SHA-256)
  *
- * To support existing customers and deployments, we will continue to support existing keys using RS256.
- * All new keys will use ES256 by default.
+ * This remains one of the most widely deployed JWT algorithms and is used by
+ * providers such as AWS Cognito. It uses an RSA public/private key pair, where
+ * the server signs with the private key and clients verify signatures using the
+ * published public key.
  *
- * Note: AWS Cognito uses RS256. Auth0 supports RS256, HS256, and PS256 options.
+ * In 2025, we added support for elliptic curve algorithms in response to
+ * customer requests for FAPI 2 compliance. New keys defaulted to ES256 because
+ * it provides equivalent security to 2048-bit RSA with significantly smaller
+ * keys and better performance.
+ *
+ * As CMS interoperability programs evolved, some certification profiles began
+ * requiring ES384 (ECDSA using the P-384 curve with SHA-384). New keys now
+ * default to ES384 to satisfy those requirements while remaining compatible
+ * with modern OAuth 2.0 and OpenID Connect ecosystems.
+ *
+ * Existing deployments continue to support previously-generated RS256 and
+ * ES256 keys for backwards compatibility. New keys use ES384 by default.
+ *
+ * Notes:
+ * - AWS Cognito currently issues RS256 tokens.
+ * - Auth0 supports RS256, HS256, PS256, ES256, and ES384.
  */
 
-const PREFERRED_ALG = OAuthSigningAlgorithm.ES256;
+const PREFERRED_ALG = OAuthSigningAlgorithm.ES384;
 const LEGACY_DEFAULT_ALG = OAuthSigningAlgorithm.RS256;
 const DEFAULT_ACCESS_LIFETIME = '1h';
 const DEFAULT_REFRESH_LIFETIME = '2w';
@@ -155,7 +165,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
       kty: jwk.kty,
       use: 'sig',
     };
-    if (jwk.alg === OAuthSigningAlgorithm.ES256) {
+    if (jwk.alg === OAuthSigningAlgorithm.ES256 || jwk.alg === OAuthSigningAlgorithm.ES384) {
       publicKey.x = jwk.x;
       publicKey.y = jwk.y;
       publicKey.crv = jwk.crv;
@@ -223,10 +233,11 @@ export function generateSecret(size: number): string {
 /**
  * Generates an ID token JWT.
  * @param claims - The ID token claims.
+ * @param tokenIssuer - Optional issuer override.
  * @returns A well-formed JWT that can be used as an ID token.
  */
-export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
-  return generateJwt('1h', claims);
+export function generateIdToken(claims: MedplumIdTokenClaims, tokenIssuer?: string): Promise<string> {
+  return generateJwt('1h', claims, tokenIssuer);
 }
 
 /**
@@ -235,35 +246,46 @@ export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
  * @param options - Optional parameters.
  * @param options.additionalClaims - Any additional custom claims.
  * @param options.lifetime - Access token duration.
+ * @param options.issuer - Optional issuer override.
  * @returns A well-formed JWT that can be used as an access token.
  */
 export function generateAccessToken(
   claims: MedplumAccessTokenClaims,
-  options?: { additionalClaims?: Record<string, string | number>; lifetime?: string }
+  options?: { additionalClaims?: Record<string, string | number>; lifetime?: string; issuer?: string }
 ): Promise<string> {
   const duration = options?.lifetime ?? DEFAULT_ACCESS_LIFETIME;
-  return generateJwt(duration, { aud: issuer, ...claims, ...options?.additionalClaims });
+  return generateJwt(
+    duration,
+    { aud: options?.issuer ?? issuer, ...claims, ...options?.additionalClaims },
+    options?.issuer
+  );
 }
 
 /**
  * Generates a refresh token JWT.
  * @param claims - The refresh token claims.
  * @param lifetime - The refresh token duration.
+ * @param tokenIssuer - Optional issuer override.
  * @returns A well-formed JWT that can be used as a refresh token.
  */
-export function generateRefreshToken(claims: MedplumRefreshTokenClaims, lifetime?: string): Promise<string> {
+export function generateRefreshToken(
+  claims: MedplumRefreshTokenClaims,
+  lifetime?: string,
+  tokenIssuer?: string
+): Promise<string> {
   const duration = lifetime ?? DEFAULT_REFRESH_LIFETIME;
-  return generateJwt(duration, { aud: issuer, ...claims });
+  return generateJwt(duration, { aud: tokenIssuer ?? issuer, ...claims }, tokenIssuer);
 }
 
 /**
  * Generates a JWT.
  * @param exp - Expiration time resolved to a time span.
  * @param claims - The key/value pairs to include in the payload section.
+ * @param tokenIssuer - Issuer for the generated token.
  * @returns Promise to generate and sign the JWT.
  */
-async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
-  if (!jsonWebKey || !defaultSigningKey || !issuer) {
+async function generateJwt(exp: string, claims: JWTPayload, tokenIssuer = issuer): Promise<string> {
+  if (!jsonWebKey || !defaultSigningKey || !tokenIssuer) {
     throw new Error('Signing key not initialized');
   }
 
@@ -281,7 +303,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
     .setJti(randomUUID())
     .setIssuedAt()
     .setNotBefore(new Date())
-    .setIssuer(issuer)
+    .setIssuer(tokenIssuer)
     .setAudience(claims.aud ?? (claims.client_id as string))
     .setExpirationTime(exp)
     .sign(defaultSigningKey);
@@ -290,16 +312,20 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
 /**
  * Decodes and verifies a JWT.
  * @param token - The jwt token / bearer token.
+ * @param expectedIssuer - Issuer expected in the token.
  * @returns Returns the decoded claims on success.
  */
-export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
-  if (!issuer) {
+export async function verifyJwt(
+  token: string,
+  expectedIssuer = issuer
+): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
+  if (!expectedIssuer) {
     throw new Error('Signing key not initialized');
   }
 
   const verifyOptions: JWTVerifyOptions = {
-    issuer,
-    algorithms: [OAuthSigningAlgorithm.ES256, OAuthSigningAlgorithm.RS256],
+    issuer: expectedIssuer,
+    algorithms: [OAuthSigningAlgorithm.ES256, OAuthSigningAlgorithm.ES384, OAuthSigningAlgorithm.RS256],
   };
 
   return jwtVerify(token, getKeyForHeader, verifyOptions);

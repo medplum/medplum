@@ -93,6 +93,21 @@ Medplum supports the following first party integrations.
       <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>E-Prescribe</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.dosespot.com/">DoseSpot</a></td>
+      <td>E-Prescribe</td>
+      <td>Embedded iFrame e-prescribing, including EPCS</td>
+      <td><a href="/docs/integration/dosespot">DoseSpot Integration</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.dawsystems.com/">ScriptSure</a></td>
+      <td>E-Prescribe</td>
+      <td>API-driven e-prescribing with custom FHIR operations and bots</td>
+      <td><a href="/docs/integration/scriptsure">ScriptSure Integration</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Communications</strong></td>
     </tr>
     <tr>
@@ -100,6 +115,12 @@ Medplum supports the following first party integrations.
       <td>Communications</td>
       <td>Send and receive faxes via FHIR Communication resources</td>
       <td><a href="/docs/integration/efax">eFax Integration</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.twilio.com/">Twilio SMS</a></td>
+      <td>Communications</td>
+      <td>Send and receive SMS messages via FHIR Communication resources</td>
+      <td><a href="/docs/integration/twilio-sms">Twilio SMS Integration</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Billing</strong></td>
@@ -109,6 +130,12 @@ Medplum supports the following first party integrations.
       <td>Billing</td>
       <td>Revenue cycle and insurance eligibility check</td>
       <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.stedi.com/">Stedi</a></td>
+      <td>Billing</td>
+      <td>Insurance eligibility checks (X12 270/271) and professional claim submission (X12 837P/277/835)</td>
+      <td><a href="/docs/integration/stedi">Stedi Integration</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Data and Observability</strong></td>
@@ -129,7 +156,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.snowflake.com/">Snowflake</a></td>
       <td>Data warehouse</td>
       <td>Synchronize data to datawarehouse</td>
-      <td>Documentation coming soon</td>
+      <td><a href="/docs/analytics/snowflake">Snowflake sync</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Artificial Intelligence</strong></td>
@@ -264,7 +291,7 @@ Medplum provides templates and playbooks for common medical integrations.
 
 ## Custom built integrations
 
-Medplum provides building blocks for custom integrations. Some examples are below.
+Medplum provides building blocks for custom integrations. **Any system that exposes an API (REST/FHIR), HL7, or SFTP interface can be connected to Medplum** - you are not limited to a fixed catalog of vendors. Because the integration logic is built with [Bots](/docs/bots) that run on your own project, you own and control it. This makes custom built integrations both flexible and portable. 
 
 <table>
   <thead>
@@ -326,6 +353,21 @@ Medplum provides building blocks for custom integrations. Some examples are belo
       <td>Bot PDF</td>
       <td>Create PDF for Superbill</td>
       <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Consent and E-signature (Bot Webhooks)</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.docusign.com/">DocuSign</a></td>
+      <td>Bot Webhooks</td>
+      <td>Send documents for signature and store completed agreements</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://sign.dropbox.com/">Dropbox Sign</a></td>
+      <td>Bot Webhooks</td>
+      <td>Send documents for signature and store completed agreements</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
     </tr>
   </tbody>
 </table>

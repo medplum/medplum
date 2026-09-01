@@ -320,7 +320,12 @@ export class ReindexJob {
         ORDER BY "Task"."lastUpdated" LIMIT 501
         ```
         */
-          const sqlOpts = repoAccess.sqlWriteConfig({ source: 'ReindexJobExecutor.processIteration' });
+          // Named with the type being reindexed, which is what the enclosing transaction bound to:
+          // reindexing a global type from a project-shard repo would otherwise resolve these
+          // statements to the project shard, away from the transaction they configure.
+          const sqlOpts = repoAccess.sqlWriteConfig(resourceType, {
+            source: 'ReindexJobExecutor.processIteration',
+          });
           let bundle: Bundle<WithId<Resource>>;
           try {
             await txRepo.executeRawSql(

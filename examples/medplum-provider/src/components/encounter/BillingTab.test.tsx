@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { ReadablePromise, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import type {
   Bot,
   ChargeItem,
@@ -22,7 +22,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { BillingTab } from './BillingTab';
@@ -104,22 +103,12 @@ const mockClaim: WithId<Claim> = {
   provider: { reference: 'Practitioner/practitioner-123' },
 };
 
-const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource> => {
-  const fn = vi.fn().mockResolvedValue(undefined) as unknown as ReturnType<
-    typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource
-  >;
-  fn.cancel = vi.fn();
-  return fn;
-};
-
 describe('BillingTab', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    // Mock useDebouncedUpdateResource to return a function that resolves immediately
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(mockDebouncedUpdate());
     // BillingTab fetches its own charge items; default to a single CPT charge item.
     vi.spyOn(chargeItemsUtils, 'getChargeItemsForEncounter').mockResolvedValue([mockChargeItem]);
   });
@@ -505,13 +494,8 @@ describe('BillingTab', () => {
     // Type in CPT code input
     await user.type(cptInput, '99214');
 
-    // Wait for valueSetExpand to be called
-    await waitFor(
-      () => {
-        expect(medplum.valueSetExpand).toHaveBeenCalled();
-      },
-      { timeout: 3000 }
-    );
+    // Wait for the search result to render before selecting
+    await screen.findByText('Office Visit Level 4', undefined, { timeout: 3000 });
 
     // Select the CPT code option
     await act(async () => {
@@ -611,6 +595,7 @@ describe('BillingTab', () => {
   test('updates the encounter and resolves the practitioner when the practitioner is changed', async () => {
     const setEncounter = vi.fn();
     const setPractitioner = vi.fn();
+    const onEncounterSaved = vi.fn();
 
     const mockPractitioner1: Practitioner = {
       resourceType: 'Practitioner',
@@ -657,13 +642,14 @@ describe('BillingTab', () => {
     // Coverage on mount, Practitioner for the practitioner search, and no existing Claim.
     mockSearchResources({ Coverage: [mockCoverage], Practitioner: [mockPractitioner1, mockPractitioner2] });
     mockChargeItems([appliedChargeItem]); // Charge items already present
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(updatedEncounter as any);
+    vi.spyOn(medplum, 'patchResource').mockResolvedValue(updatedEncounter as any);
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
     // Setup with charge items but no claim initially
     await setup({
       setEncounter,
       setPractitioner,
+      onEncounterSaved,
       encounter: {
         resourceType: 'Encounter',
         id: 'encounter-123',
@@ -698,9 +684,25 @@ describe('BillingTab', () => {
       fireEvent.click(smithOption);
     });
 
+    // Also change the check-in time inside the same debounce window; both field edits must
+    // survive into the persisted patch ops (the debounce must not drop the earlier one).
+    const checkinInput = screen.getByLabelText(/Check in/i);
+    await act(async () => {
+      fireEvent.change(checkinInput, { target: { value: '2024-01-02T09:30' } });
+    });
+
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        const encounterPatchOps = vi
+          .mocked(medplum.patchResource)
+          .mock.calls.filter((call) => call[0] === 'Encounter')
+          .flatMap((call) => call[2]);
+        expect(encounterPatchOps).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ op: 'add', path: '/participant' }),
+            expect.objectContaining({ op: 'add', path: '/period/start' }),
+          ])
+        );
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
@@ -719,6 +721,9 @@ describe('BillingTab', () => {
       },
       { timeout: 5000 }
     );
+
+    // The persisted-save notification fires with the saved encounter.
+    expect(onEncounterSaved).toHaveBeenCalledWith(updatedEncounter);
   }, 15000);
 
   test('creates the claim before exporting when none is persisted yet', async () => {
@@ -751,6 +756,53 @@ describe('BillingTab', () => {
       const exportCall = postSpy.mock.calls.find((c) => c[0]?.toString().includes('$export'));
       expect(exportCall).toBeDefined();
       expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/claim.pdf', '_blank');
+    });
+
+    windowOpenSpy.mockRestore();
+  });
+
+  test('defaults the claim billing provider from the practitioner PractitionerRole organization', async () => {
+    const user = userEvent.setup();
+
+    mockSearchResources({ Coverage: [mockCoverage] });
+
+    // No persisted Claim; the practitioner bills under an organization via PractitionerRole.
+    vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) => {
+      if (resourceType === 'PractitionerRole') {
+        return Promise.resolve({
+          resourceType: 'PractitionerRole',
+          id: 'role-1',
+          practitioner: { reference: 'Practitioner/practitioner-123' },
+          organization: { reference: 'Organization/billing-org-123', display: 'Test Medical Practice' },
+        });
+      }
+      return Promise.resolve(undefined);
+    }) as any);
+
+    const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({ ...mockClaim, id: 'created-claim' });
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/claim.pdf' },
+    });
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup();
+
+    await waitFor(() => {
+      expect(medplum.searchOne).toHaveBeenCalledWith('PractitionerRole', expect.anything());
+    });
+
+    await user.click(screen.getByText('Export Claim'));
+    await user.click(await screen.findByText('CMS 1500 Form'));
+
+    // The generated claim bills through the role's organization instead of the practitioner.
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Claim',
+          provider: expect.objectContaining({ reference: 'Organization/billing-org-123' }),
+        })
+      );
     });
 
     windowOpenSpy.mockRestore();
@@ -861,10 +913,8 @@ describe('BillingTab', () => {
 
   test('handles error in encounter change', async () => {
     const setEncounter = vi.fn();
-    const debouncedUpdateResource = mockDebouncedUpdate();
 
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
-    vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Update failed'));
+    vi.spyOn(medplum, 'patchResource').mockRejectedValue(new Error('Update failed'));
 
     await setup({
       setEncounter,
@@ -998,22 +1048,57 @@ describe('BillingTab', () => {
       identifier: [{ system: 'https://medplum.com/integrations/candid-health', value: 'get-candid-claim-portal-url' }],
     };
 
+    const getEncountersBot: WithId<Bot> = {
+      resourceType: 'Bot',
+      id: 'get-encounter-bot',
+      identifier: [{ system: 'https://medplum.com/integrations/candid-health', value: 'get-encounter' }],
+    };
+
     const candidClaimUrl = 'https://app-staging.joincandidhealth.com/claims/candid-encounter-123';
 
+    // A claim that has been submitted to Candid: the submit operation writes the Candid encounter
+    // id back onto the Claim, which is what triggers the refresh on load.
+    const candidClaim: WithId<Claim> = {
+      ...mockClaim,
+      identifier: [{ system: 'https://candidhealth.com/encounter-id', value: 'candid-encounter-123' }],
+    };
+
     // The Candid card requires BillingTab to find an existing Claim (searchOne), its ClaimResponse
-    // (searchOne), and the deployed URL bot (searchOne on Bot). ClaimSubmittedPanel then executes that
-    // bot to resolve the portal URL, so stub executeBot to return it.
-    const mockSearchOneWithClaimResponse = (claimResponse: WithId<ClaimResponse>): void => {
-      vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) =>
-        Promise.resolve(
-          (resourceType === 'Claim' && mockClaim) || (resourceType === 'Bot' && candidUrlBot) || claimResponse
-        )) as (
-        resourceType: string
-      ) => ReadablePromise<WithId<Claim> | WithId<ClaimResponse> | WithId<Bot> | undefined>);
-      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
-        encounterId: 'candid-encounter-123',
-        url: candidClaimUrl,
-      });
+    // (searchOne), and the deployed bots (searchOne on Bot, dispatched by identifier). BillingTab
+    // executes get-encounter with the Claim's Candid encounter id before fetching the ClaimResponse,
+    // and ClaimSubmittedPanel executes the URL bot to resolve the portal URL, so stub executeBot per bot.
+    const mockSearchOneWithClaimResponse = (
+      claimResponse: WithId<ClaimResponse>,
+      options?: {
+        claim?: WithId<Claim>;
+        getEncounterDeployed?: boolean;
+        refreshedClaimResponse?: WithId<ClaimResponse>;
+      }
+    ): void => {
+      let currentClaimResponse = claimResponse;
+      vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string, query?: Record<string, string>) => {
+        if (resourceType === 'Claim') {
+          return Promise.resolve(options?.claim ?? mockClaim);
+        }
+        if (resourceType === 'Bot') {
+          const identifier = String(query?.identifier ?? '');
+          if (identifier.endsWith('get-candid-claim-portal-url')) {
+            return Promise.resolve(candidUrlBot);
+          }
+          if (identifier.endsWith('get-encounter')) {
+            return Promise.resolve(options?.getEncounterDeployed ? getEncountersBot : undefined);
+          }
+          return Promise.resolve(undefined);
+        }
+        return Promise.resolve(currentClaimResponse);
+      }) as any);
+      vi.spyOn(medplum, 'executeBot').mockImplementation((async (botId: string) => {
+        if (botId === getEncountersBot.id) {
+          currentClaimResponse = options?.refreshedClaimResponse ?? currentClaimResponse;
+          return {};
+        }
+        return { encounterId: 'candid-encounter-123', url: candidClaimUrl };
+      }) as typeof medplum.executeBot);
     };
 
     test('shows Candid claim card when a ClaimResponse exists', async () => {
@@ -1029,12 +1114,22 @@ describe('BillingTab', () => {
     });
 
     test('displays status badge and submission date from ClaimResponse', async () => {
-      mockSearchOneWithClaimResponse(candidClaimResponse);
+      mockSearchOneWithClaimResponse({
+        ...candidClaimResponse,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+            valueCodeableConcept: {
+              coding: [{ system: 'https://candidhealth.com/claim-status', code: 'waiting_for_provider' }],
+            },
+          },
+        ],
+      });
 
       await setup();
 
       await waitFor(() => {
-        expect(screen.getByText('Submitted')).toBeInTheDocument();
+        expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
         expect(screen.getByText(/Submitted on/)).toBeInTheDocument();
       });
     });
@@ -1048,6 +1143,63 @@ describe('BillingTab', () => {
         expect(screen.getByText('Claim Status:')).toBeInTheDocument();
       });
       expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
+    });
+
+    test('executes the get-encounter bot to refresh a Candid ClaimResponse on load', async () => {
+      const refreshedClaimResponse: WithId<ClaimResponse> = {
+        ...candidClaimResponse,
+        total: [{ category: { coding: [{ code: 'submitted' }] }, amount: { value: 150 } }],
+      };
+
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockSearchOneWithClaimResponse(candidClaimResponse, {
+        claim: candidClaim,
+        getEncounterDeployed: true,
+        refreshedClaimResponse,
+      });
+
+      await setup();
+
+      // The bot ran with the claim's Candid encounter ID as input, and the (already refreshed)
+      // ClaimResponse was fetched once.
+      await waitFor(() => {
+        expect(medplum.executeBot).toHaveBeenCalledWith(
+          'get-encounter-bot',
+          { encounterId: 'candid-encounter-123' },
+          'application/json'
+        );
+        expect(screen.getByText('$150')).toBeInTheDocument();
+      });
+      const claimResponseSearches = vi.mocked(medplum.searchOne).mock.calls.filter((c) => c[0] === 'ClaimResponse');
+      expect(claimResponseSearches).toHaveLength(1);
+    });
+
+    test('does not run get-encounter when the claim was not submitted to Candid', async () => {
+      const nonCandidClaimResponse: WithId<ClaimResponse> = { ...candidClaimResponse, identifier: [] };
+
+      mockSearchResources({ Coverage: [mockCoverage] });
+      // The claim (default mockClaim) has no Candid encounter id, so there is nothing to refresh.
+      mockSearchOneWithClaimResponse(nonCandidClaimResponse, { getEncounterDeployed: true });
+
+      await setup();
+
+      await waitFor(() => {
+        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+      });
+      // Neither the refresh bot nor the Candid URL bot runs for a non-Candid claim.
+      expect(medplum.executeBot).not.toHaveBeenCalled();
+    });
+
+    test('skips the refresh when the get-encounter bot is not deployed', async () => {
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockSearchOneWithClaimResponse(candidClaimResponse, { claim: candidClaim });
+
+      await setup();
+
+      await waitFor(() => {
+        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+      });
+      expect(medplum.executeBot).not.toHaveBeenCalledWith('get-encounter-bot', expect.anything(), expect.anything());
     });
 
     test('View Claim on Candid button opens the correct Candid URL', async () => {

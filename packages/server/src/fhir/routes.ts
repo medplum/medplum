@@ -38,11 +38,16 @@ import { codeSystemValidateCodeHandler } from './operations/codesystemvalidateco
 import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { appointmentConfirmHandler } from './operations/confirm';
+import {
+  coverageEligibilitySubmitPostByIdHandler,
+  coverageEligibilitySubmitPostHandler,
+} from './operations/coverageeligibilityrequestsubmit';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
 import { getColumnStatisticsHandler } from './operations/db-column-statistics';
 import { configureColumnStatisticsHandler } from './operations/db-configure-column-statistics';
 import { dbConfigureIndexesHandler } from './operations/db-configure-indexes';
+import { dbIndexBloatHandler } from './operations/db-index-bloat';
 import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
@@ -337,6 +342,10 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Claim/$submit', claimSubmitPostHandler);
   router.add('POST', '/Claim/:id/$submit', claimSubmitPostByIdHandler);
 
+  // CoverageEligibilityRequest $submit operation (dispatches to the configured eligibility custom operation).
+  router.add('POST', '/CoverageEligibilityRequest/$submit', coverageEligibilitySubmitPostHandler);
+  router.add('POST', '/CoverageEligibilityRequest/:id/$submit', coverageEligibilitySubmitPostByIdHandler);
+
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
   router.add('POST', '/Group/:id/$export', groupExportHandler);
@@ -445,6 +454,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
+  router.add('GET', '/$db-index-bloat', dbIndexBloatHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
   router.add('GET', '/$get-ws-sub-stats', getWsSubStatsHandler);

@@ -29,6 +29,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { generateAccessToken } from '../oauth/keys';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { ReentrantBatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
@@ -61,17 +62,23 @@ function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, un
 describe('Batch and Transaction processing', () => {
   const app = express();
   let accessToken: string;
+  let baseUrl: string;
+  let projectScopedAccessToken: string;
+  let projectId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    baseUrl = config.baseUrl;
     // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
     // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
     // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
     config.asyncDelayScaling = 0;
     await initApp(app, config);
-    accessToken = await initTestAuth({
+    const testProject = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
       project: {
-        features: ['transaction-bundles'],
+        features: ['transaction-bundles', 'async-batch'],
         // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
         // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
         // flag the project defaults to the legacy single-shot path.
@@ -79,6 +86,19 @@ describe('Batch and Transaction processing', () => {
       },
       membership: { admin: true },
     });
+    accessToken = testProject.accessToken;
+    projectId = testProject.project.id;
+    projectScopedAccessToken = await generateAccessToken(
+      {
+        login_id: testProject.login.id,
+        sub: testProject.client.id,
+        username: testProject.client.id,
+        client_id: testProject.client.id,
+        profile: `${testProject.client.resourceType}/${testProject.client.id}`,
+        scope: testProject.login.scope as string,
+      },
+      { issuer: `${config.issuer}projects/${projectId}/` }
+    );
   });
 
   afterEach(() => {
@@ -209,6 +229,56 @@ describe('Batch and Transaction processing', () => {
 
     expect(results.entry?.[5]?.response?.status).toStrictEqual('404');
     expect(results.entry?.[5]?.resource).toBeUndefined();
+  });
+
+  test('FHIRPath Patch in batch', async () => {
+    const created = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'PATCH', url: 'Patient/' + patient.id },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'unknown' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/projects/${projectId}/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + projectScopedAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    const results = res.body as Bundle;
+    expect(results.entry?.[0]?.response?.status).toStrictEqual('200');
+    expect(results.entry?.[0]?.resource).toMatchObject<Patient>({ resourceType: 'Patient', gender: 'unknown' });
+
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+    expect(reread.body).toMatchObject<Patient>({ resourceType: 'Patient', gender: 'unknown' });
   });
 
   test('Transaction success', async () => {
@@ -783,6 +853,184 @@ describe('Batch and Transaction processing', () => {
     expect(res).toHaveStatus(412);
   });
 
+  test('Batch FHIRPath PATCH with stale ifMatch fails and does not modify resource', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    // Change the version so the captured versionId is stale
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('412');
+
+    // The stale precondition must have prevented the patch from being applied
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(reread).toHaveStatus(200);
+    expect((reread.body as Patient).gender).toBeUndefined();
+  });
+
+  test('Batch FHIRPath PATCH with current ifMatch succeeds and persists', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('200');
+
+    const reread = await request(app)
+      .get(`/fhir/R4/Patient/` + patient.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect((reread.body as Patient).gender).toStrictEqual('female');
+  });
+
+  test('Transaction PATCH with stale ifMatch rolls back the whole transaction', async () => {
+    const created = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', active: false });
+    expect(created).toHaveStatus(201);
+    const patient = created.body as WithId<Patient>;
+
+    // Bump the version so the captured versionId is stale
+    const updated = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...patient, active: true });
+    expect(updated).toHaveStatus(200);
+
+    const orgIdentifier = randomUUID();
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          // A create that must be rolled back when the later PATCH fails its precondition
+          request: { method: 'POST', url: 'Organization' },
+          resource: { resourceType: 'Organization', identifier: [{ value: orgIdentifier }] },
+        },
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+            ifMatch: `W/"${patient.meta?.versionId}"`,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'type', valueCode: 'add' },
+                  { name: 'path', valueString: 'Patient' },
+                  { name: 'name', valueString: 'gender' },
+                  { name: 'value', valueCode: 'female' },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res).toHaveStatus(412);
+
+    // The Organization created in the first entry must have been rolled back
+    const search = await request(app)
+      .get(`/fhir/R4/Organization?identifier=${orgIdentifier}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(search).toHaveStatus(200);
+    expect((search.body as Bundle).entry?.length ?? 0).toStrictEqual(0);
+  });
+
   test('Conditional update (create-as-update) in transaction', async () => {
     const careTeamIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
@@ -1207,14 +1455,14 @@ describe('Batch and Transaction processing', () => {
     };
 
     const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .post(`/projects/${projectId}/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + projectScopedAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Prefer', 'respond-async')
       .send(bundle);
     expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
-    expect(outcome.issue[0].diagnostics).toMatch('http://');
+    expect(outcome.issue[0].diagnostics).toMatch(`${baseUrl}projects/${projectId}/fhir/R4/job/`);
 
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
@@ -1230,7 +1478,7 @@ describe('Batch and Transaction processing', () => {
     await expect(execBatchJob(job)).resolves.toBe(undefined);
 
     const jobUrl = outcome.issue[0].diagnostics as string;
-    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    const asyncJob = await waitForAsyncJob(jobUrl, app, projectScopedAccessToken);
     expect(asyncJob.output).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
@@ -1659,6 +1907,7 @@ describe('Batch and Transaction processing', () => {
       withAccessToken: true,
       withClient: true,
       project: {
+        features: ['async-batch'],
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },

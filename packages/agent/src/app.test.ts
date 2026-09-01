@@ -933,7 +933,8 @@ describe('App', () => {
     function makeHl7ChannelWithWorker(impl: () => void): { channel: AgentHl7Channel; onWebSocketDisconnect: any } {
       const channel = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
       const onWebSocketDisconnect = vi.fn(impl);
-      (channel as any).worker = { onWebSocketDisconnect };
+      (channel as any).workers = [{ onWebSocketDisconnect }];
+      (channel as any).drainingWorkers = []; // allWorkers getter reads this
       return { channel, onWebSocketDisconnect };
     }
     const worker1 = makeHl7ChannelWithWorker(() => undefined);
@@ -942,11 +943,12 @@ describe('App', () => {
     });
     const worker3 = makeHl7ChannelWithWorker(() => undefined);
 
-    // An HL7 channel with no worker is skipped (loop guards on `channel.worker`).
+    // An HL7 channel with an empty pool is skipped (the inner loop has nothing to run).
     const channelWithoutWorker = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
-    (channelWithoutWorker as any).worker = undefined;
+    (channelWithoutWorker as any).workers = [];
+    (channelWithoutWorker as any).drainingWorkers = [];
     // A non-HL7 channel is skipped entirely, worker or not.
-    const nonHl7Channel = { worker: { onWebSocketDisconnect: vi.fn() } };
+    const nonHl7Channel = { workers: [{ onWebSocketDisconnect: vi.fn() }] };
 
     (app as any).channels = new Map<string, unknown>([
       ['hl7-1', worker1.channel],
@@ -968,7 +970,7 @@ describe('App', () => {
     expect(worker2.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
     expect(worker3.onWebSocketDisconnect).toHaveBeenCalledTimes(1);
     // The non-HL7 channel's worker is never touched.
-    expect(nonHl7Channel.worker.onWebSocketDisconnect).not.toHaveBeenCalled();
+    expect(nonHl7Channel.workers[0].onWebSocketDisconnect).not.toHaveBeenCalled();
 
     // And we threw at the end with the collected errors as the cause.
     expect(thrown).toBeInstanceOf(Error);
@@ -986,10 +988,12 @@ describe('App', () => {
 
     const channel1 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     const notify1 = vi.fn();
-    (channel1 as any).worker = { notify: notify1 };
+    (channel1 as any).workers = [{ notify: notify1 }];
+    (channel1 as any).drainingWorkers = [];
     const channel2 = Object.create(AgentHl7Channel.prototype) as AgentHl7Channel;
     const notify2 = vi.fn();
-    (channel2 as any).worker = { notify: notify2 };
+    (channel2 as any).workers = [{ notify: notify2 }];
+    (channel2 as any).drainingWorkers = [];
 
     (app as any).channels = new Map<string, unknown>([
       ['hl7-1', channel1],
@@ -4996,19 +5000,19 @@ describe('App', () => {
     expect(app.hl7Clients.size).toBe(1);
     expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
 
-    // Stop the HL7 server — this closes connections from the server side
-    await hl7Server.stop();
-
-    // Wait for the close to propagate (client removed from pool, but pool stays)
-    await sleep(200);
+    // Stop the HL7 server — this closes connections from the server side. Force the
+    // drain: the agent holds a keepAlive connection open, so `close()` would otherwise
+    // block on the 10s default and leave the rest of the test a thin slice of its budget.
+    await hl7Server.stop({ forceDrainTimeoutMs: 0 });
 
     // Pool should STILL be in hl7Clients — it is never removed by client errors
     expect(app.hl7Clients.size).toBe(1);
     expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
 
-    // The pool should have no clients (they were removed when the connection closed)
+    // The pool sheds its clients as the closes land — waited on rather than slept off,
+    // so a shed that never happens names itself instead of failing a later assertion.
     const pool = app.hl7Clients.get('mllp://localhost:57110') as Hl7ClientPool;
-    expect(pool.size()).toBe(0);
+    await waitFor(() => pool.size() === 0, 2000, 'pool sheds its clients after the server closes');
 
     // Restart the HL7 server
     const hl7Server2 = new Hl7Server((conn) => {

@@ -8,18 +8,20 @@ import {
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  isString,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import assert from 'node:assert';
+import type { PoolClient } from 'pg';
 import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
-import type { SqlFunctionDefinition } from '../fhir/sql';
-import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
+import type { PgQueryable, SqlFunctionDefinition } from '../fhir/sql';
+import { getSearchParamColumnType, MedplumUnaccentFn, TokenArrayToTextFn } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import * as fns from './migrate-functions';
 import {
@@ -35,7 +37,6 @@ import {
 import type {
   CheckConstraintDefinition,
   ColumnDefinition,
-  DbClient,
   IndexDefinition,
   IndexType,
   MigrationAction,
@@ -62,7 +63,7 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 }
 
 export type BuildMigrationOptions = {
-  dbClient: DbClient;
+  dbClient: PgQueryable;
   dropUnmatchedIndexes?: boolean;
   analyzeResourceTables?: boolean;
   writeSchema?: boolean;
@@ -165,12 +166,12 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
   return { tables, functions };
 }
 
-async function getTableNames(db: DbClient): Promise<string[]> {
+async function getTableNames(db: PgQueryable): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: DbClient, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: PgQueryable, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
@@ -179,7 +180,7 @@ async function getTableDefinition(db: DbClient, name: string): Promise<TableDefi
   };
 }
 
-async function getIndexes(db: DbClient, tableName: string): Promise<IndexDefinition[]> {
+async function getIndexes(db: PgQueryable, tableName: string): Promise<IndexDefinition[]> {
   const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename=$1`, [tableName]);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
@@ -189,7 +190,7 @@ export function parseIndexName(indexdef: string): string | undefined {
 }
 
 export async function getCheckConstraints(
-  db: DbClient,
+  db: PgQueryable,
   tableName: string
 ): Promise<(CheckConstraintDefinition & { valid: boolean })[]> {
   const rs = await db.query<{
@@ -443,7 +444,7 @@ function getSearchParameterIndexes(
         // legacy index prior to range-column search strategy
         { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
         {
-          columns: [impl.rangeColumnName, { expression: impl.sortColumnName, name: 'sorted' }],
+          columns: [impl.rangeColumnName, impl.sortColumnName],
           indexType: 'gist',
         },
       ];
@@ -674,7 +675,22 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexType: 'btree',
         unique: true,
       },
+      // Accent- and normalization-insensitive substring matching on display, e.g. filter "systeme"  matching "Système"
+      {
+        columns: [
+          'system',
+          { expression: `${MedplumUnaccentFn.name}(display) gin_trgm_ops`, name: 'displayUnaccentTrgm' },
+        ],
+        indexType: 'gin',
+      },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
+      // Supports case-insensitive prefix matching on code, e.g. LOWER(code) LIKE 'abc%' under non-C collations
+      // Partial on canonical rows only: this mirrors the primary_idx above and makes the index ~40% smaller
+      {
+        columns: ['system', { expression: 'lower(code) text_pattern_ops', name: 'codeLowerPattern' }],
+        indexType: 'btree',
+        where: `"synonymOf" IS NULL`,
+      },
     ],
   });
 }
@@ -796,7 +812,7 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
 }
 
 export async function executeMigrationActions(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   actions: MigrationAction[]
 ): Promise<void> {
@@ -863,6 +879,10 @@ export async function executeMigrationActions(
         await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
+      case 'REINDEX_CONCURRENTLY': {
+        await fns.reindexConcurrently(client, results, action.target, action.name);
+        break;
+      }
       case 'ADD_CONSTRAINT': {
         await fns.nonBlockingAddCheckConstraint(
           client,
@@ -899,6 +919,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
 
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
   b.newLine();
 
   for (const action of actions) {
@@ -1023,6 +1044,12 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'REINDEX_CONCURRENTLY': {
+        b.appendNoWrap(
+          `await fns.reindexConcurrently(client, results, '${action.target}', ${JSON.stringify(action.name)});`
+        );
         break;
       }
       case 'ADD_CONSTRAINT': {
@@ -1309,6 +1336,20 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
 
   if (index.primaryKey) {
     return tableName + '_pkey';
+  }
+
+  if (
+    index.columns.length === 2 &&
+    isString(index.columns[0]) &&
+    isString(index.columns[1]) &&
+    index.columns[1] === `${index.columns[0]}Sort`
+  ) {
+    return (
+      applyAbbreviations(tableName, TableNameAbbreviations) +
+      '_' +
+      applyAbbreviations(index.columns[0], ColumnNameAbbreviations) +
+      '_sorted_idx'
+    );
   }
 
   let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';

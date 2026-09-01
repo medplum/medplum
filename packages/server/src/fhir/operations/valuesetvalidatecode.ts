@@ -15,6 +15,7 @@ import type {
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { repoAccess } from '../repository/access-tracker';
+import { Column, SelectQuery, SqlFunction } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { hydrateCodeSystemProperties } from './expand';
@@ -119,8 +120,9 @@ async function findIncludedCode(
     return undefined;
   }
 
+  let found: (Coding & { code: string }) | undefined;
   if (include.concept) {
-    return candidates.find((c) => include.concept?.some((i) => i.code === c.code));
+    found = candidates.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', include.system);
     // used on non resource type tables derived from CodeSystem
@@ -129,59 +131,85 @@ async function findIncludedCode(
     );
     await hydrateCodeSystemProperties(db, codeSystem);
 
-    for (const coding of candidates) {
-      const filterResults = await Promise.all(
-        include.filter.map((filter) => satisfies(coding.code, filter, codeSystem))
-      );
-      if (filterResults.every(Boolean)) {
-        return coding;
-      }
+    // Validate every candidate code against all filters in a single query, rather than one query per candidate
+    // (and previously one per filter). The first candidate present in the result, in input order, is the match.
+    const query = buildFilterQuery(
+      candidates.map((c) => c.code),
+      include.filter,
+      codeSystem
+    );
+    if (query) {
+      const results = await query.execute(db);
+      const matched = results.map((row) => row.code);
+      found = candidates.find((c) => matched.includes(c.code));
     }
   } else {
-    return candidates[0]; // Default pass when any code from system is acceptable
+    found = candidates[0]; // Default pass when any code from system is acceptable
   }
 
-  return undefined;
+  // A candidate may carry no system of its own; stamp the matching include's system so the caller sees the correct CodeSystem
+  return found ? { ...found, system: include.system } : undefined;
 }
 
-async function satisfies(
-  code: string,
-  filter: ValueSetComposeIncludeFilter,
+/**
+ * Builds a single query selecting whichever of the given codes satisfy every filter, combining the filters as
+ * AND-ed predicates. Returns undefined when a filter can never be satisfied (unknown op or missing property), in
+ * which case no code belongs to the include.
+ * @param codes - The codes being validated; all are checked in one query.
+ * @param filters - The filters from the ValueSet include, all of which must be satisfied.
+ * @param codeSystem - The CodeSystem the codes are drawn from, with hydrated property IDs.
+ * @returns A query selecting the codes that satisfy all filters, or undefined if none can.
+ */
+function buildFilterQuery(
+  codes: string[],
+  filters: ValueSetComposeIncludeFilter[],
   codeSystem: WithId<CodeSystem>
-): Promise<boolean> {
-  const { logger, repo } = getAuthenticatedContext();
-  const db = repo.getDatabaseClient(repoAccess.sqlRead('CodeSystem', { source: 'valuesetvalidatecode.satisfies' }));
-  let query = selectCoding(codeSystem.id, code);
+): SelectQuery | undefined {
+  const { logger } = getAuthenticatedContext();
+  const query = selectCoding(codeSystem.id, ...codes);
 
-  switch (filter.op) {
-    case '=':
-    case 'in': {
-      const property = codeSystem.property?.find((p) => p.code === filter.property);
-      if (!property?.id) {
-        return false;
+  for (const filter of filters) {
+    switch (filter.op) {
+      case '=':
+      case 'in': {
+        const property = codeSystem.property?.find((p) => p.code === filter.property);
+        if (!property?.id) {
+          return undefined;
+        }
+        addPropertyFilter(query, filter, property as WithId<CodeSystemProperty>);
+        break;
       }
-      query = addPropertyFilter(query, filter, property as WithId<CodeSystemProperty>);
-      break;
+      case 'is-a':
+      case 'descendent-of': {
+        const parentProperty = getParentProperty(codeSystem);
+        if (!parentProperty.id) {
+          return undefined;
+        }
+        // Correlated EXISTS walking up from the candidate's own row, so the ancestry check composes with the
+        // other filters on the same query rather than requiring a separate round-trip.
+        const base = new SelectQuery('Coding', undefined, 'origin')
+          .column('id')
+          .column('code')
+          .column('synonymOf')
+          .where(new Column('origin', 'system'), '=', codeSystem.id)
+          .where(new Column('origin', 'code'), '=', new Column(query.effectiveTableName, 'code'));
+        const ancestorQuery = findAncestor(
+          base,
+          codeSystem,
+          parentProperty as WithId<CodeSystemProperty>,
+          filter.value
+        );
+        query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
+        if (filter.op !== 'is-a') {
+          query.where('code', '!=', filter.value);
+        }
+        break;
+      }
+      default:
+        logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
+        return undefined; // Unknown filter type, don't make DB query with incorrect filters
     }
-    case 'is-a':
-    case 'descendent-of': {
-      if (filter.op !== 'is-a') {
-        query.where('code', '!=', filter.value);
-      }
-
-      // Recursively find parents until one matches
-      const parentProperty = getParentProperty(codeSystem);
-      if (!parentProperty.id) {
-        return false;
-      }
-      query = findAncestor(query, codeSystem, parentProperty as WithId<CodeSystemProperty>, filter.value);
-      break;
-    }
-    default:
-      logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
-      return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(db);
-  return results.length > 0;
+  return query;
 }

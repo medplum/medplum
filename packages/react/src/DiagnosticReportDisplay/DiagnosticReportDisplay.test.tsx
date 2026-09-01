@@ -2,15 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Observation, Reference } from '@medplum/fhirtypes';
-import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
+import { HomerDiagnosticReport, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import {
-  HealthGorillaDiagnosticReport,
-  HealthGorillaObservation1,
-  HealthGorillaObservation2,
-  HealthGorillaObservationGroup1,
-  HealthGorillaObservationGroup2,
+  HealthGorillaCholesterolObservation,
+  HealthGorillaClinicalPdfGroup,
+  HealthGorillaClinicalPdfObservation,
+  HealthGorillaHdlObservation,
+  HealthGorillaLipidPanelDiagnosticReport,
+  HealthGorillaLipidPanelGroup,
+  HealthGorillaQuestDiagnosticReport,
+  HealthGorillaQuestLabLenexa,
+  HealthGorillaQuestLabSacramento,
+  HealthGorillaQuestObservation1,
+  HealthGorillaQuestObservation2,
+  HealthGorillaQuestObservation3,
+  HealthGorillaQuestObservationGroup1,
+  HealthGorillaQuestObservationGroup2,
+  HealthGorillaQuestObservationGroup3,
+  HealthGorillaQuestParentLab,
+  HealthGorillaQuestServiceRequest,
+  HealthGorillaTriglyceridesObservation,
 } from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
 import { act, render, screen } from '../test-utils/render';
@@ -82,11 +94,9 @@ describe('DiagnosticReportDisplay', () => {
 
   function setup(args: DiagnosticReportDisplayProps): void {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <DiagnosticReportDisplay {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <DiagnosticReportDisplay {...args} />
+      </MedplumProvider>
     );
   }
 
@@ -97,6 +107,27 @@ describe('DiagnosticReportDisplay', () => {
       id: undefined,
       result: [createReference(obs)],
     });
+
+    for (const resource of [
+      HealthGorillaQuestParentLab,
+      HealthGorillaQuestLabLenexa,
+      HealthGorillaQuestLabSacramento,
+      HealthGorillaQuestObservation1,
+      HealthGorillaQuestObservation2,
+      HealthGorillaQuestObservation3,
+      HealthGorillaQuestObservationGroup1,
+      HealthGorillaQuestObservationGroup2,
+      HealthGorillaQuestObservationGroup3,
+      HealthGorillaQuestServiceRequest,
+      HealthGorillaCholesterolObservation,
+      HealthGorillaHdlObservation,
+      HealthGorillaTriglyceridesObservation,
+      HealthGorillaLipidPanelGroup,
+      HealthGorillaClinicalPdfObservation,
+      HealthGorillaClinicalPdfGroup,
+    ]) {
+      await medplum.createResource(resource);
+    }
   });
 
   test('Renders by value', async () => {
@@ -163,7 +194,9 @@ describe('DiagnosticReportDisplay', () => {
     });
 
     expect(screen.getByText('Test Organization')).not.toBeNull();
-    expect(screen.getByText('Alice Smith')).not.toBeNull();
+    // The observation performer is resolved to the actual resource name ("Alice Smith"),
+    // rather than the raw reference display ("Dr. Alice Smith")
+    expect(screen.getAllByText('Alice Smith')).toHaveLength(2);
   });
 
   test('Renders performer organization address', async () => {
@@ -173,6 +206,70 @@ describe('DiagnosticReportDisplay', () => {
 
     // See packages/mock/src/mocks/alice.ts for the TestOrganization address
     expect(screen.getByText('123 Test Street, Springfield, CA, 90210')).not.toBeNull();
+  });
+
+  test('Renders performing labs', async () => {
+    await act(async () => {
+      setup({ value: HealthGorillaQuestDiagnosticReport });
+    });
+
+    expect(screen.getByText('Performing Labs')).toBeInTheDocument();
+
+    // Two observations were performed by the Lenexa lab: it appears in two
+    // observation table rows, but only once in the performing labs footer
+    expect(screen.getAllByText('Quest Diagnostics-Lenexa')).toHaveLength(3);
+    expect(screen.getByText('10101 Renner Blvd, Lenexa, KS, 66219-9752')).toBeInTheDocument();
+    expect(screen.getByText('William Becker D.O., MPH')).toBeInTheDocument();
+
+    // One observation table row and one performing labs footer row
+    expect(screen.getAllByText('Quest Diagnostics-Sacramento - Northgate')).toHaveLength(2);
+    expect(screen.getByText('3714 Northgate Blvd, Sacramento, CA, 95834-1617')).toBeInTheDocument();
+    expect(screen.getByText('M. Rose Akin, M.D., FCAP')).toBeInTheDocument();
+
+    // The parent lab has no address or contact, so it is not in the footer, and the observation
+    // groups that name it as performer are not rendered: it only appears in the report header
+    expect(screen.getAllByText('HGDX Quest')).toHaveLength(1);
+  });
+
+  test('Renders ordering requester', async () => {
+    await act(async () => {
+      setup({ value: HealthGorillaQuestDiagnosticReport });
+    });
+
+    expect(screen.getByText('Ordering')).toBeInTheDocument();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('Renders performing labs from server references', async () => {
+    const obs = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Glucose' },
+      performer: [createReference(TestOrganization)],
+    });
+    const report = await medplum.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { text: 'Glucose Panel' },
+      result: [createReference(obs)],
+    });
+
+    await act(async () => {
+      setup({ value: report });
+    });
+
+    expect(screen.getByText('Performing Labs')).toBeInTheDocument();
+    // Once in the observation table performer column, once in the performing labs footer
+    expect(screen.getAllByText('Test Organization')).toHaveLength(2);
+    expect(screen.getByText('123 Test Street, Springfield, CA, 90210')).toBeInTheDocument();
+  });
+
+  test('Hides performing labs when there are none', async () => {
+    await act(async () => {
+      setup({ value: HomerDiagnosticReport });
+    });
+
+    expect(screen.queryByText('Performing Labs')).toBeNull();
   });
 
   test('Renders observation category', async () => {
@@ -222,21 +319,101 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.queryByText('Collected:')).toBeNull();
   });
 
-  test('Renders observation group', async () => {
-    await medplum.createResource(HealthGorillaObservation1);
-    await medplum.createResource(HealthGorillaObservation2);
-    await medplum.createResource(HealthGorillaObservationGroup1);
-    await medplum.createResource(HealthGorillaObservationGroup2);
-    await medplum.createResource(HealthGorillaDiagnosticReport);
-
+  test('Renders observation group as a section header', async () => {
     await act(async () => {
-      setup({ value: HealthGorillaDiagnosticReport });
+      setup({ value: HealthGorillaLipidPanelDiagnosticReport });
     });
 
-    expect(screen.getByText('Example Panel Day 1')).toBeInTheDocument();
-    expect(screen.getByText('Above high normal')).toBeInTheDocument();
-    expect(screen.getByText('Example Panel Day 2')).toBeInTheDocument();
-    expect(screen.getByText('Normal')).toBeInTheDocument();
+    // The panel has no result of its own, so it spans the table instead of
+    // rendering a row with every data column blank.
+    const headerCells = screen.getByText('LIPID PANEL, STANDARD').closest('tr')?.querySelectorAll('td');
+    expect(headerCells).toHaveLength(1);
+    expect(headerCells?.[0]).toHaveAttribute('colspan', '7');
+    // One per group: the lipid panel and the clinical PDF report
+    expect(screen.getAllByText(/^Collected: /)).toHaveLength(2);
+
+    // Its analytes are indented so they read as belonging to the panel above them.
+    for (const analyte of ['CHOLESTEROL, TOTAL', 'HDL CHOLESTEROL', 'TRIGLYCERIDES']) {
+      expect(screen.getByText(analyte).closest('td')?.style.paddingInlineStart).toBeTruthy();
+    }
+  });
+
+  test('Renders section header for a single member observation group', async () => {
+    await act(async () => {
+      setup({ value: HealthGorillaLipidPanelDiagnosticReport });
+    });
+
+    // The "Clinical PDF Report" group wraps one result that repeats its code: both
+    // the header and the member row render, matching the lab's own report
+    const [header, member] = screen.getAllByText('Clinical PDF Report');
+    expect(header.closest('tr')?.querySelectorAll('td')).toHaveLength(1);
+    expect(member.closest('td')?.style.paddingInlineStart).toBeTruthy();
+    expect(screen.getByText('QUEST')).toBeInTheDocument();
+  });
+
+  test('Renders observation group that has a value of its own', async () => {
+    const member = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Member observation' },
+      valueString: 'MEMBER VALUE',
+    });
+
+    const group = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Group observation' },
+      valueString: 'GROUP VALUE',
+      hasMember: [createReference(member)],
+    });
+
+    await act(async () => {
+      setup({
+        value: {
+          resourceType: 'DiagnosticReport',
+          status: 'final',
+          code: { text: 'test' },
+          subject: createReference(HomerSimpson),
+          result: [createReference(group)],
+        },
+      });
+    });
+
+    expect(screen.getByText('Group observation')).toBeInTheDocument();
+    expect(screen.getByText('GROUP VALUE')).toBeInTheDocument();
+    expect(screen.getByText('MEMBER VALUE')).toBeInTheDocument();
+  });
+
+  test('Renders empty observation group when it carries a note', async () => {
+    const member = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Member observation' },
+      valueString: 'MEMBER VALUE',
+    });
+
+    const group = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'Group observation' },
+      note: [{ text: 'Panel level note' }],
+      hasMember: [createReference(member)],
+    });
+
+    await act(async () => {
+      setup({
+        value: {
+          resourceType: 'DiagnosticReport',
+          status: 'final',
+          code: { text: 'test' },
+          subject: createReference(HomerSimpson),
+          result: [createReference(group)],
+        },
+      });
+    });
+
+    expect(screen.getByText('Group observation')).toBeInTheDocument();
+    expect(screen.getByText('Panel level note')).toBeInTheDocument();
   });
 
   test('No specimen header if no specimen', async () => {

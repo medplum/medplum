@@ -4,7 +4,6 @@ import type { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Labs } from './Labs';
 
@@ -13,11 +12,7 @@ const medplum = new MockClient();
 describe('PatientSummary - Labs', () => {
   async function setup(children: ReactNode): Promise<void> {
     await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
+      render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
     });
   }
 
@@ -71,8 +66,8 @@ describe('PatientSummary - Labs', () => {
       fireEvent.click(screen.getByText('Test Report'));
     });
 
-    const modalTitle = await screen.findByText('Diagnostic Report');
-    expect(modalTitle).toBeInTheDocument();
+    expect(await screen.findByText('Lab Results')).toBeInTheDocument();
+    expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
   });
 
   test('Renders only first ServiceRequest when multiple have same requisition number', async () => {

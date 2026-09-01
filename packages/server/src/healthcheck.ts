@@ -27,10 +27,15 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'writer' },
   });
 
+  let postgresReaderOk: boolean | undefined;
   if (hasSeparateReaderPool()) {
-    readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
-    startTime = Date.now();
-    await testPostgres(readerConn);
+    try {
+      readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
+      startTime = Date.now();
+      postgresReaderOk = await testPostgres(readerConn);
+    } catch {
+      postgresReaderOk = false;
+    }
     const readerRoundtripMs = Date.now() - startTime;
     setGauge('medplum.db.healthcheckRTT', readerRoundtripMs / 1000, {
       ...METRIC_IN_SECS_OPTIONS,
@@ -63,6 +68,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     platform: process.platform,
     runtime: process.version,
     postgres: postgresWriterOk,
+    postgresReader: postgresReaderOk,
     redis: redisResult.default,
     redisInstances: redisResult,
   });

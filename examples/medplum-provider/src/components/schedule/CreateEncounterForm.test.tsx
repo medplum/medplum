@@ -69,13 +69,64 @@ describe('CreateEncounterForm', () => {
     expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
     expect(screen.getByLabelText(/Encounter Class/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   });
 
-  test('Apply button is disabled when class and care template are not selected', async () => {
+  test('Continue button is disabled when class is not selected', async () => {
     setup(appointment);
 
-    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  });
+
+  test('Continue button is enabled once class is selected without a care template', async () => {
+    const user = userEvent.setup();
+    setup(appointment);
+
+    const classInput = screen.getByLabelText(/Encounter Class/i);
+    await user.type(classInput, 'Test');
+    await waitFor(() => {
+      expect(screen.getByText('Test Display')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Test Display'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
+    });
+  });
+
+  test('calls createEncounter without a care template selected', async () => {
+    const user = userEvent.setup();
+    vi.mocked(createEncounter).mockResolvedValue({
+      resourceType: 'Encounter',
+      id: 'enc-1',
+      status: 'planned',
+      class: {},
+    });
+
+    setup(appointment);
+
+    const classInput = screen.getByLabelText(/Encounter Class/i);
+    await user.type(classInput, 'Test');
+    await waitFor(() => {
+      expect(screen.getByText('Test Display')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Test Display'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
+    });
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await waitFor(() => {
+      expect(createEncounter).toHaveBeenCalledWith(
+        medplum,
+        expect.anything(),
+        patientRef,
+        undefined,
+        appointment,
+        practitionerRef
+      );
+    });
   });
 
   test('shows alert when no practitioner is in appointment.participants', async () => {
@@ -173,9 +224,9 @@ describe('CreateEncounterForm', () => {
     await user.click(screen.getByText('Test Plan'));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
     });
-    await user.click(screen.getByRole('button', { name: 'Apply' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     await waitFor(() => {
       expect(showErrorNotification).toHaveBeenCalledWith(encounterError);

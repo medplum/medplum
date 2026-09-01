@@ -3,7 +3,6 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
 import type { ResourceBadgeProps } from './ResourceBadge';
 import { ResourceBadge } from './ResourceBadge';
@@ -12,11 +11,9 @@ const medplum = new MockClient();
 
 function setup(args: ResourceBadgeProps): void {
   render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        <ResourceBadge {...args} />
-      </MedplumProvider>
-    </MemoryRouter>
+    <MedplumProvider medplum={medplum}>
+      <ResourceBadge {...args} />
+    </MedplumProvider>
   );
 }
 

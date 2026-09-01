@@ -37,6 +37,8 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
+  config.dispatchEnabled ??= true;
+  config.subscriptionsEnabled ??= true;
   config.autoDownloadEnabled ??= true;
   config.serverScopedSubscriptionsEnabled ??= false;
   config.base64BinaryMaxBytes ??= 1 * 1024 * 1024; // 1 MB default cap for base64Binary
@@ -106,6 +108,9 @@ type DefaultConfigKeys =
   | 'defaultProjectFeatures'
   | 'defaultProjectSystemSetting'
   | 'emailProvider'
+  | 'dispatchEnabled'
+  | 'subscriptionsEnabled'
+  | 'autoDownloadEnabled'
   | 'rateLimitsEnabled'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
@@ -136,9 +141,17 @@ const integerKeys = new Set([
   'fhirSearchMinLimit',
 
   'database.maxConnections',
+  'database.minConnections',
+  'database.maxConnectionUses',
+  'database.idleTimeoutMs',
+  'database.connectionTimeoutMs',
   'database.port',
   'database.queryTimeout',
   'readonlyDatabase.maxConnections',
+  'readonlyDatabase.minConnections',
+  'readonlyDatabase.maxConnectionUses',
+  'readonlyDatabase.idleTimeoutMs',
+  'readonlyDatabase.connectionTimeoutMs',
   'readonlyDatabase.port',
   'readonlyDatabase.queryTimeout',
 
@@ -156,6 +169,7 @@ const integerKeys = new Set([
   'smtp.port',
 
   'bullmq.concurrency',
+  'bullmq.globalConcurrency',
 
   'fission.routerPort',
 ]);
@@ -184,6 +198,7 @@ const booleanKeys = new Set([
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
+  'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
   'require',
   'rejectUnauthorized',
@@ -216,7 +231,11 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set(['dataWarehouse.includeResourceTypes', 'dataWarehouse.excludeResourceTypes']);
+const arrayKeys = new Set([
+  'dataWarehouse.includeResourceTypes',
+  'dataWarehouse.excludeResourceTypes',
+  'blockedEmailDomains',
+]);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

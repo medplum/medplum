@@ -166,8 +166,8 @@ function touchUpValue(
   property: InternalSchemaElement | undefined,
   input: TypedValue[] | TypedValue | undefined
 ): TypedValue | undefined {
-  if (!input) {
-    return input;
+  if (!input || (Array.isArray(input) && input.length === 0)) {
+    return undefined;
   }
   return {
     type: Array.isArray(input) ? input[0].type : input.type,

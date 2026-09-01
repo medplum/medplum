@@ -34,14 +34,13 @@ import type {
 import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { VerifyOptions } from 'jose';
-import { jwtVerify } from 'jose';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
-import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
@@ -56,7 +55,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { safeFetch } from '../util/url';
+import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -608,6 +607,7 @@ export async function getAuthTokens(
   options?: {
     accessLifetime?: string;
     refreshLifetime?: string;
+    issuer?: string;
   }
 ): Promise<TokenResult> {
   assert.equal(getReferenceString(user), login.user?.reference);
@@ -626,16 +626,19 @@ export async function getAuthTokens(
     });
   }
 
-  const idToken = await generateIdToken({
-    client_id: clientId,
-    login_id: login.id,
-    fhirUser: profile.reference,
-    email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
-    aud: clientId,
-    sub: user.id,
-    nonce: login.nonce as string,
-    auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
-  });
+  const idToken = await generateIdToken(
+    {
+      client_id: clientId,
+      login_id: login.id,
+      fhirUser: profile.reference,
+      email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
+      aud: clientId,
+      sub: user.id,
+      nonce: login.nonce as string,
+      auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
+    },
+    options?.issuer
+  );
 
   const accessToken = await generateAccessToken(
     {
@@ -647,7 +650,7 @@ export async function getAuthTokens(
       profile: profile.reference as string,
       email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     },
-    { lifetime: options?.accessLifetime }
+    { lifetime: options?.accessLifetime, issuer: options?.issuer }
   );
 
   const refreshToken = login.refreshSecret
@@ -657,7 +660,8 @@ export async function getAuthTokens(
           login_id: login.id,
           refresh_secret: login.refreshSecret,
         },
-        options?.refreshLifetime
+        options?.refreshLifetime,
+        options?.issuer
       )
     : undefined;
 
@@ -961,6 +965,21 @@ function normalizeExternalUserInfo(body: Record<string, unknown>, idp?: Identity
   };
 }
 
+async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
+  if (!idp.jwksUrl) {
+    if (!idp.userInfoUrl) {
+      throw new OperationOutcomeError(badRequest('Missing user info URL - check your identity provider configuration'));
+    }
+    await getExternalUserInfo(idp.userInfoUrl, token, idp);
+    return;
+  }
+  if (!idp.issuer) {
+    throw new OperationOutcomeError(badRequest('Missing issuer - check your identity provider configuration'));
+  }
+  const jwks = createRemoteJWKSet(new URL(idp.jwksUrl), { [customFetch]: safeFetch });
+  await jwtVerify(token, jwks, { issuer: idp.issuer, audience: idp.audience });
+}
+
 interface ValidationAssertion {
   clientId?: string;
   clientSecret?: string;
@@ -1000,20 +1019,30 @@ export async function getLoginForAccessToken(
   accessToken: string
 ): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
-  const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
-  if (externalAuthState) {
-    const repo = await getRepoForLogin(externalAuthState);
-    return { authState: externalAuthState, repo };
-  }
-
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
-    verifyResult = await verifyJwt(accessToken);
+    const config = getConfig();
+    const expectedIssuer = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+    verifyResult = await verifyJwt(accessToken, expectedIssuer);
   } catch {
+    const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
+    if (externalAuthState) {
+      const repo = await getRepoForLogin(externalAuthState, undefined, req?.ip);
+      return { authState: externalAuthState, repo };
+    }
     return undefined;
   }
 
   const claims = verifyResult.payload as MedplumAccessTokenClaims;
+
+  // A valid signature only proves that this server minted the token, not that it minted an access token.
+  // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
+  // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
+  const config = getConfig();
+  const expectedAudience = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+  if (claims.aud !== expectedAudience || claims.refresh_secret !== undefined) {
+    return undefined;
+  }
 
   let login = undefined;
   try {
@@ -1032,7 +1061,7 @@ export async function getLoginForAccessToken(
   }
   const project = await globalSystemRepo.readReference<Project>(membership.project);
   const systemRepo = await getProjectSystemRepo(project);
-  return makeAuthResult(systemRepo, req, login, project, membership, { accessToken });
+  return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
 }
 
 /**
@@ -1042,10 +1071,7 @@ export async function getLoginForAccessToken(
  * @param token - The basic auth token as provided by the client.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
-export async function getLoginForBasicAuth(
-  req: IncomingMessage,
-  token: string
-): Promise<AuthenticationResult | undefined> {
+export async function getLoginForBasicAuth(req: Request, token: string): Promise<AuthenticationResult | undefined> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
@@ -1064,6 +1090,10 @@ export async function getLoginForBasicAuth(
     return undefined;
   }
 
+  if (client.status && client.status !== 'active') {
+    return undefined;
+  }
+
   const membership = await getClientApplicationMembership(systemRepo, client);
   if (!membership || membership.active === false) {
     return undefined;
@@ -1075,9 +1105,20 @@ export async function getLoginForBasicAuth(
     user: createReference(client),
     authMethod: 'client',
     authTime: new Date().toISOString(),
+    remoteAddress: req.ip,
   };
 
-  return makeAuthResult(systemRepo, req, login, project, membership, { profile: client });
+  // Basic auth has no login step, so the checks that the token endpoint performs once
+  // when issuing a token must be performed here on every request instead.
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const accessPolicy = await getAccessPolicyForLogin({ login, project, membership, userConfig });
+  try {
+    await checkIpAccessRules(login, accessPolicy);
+  } catch {
+    return undefined;
+  }
+
+  return makeAuthResult(systemRepo, req, login, project, membership, { profile: client, remoteAddress: req.ip });
 }
 
 async function makeAuthResult(
@@ -1089,6 +1130,7 @@ async function makeAuthResult(
   opts?: {
     profile?: WithId<ProfileResource | Bot | ClientApplication>;
     accessToken?: string;
+    remoteAddress?: string;
   }
 ): Promise<AuthenticationResult> {
   const extendedMode = req ? isExtendedMode(req) : true;
@@ -1106,10 +1148,10 @@ async function makeAuthResult(
     accessToken: opts?.accessToken,
     profile: opts?.profile,
   };
-  let repo = await getRepoForLogin(authState, extendedMode);
+  let repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
   await tryAddOnBehalfOf(repo, req, authState);
   if (authState.onBehalfOf) {
-    repo = await getRepoForLogin(authState, extendedMode);
+    repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
   }
   return { authState, repo };
 }
@@ -1174,11 +1216,6 @@ async function tryExternalAuth(
   accessToken: string
 ): Promise<AuthState | undefined> {
   const externalAuthProviders = getConfig().externalAuthProviders;
-  if (!externalAuthProviders) {
-    // No external auth providers configured
-    return undefined;
-  }
-
   if (!isJwt(accessToken)) {
     // Not a JWT, so we cannot verify it
     return undefined;
@@ -1186,14 +1223,28 @@ async function tryExternalAuth(
 
   const claims = parseJWTPayload(accessToken);
   const issuer = claims.iss as string;
-  const externalAuthConfig = externalAuthProviders.find((provider) => provider.issuer === issuer);
-  if (!externalAuthConfig) {
+  const projectId = req ? getProjectIdFromUrl(req.originalUrl) : undefined;
+  const externalAuthConfig = externalAuthProviders?.find(
+    (provider) => (provider.identityProvider?.issuer ?? provider.issuer) === issuer
+  );
+  let client: WithId<ClientApplication> | undefined;
+  let idp: IdentityProvider | undefined;
+  if (externalAuthConfig?.identityProvider) {
+    idp = { issuer, userInfoUrl: externalAuthConfig.userInfoUrl, ...externalAuthConfig.identityProvider };
+  } else if (externalAuthConfig?.userInfoUrl) {
+    idp = { issuer, userInfoUrl: externalAuthConfig.userInfoUrl };
+  }
+  if (!idp && projectId) {
+    client = await getExternalBearerClient(projectId, issuer);
+    idp = client?.identityProvider;
+  }
+  if (!idp) {
     // Not a configured external auth provider
     return undefined;
   }
 
   const redis = getCacheRedis();
-  const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
+  const redisKey = `medplum:ext-auth:${issuer}:${projectId ?? ''}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
   let login: Login;
   let project: WithId<Project> | undefined;
@@ -1206,7 +1257,7 @@ async function tryExternalAuth(
     project = await systemRepo.readReference<Project>(membership.project);
   } else {
     // If not cached, try to authenticate the user with the external auth provider
-    const externalAuthState = await tryExternalAuthLogin(systemRepo, req, accessToken, claims, externalAuthConfig);
+    const externalAuthState = await tryExternalAuthLogin(systemRepo, req, accessToken, claims, idp, client);
     if (!externalAuthState) {
       return undefined;
     }
@@ -1223,34 +1274,28 @@ async function tryExternalAuthLogin(
   req: Request | undefined,
   accessToken: string,
   claims: JWTPayload,
-  externalAuthConfig: MedplumExternalAuthConfig
+  idp: IdentityProvider,
+  client: WithId<ClientApplication> | undefined
 ): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
-  // To ensure broad compatibility, we check for the FHIR user profile in two places:
-  // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
-  // that automatically place custom claims in an `ext` block.
   const extensions = claims.ext as Record<string, unknown> | undefined;
   const profileString = claims.fhirUser ?? extensions?.fhirUser;
-
-  // If neither fhirUser nor sub is present, we cannot identify the user
-  if (!isString(profileString) && !isString(claims.sub)) {
+  const projectId = req ? getProjectIdFromUrl(req.originalUrl) : undefined;
+  if (!isString(profileString) && !isString(claims.sub) && !projectId) {
     return undefined;
   }
 
-  // Validate the token against the external IDP's userinfo endpoint
+  // Verify the token against the external IDP.
   try {
-    const userInfoUrl = externalAuthConfig.identityProvider?.userInfoUrl ?? externalAuthConfig.userInfoUrl;
-    if (!userInfoUrl) {
-      return undefined;
-    }
-    await getExternalUserInfo(userInfoUrl, accessToken, externalAuthConfig.identityProvider);
+    await verifyExternalToken(idp, accessToken);
   } catch (err: any) {
-    getLogger().warn('Failed to get external user info', err);
+    getLogger().warn('Failed to verify external token', err);
     return undefined;
   }
 
   let membership: WithId<ProjectMembership> | undefined;
-
-  if (isString(profileString)) {
+  if (client) {
+    membership = await getClientApplicationMembership(systemRepo, client);
+  } else if (isString(profileString)) {
     // Path A: fhirUser claim present - look up profile, then find membership
     // Profile string can be either a reference or a search string
     let searchRequest: SearchRequest<ProfileResource>;
@@ -1280,6 +1325,9 @@ async function tryExternalAuthLogin(
       resourceType: 'ProjectMembership',
       filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
     });
+  } else if (!isString(claims.sub)) {
+    client = await getExternalBearerClient(projectId as string, claims.iss as string);
+    membership = client ? await getClientApplicationMembership(systemRepo, client) : undefined;
   } else {
     // Path B: sub claim fallback - look up ProjectMembership by externalId
     // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous
@@ -1289,7 +1337,7 @@ async function tryExternalAuthLogin(
         {
           code: 'external-id',
           operator: Operator.EXACT,
-          value: claims.sub as string,
+          value: claims.sub,
         },
       ],
       count: 2,
@@ -1338,6 +1386,38 @@ async function tryExternalAuthLogin(
   );
 
   return { login, project, membership };
+}
+
+/**
+ * Resolves an identity-less external bearer token to the client application configured for its issuer.
+ * The project-scoped URL supplies the tenant, while the issuer identifies the client within that project.
+ * Ambiguous configurations fail closed.
+ *
+ * @param projectId - Project ID from the request URL.
+ * @param issuer - Issuer presented by the external token.
+ * @returns The matching client application, or undefined unless exactly one client matches.
+ */
+async function getExternalBearerClient(
+  projectId: string,
+  issuer: string
+): Promise<WithId<ClientApplication> | undefined> {
+  const projectRepo = await getProjectSystemRepo(projectId);
+  const clients = await projectRepo.searchResources<ClientApplication>({
+    resourceType: 'ClientApplication',
+    filters: [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      { code: 'identity-provider-issuer', operator: Operator.EXACT, value: issuer },
+    ],
+    count: 2,
+  });
+  if (clients.length !== 1) {
+    if (clients.length > 1) {
+      getLogger().warn('Multiple ClientApplications found for external auth issuer in project', { issuer, projectId });
+    }
+    return undefined;
+  }
+
+  return clients[0];
 }
 
 /**

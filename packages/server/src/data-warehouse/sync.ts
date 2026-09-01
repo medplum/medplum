@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { DuckDBInstance } from '@duckdb/node-api';
+import { countBy, countWhere, normalizeErrorString, sumBy } from '@medplum/core';
+
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,11 +11,15 @@ import type { MedplumDatabaseConfig } from '../config/types';
 import type { Expression } from '../fhir/sql';
 import { Conjunction } from '../fhir/sql';
 import { globalLogger } from '../logger';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import type { WarehouseSourceTable } from './config';
 import { buildPgConnectionURI } from './config';
 import type { DataWarehouseDestination } from './destination';
 import type { DuckdbConnection } from './warehouse-sql';
 import { buildStartDatePredicate, DEFAULT_NAMESPACE } from './warehouse-sql';
+
+/** Max concurrent DuckDB connections used to read Iceberg watermarks in parallel. */
+const WATERMARK_READ_CONCURRENCY = 8;
 
 export interface SyncOptions {
   database: MedplumDatabaseConfig;
@@ -29,8 +35,12 @@ export interface SyncOptions {
   onProgress?: (message: string, metadata?: Record<string, string | number>) => void | Promise<void>;
 }
 
+export type SyncTableSkipReason = 'conflict' | 'watermark' | 'missing-table';
+
 export interface SyncTableResult {
   destination: string;
+  /** Set when the table was skipped or failed; omitted on successful sync. */
+  status?: SyncTableSkipReason | 'error';
   rowsInserted: number;
   syncDurationMs: number;
   watermarkDurationMs: number;
@@ -38,6 +48,17 @@ export interface SyncTableResult {
 
 export interface SyncResult {
   tables: SyncTableResult[];
+}
+
+interface WarehouseTableWatermark {
+  spec: WarehouseSourceTable;
+  sourcePredicate: Expression | undefined;
+  watermarkDurationMs: number;
+  /**
+   * Present when this table will not be written: Iceberg watermark read failed, or the
+   * destination target is missing.
+   */
+  status?: 'watermark' | 'missing-table';
 }
 
 function getSyncSourceConnectionString(options: SyncOptions): string {
@@ -63,21 +84,46 @@ type WarehouseSyncDuckdbConnection = DuckdbConnection & {
   closeSync(): void;
 };
 
+function closeWarehouseConnection(connection: WarehouseSyncDuckdbConnection | undefined, label: string): void {
+  if (!connection) {
+    return;
+  }
+  try {
+    connection.closeSync();
+  } catch (err) {
+    globalLogger.warn(`Failed closing data warehouse DuckDB ${label}`, { err, subsystem: 'data-warehouse-sync' });
+  }
+}
+
+async function connectWarehouse(
+  instance: DuckDBInstance,
+  options: SyncOptions,
+  label: string
+): Promise<WarehouseSyncDuckdbConnection> {
+  const connection = await instance.connect();
+  try {
+    for (const query of options.destination.getConnectionSetupQueries()) {
+      await connection.run(query);
+    }
+    return connection;
+  } catch (err) {
+    closeWarehouseConnection(connection, label);
+    throw err;
+  }
+}
+
 /**
- * Opens a fresh DuckDB instance/connection backed by a throwaway temp directory,
- * runs the destination setup queries, invokes `fn`, and tears everything down
- * afterwards. A new database is created and destroyed for each invocation.
+ * Opens a DuckDB instance (backed by a throwaway temp directory), runs destination
+ * setup on a short-lived connection, invokes `fn` with the instance, and tears
+ * everything down afterwards.
  * @param options - The sync options.
- * @param sourceConnectionString - The Postgres source connection string.
- * @param fn - Callback invoked with the ready-to-use DuckDB connection.
+ * @param fn - Callback invoked with the ready-to-use DuckDB instance.
  * @returns The value returned by `fn`.
  */
 async function withWarehouseConnection<T>(
   options: SyncOptions,
-  sourceConnectionString: string,
-  fn: (connection: WarehouseSyncDuckdbConnection) => Promise<T>
+  fn: (instance: DuckDBInstance) => Promise<T>
 ): Promise<T> {
-  let connection: WarehouseSyncDuckdbConnection | undefined;
   let instance: DuckDBInstance | undefined;
   let duckdbTempDir: string | undefined;
   try {
@@ -85,19 +131,20 @@ async function withWarehouseConnection<T>(
     duckdbTempDir = await mkdtemp(join(tmpdir(), `medplum-dw-sync-`));
     const duckdbDatabasePath = join(duckdbTempDir, 'warehouse.duckdb');
     instance = await DuckDBInstance.create(duckdbDatabasePath);
-    connection = await instance.connect();
-    for (const q of options.destination.getSetupQueries()) {
-      await connection.run(q);
-    }
 
-    return await fn(connection);
-  } finally {
+    // Instance-scoped setup (extensions, secrets, ATTACH) is shared by later connections.
+    // Session SETs are connection-scoped and applied in connectWarehouse().
+    const setupConnection = await instance.connect();
     try {
-      connection?.closeSync();
-    } catch (err) {
-      globalLogger.warn('Failed closing data warehouse DuckDB connection', { err, subsystem: 'data-warehouse-sync' });
+      for (const q of options.destination.getSetupQueries()) {
+        await setupConnection.run(q);
+      }
+    } finally {
+      closeWarehouseConnection(setupConnection, 'setup connection');
     }
 
+    return await fn(instance);
+  } finally {
     try {
       instance?.closeSync();
     } catch (err) {
@@ -121,38 +168,122 @@ async function withWarehouseConnection<T>(
   }
 }
 
-async function syncWarehouseTable(
+/*
+ * Reads one table's destination existence check and Iceberg watermark.
+ * Never throws: failures become skip entries so watermark workers can finish their stripe.
+ */
+async function readWarehouseTableWatermark(
   connection: WarehouseSyncDuckdbConnection,
   options: SyncOptions,
   spec: WarehouseSourceTable,
+  namespace: string
+): Promise<WarehouseTableWatermark> {
+  const watermarkStartTime = Date.now();
+  let destination = spec.icebergTable;
+  let phase: 'setup' | 'ensure' | 'watermark' = 'setup';
+  try {
+    destination = options.destination.getDestinationName(spec);
+    phase = 'ensure';
+    await options.destination.ensureTargetExists(spec, namespace);
+    phase = 'watermark';
+    const sourcePredicate = await buildWarehouseSourcePredicate(connection, options, spec, namespace);
+    return {
+      spec,
+      sourcePredicate,
+      watermarkDurationMs: Date.now() - watermarkStartTime,
+    };
+  } catch (err) {
+    const status = phase === 'ensure' ? 'missing-table' : 'watermark';
+    globalLogger.warn(
+      status === 'missing-table'
+        ? `Data warehouse destination table missing for table=${destination}`
+        : `Failed reading data warehouse watermark for table=${destination}`,
+      {
+        destination,
+        err,
+        subsystem: 'data-warehouse-sync',
+      }
+    );
+    return {
+      spec,
+      sourcePredicate: undefined,
+      watermarkDurationMs: Date.now() - watermarkStartTime,
+      status,
+    };
+  }
+}
+
+/**
+ * Resolves incremental source predicates for every warehouse table.
+ *
+ * Per-table existence checks and Iceberg watermark DuckDB reads fan out across
+ * watermark connections on the same instance (one query per connection). All watermark
+ * work finishes before this returns so the caller can attach Postgres afterwards.
+ * Per-table failures are logged and returned as skip entries (`missing-table` or
+ * `watermark`); successful tables still sync.
+ *
+ * @param instance - Shared DuckDB instance used to open watermark connections.
+ * @param options - Sync options including destination and warehouse source tables.
+ * @param namespace - Iceberg / warehouse namespace for target tables.
+ * @returns One entry per warehouse source table (including skip entries), sorted by Iceberg table name.
+ */
+async function collectWarehouseWatermarks(
+  instance: DuckDBInstance,
+  options: SyncOptions,
+  namespace: string
+): Promise<WarehouseTableWatermark[]> {
+  const sources = options.warehouseSources;
+  const concurrency = Math.min(WATERMARK_READ_CONCURRENCY, sources.length);
+  const watermarkConnections: WarehouseSyncDuckdbConnection[] = [];
+  try {
+    // Open one DuckDB connection per watermark worker.
+    for (let i = 0; i < concurrency; i++) {
+      watermarkConnections.push(await connectWarehouse(instance, options, 'watermark connection'));
+    }
+
+    // Fan out: worker i owns sources[i], sources[i + concurrency], …
+    // Use allSettled so we never close connections while sibling workers still have in-flight queries.
+    const settled = await Promise.allSettled(
+      watermarkConnections.map(async (connection, workerIndex) => {
+        const results: WarehouseTableWatermark[] = [];
+        for (let i = workerIndex; i < sources.length; i += concurrency) {
+          results.push(await readWarehouseTableWatermark(connection, options, sources[i], namespace));
+        }
+        return results;
+      })
+    );
+
+    // sort alphabetically because some jobs will finish faster than others
+    return settled
+      .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+      .sort((a, b) => a.spec.icebergTable.localeCompare(b.spec.icebergTable));
+  } finally {
+    // Close watermark connections before Postgres is attached.
+    for (const connection of watermarkConnections) {
+      closeWarehouseConnection(connection, 'watermark connection');
+    }
+  }
+}
+
+async function writeWarehouseTable(
+  connection: WarehouseSyncDuckdbConnection,
+  options: SyncOptions,
+  watermark: WarehouseTableWatermark,
   namespace: string,
-  sourceConnectionString: string,
   index: number,
   tablesTotal: number
 ): Promise<SyncTableResult> {
   const tablesCompleted = index + 1;
+  const { spec, sourcePredicate, watermarkDurationMs } = watermark;
   const destination = options.destination.getDestinationName(spec);
 
   const syncStartTime = Date.now();
-
-  await options.destination.ensureTargetExists(spec, namespace);
-
-  const watermarkStartTime = Date.now();
-  const sourcePredicate = await buildWarehouseSourcePredicate(connection, options, spec, namespace);
-  const watermarkDurationMs = Date.now() - watermarkStartTime;
-
-  for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
-    await connection.run(query);
-  }
-
   const rowsInserted = await options.destination.writeRows(connection, {
     tableSpec: spec,
     namespace,
     sourcePredicate,
   });
-
-  const syncEndTime = Date.now();
-  const syncDurationMs = syncEndTime - syncStartTime;
+  const syncDurationMs = Date.now() - syncStartTime;
 
   globalLogger.info(`Data warehouse sync finished for table=${destination}`, {
     tableIndex: tablesCompleted,
@@ -186,25 +317,174 @@ async function syncWarehouseTable(
   };
 }
 
+function buildSkippedTableResult(
+  destination: string,
+  status: SyncTableSkipReason,
+  watermarkDurationMs: number
+): SyncTableResult {
+  return {
+    destination,
+    status,
+    rowsInserted: 0,
+    syncDurationMs: 0,
+    watermarkDurationMs,
+  };
+}
+
+function buildErrorTableResult(destination: string, watermarkDurationMs: number): SyncTableResult {
+  return {
+    destination,
+    status: 'error',
+    rowsInserted: 0,
+    syncDurationMs: 0,
+    watermarkDurationMs,
+  };
+}
+
+/**
+ * Records sync-level OTEL metrics aggregated across all table outcomes.
+ * @param tables - Per-table sync results (including partial progress when a hard failure aborts the run).
+ */
+function recordSyncMetrics(tables: SyncTableResult[]): void {
+  // Early abort before any table outcome (watermark/attach failure, etc.): emit a positive error
+  // signal for alarms, but skip duration histograms so empty runs do not pollute p50/avg with zeros.
+  if (tables.length === 0) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'error' } }, 1);
+    return;
+  }
+
+  // count totals for all tables
+  const rowsInserted = sumBy(tables, (t) => t.rowsInserted);
+  const syncDurationMs = sumBy(tables, (t) => t.syncDurationMs);
+  const watermarkDurationMs = sumBy(tables, (t) => t.watermarkDurationMs);
+  const successCount = countWhere(tables, (t) => !t.status);
+  const errorCount = countWhere(tables, (t) => t.status === 'error');
+
+  /*
+   * count tables by skip reason (excluding errors)
+   */
+  const skippedByReason = countBy(
+    tables.filter((t) => t.status && t.status !== 'error'),
+    (t) => t.status as SyncTableSkipReason
+  );
+
+  /*
+   * record as metrics
+   * NOTE: Sums of per-table durations, not wall-clock, because watermarks are done in parallel
+   */
+  incrementCounter('medplum.dataWarehouse.sync.rows', undefined, rowsInserted);
+
+  recordHistogramValue('medplum.dataWarehouse.sync.tableDuration', syncDurationMs / 1000, {
+    options: { unit: 's' },
+  });
+  recordHistogramValue('medplum.dataWarehouse.sync.watermarkDuration', watermarkDurationMs / 1000, {
+    options: { unit: 's' },
+  });
+  if (successCount > 0) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'success' } }, successCount);
+  }
+  for (const [skipReason, count] of Object.entries(skippedByReason) as [SyncTableSkipReason, number][]) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'skipped', skipReason } }, count);
+  }
+  if (errorCount > 0) {
+    incrementCounter('medplum.dataWarehouse.sync.tables', { attributes: { result: 'error' } }, errorCount);
+  }
+}
+
+async function reportSkippedTableProgress(
+  options: SyncOptions,
+  destination: string,
+  reason: string,
+  tablesCompleted: number,
+  tablesTotal: number
+): Promise<void> {
+  if (!options.onProgress) {
+    return;
+  }
+  await options.onProgress(`Skipped ${destination} (${reason}, table ${tablesCompleted}/${tablesTotal})`, {
+    tablesCompleted,
+    tablesTotal,
+    destination,
+    rowsInserted: 0,
+  });
+}
+
 async function runWarehouseTableSync(
   options: SyncOptions,
   namespace: string,
-  sourceConnectionString: string
-): Promise<SyncTableResult[]> {
-  const tables: SyncTableResult[] = [];
+  sourceConnectionString: string,
+  tables: SyncTableResult[]
+): Promise<void> {
+  return withWarehouseConnection(options, async (instance) => {
+    // in one session, grabs all high-watermarks for all tables (before Postgres attach)
+    const watermarks = await collectWarehouseWatermarks(instance, options, namespace);
+    const tablesTotal = options.warehouseSources.length;
 
-  const tablesTotal = options.warehouseSources.length;
+    // in another session, connect to postgres only after every Iceberg watermark has been fetched
+    const writeConnection = await connectWarehouse(instance, options, 'write connection');
+    try {
+      for (const query of options.destination.getPostgresAttachQueries(sourceConnectionString)) {
+        await writeConnection.run(query);
+      }
 
-  for (const [index, spec] of options.warehouseSources.entries()) {
-    // Close and re-open the DuckDB database between tables so each table sync
-    // runs against a fresh instance/connection and temp directory.
-    const result = await withWarehouseConnection(options, sourceConnectionString, (connection) =>
-      syncWarehouseTable(connection, options, spec, namespace, sourceConnectionString, index, tablesTotal)
-    );
-    tables.push(result);
-  }
+      // update each iceberg table (watermarks includes skip entries, so index tracks all sources)
+      for (const [index, watermark] of watermarks.entries()) {
+        const tablesCompleted = index + 1;
+        const destination = options.destination.getDestinationName(watermark.spec);
 
-  return tables;
+        if (watermark.status === 'missing-table') {
+          tables.push(buildSkippedTableResult(destination, 'missing-table', watermark.watermarkDurationMs));
+          await reportSkippedTableProgress(
+            options,
+            destination,
+            'destination table missing',
+            tablesCompleted,
+            tablesTotal
+          );
+          continue;
+        }
+
+        if (watermark.status === 'watermark') {
+          tables.push(buildSkippedTableResult(destination, 'watermark', watermark.watermarkDurationMs));
+          await reportSkippedTableProgress(options, destination, 'watermark read failed', tablesCompleted, tablesTotal);
+          continue;
+        }
+
+        try {
+          const result = await writeWarehouseTable(writeConnection, options, watermark, namespace, index, tablesTotal);
+          tables.push(result);
+        } catch (err) {
+          const message = normalizeErrorString(err);
+          if (!message.includes('CommitFailedException') && !message.includes('409')) {
+            tables.push(buildErrorTableResult(destination, watermark.watermarkDurationMs));
+            throw err;
+          }
+
+          globalLogger.info(
+            `Skipping data warehouse sync for table=${destination} due to Iceberg commit conflict (likely compaction)`,
+            {
+              destination,
+              tableIndex: tablesCompleted,
+              tablesTotal,
+              err,
+              subsystem: 'data-warehouse-sync',
+            }
+          );
+
+          tables.push(buildSkippedTableResult(destination, 'conflict', watermark.watermarkDurationMs));
+          await reportSkippedTableProgress(
+            options,
+            destination,
+            'Iceberg commit conflict',
+            tablesCompleted,
+            tablesTotal
+          );
+        }
+      }
+    } finally {
+      closeWarehouseConnection(writeConnection, 'write connection');
+    }
+  });
 }
 
 export async function syncData(options: SyncOptions): Promise<SyncResult> {
@@ -215,6 +495,11 @@ export async function syncData(options: SyncOptions): Promise<SyncResult> {
   const sourceConnectionString = getSyncSourceConnectionString(options);
   const namespace = options.namespace ?? DEFAULT_NAMESPACE;
 
-  const tables = await runWarehouseTableSync(options, namespace, sourceConnectionString);
-  return { tables };
+  const tables: SyncTableResult[] = [];
+  try {
+    await runWarehouseTableSync(options, namespace, sourceConnectionString, tables);
+    return { tables };
+  } finally {
+    recordSyncMetrics(tables);
+  }
 }

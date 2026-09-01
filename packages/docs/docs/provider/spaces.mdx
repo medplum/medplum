@@ -12,7 +12,11 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 Spaces is the in-app AI assistant in [Medplum Provider](https://provider.medplum.com). A user types a question in natural language; under the hood a chain of Medplum [bots](/docs/bots) translates the question into FHIR API calls, executes them against the project, summarizes the results in the chat, and optionally renders a generated chart inside the same view.
 
-Spaces is shipped as an example implementation. The Provider app source lives in [`examples/medplum-provider`](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) and the bot source in [`examples/medplum-demo-bots/src/spaces-bots`](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/spaces-bots). Use this page to set Spaces up in your own project, understand what it does behind the chat input, and tune the parts that are designed to be tuned.
+The Provider app source lives in [`examples/medplum-provider`](https://github.com/medplum/medplum/tree/main/examples/medplum-provider). The three bots behind the chat input are installed by the Medplum team. Use this page to set Spaces up in your own project, understand what it does behind the chat input, and tune the parts that are designed to be tuned.
+
+:::caution[Medplum Team Setup Required]
+Spaces requires setup by the Medplum team: the `ai` and `bots` project features, plus the three Spaces bots themselves. [Contact us](mailto:info+spaces@medplum.com?subject=Spaces%20for%20Medplum) to enable Spaces for your project.
+:::
 
 The assistant's behavior – what it says, what it refuses, which FHIR strategies it uses, how it summarizes, what charts it favors – is determined by three [`Communication`](/docs/api/fhir/resources/communication) resources that you author for your deployment. Spaces ships without canonical prompts on purpose: the right behavior depends on what your clinic plans to use the feature for. See [Author System Prompt Communications](#author-system-prompt-communications) below.
 
@@ -87,24 +91,22 @@ You must be a project administrator to add secrets. In the [Medplum App](https:/
 See [Bot Secrets](/docs/bots/bot-secrets) for the same workflow described in more detail.
 
 :::caution
-If the key is missing, the `$ai` operation returns `OpenAI API key not configured in project secrets` and every Spaces turn fails. Set this before deploying the bots.
+If the key is missing, the `$ai` operation returns `OpenAI API key not configured in project secrets` and every Spaces turn fails. Set this before rolling Spaces out to users.
 :::
 
-### Deploy The Spaces Bots
+### Request The Spaces Bots
 
-Spaces depends on three bots that ship under [`examples/medplum-demo-bots/src/spaces-bots`](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/spaces-bots) and are already registered in that project's `medplum.config.json`. The Provider UI resolves each one by `Identifier` (system `https://www.medplum.com/bots`), so the identifier values below are load-bearing.
+Spaces depends on three bots that the Medplum team installs in your project. [Contact us](mailto:info+spaces@medplum.com?subject=Spaces%20for%20Medplum) to have them provisioned.
 
-| Identifier Value             | Source File                                                                                                                                       | Role                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `ai-fhir-request-tools`      | [`fhir-translator-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-translator-bot.ts)         | Translator. Emits `fhir_request` tool calls and a `visualize` flag.   |
-| `ai-resource-summary-sse`    | [`fhir-summary-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-summary-bot.ts)               | Streaming summary bot (Server-Sent Events).                           |
-| `ai-component-generator-sse` | [`fhir-visualizer-bot.ts`](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/spaces-bots/fhir-visualizer-bot.ts)         | Streaming Recharts / Mantine `Chart()` JSX generation.                |
+The Provider UI resolves each bot by `Identifier` (system `https://www.medplum.com/bots`), so the identifier values below are load-bearing. They are worth knowing: the same values name the system-prompt Communications you author in the next section, and they are the first thing to check when a Spaces turn silently fails.
 
-To deploy:
+| Identifier Value             | Role                                                                |
+| ---------------------------- | ------------------------------------------------------------------- |
+| `ai-fhir-request-tools`      | Translator. Emits `fhir_request` tool calls and a `visualize` flag.  |
+| `ai-resource-summary-sse`    | Streaming summary bot (Server-Sent Events).                          |
+| `ai-component-generator-sse` | Streaming Recharts / Mantine `Chart()` JSX generation.               |
 
-1. Clone [the demo-bots project](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots) (or copy the `spaces-bots` directory and the matching entries from `medplum.config.json` into your own bot project).
-2. Build and deploy each bot following [Bot Basics](/docs/bots/bot-basics) and [Bots In Production](/docs/bots/bots-in-production).
-3. After deployment, open each [`Bot`](/docs/api/fhir/medplum/bot) resource in the Medplum App and add an `identifier` entry whose `system` is `https://www.medplum.com/bots` and whose `value` matches the table above. The Provider UI uses this identifier to find the bot, so a missing or mistyped value silently breaks the feature.
+Once the bots are installed, you can confirm the wiring in the [Medplum App](https://app.medplum.com): each [`Bot`](/docs/api/fhir/medplum/bot) resource should carry an `identifier` entry whose `system` is `https://www.medplum.com/bots` and whose `value` matches the table above. A missing or mistyped value silently breaks the feature.
 
 ### Author System Prompt Communications
 
@@ -123,6 +125,17 @@ If any Communication is missing, the corresponding bot throws (`"... system prom
 The example below seeds all three Communications. The bodies are thin but functional – the loop will run end-to-end so you can verify wiring – they are not production prompts. Replace each `payload[0].contentString` with text authored for your deployment before exposing Spaces to users.
 
 <MedplumCodeBlock language="ts" selectBlocks="seedSystemPromptsTs">{ExampleCode}</MedplumCodeBlock>
+
+### Default Prompts And Overrides
+
+If Spaces has been set up in your project, default base prompts are already in place for all three bots, so you don't need to author all three Communication resources yourself before Spaces works.
+
+Because of this, a search for a prompt Communication by identifier can return two matches: the default base prompt, and, once you've created one, your own override with the same identifier. The bots resolve this with a preference rule rather than assuming a single match: they search by identifier, then prefer whichever result's `meta.project` equals the current project, falling back to the most recently updated match if no override exists.
+
+In practice:
+
+- With no override, the default base prompt is used automatically.
+- Once you create a Communication with the same identifier, it takes over immediately for your users – you don't need to edit or delete the default one. 
 
 ## Conversation Data Model
 
@@ -255,7 +268,9 @@ Voice input is transcription-only (speech to text). Spaces does not support text
 
 ## Customizing System Prompts
 
-Spaces' behavior – when it calls FHIR, how it phrases summaries, which chart types it reaches for – is determined almost entirely by the three system-prompt Communications, not by the bot code (the bots are thin wrappers around `$ai`). To change behavior, edit `payload[0].contentString` on the relevant Communication. The next user message picks up the new prompt without a bot redeploy.
+Spaces' behavior – when it calls FHIR, how it phrases summaries, which chart types it reaches for – is determined almost entirely by the three system-prompt Communications, not by the bot code (the bots are thin wrappers around `$ai`). The next user message picks up a changed prompt immediately, without a bot redeploy.
+
+Do not edit the default base prompts in place (see [Default Prompts And Overrides](#default-prompts-and-overrides) above). Instead, create your own Communication with the same identifier. The bots prefer whichever match's `meta.project` equals the current project, so your copy takes over automatically, with no redeploy needed.
 
 <MedplumCodeBlock language="ts" selectBlocks="updateSystemPromptTs">{ExampleCode}</MedplumCodeBlock>
 

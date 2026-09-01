@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { normalizeErrorString } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GoogleCloudStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
+import { getLogger } from '../logger';
 import type { PresignedUrlOptions } from './base';
 import { FileSystemStorage } from './filesystem';
 import { generatePresignedUrl } from './presign';
@@ -31,6 +33,30 @@ export function getBinaryStorage(): BinaryStorage {
     throw new Error('Binary storage not initialized');
   }
   return binaryStorage;
+}
+
+/**
+ * Deletes stored objects for expunged Binary resources.
+ *
+ * No-op on deployments where binary storage is not configured. Best effort: a storage failure must
+ * not fail the expunge, because the database rows are already gone by the time this runs. Failures
+ * are logged with the key so the object can be reclaimed.
+ * @param storageKeys - The storage keys to delete.
+ */
+export async function deleteBinaryStorageObjects(storageKeys: string[]): Promise<void> {
+  if (!binaryStorage) {
+    return;
+  }
+  for (const key of storageKeys) {
+    try {
+      await binaryStorage.deleteFile(key);
+    } catch (err) {
+      getLogger().warn('Failed to delete binary storage object during expunge', {
+        key,
+        error: normalizeErrorString(err),
+      });
+    }
+  }
 }
 
 export async function getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {

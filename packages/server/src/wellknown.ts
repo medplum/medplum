@@ -3,9 +3,11 @@
 import { OAuthGrantType, OAuthSigningAlgorithm, OAuthTokenAuthMethod } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
+import { apiCatalogHandler } from './api-catalog';
 import { getConfig } from './config/loader';
 import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
 import { getJwks } from './oauth/keys';
+import { getProjectScopedUrl } from './util/url';
 
 export const wellKnownRouter = Router();
 
@@ -13,18 +15,19 @@ wellKnownRouter.get('/jwks.json', (_req: Request, res: Response) => {
   res.status(200).json(getJwks());
 });
 
-function handleOAuthConfig(_req: Request, res: Response): void {
+function handleOAuthConfig(req: Request, res: Response): void {
   const config = getConfig();
   res.status(200).json({
-    issuer: config.issuer,
-    authorization_endpoint: config.authorizeUrl,
-    token_endpoint: config.tokenUrl,
-    userinfo_endpoint: config.userInfoUrl,
-    jwks_uri: config.jwksUrl,
-    introspection_endpoint: config.introspectUrl,
-    registration_endpoint: config.registerUrl,
+    issuer: getProjectScopedUrl(req.originalUrl, config.issuer),
+    authorization_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.authorizeUrl),
+    token_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.tokenUrl),
+    userinfo_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.userInfoUrl),
+    jwks_uri: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.jwksUrl),
+    introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
+    registration_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.registerUrl),
     id_token_signing_alg_values_supported: [
       OAuthSigningAlgorithm.ES256,
+      OAuthSigningAlgorithm.ES384,
       OAuthSigningAlgorithm.HS256,
       OAuthSigningAlgorithm.RS256,
     ],
@@ -49,11 +52,12 @@ function handleOAuthConfig(_req: Request, res: Response): void {
 
 function handleOauthProtectedResource(req: Request, res: Response): void {
   const config = getConfig();
-  let resource = config.baseUrl;
+  const baseUrl = getProjectScopedUrl(req.originalUrl, config.baseUrl);
+  let resource = baseUrl;
 
   const requestedResource = req.query.resource;
   if (requestedResource) {
-    if (typeof requestedResource !== 'string' || !requestedResource.startsWith(config.baseUrl)) {
+    if (typeof requestedResource !== 'string' || !requestedResource.startsWith(baseUrl)) {
       res.status(400).send('Invalid resource URL');
       return;
     }
@@ -62,13 +66,17 @@ function handleOauthProtectedResource(req: Request, res: Response): void {
 
   res.status(200).json({
     resource,
-    issuer: config.issuer,
-    authorization_servers: [config.issuer],
+    issuer: getProjectScopedUrl(req.originalUrl, config.issuer),
+    authorization_servers: [getProjectScopedUrl(req.originalUrl, config.issuer)],
     scopes_supported: ['openid', 'profile', 'email', 'phone', 'address'],
     bearer_methods_supported: ['header'],
-    introspection_endpoint: config.introspectUrl,
+    introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
   });
 }
+
+// RFC 9727 API catalog
+// Express routes HEAD requests to the GET handler, which is how HEAD support is provided.
+wellKnownRouter.get('/api-catalog', apiCatalogHandler);
 
 wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
 wellKnownRouter.get('/openid-configuration', handleOAuthConfig);

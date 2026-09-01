@@ -3,7 +3,7 @@
 import { Flex, Stack, Text } from '@mantine/core';
 import type { JSX } from 'react';
 
-type LabTab = 'open' | 'completed';
+type LabTab = 'open' | 'completed' | 'revoked';
 
 interface LabSelectEmptyProps {
   activeTab: LabTab;

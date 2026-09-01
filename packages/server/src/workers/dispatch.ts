@@ -2,20 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
-import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { DicomInstance, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { deleteLambda, getLambdaNameForBot } from '../cloud/aws/deploy';
 import { getBotManagementLambdaClient } from '../cloud/aws/lambda';
+import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { addCronJobs } from './cron';
+import { addDicomJobs } from './dicom';
 import { addDownloadJobs } from './download';
 import { addSubscriptionJobs } from './subscription';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
-import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
+import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
 /*
  * The dispatch worker dispatches resource changes to other async jobs.
@@ -47,7 +49,9 @@ export const initDispatchWorker: WorkerInitializer = (config, options?: WorkerIn
   if (options?.workerEnabled !== false) {
     worker = new Worker<DispatchJobData>(
       queueName,
-      (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDispatchJob(job)),
+      trackJobMetrics('dispatch', (job) =>
+        tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDispatchJob(job))
+      ),
       getWorkerBullmqConfig(config, 'dispatch', queueOptions)
     );
   }
@@ -107,6 +111,10 @@ async function addDispatchJobData(job: DispatchJobData): Promise<void> {
  * @param job - The dispatch job details.
  */
 export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> {
+  if (!getConfig().dispatchEnabled) {
+    return;
+  }
+
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
   const { resourceType, id, versionId, previousVersionId } = job.data;
   const resource = await systemRepo.readVersion(resourceType, id, versionId);
@@ -167,6 +175,18 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
         resource: resource.id,
         err,
       });
+    }
+
+    if (resource.resourceType === 'DicomInstance') {
+      try {
+        await addDicomJobs(resource, previousVersion as DicomInstance);
+      } catch (err) {
+        getLogger().error('Error adding DICOM jobs', {
+          resourceType: resource.resourceType,
+          resource: resource.id,
+          err,
+        });
+      }
     }
   }
 }

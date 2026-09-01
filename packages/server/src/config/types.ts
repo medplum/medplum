@@ -122,6 +122,15 @@ export interface MedplumServerConfig {
   /** Optional threshold in milliseconds for logging and recording high idle time within transactions */
   idleInTransactionLogThresholdMs?: number;
 
+  /**
+   * Flag to enable/disable the background worker dispatch service. (default 'true' for enabled)
+   * Dispatch is the entry point for most background jobs including subscriptions and auto-download.
+   */
+  dispatchEnabled?: boolean;
+
+  /** Flag to enable/disable FHIR subscriptions. (default 'true' for enabled) */
+  subscriptionsEnabled?: boolean;
+
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
@@ -220,11 +229,25 @@ export interface MedplumServerConfig {
   requireVerifiedEmailForProjectCreation?: boolean;
 
   /**
+   * Optional list of email domains that are blocked server-wide, regardless of
+   * any project-level `allowedPractitionerEmailDomain` setting (e.g. disposable email providers).
+   * Matched case-insensitively against the domain portion of the email address.
+   */
+  blockedEmailDomains?: string[];
+
+  /**
    * Optional flag to allow outbound fetch requests to private/local networks.
    * Intended only for on-premises deployments that connect to trusted local services.
    * Do not enable in hosted or cloud-managed environments.
    */
   allowUnsafeOutbound?: boolean;
+
+  /**
+   * Optional list of enabled search parameters by SearchParameter.id.  Default is all search parameters enabled.
+   * Note that Medplum resource type search params are always enabled regardless of this setting,
+   * as they are necesary for system functionality.
+   */
+  enabledSearchParameters?: string[];
 }
 
 export interface SubscriptionAutoDisableTrigger {
@@ -277,6 +300,14 @@ export interface MedplumDatabaseConfig {
    */
   disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
+  /** Minimum number of clients the pool retains and _not_ destroy via idleTimeoutMs. Default is 0 */
+  minConnections?: number;
+  /** Maximum times a pool client can be used before being replaced. Active connection pruner. Default is Infinity */
+  maxConnectionUses?: number;
+  /** Duration a client must sit idle before being disconnected. Idle connection pruner. Default is 10,000ms */
+  idleTimeoutMs?: number; // idle pruner
+  /** Duration to wait before timing out when connecting a new client. Defaults to no timeout */
+  connectionTimeoutMs?: number;
   disableConnectionConfiguration?: boolean;
 }
 
@@ -305,6 +336,13 @@ export interface MedplumBullmqConfig {
    */
   concurrency?: number;
   /**
+   * Maximum number of jobs processed simultaneously across all workers for a queue (cluster-wide).
+   * Unlike `concurrency` (which is per-worker), this limit is enforced globally via Redis.
+   * When omitted, any previously-set global concurrency limit is removed.
+   * @see {@link https://docs.bullmq.io/guide/queues/global-concurrency}
+   */
+  globalConcurrency?: number;
+  /**
    * Duration of the job lock in milliseconds while a worker is processing.
    * @see {@link https://docs.bullmq.io/guide/workers/stalled-jobs}
    */
@@ -332,7 +370,8 @@ export type WorkerName =
   | 'post-deploy-migration'
   | 'set-accounts'
   | 'lambda-cleaner'
-  | 'data-warehouse-sync';
+  | 'data-warehouse-sync'
+  | 'dicom';
 
 export interface MedplumWorkersConfig {
   /**

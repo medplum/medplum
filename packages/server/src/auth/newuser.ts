@@ -8,13 +8,14 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword } from './utils';
+import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -25,7 +26,11 @@ export const newUserValidator = makeValidationMiddleware([
     .withMessage('Valid email address between 3 and 72 characters is required')
     .isLength({ min: 3, max: 72 })
     .withMessage('Valid email address between 3 and 72 characters is required'),
-  body('password').isByteLength({ min: 8, max: 72 }).withMessage('Password must be between 8 and 72 characters'),
+  body('password')
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    .isByteLength({ max: MAX_PASSWORD_LENGTH })
+    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
 ]);
 
 /**
@@ -61,6 +66,22 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   // If the user is a practitioner, then projectId should be undefined
   // If the user is a patient, then projectId must be set
   const email = req.body.email.toLowerCase();
+
+  if (projectId && projectId !== 'new') {
+    let project: Project;
+    try {
+      project = await getGlobalSystemRepo().readResource<Project>('Project', projectId);
+    } catch (err) {
+      sendOutcome(res, normalizeOperationOutcome(err));
+      return;
+    }
+    const registrationOutcome = projectRegistrationAllowed(project);
+    if (registrationOutcome) {
+      sendOutcome(res, registrationOutcome);
+      return;
+    }
+  }
+
   let existingUser = undefined;
   if (req.body.projectId && req.body.projectId !== 'new') {
     existingUser = await getUserByEmailInProject(email, req.body.projectId);

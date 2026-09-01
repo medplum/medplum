@@ -27,6 +27,7 @@ import type {
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
+  ResourceModifiedEvent,
 } from './client';
 import { DEFAULT_ACCEPT, MedplumClient } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse, mockFetchWithStatus } from './client-test-utils';
@@ -3974,6 +3975,58 @@ describe('Client', () => {
       );
       expect(await blob.text()).toStrictEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
     });
+
+    test('Downloading external URLs should NOT include credentials', async () => {
+      const externalUrl = 'https://external-site.example.com/document.pdf';
+      const fetch = mockFetch(200, () => 'external content');
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
+      await client.download(externalUrl);
+
+      // Verify the Authorization header was NOT sent to external URL
+      expect(fetch).toHaveBeenCalledWith(
+        externalUrl,
+        expect.objectContaining({
+          headers: {
+            Accept: '*/*',
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+
+      // Verify Authorization header is NOT present
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[1].headers.Authorization).toBeUndefined();
+
+      // Verify credentials are NOT included for external URLs
+      expect(callArgs[1].credentials).toBeUndefined();
+    });
+
+    test('Downloading from baseUrl path should include credentials', async () => {
+      // URLs under the baseUrl should still get credentials (legitimate Medplum endpoints)
+      const internalUrl = 'https://api.medplum.com/admin/projects/123';
+      const fetch = mockFetch(200, () => 'internal content');
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
+      await client.download(internalUrl);
+
+      // Verify the Authorization header WAS sent to internal URL
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[1].headers.Authorization).toBe(`Bearer ${accessToken}`);
+      expect(callArgs[1].credentials).toBe('include');
+    });
+
+    test('Downloading from subdomain should NOT include credentials', async () => {
+      const externalUrl = 'https://evil.api.medplum.com/malicious';
+      const fetch = mockFetch(200, () => 'external content');
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
+      await client.download(externalUrl);
+
+      // Verify the Authorization header was NOT sent
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[1].headers.Authorization).toBeUndefined();
+    });
   });
 
   describe('Media', () => {
@@ -4761,6 +4814,150 @@ describe('Client', () => {
         duplex: 'half',
       })
     );
+  });
+
+  describe('Client events', () => {
+    test('Throwing event listener does not affect the caller', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      client.addEventListener('resourceModified', () => {
+        throw new Error('listener error');
+      });
+
+      const patient = await client.createResource<Patient>({ resourceType: 'Patient' });
+
+      expect(patient).toBeDefined();
+      expect(consoleError).toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
+    test('resourceModified on create', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      const patient = await client.createResource<Patient>({ resourceType: 'Patient' });
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Patient', operation: 'create', id: '123' });
+      expect(events[0].resource).toBe(patient);
+    });
+
+    test('resourceModified on createResourceIfNoneExist', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      await client.createResourceIfNoneExist<Patient>({ resourceType: 'Patient' }, 'identifier=123');
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Patient', operation: 'create', id: '123' });
+    });
+
+    test('resourceModified on update', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      await client.updateResource<Patient>({ resourceType: 'Patient', id: '123' });
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Patient', operation: 'update', id: '123' });
+    });
+
+    test('No resourceModified on update not modified', async () => {
+      const fetch = mockFetch(304, {});
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      await client.updateResource<Patient>({ resourceType: 'Patient', id: '123' });
+
+      expect(events).toHaveLength(0);
+    });
+
+    test('resourceModified on upsert', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      await client.upsertResource<Patient>({ resourceType: 'Patient' }, 'identifier=123');
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Patient', operation: 'update', id: '123' });
+    });
+
+    test('resourceModified on patch', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      await client.patchResource('Patient', '123', [{ op: 'replace', path: '/active', value: true }]);
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Patient', operation: 'patch', id: '123' });
+    });
+
+    test('resourceModified on delete', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+
+      await client.deleteResource('Patient', '123');
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Patient', operation: 'delete', id: '123' });
+      expect(events[0].resource).toBeUndefined();
+    });
+
+    test('notifyResourceModified dispatches and invalidates search cache', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Bundle', type: 'searchset', entry: [] });
+      const client = new MedplumClient({ fetch });
+      await client.search('Slot');
+      await client.search('Slot');
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      const events: ResourceModifiedEvent[] = [];
+      client.addEventListener('resourceModified', (e) => events.push(e.payload));
+      client.notifyResourceModified({ resourceType: 'Slot', operation: 'update' });
+
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ resourceType: 'Slot', operation: 'update' });
+
+      await client.search('Slot');
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    test('notifyResourceModified caches the provided resource', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const patient: WithId<Patient> = { resourceType: 'Patient', id: 'p1' };
+
+      client.notifyResourceModified({ resourceType: 'Patient', operation: 'update', id: 'p1', resource: patient });
+
+      const read = await client.readResource('Patient', 'p1');
+      expect(read).toBe(patient);
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    test('notifyResourceModified on delete invalidates the cached read', async () => {
+      const fetch = mockFetch(200, { resourceType: 'Patient', id: 'p1' });
+      const client = new MedplumClient({ fetch });
+      await client.readResource('Patient', 'p1');
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      client.notifyResourceModified({ resourceType: 'Patient', operation: 'delete', id: 'p1' });
+
+      await client.readResource('Patient', 'p1');
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
   });
 });
 

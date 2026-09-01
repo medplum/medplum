@@ -36,17 +36,17 @@ export function SearchableMultiSelect({
     }
   };
 
-  const handleValueRemove = (val: string): void => setValue((current) => current.filter((v) => v !== val));
+  const handleValueRemove = (val: string): void => {
+    const newValue = value.filter((v) => v !== val);
+    setValue(newValue);
+    onChange?.(newValue);
+  };
 
-  const valueDisplay = useMemo(
-    () =>
-      value.map((item) => (
-        <Pill key={item} withRemoveButton onRemove={() => handleValueRemove(item)}>
-          {item}
-        </Pill>
-      )),
-    [value]
-  );
+  const valueDisplay = value.map((item) => (
+    <Pill key={item} withRemoveButton onRemove={() => handleValueRemove(item)}>
+      {item}
+    </Pill>
+  ));
 
   const filteredOptions = useMemo(() => {
     const needle = search.trim().toLowerCase();

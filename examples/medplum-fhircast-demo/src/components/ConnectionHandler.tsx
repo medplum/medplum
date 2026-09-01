@@ -59,12 +59,9 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
 
     const connectHandler = (): void => setConnectionStatus('CONNECTED');
     const messageHandler = (event: FhircastMessageEvent): void => onMessageRef.current(event.payload);
-    const disconnectHandler = (): void => {
-      setConnectionStatus('DISCONNECTED');
-      connection.removeEventListener('connect', connectHandler);
-      connection.removeEventListener('message', messageHandler);
-      connection.removeEventListener('disconnect', disconnectHandler);
-    };
+    // The connection reconnects on its own, so a disconnect is a state to show rather than the end
+    // of the session: leave the listeners attached and let the next `connect` flip the status back.
+    const disconnectHandler = (): void => setConnectionStatus('DISCONNECTED');
 
     connection.addEventListener('connect', connectHandler);
     connection.addEventListener('message', messageHandler);

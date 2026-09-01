@@ -5,7 +5,6 @@ import type { GoogleCredentialResponse } from '@medplum/core';
 import { allOk, badRequest, locationUtils, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
-import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { SignInFormProps } from './SignInForm';
@@ -247,13 +246,11 @@ async function setup(args?: SignInFormProps): Promise<void> {
 
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <SignInForm {...props}>
-            <Title>Sign in to Medplum</Title>
-          </SignInForm>
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <SignInForm {...props}>
+          <Title>Sign in to Medplum</Title>
+        </SignInForm>
+      </MedplumProvider>
     );
   });
 }

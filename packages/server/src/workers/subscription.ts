@@ -7,7 +7,6 @@ import {
   EMPTY,
   Operator,
   createReference,
-  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -71,6 +70,7 @@ import {
   getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
+  trackJobMetrics,
 } from './utils';
 
 /**
@@ -163,12 +163,13 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
   if (options?.workerEnabled !== false) {
     worker = new Worker<SubscriptionJobData>(
       queueName,
-      (job) =>
+      trackJobMetrics('subscription', (job) =>
         job.data.authState
           ? runInAuthenticatedContext(job.data.authState, job.data.requestId, job.data.traceId, undefined, () =>
               execSubscriptionJob(job)
             )
-          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+      ),
       {
         ...getWorkerBullmqConfig(config, 'subscription', defaultOptions),
         settings: {
@@ -329,6 +330,10 @@ export async function addSubscriptionJobs(
   context: BackgroundJobContext,
   options?: ResendSubscriptionsOptions
 ): Promise<void> {
+  if (!getConfig().subscriptionsEnabled) {
+    return;
+  }
+
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
@@ -649,7 +654,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
     // They would get if they did a search
-    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, deepClone(versionedResource));
+    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, versionedResource);
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;

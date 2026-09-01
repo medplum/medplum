@@ -4,7 +4,7 @@ import { sleep } from '@medplum/core';
 import type { PoolClient, PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import * as semver from 'semver';
-import type { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
+import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig, MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -59,7 +59,7 @@ function initPoolConfig(
   proxyEndpoint: string | undefined,
   applicationName = 'medplum-server'
 ): PoolConfig {
-  const poolConfig = {
+  const poolConfig: PoolConfig = {
     host: config.host,
     port: config.port,
     database: config.dbname,
@@ -68,6 +68,10 @@ function initPoolConfig(
     application_name: applicationName,
     ssl: config.ssl,
     max: config.maxConnections ?? DEFAULT_MAX_CONNECTIONS,
+    min: config.minConnections,
+    idleTimeoutMillis: config.idleTimeoutMs,
+    maxUses: config.maxConnectionUses,
+    connectionTimeoutMillis: config.connectionTimeoutMs,
     options: config.disableConnectionConfiguration
       ? undefined
       : `-c statement_timeout=${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT} -c default_transaction_isolation=${DEFAULT_TRANSACTION_ISOLATION} -c idle_in_transaction_session_timeout=${DEFAULT_IDLE_IN_TRANSACTION_SESSION_TIMEOUT}`,
@@ -75,8 +79,9 @@ function initPoolConfig(
 
   if (proxyEndpoint) {
     poolConfig.host = proxyEndpoint;
-    poolConfig.ssl = poolConfig.ssl ?? {};
-    poolConfig.ssl.require = true;
+    // require SSL when using a proxy endpoint
+    poolConfig.ssl = typeof poolConfig.ssl === 'object' ? poolConfig.ssl : {};
+    (poolConfig.ssl as MedplumDatabaseSslConfig).require = true;
   }
 
   return poolConfig;
@@ -260,4 +265,57 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1 WHERE "id" = 1', [i]);
     }
   }
+}
+
+/**
+ * Prepares the database pools for graceful shutdown. Existing idle connections are
+ * removed immediately, regardless of the configured minimum. Checked-out and subsequently
+ * created connections remain usable, but are removed when released instead of returning
+ * to the pool. {@link closeDatabase} later ends the pools completely.
+ */
+export function prepareDatabasePoolsForShutdown(): void {
+  try {
+    if (pool) {
+      preparePoolForShutdown(pool, DatabaseMode.WRITER);
+    }
+  } catch (err) {
+    globalLogger.error('Error purging idle pool connections', { err });
+  }
+
+  try {
+    if (readonlyPool) {
+      preparePoolForShutdown(readonlyPool, DatabaseMode.READER);
+    }
+  } catch (err) {
+    globalLogger.error('Error purging idle pool connections', { err });
+  }
+}
+
+/**
+ * Prepares a pool for graceful shutdown by disabling its minimum connection count,
+ * removing its idle connections, and preventing released connections from returning
+ * to the pool.
+ * @param pool - The pool to prepare
+ * @param mode - The database mode, used for logging
+ * @returns The number of idle connections removed immediately
+ */
+function preparePoolForShutdown(pool: Pool, mode: DatabaseMode): number {
+  pool.options.min = 0; // do not retain a min during graceful shutdown
+  pool.options.maxUses = 1; // do not reuse connections during graceful shutdown
+
+  const poolInternal = pool as Pool & {
+    _idle: { client: PoolClient }[];
+    _remove: (client: PoolClient) => void;
+  };
+
+  const idleItems = poolInternal._idle;
+  const count = idleItems.length;
+
+  // Iterate backwards because _remove mutates _idle.
+  for (let i = count - 1; i >= 0; i--) {
+    poolInternal._remove(idleItems[i].client);
+  }
+
+  globalLogger.info(`Purged idle connections from pool`, { mode, count });
+  return count;
 }
