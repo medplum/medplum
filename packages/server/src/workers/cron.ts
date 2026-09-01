@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, resolveId } from '@medplum/core';
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
-import { getShardSystemRepo } from '../fhir/repo';
+import { getAllowedProjects } from '../fhir/accesspolicy';
+import type { Repository } from '../fhir/repo';
+import { getPermittedProjectIds, getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
@@ -187,6 +189,32 @@ function isPastEndTime(cron: Cron): boolean {
   return cron.endTime !== undefined && Date.parse(cron.endTime) <= Date.now();
 }
 
+/**
+ * Returns whether a Cron's project may still run the target bot.
+ *
+ * A bot is code, not authority, so the target may live in a linked project. The link is what makes
+ * that safe, and it is checked here because the worker reads on an unscoped system repo, which
+ * would otherwise reach a bot in any project at all.
+ * @param systemRepo - System repository used to load the Cron's project.
+ * @param cron - The Cron naming the bot.
+ * @param bot - The bot the Cron targets.
+ * @returns True if the bot's project is the Cron's own or a link that exports Bot.
+ */
+async function canCronReadBot(systemRepo: Repository, cron: Cron, bot: Bot): Promise<boolean> {
+  const botProjectId = bot.meta?.project;
+  const cronProjectId = cron.meta?.project;
+  if (!botProjectId || !cronProjectId) {
+    return false;
+  }
+  if (botProjectId === cronProjectId) {
+    return true;
+  }
+
+  const cronProject = await systemRepo.readResource<Project>('Project', cronProjectId);
+  const permitted = getPermittedProjectIds(await getAllowedProjects(cronProject), cronProject, 'Bot');
+  return !permitted || permitted.includes(botProjectId);
+}
+
 function getCronStringForBot(bot: Bot | undefined): string | undefined {
   if (bot?.cronTiming) {
     const timingStr = convertTimingToCron(bot.cronTiming);
@@ -264,12 +292,22 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 
     bot = await systemRepo.readReference<Bot>(cron.targetReference);
 
-    if (bot.meta?.project !== cron.meta?.project) {
-      throw new Error('Cron target bot belongs to a different project');
+    if (!(await canCronReadBot(systemRepo, cron, bot))) {
+      // The write path authorized this target, so the link must have been revoked or narrowed
+      // since. Nothing re-validates existing Crons when that happens, so unregister here rather
+      // than fail on every tick until someone edits the Cron.
+      getLogger().warn('Unregistering cron job whose target bot is no longer readable', {
+        cronId: cron.id,
+        botId: bot.id,
+      });
+      await removeBullMQJobByKey(getSchedulerId(cron));
+      return;
     }
 
     runAs = await systemRepo.readReference<ProjectMembership>(cron.onBehalfOf);
-    if (runAs.project?.reference !== `Project/${cron.meta?.project}`) {
+    if (!cron.meta?.project || resolveId(runAs.project) !== cron.meta.project) {
+      // onBehalfOf picks the access policy the run assumes, so it never crosses a project
+      // boundary -- otherwise a Cron could borrow the privileges of a membership elsewhere.
       throw new Error('Cron onBehalfOf membership belongs to a different project');
     }
 

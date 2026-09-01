@@ -2141,7 +2141,11 @@ describe('AccessPolicy', () => {
       });
       const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
 
-      const bot = await systemRepo.createResource<Bot>({ resourceType: 'Bot', name: 'cron-target' });
+      const bot = await systemRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'cron-target',
+        meta: { project: project.id },
+      });
       const botMembership = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),

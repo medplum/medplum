@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, parseSearchRequest } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { createReference, parseSearchRequest, resolveId } from '@medplum/core';
 import type {
   AuditEvent,
   Bot,
@@ -18,6 +19,7 @@ import * as executeModule from '../bots/execute';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import type { TestProjectResult } from '../test.setup';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
 import { convertTimingToCron, execBot, getCronQueue } from './cron';
@@ -489,11 +491,19 @@ describe('Cron resource', () => {
         author: createReference(plain.client),
       });
 
+      const plainBot = await plainRepo.createResource<Bot>({ resourceType: 'Bot', name: 'ungated-target' });
+      const plainMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(plain.project),
+        user: createReference(plainBot),
+        profile: createReference(plainBot),
+      });
+
       const cron = await plainRepo.createResource<Cron>({
         resourceType: 'Cron',
         active: true,
-        onBehalfOf: createReference(botMembership),
-        targetReference: createReference(bot),
+        onBehalfOf: createReference(plainMembership),
+        targetReference: createReference(plainBot),
         cronString: '* * * * *',
       });
       await findAndExecDispatchJob(cron, 'create');
@@ -543,7 +553,7 @@ describe('Cron resource', () => {
       );
     }));
 
-  test('execBot rejects an onBehalfOf membership in another project', () =>
+  test('Rejects an onBehalfOf membership in another project', () =>
     withTestContext(async () => {
       const other = await createTestProject({ withClient: true, project: { features: ['cron'] } });
       const otherMembership = await systemRepo.createResource<ProjectMembership>({
@@ -553,20 +563,12 @@ describe('Cron resource', () => {
         profile: createReference(other.client),
       });
 
-      const cron = await repo.createResource<Cron>({
-        resourceType: 'Cron',
-        active: true,
-        cronString: '* * * * *',
-        targetReference: createReference(bot),
-        onBehalfOf: createReference(otherMembership),
-      });
-
-      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
-        'Cron onBehalfOf membership belongs to a different project'
-      );
+      await expect(
+        repo.createResource<Cron>({ ...validCron(), onBehalfOf: createReference(otherMembership) })
+      ).rejects.toThrow(`Cannot resolve 'ProjectMembership/${otherMembership.id}'`);
     }));
 
-  test('execBot rejects a target bot in another project', () =>
+  test('Rejects a target bot in an unlinked project', () =>
     withTestContext(async () => {
       const other = await createTestProject({ withClient: true, project: { features: ['cron'] } });
       const otherRepo = new Repository({
@@ -576,17 +578,199 @@ describe('Cron resource', () => {
       });
       const otherBot = await otherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'other-project-bot' });
 
-      const cron = await repo.createResource<Cron>({
-        resourceType: 'Cron',
-        active: true,
-        onBehalfOf: createReference(botMembership),
-        cronString: '* * * * *',
-        targetReference: createReference(otherBot),
+      await expect(
+        repo.createResource<Cron>({ ...validCron(), targetReference: createReference(otherBot) })
+      ).rejects.toThrow(`Cannot resolve 'Bot/${otherBot.id}'`);
+    }));
+
+  test('A Cron rejected on write schedules nothing', () =>
+    withTestContext(async () => {
+      const queue = getCronQueue() as any;
+      queue.upsertJobScheduler.mockClear();
+
+      const other = await createTestProject({ withClient: true });
+      const otherRepo = new Repository({
+        extendedMode: true,
+        projects: [other.project],
+        author: createReference(other.client),
+      });
+      const otherBot = await otherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'never-scheduled' });
+
+      await expect(
+        repo.createResource<Cron>({ ...validCron(), targetReference: createReference(otherBot) })
+      ).rejects.toThrow('Cannot resolve');
+
+      // Failing the write is what keeps an unrunnable job off the scheduler entirely
+      expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
+    }));
+});
+
+/*
+ * The marketplace shape the Cron resource exists for: a shared project publishes a bot, and each
+ * customer project links to it. The bot crosses that link; the identity the run assumes never does.
+ */
+describe('Cron across linked projects', () => {
+  let systemRepo: SystemRepository;
+  let sharedProject: WithId<Project>;
+  let sharedBot: WithId<Bot>;
+  let customerProject: WithId<Project>;
+  let customerRepo: Repository;
+  let customerMembership: WithId<ProjectMembership>;
+
+  // Mirrors the repo `getRepoForLogin` builds for a project that links another
+  function customerRepoFor(customer: TestProjectResult<{ withClient: true }>, linked: WithId<Project>): Repository {
+    return new Repository({
+      extendedMode: true,
+      strictMode: true,
+      projects: [customer.project, linked],
+      currentProject: customer.project,
+      author: createReference(customer.client),
+    });
+  }
+
+  async function linkedCustomer(
+    linked: WithId<Project>
+  ): Promise<{ project: WithId<Project>; repo: Repository; membership: WithId<ProjectMembership> }> {
+    const customer = await createTestProject({
+      withClient: true,
+      project: { features: ['cron'], link: [{ project: createReference(linked) }] },
+    });
+    const repo = customerRepoFor(customer, linked);
+    const membership = await withTestContext(() =>
+      systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(customer.project),
+        user: createReference(sharedBot),
+        profile: createReference(sharedBot),
+      })
+    );
+    return { project: customer.project, repo, membership };
+  }
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initAppServices(config);
+
+    const shared = await createTestProject({ withClient: true });
+    sharedProject = shared.project;
+    const sharedRepo = new Repository({
+      extendedMode: true,
+      projects: [shared.project],
+      author: createReference(shared.client),
+    });
+    systemRepo = sharedRepo.getSystemRepo();
+    sharedBot = await withTestContext(() =>
+      sharedRepo.createResource<Bot>({ resourceType: 'Bot', name: 'marketplace-bot' })
+    );
+
+    const customer = await linkedCustomer(sharedProject);
+    customerProject = customer.project;
+    customerRepo = customer.repo;
+    customerMembership = customer.membership;
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  function validCron(): Cron {
+    return {
+      resourceType: 'Cron',
+      active: true,
+      cronString: '* * * * *',
+      onBehalfOf: createReference(customerMembership),
+      targetReference: createReference(sharedBot),
+    };
+  }
+
+  test('Runs a linked bot under the customer membership', () =>
+    withTestContext(async () => {
+      const cron = await customerRepo.createResource<Cron>(validCron());
+
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      expect(executeBotSpy).toHaveBeenCalledTimes(1);
+      const args = executeBotSpy.mock.calls[0][0];
+      // The bot is the shared project's code, run with the customer's authority
+      expect(args.bot.id).toStrictEqual(sharedBot.id);
+      expect(args.bot.meta?.project).toStrictEqual(sharedProject.id);
+      expect(args.runAs.id).toStrictEqual(customerMembership.id);
+      expect(resolveId(args.runAs.project)).toStrictEqual(customerProject.id);
+      executeBotSpy.mockRestore();
+    }));
+
+  test('Rejects an onBehalfOf membership in the linked project', () =>
+    withTestContext(async () => {
+      // ProjectMembership never crosses a link, so the access policy a run assumes cannot either
+      const sharedMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(sharedProject),
+        user: createReference(sharedBot),
+        profile: createReference(sharedBot),
       });
 
-      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
-        'Cron target bot belongs to a different project'
-      );
+      await expect(
+        customerRepo.createResource<Cron>({ ...validCron(), onBehalfOf: createReference(sharedMembership) })
+      ).rejects.toThrow(`Cannot resolve 'ProjectMembership/${sharedMembership.id}'`);
+    }));
+
+  test('Rejects a linked bot when the project does not export Bot', () =>
+    withTestContext(async () => {
+      const closed = await createTestProject({ withClient: true, project: { exportedResourceType: ['Patient'] } });
+      const closedRepo = new Repository({
+        extendedMode: true,
+        projects: [closed.project],
+        author: createReference(closed.client),
+      });
+      const closedBot = await closedRepo.createResource<Bot>({ resourceType: 'Bot', name: 'unexported-bot' });
+
+      const customer = await createTestProject({
+        withClient: true,
+        project: { features: ['cron'], link: [{ project: createReference(closed.project) }] },
+      });
+      const repo = customerRepoFor(customer, closed.project);
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(customer.project),
+        user: createReference(closedBot),
+        profile: createReference(closedBot),
+      });
+
+      await expect(
+        repo.createResource<Cron>({
+          resourceType: 'Cron',
+          active: true,
+          cronString: '* * * * *',
+          onBehalfOf: createReference(membership),
+          targetReference: createReference(closedBot),
+        })
+      ).rejects.toThrow(`Cannot resolve 'Bot/${closedBot.id}'`);
+    }));
+
+  test('Unregisters the job when the link is revoked after the Cron was written', () =>
+    withTestContext(async () => {
+      const customer = await linkedCustomer(sharedProject);
+      const cron = await customer.repo.createResource<Cron>({
+        resourceType: 'Cron',
+        active: true,
+        cronString: '* * * * *',
+        onBehalfOf: createReference(customer.membership),
+        targetReference: createReference(sharedBot),
+      });
+
+      // Only a super admin can change link, and nothing re-validates existing Crons when they do
+      await systemRepo.updateResource<Project>({ ...customer.project, link: undefined });
+
+      const queue = getCronQueue() as any;
+      queue.removeJobScheduler.mockClear();
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      expect(executeBotSpy).not.toHaveBeenCalled();
+      expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
+      executeBotSpy.mockRestore();
     }));
 });
 

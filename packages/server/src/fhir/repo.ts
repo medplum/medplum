@@ -285,6 +285,47 @@ function addSyntheticR4ProjectIfMissing(context: RepositoryContext): void {
 }
 
 /**
+ * Returns the project IDs a caller may read for the given resource type.
+ *
+ * Linked projects are readable only when they export the resource type, and project admin
+ * resource types never cross a link at all.
+ * @param projects - Projects the caller may access; the first is the caller's own.
+ * @param currentProject - The caller's current project, if any.
+ * @param resourceType - The resource type being read.
+ * @returns The permitted project IDs, or undefined if all projects are permitted.
+ */
+export function getPermittedProjectIds(
+  projects: WithId<Project>[] | undefined,
+  currentProject: WithId<Project> | undefined,
+  resourceType: string
+): string[] | undefined {
+  if (!projects?.length) {
+    // The caller is system-level, so all projects are permitted.
+    return undefined;
+  }
+
+  const projectIds = [projects[0].id]; // Always include the first project
+
+  if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
+    // If the resource type is a project admin resource, only include the current project (the first project)
+    return projectIds;
+  }
+
+  for (let i = 1; i < projects.length; i++) {
+    const project = projects[i];
+    if (
+      resourceType === 'Project' || // When searching for projects, include all projects
+      project.id === currentProject?.id || // Always include the current project (usually the same as the first project)
+      !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
+      project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
+    ) {
+      projectIds.push(project.id);
+    }
+  }
+  return projectIds;
+}
+
+/**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
@@ -1799,30 +1840,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @returns The permitted project IDs or undefined if all projects are permitted
    */
   private getPermittedProjectIds(resourceType: string): string[] | undefined {
-    if (!this.context.projects?.length) {
-      // The repository is system-level, so all projects are permitted.
-      return undefined;
-    }
-
-    const projectIds = [this.context.projects[0].id]; // Always include the first project
-
-    if (resourceType !== 'Project' && projectAdminResourceTypes.includes(resourceType)) {
-      // If the resource type is a project admin resource, only include the current project (the first project)
-      return projectIds;
-    }
-
-    for (let i = 1; i < this.context.projects.length; i++) {
-      const project = this.context.projects[i];
-      if (
-        resourceType === 'Project' || // When searching for projects, include all projects
-        project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
-        !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
-        project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
-      ) {
-        projectIds.push(project.id);
-      }
-    }
-    return projectIds;
+    return getPermittedProjectIds(this.context.projects, this.context.currentProject, resourceType);
   }
 
   /**
