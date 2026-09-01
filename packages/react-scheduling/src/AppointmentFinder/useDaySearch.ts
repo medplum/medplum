@@ -91,21 +91,14 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const windowError = getFindWindowError(daySearch.range);
 
-  // Gated here rather than by the caller, which cannot know the window is unanswerable
-  // until this hook has said so.
+  const dayCount = useMemo(() => enumerateDateRange(daySearch.range).length, [daySearch.range]);
+
   const search = useProposedAppointments({
     service,
-    combinations: windowError ? [] : combinations,
+    combinations,
     range: daySearch.range,
-    count: TIMES_PER_DAY * enumerateDateRange(daySearch.range).length,
+    count: TIMES_PER_DAY * dayCount,
   });
-
-  // While a further window is loading, `search.appointments` is that window's
-  // in-flight result, not yet part of `found`.
-  const times = useMemo(
-    () => (search.loading ? daySearch.found : [...daySearch.found, ...search.appointments]),
-    [search.loading, search.appointments, daySearch.found]
-  );
 
   const shown = useMemo(
     () => ({ start: daySearch.first.start, end: daySearch.range.end }),
@@ -113,18 +106,21 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   );
 
   // Passing `shown` lists empty days too, so a day that came back with nothing still
-  // shows up rather than looking like nobody asked about it.
-  const days = useMemo(() => groupAppointmentsByDay(times, timezone, shown), [times, timezone, shown]);
-
-  const chooseDay = useCallback((date: Date): void => {
-    setDaySearch(openDaySearch(date));
-    onDaysChangedRef.current?.();
-  }, []);
+  // shows up rather than looking like nobody asked about it. While a further window is
+  // loading, `search.appointments` is that window's in-flight result, not yet part of
+  // `found`.
+  const { days, anyTimes } = useMemo(() => {
+    const times = search.loading ? daySearch.found : [...daySearch.found, ...search.appointments];
+    const grouped = groupAppointmentsByDay(times, timezone, shown);
+    return { days: grouped, anyTimes: grouped.some((day) => day.groups.length > 0) };
+  }, [search.loading, search.appointments, daySearch.found, timezone, shown]);
 
   const chooseRange = useCallback((start: Date, end: Date): void => {
     setDaySearch(openDaySearch(start, end));
     onDaysChangedRef.current?.();
   }, []);
+
+  const chooseDay = useCallback((date: Date): void => chooseRange(date, date), [chooseRange]);
 
   // `search.appointments` is the settled result of the current window rather than an
   // in-flight one, because the control that calls this is disabled while `loading`.
@@ -133,7 +129,6 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
       first: previous.first,
       range: nextWindow(previous.range),
       found: [...previous.found, ...search.appointments],
-      extended: true,
     }));
   }, [search.appointments]);
 
@@ -144,7 +139,6 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
       first: previous.first,
       range: previous.first,
       found: [],
-      extended: false,
     }));
   }, []);
 
@@ -154,9 +148,10 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     // marked as the one picked once "Show more days" has widened what is around it.
     picked: isSameDay(daySearch.first.start, daySearch.first.end) ? daySearch.first.start : undefined,
     days,
-    anyTimes: days.some((day) => day.groups.length > 0),
-    // A spinner rather than empty days: only while the first window is still out.
-    pending: search.loading && !daySearch.extended,
+    anyTimes,
+    // A spinner rather than empty days: only while the first window is still out, i.e.
+    // `range` hasn't yet been extended past `first`.
+    pending: search.loading && daySearch.range === daySearch.first,
     loading: search.loading,
     error: search.error,
     windowError,
@@ -175,8 +170,6 @@ interface DaySearch {
   readonly range: DateTimeRange;
   /** Times the earlier windows offered, kept on screen while a further one is out. */
   readonly found: readonly Appointment[];
-  /** Whether days beyond the first window have been asked for. */
-  readonly extended: boolean;
 }
 
 /**
@@ -203,7 +196,7 @@ function floorToNow(date: Date): Date {
 function openDaySearch(start: Date, end: Date = start): DaySearch {
   const from = floorToNow(start);
   const window = { start: from, end: endOfDay(end > from ? end : from) };
-  return { first: window, range: window, found: [], extended: false };
+  return { first: window, range: window, found: [] };
 }
 
 /**

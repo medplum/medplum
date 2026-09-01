@@ -7,6 +7,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
+import { getFindWindowError } from './AppointmentFinder.times';
 
 /** `$find`'s own default page size, applied per combination. */
 const DEFAULT_COUNT = 20;
@@ -54,7 +55,7 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
   const { start, end } = range;
   const serviceReference = service && getReferenceString(service);
   const urls =
-    serviceReference && start && end
+    serviceReference && start && end && !getFindWindowError(range)
       ? combinations.map((combination) => buildFindUrl(medplum, serviceReference, combination, start, end, count))
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
