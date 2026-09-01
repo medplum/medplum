@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 import {
   formatPatientPageTabUrl,
   getPatientPageTabOrThrow,
+  getPatientPageTabs,
   PatientPageTabs,
   patientPathPrefix,
   prependPatientPath,
@@ -163,6 +164,7 @@ describe('PatientPage.utils', () => {
         'dosespot',
         'scriptsure',
         'export',
+        'hie-import',
       ];
       for (const tabId of tabIds) {
         const tab = getPatientPageTabOrThrow(tabId);
@@ -194,6 +196,7 @@ describe('PatientPage.utils', () => {
       expect(tabIds).toContain('dosespot');
       expect(tabIds).toContain('scriptsure');
       expect(tabIds).toContain('export');
+      expect(tabIds).toContain('hie-import');
     });
 
     test('all tabs have required properties', () => {
@@ -226,6 +229,22 @@ describe('PatientPage.utils', () => {
       expect(tasksTab).toBeDefined();
       expect(tasksTab?.url).toBe('Task');
       expect(tasksTab?.label).toBe('Tasks');
+    });
+
+    test('places HIE Import immediately after Export', () => {
+      const exportIndex = PatientPageTabs.findIndex((tab) => tab.id === 'export');
+      expect(PatientPageTabs[exportIndex + 1]).toMatchObject({
+        id: 'hie-import',
+        url: 'hie-import',
+        label: 'HIE Import',
+      });
+    });
+
+    test('only exposes HIE Import when the eligibility check grants access', () => {
+      expect(getPatientPageTabs(undefined).some((tab) => tab.id === 'hie-import')).toBe(false);
+      expect(getPatientPageTabs(undefined, { hasHieImportAccess: true }).some((tab) => tab.id === 'hie-import')).toBe(
+        true
+      );
     });
   });
 });
