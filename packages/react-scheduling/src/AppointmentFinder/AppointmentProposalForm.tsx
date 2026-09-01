@@ -27,22 +27,11 @@ import type { SchedulingRole } from './AppointmentFinder.roles';
 import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
-import {
-  addDays,
-  endOfDay,
-  enumerateDateRange,
-  formatDateRange,
-  formatDayLabel,
-  getDurationMinutes,
-  getFindWindowError,
-  groupAppointmentsByDay,
-  isSameDay,
-} from './AppointmentFinder.times';
+import { formatDateRange, formatDayLabel, getDurationMinutes } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
-import { useProposedAppointments } from './useProposedAppointments';
-import type { DateTimeRange } from '../types';
+import { useDaySearch } from './useDaySearch';
 
 // Excludes what a room is rather than admitting what a site is: `physicalType` is
 // optional, so `physical-type=si,bu` would hide a Location that never declared one.
@@ -55,11 +44,6 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
-
-const MORE_DAYS = 2;
-
-// Generous heuristic for how many time results might be returned for a given day.
-const TIMES_PER_DAY = 50;
 
 // Shown beneath the calendar, since dragging or shift-clicking leaves no visible mark.
 const DAY_GESTURE_HINT = 'drag or shift-click to search more days';
@@ -148,7 +132,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>({});
-  const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
@@ -162,7 +145,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
-  const windowError = getFindWindowError(daySearch.range);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -170,17 +152,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // Nothing is searched until the time search is open, so the answers above cost no
   // request per keystroke.
-  const combinations = useMemo(
-    () => (searching && !windowError ? getActorCombinations(selections) : []),
-    [searching, windowError, selections]
-  );
-
-  const search = useProposedAppointments({
-    service,
-    combinations,
-    range: daySearch.range,
-    count: TIMES_PER_DAY * enumerateDateRange(daySearch.range).length,
-  });
+  const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
   // The first actor's schedule answers for all of them: every actor in one search
   // shares the scheduling parameters, or `$find` rejects the request.
@@ -189,30 +161,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
   }, [service, selections]);
 
-  // While a further window is loading, `search.appointments` is that window's
-  // in-flight result, not yet part of `found`.
-  const times = useMemo(
-    () => (search.loading ? daySearch.found : [...daySearch.found, ...search.appointments]),
-    [search.loading, search.appointments, daySearch.found]
-  );
+  // A proposal carries the Slots it was found for, so it cannot outlive the days it
+  // was offered from.
+  const clearChosen = useCallback((): void => setChosen(undefined), []);
 
-  const shownDays = useMemo(
-    () => ({ start: daySearch.first.start, end: daySearch.range.end }),
-    [daySearch.first.start, daySearch.range.end]
-  );
-
-  // Read off the first window rather than the days on show, so a day picked stays marked
-  // as the one picked once "Show more days" has widened what is on show around it.
-  const picked = getPickedDay(daySearch);
-
-  // Passing shownDays lists empty days too, so a day that came back with nothing still
-  // shows up rather than looking like nobody asked about it.
-  const days = useMemo(() => groupAppointmentsByDay(times, timezone, shownDays), [times, timezone, shownDays]);
-
-  const anyTimes = days.some((day) => day.groups.length > 0);
-
-  // A spinner rather than empty days: only while the first window is still out.
-  const pending = search.loading && !daySearch.extended;
+  const daySearch = useDaySearch({ service, combinations, timezone, defaultStart, onDaysChanged: clearChosen });
+  const { reset: resetDaySearch } = daySearch;
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
@@ -245,14 +199,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setFinding(!finding);
   }
 
-  const chooseResources = useCallback((update: (selections: ActorSelections) => ActorSelections): void => {
-    setSelections(update);
-    // A chosen time is a proposal carrying the Slots it was found for. Booked after
-    // a resource changes it would hold whoever is named inside the proposal, and
-    // `$book` cannot catch that: the proposal is internally consistent.
-    setChosen(undefined);
-    setDaySearch(resetDaySearch);
-  }, []);
+  const chooseResources = useCallback(
+    (update: (selections: ActorSelections) => ActorSelections): void => {
+      setSelections(update);
+      // A chosen time is a proposal carrying the Slots it was found for. Booked after
+      // a resource changes it would hold whoever is named inside the proposal, and
+      // `$book` cannot catch that: the proposal is internally consistent.
+      setChosen(undefined);
+      resetDaySearch();
+    },
+    [resetDaySearch]
+  );
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
@@ -280,31 +237,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setSelections({});
     setChosen(undefined);
     setRoleFieldsKey((key) => key + 1);
-    setDaySearch(resetDaySearch);
-  }
-
-  function chooseDay(date: Date): void {
-    setDaySearch(openDaySearch(date));
-    setChosen(undefined);
-  }
-
-  // Held stable, unlike `chooseDay`: the calendar listens for a drag's end on the
-  // window for as long as it's under way, and re-subscribes whenever this changes.
-  const chooseRange = useCallback((start: Date, end: Date): void => {
-    setDaySearch(openDaySearch(start, end));
-    setChosen(undefined);
-  }, []);
-
-  // The button that calls this is `loading={search.loading}` and Mantine-disabled
-  // while loading, so `search.appointments` here is always the settled result of
-  // the current window, never an in-flight or stale one.
-  function showMoreDays(): void {
-    setDaySearch((previous) => ({
-      ...previous,
-      range: nextWindow(previous.range),
-      found: [...previous.found, ...search.appointments],
-      extended: true,
-    }));
+    resetDaySearch();
   }
 
   // The two answers a written booking can still be changed by. Everything else
@@ -388,16 +321,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              selected={picked}
-              range={shownDays}
+              selected={daySearch.picked}
+              range={daySearch.shown}
               onChangeMonth={setMonth}
-              onClick={chooseDay}
-              onSelectRange={chooseRange}
+              onClick={daySearch.chooseDay}
+              onSelectRange={daySearch.chooseRange}
             />
             <Text size="xs" c="dimmed">
-              {getSearchedDaysHint(shownDays)}
+              {getSearchedDaysHint(daySearch.shown)}
             </Text>
-            {windowError && <Alert color="yellow">{windowError}</Alert>}
+            {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
         )}
 
@@ -429,11 +362,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
       {searching && (
         <Stack className={classes.results} gap="lg">
-          {pending && <Loader size="sm" />}
-          {search.error && <Alert color="red">{normalizeErrorString(search.error)}</Alert>}
-          {!pending &&
-            anyTimes &&
-            days.map((day) => (
+          {daySearch.pending && <Loader size="sm" />}
+          {daySearch.error && <Alert color="red">{normalizeErrorString(daySearch.error)}</Alert>}
+          {!daySearch.pending &&
+            daySearch.anyTimes &&
+            daySearch.days.map((day) => (
               <AppointmentDayTimes
                 key={day.key}
                 date={day.date}
@@ -443,14 +376,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 onSelectAppointment={chooseTime}
               />
             ))}
-          {!pending && !anyTimes && !search.error && !windowError && (
+          {!daySearch.pending && !daySearch.anyTimes && !daySearch.error && !daySearch.windowError && (
             <Text c="dimmed" ta="center">
               No times are available for this selection.
             </Text>
           )}
-          {!pending && !search.error && !windowError && (
+          {!daySearch.pending && !daySearch.error && !daySearch.windowError && (
             // No signal for how far ahead there's anything to find, so this has no end state.
-            <Button variant="subtle" loading={search.loading} onClick={showMoreDays}>
+            <Button variant="subtle" loading={daySearch.loading} onClick={daySearch.showMoreDays}>
               Show more days
             </Button>
           )}
@@ -649,38 +582,6 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
   );
 }
 
-/** The days on offer, and the times the ones already answered came back with. */
-interface DaySearch {
-  /** The window the search opened on, which is what putting the added days away goes back to. */
-  readonly first: DateTimeRange;
-  /** The days being asked about now, which is the newest window alone. Both ends closed, as `$find` requires. */
-  readonly range: DateTimeRange;
-  /** Times the earlier windows offered, kept on screen while a further one is out. */
-  readonly found: readonly Appointment[];
-  /** Whether days beyond the first window have been asked for. */
-  readonly extended: boolean;
-}
-
-function floorToNow(date: Date): Date {
-  const now = new Date();
-  return date > now ? date : now;
-}
-
-/**
- * Opens the search on a stretch of days, asking about all of them at once.
- *
- * A day picked on its own is a stretch of one, so a click and a drag open the same way.
- *
- * @param start - Any instant during the first day of the stretch.
- * @param end - Any instant during its last day. Defaults to the first day.
- * @returns The first window, with nothing found yet.
- */
-function openDaySearch(start: Date, end: Date = start): DaySearch {
-  const from = floorToNow(start);
-  const window = { start: from, end: endOfDay(end > from ? end : from) };
-  return { first: window, range: window, found: [], extended: false };
-}
-
 /**
  * Reads the interval a proposal runs over.
  *
@@ -692,39 +593,6 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
     return undefined;
   }
   return { start: new Date(appointment.start), end: new Date(appointment.end) };
-}
-
-/**
- * Returns the day picked, when a day was picked rather than a stretch of them.
- *
- * A one-day first window means a click: `CalendarDateInput` only reports a range once a
- * drag has crossed a day, so a drag that stayed put arrives as an ordinary click.
- *
- * @param search - The day search as it stands.
- * @returns The day picked, or undefined when a stretch of days was picked instead.
- */
-function getPickedDay(search: DaySearch): Date | undefined {
-  return isSameDay(search.first.start, search.first.end) ? search.first.start : undefined;
-}
-
-/**
- * Moves the search on to the days after the ones already asked about.
- * @param range - The window last asked about.
- * @returns The window following it, opening at midnight of the next day.
- */
-function nextWindow(range: DateTimeRange): DateTimeRange {
-  const next = addDays(range.end, 1);
-  const start = new Date(next.getFullYear(), next.getMonth(), next.getDate());
-  return { start, end: endOfDay(addDays(start, MORE_DAYS - 1)) };
-}
-
-/**
- * Puts the added days away, for an answer that changes what every day offers.
- * @param previous - The day search as it stands.
- * @returns The day search, back to its first window.
- */
-function resetDaySearch(previous: DaySearch): DaySearch {
-  return { first: previous.first, range: previous.first, found: [], extended: false };
 }
 
 /**
