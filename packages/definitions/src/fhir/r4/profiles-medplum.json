@@ -10857,8 +10857,8 @@
             "constraint" : [{
               "key" : "cron-3",
               "severity" : "error",
-              "human" : "A parameter must have one and only one of (value, resource, part)",
-              "expression" : "(part.exists() and value.empty() and resource.empty()) or (part.empty() and (value.exists() xor resource.exists()))"
+              "human" : "A parameter must have one and only one of (value, resource)",
+              "expression" : "value.exists() xor resource.exists()"
             }]
           },
           {
