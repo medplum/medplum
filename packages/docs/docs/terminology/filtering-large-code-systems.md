@@ -9,7 +9,7 @@ A scoped `ValueSet` fixes this. This guide covers the common case: filtering a `
 code system's data but can't modify the `CodeSystem` resource itself. Everything below works through
 `$lookup` and `ValueSet.compose.filter`, without needing write access.
 
-(If you're defining your own local codes instead, see [Local Codes](/docs/terminology/local-codes).)
+If you're defining your own local codes instead, see [Local Codes](/docs/terminology/local-codes).
 
 ## Step 1: Understand the code system
 
