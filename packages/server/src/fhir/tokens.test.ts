@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED } from '@medplum/core';
 import type {
+  AccessPolicy,
   Bundle,
   Condition,
   Identifier,
@@ -90,6 +91,30 @@ test('Identifier', () =>
       ],
     });
     expect(badTextResult.entry?.length).toStrictEqual(0);
+  }));
+
+test('AccessPolicy identifier', () =>
+  withTestContext(async () => {
+    const system = 'https://example.com/access-policies';
+    const value = randomUUID();
+    const policy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      identifier: [{ system, value }],
+      resource: [{ resourceType: '*' }],
+    });
+
+    const searchResult = await systemRepo.search<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: `${system}|${value}`,
+        },
+      ],
+    });
+    expect(searchResult.entry?.length).toStrictEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(policy.id);
   }));
 
 test.each(TokenQueryOperators)('%s with empty value does not throw errors', async (operator) => {

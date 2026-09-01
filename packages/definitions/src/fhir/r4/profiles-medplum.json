@@ -3993,6 +3993,22 @@
             }]
           },
           {
+            "id" : "AccessPolicy.identifier",
+            "path" : "AccessPolicy.identifier",
+            "short" : "An identifier for this access policy",
+            "definition" : "An identifier for this access policy.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "AccessPolicy.name",
             "path" : "AccessPolicy.name",
             "definition" : "A name associated with the AccessPolicy.",

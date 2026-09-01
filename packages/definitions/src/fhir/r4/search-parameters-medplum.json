@@ -556,6 +556,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AccessPolicy-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AccessPolicy-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/AccessPolicy-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the access policy",
+        "code": "identifier",
+        "base": ["AccessPolicy"],
+        "type": "token",
+        "expression": "AccessPolicy.identifier"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/AccessPolicy-name",
       "resource": {
         "resourceType": "SearchParameter",

@@ -62673,6 +62673,13 @@
           },
           "type": "array"
         },
+        "identifier": {
+          "description": "An identifier for this access policy.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
         "name": {
           "description": "A name associated with the AccessPolicy.",
           "$ref": "#/definitions/string"
