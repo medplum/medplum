@@ -667,5 +667,4 @@ describe('New user', () => {
     expect(res.body.code).toBeUndefined();
     expect(res.body.emailVerificationRequired).toBe(true);
   });
-
 });
