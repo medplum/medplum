@@ -455,7 +455,7 @@ describe('AppointmentProposalForm', () => {
       expect(screen.getAllByText('No times are offered on this day.')).toHaveLength(2);
     });
 
-    test('Marks the days on show against the calendar, the picked day apart', async () => {
+    test('Marks the days on show against the calendar, widening the range as it grows', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
@@ -471,9 +471,10 @@ describe('AppointmentProposalForm', () => {
       await waitFor(() => expect(dayCell('18').closest('td')?.className).toContain('inRange'));
       expect(dayCell('19').closest('td')?.className).toContain('inRange');
       expect(dayCell('20').closest('td')?.className).not.toContain('inRange');
-      // The day picked keeps its own mark, rather than the widened window taking it over.
+      // "Show more days" widens the range on show, so its new far end is marked
+      // too, the same as the day first picked.
       expect(dayCell('17').className).toContain('selected');
-      expect(dayCell('19').className).not.toContain('selected');
+      expect(dayCell('19').className).toContain('selected');
     });
 
     test('Puts the added days away when the named resources change', async () => {

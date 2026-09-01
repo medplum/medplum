@@ -199,10 +199,10 @@ function toDays(range: DayRange): DayRange {
  * @returns True when the day is one the calendar is anchored on.
  */
 function isAnchor(date: Date, range: DayRange, selected: Date | undefined): boolean {
-  if (selected) {
-    return isSameDay(date, selected);
+  if (range && !isSameDay(range.start, range.end)) {
+    return isSameDay(date, range.start) || isSameDay(date, range.end);
   }
-  return !!range && (isSameDay(date, range.start) || isSameDay(date, range.end));
+  return !!selected && isSameDay(date, selected);
 }
 
 /**
@@ -213,10 +213,10 @@ function isAnchor(date: Date, range: DayRange, selected: Date | undefined): bool
  * @returns True when the day falls within what is chosen.
  */
 function isChosen(date: Date, range: DayRange, selected: Date | undefined): boolean {
-  if (selected) {
-    return isSameDay(date, selected);
+  if (range && !isSameDay(range.start, range.end)) {
+    return date >= range.start && date <= range.end;
   }
-  return !!range && date >= range.start && date <= range.end;
+  return !!selected && isSameDay(date, selected);
 }
 
 /**

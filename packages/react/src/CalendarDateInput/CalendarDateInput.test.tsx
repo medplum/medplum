@@ -154,7 +154,7 @@ describe('CalendarDateInput', () => {
     expect(screen.getByRole('button', { name: '10' }).className).toContain('available');
   });
 
-  test('Marks the day named rather than the ends when a range is on show around it', () => {
+  test('Marks both ends of the range even when a day within it is named selected', () => {
     const month = getStartMonth();
 
     render(
@@ -169,11 +169,12 @@ describe('CalendarDateInput', () => {
       />
     );
 
-    // Only the day named was picked; the far end of the band is not itself selectable.
+    // A multi-day range on show always marks both its ends, whether or not one of
+    // them also happens to be named as the day picked.
     expect(screen.getByRole('button', { name: '10' }).className).toContain('selected');
-    expect(screen.getByRole('button', { name: '12' }).className).not.toContain('selected');
+    expect(screen.getByRole('button', { name: '12' }).className).toContain('selected');
     expect(cellOf('12').className).toContain('inRange');
-    expect(screen.getByRole('button', { name: '12' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: '12' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('Bands a range whose ends carry a time of day', () => {
