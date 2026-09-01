@@ -2421,7 +2421,7 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if ((isSystem && isReadOnlyAction(subtype)) || resourceType === 'AuditEvent') {
+    if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
       // Don't log system read or audit events
       return;
     }
