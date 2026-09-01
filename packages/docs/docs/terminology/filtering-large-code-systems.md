@@ -16,7 +16,7 @@ If you're defining your own local codes instead, see [Local Codes](/docs/termino
 ### Hierarchy
 
 Check `CodeSystem.hierarchyMeaning`. Most clinical code systems (SNOMED CT, and most `is-a` trees) use
-`"is-a"` — an `is-a` or `descendent-of` filter walks the parent/child tree. Some code systems, like LOINC, have
+`"is-a"` — an `is-a` or `descendent-of` filter selects codes that are children of some parent code. Some code systems, like LOINC, have
 no real hierarchy. For those, filter on properties or list codes explicitly instead.
 
 ### Term types
