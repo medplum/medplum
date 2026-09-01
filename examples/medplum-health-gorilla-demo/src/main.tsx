@@ -56,7 +56,7 @@ function setEnvironmentFavicon(): void {
   }
   const isLocal =
     /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(hostname) ||
-    hostname.startsWith("192.168.") ||
+    hostname.startsWith('192.168.') ||
     /\.local(host)?$/.test(hostname);
   document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.remove();
   const link = document.createElement('link');
