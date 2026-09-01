@@ -28,8 +28,8 @@ the exchange network, so the workflow is useful to both your team and the broade
 
 :::info[At a glance]
 
-- **Retrieve outside records:** request a patient's longitudinal record and bring supported FHIR R4
-  resources into the Medplum chart.
+- **Retrieve outside records:** import every supported FHIR R4 record automatically or review a
+  selective inventory before writing clinical data.
 - **Review data in context:** keep imported problems, medications, allergies, results, procedures, and
   notes connected to the existing Medplum patient.
 - **Share new care data:** send customer-authored encounter data back through Health Gorilla.
@@ -42,16 +42,21 @@ the exchange network, so the workflow is useful to both your team and the broade
 
 ```mermaid
 flowchart LR
-    A["Clinician requests outside records"] --> B["Patient360 network retrieval"]
-    B --> C["Supported FHIR resources imported into Medplum"]
-    C --> D["Clinician reviews and reconciles the chart"]
-    D --> E["Customer-authored encounter data shared back"]
-    E --> F["Updated longitudinal record available to the network"]
+    A["Clinician chooses import-all or selective"] --> B["Patient360 network retrieval"]
+    B --> C{"Retrieval mode"}
+    C -->|Import all| D["Supported resources imported automatically"]
+    C -->|Selective| E["Clinician reviews manifest inventory"]
+    E --> D
+    D --> F["Clinician reviews and reconciles the chart"]
+    F --> G["Customer-authored encounter data shared back"]
+    G --> H["Updated longitudinal record available to the network"]
 ```
 
 A Patient360 retrieval is asynchronous and can take minutes or longer while connected networks prepare
 the record. Medplum tracks the request with a FHIR [`Task`](/docs/api/fhir/resources/task), prevents a
-second retrieval while one is open, and retries processing if a completion webhook is early or missed.
+second retrieval while one is processing or awaiting selective review, and retries processing if a
+callback is early or missed. Import-all completes without another user action. Selective retrieval
+stops at a versioned inventory until a clinician confirms chosen records or discards the retrieval.
 
 When results are ready, Medplum imports supported resources with their references and source identity
 preserved. Reprocessing the same result updates previously imported resources instead of creating a
@@ -76,6 +81,7 @@ is never returned to the network as though your organization authored it.
 - Incorporate external problems, medications, allergies, results, procedures, and notes into a
   longitudinal FHIR chart.
 - Pre-populate clinical review and reconciliation workflows with exchange data.
+- Review a Patient360 inventory before importing selected root records and their required dependencies.
 - Share new encounter documentation back to participating organizations.
 - Track retrieval state, imported data provenance, and share-back outcomes using FHIR resources and
   Medplum audit logs.

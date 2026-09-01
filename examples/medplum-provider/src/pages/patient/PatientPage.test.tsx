@@ -12,7 +12,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { HEALTH_GORILLA_HIE_P360_OPERATION_URL } from '../../hooks/useHealthGorillaHieImportEligibility';
+import {
+  HEALTH_GORILLA_HIE_P360_IMPORT_ALL_OPERATION_URL,
+  HEALTH_GORILLA_HIE_P360_IMPORT_SELECTIVE_OPERATION_URL,
+  HEALTH_GORILLA_HIE_P360_INGEST_SELECTED_OPERATION_URL,
+} from '../../hooks/useHealthGorillaHieImportEligibility';
 import { EditTab } from './EditTab';
 import { PatientPage } from './PatientPage';
 import { TimelineTab } from './TimelineTab';
@@ -164,26 +168,57 @@ describe('PatientPage', () => {
   });
 
   test('adds and selects HIE Import after asynchronous eligibility resolves on a deep link', async () => {
+    vi.spyOn(medplum, 'getProject').mockReturnValue({ resourceType: 'Project', id: '123' });
     const hgPatient: Patient = {
       resourceType: 'Patient',
       id: 'hg-patient',
       identifier: [{ system: HEALTH_GORILLA_SYSTEM, value: 'hg-123' }],
       name: [{ family: 'Import', given: ['Hie'] }],
     };
-    const linkedOperation: OperationDefinition = {
-      resourceType: 'OperationDefinition',
-      id: 'p360-operation',
-      url: HEALTH_GORILLA_HIE_P360_OPERATION_URL,
-      name: 'HealthGorillaPatient360Retrieval',
-      status: 'active',
-      kind: 'operation',
-      code: 'health-gorilla-hie-p360',
-      system: false,
-      type: false,
-      instance: true,
-      resource: ['Patient'],
-      meta: { project: 'linked-hie-project' },
-    };
+    const linkedOperations: OperationDefinition[] = [
+      {
+        resourceType: 'OperationDefinition',
+        id: 'p360-import-all-operation',
+        url: HEALTH_GORILLA_HIE_P360_IMPORT_ALL_OPERATION_URL,
+        name: 'HealthGorillaPatient360ImportAll',
+        status: 'active',
+        kind: 'operation',
+        code: 'health-gorilla-hie-p360-import-all',
+        system: false,
+        type: false,
+        instance: true,
+        resource: ['Patient'],
+        meta: { project: 'linked-hie-project' },
+      },
+      {
+        resourceType: 'OperationDefinition',
+        id: 'p360-import-selective-operation',
+        url: HEALTH_GORILLA_HIE_P360_IMPORT_SELECTIVE_OPERATION_URL,
+        name: 'HealthGorillaPatient360ImportSelective',
+        status: 'active',
+        kind: 'operation',
+        code: 'health-gorilla-hie-p360-import-selective',
+        system: false,
+        type: false,
+        instance: true,
+        resource: ['Patient'],
+        meta: { project: 'linked-hie-project' },
+      },
+      {
+        resourceType: 'OperationDefinition',
+        id: 'p360-ingest-selected-operation',
+        url: HEALTH_GORILLA_HIE_P360_INGEST_SELECTED_OPERATION_URL,
+        name: 'HealthGorillaPatient360IngestSelected',
+        status: 'active',
+        kind: 'operation',
+        code: 'health-gorilla-hie-p360-ingest-selected',
+        system: false,
+        type: true,
+        instance: false,
+        resource: ['Task'],
+        meta: { project: 'linked-hie-project' },
+      },
+    ];
     let resolveOperation: ((operations: OperationDefinition[]) => void) | undefined;
     const operationSearch = new Promise<OperationDefinition[]>((resolve) => {
       resolveOperation = resolve;
@@ -195,7 +230,7 @@ describe('PatientPage', () => {
 
     setup('/Patient/hg-patient/hie-import');
     expect(screen.queryByText('HIE Import')).not.toBeInTheDocument();
-    resolveOperation?.([linkedOperation]);
+    resolveOperation?.(linkedOperations);
 
     const hieTab = await screen.findByText('HIE Import');
     expect(hieTab.closest('[role="tab"]')).toHaveAttribute('aria-selected', 'true');

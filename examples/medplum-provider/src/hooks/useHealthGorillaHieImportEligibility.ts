@@ -7,9 +7,44 @@ import { HEALTH_GORILLA_SYSTEM } from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useMemo, useState } from 'react';
 
-export const HEALTH_GORILLA_HIE_P360_OPERATION_URL =
-  'https://medplum.com/fhir/OperationDefinition/health-gorilla-hie-p360';
-const HEALTH_GORILLA_HIE_P360_OPERATION_CODE = 'health-gorilla-hie-p360';
+export const HEALTH_GORILLA_HIE_P360_IMPORT_ALL_OPERATION_URL =
+  'https://medplum.com/fhir/OperationDefinition/health-gorilla-hie-p360-import-all';
+export const HEALTH_GORILLA_HIE_P360_IMPORT_SELECTIVE_OPERATION_URL =
+  'https://medplum.com/fhir/OperationDefinition/health-gorilla-hie-p360-import-selective';
+export const HEALTH_GORILLA_HIE_P360_INGEST_SELECTED_OPERATION_URL =
+  'https://medplum.com/fhir/OperationDefinition/health-gorilla-hie-p360-ingest-selected';
+
+interface RequiredHieOperation {
+  url: string;
+  code: string;
+  resourceType: 'Patient' | 'Task';
+  instance: boolean;
+  type: boolean;
+}
+
+const REQUIRED_HIE_OPERATIONS: readonly RequiredHieOperation[] = [
+  {
+    url: HEALTH_GORILLA_HIE_P360_IMPORT_ALL_OPERATION_URL,
+    code: 'health-gorilla-hie-p360-import-all',
+    resourceType: 'Patient',
+    instance: true,
+    type: false,
+  },
+  {
+    url: HEALTH_GORILLA_HIE_P360_IMPORT_SELECTIVE_OPERATION_URL,
+    code: 'health-gorilla-hie-p360-import-selective',
+    resourceType: 'Patient',
+    instance: true,
+    type: false,
+  },
+  {
+    url: HEALTH_GORILLA_HIE_P360_INGEST_SELECTED_OPERATION_URL,
+    code: 'health-gorilla-hie-p360-ingest-selected',
+    resourceType: 'Task',
+    instance: false,
+    type: true,
+  },
+];
 
 export interface HealthGorillaHieImportEligibility {
   eligible: boolean;
@@ -21,8 +56,8 @@ export interface HealthGorillaHieImportEligibility {
 /**
  * Determines whether the HIE import UI is available for a patient.
  *
- * The custom operation must be visible through a linked project. A matching
- * operation owned by the active project is deliberately not sufficient: the
+ * The custom operations must be visible through one linked project. Matching
+ * operations owned by the active project are deliberately not sufficient: the
  * shared HIE project owns the production Patient360 capability.
  *
  * @param patient - Patient whose Health Gorilla identity will be synchronized.
@@ -54,19 +89,20 @@ export function useHealthGorillaHieImportEligibility(patient: Patient | undefine
     }
 
     let cancelled = false;
-    const search = new URLSearchParams({
-      url: HEALTH_GORILLA_HIE_P360_OPERATION_URL,
-      status: 'active',
-      _count: '20',
-    });
-
-    medplum
-      .searchResources('OperationDefinition', search, { cache: 'reload' })
-      .then((operations) => {
+    Promise.all(
+      REQUIRED_HIE_OPERATIONS.map((required) =>
+        medplum.searchResources(
+          'OperationDefinition',
+          new URLSearchParams({ url: required.url, status: 'active', _count: '20' }),
+          { cache: 'reload' }
+        )
+      )
+    )
+      .then((operationSets) => {
         if (!cancelled) {
           setState({
             key: eligibilityKey,
-            eligible: operations.some((operation) => isLinkedPatientInstanceOperation(operation, activeProjectId)),
+            eligible: hasCompleteLinkedOperationSet(operationSets, activeProjectId),
             loading: false,
           });
         }
@@ -93,15 +129,30 @@ export function useHealthGorillaHieImportEligibility(patient: Patient | undefine
   return { ...state, hasHealthGorillaIdentifier };
 }
 
-function isLinkedPatientInstanceOperation(operation: OperationDefinition, activeProjectId: string): boolean {
+function hasCompleteLinkedOperationSet(operationSets: OperationDefinition[][], activeProjectId: string): boolean {
+  const eligibleProjects = operationSets.map((operations, index) => {
+    const required = REQUIRED_HIE_OPERATIONS[index];
+    return new Set(
+      operations.flatMap((operation) => {
+        const projectId = operation.meta?.project;
+        return projectId && projectId !== activeProjectId && isRequiredOperation(operation, required)
+          ? [projectId]
+          : [];
+      })
+    );
+  });
+  const first = eligibleProjects[0];
+  return !!first && [...first].some((projectId) => eligibleProjects.every((projects) => projects.has(projectId)));
+}
+
+function isRequiredOperation(operation: OperationDefinition, required: RequiredHieOperation): boolean {
   return (
-    operation.url === HEALTH_GORILLA_HIE_P360_OPERATION_URL &&
+    operation.url === required.url &&
     operation.status === 'active' &&
     operation.kind === 'operation' &&
-    operation.code === HEALTH_GORILLA_HIE_P360_OPERATION_CODE &&
-    operation.instance &&
-    operation.resource?.includes('Patient') === true &&
-    !!operation.meta?.project &&
-    operation.meta.project !== activeProjectId
+    operation.code === required.code &&
+    operation.instance === required.instance &&
+    operation.type === required.type &&
+    operation.resource?.includes(required.resourceType) === true
   );
 }

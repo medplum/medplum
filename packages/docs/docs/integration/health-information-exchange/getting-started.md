@@ -59,7 +59,8 @@ applicable vendor and network requirements.
 Medplum enables the managed integration components for your approved production environment. Together,
 your team and Medplum will confirm that:
 
-- Patient360 retrieval, completion callbacks, and scheduled recovery are enabled.
+- Both explicit Patient360 retrieval operations, the `p360-ingest-all` callback worker, selective
+  ingestion, and scheduled recovery are enabled.
 - The HIE share-back Bot is available in the customer project.
 - The project supports the transaction and scheduled-job features used by the integration.
 - The application roles that start retrievals or review imported records have the intended
@@ -113,8 +114,8 @@ Production-only availability does not mean skipping validation. Before Medplum e
 use representative FHIR data in a non-production Medplum project to:
 
 1. Confirm that your application collects the required patient matching demographics.
-2. Exercise the retrieval progress, completion, failure, and manual-review experience without making a
-   Patient360 network request.
+2. Exercise import-all progress and the selective `ready / awaiting-selection` review, confirmation,
+   discard, completion, failure, and manual-review states without making a Patient360 network request.
 3. Test each production AccessPolicy against every supported resource type the application will
    display, including standalone referenced resources.
 4. Review the proposed share-back trigger and patient-wide data scope with your clinical team.
@@ -137,17 +138,24 @@ a connectivity test.
 
 1. Confirm that onboarding, network approval, production configuration, callbacks, and recovery jobs
    are complete.
-2. Start one Patient360 retrieval for the selected patient and permitted treatment purpose.
+2. Explicitly choose import-all or selective retrieval, record a fresh treatment attestation, and start
+   one Patient360 retrieval for the selected patient.
 3. Confirm that one `in-progress` `Task` is created and that the application prevents users from
    requesting another retrieval while it remains open.
-4. Follow the callback or scheduled recovery process, then confirm the `Task` reaches `completed`.
-5. Confirm that Medplum reused the existing patient, preserved references, and added the Patient360
+4. For import-all, follow the callback or scheduled recovery process and confirm the Task reaches
+   `completed` without another user action. For selective retrieval, confirm the Task reaches
+   `ready / awaiting-selection`, review its complete manifest inventory, and submit the chosen source
+   identifiers with the exact Task version.
+5. For selective retrieval, confirm the Task moves through `in-progress / importing-selection` to
+   `completed`, and that required referenced resources are imported even when they were not selected as
+   roots.
+6. Confirm that Medplum reused the existing patient, preserved references, and added the Patient360
    provenance tag without creating duplicates.
-6. Review the imported chart, metadata-only attachments, and referenced resources using the production
+7. Review the imported chart, metadata-only attachments, and referenced resources using the production
    AccessPolicies.
-7. Run the first approved share-back for customer-authored data and review its `OperationOutcome` and
+8. Run the first approved share-back for customer-authored data and review its `OperationOutcome` and
    request archive before enabling automation.
-8. Confirm that the outgoing archive contains the intended patient history and excludes
+9. Confirm that the outgoing archive contains the intended patient history and excludes
    Patient360-sourced resources.
 
 :::info[An empty result can still be successful]
@@ -163,6 +171,12 @@ operational team will handle:
 - **Async progress:** show that a retrieval can take minutes or longer and refresh when its `Task`
   changes.
 - **Open requests:** prevent users from repeatedly starting the same billable retrieval.
+- **Explicit mode choice:** present import-all and selective retrieval as separate actions without a
+  default or preselection.
+- **Selective review:** keep every inventory checkbox unchecked initially, submit only source-reference
+  identifiers after a second confirmation, and reload the inventory after version conflicts or drift.
+- **Discard:** let authorized users cancel a ready selective retrieval while preserving its manifest on
+  the Task for audit.
 - **Clinical review:** distinguish outside records from locally authored data and route them through the
   appropriate reconciliation workflow.
 - **Metadata-only documents:** make it clear when an outside `DocumentReference` does not include the
@@ -180,6 +194,8 @@ operational team will handle:
 - [ ] Patient matching data is collected before retrieval.
 - [ ] Every user role has a tested AccessPolicy for the resources it displays.
 - [ ] The application communicates asynchronous retrieval state clearly.
+- [ ] Import-all and selective retrieval are separate actions with fresh treatment attestation.
+- [ ] Selective manifests, optimistic version checks, dependencies, and discard behavior are tested.
 - [ ] Clinical review and reconciliation ownership is defined.
 - [ ] The share-back trigger and data scope have clinical approval.
 - [ ] Pre-launch checks are complete, and the controlled production validation plan is approved.
