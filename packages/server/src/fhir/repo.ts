@@ -2402,13 +2402,14 @@ export class Repository extends FhirRepository implements Disposable {
   ): void {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
+    const resourceType = isResource(resource) ? resource?.resourceType : undefined;
 
     if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
           system: isSystem,
-          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+          resourceType,
         },
       });
     }
@@ -2420,8 +2421,8 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if (isSystem && isReadOnlyAction(subtype)) {
-      // Don't log system read events.
+    if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
+      // Don't log system read or audit events
       return;
     }
     let outcomeDesc: string | undefined = undefined;
