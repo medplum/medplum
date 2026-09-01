@@ -248,7 +248,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     // a resource changes it would hold whoever is named inside the proposal, and
     // `$book` cannot catch that: the proposal is internally consistent.
     setChosen(undefined);
-    setDaySearch(collapseDays);
+    setDaySearch(resetDaySearch);
   }, []);
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
@@ -277,7 +277,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setSelections({});
     setChosen(undefined);
     setRoleFieldsKey((key) => key + 1);
-    setDaySearch(collapseDays);
+    setDaySearch(resetDaySearch);
   }
 
   function chooseDay(date: Date): void {
@@ -292,6 +292,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setChosen(undefined);
   }, []);
 
+  // The button that calls this is `loading={search.loading}` and Mantine-disabled
+  // while loading, so `search.appointments` here is always the settled result of
+  // the current window, never an in-flight or stale one.
   function showMoreDays(): void {
     setDaySearch((previous) => ({
       ...previous,
@@ -721,8 +724,8 @@ function nextWindow(range: SearchWindow): SearchWindow {
  * @param previous - The day search as it stands.
  * @returns The day search, back to its first window.
  */
-function collapseDays(previous: DaySearch): DaySearch {
-  return previous.extended ? { ...previous, range: previous.first, found: [], extended: false } : previous;
+function resetDaySearch(previous: DaySearch): DaySearch {
+  return { picked: previous.picked, first: previous.first, range: previous.first, found: [], extended: false };
 }
 
 /**
