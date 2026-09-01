@@ -17,4 +17,6 @@ await medplum.createMedia({
     subject: { reference: `Patient/${patientId}` },
   },
 });
+// The associated Binary resource will automatically have:
+// securityContext: { reference: "Media/[media-id]" }
 // end-block createMedia
