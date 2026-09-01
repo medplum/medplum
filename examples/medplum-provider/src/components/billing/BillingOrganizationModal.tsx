@@ -9,13 +9,7 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
-import {
-  EIN_SYSTEM,
-  NPI_SYSTEM,
-  isCompleteBillingAddress,
-  isValidBillingPhone,
-  isValidNpi,
-} from '../../utils/billing';
+import { EIN_SYSTEM, NPI_SYSTEM, isCompleteBillingAddress, isValidBillingPhone, isValidNpi } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 
 export interface BillingOrganizationModalProps {
