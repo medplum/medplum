@@ -170,7 +170,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
-  const settled = !daySearch.pending && !daySearch.error && !daySearch.windowError;
+  const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
@@ -325,13 +325,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              range={daySearch.shown}
+              range={daySearch.selectedDayRange}
               onChangeMonth={setMonth}
-              onClick={daySearch.chooseDay}
-              onSelectRange={daySearch.chooseRange}
+              onClick={daySearch.chooseDayRange}
+              onSelectRange={daySearch.chooseDayRange}
             />
             <Text size="xs" c="dimmed">
-              {getSearchedDaysHint(daySearch.shown)}
+              {getSearchedDaysHint(daySearch.selectedDayRange)}
             </Text>
             {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
@@ -365,11 +365,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
       {searching && (
         <Stack className={classes.results} gap="lg">
-          {daySearch.pending && <Loader size="sm" />}
-          {daySearch.error && <Alert color="red">{normalizeErrorString(daySearch.error)}</Alert>}
-          {!daySearch.pending &&
-            daySearch.anyTimes &&
-            daySearch.days.map((day) => (
+          {daySearch.loadingFirstDays && <Loader size="sm" />}
+          {daySearch.findRequestError && <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>}
+          {!daySearch.loadingFirstDays &&
+            daySearch.hasTimes &&
+            daySearch.timeResultsByDay.map((day) => (
               <AppointmentDayTimes
                 key={day.key}
                 date={day.date}
@@ -381,13 +381,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             ))}
           {settled && (
             <>
-              {!daySearch.anyTimes && (
+              {!daySearch.hasTimes && (
                 <Text c="dimmed" ta="center">
                   No times are available for this selection.
                 </Text>
               )}
               {/* No signal for how far ahead there's anything to find, so this has no end state. */}
-              <Button variant="subtle" loading={daySearch.loading} onClick={daySearch.showMoreDays}>
+              <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
                 Show more days
               </Button>
             </>

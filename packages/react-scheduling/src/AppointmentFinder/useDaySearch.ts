@@ -30,23 +30,25 @@ export interface UseDaySearchOptions {
 
 export interface UseDaySearchResult {
   /** Every day on show, which is what the calendar marks. */
-  readonly shown: DateTimeRange;
+  readonly selectedDayRange: DateTimeRange;
   /** The days on show, grouped by day and actor set, days that offered nothing included. */
-  readonly days: readonly AppointmentDay[];
+  readonly timeResultsByDay: readonly AppointmentDay[];
   /** Whether any day on show offered a time at all. */
-  readonly anyTimes: boolean;
+  readonly hasTimes: boolean;
   /** True while the first window is out, when there is nothing yet to show. */
-  readonly pending: boolean;
-  /** True while any window is out, a further one over days already shown included. */
-  readonly loading: boolean;
-  /** Set only when every combination failed. */
-  readonly error: Error | undefined;
+  readonly loadingFirstDays: boolean;
+  /** True while a window over days beyond the ones already on show is out. */
+  readonly loadingMoreDays: boolean;
+  /** Set only when every combination's `$find` failed. */
+  readonly findRequestError: Error | undefined;
   /** A window `$find` will not answer, caught before the request is made. */
   readonly windowError: string | undefined;
-  /** Opens the search on one day. */
-  readonly chooseDay: (date: Date) => void;
-  /** Opens the search on a stretch of days, asking about all of them at once. */
-  readonly chooseRange: (start: Date, end: Date) => void;
+  /**
+   * Opens the search on a stretch of days, asking about all of them at once.
+   *
+   * A day picked on its own is a stretch of one, so a click and a drag come in the same way.
+   */
+  readonly chooseDayRange: (start: Date, end?: Date) => void;
   /** Reaches further than the days already answered, keeping them on screen. */
   readonly showMoreDays: () => void;
   /**
@@ -66,7 +68,7 @@ export interface UseDaySearchResult {
  * and the fetch have to sit together to stay honest.
  *
  * @param options - The service, actors and zone to search against, and the day to open on.
- * @returns The days on show with their times, load and error state, and the four ways in.
+ * @returns The days on show with their times, load and error state, and the three ways in.
  */
 export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   const { service, combinations, timezone, defaultStart, onDaysChanged } = options;
@@ -80,33 +82,27 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     count: TIMES_PER_DAY * getDayCount(daySearch.range.start, daySearch.range.end),
   });
 
-  const shown = useMemo(
+  const selectedDayRange = useMemo(
     () => ({ start: daySearch.first.start, end: daySearch.range.end }),
     [daySearch.first.start, daySearch.range.end]
   );
 
-  // Passing `shown` lists empty days too, so a day that came back with nothing still
-  // shows up rather than looking like nobody asked about it. While a further window is
-  // loading, `search.appointments` is that window's in-flight result, not yet part of
-  // `found`.
-  const { days, anyTimes } = useMemo(() => {
+  const { timeResultsByDay, hasTimes } = useMemo(() => {
     const times = search.loading ? daySearch.found : [...daySearch.found, ...search.appointments];
-    const grouped = groupAppointmentsByDay(times, timezone, shown);
-    return { days: grouped, anyTimes: grouped.some((day) => day.groups.length > 0) };
-  }, [search.loading, search.appointments, daySearch.found, timezone, shown]);
+    const grouped = groupAppointmentsByDay(times, timezone, selectedDayRange);
+    return { timeResultsByDay: grouped, hasTimes: grouped.some((day) => day.groups.length > 0) };
+  }, [search.loading, search.appointments, daySearch.found, timezone, selectedDayRange]);
 
-  const chooseRange = useCallback(
-    (start: Date, end: Date): void => {
+  const chooseDayRange = useCallback(
+    (start: Date, end?: Date): void => {
       setDaySearch(openDaySearch(start, end));
       onDaysChanged?.();
     },
     [onDaysChanged]
   );
 
-  const chooseDay = useCallback((date: Date): void => chooseRange(date, date), [chooseRange]);
-
   // `search.appointments` is the settled result of the current window rather than an
-  // in-flight one, because the control that calls this is disabled while `loading`.
+  // in-flight one, because the control that calls this is disabled while `loadingMoreDays`.
   const showMoreDays = useCallback((): void => {
     setDaySearch((previous) => ({
       first: previous.first,
@@ -125,18 +121,19 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     }));
   }, []);
 
+  // A spinner rather than empty days: only while the first window is still out, before
+  // "Show more days" has moved the search past it.
+  const loadingFirstDays = search.loading && daySearch.range.start.getTime() === daySearch.first.start.getTime();
+
   return {
-    shown,
-    days,
-    anyTimes,
-    // A spinner rather than empty days: only while the first window is still out, before
-    // "Show more days" has moved the search past it.
-    pending: search.loading && daySearch.range.start.getTime() === daySearch.first.start.getTime(),
-    loading: search.loading,
-    error: search.error,
+    selectedDayRange,
+    timeResultsByDay,
+    hasTimes,
+    loadingFirstDays,
+    loadingMoreDays: search.loading && !loadingFirstDays,
+    findRequestError: search.error,
     windowError: search.windowError,
-    chooseDay,
-    chooseRange,
+    chooseDayRange,
     showMoreDays,
     reset,
   };
