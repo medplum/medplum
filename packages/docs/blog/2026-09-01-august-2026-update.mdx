@@ -9,7 +9,7 @@ tags: [monthly-update]
 
 On August 1 we hosted the YC x Medplum Hackathon at the Y Combinator office in San Francisco, where 160+ hackers built on Medplum in a day. [Read the recap](/blog/yc-medplum-hackathon-2026-recap).
 
-It was a heavy month of shipping: 183 commits from 23 contributors and nine patch releases, v5.1.28 through v5.1.36.
+It was a heavy month of shipping: 198 commits from 22 contributors, with nine patch releases, v5.1.28 through v5.1.36.
 
 **[DICOM moved to Beta](/blog/dicom-beta)**, [scheduling](/blog/2026-roadmap#scheduling) got its own React package and a mountable booking workspace — the fastest path yet from empty project to a working calendar. [Terminology](/blog/terminology-2026) got its 2026 refresh with multi-language display support, and externally issued JWTs can now authenticate against a specific project rather than the whole server.
 
@@ -26,13 +26,13 @@ All of this continues to drive forward our [2026 roadmap priorities](/blog/2026-
 [Scheduling](/blog/2026-roadmap#scheduling) was the largest area of the month. The work that had been living inside the Provider App became a package of its own, and a complete booking flow was built on top of it:
 
 - **`@medplum/react-scheduling`** — A dedicated React package for scheduling UI, separate from `@medplum/react`. Scheduling components carry more domain logic than a typical component library, and they now version and ship on their own, with a Storybook section to browse them
-- **The Scheduling Workspace** — A single top-level component that mounts an entire scheduling workflow. A team that wants a working calendar can render one component rather than assembling the pieces, and it is designed as an evolving shell for our best scheduling experience rather than a fixed layout
+- **The Scheduling Workspace** — A single top-level component that mounts the booking workflow. A team that wants a working calendar can render one component rather than assembling the pieces, and it is designed as an evolving shell for our best scheduling experience rather than a fixed layout
 - **A complete booking form** — Booking now runs end to end inside the workspace: gather the criteria, [find a time](/docs/scheduling/appointment-find), attach the appointment details, and [book](/docs/scheduling/appointment-book). The supporting pieces landed alongside it — a service select component, an actor selection field with a proposed-appointments hook, and appointment time cards for a day
 - **Multi-schedule calendar** — A calendar widget that renders several schedules at once, which is how a practice with multiple practitioners or rooms actually looks at its day
 - **Availability in the calendar** — `CalendarDateInput` gained month navigation, availability marking, and range selection, and the Provider App shows an availability overlay while scheduling so open time is visible during booking rather than discovered by trial
 - **Shared primitives** — Service type utilities and scheduling duration units moved into `@medplum/core`, and `useSchedulingResources` was extracted from the Provider App, so a team building its own calendar uses the same resource loading and units the Provider App does
 
-<img src="/img/blog/2026-08-scheduling-workspace.png" alt="The Scheduling Workspace component rendering a full scheduling workflow" style={{maxHeight: '400px', maxWidth: '100%'}} />
+<img src="/img/blog/2026-08-scheduling-workspace.png" alt="The Scheduling Workspace component rendering an appointment booking workflow" style={{maxHeight: '400px', maxWidth: '100%'}} />
 
 <img src="/img/blog/2026-08-scheduling-booking-form.png" alt="Booking form inside the scheduling workspace, gathering criteria and finding a time" style={{maxHeight: '400px', maxWidth: '100%'}} />
 
@@ -47,22 +47,22 @@ All of this continues to drive forward our [2026 roadmap priorities](/blog/2026-
 - **Ingestion at volume** — Stored instances are de-duplicated, study-level aggregates are computed so a study summarizes without walking every instance, and search results paginate
 - **Bulk upload** — The [CLI](/docs/dicom/cli) uploads directories and glob patterns via STOW-RS, so an existing archive can be moved in without a per-file script
 - **On-premise ingest** — DICOMweb was added to the [Agent](/docs/dicom/agent-dimse), which is how a modality inside a hospital network reaches Medplum without exposing the server
-- **Viewing** — Studies open in the [OHIF viewer](/docs/dicom/ohif-viewer) directly from the chart
+- **Viewing** — Studies open in the [OHIF viewer](/docs/dicom/ohif-viewer)
 
 ### Provider App
 
-<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)** and <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+<img src="https://github.com/techdavidy.png" alt="David Yanez" width="50" height="50" style={{borderRadius: '50%'}} /> **[David Yanez](https://github.com/techdavidy)**
 
 The [Provider App](https://provider.medplum.com) picked up a billing surface, patient-mediated record import, and a round of interaction polish ([roadmap](/blog/2026-roadmap#provider-application)):
 
 - **Billing settings** — A billing settings area with a payer directory, behind a feature flag while it settles. Claims can carry an explicit billing provider, and eligibility checks run from the Provider App using [`CoverageEligibilityRequest/$submit`](/docs/billing/insurance-eligibility-checks) rather than a separate tool
 - **SMART Health Links** — A modal for creating and sharing [SMART Health Links](/docs/integration), plus an import page for bringing a shared record in. This is the patient-mediated exchange path: a patient hands over a link, and the record arrives in the chart
-- **Labs** — A [revoked status](https://youtu.be/evEhIeZstbY) for lab results, completed [`DiagnosticReport`](/docs/labs-imaging/results-and-review) criteria widened so more finished reports are recognized as finished, a branded PDF fallback when a lab supplies its own report layout, and `DiagnosticReportDisplay` [surfaced in encounters and tasks](https://youtu.be/LiqA9ybT_68) where the result matters
+- **Labs** — A [revoked status](https://youtu.be/evEhIeZstbY) for lab results, completed [`DiagnosticReport`](/docs/labs-imaging/results-and-review) criteria widened so more finished reports are recognized as finished, a branded PDF fallback when a lab supplies its own report layout, and `DiagnosticReportDisplay` [surfaced in encounters and tasks](https://youtu.be/LiqA9ybT_68) where the result matters ([Finn Bergquist](https://github.com/finnbergquist))
 - **Encounters** — Encounters [moved to `ResourceBoard`](https://youtu.be/ElL2Z22XATE), and encounter edits use `PATCH` instead of a full update, which avoids clobbering concurrent changes to the same encounter
 - **Quick actions** — A spotlight command surface with keyboard shortcut hints, so common actions are reachable without hunting through menus
 - **Consistent modals** — A shared modal component adopted across the Medplum App and Provider App, replacing several one-off implementations
 - **Patient summary** — Goals and immunizations now appear in the patient summary
-- **Fixes** — An infinite redirect in the patient Messages tab was resolved (with a regression test), the e-prescribe sync toast dismisses when leaving the Meds tab ([Finn Bergquist](https://github.com/finnbergquist)), and a loader shows while the e-prescribe iframe is loading
+- **Fixes** — An infinite redirect in the patient Messages tab was resolved (with a regression test), the e-prescribe sync toast dismisses when leaving the Meds tab, and a loader shows while the e-prescribe iframe is loading ([Noah Silas](https://github.com/noahsilas), [Finn Bergquist](https://github.com/finnbergquist))
 
 <img src="/img/blog/2026-08-provider-payer-directory.png" alt="Billing settings with the payer directory in the Provider App" style={{maxHeight: '400px', maxWidth: '100%'}} />
 
@@ -77,8 +77,8 @@ The [Provider App](https://provider.medplum.com) picked up a billing surface, pa
 August was the [2026 terminology refresh](/blog/terminology-2026), and the post has the full detail. The theme was internationalization and getting large code systems to behave:
 
 - **Multi-language displays** — Database migrations for terminology i18n, and a fix to the `displayLanguage` filter on [`ValueSet/$expand`](/docs/api/fhir/operations/valueset-expand), so a code system can carry displays in more than one language and expansion returns the right one
-- **SNOMED-to-ICD mapping** — [`ConceptMap/$import`](/docs/api/fhir/operations/conceptmap-translate) and `ConceptMap/$translate` were prepared for SNOMED-to-ICD mapping, which is the translation most billing and quality-reporting workflows need
-- **Expansion at scale** — `$expand` queries run against the reader database, a maximum token count bounds typeahead expansions so an unbounded query cannot saturate the writer, and extended statistics on coding properties help the planner choose better plans
+- **SNOMED-to-ICD mapping** — [`ConceptMap/$import`](/docs/api/fhir/operations/conceptmap-import) and [`ConceptMap/$translate`](/docs/api/fhir/operations/conceptmap-translate) were prepared for SNOMED-to-ICD mapping, which is the translation most billing and quality-reporting workflows need
+- **Expansion at scale** — `$expand` queries run against the reader database, a maximum token count bounds typeahead expansions so an unbounded query cannot saturate the writer, and extended statistics on coding properties help the planner choose better plans ([Cody Ebberson](https://github.com/codyebberson))
 - **Resolution order** — Terminology resource resolution order was updated so the intended code system wins when several could match
 
 ### Revenue Cycle and Billing
@@ -89,7 +89,7 @@ August was the [2026 terminology refresh](/blog/terminology-2026), and the post 
 
 - **Claim status tracking** — Claim status is reported through `ClaimResponse`, so a submitted claim's progress is readable from the resource rather than from a vendor console
 - **Payer directory** — A directory of payers behind the billing settings surface, so a claim is built against a known payer rather than free text
-- **Eligibility refinements** — Service type code handling in the eligibility path, with a sensible default category when a request arrives without a service type code, so an eligibility check does not fail on an omission the caller cannot always supply
+- **Eligibility refinements** — Service type code handling in the eligibility path, with a sensible default category when a request arrives without a service type code, so an eligibility check does not fail on an omission the caller cannot always supply ([Darren Eam](https://github.com/deam65), [Alex Lin](https://github.com/alexanderxlin))
 - **Claims routing** — Billing and rendering providers resolve from the `Claim` itself across every configured claims processor, so the same claim produces the same result regardless of which clearinghouse handles it
 - **Preauthorization permissions** — Preauthorization no longer requires client read permission ([Maddy Li](https://github.com/maddyli))
 
@@ -97,10 +97,10 @@ August was the [2026 terminology refresh](/blog/terminology-2026), and the post 
 
 <img src="https://github.com/ThatOneBro.png" alt="Derrick Farris" width="50" height="50" style={{borderRadius: '50%'}} /> **[Derrick Farris](https://github.com/ThatOneBro)**
 
-[FHIRcast](/docs/integration) — the standard for keeping separate clinical applications on the same patient and encounter — got a substantial round of work, alongside the on-premise [Agent](/docs/agent):
+[FHIRcast](/docs/fhircast) — the standard for keeping separate clinical applications on the same patient and encounter — got a substantial round of work, alongside the on-premise [Agent](/docs/agent):
 
 - **Client reconnection** — The FHIRcast client's WebSocket reconnects on drop, so a context subscription survives a network blip instead of silently going stale
-- **Subscriber event tracking** — Each subscriber's events are tracked and confirmed, which turns context synchronization from fire-and-forget into something with a record of what was delivered
+- **Subscriber event tracking** — Each subscription records and confirms its selected events, and receives only matching events
 - **Version-safe context updates** — A context update applies only to the version it was built on, so two applications updating context simultaneously cannot overwrite each other
 - **STU3 route aliases** — FHIRcast STU3 routes are aliased at `/api/hub`, and the legacy unsubscribe endpoint field is accepted, so existing clients connect without modification
 - **Logical channels on the Agent** — A channel can now process messages in parallel through logical sub-channels, which lifts throughput on a busy HL7 interface without running multiple channels
@@ -116,8 +116,8 @@ August was the [2026 terminology refresh](/blog/terminology-2026), and the post 
 - **Index operations** — A [Super Admin](/docs/self-hosting/super-admin-guide) endpoint to rebuild database indexes, and an index bloat page for seeing which indexes need it
 - **Graceful shutdown** — Database pools drain proactively on shutdown and server queues close sequentially, so a deploy finishes in-flight work instead of severing it
 - **Reader resilience** — The health check passes when the reader database is unavailable, so losing a read replica degrades performance rather than taking the server out of rotation
-- **Search performance** — Quadratic query string parsing on duplicate parameters was fixed, search filters are de-duplicated, chained search by `_compartment` works correctly, and `MemoryRepository` supports chained search so tests match production
-- **Throughput** — A redundant `deepClone` was dropped from the subscription worker, attachment rewriting is skipped for resources with no attachments, and `Binary` reference extraction was re-implemented for performance
+- **Search performance** — Quadratic query string parsing on duplicate parameters was fixed, search filters are de-duplicated, chained search by `_compartment` works correctly, and `MemoryRepository` supports chained search so tests match production ([Derrick Farris](https://github.com/ThatOneBro), [Noah Silas](https://github.com/noahsilas))
+- **Throughput** — A redundant `deepClone` was dropped from the subscription worker, attachment rewriting is skipped for resources with no attachments, and `Binary` reference extraction was re-implemented for performance ([Derrick Farris](https://github.com/ThatOneBro))
 - **Data warehouse observability** — OTEL metrics for data warehouse sync, so an [analytics](/docs/analytics) export can be watched rather than inferred
 - **Bulk import** — Bulk import recognizes rate limits and retries instead of failing the batch ([Cody Ebberson](https://github.com/codyebberson))
 
@@ -144,13 +144,13 @@ August was the [2026 terminology refresh](/blog/terminology-2026), and the post 
 
 ### Developer Experience
 
-<img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
+<img src="https://github.com/codyebberson.png" alt="Cody Ebberson" width="50" height="50" style={{borderRadius: '50%'}} /> **[Cody Ebberson](https://github.com/codyebberson)** and <img src="https://github.com/noahsilas.png" alt="Noah Silas" width="50" height="50" style={{borderRadius: '50%'}} /> **[Noah Silas](https://github.com/noahsilas)**
 
-- **Bot operation returns** — Custom Bot operations return `Parameters` correctly ([Cody Ebberson](https://github.com/codyebberson))
-- **Publish reliability** — Publishing is retryable and manually invokable rather than a one-shot ([Cody Ebberson](https://github.com/codyebberson))
-- **React Router 8** — `react-router` upgraded to 8.3.0 ([Cody Ebberson](https://github.com/codyebberson))
+- **Bot operation returns** — Custom Bot operations return `Parameters` correctly
+- **Publish reliability** — Publishing is retryable and manually invokable rather than a one-shot
+- **React Router 8** — `react-router` upgraded to 8.3.0
 - **Component fixes** — `AsyncAutocomplete` autosubmit corrections, the deprecation notice removed from `<ResourceInput>`, unicode handling in the explain operation ([Matt Long](https://github.com/mattlong)), and Storybook release build and S3 iframe embedding fixes
-- **API surface hygiene** — API Extractor and TSDoc warnings cleared in `@medplum/core` ([Cody Ebberson](https://github.com/codyebberson))
+- **API surface hygiene** — API Extractor and TSDoc warnings cleared in `@medplum/core`
 
 ## Compliance
 
@@ -162,26 +162,26 @@ August was the [2026 terminology refresh](/blog/terminology-2026), and the post 
 - **[RFC 9116](https://www.rfc-editor.org/rfc/rfc9116.html) security.txt** — A `/.well-known/security.txt` endpoint publishing how to report a vulnerability, alongside the existing disclosure process on our [security page](/security)
 - **PDex `network-reference`** — A new search parameter for the CMS Payer Data Exchange profile, part of the payer interoperability work that [CMS-0057-F and HTI-4](/docs/compliance/hti-4) require
 - **Prior authorization test coverage** — A client test suite for the Inferno Coverage Requirements Discovery validator, continuing the electronic prior authorization work ahead of the January 2027 enforcement date
-- **[Consent documentation](/docs/consent)** — Documentation on modeling consent in Medplum
+- **[Consent documentation](/docs/consent)** — Documentation on modeling consent in Medplum ([Reshma Khilnani](https://github.com/reshmakh))
 - **Certification links** — The Drummond validated product URL was corrected on the [ONC certification page](/docs/compliance/onc)
 
 ## Documentation
 
-<img src="https://github.com/maddyli.png" alt="Maddy Li" width="50" height="50" style={{borderRadius: '50%'}} /> **[Maddy Li](https://github.com/maddyli)**, <img src="https://github.com/andystoneman.png" alt="Andy Stoneman" width="50" height="50" style={{borderRadius: '50%'}} /> **[Andy Stoneman](https://github.com/andystoneman)**, and <img src="https://github.com/everett-williams.png" alt="Everett Williams" width="50" height="50" style={{borderRadius: '50%'}} /> **[Everett Williams](https://github.com/everett-williams)**
+<img src="https://github.com/maddyli.png" alt="Maddy Li" width="50" height="50" style={{borderRadius: '50%'}} /> **[Maddy Li](https://github.com/maddyli)**, <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="50" height="50" style={{borderRadius: '50%'}} /> **[Reshma Khilnani](https://github.com/reshmakh)**, and <img src="https://github.com/andystoneman.png" alt="Andy Stoneman" width="50" height="50" style={{borderRadius: '50%'}} /> **[Andy Stoneman](https://github.com/andystoneman)**
 
 **Provider and platform**
 
 - **[Redshift analytics](/docs/analytics/redshift)** — Documentation for exporting to Redshift, plus a refreshed [analytics](/docs/analytics) landing page covering the warehouse options together
-- **[DICOM documentation](/docs/dicom)** — A full documentation set for the Beta: the [DICOMweb API](/docs/dicom/dicomweb-api), the [data model](/docs/dicom/data-model), [CLI usage](/docs/dicom/cli), [on-premise DIMSE ingest](/docs/dicom/agent-dimse), and the [OHIF viewer](/docs/dicom/ohif-viewer)
-- **[Agent channel guides](/docs/agent)** — High-throughput HL7 and ASTM channel configuration, both written from real interface tuning
+- **[DICOM documentation](/docs/dicom)** — A full documentation set for the Beta: the [DICOMweb API](/docs/dicom/dicomweb-api), the [data model](/docs/dicom/data-model), [CLI usage](/docs/dicom/cli), [on-premise DIMSE ingest](/docs/dicom/agent-dimse), and the [OHIF viewer](/docs/dicom/ohif-viewer) ([Cody Ebberson](https://github.com/codyebberson))
+- **[Agent channel guides](/docs/agent)** — High-throughput HL7 and ASTM channel configuration, both written from real interface tuning ([Derrick Farris](https://github.com/ThatOneBro))
 - **[MCP](/docs/ai/mcp)** — The three-tool surface and FHIR-powered design clarified
 - **[Seeding tutorial](/docs/tutorials)** — Synthea added as a sample-data source
 - **[Consent and signatures](/docs/consent)**: Capturing consent, the audit trail behind it, intake capture, and the signature panels, with a [walkthrough video](https://youtu.be/9Ck2FEa4ALg)
 
 **Integrations**
 
-- **[Claims and clearinghouse](/docs/billing)** — Claims billing documentation updated across the supported clearinghouses, including newly supported service type codes ([Darren Eam](https://github.com/deam65)) and front-end sorting in the claims views
-- **[Lab and HIE connectivity](/docs/integration/health-gorilla)**: A fix to lab order updates, so an order stamped with its requisition and identifiers after submission no longer fails on a version conflict. The [Health Gorilla changelog](/docs/integration/health-gorilla/hg-changelog) now runs back to May
+- **[Claims and clearinghouse](/docs/billing)** — Claims billing documentation updated across the supported clearinghouses, including newly supported service type codes ([David Yanez](https://github.com/techdavidy), [Darren Eam](https://github.com/deam65))
+- **[Lab and HIE connectivity](/docs/integration/health-gorilla)**: Lab order updates now retry conflicted changes with refreshed resource versions, reducing version-conflict failures after submission. The [integration changelog](/docs/integration/health-gorilla/hg-changelog) now runs back to May
 - **[Custom integrations](/docs/integration)** — The custom integrations section expanded
 - **[Electronic fax](/docs/communications)** — Fax documentation synced
 
@@ -245,11 +245,11 @@ New videos published this month, all on the [Medplum YouTube channel](https://ww
 ## Releases
 
 - [**v5.1.28**](https://github.com/medplum/medplum/releases/tag/v5.1.28) — August 5
-- [**v5.1.29**](https://github.com/medplum/medplum/releases/tag/v5.1.29) — August 9
+- [**v5.1.29**](https://github.com/medplum/medplum/releases/tag/v5.1.29) — August 8
 - [**v5.1.30**](https://github.com/medplum/medplum/releases/tag/v5.1.30) — August 13
 - [**v5.1.31**](https://github.com/medplum/medplum/releases/tag/v5.1.31) — August 20
-- [**v5.1.32**](https://github.com/medplum/medplum/releases/tag/v5.1.32) — August 25
-- [**v5.1.33**](https://github.com/medplum/medplum/releases/tag/v5.1.33) — August 27
+- [**v5.1.32**](https://github.com/medplum/medplum/releases/tag/v5.1.32) — August 24
+- [**v5.1.33**](https://github.com/medplum/medplum/releases/tag/v5.1.33) — August 26
 - [**v5.1.34**](https://github.com/medplum/medplum/releases/tag/v5.1.34) — August 27
 - [**v5.1.35**](https://github.com/medplum/medplum/releases/tag/v5.1.35) — August 27
 - [**v5.1.36**](https://github.com/medplum/medplum/releases/tag/v5.1.36) — August 28
