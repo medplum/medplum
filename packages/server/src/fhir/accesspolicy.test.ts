@@ -887,7 +887,11 @@ describe('AccessPolicy', () => {
         const loggedCreateCall = writeSpy.mock.calls.find((call: unknown[]) => {
           try {
             const parsed = JSON.parse(call[0] as string);
-            return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'rest';
+            return (
+              parsed.resourceType === 'AuditEvent' &&
+              parsed.subtype?.[0]?.code === 'create' &&
+              parsed.entity?.[0]?.what?.reference?.startsWith('Patient/')
+            );
           } catch {
             return false;
           }
