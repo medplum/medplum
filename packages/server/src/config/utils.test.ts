@@ -11,6 +11,7 @@ describe('utils', () => {
     expect(isBooleanConfig('baseUrl')).toBe(false);
     expect(isBooleanConfig('logRequests')).toBe(true);
     expect(isBooleanConfig('rateLimitsEnabled')).toBe(true);
+    expect(isBooleanConfig('requireVerifiedEmailForProjectCreation')).toBe(true);
   });
 
   test('isIntegerConfig', () => {
@@ -66,6 +67,12 @@ describe('utils', () => {
     const config = {};
     setValue(config, 'rateLimitsEnabled', 'false');
     expect(config).toEqual({ rateLimitsEnabled: false });
+  });
+
+  test('setValue parses requireVerifiedEmailForProjectCreation as boolean', () => {
+    const config = {};
+    setValue(config, 'requireVerifiedEmailForProjectCreation', 'false');
+    expect(config).toEqual({ requireVerifiedEmailForProjectCreation: false });
   });
 
   test('addDefaults preserves dataWarehouse.startDate as ISO-8601 string', () => {

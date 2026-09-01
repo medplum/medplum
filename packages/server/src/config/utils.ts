@@ -198,6 +198,7 @@ const booleanKeys = new Set([
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
+  'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
   'require',
   'rejectUnauthorized',
