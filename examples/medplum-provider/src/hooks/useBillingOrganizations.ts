@@ -6,35 +6,24 @@ import type { Organization } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import type { BillingOrganizationFormValues } from '../utils/billing';
-import {
-  BILLING_ORGANIZATION_IDENTIFIER_VALUE,
-  MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
-  buildUpdatedOrganization,
-  withCandidProviderExtensions,
-} from '../utils/billing';
+import { buildUpdatedOrganization, withCandidProviderExtensions } from '../utils/billing';
 import { CANDID_CREATE_PROVIDER_BOT_IDENTIFIER, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../utils/notifications';
 
-const PAGE_SIZE = 10;
-
 /**
- * State and operations for the billing organizations claims are billed under.
+ * State and operations for the billing organizations claims are billed under. The list itself is
+ * searched by the search control; this hook covers what a search cannot.
  *
- * - `organizations` — one page of the project's billing organizations, recognized by the
- *   provider-app marker identifier.
- * - `page` / `pageCount` — 1-based current page and the number of pages the search reports.
  * - `candidBotId` — ID of the candid-create-provider bot; undefined while looking up, '' when not deployed.
+ * - `savedVersion` — increments on every successful save, so the list can refetch.
  * - `saveOrganization` — creates or updates a billing organization from form values and, when the
  *   Candid bot is deployed, registers it as a Candid organization provider. Returns the saved
  *   Organization, or undefined when the save itself failed; a failed Candid registration leaves the
  *   saved Organization in place, unregistered, so saving again retries it.
  */
 export interface BillingOrganizations {
-  organizations: WithId<Organization>[];
-  page: number;
-  pageCount: number;
-  setPage: (pageNumber: number) => void;
   candidBotId: string | undefined;
+  savedVersion: number;
   saving: boolean;
   saveOrganization: (
     organization: WithId<Organization> | undefined,
@@ -44,42 +33,9 @@ export interface BillingOrganizations {
 
 export function useBillingOrganizations(): BillingOrganizations {
   const medplum = useMedplum();
-  const [organizations, setOrganizations] = useState<WithId<Organization>[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [reload, setReload] = useState(0);
   const [candidBotId, setCandidBotId] = useState<string | undefined>(undefined);
+  const [savedVersion, setSavedVersion] = useState(0);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    // Filter on the marker identifier stamped by saveOrganization, not on organization type:
-    // projects can hold hundreds of unrelated Organizations. No NPI filter — an organization
-    // missing its NPI must stay visible here so it can be fixed.
-    // The create/update in saveOrganization invalidates the client's Organization searches, so this
-    // refetch sees the identifier the registration bot stamps server-side.
-    medplum
-      .searchResources('Organization', {
-        identifier: `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
-        _count: `${PAGE_SIZE}`,
-        _offset: `${(page - 1) * PAGE_SIZE}`,
-        _sort: 'name',
-        _total: 'accurate',
-      })
-      .then((result) => {
-        // bundle.total is absent when the server did not honor _total; the page length is then the
-        // only count available, which collapses the control to a single page.
-        const count = result.bundle?.total ?? result.length;
-        setTotal(count);
-        const lastPage = Math.max(Math.ceil(count / PAGE_SIZE), 1);
-        if (page > lastPage) {
-          // The page fell off the end (organizations removed, or a stale page after a refetch)
-          setPage(lastPage);
-          return;
-        }
-        setOrganizations(result);
-      })
-      .catch(showErrorNotification);
-  }, [medplum, page, reload]);
 
   useEffect(() => {
     medplum
@@ -127,7 +83,9 @@ export function useBillingOrganizations(): BillingOrganizations {
       if (registerable) {
         await registerWithCandid(saved);
       }
-      setReload((r) => r + 1);
+      // The create/update invalidated the client's Organization searches, so the refetch this
+      // triggers sees the identifier the registration bot stamps server-side.
+      setSavedVersion((version) => version + 1);
       return saved;
     } catch (error) {
       showErrorNotification(error);
@@ -137,13 +95,5 @@ export function useBillingOrganizations(): BillingOrganizations {
     }
   };
 
-  return {
-    organizations,
-    page,
-    pageCount: Math.ceil(total / PAGE_SIZE),
-    setPage,
-    candidBotId,
-    saving,
-    saveOrganization,
-  };
+  return { candidBotId, savedVersion, saving, saveOrganization };
 }

@@ -44,7 +44,7 @@ export function BillingSetupPage(): JSX.Element {
             />
           </Tabs.Panel>
           <Tabs.Panel value="Payers" pt="md">
-            <ImportedPayerList payers={directory.importedPayers} onSelectPayer={setDetailsPayer} />
+            <ImportedPayerList directory={directory} onSelectPayer={setDetailsPayer} />
           </Tabs.Panel>
           <Tabs.Panel value="Directory" pt="md">
             <PayerDirectorySearch directory={directory} onSelectPayer={setDetailsPayer} />

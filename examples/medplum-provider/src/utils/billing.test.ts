@@ -14,7 +14,6 @@ import {
   buildUpdatedOrganization,
   formatPayerCategory,
   getPayerCategory,
-  hasAnyAddressValue,
   isCompleteBillingAddress,
   isPayerNotFoundError,
   isValidBillingPhone,
@@ -25,6 +24,7 @@ import {
   withCandidProviderExtensions,
 } from './billing';
 import {
+  CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
@@ -317,6 +317,24 @@ describe('billing utils', () => {
       ]);
       expect(result.telecom).toEqual([{ system: 'phone', value: '6175550142' }]);
       expect(result.address?.[0]?.city).toBe('Boston');
+      expect(result.meta?.profile).toEqual([CANDID_BILLING_ORGANIZATION_PROFILE]);
+    });
+
+    test('claims the billing organization profile once, keeping profiles from elsewhere', () => {
+      const existing: Organization = {
+        resourceType: 'Organization',
+        meta: { versionId: '1', profile: ['https://example.com/StructureDefinition/legacy-org'] },
+      };
+      const fields = { name: 'Org', npi: '3564119220', ein: '123456789', phone: '' };
+
+      const once = buildUpdatedOrganization(existing, fields);
+      expect(once.meta?.profile).toEqual([
+        'https://example.com/StructureDefinition/legacy-org',
+        CANDID_BILLING_ORGANIZATION_PROFILE,
+      ]);
+      expect(once.meta?.versionId).toBe('1');
+
+      expect(buildUpdatedOrganization(once, fields).meta?.profile).toEqual(once.meta?.profile);
     });
 
     test('does not duplicate the prov type or clobber unrelated identifiers and types', () => {
@@ -378,7 +396,6 @@ describe('billing utils', () => {
 
     test('accepts a complete address', () => {
       expect(isCompleteBillingAddress(complete)).toBe(true);
-      expect(hasAnyAddressValue(complete)).toBe(true);
     });
 
     test.each([
@@ -388,14 +405,11 @@ describe('billing utils', () => {
       ['spelled-out state', { ...complete, state: 'Massachusetts' }],
     ])('rejects an address with %s', (_label, address) => {
       expect(isCompleteBillingAddress(address)).toBe(false);
-      expect(hasAnyAddressValue(address)).toBe(true);
     });
 
-    test('treats an empty address as no address at all', () => {
-      expect(hasAnyAddressValue(undefined)).toBe(false);
-      expect(hasAnyAddressValue({})).toBe(false);
-      expect(hasAnyAddressValue({ line: [''] })).toBe(false);
+    test('rejects a missing address', () => {
       expect(isCompleteBillingAddress(undefined)).toBe(false);
+      expect(isCompleteBillingAddress({})).toBe(false);
     });
   });
 

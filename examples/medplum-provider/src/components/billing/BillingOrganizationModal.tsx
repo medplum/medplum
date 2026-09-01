@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Input, Stack, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
@@ -12,7 +12,6 @@ import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
 import {
   EIN_SYSTEM,
   NPI_SYSTEM,
-  hasAnyAddressValue,
   isCompleteBillingAddress,
   isValidBillingPhone,
   isValidNpi,
@@ -67,10 +66,12 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
     if (!/^\d{2}-?\d{7}$/.test(ein.trim())) {
       result.ein = 'Tax ID (EIN) must be 9 digits, e.g. 12-3456789';
     }
-    if (phone.trim() && !isValidBillingPhone(phone)) {
+    // Phone and address are required, not optional: the billing organization profile the server
+    // validates against needs both, so a missing one is rejected on save rather than here.
+    if (!isValidBillingPhone(phone)) {
       result.phone = 'Phone must be 10 digits and not start with 0 or 1';
     }
-    if (hasAnyAddressValue(address) && !isCompleteBillingAddress(address)) {
+    if (!isCompleteBillingAddress(address)) {
       result.address = 'Address needs a street, city, two-letter state, and ZIP';
     }
     return result;
@@ -133,21 +134,18 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
           />
           <TextInput
             label="Phone"
+            required
             description="Used as the claim submitter phone; must not start with 0 or 1"
             value={phone}
             error={errors.phone}
             onChange={(event) => setPhone(event.currentTarget.value)}
           />
           <div>
-            <Text size="sm" fw={500} mb={4}>
+            <Input.Label required mb={4}>
               Address
-            </Text>
+            </Input.Label>
             <AddressInput name="address" path="Organization.address" defaultValue={address} onChange={setAddress} />
-            {errors.address && (
-              <Text size="xs" c="red" mt={4}>
-                {errors.address}
-              </Text>
-            )}
+            {errors.address && <Input.Error mt={4}>{errors.address}</Input.Error>}
           </div>
           {!!billingOrganizations.candidBotId &&
             !getIdentifierValue(organization, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM) && (

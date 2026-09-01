@@ -4,6 +4,7 @@ import type { PatchOperation } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import type { Address, ContactPoint, Identifier, Organization, Parameters } from '@medplum/fhirtypes';
 import {
+  CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
@@ -248,8 +249,18 @@ export function buildUpdatedOrganization(
         },
       ];
 
+  const profile = organization.meta?.profile ?? [];
+
   return {
     ...organization,
+    meta: {
+      ...organization.meta,
+      // Claiming the profile is what makes the server validate these organizations; every writer
+      // that skips it is unvalidated, so stamp it on save.
+      profile: profile.includes(CANDID_BILLING_ORGANIZATION_PROFILE)
+        ? profile
+        : [...profile, CANDID_BILLING_ORGANIZATION_PROFILE],
+    },
     name: fields.name.trim(),
     identifier,
     type,
@@ -267,15 +278,6 @@ export function buildUpdatedOrganization(
  */
 export function isCompleteBillingAddress(address: Address | undefined): boolean {
   return !!(address?.line?.[0] && address.city && /^[A-Za-z]{2}$/.test(address.state ?? '') && address.postalCode);
-}
-
-/**
- * Whether an address has any value at all, i.e. the user started filling it in.
- * @param address - The address entered on the billing organization form.
- * @returns True when at least one address field is set.
- */
-export function hasAnyAddressValue(address: Address | undefined): boolean {
-  return !!(address?.line?.some(Boolean) || address?.city || address?.state || address?.postalCode);
 }
 
 /**

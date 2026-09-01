@@ -33,6 +33,13 @@ export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
   value: 'candid-create-provider',
 };
 
+// Profile the medplum-ee candid-health package publishes for billing organizations: it requires the
+// NPI and Tax ID identifiers, the 'prov' organization type, and a complete address. Saving a billing
+// organization claims it so the server enforces those on write; a project without the Candid package
+// deployed has no such StructureDefinition, and the server skips a profile it cannot resolve.
+export const CANDID_BILLING_ORGANIZATION_PROFILE =
+  'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization';
+
 // Identifier the candid-create-provider bot writes onto the registered resource; its presence
 // means the provider exists in Candid.
 export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';
