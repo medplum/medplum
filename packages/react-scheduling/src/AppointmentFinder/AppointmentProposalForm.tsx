@@ -61,7 +61,8 @@ const DAYS_SHOWN = 3;
 
 const MORE_DAYS = 2;
 
-const TIMES_PER_DAY = 20;
+// Generous heuristic for how many time results might be returned for a given day.
+const TIMES_PER_DAY = 50;
 
 // Shown beneath the calendar, since dragging or shift-clicking leaves no visible mark.
 const DAY_GESTURE_HINT = 'drag or shift-click to search more days';

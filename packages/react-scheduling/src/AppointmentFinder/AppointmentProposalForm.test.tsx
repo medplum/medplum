@@ -387,9 +387,9 @@ describe('AppointmentProposalForm', () => {
 
       const params = lastFindParams(get) as URLSearchParams;
       expect(new Date(params.get('end') as string).getDate()).toBe(19);
-      // More than one day's worth: `$find` pages a whole window at once, so twenty
+      // More than one day's worth: `$find` pages a whole window at once, so fifty
       // times (one day's worth) would leave the two days after it empty.
-      expect(Number(params.get('_count'))).toBeGreaterThan(20);
+      expect(Number(params.get('_count'))).toBeGreaterThan(50);
     });
 
     test('Adds the next two days under the ones already on screen', async () => {
@@ -507,7 +507,7 @@ describe('AppointmentProposalForm', () => {
       expect(findRequests(get)).toHaveLength(1);
       const params = lastFindParams(get) as URLSearchParams;
       expect(new Date(params.get('end') as string).getDate()).toBe(21);
-      expect(Number(params.get('_count'))).toBe(100);
+      expect(Number(params.get('_count'))).toBe(250);
     });
 
     test('Marks both ends of a stretch that was picked on purpose', async () => {
