@@ -16,7 +16,6 @@ import {
   MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
   NPI_SYSTEM,
 } from '../../utils/billing';
-import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 
 const DEFAULT_SEARCH: SearchRequest = {
   resourceType: 'Organization',
@@ -50,7 +49,7 @@ export function BillingOrganizationList(props: BillingOrganizationListProps): JS
   const additionalColumns: SearchControlAdditionalColumn[] = [
     { name: 'NPI', renderCell: (resource) => getIdentifier(resource, NPI_SYSTEM) },
     { name: 'Tax ID', renderCell: (resource) => getIdentifier(resource, EIN_SYSTEM) },
-    { name: 'Status', renderCell: (resource) => renderStatus(resource, candidBotId) },
+    { name: 'Status', renderCell: renderStatus },
   ];
 
   return (
@@ -75,20 +74,12 @@ export function BillingOrganizationList(props: BillingOrganizationListProps): JS
   );
 }
 
-function renderStatus(resource: Resource, candidBotId: string | undefined): JSX.Element {
-  // The Candid warning is only meaningful where the registration bot is deployed; elsewhere Candid
-  // provider registration is not part of the project at all.
-  const unregistered = !!candidBotId && !getIdentifier(resource, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+function renderStatus(resource: Resource): JSX.Element {
   return (
     <Group gap={6}>
       {!getIdentifier(resource, NPI_SYSTEM) && (
         <Badge color="yellow" variant="light">
-          Missing NPI — hidden from the encounter billing picker
-        </Badge>
-      )}
-      {unregistered && (
-        <Badge color="yellow" variant="light">
-          Not registered with Candid — save again to retry
+          Missing NPI
         </Badge>
       )}
     </Group>

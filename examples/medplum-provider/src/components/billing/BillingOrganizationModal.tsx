@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Input, Stack, TextInput } from '@mantine/core';
+import { Button, Input, Stack, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getIdentifier } from '@medplum/core';
 import type { Address, Organization } from '@medplum/fhirtypes';
 import { AddressInput, Modal } from '@medplum/react';
-import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
@@ -16,7 +15,8 @@ import {
   isValidBillingPhone,
   isValidNpi,
 } from '../../utils/billing';
-import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
+import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
+import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 export interface BillingOrganizationModalProps {
   readonly billingOrganizations: BillingOrganizations;
@@ -42,6 +42,9 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
   // from the organization each time it opens. This runs during render — before the
   // `{opened && ...}` form remounts — so the uncontrolled AddressInput picks up the fresh
   // defaultValue; a useEffect would fire too late for it.
+  // Ask Candid directly rather than trusting the identifier a past registration stamped locally.
+  const registration = useCandidProviderRegistration(opened ? 'Organization' : undefined, npi);
+
   const [prevOpened, setPrevOpened] = useState(opened);
   if (opened !== prevOpened) {
     setPrevOpened(opened);
@@ -83,13 +86,11 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
-    const saved = await billingOrganizations.saveOrganization(organization, {
-      name,
-      npi: npi.trim(),
-      ein: ein.trim(),
-      phone,
-      address,
-    });
+    const saved = await billingOrganizations.saveOrganization(
+      organization,
+      { name, npi: npi.trim(), ein: ein.trim(), phone, address },
+      registration
+    );
     if (saved) {
       onClose();
     }
@@ -102,13 +103,25 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       size="lg"
       title={organization ? 'Edit billing organization' : 'New billing organization'}
       actions={
-        <Button onClick={() => handleSave().catch(console.error)} loading={billingOrganizations.saving}>
-          Save
+        <Button
+          onClick={() => handleSave().catch(console.error)}
+          // The lookup decides whether saving registers or edits in Candid, so wait for its answer
+          loading={billingOrganizations.saving || registration.status === 'loading'}
+        >
+          {registration.status === 'registered' ? 'Edit' : 'Save'}
         </Button>
       }
     >
       {opened && (
         <Stack gap="md">
+          <CandidRegistrationAlert
+            registration={registration}
+            registersAs={
+              billingOrganizations.candidBotId
+                ? 'this organization as an organization provider, billing under its own NPI'
+                : undefined
+            }
+          />
           <TextInput
             label="Name"
             required
@@ -147,12 +160,6 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
             <AddressInput name="address" path="Organization.address" defaultValue={address} onChange={setAddress} />
             {errors.address && <Input.Error mt={4}>{errors.address}</Input.Error>}
           </div>
-          {!!billingOrganizations.candidBotId &&
-            !getIdentifierValue(organization, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM) && (
-              <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
-                Saving registers this organization with Candid as an organization provider, billing under its own NPI.
-              </Alert>
-            )}
         </Stack>
       )}
     </Modal>

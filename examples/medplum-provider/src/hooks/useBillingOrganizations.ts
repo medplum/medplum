@@ -4,47 +4,49 @@ import type { WithId } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { BillingOrganizationFormValues } from '../utils/billing';
-import { buildUpdatedOrganization, withCandidProviderExtensions } from '../utils/billing';
-import { CANDID_CREATE_PROVIDER_BOT_IDENTIFIER, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../utils/candid';
+import { buildUpdatedOrganization, withCandidProviderExtensions, withCandidProviderId } from '../utils/billing';
+import {
+  CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
+  CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
+  CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
+} from '../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../utils/notifications';
+import { useCandidBot } from './useCandidBot';
+import type { CandidProviderRegistration } from './useCandidProviderRegistration';
 
 /**
  * State and operations for the billing organizations claims are billed under. The list itself is
  * searched by the search control; this hook covers what a search cannot.
  *
  * - `candidBotId` — ID of the candid-create-provider bot; undefined while looking up, '' when not deployed.
+ * - `candidEditBotId` — ID of the candid-edit-provider bot, which pushes changes to a provider
+ *   Candid already holds; undefined while looking up, '' when not deployed.
  * - `savedVersion` — increments on every successful save, so the list can refetch.
  * - `saveOrganization` — creates or updates a billing organization from form values and, when the
- *   Candid bot is deployed, registers it as a Candid organization provider. Returns the saved
- *   Organization, or undefined when the save itself failed; a failed Candid registration leaves the
- *   saved Organization in place, unregistered, so saving again retries it.
+ *   bots are deployed, either registers it with Candid or, when Candid already holds the provider,
+ *   pushes the change up to it. Returns the saved Organization, or undefined when the save itself
+ *   failed; a failed Candid call leaves the saved Organization in place, so saving again retries.
  */
 export interface BillingOrganizations {
   candidBotId: string | undefined;
+  candidEditBotId: string | undefined;
   savedVersion: number;
   saving: boolean;
   saveOrganization: (
     organization: WithId<Organization> | undefined,
-    fields: BillingOrganizationFormValues
+    fields: BillingOrganizationFormValues,
+    registration: CandidProviderRegistration
   ) => Promise<WithId<Organization> | undefined>;
 }
 
 export function useBillingOrganizations(): BillingOrganizations {
   const medplum = useMedplum();
-  const [candidBotId, setCandidBotId] = useState<string | undefined>(undefined);
+  const candidBotId = useCandidBot(CANDID_CREATE_PROVIDER_BOT_IDENTIFIER);
+  const candidEditBotId = useCandidBot(CANDID_EDIT_PROVIDER_BOT_IDENTIFIER);
   const [savedVersion, setSavedVersion] = useState(0);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    medplum
-      .searchOne('Bot', {
-        identifier: `${CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.value}`,
-      })
-      .then((bot) => setCandidBotId(bot?.id ?? ''))
-      .catch(showErrorNotification);
-  }, [medplum]);
 
   const registerWithCandid = async (organization: WithId<Organization>): Promise<void> => {
     try {
@@ -62,15 +64,39 @@ export function useBillingOrganizations(): BillingOrganizations {
     }
   };
 
+  const updateInCandid = async (organization: WithId<Organization>): Promise<void> => {
+    try {
+      await medplum.executeBot(candidEditBotId as string, organization, 'application/fhir+json');
+      showSuccessNotification({ title: 'Success', message: 'Updated in Candid' });
+    } catch (error) {
+      showErrorNotification(
+        new Error(
+          `Billing organization saved, but updating it in Candid failed: ${normalizeErrorString(error)}. ` +
+            'Save the organization again to retry.'
+        )
+      );
+    }
+  };
+
   const saveOrganization = async (
     organization: WithId<Organization> | undefined,
-    fields: BillingOrganizationFormValues
+    fields: BillingOrganizationFormValues,
+    registration: CandidProviderRegistration
   ): Promise<WithId<Organization> | undefined> => {
     setSaving(true);
     try {
       let built = buildUpdatedOrganization(organization ?? { resourceType: 'Organization' }, fields);
-      const registerable = !!candidBotId && !getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
-      if (registerable) {
+      built = withCandidProviderId(
+        built,
+        registration.status === 'registered' ? registration.candidProviderId : undefined
+      );
+      // Candid holds one provider per NPI: register a new one, and push changes to one it already
+      // has. Which applies is decided by the provider identifier, live from Candid when the lookup
+      // could answer and from the resource otherwise.
+      const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+      const registering = !candidProviderId && !!candidBotId;
+      const updating = !!candidProviderId && !!candidEditBotId;
+      if (registering || updating) {
         built = withCandidProviderExtensions(built);
       }
       const saved = organization
@@ -80,8 +106,10 @@ export function useBillingOrganizations(): BillingOrganizations {
         title: 'Success',
         message: organization ? 'Billing organization updated' : 'Billing organization created',
       });
-      if (registerable) {
+      if (registering) {
         await registerWithCandid(saved);
+      } else if (updating) {
+        await updateInCandid(saved);
       }
       // The create/update invalidated the client's Organization searches, so the refetch this
       // triggers sees the identifier the registration bot stamps server-side.
@@ -95,5 +123,5 @@ export function useBillingOrganizations(): BillingOrganizations {
     }
   };
 
-  return { candidBotId, savedVersion, saving, saveOrganization };
+  return { candidBotId, candidEditBotId, savedVersion, saving, saveOrganization };
 }

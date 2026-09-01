@@ -40,6 +40,26 @@ export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
 export const CANDID_BILLING_ORGANIZATION_PROFILE =
   'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization';
 
+// Companion profile for the practitioners claims are rendered by: it requires the NPI identifier
+// and the NUCC taxonomy code Candid needs on an individual provider.
+export const CANDID_PRACTITIONER_PROFILE =
+  'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner';
+
+// Bot that pushes a provider's current details to the Candid organization provider it is already
+// registered as; it resolves that provider by the identifier below.
+export const CANDID_EDIT_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-edit-provider',
+};
+
+// Bot that lists the organization providers registered in Candid, as FHIR resources. Looked up by
+// NPI, it answers whether Candid already knows a provider — the resource identifier below only
+// records that a registration once succeeded from here.
+export const CANDID_LIST_PROVIDERS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-list-providers',
+};
+
 // Identifier the candid-create-provider bot writes onto the registered resource; its presence
 // means the provider exists in Candid.
 export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';

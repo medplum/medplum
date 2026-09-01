@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { Bot, Organization, Parameters } from '@medplum/fhirtypes';
+import type { Bot, Organization, Parameters, Practitioner, PractitionerRole, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -13,6 +13,7 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
+  BILLING_PRACTITIONER_IDENTIFIER_VALUE,
   EIN_SYSTEM,
   MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
   NPI_SYSTEM,
@@ -23,12 +24,15 @@ import {
 import {
   CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
+  CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
   CANDID_GET_PAYERS_BOT_IDENTIFIER,
+  CANDID_LIST_PROVIDERS_BOT_IDENTIFIER,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
+  CANDID_PRACTITIONER_PROFILE,
   CHC_PAYER_ID_SYSTEM,
 } from '../../utils/candid';
 import { BillingSetupPage } from './BillingSetupPage';
@@ -39,6 +43,13 @@ const createProviderBot: WithId<Bot> = {
   id: 'bot-create-provider',
   name: 'Candid Create Provider',
 };
+const listProvidersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-list-providers', name: 'Candid List Providers' };
+const editProviderBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-edit-provider', name: 'Candid Edit Provider' };
+
+// What candid-list-providers returns: the providers Candid holds for an NPI, as FHIR resources.
+function makeProviderSearchResult(providers: (Organization | Practitioner)[]): Parameters {
+  return { resourceType: 'Parameters', parameter: providers.map((resource) => ({ name: 'provider', resource })) };
+}
 
 // A payer Organization as the candid-get-payers bot builds it from Candid's payers.v4 API.
 function makeDirectoryPayer(uuid: string, payerId: string, name: string, extras?: Partial<Organization>): Organization {
@@ -83,6 +94,41 @@ const billingOrg: WithId<Organization> = {
   address: [{ line: ['456 Medical Center Drive'], city: 'Boston', state: 'MA', postalCode: '02101' }],
 };
 
+const drSmith: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'prac-smith',
+  name: [{ given: ['Alice'], family: 'Smith' }],
+  identifier: [{ system: NPI_SYSTEM, value: '1234567893' }],
+};
+
+// A practitioner nobody has set up for billing yet.
+const drJones: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'prac-jones',
+  name: [{ given: ['Bob'], family: 'Jones' }],
+};
+
+// Billing individually: the practitioner is the billing provider, so they carry their own tax ID
+// and address rather than an organization's.
+const drDiaz: WithId<Practitioner> = {
+  resourceType: 'Practitioner',
+  id: 'prac-diaz',
+  name: [{ given: ['Cara'], family: 'Diaz' }],
+  identifier: [
+    { system: NPI_SYSTEM, value: '1987654321' },
+    { system: EIN_SYSTEM, value: '123456789' },
+  ],
+  address: [{ line: ['1 Clinic Way'], city: 'Boston', state: 'MA', postalCode: '02101' }],
+};
+
+const smithBillsUnderPractice: WithId<PractitionerRole> = {
+  resourceType: 'PractitionerRole',
+  id: 'role-smith',
+  active: true,
+  practitioner: { reference: 'Practitioner/prac-smith' },
+  organization: { reference: 'Organization/org-practice', display: 'Test Medical Practice LLC' },
+};
+
 // More billing organizations than fit on one page.
 function manyOrganizations(): WithId<Organization>[] {
   return Array.from({ length: 12 }, (_, i) => ({
@@ -103,19 +149,35 @@ function searchQueries(searchSpy: ReturnType<typeof vi.spyOn>, identifierSystem:
 describe('BillingSetupPage', () => {
   let medplum: MockClient;
 
-  // Both lists are search controls over Organization, and the payer directory reads its imported
-  // payers through searchResources; route every search by the identifier it filters on so a tab
-  // only ever sees its own resources. Search controls page server-side, so serve the requested
-  // window and report the full count on the bundle.
+  // Every tab searches through the same two client methods: the search controls pass a query string,
+  // the payer directory and the role lookups pass an object. Route both the same way — by resource
+  // type, then by the identifier the Organization lists filter on — so a tab only ever sees its own
+  // resources. Search controls page server-side, so serve the requested window and report the full
+  // count on the bundle.
   const mockSearches = (
-    resources: { organizations?: Organization[]; payers?: Organization[] } = {}
+    resources: {
+      organizations?: Organization[];
+      payers?: Organization[];
+      practitioners?: Practitioner[];
+      roles?: PractitionerRole[];
+    } = {}
   ): ReturnType<typeof vi.spyOn> => {
-    vi.spyOn(medplum, 'searchResources').mockImplementation((async () => resources.payers ?? []) as any);
-    return vi.spyOn(medplum, 'search').mockImplementation((async (_resourceType: string, query: string) => {
-      const params = new URLSearchParams(query);
-      const all = (params.get('identifier') ?? '').startsWith(MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM)
+    const route = (resourceType: string, params: URLSearchParams): Resource[] => {
+      if (resourceType === 'Practitioner') {
+        return resources.practitioners ?? [];
+      }
+      if (resourceType === 'PractitionerRole') {
+        return resources.roles ?? [];
+      }
+      return (params.get('identifier') ?? '').startsWith(MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM)
         ? (resources.organizations ?? [])
         : (resources.payers ?? []);
+    };
+    vi.spyOn(medplum, 'searchResources').mockImplementation((async (resourceType: string, query: any) =>
+      route(resourceType, new URLSearchParams(query))) as any);
+    return vi.spyOn(medplum, 'search').mockImplementation((async (resourceType: string, query: string) => {
+      const params = new URLSearchParams(query);
+      const all = route(resourceType, params);
       const offset = Number(params.get('_offset') ?? 0);
       const count = Number(params.get('_count') ?? all.length);
       return {
@@ -129,11 +191,29 @@ describe('BillingSetupPage', () => {
 
   // Each tab looks up its own Candid bot by identifier, so a project can have the payer directory
   // deployed without the provider registration bot, and vice versa.
-  const mockBots = (bots: { payers?: boolean; createProvider?: boolean } = {}): ReturnType<typeof vi.spyOn> =>
-    vi.spyOn(medplum, 'searchOne').mockImplementation((async (_resourceType: string, query: any) => {
+  const mockBots = (
+    bots: {
+      payers?: boolean;
+      createProvider?: boolean;
+      editProvider?: boolean;
+      listProviders?: boolean;
+      practitionerRole?: PractitionerRole;
+    } = {}
+  ): ReturnType<typeof vi.spyOn> =>
+    vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: any) => {
+      // The practitioner form and its save both resolve the practitioner's active role this way
+      if (resourceType !== 'Bot') {
+        return resourceType === 'PractitionerRole' ? bots.practitionerRole : undefined;
+      }
       const identifier = ((query?.identifier as string) ?? '').split('|')[1];
       if (identifier === CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.value) {
         return bots.createProvider ? createProviderBot : undefined;
+      }
+      if (identifier === CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.value) {
+        return bots.editProvider ? editProviderBot : undefined;
+      }
+      if (identifier === CANDID_LIST_PROVIDERS_BOT_IDENTIFIER.value) {
+        return bots.listProviders ? listProvidersBot : undefined;
       }
       return bots.payers ? payersBot : undefined;
     }) as any);
@@ -150,6 +230,16 @@ describe('BillingSetupPage', () => {
   const fillPhoneAndAddress = async (user: UserEvent, dialog: HTMLElement, phone = '6175550142'): Promise<void> => {
     await user.type(within(dialog).getByLabelText(/Phone/), phone);
     await user.type(within(dialog).getByPlaceholderText('Line 1'), '456 Medical Center Drive');
+    await user.type(within(dialog).getByPlaceholderText('City'), 'Boston');
+    await user.type(within(dialog).getByPlaceholderText('State'), 'MA');
+    await user.type(within(dialog).getByPlaceholderText('Postal Code'), '02101');
+  };
+
+  // Billing individually makes the practitioner the billing provider on the claim, so the form then
+  // requires the tax ID and address an organization would otherwise supply.
+  const fillPractitionerBillingIdentity = async (user: UserEvent, dialog: HTMLElement): Promise<void> => {
+    await user.type(within(dialog).getByLabelText(/Tax ID/), '123456789');
+    await user.type(within(dialog).getByPlaceholderText('Line 1'), '1 Clinic Way');
     await user.type(within(dialog).getByPlaceholderText('City'), 'Boston');
     await user.type(within(dialog).getByPlaceholderText('State'), 'MA');
     await user.type(within(dialog).getByPlaceholderText('Postal Code'), '02101');
@@ -391,7 +481,6 @@ describe('BillingSetupPage', () => {
     await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText(/Saving registers this organization with Candid/)).toBeInTheDocument();
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
     await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
     await user.type(within(dialog).getByLabelText(/Tax ID/), '123456789');
@@ -426,7 +515,6 @@ describe('BillingSetupPage', () => {
     await user.click(await screen.findByRole('button', { name: 'New...' }));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).queryByText(/Saving registers this organization with Candid/)).not.toBeInTheDocument();
     await user.type(within(dialog).getByLabelText(/^Name/), 'Test Medical Practice LLC');
     await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
     await user.type(within(dialog).getByLabelText(/Tax ID/), '123456789');
@@ -440,7 +528,7 @@ describe('BillingSetupPage', () => {
     expect(executeSpy).not.toHaveBeenCalled();
   });
 
-  test('keeps the organization when Candid registration fails, and flags it as unregistered', async () => {
+  test('keeps the organization when Candid registration fails', async () => {
     const user = userEvent.setup();
     mockSearches({ organizations: [billingOrg] });
     mockBots({ createProvider: true });
@@ -458,11 +546,14 @@ describe('BillingSetupPage', () => {
     await fillPhoneAndAddress(user, dialog);
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    // The Organization is kept and marked so the failed registration can be retried by saving again
+    // The Organization is stored and the form closes: only the registration failed, and reopening
+    // the organization asks Candid again
     await waitFor(() => {
       expect(createSpy).toHaveBeenCalled();
     });
-    expect(await screen.findByText(/Not registered with Candid/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
   test('does not re-register an organization that already has a Candid provider ID', async () => {
@@ -484,7 +575,6 @@ describe('BillingSetupPage', () => {
     await user.click(await screen.findByText('Test Medical Practice LLC'));
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).queryByText(/Saving registers this organization with Candid/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Not registered with Candid/)).not.toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
@@ -804,7 +894,7 @@ describe('BillingSetupPage', () => {
 
     setup('Payers');
 
-    expect(await screen.findByText('Inactive — not in payer directory')).toBeInTheDocument();
+    expect(await screen.findByText('Inactive')).toBeInTheDocument();
   });
 
   test('paginates imported payers, 10 per page', async () => {
@@ -870,4 +960,393 @@ describe('BillingSetupPage', () => {
     // Loaded pages are not refetched: one search call + one batch fetch total
     expect(executeSpy).toHaveBeenCalledTimes(2);
   });
+
+  describe('billing practitioners', () => {
+    test('lists every practitioner with what Candid needs from them', async () => {
+      mockSearches({ practitioners: [drSmith], roles: [smithBillsUnderPractice] });
+      mockBots({ createProvider: true });
+
+      setup('Practitioners');
+
+      expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
+      expect(screen.getByText('1234567893')).toBeInTheDocument();
+      // The billing organization lives on the practitioner's role, not the practitioner
+      expect(await screen.findByText('Test Medical Practice LLC')).toBeInTheDocument();
+    });
+
+    test('loads the list once: the role lookup must not retrigger the search', async () => {
+      const searchSpy = mockSearches({ practitioners: [drSmith], roles: [smithBillsUnderPractice] });
+      mockBots({ payers: true });
+
+      setup('Practitioners');
+
+      expect(await screen.findByText('Test Medical Practice LLC')).toBeInTheDocument();
+      // Resolving the billing organizations sets state; the search control reloads whenever its
+      // onLoad handler changes identity, which would spin
+      const practitionerSearches = (searchSpy.mock.calls as unknown[][]).filter((call) => call[0] === 'Practitioner');
+      expect(practitionerSearches).toHaveLength(1);
+    });
+
+    test('flags what a practitioner is missing, and individual billing', async () => {
+      mockSearches({ practitioners: [drJones] });
+      mockBots({ createProvider: true });
+
+      setup('Practitioners');
+
+      expect(await screen.findByText(/Missing NPI/)).toBeInTheDocument();
+      // No role means the practitioner bills under their own NPI
+      expect(screen.getByText('Individually')).toBeInTheDocument();
+    });
+
+    test('asks for a tax ID and address only from practitioners who bill individually', async () => {
+      mockSearches({ practitioners: [drSmith, drDiaz, drJones], roles: [smithBillsUnderPractice] });
+      mockBots({ payers: true });
+
+      setup('Practitioners');
+
+      // Alice bills under an organization, which is the billing provider and supplies both, even
+      // though she carries neither; Cara bills individually and carries her own
+      expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
+      expect(screen.getByText('Cara Diaz')).toBeInTheDocument();
+      // Leaving Bob, who bills individually with neither
+      expect(screen.getAllByText('Missing Tax ID')).toHaveLength(1);
+      expect(screen.getAllByText('Incomplete address')).toHaveLength(1);
+    });
+
+    test('saves the billing details, and points a new role at the billing organization', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drJones], organizations: [billingOrg] });
+      mockBots({ payers: true });
+      const updateSpy = vi.spyOn(medplum, 'updateResource').mockResolvedValue(drJones);
+      const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue(smithBillsUnderPractice);
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Bob Jones'));
+
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
+      // The picker searches the billing organizations, so it needs no tax ID or address here
+      await user.type(within(dialog).getByRole('searchbox'), 'Test');
+      // The autocomplete dropdown portals outside the modal, which the modal marks aria-hidden
+      await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => {
+        expect(updateSpy).toHaveBeenCalled();
+      });
+      const updated = updateSpy.mock.calls[0][0] as Practitioner;
+      expect(updated.identifier).toEqual([
+        { system: NPI_SYSTEM, value: '3564119220' },
+        { system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_PRACTITIONER_IDENTIFIER_VALUE },
+      ]);
+      expect(updated.meta?.profile).toEqual([CANDID_PRACTITIONER_PROFILE]);
+      // A practitioner with no role gets one pointing at the organization they bill under
+      await waitFor(() => {
+        expect(createSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'PractitionerRole',
+            active: true,
+            practitioner: expect.objectContaining({ reference: 'Practitioner/prac-jones' }),
+            organization: expect.objectContaining({ reference: 'Organization/org-practice' }),
+          })
+        );
+      });
+    });
+
+    test('clears the organization from the role when switching to individual billing', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [billingOrg], roles: [smithBillsUnderPractice] });
+      mockBots({ payers: true, practitionerRole: smithBillsUnderPractice });
+      // The picker resolves the reference the row handed it, to show what the role points at now
+      vi.spyOn(medplum, 'readReference').mockResolvedValue(billingOrg);
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(drSmith);
+      const patchSpy = vi.spyOn(medplum, 'patchResource').mockResolvedValue(smithBillsUnderPractice);
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+
+      const dialog = await screen.findByRole('dialog');
+      // The form opens on the organization the role already points at
+      expect(await within(dialog).findByText('Test Medical Practice LLC')).toBeInTheDocument();
+      await user.click(within(dialog).getByTitle('Clear all'));
+      // Billing individually makes the practitioner the billing provider, so they need their own
+      await fillPractitionerBillingIdentity(user, dialog);
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      // Only the organization is dropped: the role carries unrelated authorizations
+      await waitFor(() => {
+        expect(patchSpy).toHaveBeenCalledWith('PractitionerRole', 'role-smith', [
+          { op: 'remove', path: '/organization' },
+        ]);
+      });
+    });
+
+    test('registers a practitioner with Candid as a rendering provider', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drJones], organizations: [billingOrg] });
+      mockBots({ createProvider: true });
+      const updateSpy = vi.spyOn(medplum, 'updateResource').mockResolvedValue(drJones);
+      const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Bob Jones'));
+
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
+      await fillPractitionerBillingIdentity(user, dialog);
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => {
+        expect(executeSpy).toHaveBeenCalled();
+      });
+      // A practitioner always renders; billing individually here, since no organization was chosen
+      const updated = updateSpy.mock.calls[0][0] as Practitioner;
+      expect(updated.extension).toEqual([
+        { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
+        { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
+      ]);
+      expect(executeSpy).toHaveBeenCalledWith(
+        'bot-create-provider',
+        expect.objectContaining({ resourceType: 'Practitioner', id: 'prac-jones' }),
+        'application/fhir+json'
+      );
+    });
+
+    test('blocks save on a malformed NPI', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drJones] });
+      mockBots({ payers: true });
+      const updateSpy = vi.spyOn(medplum, 'updateResource');
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Bob Jones'));
+
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByLabelText(/NPI/), '12345');
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      expect(await screen.findByText('NPI must be 10 digits')).toBeInTheDocument();
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+  });
+
+
+  describe('Candid registration lookup', () => {
+    // What Candid returns for an NPI it already holds a provider for.
+    const candidOrg: Organization = {
+      resourceType: 'Organization',
+      identifier: [
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-org-1' },
+        { system: NPI_SYSTEM, value: '3564119220' },
+      ],
+    };
+    const candidPractitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        { system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM, value: 'cand-prac-1' },
+        { system: NPI_SYSTEM, value: '1234567893' },
+      ],
+    };
+
+    // The organization as stored before any registration wrote its Candid ID back.
+    const unstamped: WithId<Organization> = {
+      ...billingOrg,
+      identifier: billingOrg.identifier?.filter((i) => i.system !== CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM),
+    };
+
+    test('reports what Candid says when a billing organization is opened', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true, listProviders: true });
+      const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(makeProviderSearchResult([candidOrg]));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      expect(await screen.findByText(/Registered with Candid under NPI 3564119220/)).toBeInTheDocument();
+      // Looked up by NPI against Candid, not read off the stored resource
+      expect(executeSpy).toHaveBeenCalledWith('bot-list-providers', { npi: '3564119220' }, 'application/json');
+    });
+
+    test('records the provider ID Candid returns instead of registering a duplicate', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true, listProviders: true });
+      const updateSpy = vi.spyOn(medplum, 'updateResource').mockResolvedValue(unstamped);
+      const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(makeProviderSearchResult([candidOrg]));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      // Candid registers one provider per NPI, so creating a second is rejected as a duplicate:
+      // the ID it already has is stamped on instead
+      await waitFor(() => {
+        expect(updateSpy).toHaveBeenCalled();
+      });
+      const updated = updateSpy.mock.calls[0][0] as Organization;
+      expect(updated.identifier).toContainEqual({
+        system: CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
+        value: 'cand-org-1',
+      });
+      expect(executeSpy).not.toHaveBeenCalledWith('bot-create-provider', expect.anything(), expect.anything());
+    });
+
+    test('pushes the change to Candid when it already holds the provider', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true });
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(unstamped);
+      const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(makeProviderSearchResult([candidOrg]));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+      const dialog = await screen.findByRole('dialog');
+      // Candid already holds this provider, so the action edits it rather than registering another
+      expect(await screen.findByText(/Registered with Candid/)).toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() => {
+        expect(executeSpy).toHaveBeenCalledWith(
+          'bot-edit-provider',
+          expect.objectContaining({ resourceType: 'Organization' }),
+          'application/fhir+json'
+        );
+      });
+      // One provider per NPI: registering a second is what Candid would reject
+      expect(executeSpy).not.toHaveBeenCalledWith('bot-create-provider', expect.anything(), expect.anything());
+    });
+
+    test('updates a practitioner in Candid, carrying the billing flags with it', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith], organizations: [billingOrg] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true });
+      // The bot is handed the stored resource, so echo what the save wrote
+      vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
+      const executeSpy = vi
+        .spyOn(medplum, 'executeBot')
+        .mockResolvedValue(makeProviderSearchResult([candidPractitioner]));
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+      const dialog = await screen.findByRole('dialog');
+      await screen.findByText(/Registered with Candid/);
+      await fillPractitionerBillingIdentity(user, dialog);
+      await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
+
+      await waitFor(() => {
+        expect(executeSpy).toHaveBeenCalledWith(
+          'bot-edit-provider',
+          // Billing individually, so Candid is told they are the billing provider too
+          expect.objectContaining({
+            extension: [
+              { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
+              { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
+            ],
+          }),
+          'application/fhir+json'
+        );
+      });
+    });
+
+    test('registers when Candid has no provider for the NPI', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true, listProviders: true });
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(unstamped);
+      const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(makeProviderSearchResult([]));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+      const dialog = await screen.findByRole('dialog');
+      expect(await screen.findByText(/Not registered with Candid/)).toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await waitFor(() => {
+        expect(executeSpy).toHaveBeenCalledWith(
+          'bot-create-provider',
+          expect.objectContaining({ resourceType: 'Organization' }),
+          'application/fhir+json'
+        );
+      });
+    });
+
+    test('says so when the lookup itself fails', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true, listProviders: true });
+      vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Candid credentials missing'));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      expect(await screen.findByText(/Could not check Candid: Candid credentials missing/)).toBeInTheDocument();
+    });
+
+    test('checks a practitioner by NPI too, matching the individual provider', async () => {
+      const user = userEvent.setup();
+      mockSearches({ practitioners: [drSmith] });
+      mockBots({ createProvider: true, listProviders: true });
+      // Candid can hold an organization under the same NPI; only the individual provider applies
+      const executeSpy = vi
+        .spyOn(medplum, 'executeBot')
+        .mockResolvedValue(makeProviderSearchResult([candidOrg, candidPractitioner]));
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Alice Smith'));
+
+      expect(await screen.findByText(/Registered with Candid under NPI 1234567893/)).toBeInTheDocument();
+      expect(executeSpy).toHaveBeenCalledWith('bot-list-providers', { npi: '1234567893' }, 'application/json');
+    });
+
+    test('checks the NPI as it is typed, before a first registration is attempted', async () => {
+      const user = userEvent.setup();
+      // Bob has no NPI stored, so there is nothing to look up until one is entered
+      mockSearches({ practitioners: [drJones] });
+      mockBots({ createProvider: true, listProviders: true });
+      const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(makeProviderSearchResult([candidOrg]));
+
+      setup('Practitioners');
+
+      await user.click(await screen.findByText('Bob Jones'));
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).queryByText(/Candid/)).not.toBeInTheDocument();
+
+      await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
+
+      // Candid holds an organization under that NPI, not an individual provider, so registering
+      // this practitioner is still the right move
+      expect(await screen.findByText(/Not registered with Candid/)).toBeInTheDocument();
+      expect(executeSpy).toHaveBeenCalledWith('bot-list-providers', { npi: '3564119220' }, 'application/json');
+    });
+
+    test('asks nothing of Candid when the lookup bot is not deployed', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true });
+      const executeSpy = vi.spyOn(medplum, 'executeBot');
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).queryByText(/Candid/)).not.toBeInTheDocument();
+      expect(executeSpy).not.toHaveBeenCalled();
+    });
+  });
+
 });

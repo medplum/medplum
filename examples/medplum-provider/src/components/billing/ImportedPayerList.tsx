@@ -71,7 +71,7 @@ function renderStatus(resource: Resource): JSX.Element | undefined {
   }
   return (
     <Badge color="gray" variant="light">
-      Inactive — not in payer directory
+      Inactive
     </Badge>
   );
 }

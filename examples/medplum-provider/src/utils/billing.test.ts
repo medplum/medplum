@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Organization, Parameters } from '@medplum/fhirtypes';
+import type { Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
+  BILLING_PRACTITIONER_IDENTIFIER_VALUE,
   EIN_SYSTEM,
   MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM,
   NPI_SYSTEM,
@@ -12,6 +13,7 @@ import {
   PROVIDER_ORGANIZATION_TYPE,
   buildPayerRefreshOps,
   buildUpdatedOrganization,
+  buildUpdatedPractitioner,
   formatPayerCategory,
   getPayerCategory,
   isCompleteBillingAddress,
@@ -21,6 +23,7 @@ import {
   parsePayerSearchPage,
   upsertIdentifier,
   upsertPhone,
+  withCandidPractitionerExtensions,
   withCandidProviderExtensions,
 } from './billing';
 import {
@@ -31,6 +34,7 @@ import {
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
+  CANDID_PRACTITIONER_PROFILE,
   CHC_PAYER_ID_SYSTEM,
   CMS_PAYER_ID_SYSTEM,
 } from './candid';
@@ -437,4 +441,49 @@ describe('billing utils', () => {
       ]);
     });
   });
+
+  describe('buildUpdatedPractitioner', () => {
+    test('writes the NPI and tax ID and claims the practitioner profile', () => {
+      const result = buildUpdatedPractitioner(
+        { resourceType: 'Practitioner', name: [{ given: ['Bob'], family: 'Jones' }] },
+        { npi: '3564119220', ein: '12-3456789' }
+      );
+
+      expect(result.identifier).toEqual([
+        { system: NPI_SYSTEM, value: '3564119220' },
+        { system: EIN_SYSTEM, value: '123456789' },
+        { system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_PRACTITIONER_IDENTIFIER_VALUE },
+      ]);
+      expect(result.meta?.profile).toEqual([CANDID_PRACTITIONER_PROFILE]);
+    });
+
+    test('leaves qualifications alone: the taxonomy is not collected here', () => {
+      const existing: Practitioner = {
+        resourceType: 'Practitioner',
+        qualification: [
+          { code: { coding: [{ system: 'https://example.com/license', code: 'MA-12345' }] } },
+          { code: { coding: [{ system: 'http://nucc.org/provider-taxonomy', code: '207Q00000X' }] } },
+        ],
+      };
+
+      const result = buildUpdatedPractitioner(existing, { npi: '3564119220', ein: '123456789' });
+
+      expect(result.qualification).toEqual(existing.qualification);
+    });
+  });
+
+  describe('withCandidPractitionerExtensions', () => {
+    test('always renders, and bills only when there is no billing organization', () => {
+      expect(withCandidPractitionerExtensions({ resourceType: 'Practitioner' }, true).extension).toEqual([
+        { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
+        { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
+      ]);
+      expect(withCandidPractitionerExtensions({ resourceType: 'Practitioner' }, false).extension).toEqual([
+        { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: false },
+        { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: true },
+      ]);
+    });
+  });
+
+
 });
