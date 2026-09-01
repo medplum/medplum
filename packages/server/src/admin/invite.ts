@@ -29,7 +29,7 @@ import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
+import { bcryptHashPassword, createProjectMembership, isEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
@@ -98,6 +98,11 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   const { project, email } = request;
+  const invitedBySuperAdmin = tryGetRequestContext()?.authState?.project?.superAdmin;
+  if (email && !invitedBySuperAdmin && !isEmailDomainAllowed(email, project, getConfig().blockedEmailDomains)) {
+    throw new OperationOutcomeError(badRequest('Email domain is not allowed for this project', 'email'));
+  }
+
   let existingUser = false;
   let passwordResetUrl: string | undefined;
 

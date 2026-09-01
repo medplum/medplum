@@ -13,6 +13,7 @@ import {
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   Binary,
   Bot,
   ClientApplication,
@@ -41,6 +42,7 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from './accesspolicy';
@@ -840,6 +842,65 @@ describe('AccessPolicy', () => {
 
       // The ClientApplication should not be able to access it
       await expect(clientRepo.readResource<Observation>('Observation', observation2.id)).rejects.toThrow('Not found');
+    }));
+
+  test('Uses current request remoteAddress instead of stale login.remoteAddress for AuditEvents', () =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      config.logAuditEvents = true;
+      const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+      try {
+        const client = await systemRepo.createResource<ClientApplication>({
+          resourceType: 'ClientApplication',
+          secret: 'foo',
+          redirectUris: ['https://example.com/'],
+        });
+
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: { reference: 'Project/' + testProject.id },
+          profile: createReference(client),
+          user: createReference(client),
+        });
+
+        const clientRepo = await getRepoForLogin(
+          {
+            login: {
+              resourceType: 'Login',
+              user: createReference(client),
+              authMethod: 'client',
+              authTime: new Date().toISOString(),
+              remoteAddress: '10.0.0.1',
+            },
+            membership,
+            project: testProject,
+            userConfig: {} as UserConfiguration,
+          },
+          true,
+          '203.0.113.5'
+        );
+
+        await clientRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Al'], family: 'Bundy' }],
+        });
+
+        const loggedCreateCall = writeSpy.mock.calls.find((call: unknown[]) => {
+          try {
+            const parsed = JSON.parse(call[0] as string);
+            return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'rest';
+          } catch {
+            return false;
+          }
+        });
+        expect(loggedCreateCall).toBeDefined();
+        const auditEvent = JSON.parse((loggedCreateCall as unknown[])[0] as string) as AuditEvent;
+        expect(auditEvent.agent?.[0]?.network?.address).toStrictEqual('203.0.113.5');
+      } finally {
+        config.logAuditEvents = false;
+        writeSpy.mockRestore();
+      }
     }));
 
   test('ClientApplication with access policy', () =>

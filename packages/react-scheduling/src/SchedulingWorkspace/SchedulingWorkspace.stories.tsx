@@ -35,6 +35,12 @@ export default {
  * visit is this story's, raised from `onBooked`: the workspace reports what was booked
  * and leaves how to say so to whatever is hosting it.
  *
+ * The grid marks the time being booked, and the mark follows the answers: picking a time
+ * in the search moves it there, and searching another day takes it down. Hovering open
+ * time marks nothing — a whole-column tint cannot say which time is under the pointer.
+ * The calendar never moves itself to keep the mark in sight; page to a week the marked
+ * time is on and it is there.
+ *
  * Clicking a different day with the form part-filled re-opens it on the new day and
  * clears the answers; clicking again inside the day already open leaves them alone.
  *
