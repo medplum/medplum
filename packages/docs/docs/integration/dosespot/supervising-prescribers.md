@@ -33,8 +33,9 @@ The request identifies the supervisee and supervisor by their Medplum Practition
 Before calling the operation:
 
 1. Restrict access to a trusted administrative caller with permission to invoke this operation.
-2. Enroll both Practitioners in DoseSpot. Each must have a DoseSpot clinician ID on their `ProjectMembership`.
-3. Verify that the supervisor is a Prescribing Clinician (role `1`) and the supervisee is a Prescribing Agent Clinician (role `5`). The operation does not independently validate role eligibility.
+2. Configure the `DOSESPOT_USER_ID` project secret with the DoseSpot clinician ID of a Proxy user with the Clinic Admin role (`ClinicianAdmin`, role `4`). The operation authenticates to DoseSpot with this administrative identity, not the Medplum caller's identity. The Medplum caller does not need to be enrolled in DoseSpot or have a DoseSpot clinician role.
+3. Enroll both Practitioners in DoseSpot. Each must have a DoseSpot clinician ID on their `ProjectMembership`.
+4. Verify that the supervisor is a Prescribing Clinician (role `1`) and the supervisee is a Prescribing Agent Clinician (role `5`). The operation does not independently validate role eligibility.
 :::
 
 ## Workflow
@@ -169,5 +170,6 @@ On `remove`, the supervisor parameters identify the supervisor supplied to the o
 | Invalid action | `action` is not `"add"` or `"remove"` | Omit `action` (defaults to `"add"`) or pass one of those two values |
 | No DoseSpot clinician ID | One or both Practitioners are not enrolled | Enroll both Practitioners before setting a supervising prescriber |
 | No ProjectMembership found | Supervisee or supervisor has no membership | Create a `ProjectMembership` for that Practitioner, then enroll |
+| Missing `DOSESPOT_USER_ID` or DoseSpot authorization error | The administrative DoseSpot identity is missing or lacks the required permissions | Set `DOSESPOT_USER_ID` to the clinician ID of a Proxy user with the Clinic Admin role (`ClinicianAdmin`, role `4`) |
 | Invalid `DOSESPOT_CLINIC_ID` | Clinic secret is not a number | Set `DOSESPOT_CLINIC_ID` to the numeric DoseSpot clinic ID |
 | Failed to add/remove supervising prescriber | DoseSpot returned a non-OK `ResultCode` | Use `ResultDescription` from the error to correct the clinic or clinician data |
