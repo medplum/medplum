@@ -3,14 +3,13 @@
 
 function resolveEnvironmentFavicon(): string | null {
   const { hostname } = window.location;
+  if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$|^192\.168\.|\.local(host)?$/.test(hostname)) {
+    return '/favicon-local.ico';
+  }
   if (hostname === 'medplum.com' || hostname.endsWith('.medplum.com')) {
     return null;
   }
-  const isLocal =
-    /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(hostname) ||
-    /^192\.168\./.test(hostname) ||
-    /\.local(host)?$/.test(hostname);
-  return isLocal ? '/favicon-local.ico' : '/favicon-staging.ico';
+  return '/favicon-staging.ico';
 }
 
 if (typeof document !== 'undefined') {

@@ -40,17 +40,13 @@ const theme = createTheme({
 
 const container = document.getElementById('root') as HTMLDivElement;
 function setEnvironmentFavicon(): void {
-  if (import.meta.env.MEDPLUM_ENVIRONMENT_FAVICON !== 'true') {
-    return;
-  }
   const { hostname } = window.location;
-  if (hostname === 'medplum.com' || hostname.endsWith('.medplum.com')) {
+  const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$|^192\.168\.|\.local(host)?$/.test(hostname);
+  const isMedplumStaging =
+    import.meta.env.MEDPLUM_ENVIRONMENT_FAVICON === 'true' && !/(^|\.)medplum\.com$/.test(hostname);
+  if (!isLocal && !isMedplumStaging) {
     return;
   }
-  const isLocal =
-    /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(hostname) ||
-    hostname.startsWith('192.168.') ||
-    /\.local(host)?$/.test(hostname);
   document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.remove();
   const link = document.createElement('link');
   link.rel = 'icon';
