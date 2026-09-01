@@ -243,6 +243,31 @@ def handle_webhook():
     return {"ok":True}
 ```
 
+## Omitting Medplum metadata from webhook payloads
+
+By default, rest-hook payloads can include Medplum's extended `meta` fields. To send standard FHIR metadata only, add the `subscription-omit-extended-meta` extension with `valueBoolean` set to `true`:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-omit-extended-meta",
+      "valueBoolean": true
+    }
+  ]
+}
+```
+
+When enabled, the webhook resource omits the Medplum-specific `meta.author`, `meta.project`, `meta.account`, `meta.accounts`, `meta.compartment`, and `meta.deleted` fields. The default payload is unchanged, and the option applies to rest-hook payloads only.
+
 ## Retry Policy
 
 If your subscription failed or threw an error, you can configure it to attempt to execute the operation multiple times.

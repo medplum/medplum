@@ -5,6 +5,7 @@ import type { SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
   createReference,
+  deepClone,
   generateId,
   getReferenceString,
   LogLevel,
@@ -190,6 +191,58 @@ describe('Subscription Worker', () => {
       await repo.deleteResource('Patient', patient.id);
 
       await findAndExecSubscriptionJob(patient, 'delete');
+    }));
+
+  test('Omit extended metadata from rest-hook payloads', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-omit-extended-meta',
+            valueBoolean: true,
+          },
+        ],
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient.meta?.project).toBe(repo.currentProject()?.id);
+      expect(patient.meta?.author).toBeDefined();
+      const patientBeforeDelivery = deepClone(patient);
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(patient, 'create');
+
+      const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+      const payload = JSON.parse(request.body as string) as Patient;
+      expect(payload).toMatchObject({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: {
+          versionId: patient.meta?.versionId,
+          lastUpdated: patient.meta?.lastUpdated,
+        },
+      });
+      expect(payload.meta).toBeDefined();
+      expect(payload.meta).not.toHaveProperty('author');
+      expect(payload.meta).not.toHaveProperty('project');
+      expect(payload.meta).not.toHaveProperty('account');
+      expect(payload.meta).not.toHaveProperty('accounts');
+      expect(payload.meta).not.toHaveProperty('compartment');
+      expect(payload.meta).not.toHaveProperty('deleted');
+      expect(patient).toStrictEqual(patientBeforeDelivery);
+      expect(request.body).toBe(stringify(payload));
     }));
 
   test('Does not send subscriptions when disabled', () =>
