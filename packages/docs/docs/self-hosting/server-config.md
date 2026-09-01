@@ -282,7 +282,7 @@ Optional AWS CloudWatch Log Stream name for `AuditEvent` logs. Only applies if `
 
 ### registerEnabled
 
-Optional flag whether new user registration is enabled. See [Open Patient Registration](/docs/user-management/open-patient-registration) for more details.
+Optional flag whether new user registration is enabled. When `false`, the server rejects both new user registration (`/auth/newuser`) and new project creation (`/auth/newproject`). See [Open Patient Registration](/docs/user-management/open-patient-registration) for more details.
 
 **Default:** `true`
 
