@@ -15,7 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword, isPractitionerEmailDomainAllowed, projectRegistrationAllowed } from './utils';
+import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -79,10 +79,6 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     const registrationOutcome = projectRegistrationAllowed(project);
     if (registrationOutcome) {
       sendOutcome(res, registrationOutcome);
-      return;
-    }
-    if (!isPractitionerEmailDomainAllowed(email, project, config.blockedEmailDomains)) {
-      sendOutcome(res, badRequest('Email domain is not allowed for this project', 'email'));
       return;
     }
   }
