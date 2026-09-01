@@ -34,8 +34,10 @@ export function dcmjsStudyToMedplumStudy(naturalized: Record<string, unknown>): 
     patientId: naturalized.PatientID as string,
     patientBirthDate: dicomDateToFhirDate(naturalized.PatientBirthDate),
     patientSex: naturalized.PatientSex as string,
-    numberOfStudyRelatedSeries: naturalized.NumberOfStudyRelatedSeries as number,
-    numberOfStudyRelatedInstances: naturalized.NumberOfStudyRelatedInstances as number,
+    // NumberOfStudyRelatedSeries/Instances are Q/R query keys the archive computes, so a sender's
+    // own values are dropped rather than trusted: a modality that stamps 512 while pushing one
+    // instance at a time would otherwise have QIDO report 512 from the first instance onward. The
+    // study job fills them in from what is actually stored.
   };
 }
 
@@ -85,7 +87,7 @@ const MAX_UPDATE_ATTEMPTS = 3;
  * @param id - The ID of the resource to update.
  * @param recompute - Returns the updated resource, or undefined when it already holds the right values.
  */
-async function updateWithRetry<T extends Resource>(
+export async function updateWithRetry<T extends Resource>(
   repo: Repository,
   resourceType: T['resourceType'],
   id: string,
@@ -109,11 +111,80 @@ async function updateWithRetry<T extends Resource>(
     }
   }
 
-  getLogger().warn('Unable to update DICOM aggregates', { resourceType, id });
+  getLogger().warn('Unable to update derived DICOM resource', { resourceType, id });
 }
 
 /**
- * Recomputes the Study level aggregate attributes of a `DicomStudy` from its series and instances.
+ * A single consistent read of a study's series and instance counts.
+ *
+ * Gathered once and reused for the study aggregates, the series aggregates, and the `ImagingStudy`,
+ * so those three cannot disagree with each other the way they could if each recomputed its own view.
+ */
+export interface StudyScan {
+  readonly seriesList: WithId<DicomSeries>[];
+  readonly instanceCounts: Map<string, number>;
+  readonly totalInstances: number;
+}
+
+/**
+ * Reads every series in a study, plus the instance counts for the study and each series.
+ *
+ * Instances are counted rather than enumerated: nothing downstream needs the instances themselves,
+ * and a large study holds more of them than is reasonable to hold in memory.
+ *
+ * @param repo - The repository to read with.
+ * @param studyId - The ID of the `DicomStudy` to scan.
+ * @returns The scan.
+ */
+export async function scanStudy(repo: Repository, studyId: string): Promise<StudyScan> {
+  const studyReference = `DicomStudy/${studyId}`;
+  const seriesList: WithId<DicomSeries>[] = [];
+
+  await repo.processAllResources<DicomSeries>(
+    {
+      resourceType: 'DicomSeries',
+      filters: [{ code: 'study', operator: Operator.EQUALS, value: studyReference }],
+      // Sorted by _lastUpdated ascending so the search pages by cursor rather than by offset.
+      // Offset paging throws past `maxSearchOffset` (default 10,000), which a large study reaches.
+      sortRules: [{ code: '_lastUpdated' }],
+      count: 1000,
+    },
+    async (series) => {
+      seriesList.push(series);
+    }
+  );
+
+  const instanceCounts = new Map<string, number>();
+  for (const series of seriesList) {
+    instanceCounts.set(series.id, await countInstances(repo, 'series', `DicomSeries/${series.id}`));
+  }
+
+  return {
+    seriesList,
+    instanceCounts,
+    totalInstances: await countInstances(repo, 'study', studyReference),
+  };
+}
+
+/**
+ * Counts the instances matching one reference search parameter.
+ * @param repo - The repository to read with.
+ * @param code - The search parameter to filter on.
+ * @param value - The reference to match.
+ * @returns The instance count.
+ */
+async function countInstances(repo: Repository, code: string, value: string): Promise<number> {
+  const bundle = await repo.search<DicomInstance>({
+    resourceType: 'DicomInstance',
+    filters: [{ code, operator: Operator.EQUALS, value }],
+    count: 0,
+    total: 'accurate',
+  });
+  return bundle.total ?? 0;
+}
+
+/**
+ * Recomputes the Study level aggregate attributes of a `DicomStudy` from a scan.
  *
  * ModalitiesInStudy (0008,0061), NumberOfStudyRelatedSeries (0020,1206), and
  * NumberOfStudyRelatedInstances (0020,1208) are Study level query keys that the archive computes
@@ -126,34 +197,17 @@ async function updateWithRetry<T extends Resource>(
  *
  * @param repo - The repository to read and write with.
  * @param studyId - The ID of the `DicomStudy` to update.
+ * @param scan - The scan to compute from.
  */
-export async function updateStudyAggregates(repo: Repository, studyId: string): Promise<void> {
-  const studyReference = `DicomStudy/${studyId}`;
-
+export async function updateStudyAggregates(repo: Repository, studyId: string, scan: StudyScan): Promise<void> {
   await updateWithRetry<DicomStudy>(repo, 'DicomStudy', studyId, async (study) => {
     const modalities = new Set<string>();
-    let seriesCount = 0;
-    await repo.processAllResources<DicomSeries>(
-      {
-        resourceType: 'DicomSeries',
-        filters: [{ code: 'study', operator: Operator.EQUALS, value: studyReference }],
-        count: 1000,
-      },
-      async (series) => {
-        seriesCount++;
-        const modality = series.modality?.trim().toUpperCase();
-        if (modality) {
-          modalities.add(modality);
-        }
+    for (const series of scan.seriesList) {
+      const modality = series.modality?.trim().toUpperCase();
+      if (modality) {
+        modalities.add(modality);
       }
-    );
-
-    const instanceBundle = await repo.search<DicomInstance>({
-      resourceType: 'DicomInstance',
-      filters: [{ code: 'study', operator: Operator.EQUALS, value: studyReference }],
-      count: 0,
-      total: 'accurate',
-    });
+    }
 
     // Sorted so that an unchanged study compares equal below, rather than churning a new version.
     const modalitiesInStudy =
@@ -161,8 +215,8 @@ export async function updateStudyAggregates(repo: Repository, studyId: string): 
 
     if (
       deepEquals(study.modalitiesInStudy, modalitiesInStudy) &&
-      study.numberOfStudyRelatedSeries === seriesCount &&
-      study.numberOfStudyRelatedInstances === instanceBundle.total
+      study.numberOfStudyRelatedSeries === scan.seriesList.length &&
+      study.numberOfStudyRelatedInstances === scan.totalInstances
     ) {
       return undefined;
     }
@@ -170,37 +224,32 @@ export async function updateStudyAggregates(repo: Repository, studyId: string): 
     return {
       ...study,
       modalitiesInStudy,
-      numberOfStudyRelatedSeries: seriesCount,
-      numberOfStudyRelatedInstances: instanceBundle.total,
+      numberOfStudyRelatedSeries: scan.seriesList.length,
+      numberOfStudyRelatedInstances: scan.totalInstances,
     };
   });
 }
 
 /**
- * Recomputes NumberOfSeriesRelatedInstances (0020,1209) for a `DicomSeries`.
+ * Recomputes NumberOfSeriesRelatedInstances (0020,1209) for every series in a scan.
  *
  * Another Q/R query key absent from the composite IOD, for the same reasons described on
- * {@link updateStudyAggregates}. Only series that actually received instances need this, so STOW
- * calls it for the series it touched rather than every series in the study.
+ * {@link updateStudyAggregates}. Every series in the study is recomputed rather than only the ones a
+ * request touched, because a coalesced study job cannot know which instances arrived since it last
+ * ran. Series whose count is unchanged return early without a write.
  *
  * @param repo - The repository to read and write with.
- * @param seriesId - The ID of the `DicomSeries` to update.
+ * @param scan - The scan to compute from.
  */
-export async function updateSeriesAggregates(repo: Repository, seriesId: string): Promise<void> {
-  await updateWithRetry<DicomSeries>(repo, 'DicomSeries', seriesId, async (series) => {
-    const instanceBundle = await repo.search<DicomInstance>({
-      resourceType: 'DicomInstance',
-      filters: [{ code: 'series', operator: Operator.EQUALS, value: `DicomSeries/${seriesId}` }],
-      count: 0,
-      total: 'accurate',
-    });
-
-    if (series.numberOfSeriesRelatedInstances === instanceBundle.total) {
-      return undefined;
-    }
-
-    return { ...series, numberOfSeriesRelatedInstances: instanceBundle.total };
-  });
+export async function updateSeriesAggregates(repo: Repository, scan: StudyScan): Promise<void> {
+  for (const series of scan.seriesList) {
+    const count = scan.instanceCounts.get(series.id) ?? 0;
+    await updateWithRetry<DicomSeries>(repo, 'DicomSeries', series.id, async (existing) =>
+      existing.numberOfSeriesRelatedInstances === count
+        ? undefined
+        : { ...existing, numberOfSeriesRelatedInstances: count }
+    );
+  }
 }
 
 export function dcmjsSeriesToMedplumSeries(
@@ -215,7 +264,7 @@ export function dcmjsSeriesToMedplumSeries(
     modality: naturalized.Modality as string,
     seriesDescription: naturalized.SeriesDescription as string,
     timezoneOffsetFromUtc: naturalized.TimezoneOffsetFromUTC as string,
-    numberOfSeriesRelatedInstances: naturalized.NumberOfSeriesRelatedInstances as number,
+    // Recomputed by the DICOM study job, not taken from the sender. See dcmjsStudyToMedplumStudy.
     performedProcedureStepStartDate: dicomDateToFhirDate(naturalized.PerformedProcedureStepStartDate),
     performedProcedureStepStartTime: dicomTimeToFhirTime(naturalized.PerformedProcedureStepStartTime),
   };

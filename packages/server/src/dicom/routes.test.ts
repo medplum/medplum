@@ -12,6 +12,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject } from '../test.setup';
+import { execPendingDicomStudyJobs } from '../workers/test-utils';
 import { handleSearchSeries } from './qido-rs';
 import { handleRetrieveInstanceFrame, handleRetrieveSeriesMetadata } from './wado-rs';
 
@@ -124,7 +125,10 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
+    // The body is what separates an unbuilt route from a study that genuinely does not exist, since
+    // both answer 404.
+    expect(res.body).toMatchObject({ error: 'DICOMweb endpoint not implemented' });
   });
 
   test.skip('Update study', async () => {
@@ -140,7 +144,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/rendered`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get all series', async () => {
@@ -163,14 +167,14 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get rendered series', async () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/rendered`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get series metadata', async () => {
@@ -205,28 +209,28 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get instance', async () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/789`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get rendered instance', async () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/789/rendered`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get instance metadata', async () => {
     const res = await request(app)
       .get(`/dicomweb/studies/123/series/456/instances/789/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Get frame', async () => {
@@ -302,7 +306,7 @@ describe('DICOM Routes', () => {
     const res = await request(app)
       .get(`/dicomweb/bulkdataUriReference`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res).toHaveStatus(200);
+    expect(res).toHaveStatus(404);
   });
 
   test('Create study invalid multipart content-type', async () => {
@@ -332,6 +336,10 @@ describe('DICOM Routes', () => {
     expect(res).toHaveStatus(200);
     expect(JSON.stringify(res.body)).toContain('1.2.840.10008.5.1.4.1.1.7');
     expect(JSON.stringify(res.body)).toContain('1.2.826.0.1.3680043.10.543.1');
+
+    // Study level aggregates are computed by the coalesced study job rather than during the upload,
+    // so they are only correct once it has run.
+    await execPendingDicomStudyJobs();
 
     // The uploaded instance carries no ModalitiesInStudy (0008,0061), so the value below can only
     // come from reconciling the study against its stored series.
@@ -388,6 +396,8 @@ describe('DICOM Routes', () => {
     ].Value?.map((item) => item['00081155'].Value[0]);
     expect(referenced).toStrictEqual(sopInstanceUids);
 
+    await execPendingDicomStudyJobs();
+
     // A single study and series absorbed all three, rather than one being created per instance
     const studies = await request(app)
       .get(`/dicomweb/studies`)
@@ -433,6 +443,8 @@ describe('DICOM Routes', () => {
     // Store the same SOP instance twice, in two separate requests
     expect(await upload()).toHaveStatus(200);
     expect(await upload()).toHaveStatus(200);
+
+    await execPendingDicomStudyJobs();
 
     // The conditional create resolved the existing instance the second time, so the study and series
     // still count a single instance rather than two. NumberOfStudyRelatedInstances (0020,1208) and
