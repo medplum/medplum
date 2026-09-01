@@ -58,7 +58,11 @@ export interface UseDaySearchResult {
   readonly chooseRange: (start: Date, end: Date) => void;
   /** Reaches further than the days already answered, keeping them on screen. */
   readonly showMoreDays: () => void;
-  /** Puts the added days away, for an answer that changes what every day offers. */
+  /**
+   * Goes back to the days first picked, dropping the days "Show more days" reached for
+   * and every time found so far. For a change that makes those times wrong — a different
+   * service, or a different set of actors — rather than for a change of days.
+   */
   readonly reset: () => void;
 }
 
@@ -133,7 +137,8 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     }));
   }, [search.appointments]);
 
-  // Which days were picked does not change, so nothing chosen from them goes stale.
+  // `first` is carried over, so the days picked stay picked and `onDaysChanged` does not
+  // fire: it is the extension that goes, not the choice of days.
   const reset = useCallback((): void => {
     setDaySearch((previous) => ({
       first: previous.first,
