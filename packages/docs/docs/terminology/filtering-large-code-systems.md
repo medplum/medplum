@@ -5,8 +5,7 @@ expose directly. Binding to the full code system tends to surface the wrong code
 billable diagnoses, drug ingredients next to prescribable products, or clinical findings mixed in with
 unrelated situations and qualifiers.
 
-A scoped `ValueSet` fixes this. This guide covers the common case: filtering a `CodeSystem` you don't own —
-a standard system like SNOMED CT or RxNorm, or one already loaded into your project — where you can read the
+A scoped `ValueSet` fixes this. This guide covers the common case: filtering a `CodeSystem` you don't own, where you can read the
 code system's data but can't modify the `CodeSystem` resource itself. Everything below works through
 `$lookup` and `ValueSet.compose.filter`, without needing write access.
 
