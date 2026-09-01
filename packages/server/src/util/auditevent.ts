@@ -331,12 +331,16 @@ export async function createBotAuditEvent(
   if (tracingExt) {
     extension = append(extension, tracingExt);
   }
+  // The record lands in the project the run assumed, so a bot shared from elsewhere must not bring
+  // its own compartments along: they would scope the record to accounts of a different project.
+  const auditProject = resolveId(runAs.project) as string;
+  const sameProject = bot.meta?.project === auditProject;
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: resolveId(runAs.project) as string,
-      account: bot.meta?.account,
-      accounts: bot.meta?.accounts,
+      project: auditProject,
+      account: sameProject ? bot.meta?.account : undefined,
+      accounts: sameProject ? bot.meta?.accounts : undefined,
     },
     period: {
       start: startTime,

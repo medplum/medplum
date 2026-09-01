@@ -69,6 +69,31 @@ export async function getRepoForLogin(
     project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
+  const allowedProjects = await getAllowedProjects(project);
+
+  return new Repository({
+    projects: allowedProjects,
+    currentProject: project,
+    author: profile ? createReference(profile) : realMembership.profile,
+    remoteAddress: remoteAddress ?? login.remoteAddress,
+    superAdmin: project.superAdmin,
+    projectAdmin: membership.admin,
+    accessPolicy,
+    strictMode: project.strictMode,
+    extendedMode,
+    checkReferencesOnWrite: project.checkReferencesOnWrite,
+    validateTerminology: project.features?.includes('validate-terminology'),
+    onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
+    client: login.client,
+  });
+}
+
+/**
+ * Resolves a project and the projects it links to, which its members may read from.
+ * @param project - The project whose links to resolve.
+ * @returns The project followed by each linked project that could be read.
+ */
+export async function getAllowedProjects(project: WithId<Project>): Promise<WithId<Project>[]> {
   const allowedProjects: WithId<Project>[] = [project];
   if (project.link) {
     const linkedProjectRefs: Reference<Project>[] = [];
@@ -91,22 +116,7 @@ export async function getRepoForLogin(
       }
     }
   }
-
-  return new Repository({
-    projects: allowedProjects,
-    currentProject: project,
-    author: profile ? createReference(profile) : realMembership.profile,
-    remoteAddress: remoteAddress ?? login.remoteAddress,
-    superAdmin: project.superAdmin,
-    projectAdmin: membership.admin,
-    accessPolicy,
-    strictMode: project.strictMode,
-    extendedMode,
-    checkReferencesOnWrite: project.checkReferencesOnWrite,
-    validateTerminology: project.features?.includes('validate-terminology'),
-    onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
-    client: login.client,
-  });
+  return allowedProjects;
 }
 
 /**
@@ -354,6 +364,10 @@ function applyProjectAdminAccessPolicy(
         criteria: `User?_project=${resolveId(membership.project)}`,
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      },
+      {
+        resourceType: 'Cron',
+        criteria: `Cron?_project=${resolveId(membership.project)}`,
       },
       {
         resourceType: 'Package',

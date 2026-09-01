@@ -10630,5 +10630,360 @@
         ]
       }
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/Cron",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "Cron",
+      "name" : "Cron",
+      "url" : "https://medplum.com/fhir/StructureDefinition/Cron",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "Cron",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "A scheduled job that executes a Bot on a recurring schedule.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "Cron",
+            "path" : "Cron",
+            "short" : "A scheduled job that executes a Bot on a recurring schedule.",
+            "definition" : "A scheduled job that executes a Bot on a recurring schedule.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Cron",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "Cron.id",
+            "path" : "Cron.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Cron.meta",
+            "path" : "Cron.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "Cron.implicitRules",
+            "path" : "Cron.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "Cron.language",
+            "path" : "Cron.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Cron.text",
+            "path" : "Cron.text",
+            "short" : "Text summary of the resource, for human interpretation",
+            "definition" : "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "DomainResource.text",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Narrative"
+            }]
+          },
+          {
+            "id" : "Cron.contained",
+            "path" : "Cron.contained",
+            "short" : "Contained, inline Resources",
+            "definition" : "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.contained",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Cron.extension",
+            "path" : "Cron.extension",
+            "short" : "Additional content defined by implementations",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.extension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Cron.modifierExtension",
+            "path" : "Cron.modifierExtension",
+            "short" : "Extensions that cannot be ignored",
+            "definition" : "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "DomainResource.modifierExtension",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Extension"
+            }]
+          },
+          {
+            "id" : "Cron.identifier",
+            "path" : "Cron.identifier",
+            "short" : "An identifier for this cron job",
+            "definition" : "An identifier for this cron job.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Cron.identifier",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "Identifier"
+            }]
+          },
+          {
+            "id" : "Cron.active",
+            "path" : "Cron.active",
+            "short" : "Whether the job is registered with the scheduler",
+            "definition" : "Whether the scheduled job runs. Setting this to false unregisters the job while leaving the schedule itself intact, so the job can be turned back on without redefining it.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.active",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
+            "id" : "Cron.onBehalfOf",
+            "path" : "Cron.onBehalfOf",
+            "short" : "The membership on whose behalf the job runs",
+            "definition" : "The project membership whose identity and access policy the scheduled job assumes when it runs.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.onBehalfOf",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ProjectMembership"]
+            }],
+            "constraint" : [{
+              "key" : "cron-1",
+              "severity" : "error",
+              "human" : "A cron job resolves its identity by reading onBehalfOf, so a logical reference is not enough.",
+              "expression" : "reference.exists()"
+            }]
+          },
+          {
+            "id" : "Cron.parameter",
+            "path" : "Cron.parameter",
+            "short" : "Input passed to the target",
+            "definition" : "Input passed to the target each time the scheduled job runs, with the same structure as Parameters.parameter. The target is always invoked with the whole Cron resource, so these parameters arrive alongside the schedule that produced them.",
+            "min" : 0,
+            "max" : "*",
+            "base" : {
+              "path" : "Cron.parameter",
+              "min" : 0,
+              "max" : "*"
+            },
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "constraint" : [{
+              "key" : "cron-3",
+              "severity" : "error",
+              "human" : "A parameter must have one and only one of (value, resource)",
+              "expression" : "value.exists() xor resource.exists()"
+            }]
+          },
+          {
+            "id" : "Cron.parameter.name",
+            "path" : "Cron.parameter.name",
+            "short" : "Name from the definition",
+            "definition" : "The name of the parameter (reference to the operation definition).",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.parameter.name",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Cron.parameter.value[x]",
+            "path" : "Cron.parameter.value[x]",
+            "short" : "If parameter is a data type",
+            "definition" : "If the parameter is a data type.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.parameter.value[x]",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [
+              {
+                "code" : "boolean"
+              },
+              {
+                "code" : "dateTime"
+              },
+              {
+                "code" : "decimal"
+              },
+              {
+                "code" : "integer"
+              },
+              {
+                "code" : "string"
+              },
+              {
+                "code" : "Reference"
+              }
+            ]
+          },
+          {
+            "id" : "Cron.parameter.resource",
+            "path" : "Cron.parameter.resource",
+            "short" : "If parameter is a whole resource",
+            "definition" : "If the parameter is a whole resource.",
+            "comment" : "When resolving references in resources, the operation definition may specify how references may be resolved between parameters. If a reference cannot be resolved between the parameters, the application should fall back to it's general resource resolution methods.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.parameter.resource",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Resource"
+            }]
+          },
+          {
+            "id" : "Cron.cronString",
+            "path" : "Cron.cronString",
+            "short" : "The schedule on which the job runs",
+            "definition" : "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.cronString",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Cron.endTime",
+            "path" : "Cron.endTime",
+            "short" : "The point after which the job stops running",
+            "definition" : "The point in time after which the job no longer runs. A job whose end time has already passed is never scheduled, and a running one is removed once the time passes. When absent, the job runs until it is disabled or deleted.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.endTime",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "dateTime"
+            }]
+          },
+          {
+            "id" : "Cron.targetReference",
+            "path" : "Cron.targetReference",
+            "short" : "The target invoked by the scheduled job",
+            "definition" : "The target invoked each time the scheduled job runs.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "Cron.targetReference",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot"]
+            }],
+            "constraint" : [{
+              "key" : "cron-2",
+              "severity" : "error",
+              "human" : "A cron job resolves its target by reading targetReference, so a logical reference is not enough.",
+              "expression" : "reference.exists()"
+            }]
+          }
+        ]
+      }
+    }
   }]
 }

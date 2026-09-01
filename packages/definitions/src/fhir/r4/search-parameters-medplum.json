@@ -2422,6 +2422,57 @@
         "target": ["Organization"],
         "expression": "PractitionerRole.extension.where(url='http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference').value"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Cron-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Cron-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Cron-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the cron job",
+        "code": "identifier",
+        "base": ["Cron"],
+        "type": "token",
+        "expression": "Cron.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Cron-on-behalf-of",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Cron-on-behalf-of",
+        "url": "https://medplum.com/fhir/SearchParameter/Cron-on-behalf-of",
+        "version": "4.0.1",
+        "name": "on-behalf-of",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The project membership on whose behalf the cron job runs",
+        "code": "on-behalf-of",
+        "base": ["Cron"],
+        "type": "reference",
+        "expression": "Cron.onBehalfOf"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Cron-target",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Cron-target",
+        "url": "https://medplum.com/fhir/SearchParameter/Cron-target",
+        "version": "4.0.1",
+        "name": "target",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Bot invoked by the cron job",
+        "code": "target",
+        "base": ["Cron"],
+        "type": "reference",
+        "expression": "Cron.targetReference"
+      }
     }
   ]
 }

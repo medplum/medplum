@@ -156,21 +156,22 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     });
   }
 
+  // Runs on delete as well: a deleted resource still has a schedule to tear down.
+  try {
+    await addCronJobs(resource, previousVersion, context);
+  } catch (err) {
+    getLogger().error('Error adding cron jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
   if (interaction !== 'delete') {
     try {
       await addDownloadJobs(resource, previousVersion, context);
     } catch (err) {
       getLogger().error('Error adding download jobs', {
-        resourceType: resource.resourceType,
-        resource: resource.id,
-        err,
-      });
-    }
-
-    try {
-      await addCronJobs(resource, previousVersion, context);
-    } catch (err) {
-      getLogger().error('Error adding cron jobs', {
         resourceType: resource.resourceType,
         resource: resource.id,
         err,

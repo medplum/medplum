@@ -43,6 +43,11 @@
             "definition": "Medplum client application for automated access."
           },
           {
+            "code": "Cron",
+            "display": "Cron",
+            "definition": "A scheduled job that executes a Bot on a recurring schedule."
+          },
+          {
             "code": "DicomInstance",
             "display": "DicomInstance",
             "definition": "A single DICOM instance (image or other data) within a series."

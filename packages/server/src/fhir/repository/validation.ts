@@ -1,15 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValueWithPath, ValidatorOptions } from '@medplum/core';
-import { getReferenceString, OperationOutcomeError, Operator, validateResource } from '@medplum/core';
+import { badRequest, getReferenceString, OperationOutcomeError, Operator, validateResource } from '@medplum/core';
 import type {
   CodeableConcept,
   Coding,
+  Cron,
   OperationOutcomeIssue,
+  Reference,
   Resource,
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { isValidCron } from 'cron-validator';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { recordHistogramValue } from '../../otel/otel';
@@ -29,6 +32,11 @@ import { cacheProfile, getCachedProfile } from './profile-cache';
  * @param resource - The candidate resource to validate.
  */
 export async function validateRepositoryResource(repo: Repository, resource: Resource): Promise<void> {
+  if (resource.resourceType === 'Cron') {
+    validateCronString(resource);
+    await validateCronReferences(repo, resource);
+  }
+
   if (repo.getConfig().strictMode) {
     await validateRepositoryResourceStrictly(repo, resource);
   } else {
@@ -43,6 +51,50 @@ export async function validateRepositoryResource(repo: Repository, resource: Res
         resource: getReferenceString(resource),
         err,
       });
+    }
+  }
+}
+
+/**
+ * Rejects a `Cron` whose schedule cannot be parsed.
+ *
+ * A cron expression resists being stated as a FHIRPath constraint -- an inverted range such as
+ * `10-2` is well formed but invalid -- and constraints only warn outside strict mode. Checking here
+ * means a schedule the worker cannot use fails the write instead of silently never firing.
+ * @param cron - The Cron resource being written.
+ */
+function validateCronString(cron: Cron): void {
+  if (cron.cronString && !isValidCron(cron.cronString)) {
+    throw new OperationOutcomeError(badRequest(`Invalid cron expression: '${cron.cronString}'`, 'Cron.cronString'));
+  }
+}
+
+/**
+ * Rejects a `Cron` whose target or identity the author cannot read.
+ *
+ * Resolving each reference through the author's own repository is the whole check, which is why no
+ * project comparison appears here: `Bot` may come from a linked project that exports it, while
+ * `ProjectMembership` is a project admin type and so never crosses a link -- keeping the access
+ * policy a run assumes inside the Cron's own project. Rejecting on write means a job that could
+ * only ever fail never reaches the scheduler.
+ * @param repo - The repository writing the Cron, carrying the author's access.
+ * @param cron - The Cron resource being written.
+ */
+async function validateCronReferences(repo: Repository, cron: Cron): Promise<void> {
+  const references: [Reference | undefined, string][] = [
+    [cron.targetReference, 'Cron.targetReference'],
+    [cron.onBehalfOf, 'Cron.onBehalfOf'],
+  ];
+
+  for (const [reference, path] of references) {
+    if (!reference?.reference) {
+      // Cardinality and the cron-1/cron-2 constraints already cover a missing or logical reference.
+      continue;
+    }
+    try {
+      await repo.readReference(reference);
+    } catch (_err: unknown) {
+      throw new OperationOutcomeError(badRequest(`Cannot resolve '${reference.reference}'`, path));
     }
   }
 }
