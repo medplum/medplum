@@ -65,7 +65,7 @@ What you'll find, at a high level:
 - Companion history tables that back resource versioning and `_history`.
 - Lookup tables (for tokens, references, human names, and similar) that make search fast and referential integrity enforceable.
 
-> The specifics of columns and table layout are best read directly from the source or a running instance rather than memorized — see [self-hosting](/docs/self-hosting) to spin one up. _(TODO: confirm slug / point at the most relevant schema or architecture doc.)_
+> The specifics of columns and table layout are best read directly from the source or a running instance rather than memorized — see [self-hosting](/docs/self-hosting) to spin one up. 
 
 One important caveat: this internal layout is Medplum's to evolve. It is not a stable, versioned API, and it can change between releases. Treat it as _read-for-understanding_, not _build-against_. If you find yourself writing application code that queries these tables directly, that's the signal to step back up to the FHIR API.
 
