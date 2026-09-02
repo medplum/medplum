@@ -38,7 +38,7 @@
     "adm-zip": "0.6.0",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
-    "uuid": "14.0.1",
+    "uuid": "14.0.2",
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {
