@@ -234,19 +234,6 @@ function buildSchedule(
 }
 
 /**
- * Strips the name a Schedule copied onto its actor.
- *
- * `Schedule.actor.display` is optional, and plenty of real projects never write
- * it — which is the case where the name has to come from the actor itself.
- *
- * @param schedule - The schedule to strip.
- * @returns The same schedule, with no name on any of its actors.
- */
-export function withoutActorDisplay(schedule: WithId<Schedule>): WithId<Schedule> {
-  return { ...schedule, actor: schedule.actor.map(({ display: _display, ...actor }) => actor) };
-}
-
-/**
  * Keys resources by the reference a proposed appointment names them by, which is
  * the shape `groupAppointmentsByDay` and `getAppointmentActors` read them from.
  *
