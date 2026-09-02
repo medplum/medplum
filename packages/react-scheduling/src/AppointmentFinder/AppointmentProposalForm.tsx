@@ -13,13 +13,13 @@ import {
   MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
 } from '@medplum/core';
-import type { Appointment, HealthcareService, Location, Patient, Resource } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareService, Location, Patient } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CalendarDateInput, ResourceInput, ResourceName } from '@medplum/react';
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { BookableActorType } from '../actors';
+import type { BookableActorType, SchedulingActorValue } from '../actors';
 import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
@@ -177,9 +177,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // was offered from.
   const clearChosen = useCallback((): void => setChosen(undefined), []);
 
-  // The fields read these to offer the actors, so the times they hold can be
-  // headed by the actors themselves rather than by whatever `$find` copied off
-  // the Schedule.
+  // The fields read these to offer the actors, so naming a chosen one costs no
+  // further read. See `getAppointmentActors`.
   const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
 
   const daySearch = useDaySearch({
@@ -195,6 +194,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // The first window is back and nothing is holding the search up, so what it found —
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
+
+  const chosenActors = useMemo(() => getAppointmentActors(chosen, actorResources), [chosen, actorResources]);
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
@@ -337,7 +338,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
-          actorResources={actorResources}
+          actors={chosenActors}
           searching={searching}
           blockedBy={service ? selectionError : 'Choose a visit type'}
           onToggleFinder={toggleFinder}
@@ -427,8 +428,8 @@ interface ChosenTimeProps {
   readonly appointment: Appointment | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
-  /** The chosen actors' own resources, keyed by reference. */
-  readonly actorResources: ReadonlyMap<string, WithId<Resource>>;
+  /** Who the chosen time is held on. */
+  readonly actors: readonly SchedulingActorValue[];
   readonly searching: boolean;
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: string | undefined;
@@ -445,7 +446,7 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actorResources, searching, blockedBy, onToggleFinder } = props;
+  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder } = props;
 
   return (
     <>
@@ -456,7 +457,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
           inputWrapperOrder={['label', 'input', 'description']}
-          description={<ChosenTimeCommitment appointment={appointment} actorResources={actorResources} />}
+          description={<ChosenTimeCommitment appointment={appointment} actors={actors} />}
         />
       )}
 
@@ -482,8 +483,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
 
 interface ChosenTimeCommitmentProps {
   readonly appointment: Appointment;
-  /** The chosen actors' own resources, keyed by reference. */
-  readonly actorResources: ReadonlyMap<string, WithId<Resource>>;
+  /** Who the time is held on. */
+  readonly actors: readonly SchedulingActorValue[];
 }
 
 /**
@@ -497,8 +498,7 @@ interface ChosenTimeCommitmentProps {
  * @returns The detail beneath the time.
  */
 function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
-  const { appointment, actorResources } = props;
-  const actors = getAppointmentActors(appointment, actorResources);
+  const { appointment, actors } = props;
   const durationMinutes = getDurationMinutes(appointment);
 
   return (

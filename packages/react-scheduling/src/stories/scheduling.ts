@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   deepClone,
+  getReferenceString,
   HL7_V2_0203,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
@@ -31,7 +32,7 @@ import type {
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** Who an appointment can be held on, as FHIR allows. */
-type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
+export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 /**
  * Fixtures for the scheduling components: one imaging service bookable against
@@ -248,10 +249,21 @@ function buildSchedule(
  * it — which is the case where the name has to come from the actor itself.
  *
  * @param schedule - The schedule to strip.
- * @returns The same schedule, naming its actor by reference alone.
+ * @returns The same schedule, with no name on any of its actors.
  */
 export function withoutActorDisplay(schedule: WithId<Schedule>): WithId<Schedule> {
-  return { ...schedule, actor: [{ reference: schedule.actor[0].reference }] };
+  return { ...schedule, actor: schedule.actor.map(({ display: _display, ...actor }) => actor) };
+}
+
+/**
+ * Keys resources by the reference a proposed appointment names them by, which is
+ * the shape `groupAppointmentsByDay` and `getAppointmentActors` read them from.
+ *
+ * @param resources - The resources a caller has already read.
+ * @returns The resources, keyed by reference.
+ */
+export function indexByReference(resources: readonly WithId<Resource>[]): Map<string, WithId<Resource>> {
+  return new Map(resources.map((resource) => [getReferenceString(resource), resource]));
 }
 
 export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitioner/dr-rivera', 'Dr. Maya Rivera');
