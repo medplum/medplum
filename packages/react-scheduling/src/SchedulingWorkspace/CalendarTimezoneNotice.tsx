@@ -29,7 +29,7 @@ export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.
   const viewerLabel = formatTimezoneLabel(viewerTimezone);
 
   return (
-    <Group gap={6} wrap="nowrap" align="center" mt="xs" className={className} data-testid="calendar-timezone-notice">
+    <Group gap={6} wrap="nowrap" align="center" className={className} data-testid="calendar-timezone-notice">
       <IconInfoCircle size={14} stroke={1.8} color="var(--mantine-color-dimmed)" />
       <Text size="xs" c="dimmed">
         Calendar shown in your local time ({viewerLabel}).

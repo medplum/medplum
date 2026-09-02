@@ -31,6 +31,7 @@
 
 .timezoneNotice {
   flex-shrink: 0;
+  margin-top: var(--mantine-spacing-xs);
 }
 
 /* The booking form, only present while a day is being booked. */
