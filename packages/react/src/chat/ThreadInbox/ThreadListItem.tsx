@@ -15,7 +15,7 @@ export interface ThreadListItemProps {
   getThreadUri: (topic: Communication) => string;
 }
 
-// Content-only row: the surrounding ListWithDetailPane `.item` wrapper owns the
+// Content-only row: the surrounding ListDetailPane `.item` wrapper owns the
 // hover/selected chrome, so this renders just the link and its contents.
 export const ThreadListItem = (props: ThreadListItemProps): JSX.Element => {
   const { topic, lastCommunication, getThreadUri } = props;
