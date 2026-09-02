@@ -9,8 +9,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { createTestClient, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
 import { globalLogger } from '../logger';
+import { createTestClient, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 
