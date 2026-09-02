@@ -30,8 +30,6 @@ function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Elemen
         {label}
       </Text>
       <Text size="sm" fw={500}>
-        {/* Not `ReferenceDisplay`, which prints `Reference.display` without
-            ever reading the resource behind it. */}
         <ResourceName value={props.actor} link={false} inherit />
       </Text>
     </Stack>
@@ -53,8 +51,8 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <Group gap="lg" align="flex-start" wrap="wrap">
-          {group.actors.map((actor, index) => (
-            <ActorLabel actor={actor} key={getReferenceString(actor) ?? index} />
+          {group.actors.map((actor) => (
+            <ActorLabel actor={actor} key={getReferenceString(actor)} />
           ))}
         </Group>
         {group.durationMinutes > 0 && (
