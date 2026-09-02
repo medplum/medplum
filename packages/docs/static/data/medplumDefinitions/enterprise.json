@@ -1,0 +1,171 @@
+{
+  "name": "Enterprise",
+  "location": "medplum",
+  "description": "A group of Medplum projects managed as a single enterprise.",
+  "properties": [
+    {
+      "name": "Enterprise",
+      "depth": 0,
+      "types": [{ "datatype": "" }],
+      "path": "Enterprise",
+      "min": 0,
+      "max": "*",
+      "short": "A group of Medplum projects managed as a single enterprise.",
+      "definition": "A group of Medplum projects managed as a single enterprise.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [{ "datatype": "Identifier", "documentLocation": "datatype" }],
+      "path": "Enterprise.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Identifiers for the enterprise.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 1,
+      "types": [{ "datatype": "string" }],
+      "path": "Enterprise.name",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The name of the enterprise.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [{ "datatype": "code" }],
+      "path": "Enterprise.status",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Whether the enterprise is active or inactive.",
+      "comment": "",
+      "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-status",
+      "inherited": false
+    },
+    {
+      "name": "organization",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "profiles": ["http://hl7.org/fhir/StructureDefinition/Organization"]
+        }
+      ],
+      "path": "Enterprise.organization",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The organization represented by the enterprise.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 1,
+      "types": [{ "datatype": "CodeableConcept", "documentLocation": "datatype" }],
+      "path": "Enterprise.code",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Codes used to classify the enterprise.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "project",
+      "depth": 1,
+      "types": [{ "datatype": "BackboneElement" }],
+      "path": "Enterprise.project",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Projects belonging to the enterprise and their deployment environments.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "project",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "profiles": ["https://medplum.com/fhir/StructureDefinition/Project"]
+        }
+      ],
+      "path": "Enterprise.project.project",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "A project belonging to the enterprise.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [{ "datatype": "code" }],
+      "path": "Enterprise.project.code",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Whether the project is a production or non-production environment.",
+      "comment": "",
+      "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "An identifier for the enterprise",
+      "expression": "Enterprise.identifier"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "The name of the enterprise",
+      "expression": "Enterprise.name"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The status of the enterprise",
+      "expression": "Enterprise.status"
+    },
+    {
+      "name": "organization",
+      "type": "reference",
+      "description": "The organization represented by the enterprise",
+      "expression": "Enterprise.organization"
+    },
+    {
+      "name": "code",
+      "type": "token",
+      "description": "A code that classifies the enterprise",
+      "expression": "Enterprise.code"
+    },
+    {
+      "name": "project",
+      "type": "reference",
+      "description": "A project belonging to the enterprise",
+      "expression": "Enterprise.project.project"
+    },
+    {
+      "name": "project-code",
+      "type": "token",
+      "description": "The deployment environment of a project in the enterprise",
+      "expression": "Enterprise.project.code"
+    }
+  ]
+}
