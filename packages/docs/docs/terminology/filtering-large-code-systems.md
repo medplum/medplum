@@ -6,14 +6,20 @@ billable diagnoses, drug ingredients next to prescribable products, or clinical 
 unrelated situations and qualifiers.
 
 A scoped `ValueSet` fixes this. This guide covers the common case: filtering a `CodeSystem` you don't own, where you can read the
-code system's data but can't modify the `CodeSystem` resource itself. Everything below works through
-`$lookup` and `ValueSet.compose.filter`, without needing write access.
+code system's data but can't modify the `CodeSystem` resource itself. You still create and own the `ValueSet`
+— everything below works through `$lookup` and `ValueSet.compose.filter`, without needing write access to the
+`CodeSystem` you're filtering.
 
 If you're defining your own local codes instead, see [Local Codes](/docs/terminology/local-codes).
 
 ## Step 1: Understand the code system
 
 ### Hierarchy
+
+A hierarchy is a parent-child relationship between codes, where the parent's meaning is a superset of the
+child's — every child is a more specific kind of its parent. In SNOMED CT, for example, *Clinical finding*
+contains *Diabetes mellitus*, which in turn contains *Type 2 diabetes mellitus*; selecting a parent implicitly
+covers everything beneath it. That is what lets one filter stand in for thousands of codes.
 
 Check `CodeSystem.hierarchyMeaning`. Most clinical code systems (SNOMED CT, and most `is-a` trees) use
 `"is-a"` — an `is-a` or `descendent-of` filter selects codes that are children of some parent code. Some code systems, like LOINC, have
@@ -30,9 +36,11 @@ different selectability:
   typing a drug name sees ingredients and brand names mixed in with real orderable products.
 - **ICD-10-CM** has category codes (`Z01`) above billable leaf codes (`Z01.411`). Filtering on
   `property: tty, op: =, value: PT` ("Preferred Term") gets close to "billable codes only."
-- **SNOMED CT** concepts often sit under more than one ancestor branch. Allergy concepts fall under both a
-  *situation* branch (`is-a 716186003`, "no known allergy") and a *finding* branch (`is-a 418038007`,
-  "propensity to adverse reaction"). Which branches you want depends on your use case.
+- **SNOMED CT** leans on its hierarchy rather than a term-type property. Every concept lives under one of a
+  handful of top-level branches — *Clinical finding* (`404684003`), *Procedure* (`71388002`), and *Observable
+  entity* (`363787002`) among them — so scoping a filter to the right branch is what keeps unrelated concepts
+  (procedures, body structures, qualifiers) out of, say, a findings picker. Which branch you want depends on
+  your use case.
 
 Check whether a system you're filtering has a usable property by calling
 [`$lookup`](/docs/api/fhir/operations/codesystem-lookup) on a few sample codes and inspecting the returned
