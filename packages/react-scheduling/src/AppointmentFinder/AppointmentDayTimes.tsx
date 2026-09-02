@@ -15,10 +15,6 @@ export interface AppointmentDayTimesProps {
   readonly onSelectAppointment: (appointment: Appointment) => void;
   /** IANA timezone the times are read in. Defaults to the browser's. */
   readonly timezone?: string;
-  /**
-   * The viewer's own IANA timezone, which decides whether the times need their zone named beside
-   * them. Defaults to the browser's.
-   */
   readonly viewerTimezone?: string;
   readonly selected?: Appointment;
 }

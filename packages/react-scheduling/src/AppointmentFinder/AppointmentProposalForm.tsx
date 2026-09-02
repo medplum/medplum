@@ -152,6 +152,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const range = useMemo(() => getZonedDayRange(searchDay, timezone), [searchDay, timezone]);
 
+  // Validate the input range is valid for `$find`
   const windowError = getFindWindowError(range);
 
   // Nothing is searched until the time search is open, so the answers above cost no
@@ -561,8 +562,6 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
 /**
  * Writes an instant as the day and time it falls on at the site, not on the
  * booker's own clock.
- *
- * Names the zone when the site does not keep the booker's.
  *
  * @param value - The chosen start time.
  * @param timezone - IANA timezone the visit is scheduled in.

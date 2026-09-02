@@ -303,15 +303,16 @@ describe('getZonedDayRange', () => {
   test('Bounds the day at the site, not at the viewer', () => {
     const range = getZonedDayRange(AUGUST_17, EASTERN);
 
-    // Midnight Eastern on the 17th through the last instant before midnight on the 18th.
+    // Midnight Eastern on the 17th through midnight on the 18th, so an 11pm–12am
+    // slot still satisfies `$find`'s `end <= range.end`.
     expect(range.start.toISOString()).toBe('2099-08-17T04:00:00.000Z');
-    expect(range.end.toISOString()).toBe('2099-08-18T03:59:59.999Z');
+    expect(range.end.toISOString()).toBe('2099-08-18T04:00:00.000Z');
   });
 
   test('Covers a day that daylight saving made short or long', () => {
     const hours = (day: Date, timezone: string): number => {
       const range = getZonedDayRange(day, timezone);
-      return (range.end.getTime() + 1 - range.start.getTime()) / 3_600_000;
+      return (range.end.getTime() - range.start.getTime()) / 3_600_000;
     };
 
     // Assuming an ordinary 24 hours would lose an hour of one and overrun the other.
@@ -332,6 +333,6 @@ describe('getZonedDayRange', () => {
     const range = getZonedDayRange(AUGUST_17);
 
     expect(range.start).toStrictEqual(new Date(2099, 7, 17, 0, 0, 0, 0));
-    expect(range.end).toStrictEqual(new Date(2099, 7, 17, 23, 59, 59, 999));
+    expect(range.end).toStrictEqual(new Date(2099, 7, 18, 0, 0, 0, 0));
   });
 });

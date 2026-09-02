@@ -13,9 +13,9 @@ import { formatZonedTime, isViewerTimezone } from './AppointmentFinder.times';
 export interface AppointmentSlotGroupCardProps {
   readonly group: AppointmentSlotGroup;
   readonly onSelectAppointment: (appointment: Appointment) => void;
-  /** IANA timezone the times are shown in. Defaults to the browser's. */
+  /** Timezone the times are shown in. */
   readonly timezone?: string;
-  /** The viewer's own IANA timezone. Defaults to the browser's. */
+  /** The viewer's own timezone. */
   readonly viewerTimezone?: string;
   readonly selected?: Appointment;
   readonly disabled?: boolean;
