@@ -173,7 +173,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [search.appointments, timezone, actorResources]
   );
 
-  const chosenActors = useMemo(() => getAppointmentActors(chosen, actorResources), [chosen, actorResources]);
+  const chosenActors = getAppointmentActors(chosen, actorResources);
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
