@@ -44,16 +44,16 @@
     "@medplum/react": "5.1.36",
     "@tabler/icons-react": "3.46.0",
     "@testing-library/jest-dom": "7.0.1",
-    "@testing-library/react": "16.3.2",
+    "@testing-library/react": "16.3.3",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
+    "@types/react-dom": "19.2.5",
     "jsqr": "1.4.0",
     "postcss": "8.5.26",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router": "8.3.0",
-    "vite": "8.2.1"
+    "vite": "8.2.2"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
