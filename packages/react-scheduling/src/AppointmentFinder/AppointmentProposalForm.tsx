@@ -194,7 +194,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // even if that is nothing — is what is on screen.
   const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
 
-  const chosenActors = useMemo(() => getAppointmentActors(chosen, actorResources), [chosen, actorResources]);
+  const chosenActors = getAppointmentActors(chosen, actorResources);
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
