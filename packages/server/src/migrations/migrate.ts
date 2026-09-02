@@ -879,6 +879,10 @@ export async function executeMigrationActions(
         await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
+      case 'DROP_INVALID_INDEX': {
+        await fns.dropInvalidIndexConcurrently(client, results, action.indexName);
+        break;
+      }
       case 'REINDEX_CONCURRENTLY': {
         await fns.reindexConcurrently(client, results, action.target, action.name);
         break;
@@ -1044,6 +1048,10 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'DROP_INVALID_INDEX': {
+        b.appendNoWrap(`await fns.dropInvalidIndexConcurrently(client, results, ${JSON.stringify(action.indexName)});`);
         break;
       }
       case 'REINDEX_CONCURRENTLY': {

@@ -538,6 +538,7 @@ type MigrationActionTestCase = {
   executionCheck: (mocks: {
     mockQuery: MockInstance;
     mockAnalyzeTable: MockInstance;
+    mockDropInvalidIndexConcurrently: MockInstance;
     mockReindexConcurrently: MockInstance;
     mockIdempotentCreateIndex: MockInstance;
     mockNonBlockingAlterColumnNotNull: MockInstance;
@@ -712,6 +713,17 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
     },
   },
   {
+    name: 'DROP_INVALID_INDEX',
+    action: {
+      type: 'DROP_INVALID_INDEX',
+      indexName: 'Patient_name_idx_ccnew',
+    },
+    builderExpected: 'await fns.dropInvalidIndexConcurrently(client, results, "Patient_name_idx_ccnew");',
+    executionCheck: ({ mockDropInvalidIndexConcurrently, mockClient, results }) => {
+      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(mockClient, results, 'Patient_name_idx_ccnew');
+    },
+  },
+  {
     name: 'REINDEX_CONCURRENTLY',
     action: { type: 'REINDEX_CONCURRENTLY', target: 'INDEX', name: 'Patient_name_idx' },
     builderExpected: 'await fns.reindexConcurrently(client, results, \'INDEX\', "Patient_name_idx");',
@@ -745,6 +757,7 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
   let mockClient: { query: Mock };
   let mockQuery: MockInstance;
   let mockAnalyzeTable: MockInstance;
+  let mockDropInvalidIndexConcurrently: MockInstance;
   let mockReindexConcurrently: MockInstance;
   let mockIdempotentCreateIndex: MockInstance;
   let mockNonBlockingAlterColumnNotNull: MockInstance;
@@ -754,6 +767,7 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
     mockClient = { query: vi.fn() };
     mockQuery = vi.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
     mockAnalyzeTable = vi.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
+    mockDropInvalidIndexConcurrently = vi.spyOn(fns, 'dropInvalidIndexConcurrently').mockResolvedValue(undefined);
     mockReindexConcurrently = vi.spyOn(fns, 'reindexConcurrently').mockResolvedValue(undefined);
     mockIdempotentCreateIndex = vi.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
     mockNonBlockingAlterColumnNotNull = vi.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
@@ -838,6 +852,7 @@ async function callback(client: PoolClient, results: MigrationActionResult[]): P
     executionCheck({
       mockQuery,
       mockAnalyzeTable,
+      mockDropInvalidIndexConcurrently,
       mockReindexConcurrently,
       mockIdempotentCreateIndex,
       mockNonBlockingAlterColumnNotNull,
