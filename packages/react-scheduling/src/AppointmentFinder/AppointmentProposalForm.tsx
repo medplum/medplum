@@ -21,7 +21,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
-import type { SchedulingActorValue, SchedulingRole } from './AppointmentFinder.roles';
+import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
 import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import {
@@ -164,10 +164,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
   }, [service, selections]);
 
-  // The fields read these to offer the actors, so naming a chosen one costs no
-  // further read. See `getAppointmentActors`.
+  // All actor resources, keyed by their reference.
   const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
 
+  // Appointments bucketed by day, timezone, and actor resources.
   const days = useMemo(
     () => groupAppointmentsByDay(search.appointments, timezone, actorResources),
     [search.appointments, timezone, actorResources]
@@ -385,7 +385,7 @@ interface ChosenTimeProps {
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
   /** Who the chosen time is held on. */
-  readonly actors: readonly SchedulingActorValue[];
+  readonly actors: readonly SchedulingActor[];
   readonly searching: boolean;
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: string | undefined;
@@ -440,7 +440,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
 interface ChosenTimeCommitmentProps {
   readonly appointment: Appointment;
   /** Who the time is held on. */
-  readonly actors: readonly SchedulingActorValue[];
+  readonly actors: readonly SchedulingActor[];
 }
 
 /**
@@ -463,10 +463,9 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
       {actors.map((actor, index) => {
         const roleLabel = getActorRoleLabel(actor);
         return (
-          <Fragment key={getReferenceString(actor) ?? index}>
+          <Fragment key={getReferenceString(actor)}>
             {(index > 0 || durationMinutes > 0) && ' · '}
             {roleLabel && `${roleLabel}: `}
-            {/* `inherit`: the description sets its own font size. */}
             <ResourceName value={actor} link={false} inherit />
           </Fragment>
         );

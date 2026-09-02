@@ -31,18 +31,16 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <Group gap="lg" align="flex-start" wrap="wrap">
-          {group.actors.map((actor, index) => {
+          {group.actors.map((actor) => {
             const roleLabel = getActorRoleLabel(actor);
             return (
-              <Stack key={getReferenceString(actor) ?? index} gap={2}>
+              <Stack key={getReferenceString(actor)} gap={2}>
                 {roleLabel && (
                   <Text size="xs" c="dimmed" tt="uppercase">
                     {roleLabel}
                   </Text>
                 )}
                 <Text size="sm" fw={500}>
-                  {/* Not `ReferenceDisplay`, which prints `Reference.display` without
-                      ever reading the resource behind it. */}
                   <ResourceName value={actor} link={false} inherit />
                 </Text>
               </Stack>

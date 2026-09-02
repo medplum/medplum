@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient, WithId } from '@medplum/core';
-import type { Resource } from '@medplum/fhirtypes';
+import type { MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import type { ParticipantActor } from '../stories/scheduling';
 import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
+import type { SchedulingActorResource } from './AppointmentFinder.roles';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 import { AppointmentSlotGroupCard } from './AppointmentSlotGroupCard';
@@ -27,7 +27,7 @@ const EXAM_ROOM = 'Location/exam-room-a';
  */
 function buildGroup(
   actors: readonly ParticipantActor[],
-  resources: readonly WithId<Resource>[] = []
+  resources: readonly SchedulingActorResource[] = []
 ): AppointmentSlotGroup {
   const appointments = [MORNING, LATER].map((start) => buildProposedAppointment({ start, actorReferences: actors }));
   return groupAppointmentsByDay(appointments, EASTERN, indexByReference(resources))[0].groups[0];

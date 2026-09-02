@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { Appointment, Resource } from '@medplum/fhirtypes';
+import type { Appointment } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -15,6 +14,7 @@ import {
   indexByReference,
 } from '../stories/scheduling';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
+import type { SchedulingActorResource } from './AppointmentFinder.roles';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
@@ -34,7 +34,9 @@ const DAY = new Date(2020, 4, 5);
  * @param offers - Who is offering, and at what times on the clinic's own clock.
  * @returns The times, as the picker would have grouped them.
  */
-function buildGroups(offers: readonly { actor: WithId<Resource>; times: string[] }[]): readonly AppointmentSlotGroup[] {
+function buildGroups(
+  offers: readonly { actor: SchedulingActorResource; times: string[] }[]
+): readonly AppointmentSlotGroup[] {
   const appointments: Appointment[] = offers.flatMap((offer) =>
     offer.times.map((time) =>
       buildProposedAppointment({

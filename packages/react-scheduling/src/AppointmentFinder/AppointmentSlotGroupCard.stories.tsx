@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { Appointment, Resource } from '@medplum/fhirtypes';
+import type { Appointment } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
@@ -16,6 +15,7 @@ import {
   indexByReference,
   Ultrasound1Device,
 } from '../stories/scheduling';
+import type { SchedulingActorResource } from './AppointmentFinder.roles';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 import { AppointmentSlotGroupCard } from './AppointmentSlotGroupCard';
@@ -40,7 +40,11 @@ const TIMES = ['13:00', '13:30', '14:00', '15:00', '17:30'].map((time) => `2020-
  *   `$find` returned.
  * @returns The group, as the picker would have grouped it.
  */
-function buildGroup(actors: readonly WithId<Resource>[], durationMinutes = 30, resolved = true): AppointmentSlotGroup {
+function buildGroup(
+  actors: readonly SchedulingActorResource[],
+  durationMinutes = 30,
+  resolved = true
+): AppointmentSlotGroup {
   const appointments = TIMES.map((start) =>
     buildProposedAppointment({
       start,

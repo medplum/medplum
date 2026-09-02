@@ -10,7 +10,7 @@ import {
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
-import type { SchedulingActor, SchedulingRole } from './AppointmentFinder.roles';
+import type { SchedulingActorReference, SchedulingActorResource, SchedulingRole } from './AppointmentFinder.roles';
 import {
   ROLE_LABELS,
   SCHEDULING_ROLES,
@@ -28,7 +28,7 @@ import { getActorsKey } from './AppointmentFinder.times';
 export interface ScheduleCandidate {
   readonly schedule: WithId<Schedule>;
   /** The actor itself, when the search was able to include it. */
-  readonly actorResource: WithId<Resource> | undefined;
+  readonly actorResource: SchedulingActorResource | undefined;
 }
 
 /**
@@ -36,7 +36,7 @@ export interface ScheduleCandidate {
  * @param candidate - The candidate to read.
  * @returns Its schedule's only actor.
  */
-function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
+function getCandidateActor(candidate: ScheduleCandidate): SchedulingActorReference {
   return candidate.schedule.actor[0];
 }
 
@@ -144,7 +144,7 @@ export async function searchScheduleCandidates(
     { signal: options.signal }
   );
 
-  const actorsByReference = new Map<string, WithId<Resource>>();
+  const actorsByReference = new Map<string, SchedulingActorResource>();
   const schedules: WithId<Schedule>[] = [];
 
   for (const entry of bundle.entry ?? []) {
@@ -153,7 +153,9 @@ export async function searchScheduleCandidates(
       continue;
     }
     if (entry.search?.mode === 'include') {
-      actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
+      if (isActorResource(resource)) {
+        actorsByReference.set(`${resource.resourceType}/${resource.id}`, resource);
+      }
     } else if (resource.resourceType === 'Schedule') {
       schedules.push(resource);
     }
@@ -179,7 +181,7 @@ function getServiceTypeTokens(service: HealthcareService): string[] {
 function toScheduleCandidate(
   schedule: WithId<Schedule>,
   service: WithId<HealthcareService> | undefined,
-  actors: Map<string, WithId<Resource>>
+  actors: Map<string, SchedulingActorResource>
 ): ScheduleCandidate | undefined {
   if (schedule.active === false || (service && !serviceTypeIncludesService(schedule.serviceType, service))) {
     return undefined;
@@ -377,6 +379,10 @@ function getActorType(reference: string | undefined): string | undefined {
   return reference?.split('/')[0];
 }
 
+function isActorResource(resource: WithId<Resource>): resource is SchedulingActorResource {
+  return isSchedulingActorType(resource.resourceType);
+}
+
 /**
  * Walks up from a Location to the one being booked at.
  * @param medplum - The Medplum client.
@@ -447,19 +453,12 @@ export function getSelectedCandidates(selections: ActorSelections): ScheduleCand
 }
 
 /**
- * Collects the chosen actors' own resources, keyed by the reference a proposed
- * appointment names them by.
- *
- * The fields read these to offer the actors in the first place, so displaying a
- * chosen one costs nothing further. Reading them back off the client's cache is
- * not an option: a search's cached entries are dropped when its request is
- * aborted, which is what every keystroke in an `AsyncAutocomplete` does.
- *
+ * Flattens the loaded actor resources into a map, keyed by their reference.
  * @param selections - What has been chosen.
  * @returns The resource behind each chosen actor the search was able to include.
  */
-export function getSelectedActorResources(selections: ActorSelections): Map<string, WithId<Resource>> {
-  const resources = new Map<string, WithId<Resource>>();
+export function getSelectedActorResources(selections: ActorSelections): Map<string, SchedulingActorResource> {
+  const resources = new Map<string, SchedulingActorResource>();
   for (const candidate of getSelectedCandidates(selections)) {
     const reference = getReferenceString(getCandidateActor(candidate));
     if (reference && candidate.actorResource) {
@@ -492,7 +491,7 @@ export interface ActorCombination {
   /** Matches `getActorGroupKey` of the appointments offered for these actors. */
   readonly key: string;
   readonly label: string;
-  readonly actors: readonly SchedulingActor[];
+  readonly actors: readonly SchedulingActorReference[];
   readonly schedules: readonly Reference<Schedule>[];
 }
 

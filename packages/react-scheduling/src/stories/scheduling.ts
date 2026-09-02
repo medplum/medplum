@@ -240,7 +240,7 @@ function buildSchedule(
  * @param resources - The resources a caller has already read.
  * @returns The resources, keyed by reference.
  */
-export function indexByReference(resources: readonly WithId<Resource>[]): Map<string, WithId<Resource>> {
+export function indexByReference<T extends WithId<Resource>>(resources: readonly T[]): Map<string, T> {
   return new Map(resources.map((resource) => [getReferenceString(resource), resource]));
 }
 
