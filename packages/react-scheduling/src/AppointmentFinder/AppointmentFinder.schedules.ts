@@ -48,11 +48,24 @@ export function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor
 export function getCandidateDisplay(candidate: ScheduleCandidate): string {
   const actor = getCandidateActor(candidate);
   return (
-    (candidate.actorResource && getDisplayString(candidate.actorResource)) ??
+    getActorResourceName(candidate.actorResource) ??
     actor.display ??
     actor.reference ??
     `Schedule/${candidate.schedule.id}`
   );
+}
+
+/**
+ * The name of an actor's resource, or undefined where it has none.
+ * @param resource - The actor's resource, or undefined where none was read.
+ * @returns The resource's name.
+ */
+function getActorResourceName(resource: SchedulingActorResource | undefined): string | undefined {
+  if (!resource) {
+    return undefined;
+  }
+  const display = getDisplayString(resource);
+  return display === getReferenceString(resource) ? undefined : display;
 }
 
 /**
