@@ -81,3 +81,28 @@ export function getSystemInteractions(
 ): CapabilityStatementRestInteraction[] | undefined {
   return selectInteractions(DEFAULT_SYSTEM_INTERACTIONS, config?.systemInteractions);
 }
+
+/**
+ * Returns the `supportedProfile` advertised for the given resource type.
+ *
+ * The `supportedProfiles` setting either toggles the generated profiles wholesale (`true`/`false`) or, as a
+ * map keyed by resource type, replaces the generated profiles for the listed types while leaving unlisted
+ * types on their generated defaults.
+ *
+ * @param resourceType - The resource type.
+ * @param generated - The server generated profiles for the resource type.
+ * @param config - The CapabilityStatement configuration.
+ * @returns The advertised profiles, or undefined when none are advertised.
+ */
+export function getSupportedProfiles(
+  resourceType: string,
+  generated: string[] | undefined,
+  config: MedplumCapabilityStatementConfig | undefined
+): string[] | undefined {
+  const setting = config?.supportedProfiles;
+  if (setting === false) {
+    return undefined;
+  }
+  const profiles = setting && typeof setting === 'object' ? (setting[resourceType] ?? generated) : generated;
+  return profiles?.length ? profiles : undefined;
+}

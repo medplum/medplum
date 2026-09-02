@@ -279,9 +279,13 @@ export interface MedplumCapabilityStatementConfig {
   systemInteractions?: string[];
 
   /**
-   * Whether to advertise `supportedProfile` for each resource type. Defaults to true.
+   * Controls the advertised `supportedProfile` for each resource type.
+   * - `true` or omitted: advertise the server generated profiles (US Core).
+   * - `false`: omit `supportedProfile` entirely.
+   * - object: per resource type override, keyed by resource type. Listed types replace the generated
+   *   profiles (an empty array advertises none for that type); unlisted types keep the generated defaults.
    */
-  supportedProfiles?: boolean;
+  supportedProfiles?: boolean | Record<string, string[]>;
 }
 
 export interface SubscriptionAutoDisableTrigger {

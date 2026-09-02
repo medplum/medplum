@@ -21,6 +21,7 @@ import type {
 } from '@medplum/fhirtypes';
 import {
   getResourceInteractions,
+  getSupportedProfiles,
   getSystemInteractions,
   isResourceTypeAdvertised,
 } from '../config/capabilitystatement';
@@ -294,8 +295,7 @@ function buildResourceTypes(config: MedplumServerConfig): CapabilityStatementRes
         ({
           type: resourceType as ResourceType,
           profile: typeSchema.url,
-          supportedProfile:
-            csConfig?.supportedProfiles === false ? undefined : supportedProfiles[resourceType] || undefined,
+          supportedProfile: getSupportedProfiles(resourceType, supportedProfiles[resourceType], csConfig),
           interaction: getResourceInteractions(resourceType, csConfig),
           versioning: 'versioned',
           readHistory: true,

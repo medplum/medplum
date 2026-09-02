@@ -91,6 +91,28 @@ describe('CapabilityStatement', () => {
     expect(getResource('Patient')?.supportedProfile).toBeUndefined();
   });
 
+  test('Replace supported profiles per resource type', () => {
+    config.capabilityStatement = {
+      supportedProfiles: { Patient: ['http://example.com/custom-patient'] },
+    };
+    // Listed type is replaced
+    expect(getResource('Patient')?.supportedProfile).toStrictEqual(['http://example.com/custom-patient']);
+    // Unlisted type keeps generated defaults
+    expect(getResource('Observation')?.supportedProfile?.length).toBeGreaterThan(0);
+  });
+
+  test('Add supported profiles to a type with none', () => {
+    config.capabilityStatement = {
+      supportedProfiles: { Claim: ['http://example.com/custom-claim'] },
+    };
+    expect(getResource('Claim')?.supportedProfile).toStrictEqual(['http://example.com/custom-claim']);
+  });
+
+  test('Empty array omits supported profiles for a type', () => {
+    config.capabilityStatement = { supportedProfiles: { Patient: [] } };
+    expect(getResource('Patient')?.supportedProfile).toBeUndefined();
+  });
+
   test('Overlay', () => {
     config.capabilityStatement = {
       overlay: {
