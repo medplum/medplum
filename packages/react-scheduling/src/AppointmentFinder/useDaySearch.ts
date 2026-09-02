@@ -83,8 +83,8 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   });
 
   const selectedDayRange = useMemo(
-    () => ({ start: daySearch.first.start, end: daySearch.range.end }),
-    [daySearch.first.start, daySearch.range.end]
+    () => ({ start: daySearch.original.start, end: daySearch.range.end }),
+    [daySearch.original.start, daySearch.range.end]
   );
 
   const { timeResultsByDay, hasTimes } = useMemo(() => {
@@ -105,25 +105,25 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
   // in-flight one, because the control that calls this is disabled while `loadingMoreDays`.
   const showMoreDays = useCallback((): void => {
     setDaySearch((previous) => ({
-      first: previous.first,
+      original: previous.original,
       range: nextWindow(previous.range),
       found: [...previous.found, ...search.appointments],
     }));
   }, [search.appointments]);
 
-  // `first` is carried over, so the days picked stay picked and `onDaysChanged` does not
+  // `original` is carried over, so the days picked stay picked and `onDaysChanged` does not
   // fire: it is the extension that goes, not the choice of days.
   const reset = useCallback((): void => {
     setDaySearch((previous) => ({
-      first: previous.first,
-      range: previous.first,
+      original: previous.original,
+      range: previous.original,
       found: [],
     }));
   }, []);
 
   // A spinner rather than empty days: only while the first window is still out, before
   // "Show more days" has moved the search past it.
-  const loadingFirstDays = search.loading && daySearch.range.start.getTime() === daySearch.first.start.getTime();
+  const loadingFirstDays = search.loading && daySearch.range.start.getTime() === daySearch.original.start.getTime();
 
   return {
     selectedDayRange,
@@ -142,7 +142,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 /** The days on offer, and the times the ones already answered came back with. */
 interface DaySearch {
   /** The window the search opened on, which is what putting the added days away goes back to. */
-  readonly first: DateTimeRange;
+  readonly original: DateTimeRange;
   /** The days being asked about now, which is the newest window alone. Both ends closed, as `$find` requires. */
   readonly range: DateTimeRange;
   /** Times the earlier windows offered, kept on screen while a further one is out. */
@@ -173,7 +173,7 @@ function floorToNow(date: Date): Date {
 function openDaySearch(start: Date, end: Date = start): DaySearch {
   const from = floorToNow(start);
   const window = { start: from, end: endOfDay(end > from ? end : from) };
-  return { first: window, range: window, found: [] };
+  return { original: window, range: window, found: [] };
 }
 
 /**

@@ -368,6 +368,7 @@ describe('AppointmentProposalForm', () => {
 
   describe('Showing several days at a time', () => {
     test('Offers the day picked, and none of the days around it', async () => {
+      const get = vi.spyOn(medplum, 'get');
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
@@ -377,6 +378,12 @@ describe('AppointmentProposalForm', () => {
       // "Show more days" is what asks for the days after; a click asks only for its own.
       expect(screen.queryByText(/Tuesday, August 18/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Wednesday, August 19/)).not.toBeInTheDocument();
+
+      await chooseDay('20');
+
+      expect(await screen.findByText(/Thursday, August 20/)).toBeInTheDocument();
+      expect(screen.queryByText(/Friday, August 21/)).not.toBeInTheDocument();
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(20);
     });
 
     test('Asks about the one day picked, with a page wide enough for it', async () => {
@@ -389,21 +396,6 @@ describe('AppointmentProposalForm', () => {
       const params = lastFindParams(get) as URLSearchParams;
       expect(new Date(params.get('end') as string).getDate()).toBe(17);
       expect(Number(params.get('_count'))).toBe(50);
-    });
-
-    test('Asks about only the day clicked, not the days after it', async () => {
-      const get = vi.spyOn(medplum, 'get');
-      setup(medplum);
-      await chooseImagingService();
-      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
-      await openTimeFinder();
-
-      // Not just the day the form opens on: clicking a later day narrows the same way.
-      await chooseDay('20');
-
-      expect(await screen.findByText(/Thursday, August 20/)).toBeInTheDocument();
-      expect(screen.queryByText(/Friday, August 21/)).not.toBeInTheDocument();
-      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(20);
     });
 
     test('Adds the next two days under the ones already on screen', async () => {
