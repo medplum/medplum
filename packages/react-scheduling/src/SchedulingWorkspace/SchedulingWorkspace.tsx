@@ -13,10 +13,10 @@ import { useMedplum } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { BookableActorType } from '../actors';
+import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
-import type { SchedulingRole } from '../AppointmentFinder/AppointmentFinder.roles';
-import { SCHEDULING_ROLES } from '../AppointmentFinder/AppointmentFinder.roles';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { resolveThemeColor } from '../colors';
@@ -28,7 +28,16 @@ import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import classes from './SchedulingWorkspace.module.css';
 
-const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = { provider: [], room: [], device: [] };
+type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
+type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
+
+const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
+
+const NONE_DESELECTED: DeselectedIdsByActorType = {
+  Practitioner: new Set(),
+  Location: new Set(),
+  Device: new Set(),
+};
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
@@ -60,13 +69,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [schedulesLoadingError, setSchedulesLoadingError] = useState<unknown>();
 
-  const [candidatesByRole, setCandidatesByRole] =
-    useState<Readonly<Record<SchedulingRole, ScheduleCandidate[]>>>(EMPTY_CANDIDATES);
+  const [candidatesByActorType, setCandidatesByActorType] = useState<CandidatesByActorType>(NO_CANDIDATES);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
 
-  const [deselectedProviderIds, setDeselectedProviderIds] = useState<ReadonlySet<string>>(new Set());
-  const [deselectedDeviceIds, setDeselectedDeviceIds] = useState<ReadonlySet<string>>(new Set());
-  const [deselectedRoomIds, setDeselectedRoomIds] = useState<ReadonlySet<string>>(new Set());
+  const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
   const [range, setRange] = useState<DateTimeRange>();
 
@@ -76,25 +82,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
 
-  // Finds all bookable Schedules, with one search per schedulable role.
+  // Finds all bookable Schedules, with one search per bookable actor type.
   useEffect(() => {
     const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional loading flag
     setCandidatesLoading(true);
     Promise.all(
-      SCHEDULING_ROLES.map((role) =>
-        searchScheduleCandidates(medplum, undefined, {
-          role,
+      BOOKABLE_ACTOR_TYPES.map(async (actorType) => {
+        const candidates = await searchScheduleCandidates(medplum, undefined, {
+          actorType,
           query: '',
           signal: controller.signal,
           count: 100,
-        })
-      )
+        });
+        return [actorType, candidates] as const;
+      })
     )
-      .then(([provider, room, device]) => {
+      .then((results) => {
         if (!controller.signal.aborted) {
           setSchedulesLoadingError(undefined);
-          setCandidatesByRole({ provider, room, device });
+          setCandidatesByActorType(Object.fromEntries(results) as CandidatesByActorType);
         }
       })
       .catch((err: unknown) => {
@@ -110,25 +117,23 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return () => controller.abort();
   }, [medplum]);
 
-  // Every candidate across all three roles gets its own stable color, shared between
+  // Every candidate across all the bookable types gets its own stable color, shared between
   // its CalendarsPanel row and its MultiCalendar source so the two always match.
   const colorByScheduleId = useMemo(() => {
-    const all = [...candidatesByRole.provider, ...candidatesByRole.room, ...candidatesByRole.device];
+    const all = BOOKABLE_ACTOR_TYPES.flatMap((actorType) => candidatesByActorType[actorType]);
     const map = new Map<string, keyof typeof theme.colors>();
     all.forEach((candidate, i) => {
       const extensionColor = getExtensionValue(candidate.schedule, SchedulingScheduleColorURI) as string | undefined;
       map.set(candidate.schedule.id, resolveThemeColor(theme, extensionColor, i));
     });
     return map;
-  }, [candidatesByRole, theme]);
+  }, [candidatesByActorType, theme]);
 
   const activeCandidates = useMemo(() => {
-    return [
-      ...candidatesByRole.provider.filter((c) => !deselectedProviderIds.has(c.schedule.id)),
-      ...candidatesByRole.room.filter((c) => !deselectedRoomIds.has(c.schedule.id)),
-      ...candidatesByRole.device.filter((c) => !deselectedDeviceIds.has(c.schedule.id)),
-    ];
-  }, [candidatesByRole, deselectedProviderIds, deselectedRoomIds, deselectedDeviceIds]);
+    return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
+      candidatesByActorType[actorType].filter((c) => !deselectedIds[actorType].has(c.schedule.id))
+    );
+  }, [candidatesByActorType, deselectedIds]);
 
   const schedules = useMemo(() => activeCandidates.map((c) => c.schedule), [activeCandidates]);
   const {
@@ -166,6 +171,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setTimeFinderOpen(false);
   }, []);
 
+  const toggleCandidate = useCallback((actorType: BookableActorType, id: string): void => {
+    setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
+  }, []);
+
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       closeBooking();
@@ -187,20 +196,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     };
   };
 
+  const panelItems = Object.fromEntries(
+    BOOKABLE_ACTOR_TYPES.map((actorType) => [
+      actorType,
+      candidatesByActorType[actorType].map((c) => toItem(c, !deselectedIds[actorType].has(c.schedule.id))),
+    ])
+  ) as Record<BookableActorType, CalendarsPanelItem[]>;
+
   const displayError = resourcesError ?? schedulesLoadingError;
 
   return (
     <div className={`${classes.root} ${props.className ?? ''}`}>
       <div className={classes.sidebar}>
-        <CalendarsPanel
-          providers={candidatesByRole.provider.map((c) => toItem(c, !deselectedProviderIds.has(c.schedule.id)))}
-          devices={candidatesByRole.device.map((c) => toItem(c, !deselectedDeviceIds.has(c.schedule.id)))}
-          rooms={candidatesByRole.room.map((c) => toItem(c, !deselectedRoomIds.has(c.schedule.id)))}
-          candidatesLoading={candidatesLoading}
-          onToggleProvider={(id) => setDeselectedProviderIds((prev) => toggleId(prev, id))}
-          onToggleDevice={(id) => setDeselectedDeviceIds((prev) => toggleId(prev, id))}
-          onToggleRoom={(id) => setDeselectedRoomIds((prev) => toggleId(prev, id))}
-        />
+        <CalendarsPanel items={panelItems} candidatesLoading={candidatesLoading} onToggle={toggleCandidate} />
       </div>
       <div className={classes.calendar}>
         {displayError !== undefined && (

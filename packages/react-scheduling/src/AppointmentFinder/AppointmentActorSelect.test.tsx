@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
+import type { SchedulingActorType } from '../actors';
 import { SatelliteClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
 import {
   clickAutocompleteOption,
@@ -13,7 +14,6 @@ import {
 } from '../test-utils/asyncAutocomplete';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
-import type { SchedulingRole } from './AppointmentFinder.roles';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 
 installAutocompleteTimers();
@@ -28,7 +28,7 @@ async function setupClient(): Promise<MockClient> {
 }
 
 interface SetupProps {
-  readonly role?: SchedulingRole;
+  readonly actorType?: SchedulingActorType;
   readonly service?: WithId<HealthcareService>;
   readonly location?: WithId<Location>;
   readonly disabled?: boolean;
@@ -44,7 +44,7 @@ async function setup(medplum: MockClient, props?: SetupProps): Promise<{ onChang
   const onChange = vi.fn();
   const element: JSX.Element = (
     <AppointmentActorSelect
-      role={props?.role ?? 'provider'}
+      actorType={props?.actorType ?? 'Practitioner'}
       service={props?.service ?? UltrasoundImagingService}
       location={props?.location}
       disabled={props?.disabled}
@@ -89,7 +89,7 @@ function namesGiven(onChange: ReturnType<typeof vi.fn>, call = 0): string[] {
 describe('AppointmentActorSelect', () => {
   test('Offers what the service has for its role as soon as it is opened', async () => {
     const medplum = await setupClient();
-    await setup(medplum, { role: 'room' });
+    await setup(medplum, { actorType: 'Location' });
 
     await openAutocomplete();
 
@@ -143,7 +143,7 @@ describe('AppointmentActorSelect', () => {
 
   test('Leaves out actors sited at another clinic', async () => {
     const medplum = await setupClient();
-    await setup(medplum, { role: 'room', location: SatelliteClinic });
+    await setup(medplum, { actorType: 'Location', location: SatelliteClinic });
 
     await openAutocomplete();
 
@@ -155,7 +155,7 @@ describe('AppointmentActorSelect', () => {
     // Every role gets a field whether or not the service uses it, so the form's
     // shape does not change with the data behind it.
     const medplum = await setupClient();
-    await setup(medplum, { role: 'room', service: WalkInService });
+    await setup(medplum, { actorType: 'Location', service: WalkInService });
 
     await openAutocomplete();
 
@@ -175,7 +175,10 @@ describe('AppointmentActorSelect', () => {
     const medplum = await setupClient();
     const onChange = vi.fn();
 
-    renderWithMedplum(<AppointmentActorSelect role="provider" service={undefined} onChange={onChange} />, medplum);
+    renderWithMedplum(
+      <AppointmentActorSelect actorType="Practitioner" service={undefined} onChange={onChange} />,
+      medplum
+    );
     await settleAutocomplete();
     await typeInAutocomplete(screen.getByRole('searchbox'), 'riv');
 
@@ -207,7 +210,7 @@ describe('AppointmentActorSelect', () => {
     const medplum = await setupClient();
     const onChange = vi.fn();
     const { rerender } = renderWithMedplum(
-      <AppointmentActorSelect role="room" service={UltrasoundImagingService} onChange={onChange} />,
+      <AppointmentActorSelect actorType="Location" service={UltrasoundImagingService} onChange={onChange} />,
       medplum
     );
     await settleAutocomplete();
@@ -215,7 +218,7 @@ describe('AppointmentActorSelect', () => {
     await act(async () => {
       rerender(
         <AppointmentActorSelect
-          role="room"
+          actorType="Location"
           service={UltrasoundImagingService}
           location={SatelliteClinic}
           onChange={onChange}
