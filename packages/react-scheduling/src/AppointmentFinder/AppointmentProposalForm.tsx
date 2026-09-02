@@ -177,8 +177,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // was offered from.
   const clearChosen = useCallback((): void => setChosen(undefined), []);
 
-  // The fields read these to offer the actors, so naming a chosen one costs no
-  // further read. See `getAppointmentActors`.
+  // All actor resources, keyed by their reference.
   const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
 
   const daySearch = useDaySearch({
@@ -507,11 +506,9 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
       {actors.map((actor, index) => {
         const actorLabel = getActorTypeLabel(getActorType(actor));
         return (
-          <Fragment key={getReferenceString(actor) ?? index}>
+          <Fragment key={getReferenceString(actor)}>
             {(index > 0 || durationMinutes > 0) && ' · '}
-            {actorLabel}:{' '}
-            {/* `inherit`: the description sets its own font size. */}
-            <ResourceName value={actor} link={false} inherit />
+            {actorLabel}: <ResourceName value={actor} link={false} inherit />
           </Fragment>
         );
       })}

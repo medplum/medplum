@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference, WithId } from '@medplum/core';
 import { assertNever, isResource, parseReference } from '@medplum/core';
-import type { Resource, Schedule } from '@medplum/fhirtypes';
+import type { ExtractResource, Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
@@ -11,13 +11,28 @@ import type { Resource, Schedule } from '@medplum/fhirtypes';
 export type SchedulingActor = Schedule['actor'][number];
 export type SchedulingActorType = Dereference<SchedulingActor>['resourceType'];
 
+/** A loaded actor resource. Tied to the types `Schedule.actor` admits. */
+export type SchedulingActorResource = WithId<ExtractResource<SchedulingActorType>>;
+
 /**
- * An actor a proposed time is held on: the actor's own resource where whoever
- * offered the time had already fetched it, and the reference the proposal
- * carries otherwise. Both shapes are what `<ResourceName>` accepts, which is
- * what names them.
+ * An actor as a reference, or as the resource when it has already been read.
  */
-export type SchedulingActorValue = SchedulingActor | WithId<Resource>;
+export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
+
+/** The resource types `Schedule.actor` admits, as values rather than a type. */
+const SCHEDULING_ACTOR_TYPES = [
+  'Device',
+  'HealthcareService',
+  'Location',
+  'Patient',
+  'Practitioner',
+  'PractitionerRole',
+  'RelatedPerson',
+] as const satisfies SchedulingActorType[];
+
+export function isSchedulingActorType(value: string | undefined): value is SchedulingActorType {
+  return SCHEDULING_ACTOR_TYPES.includes(value as SchedulingActorType);
+}
 
 /**
  * Actor types whose schedules may be offered for booking, in the order they are
@@ -51,7 +66,7 @@ export function isBookableActorType(value: string | undefined): value is Bookabl
  * @returns The type of the actor.
  */
 export function getActorType(actor: SchedulingActorValue): SchedulingActorType {
-  return isResource(actor) ? (actor.resourceType as SchedulingActorType) : parseReference(actor)[0];
+  return isResource(actor) ? actor.resourceType : parseReference(actor)[0];
 }
 
 /**
