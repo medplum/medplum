@@ -13,6 +13,7 @@ import {
   combine,
   executeMigrationActions,
   generateConstraintsActions,
+  generateIndexesActions,
   generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
@@ -436,6 +437,66 @@ describe('Generator', () => {
       expect(loggerSpy).toHaveBeenCalledWith('[TestTable] Existing constraint should not exist: id IS NOT NULL');
 
       loggerSpy.mockRestore();
+    });
+  });
+
+  describe('generateIndexesActions', () => {
+    test('drops concurrent rebuild indexes instead of valid indexes with the same definition', () => {
+      const primaryKeyDefinition = {
+        columns: ['resourceId', 'targetId', 'code'],
+        indexType: 'btree' as const,
+        unique: true,
+      };
+      const targetIdDefinition = {
+        columns: ['targetId', 'code'],
+        indexType: 'btree' as const,
+        include: ['resourceId'],
+      };
+      const startTable: TableDefinition = {
+        name: 'AuditEvent_References',
+        columns: [],
+        indexes: [
+          {
+            ...primaryKeyDefinition,
+            indexdef:
+              'CREATE UNIQUE INDEX "AuditEvent_References_pkey_ccnew" ON public."AuditEvent_References" USING btree ("resourceId", "targetId", code)',
+          },
+          {
+            ...primaryKeyDefinition,
+            indexdef:
+              'CREATE UNIQUE INDEX "AuditEvent_References_pkey" ON public."AuditEvent_References" USING btree ("resourceId", "targetId", code)',
+          },
+          {
+            ...targetIdDefinition,
+            indexdef:
+              'CREATE INDEX "AuditEvent_References_targetId_code_idx_ccnew" ON public."AuditEvent_References" USING btree ("targetId", code) INCLUDE ("resourceId")',
+          },
+          {
+            ...targetIdDefinition,
+            indexdef:
+              'CREATE INDEX "AuditEvent_References_targetId_code_idx" ON public."AuditEvent_References" USING btree ("targetId", code) INCLUDE ("resourceId")',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'AuditEvent_References',
+        columns: [],
+        compositePrimaryKey: primaryKeyDefinition.columns,
+        indexes: [targetIdDefinition],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({
+        preDeploy: [
+          { type: 'DROP_INDEX', indexName: 'AuditEvent_References_pkey_ccnew' },
+          { type: 'DROP_INDEX', indexName: 'AuditEvent_References_targetId_code_idx_ccnew' },
+        ],
+        postDeploy: [],
+      });
     });
   });
 
