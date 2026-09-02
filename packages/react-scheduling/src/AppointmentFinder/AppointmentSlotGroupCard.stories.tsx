@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { Appointment, Resource } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
@@ -12,6 +13,7 @@ import {
   DrChenPractitioner,
   DrRiveraPractitioner,
   ExamRoomA,
+  indexByReference,
   Ultrasound1Device,
 } from '../stories/scheduling';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
@@ -32,33 +34,22 @@ const TIMES = ['13:00', '13:30', '14:00', '15:00', '17:30'].map((time) => `2020-
 
 /**
  * Builds the times one set of actors is offering.
- *
- * `$find` names an actor by reference, so the resources go in separately, the way
- * the booking form hands over whatever its fields fetched.
- *
  * @param actors - Whose times these are, as their own resources.
  * @param durationMinutes - How long each visit runs.
+ * @param resolved - Whether the resources are handed over, or only the references
+ *   `$find` returned.
  * @returns The group, as the picker would have grouped it.
  */
-function buildGroup(actors: readonly WithId<Resource>[], durationMinutes = 30): AppointmentSlotGroup {
-  const references = actors.map((actor) => ({ reference: `${actor.resourceType}/${actor.id}` }));
+function buildGroup(actors: readonly WithId<Resource>[], durationMinutes = 30, resolved = true): AppointmentSlotGroup {
   const appointments = TIMES.map((start) =>
-    buildProposedAppointment({ start, durationMinutes, actorReferences: references })
+    buildProposedAppointment({
+      start,
+      durationMinutes,
+      actorReferences: actors.map((actor) => getReferenceString(actor)),
+    })
   );
-  const resources = new Map(references.map((reference, index) => [reference.reference, actors[index]]));
+  const resources = resolved ? indexByReference(actors) : undefined;
   return groupAppointmentsByDay(appointments, TIMEZONE, resources)[0].groups[0];
-}
-
-/**
- * Builds the same times with nothing but the references `$find` returned.
- * @param references - Who the times are held on.
- * @returns The group, naming its actors by reference alone.
- */
-function buildUnresolvedGroup(references: readonly string[]): AppointmentSlotGroup {
-  const appointments = TIMES.map((start) =>
-    buildProposedAppointment({ start, actorReferences: references.map((reference) => ({ reference })) })
-  );
-  return groupAppointmentsByDay(appointments, TIMEZONE)[0].groups[0];
 }
 
 /**
@@ -108,5 +99,5 @@ export const Busy = (): JSX.Element => <Card group={buildGroup([DrRiveraPractiti
  * @returns The story.
  */
 export const UnresolvedActors = (): JSX.Element => (
-  <Card group={buildUnresolvedGroup(['Practitioner/dr-rivera', 'Location/exam-room-a'])} />
+  <Card group={buildGroup([DrRiveraPractitioner, ExamRoomA], 30, false)} />
 );

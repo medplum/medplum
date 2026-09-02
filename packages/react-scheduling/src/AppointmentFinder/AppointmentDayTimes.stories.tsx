@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { Appointment, Resource } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { withMockedDate } from '../stories/decorators';
-import { buildProposedAppointment, DrOkaforPractitioner, DrRiveraPractitioner } from '../stories/scheduling';
+import {
+  buildProposedAppointment,
+  DrOkaforPractitioner,
+  DrRiveraPractitioner,
+  indexByReference,
+} from '../stories/scheduling';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
@@ -25,26 +31,19 @@ const DAY = new Date(2020, 4, 5);
 
 /**
  * Builds a day's times.
- *
- * `$find` names an actor by reference, so the resources go in separately, the way
- * the booking form hands over whatever its fields fetched.
- *
  * @param offers - Who is offering, and at what times on the clinic's own clock.
  * @returns The times, as the picker would have grouped them.
  */
-function buildGroups(
-  offers: readonly { actor: WithId<Resource>; times: string[] }[]
-): readonly AppointmentSlotGroup[] {
-  const referenceOf = (actor: WithId<Resource>): string => `${actor.resourceType}/${actor.id}`;
+function buildGroups(offers: readonly { actor: WithId<Resource>; times: string[] }[]): readonly AppointmentSlotGroup[] {
   const appointments: Appointment[] = offers.flatMap((offer) =>
     offer.times.map((time) =>
       buildProposedAppointment({
         start: `2020-05-05T${time}:00.000Z`,
-        actorReferences: [{ reference: referenceOf(offer.actor) }],
+        actorReferences: [getReferenceString(offer.actor)],
       })
     )
   );
-  const resources = new Map(offers.map((offer) => [referenceOf(offer.actor), offer.actor]));
+  const resources = indexByReference(offers.map((offer) => offer.actor));
   return groupAppointmentsByDay(appointments, TIMEZONE, resources)[0].groups;
 }
 

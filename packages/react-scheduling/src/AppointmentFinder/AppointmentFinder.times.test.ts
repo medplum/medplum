@@ -1,10 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
-import type { Resource } from '@medplum/fhirtypes';
-import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA } from '../stories/scheduling';
+import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import {
-  MAX_FIND_WINDOW_DAYS,
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
@@ -16,6 +13,7 @@ import {
   getDurationMinutes,
   getFindWindowError,
   groupAppointmentsByDay,
+  MAX_FIND_WINDOW_DAYS,
   parseDayKey,
   parseZonedTime,
 } from './AppointmentFinder.times';
@@ -23,10 +21,7 @@ import {
 const EASTERN = 'America/New_York';
 
 /** The resources a caller had already read, keyed as a proposal names them. */
-const RESOURCES = new Map<string, WithId<Resource>>([
-  ['Practitioner/dr-rivera', DrRiveraPractitioner],
-  ['Location/exam-room-a', ExamRoomA],
-]);
+const RESOURCES = indexByReference([DrRiveraPractitioner, ExamRoomA]);
 
 describe('filterByTimeOfDay', () => {
   const morning = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' }); // 9:00 Eastern
@@ -115,7 +110,6 @@ describe('groupAppointmentsByDay', () => {
     expect(day.groups[0].key).toBe(groupAppointmentsByDay([appointment], EASTERN)[0].groups[0].key);
   });
 });
-
 
 describe('getAppointmentActors', () => {
   test('Swaps in each actor resource the caller had already read', () => {

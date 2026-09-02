@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { isResource } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { Resource, Schedule } from '@medplum/fhirtypes';
 
 /** Resource types that may appear in `Schedule.actor`. */
@@ -18,11 +18,8 @@ export type SchedulingActor = Schedule['actor'][number];
 /**
  * An actor a proposed time is held on: the actor's own resource where whoever
  * offered the time had already fetched it, and the reference the proposal
- * carries otherwise.
- *
- * `Schedule.actor.display` is a copy written once and never kept in step with
- * the resource it names, so the resource answers wherever there is one. Both
- * shapes are what `<ResourceName>` accepts, which is what does the answering.
+ * carries otherwise. Both shapes are what `<ResourceName>` accepts, which is
+ * what names them.
  */
 export type SchedulingActorValue = SchedulingActor | WithId<Resource>;
 
@@ -94,7 +91,7 @@ export function getSchedulingRole(actorType: SchedulingActorType): SchedulingRol
  * @returns The role's label, or undefined for an actor of another type.
  */
 export function getActorRoleLabel(actor: SchedulingActorValue): string | undefined {
-  const actorType = isResource(actor) ? actor.resourceType : actor.reference?.split('/')[0];
+  const actorType = getReferenceString(actor)?.split('/')[0];
   return isSchedulingActorType(actorType) ? ROLE_LABELS[getSchedulingRole(actorType)] : undefined;
 }
 
