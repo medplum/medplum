@@ -671,6 +671,45 @@ describe('AppointmentProposalForm', () => {
       expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
     });
 
+    test('Reports the time as it is chosen', async () => {
+      const onChangeTime = vi.fn();
+      setup(medplum, { onChangeTime });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      // Mounting has chosen nothing, and saying so would take down a marker a host
+      // put up when it opened this form.
+      expect(onChangeTime).not.toHaveBeenCalled();
+
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await clickBook();
+
+      // The interval reported is the one that got booked, to the instant: a host
+      // marking it on a calendar of its own is marking the visit itself.
+      const proposal = proposedAppointment();
+      expect(onChangeTime).toHaveBeenLastCalledWith({
+        start: new Date(proposal.start as string),
+        end: new Date(proposal.end as string),
+      });
+    });
+
+    test('Reports the time being dropped when a different day is searched', async () => {
+      const onChangeTime = vi.fn();
+      setup(medplum, { onChangeTime });
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      expect(onChangeTime).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(Date) }));
+
+      await chooseDay('18');
+
+      // The time was on the Monday, and the search has moved to the Tuesday. A host
+      // hears that rather than keeping a marker on a time nobody has chosen.
+      expect(onChangeTime).toHaveBeenLastCalledWith(undefined);
+    });
+
     test('Opens the time search on the day the host named', async () => {
       // In the following month, so the month the calendar would otherwise open on
       // cannot pass this by accident.

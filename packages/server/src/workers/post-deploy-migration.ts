@@ -295,19 +295,12 @@ export async function addPostDeployMigrationJobData<T extends PostDeployJobData>
   jobData: T,
   options?: JobsOptions
 ): Promise<Job<T> | undefined> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be in jobData in the future
-  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-  const deduplicationId = `v${asyncJob.dataVersion}`;
-
   const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);
   if (!queue) {
     throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
   }
 
-  const job = await queue.add('PostDeployMigrationJobData', jobData, {
-    ...options,
-    deduplication: { id: deduplicationId },
-  });
+  const job = await queue.add('PostDeployMigrationJobData', jobData, options);
 
   globalLogger.debug('Added post-deploy migration job', {
     jobId: job.id,

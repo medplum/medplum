@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { ClientApplication, Login } from '@medplum/fhirtypes';
+import type { AuditEvent, ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
+import { globalLogger } from '../logger';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 
@@ -289,6 +290,60 @@ describe('Auth middleware', () => {
       .set('X-Forwarded-For', '5.5.5.5')
       .set('Authorization', authHeader);
     expect(res2).toHaveStatus(200);
+  });
+
+  test('Bearer auth AuditEvent uses current request IP, not stale login.remoteAddress', async () => {
+    const { client, membership } = await createTestProject({ withClient: true });
+    const scope = 'openid';
+
+    const login = await withTestContext(() =>
+      systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'client',
+        user: createReference(client),
+        client: createReference(client),
+        membership: createReference(membership),
+        authTime: new Date().toISOString(),
+        remoteAddress: '198.51.100.1',
+        scope,
+      })
+    );
+
+    const accessToken = await generateAccessToken({
+      login_id: login.id,
+      sub: client.id,
+      username: client.id,
+      client_id: client.id,
+      profile: client.resourceType + '/' + client.id,
+      scope,
+    });
+
+    const config = getConfig();
+    config.logAuditEvents = true;
+    const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
+
+    try {
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('X-Forwarded-For', '203.0.113.7')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(200);
+
+      const loggedReadCall = writeSpy.mock.calls.find((call: unknown[]) => {
+        try {
+          const parsed = JSON.parse(call[0] as string);
+          return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'rest';
+        } catch {
+          return false;
+        }
+      });
+      expect(loggedReadCall).toBeDefined();
+      const auditEvent = JSON.parse((loggedReadCall as unknown[])[0] as string) as AuditEvent;
+      expect(auditEvent.agent?.[0]?.network?.address).toBe('203.0.113.7');
+    } finally {
+      config.logAuditEvents = false;
+      writeSpy.mockRestore();
+    }
   });
 
   test('Basic auth with super admin client', async () => {

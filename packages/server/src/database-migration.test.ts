@@ -6,7 +6,6 @@ import type { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } 
 import type { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import type { MockedFunction, MockInstance } from 'vitest';
 import { vi } from 'vitest';
@@ -15,6 +14,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
+import type { PgQueryable } from './fhir/sql';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import type {
@@ -57,7 +57,7 @@ const mockGetPostDeployVersion = vi.fn<typeof migrationSql.getPostDeployVersion>
 
 const mockMarkPostDeployMigrationCompleted = vi
   .fn<typeof migrationSql.markPostDeployMigrationCompleted>()
-  .mockImplementation(async (_pool: Pool | PoolClient, dataVersion: number) => {
+  .mockImplementation(async (_client: PgQueryable, dataVersion: number) => {
     if (!Number.isInteger(dataVersion)) {
       throw new Error('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
     }
@@ -333,6 +333,7 @@ describe('Database migrations', () => {
         const expectedJobData = prepareCustomMigrationJobData(asyncJob);
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall?.[1]).toEqual(expectedJobData);
+        expect(queueAddSpy.mock.lastCall?.[2]).toEqual({ deduplication: { id: 'v1' } });
       }));
 
     test('No pending data migration', () =>
@@ -842,9 +843,83 @@ describe('Database migrations', () => {
             postDeploy: [],
           },
         });
+        expect(queueAddSpy.mock.calls[0][2]).toBeUndefined();
 
         expect(res1).toHaveStatus(202);
         expect(res1.headers['content-location']).toBeDefined();
+      });
+    });
+
+    describe('Rebuild index', () => {
+      test('Queues one or more concurrent reindex actions', async () => {
+        const targets = [{ index: 'Patient_name_idx' }, { table: 'Observation' }];
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/rebuild-index')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ targets });
+
+        expect(res).toHaveStatus(202);
+        expect(res.headers['content-location']).toBeDefined();
+        expect(queueAddSpy).toHaveBeenCalledTimes(1);
+        const jobData = queueAddSpy.mock.calls[0][1];
+        expect(jobData).toMatchObject({
+          type: 'dynamic',
+          migrationActions: {
+            preDeploy: [],
+            postDeploy: [
+              { type: 'REINDEX_CONCURRENTLY', target: 'INDEX', name: 'Patient_name_idx' },
+              { type: 'REINDEX_CONCURRENTLY', target: 'TABLE', name: 'Observation' },
+            ],
+          },
+        });
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+        expect(asyncJob.request).toBe('/admin/super/rebuild-index?index=Patient_name_idx&table=Observation');
+        expect(asyncJob.meta?.project).toBeUndefined();
+      });
+
+      test.each([
+        {},
+        { targets: [] },
+        { targets: Array.from({ length: 11 }, (_, index) => ({ table: `Table${index}` })) },
+        { targets: 'Patient_name_idx' },
+        { targets: [123] },
+        { targets: [{}] },
+        { targets: [{ table: 'Patient', index: 'Patient_id_idx' }] },
+        { targets: [{ schema: 'public' }] },
+        { targets: [{ table: 123 }] },
+        { targets: [{ index: 123 }] },
+        { targets: [{ table: 'Patient History' }] },
+        { targets: [{ index: 'Patient_id_idx; DROP TABLE Patient' }] },
+      ])('Rejects invalid input: %j', async (body) => {
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/rebuild-index')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send(body);
+
+        expect(res).toHaveStatus(400);
+        expect(queueAddSpy).not.toHaveBeenCalled();
+      });
+
+      test('Rejects unexpected request properties', async () => {
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/rebuild-index')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ targets: [{ index: 'Patient_name_idx' }], otherSql: 'DROP TABLE Patient' });
+
+        expect(res).toHaveStatus(400);
+        expect(queueAddSpy).not.toHaveBeenCalled();
       });
     });
   });

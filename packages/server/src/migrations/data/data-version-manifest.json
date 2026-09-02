@@ -159,5 +159,8 @@
   },
   "v43": {
     "serverVersion": "5.1.32"
+  },
+  "v44": {
+    "serverVersion": "5.1.33"
   }
 }

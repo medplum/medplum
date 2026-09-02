@@ -229,6 +229,13 @@ export interface MedplumServerConfig {
   requireVerifiedEmailForProjectCreation?: boolean;
 
   /**
+   * Optional list of email domains that are blocked server-wide, regardless of
+   * any project-level `allowedPractitionerEmailDomain` setting (e.g. disposable email providers).
+   * Matched case-insensitively against the domain portion of the email address.
+   */
+  blockedEmailDomains?: string[];
+
+  /**
    * Optional flag to allow outbound fetch requests to private/local networks.
    * Intended only for on-premises deployments that connect to trusted local services.
    * Do not enable in hosted or cloud-managed environments.

@@ -198,6 +198,7 @@ const booleanKeys = new Set([
   'logAuditEvents',
   'mcpEnabled',
   'registerEnabled',
+  'requireVerifiedEmailForProjectCreation',
   'serverScopedSubscriptionsEnabled',
   'require',
   'rejectUnauthorized',
@@ -230,7 +231,11 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set(['dataWarehouse.includeResourceTypes', 'dataWarehouse.excludeResourceTypes']);
+const arrayKeys = new Set([
+  'dataWarehouse.includeResourceTypes',
+  'dataWarehouse.excludeResourceTypes',
+  'blockedEmailDomains',
+]);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

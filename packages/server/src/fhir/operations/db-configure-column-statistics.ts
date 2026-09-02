@@ -4,7 +4,7 @@ import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { requireSuperAdmin } from '../../context';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../../database';
-import { isValidColumnName, isValidTableName } from '../sql';
+import { isValidPostgresIdentifier } from '../sql';
 import { makeOperationDefinition } from './definitions';
 import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
@@ -31,12 +31,12 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
     newStatisticsTarget?: number;
   }>(UpdateOperation, req);
 
-  if (!isValidTableName(params.tableName)) {
+  if (!isValidPostgresIdentifier(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
   }
 
   for (const columnName of params.columnNames) {
-    if (!isValidColumnName(columnName)) {
+    if (!isValidPostgresIdentifier(columnName)) {
       throw new OperationOutcomeError(badRequest('Invalid columnName'));
     }
   }
