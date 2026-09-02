@@ -7,6 +7,7 @@ import {
   enumerateDateRange,
   filterByTimeOfDay,
   formatDateRange,
+  formatDayLabel,
   formatZonedTime,
   getActorGroupKey,
   getAppointmentKey,
@@ -90,6 +91,29 @@ describe('groupAppointmentsByDay', () => {
     expect(day.date.getFullYear()).toBe(2026);
     expect(day.date.getMonth()).toBe(6);
     expect(day.date.getDate()).toBe(27);
+  });
+
+  test('Lists every day searched, including the ones offering nothing', () => {
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 29, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-27', '2026-07-28', '2026-07-29']);
+    expect(days[0].groups).toHaveLength(1);
+    expect(days[1].groups).toStrictEqual([]);
+    expect(days[2].groups).toStrictEqual([]);
+  });
+
+  test('Keeps a day that offered times outside the days searched', () => {
+    // The search window is local days, but times are read in the site's own timezone,
+    // so a result can land a day off the searched edge.
+    const days = groupAppointmentsByDay([buildProposedAppointment({ start: '2026-07-26T13:00:00.000Z' })], EASTERN, {
+      start: new Date(2026, 6, 27),
+      end: new Date(2026, 6, 27, 23, 59, 59, 999),
+    });
+
+    expect(days.map((day) => day.key)).toStrictEqual(['2026-07-26', '2026-07-27']);
   });
 });
 
@@ -221,6 +245,19 @@ describe('formatDateRange', () => {
 
   test('Says nothing when neither end was asked for', () => {
     expect(formatDateRange({})).toBeUndefined();
+  });
+
+  test('Names the days however the caller asks them to be named', () => {
+    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) }, formatDayLabel)).toBe(
+      'July 27 – July 30'
+    );
+    expect(formatDateRange({ start: new Date(2026, 6, 27) }, formatDayLabel)).toBe('From July 27');
+  });
+});
+
+describe('formatDayLabel', () => {
+  test('Names a day without its weekday', () => {
+    expect(formatDayLabel(new Date(2026, 6, 27))).toBe('July 27');
   });
 });
 
