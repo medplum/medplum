@@ -3,7 +3,7 @@
 import { Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
-import { ReferenceDisplay } from '@medplum/react';
+import { ResourceName } from '@medplum/react';
 import type { JSX } from 'react';
 import classes from './AppointmentFinder.module.css';
 import { getActorRoleLabel } from './AppointmentFinder.roles';
@@ -31,18 +31,21 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
       <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
         <Group gap="lg" align="flex-start" wrap="wrap">
-          {group.actors.map((actor) => (
-            <Stack key={getReferenceString(actor) ?? actor.display} gap={2}>
-              {getActorRoleLabel(actor) && (
-                <Text size="xs" c="dimmed" tt="uppercase">
-                  {getActorRoleLabel(actor)}
+          {group.actors.map((actor) => {
+            const roleLabel = getActorRoleLabel(actor);
+            return (
+              <Stack key={getReferenceString(actor)} gap={2}>
+                {roleLabel && (
+                  <Text size="xs" c="dimmed" tt="uppercase">
+                    {roleLabel}
+                  </Text>
+                )}
+                <Text size="sm" fw={500}>
+                  <ResourceName value={actor} link={false} inherit />
                 </Text>
-              )}
-              <Text size="sm" fw={500}>
-                <ReferenceDisplay value={actor} link={false} />
-              </Text>
-            </Stack>
-          ))}
+              </Stack>
+            );
+          })}
         </Group>
         {group.durationMinutes > 0 && (
           <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>

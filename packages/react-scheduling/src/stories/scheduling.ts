@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, HL7_V2_0203, SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  HL7_V2_0203,
+  SchedulingParametersURI,
+  ServiceTypeReferenceURI,
+  SNOMED,
+} from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
@@ -14,12 +21,13 @@ import type {
   Patient,
   Practitioner,
   PractitionerRole,
+  Resource,
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
 
 /** Who an appointment can be held on, as FHIR allows. */
-type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
+export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 /**
  * Fixtures for the scheduling components: one imaging service bookable against
@@ -223,6 +231,17 @@ function buildSchedule(
       },
     ],
   };
+}
+
+/**
+ * Keys resources by the reference a proposed appointment names them by, which is
+ * the shape `groupAppointmentsByDay` and `getAppointmentActors` read them from.
+ *
+ * @param resources - The resources a caller has already read.
+ * @returns The resources, keyed by reference.
+ */
+export function indexByReference<T extends WithId<Resource>>(resources: readonly T[]): Map<string, T> {
+  return new Map(resources.map((resource) => [getReferenceString(resource), resource]));
 }
 
 export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitioner/dr-rivera', 'Dr. Maya Rivera');

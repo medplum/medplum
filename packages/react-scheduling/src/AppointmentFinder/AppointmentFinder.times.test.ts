@@ -1,23 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { buildProposedAppointment } from '../stories/scheduling';
+import { buildProposedAppointment, DrRiveraPractitioner, ExamRoomA, indexByReference } from '../stories/scheduling';
 import {
-  MAX_FIND_WINDOW_DAYS,
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
   formatDateRange,
   formatZonedTime,
   getActorGroupKey,
+  getAppointmentActors,
   getAppointmentKey,
   getDurationMinutes,
   getFindWindowError,
   groupAppointmentsByDay,
+  MAX_FIND_WINDOW_DAYS,
   parseDayKey,
   parseZonedTime,
 } from './AppointmentFinder.times';
 
 const EASTERN = 'America/New_York';
+
+/** The resources a caller had already read, keyed as a proposal names them. */
+const RESOURCES = indexByReference([DrRiveraPractitioner, ExamRoomA]);
 
 describe('filterByTimeOfDay', () => {
   const morning = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z' }); // 9:00 Eastern
@@ -90,6 +94,44 @@ describe('groupAppointmentsByDay', () => {
     expect(day.date.getFullYear()).toBe(2026);
     expect(day.date.getMonth()).toBe(6);
     expect(day.date.getDate()).toBe(27);
+  });
+
+  test('Heads a group with the actors themselves where it was given them', () => {
+    const appointment = buildProposedAppointment({
+      start: '2026-07-27T13:00:00.000Z',
+      actorReferences: [{ reference: 'Practitioner/dr-rivera' }, { reference: 'Location/exam-room-a' }],
+    });
+
+    const [day] = groupAppointmentsByDay([appointment], EASTERN, RESOURCES);
+
+    expect(day.groups[0].actors).toStrictEqual([DrRiveraPractitioner, ExamRoomA]);
+    // Keyed off the proposal's own references, so supplying resources cannot
+    // regroup the times or break a React key across a refetch.
+    expect(day.groups[0].key).toBe(groupAppointmentsByDay([appointment], EASTERN)[0].groups[0].key);
+  });
+});
+
+describe('getAppointmentActors', () => {
+  test('Swaps in each actor resource the caller had already read', () => {
+    const appointment = buildProposedAppointment({
+      start: '2026-07-27T13:00:00.000Z',
+      actorReferences: [{ reference: 'Practitioner/dr-rivera', display: 'Maya Rivera' }],
+    });
+
+    // The resource wins over the name `$find` copied off the Schedule.
+    expect(getAppointmentActors(appointment, RESOURCES)).toStrictEqual([DrRiveraPractitioner]);
+  });
+
+  test('Leaves an actor it was given no resource for as the proposal named it', () => {
+    const actor = { reference: 'Device/ultrasound-1', display: 'Ultrasound 1' };
+    const appointment = buildProposedAppointment({ start: '2026-07-27T13:00:00.000Z', actorReferences: [actor] });
+
+    expect(getAppointmentActors(appointment, RESOURCES)).toStrictEqual([actor]);
+    expect(getAppointmentActors(appointment)).toStrictEqual([actor]);
+  });
+
+  test('Reads nothing off nothing', () => {
+    expect(getAppointmentActors(undefined, RESOURCES)).toStrictEqual([]);
   });
 });
 

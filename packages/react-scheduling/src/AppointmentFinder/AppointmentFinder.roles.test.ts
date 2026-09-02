@@ -10,8 +10,15 @@ describe('getActorRoleLabel', () => {
     expect(getActorRoleLabel({ reference: 'Device/ultrasound-1' })).toBe('Device');
   });
 
-  test('Says nothing about a reference that is not an actor', () => {
+  test('Names the role a resource fills, for an actor handed over as itself', () => {
+    expect(getActorRoleLabel({ resourceType: 'Practitioner', id: 'dr-rivera' })).toBe('Provider');
+    expect(getActorRoleLabel({ resourceType: 'Location', id: 'exam-room-a' })).toBe('Room');
+    expect(getActorRoleLabel({ resourceType: 'Device', id: 'ultrasound-1' })).toBe('Device');
+  });
+
+  test('Says nothing about something that is not an actor', () => {
     expect(getActorRoleLabel({ reference: 'Patient/homer' })).toBeUndefined();
+    expect(getActorRoleLabel({ resourceType: 'Patient', id: 'homer' })).toBeUndefined();
     expect(getActorRoleLabel({})).toBeUndefined();
   });
 });

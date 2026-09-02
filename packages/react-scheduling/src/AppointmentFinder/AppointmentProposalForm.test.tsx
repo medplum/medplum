@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Appointment, Device } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { Appointment, Device, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { installFindStub } from '../stories/mockFind';
 import {
+  DrRiveraSchedule,
   ElderJordanPatient,
+  ExamRoomASchedule,
   MainClinic,
   MRN_SYSTEM,
   SatelliteClinic,
@@ -71,6 +74,19 @@ function setup(medplum: MockClient, props?: Partial<AppointmentProposalFormProps
 function proposedAppointment(): Appointment {
   const [proposal] = onBook.mock.calls[0] as [Appointment];
   return proposal;
+}
+
+/**
+ * Strips the name a Schedule copied onto its actor.
+ *
+ * `Schedule.actor.display` is optional, and plenty of real projects never write
+ * it — which is the case where the name has to come from the actor itself.
+ *
+ * @param schedule - The schedule to strip.
+ * @returns The same schedule, with no name on any of its actors.
+ */
+function withoutActorDisplay(schedule: WithId<Schedule>): WithId<Schedule> {
+  return { ...schedule, actor: schedule.actor.map(({ display: _display, ...actor }) => actor) };
 }
 
 describe('AppointmentProposalForm', () => {
@@ -164,6 +180,40 @@ describe('AppointmentProposalForm', () => {
       expect(groups).toHaveLength(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Dr. Tunde Okafor')).toBeInTheDocument();
+    });
+  });
+
+  describe('Naming the actors a time is offered by', () => {
+    test('Names them from their own resources when the Schedules never did', async () => {
+      // `$find` copies `Schedule.actor` into the times it offers, so a project that
+      // never wrote a `display` gets proposals naming bare references. The resources
+      // behind them were already read to offer the actors in the first place.
+      await medplum.updateResource(withoutActorDisplay(DrRiveraSchedule));
+      await medplum.updateResource(withoutActorDisplay(ExamRoomASchedule));
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await chooseActor(/room/i, 'exam', 'Exam Room A');
+      await openTimeFinder();
+
+      const [group] = await screen.findAllByTestId(/^slot-group-/);
+      expect(within(group).getByText('Dr. Maya Rivera')).toBeInTheDocument();
+      expect(within(group).getByText('Exam Room A')).toBeInTheDocument();
+      expect(within(group).queryByText(/^Practitioner\//)).not.toBeInTheDocument();
+      expect(within(group).queryByText(/^Location\//)).not.toBeInTheDocument();
+    });
+
+    test('Names them the same way under the chosen time', async () => {
+      await medplum.updateResource(withoutActorDisplay(DrRiveraSchedule));
+
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      expect(chosenTimeField()).toHaveAccessibleDescription('30 min visit · Provider: Dr. Maya Rivera');
     });
   });
 

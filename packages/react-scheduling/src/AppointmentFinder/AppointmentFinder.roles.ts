@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Reference, Schedule } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import { isResource } from '@medplum/core';
+import type { ExtractResource, Resource, Schedule } from '@medplum/fhirtypes';
 
 /** Resource types that may appear in `Schedule.actor`. */
 export const SCHEDULING_ACTOR_TYPES = ['Practitioner', 'PractitionerRole', 'Location', 'Device'] as const;
@@ -12,6 +14,14 @@ export type SchedulingActorType = (typeof SCHEDULING_ACTOR_TYPES)[number];
  * accepts as a participant, so an actor can be carried straight across.
  */
 export type SchedulingActor = Schedule['actor'][number];
+
+/** A loaded actor resource. Tied to `SCHEDULING_ACTOR_TYPES`, including PractitionerRole. */
+export type SchedulingActorResource = WithId<ExtractResource<SchedulingActorType>>;
+
+/**
+ * An actor as a reference, or as the resource when it has already been read.
+ */
+export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
 
 /**
  * The parts of an appointment a user chooses, in the order they are asked about.
@@ -72,16 +82,12 @@ export function getSchedulingRole(actorType: SchedulingActorType): SchedulingRol
 }
 
 /**
- * Names the role an actor is filling, from its own reference.
- *
- * Needed where an actor is shown away from the field it was chosen in, which is
- * the only thing that would otherwise say which role it answers.
- *
- * @param actor - A reference to a scheduling actor.
- * @returns The role's label, or undefined for a reference of another type.
+ * Names the role an actor is filling (e.g. "Provider", "Room", "Device"), from its own resource type.
+ * @param actor - A scheduling actor, as a reference or resource itself.
+ * @returns The role's label.
  */
-export function getActorRoleLabel(actor: Reference): string | undefined {
-  const actorType = actor.reference?.split('/')[0];
+export function getActorRoleLabel(actor: SchedulingActor | Resource): string | undefined {
+  const actorType = isResource(actor) ? actor.resourceType : actor.reference?.split('/')[0];
   return isSchedulingActorType(actorType) ? ROLE_LABELS[getSchedulingRole(actorType)] : undefined;
 }
 
