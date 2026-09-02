@@ -167,7 +167,7 @@ describe('Job status', () => {
           {
             code: 'invalid',
             details: {
-              text: "AsyncJob cannot be cancelled if status is not 'accepted', job had status 'completed'",
+              text: "AsyncJob cannot be cancelled if status is not 'accepted' or 'active', job had status 'completed'",
             },
             severity: 'error',
           },

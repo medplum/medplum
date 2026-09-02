@@ -3,6 +3,7 @@
 import type { BotResponseStream, WithId } from '@medplum/core';
 import type {
   Agent,
+  AsyncJob,
   Bot,
   ClientApplication,
   Device,
@@ -51,4 +52,9 @@ export interface BotExecutionResult {
   readonly success: boolean;
   readonly logResult: string;
   readonly returnValue?: any;
+  /**
+   * The `AsyncJob` handle for runtimes that start work and return, rather than running it to
+   * completion. Set by MicroVM bots; the caller responds with 202 and this job's status URL.
+   */
+  readonly asyncJob?: WithId<AsyncJob>;
 }

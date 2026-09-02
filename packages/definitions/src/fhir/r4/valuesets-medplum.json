@@ -328,6 +328,11 @@
             "definition": "AWS Lambda"
           },
           {
+            "code": "awslambdamicrovm",
+            "display": "AWS Lambda MicroVM",
+            "definition": "AWS Lambda MicroVM"
+          },
+          {
             "code": "vmcontext",
             "display": "VM Context",
             "definition": "VM Context"
@@ -639,6 +644,11 @@
             "code": "data-migration",
             "display": "Data Migration",
             "definition": "Data Migration"
+          },
+          {
+            "code": "aws-lambda-microvm",
+            "display": "AWS Lambda MicroVM",
+            "definition": "AWS Lambda MicroVM"
           }
         ]
       }

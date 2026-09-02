@@ -248,6 +248,12 @@ export interface MedplumServerConfig {
    * as they are necesary for system functionality.
    */
   enabledSearchParameters?: string[];
+
+  /** Optional AWS Lambda MicroVM base image ARN. */
+  awsLambdaMicrovmBaseImageArn?: string;
+
+  /** Optional AWS Lambda MicroVM build role ARN. */
+  awsLambdaMicrovmBuildRoleArn?: string;
 }
 
 export interface SubscriptionAutoDisableTrigger {

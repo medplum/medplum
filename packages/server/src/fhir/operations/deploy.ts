@@ -16,6 +16,7 @@ import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
+import { deployBotMicrovmImage } from '../../cloud/aws/microvm';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
@@ -155,6 +156,8 @@ export async function deployBot(
     } else {
       await deployLambda(latestBot, codeToDeploy as string);
     }
+  } else if (latestBot.runtimeVersion === 'awslambdamicrovm') {
+    await deployBotMicrovmImage(latestBot);
   } else if (latestBot.runtimeVersion === 'fission') {
     await deployFissionBot(latestBot, codeToDeploy as string);
   }
