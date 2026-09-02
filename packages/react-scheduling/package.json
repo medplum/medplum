@@ -89,6 +89,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sinon": "22.1.0",
+    "storybook": "10.5.10",
     "temporal-polyfill": "1.0.4",
     "typescript": "6.0.3"
   },
