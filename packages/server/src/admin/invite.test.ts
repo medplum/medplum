@@ -2233,7 +2233,7 @@ describe('Admin Invite', () => {
     );
     const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
 
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post('/admin/projects/' + restricted.id + '/invite')
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
