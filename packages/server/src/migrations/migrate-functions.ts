@@ -3,7 +3,7 @@
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { escapeIdentifier } from 'pg';
 import type { UpdateQuery } from '../fhir/sql';
-import { isValidPostgresIdentifier, SqlBuilder } from '../fhir/sql';
+import { isValidPostgresIdentifier, PUBLIC_SCHEMA, SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
@@ -49,6 +49,77 @@ export async function reindexConcurrently(
   } finally {
     client.removeListener('notice', noticeListener);
   }
+}
+
+export async function dropInvalidIndexConcurrently(
+  client: PoolClient,
+  results: MigrationActionResult[],
+  indexName: string
+): Promise<void> {
+  if (!isValidPostgresIdentifier(indexName)) {
+    throw new Error(`Invalid PostgreSQL index name: ${indexName}`);
+  }
+
+  const qualifiedIndexName = `${escapeIdentifier(PUBLIC_SCHEMA)}.${escapeIdentifier(indexName)}`;
+  const indexResult = await client.query<{
+    is_valid: boolean;
+    is_primary: boolean;
+    is_replica_identity: boolean;
+    is_constraint_backed: boolean;
+    is_partitioned: boolean;
+    is_partition: boolean;
+    build_in_progress: boolean;
+  }>(
+    `SELECT
+      i.indisvalid AS is_valid,
+      i.indisprimary AS is_primary,
+      i.indisreplident AS is_replica_identity,
+      EXISTS (SELECT 1 FROM pg_constraint constraint_def WHERE constraint_def.conindid = index_class.oid)
+        AS is_constraint_backed,
+      index_class.relkind = 'I' AS is_partitioned,
+      index_class.relispartition AS is_partition,
+      EXISTS (SELECT 1 FROM pg_stat_progress_create_index progress WHERE progress.relid = i.indrelid)
+        AS build_in_progress
+    FROM pg_index i
+    JOIN pg_class index_class ON index_class.oid = i.indexrelid
+    JOIN pg_namespace index_namespace ON index_namespace.oid = index_class.relnamespace
+    WHERE index_namespace.nspname = $1 AND index_class.relname = $2`,
+    [PUBLIC_SCHEMA, indexName]
+  );
+
+  if (indexResult.rows.length === 0) {
+    results.push({
+      name: `DROP INDEX CONCURRENTLY IF EXISTS ${qualifiedIndexName}`,
+      durationMs: 0,
+      skipped: 'Index does not exist',
+    });
+    return;
+  }
+
+  const index = indexResult.rows[0];
+  if (index.build_in_progress) {
+    throw new Error(`Cannot drop index ${qualifiedIndexName} while an index build is active on its table`);
+  }
+  if (index.is_valid) {
+    throw new Error(`Cannot drop valid index ${qualifiedIndexName}`);
+  }
+  if (index.is_primary) {
+    throw new Error(`Cannot drop primary index ${qualifiedIndexName}`);
+  }
+  if (index.is_replica_identity) {
+    throw new Error(`Cannot drop replica identity index ${qualifiedIndexName}`);
+  }
+  if (index.is_constraint_backed) {
+    throw new Error(`Cannot drop constraint-backed index ${qualifiedIndexName}`);
+  }
+  if (index.is_partitioned) {
+    throw new Error(`Cannot concurrently drop partitioned index ${qualifiedIndexName}`);
+  }
+  if (index.is_partition) {
+    throw new Error(`Cannot drop index partition ${qualifiedIndexName}`);
+  }
+
+  await query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS ${qualifiedIndexName}`);
 }
 
 /**

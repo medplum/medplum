@@ -11,6 +11,7 @@ import {
   addCheckConstraint,
   analyzeTable,
   batchedUpdate,
+  dropInvalidIndexConcurrently,
   idempotentCreateIndex,
   nonBlockingAddCheckConstraint,
   nonBlockingAlterColumnNotNull,
@@ -119,6 +120,74 @@ describe('migrate-functions', () => {
         'Invalid REINDEX target'
       );
       expect(results).toHaveLength(0);
+    });
+  });
+
+  describe('dropInvalidIndexConcurrently', () => {
+    const indexName = 'Test_Table_id_idx_ccnew';
+
+    test('drops an invalid index', async () => {
+      await client.query(`CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapedTableName} (id)`);
+      await client.query(
+        `UPDATE pg_index SET indisvalid = false
+        FROM pg_class WHERE pg_class.oid = pg_index.indexrelid AND pg_class.relname = $1`,
+        [indexName]
+      );
+      const results: MigrationActionResult[] = [];
+
+      await dropInvalidIndexConcurrently(client, results, indexName);
+
+      expect(results).toEqual([
+        {
+          name: `DROP INDEX CONCURRENTLY IF EXISTS "public".${escapeIdentifier(indexName)}`,
+          durationMs: expect.any(Number),
+        },
+      ]);
+      expect(await getTableIndexes(client, tableName)).toHaveLength(0);
+    });
+
+    test('is a no-op if the index no longer exists', async () => {
+      const results: MigrationActionResult[] = [];
+
+      await dropInvalidIndexConcurrently(client, results, indexName);
+
+      expect(results).toEqual([
+        {
+          name: `DROP INDEX CONCURRENTLY IF EXISTS "public".${escapeIdentifier(indexName)}`,
+          durationMs: 0,
+          skipped: 'Index does not exist',
+        },
+      ]);
+    });
+
+    test('refuses to drop a valid index', async () => {
+      await client.query(`CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapedTableName} (id)`);
+
+      await expect(dropInvalidIndexConcurrently(client, [], indexName)).rejects.toThrow(
+        `Cannot drop valid index "public".${escapeIdentifier(indexName)}`
+      );
+      expect(await getTableIndexes(client, tableName)).toHaveLength(1);
+    });
+
+    test('refuses to drop an invalid primary index', async () => {
+      const primaryIndexName = `${tableName}_pkey`;
+      await client.query(`ALTER TABLE ${escapedTableName} ADD PRIMARY KEY (id)`);
+      await client.query(
+        `UPDATE pg_index SET indisvalid = false
+        FROM pg_class WHERE pg_class.oid = pg_index.indexrelid AND pg_class.relname = $1`,
+        [primaryIndexName]
+      );
+
+      await expect(dropInvalidIndexConcurrently(client, [], primaryIndexName)).rejects.toThrow(
+        `Cannot drop primary index "public".${escapeIdentifier(primaryIndexName)}`
+      );
+      expect(await getTableIndexes(client, tableName)).toHaveLength(1);
+    });
+
+    test('rejects invalid identifiers', async () => {
+      await expect(dropInvalidIndexConcurrently(client, [], 'index; DROP TABLE Patient')).rejects.toThrow(
+        'Invalid PostgreSQL index name'
+      );
     });
   });
 

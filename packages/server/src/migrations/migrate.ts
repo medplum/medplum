@@ -879,6 +879,10 @@ export async function executeMigrationActions(
         await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
+      case 'DROP_INVALID_INDEX': {
+        await fns.dropInvalidIndexConcurrently(client, results, action.indexName);
+        break;
+      }
       case 'REINDEX_CONCURRENTLY': {
         await fns.reindexConcurrently(client, results, action.target, action.name);
         break;
@@ -1044,6 +1048,10 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'DROP_INVALID_INDEX': {
+        b.appendNoWrap(`await fns.dropInvalidIndexConcurrently(client, results, ${JSON.stringify(action.indexName)});`);
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1222,7 +1230,7 @@ function getDropIndexQuery(indexName: string): string {
   return `DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"`;
 }
 
-function generateIndexesActions(
+export function generateIndexesActions(
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
@@ -1263,7 +1271,15 @@ function generateIndexesActions(
     assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
-    const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
+    const matchingStartIndexes = startTable.indexes.filter(
+      (i) => !matchedIndexes.has(i) && indexDefinitionsEqual(i, targetIndex)
+    );
+    // REINDEX CONCURRENTLY can leave a duplicate _ccnew/_ccold index behind after a failure. Prefer the expected
+    // name, then any established legacy name, so the temporary copy is the index classified as unmatched.
+    const startIndex =
+      matchingStartIndexes.find((i) => parseIndexName(i.indexdef ?? '') === indexName) ??
+      matchingStartIndexes.find((i) => !isConcurrentReindexTemporaryIndex(i)) ??
+      matchingStartIndexes[0];
     if (startIndex) {
       matchedIndexes.add(startIndex);
     } else {
@@ -1288,6 +1304,10 @@ function generateIndexesActions(
     }
   }
   return actions;
+}
+
+function isConcurrentReindexTemporaryIndex(index: IndexDefinition): boolean {
+  return /_cc(?:new|old)\d*$/.test(parseIndexName(index.indexdef ?? '') ?? '');
 }
 
 export function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {

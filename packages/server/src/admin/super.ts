@@ -508,6 +508,64 @@ superAdminRouter.post(
 
 type RebuildIndexTarget = { table: string } | { index: string };
 
+// POST to /admin/super/drop-invalid-indexes
+// to drop explicitly selected PostgreSQL indexes after verifying that they are still invalid and safe to remove.
+superAdminRouter.post(
+  '/drop-invalid-indexes',
+  [
+    body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
+    body('targets.*')
+      .isObject({ strict: true })
+      .withMessage('Each target must be an object')
+      .bail()
+      .custom((target) => Object.keys(target).length === 1 && 'index' in target)
+      .withMessage('Each target must contain exactly index'),
+    body('targets.*.index')
+      .isString()
+      .withMessage('Index name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid index name'),
+    checkExact(),
+  ],
+  async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const targets = req.body.targets as DropInvalidIndexTarget[];
+    const migrationActions = {
+      preDeploy: [],
+      postDeploy: targets.map((target) => ({
+        type: 'DROP_INVALID_INDEX' as const,
+        indexName: target.index,
+      })),
+    };
+
+    const requestParams = new URLSearchParams();
+    for (const target of targets) {
+      requestParams.append('index', target.index);
+    }
+
+    const exec = new AsyncJobExecutor(ctx.systemRepo);
+    await exec.init(`${req.originalUrl}?${requestParams}`);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  }
+);
+
+type DropInvalidIndexTarget = { index: string };
+
 // POST to /admin/super/setdataversion
 // to set the data version of the database.
 // This is intended to allow you to set the data version and skip over a data migration YOUR ARE SURE you do not need to apply.
