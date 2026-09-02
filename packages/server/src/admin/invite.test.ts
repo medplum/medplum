@@ -815,6 +815,75 @@ describe('Admin Invite', () => {
     expect(res6.body.id).not.toStrictEqual(res2.body.id);
   });
 
+  test('Invite user with membership search criteria', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const email = `bob${randomUUID()}@example.com`;
+      const identifierSystem = 'https://example.com/memberships';
+
+      const firstInvite = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email,
+        forceNewMembership: true,
+        membership: {
+          identifier: [{ system: identifierSystem, value: 'admin' }],
+        },
+        sendEmail: false,
+      });
+
+      const secondInvite = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email,
+        forceNewMembership: true,
+        membership: {
+          identifier: [{ system: identifierSystem, value: 'practitioner' }],
+        },
+        sendEmail: false,
+      });
+
+      const targetedInvite = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email,
+        upsert: true,
+        membershipSearchCriteria: {
+          identifier: `${identifierSystem}|admin`,
+        },
+        membership: { admin: true },
+        sendEmail: false,
+      });
+
+      expect(targetedInvite.membership.id).toBe(firstInvite.membership.id);
+      expect(targetedInvite.membership.admin).toBe(true);
+
+      const systemRepo = await getProjectSystemRepo(project);
+      const secondMembership = await systemRepo.readResource<ProjectMembership>(
+        'ProjectMembership',
+        secondInvite.membership.id
+      );
+      expect(secondMembership.admin).not.toBe(true);
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email,
+          upsert: true,
+          sendEmail: false,
+        })
+      ).rejects.toThrow('Multiple resources found matching condition');
+    }));
+
   test('Inviting a project-scoped user when there is already a server-scoped user who is a member with the same email address', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
