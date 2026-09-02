@@ -10,7 +10,7 @@ import {
   serviceTypeIncludesService,
 } from '@medplum/core';
 import type { HealthcareService, Location, PractitionerRole, Reference, Resource, Schedule } from '@medplum/fhirtypes';
-import type { SchedulingActorReference, SchedulingActorResource, SchedulingRole } from './AppointmentFinder.roles';
+import type { SchedulingActor, SchedulingActorResource, SchedulingRole } from './AppointmentFinder.roles';
 import {
   ROLE_LABELS,
   SCHEDULING_ROLES,
@@ -36,7 +36,7 @@ export interface ScheduleCandidate {
  * @param candidate - The candidate to read.
  * @returns Its schedule's only actor.
  */
-function getCandidateActor(candidate: ScheduleCandidate): SchedulingActorReference {
+function getCandidateActor(candidate: ScheduleCandidate): SchedulingActor {
   return candidate.schedule.actor[0];
 }
 
@@ -58,11 +58,24 @@ export function getCandidateRole(candidate: ScheduleCandidate): SchedulingRole |
 export function getCandidateDisplay(candidate: ScheduleCandidate): string {
   const actor = getCandidateActor(candidate);
   return (
-    (candidate.actorResource && getDisplayString(candidate.actorResource)) ??
+    getActorResourceName(candidate.actorResource) ??
     actor.display ??
     actor.reference ??
     `Schedule/${candidate.schedule.id}`
   );
+}
+
+/**
+ * The name of an actor's resource, or undefined where it has none.
+ * @param resource - The actor's resource, or undefined where none was read.
+ * @returns The resource's name.
+ */
+function getActorResourceName(resource: SchedulingActorResource | undefined): string | undefined {
+  if (!resource) {
+    return undefined;
+  }
+  const display = getDisplayString(resource);
+  return display === getReferenceString(resource) ? undefined : display;
 }
 
 /**
@@ -491,7 +504,7 @@ export interface ActorCombination {
   /** Matches `getActorGroupKey` of the appointments offered for these actors. */
   readonly key: string;
   readonly label: string;
-  readonly actors: readonly SchedulingActorReference[];
+  readonly actors: readonly SchedulingActor[];
   readonly schedules: readonly Reference<Schedule>[];
 }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Reference } from '@medplum/fhirtypes';
-import type { SchedulingActor, SchedulingActorResource } from './AppointmentFinder.roles';
+import type { SchedulingActorResource, SchedulingActorValue } from './AppointmentFinder.roles';
 
 /**
  * The longest window `Appointment/$find` accepts. Requests wider than this are
@@ -18,7 +18,7 @@ export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 export interface AppointmentSlotGroup {
   /** Stable key derived from the actors, so React keys survive a refetch. */
   readonly key: string;
-  readonly actors: readonly SchedulingActor[];
+  readonly actors: readonly SchedulingActorValue[];
   readonly durationMinutes: number;
   /** Sorted by start time. */
   readonly appointments: readonly Appointment[];
@@ -232,7 +232,7 @@ function toSlotGroup(
 export function getAppointmentActors(
   appointment: Appointment | undefined,
   actorResources?: ReadonlyMap<string, SchedulingActorResource>
-): SchedulingActor[] {
+): SchedulingActorValue[] {
   return (appointment?.participant ?? [])
     .map((participant) => participant.actor)
     .filter(isDefined)

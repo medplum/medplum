@@ -718,14 +718,22 @@ describe('candidate fields', () => {
     };
     expect(getCandidateDisplay(renamed)).toBe('Maya Ross');
 
+    // A resource with no name of its own leaves the Schedule's copy to do the
+    // naming. `getDisplayString` would answer with the bare reference, which is
+    // the ugliness reading the resource at all is meant to avoid.
+    const nameless: ScheduleCandidate = { ...named, actorResource: { resourceType: 'Practitioner', id: 'dr-rivera' } };
+    expect(getCandidateDisplay(nameless)).toBe('Dr. Maya Rivera');
+
     // A Schedule that does not name its actor falls back to the resource the
-    // search included, and to the bare reference when it included none.
+    // search included, and to the bare reference when it included none or the
+    // one it included cannot name itself either.
     const bare: ScheduleCandidate = {
       schedule: { ...DrRiveraSchedule, actor: [{ reference: 'Practitioner/dr-rivera' }] },
       actorResource: { resourceType: 'Practitioner', id: 'dr-rivera', name: [{ given: ['Maya'], family: 'Rivera' }] },
     };
     expect(getCandidateDisplay(bare)).toBe('Maya Rivera');
     expect(getCandidateDisplay({ ...bare, actorResource: undefined })).toBe('Practitioner/dr-rivera');
+    expect(getCandidateDisplay({ ...bare, actorResource: nameless.actorResource })).toBe('Practitioner/dr-rivera');
   });
 
   test('Reads the role from the actor type, and says nothing for a type nothing books', () => {

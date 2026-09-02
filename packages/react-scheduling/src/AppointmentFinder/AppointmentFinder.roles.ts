@@ -13,7 +13,7 @@ export type SchedulingActorType = (typeof SCHEDULING_ACTOR_TYPES)[number];
  * A reference to something a Schedule belongs to. The same union an Appointment
  * accepts as a participant, so an actor can be carried straight across.
  */
-export type SchedulingActorReference = Schedule['actor'][number];
+export type SchedulingActor = Schedule['actor'][number];
 
 /** A loaded actor resource. Tied to `SCHEDULING_ACTOR_TYPES`, including PractitionerRole. */
 export type SchedulingActorResource = WithId<ExtractResource<SchedulingActorType>>;
@@ -21,7 +21,7 @@ export type SchedulingActorResource = WithId<ExtractResource<SchedulingActorType
 /**
  * An actor as a reference, or as the resource when it has already been read.
  */
-export type SchedulingActor = SchedulingActorReference | SchedulingActorResource;
+export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
 
 /**
  * The parts of an appointment a user chooses, in the order they are asked about.
@@ -86,7 +86,7 @@ export function getSchedulingRole(actorType: SchedulingActorType): SchedulingRol
  * @param actor - A scheduling actor, as a reference or resource itself.
  * @returns The role's label.
  */
-export function getActorRoleLabel(actor: SchedulingActorReference | Resource): string | undefined {
+export function getActorRoleLabel(actor: SchedulingActor | Resource): string | undefined {
   const actorType = isResource(actor) ? actor.resourceType : actor.reference?.split('/')[0];
   return isSchedulingActorType(actorType) ? ROLE_LABELS[getSchedulingRole(actorType)] : undefined;
 }
