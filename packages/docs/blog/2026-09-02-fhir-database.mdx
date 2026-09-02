@@ -65,11 +65,11 @@ What you'll find, at a high level:
 - Companion history tables that back resource versioning and `_history`.
 - Lookup tables (for tokens, references, human names, and similar) that make search fast and referential integrity enforceable.
 
-> The specifics of columns and table layout are best read directly from the source or a running instance rather than memorized — see [self-hosting](/docs/self-hosting) to spin one up. 
+> The specifics of columns and table layout are best read directly from the source or a running instance rather than memorized — see [self-hosting](/docs/self-hosting) to spin one up.
 
 One important caveat: this internal layout is Medplum's to evolve. It is not a stable, versioned API, and it can change between releases. Treat it as _read-for-understanding_, not _build-against_. If you find yourself writing application code that queries these tables directly, that's the signal to step back up to the FHIR API.
 
-And to answer the third question directly: on the hosted, managed service you don't get raw SQL or row-level access — the FHIR API is the interface. That's deliberate. It's exactly what lets Medplum manage storage, indexing, upgrades, and integrity on your behalf. 
+And to answer the third question directly: on the hosted, managed service you don't get raw SQL or row-level access — the FHIR API is the interface. That's deliberate. It's exactly what lets Medplum manage storage, indexing, upgrades, and integrity on your behalf.
 
 ## What you stop having to do
 
@@ -82,9 +82,9 @@ Because your data model already _is_ FHIR, a lot of work you'd normally own simp
 
 ## When the storage layer _does_ matter
 
-The abstraction isn't absolute, and we don't want to pretend it is. There are real situations where what's underneath matters — performance at scale, very large datasets, database sharding, and self-hosting operations. We have dedicated material for those cases _(TODO: link performance, scaling/sharding, and self-hosting ops docs)_.
+For most teams building _on_ Medplum, figures like load-test results and uptime are reassurance during evaluation, not daily operational concerns — because you generally aren't the one carrying pager duty for the Medplum service. That distinction is itself the abstraction working as intended. Feel free to read more about [our load testing results](/blog/medplum-performance-test-2026)!
 
-Worth calling out: for most teams building _on_ Medplum, figures like load-test results and uptime are reassurance during evaluation, not daily operational concerns — because you generally aren't the one carrying pager duty for the Medplum service. That distinction is itself the abstraction working as intended.
+And for data teams, we offer the Medplum Data Warehouse for a SQL-like querying experience for analytics and reporting purposes. Read more about that [here](/docs/analytics/snowflake)!
 
 ## The short version
 
