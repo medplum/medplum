@@ -14,10 +14,8 @@ import {
   buildUpdatedOrganization,
   formatPayerCategory,
   getPayerCategory,
-  isCompleteBillingAddress,
   isPayerNotFoundError,
   isValidBillingPhone,
-  isValidNpi,
   parsePayerSearchPage,
   upsertIdentifier,
   upsertPhone,
@@ -51,23 +49,6 @@ function makeDirectoryPayer(overrides: Partial<Organization> = {}): Organization
 }
 
 describe('billing utils', () => {
-  describe('isValidNpi', () => {
-    // The CMS check digit is not verified: Candid sandbox NPIs (e.g. 2893227171) fail it.
-    test.each(['1234567893', '3564119220', '2893227171', '1234567890'])('accepts 10-digit NPI %s', (npi) => {
-      expect(isValidNpi(npi)).toBe(true);
-    });
-
-    test.each([
-      ['123456789', 'too short'],
-      ['12345678931', 'too long'],
-      ['123456789X', 'non-digit'],
-      ['356411922 0', 'embedded space'],
-      ['', 'empty'],
-    ])('rejects %s (%s)', (npi) => {
-      expect(isValidNpi(npi)).toBe(false);
-    });
-  });
-
   describe('isValidBillingPhone', () => {
     test('accepts formatted 10-digit numbers', () => {
       expect(isValidBillingPhone('(212) 555-1234')).toBe(true);
@@ -391,28 +372,6 @@ describe('billing utils', () => {
       ]);
     });
   });
-  describe('billing address validation', () => {
-    const complete = { line: ['456 Medical Center Drive'], city: 'Boston', state: 'MA', postalCode: '02101' };
-
-    test('accepts a complete address', () => {
-      expect(isCompleteBillingAddress(complete)).toBe(true);
-    });
-
-    test.each([
-      ['no street', { ...complete, line: undefined }],
-      ['no city', { ...complete, city: undefined }],
-      ['no ZIP', { ...complete, postalCode: undefined }],
-      ['spelled-out state', { ...complete, state: 'Massachusetts' }],
-    ])('rejects an address with %s', (_label, address) => {
-      expect(isCompleteBillingAddress(address)).toBe(false);
-    });
-
-    test('rejects a missing address', () => {
-      expect(isCompleteBillingAddress(undefined)).toBe(false);
-      expect(isCompleteBillingAddress({})).toBe(false);
-    });
-  });
-
   describe('withCandidProviderExtensions', () => {
     test('sets the billing and rendering flags Candid requires', () => {
       const result = withCandidProviderExtensions({ resourceType: 'Organization' });

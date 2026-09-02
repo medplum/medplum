@@ -297,7 +297,9 @@ describe('BillingSetupPage', () => {
     });
   });
 
-  test('blocks save on a malformed NPI, missing Tax ID, and an unusable phone', async () => {
+  // The profile requires a phone but cannot express the X12 rule on its digits, so this is the one
+  // field the modal still validates itself.
+  test('blocks save on an unusable phone', async () => {
     const user = userEvent.setup();
     mockBots({ payers: true });
     const createSpy = vi.spyOn(medplum, 'createResource');
@@ -308,14 +310,12 @@ describe('BillingSetupPage', () => {
 
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(/^Name/), 'Bad Org');
-    await user.type(within(dialog).getByLabelText(/NPI/), '12345');
-    await user.type(within(dialog).getByLabelText(/Phone/), '1234567890');
+    await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
+    await user.type(within(dialog).getByLabelText(/Tax ID/), '12-3456789');
+    await fillPhoneAndAddress(user, dialog, '1234567890');
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    expect(await screen.findByText('NPI must be 10 digits')).toBeInTheDocument();
-    expect(screen.getByText('Tax ID (EIN) must be 9 digits, e.g. 12-3456789')).toBeInTheDocument();
-    expect(screen.getByText('Phone must be 10 digits and not start with 0 or 1')).toBeInTheDocument();
-    expect(screen.getByText('Address needs a street, city, two-letter state, and ZIP')).toBeInTheDocument();
+    expect(await screen.findByText('Phone must be 10 digits and not start with 0 or 1')).toBeInTheDocument();
     expect(createSpy).not.toHaveBeenCalled();
   });
 
@@ -495,19 +495,31 @@ describe('BillingSetupPage', () => {
     expect(executeSpy).not.toHaveBeenCalled();
   });
 
-  test('blocks save on an address Candid would reject', async () => {
+  // An address Candid would reject is caught by the profile on the server, not by the form.
+  test('reports the server rejection and keeps the modal open', async () => {
     const user = userEvent.setup();
     mockSearches({ organizations: [{ ...billingOrg, address: [{ city: 'Boston' }] }] });
     mockBots({ createProvider: true });
-    const updateSpy = vi.spyOn(medplum, 'updateResource');
+    const showSpy = vi.spyOn(notifications, 'show');
+    const updateSpy = vi
+      .spyOn(medplum, 'updateResource')
+      .mockRejectedValue(new Error('Missing required property (Organization.address.postalCode)'));
 
     setup();
 
     await user.click(await screen.findByText('Test Medical Practice LLC'));
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Save' }));
 
-    expect(await screen.findByText('Address needs a street, city, two-letter state, and ZIP')).toBeInTheDocument();
-    expect(updateSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalled();
+    });
+    expect(showSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Error',
+        message: expect.stringContaining('Organization.address.postalCode'),
+      })
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   test('shows a notice and no search box when the payers bot is not deployed', async () => {

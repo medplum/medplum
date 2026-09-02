@@ -44,18 +44,9 @@ const CANDID_SUPPORT_EXTENSION_URLS = [
 ];
 
 /**
- * Validates an NPI: exactly 10 digits. The CMS check digit is deliberately not verified — Candid
- * sandbox and test NPIs do not carry a valid one, and Candid itself only checks the format.
- * @param npi - The candidate NPI string.
- * @returns True when the NPI is 10 digits.
- */
-export function isValidNpi(npi: string): boolean {
-  return /^\d{10}$/.test(npi);
-}
-
-/**
  * Validates a billing phone number: 10 digits (after stripping formatting) whose first digit is
- * not 0 or 1. X12 claim submitters reject numbers starting with 0 or 1.
+ * not 0 or 1. X12 claim submitters reject numbers starting with 0 or 1. The billing organization
+ * profile only requires that a phone exist, so this format rule is enforced here.
  * @param phone - The candidate phone string, formatting allowed.
  * @returns True when the phone is usable on a claim.
  */
@@ -267,17 +258,6 @@ export function buildUpdatedOrganization(
     telecom: upsertPhone(organization.telecom, fields.phone),
     address: fields.address ? [fields.address, ...(organization.address?.slice(1) ?? [])] : organization.address,
   };
-}
-
-/**
- * Whether an address carries everything Candid requires of a provider address: street line, city,
- * two-letter state, and ZIP. The candid-create-provider bot rejects a partial address, so the form
- * validates it here rather than letting the registration fail.
- * @param address - The address entered on the billing organization form.
- * @returns True when the address is complete enough to register with Candid.
- */
-export function isCompleteBillingAddress(address: Address | undefined): boolean {
-  return !!(address?.line?.[0] && address.city && /^[A-Za-z]{2}$/.test(address.state ?? '') && address.postalCode);
 }
 
 /**

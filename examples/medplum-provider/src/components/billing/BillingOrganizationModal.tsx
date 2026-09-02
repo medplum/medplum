@@ -9,13 +9,7 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
-import {
-  EIN_SYSTEM,
-  NPI_SYSTEM,
-  isCompleteBillingAddress,
-  isValidBillingPhone,
-  isValidNpi,
-} from '../../utils/billing';
+import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
 
 export interface BillingOrganizationModalProps {
@@ -26,7 +20,10 @@ export interface BillingOrganizationModalProps {
   readonly onClose: () => void;
 }
 
-type FormErrors = Partial<Record<'name' | 'npi' | 'ein' | 'phone' | 'address', string>>;
+// The billing organization profile the server validates against covers name, NPI, Tax ID and
+// address, so a bad value there is reported by the save. Only the phone format is checked here:
+// the profile requires a phone to exist but cannot express the X12 rule on its digits.
+type FormErrors = Partial<Record<'phone', string>>;
 
 export function BillingOrganizationModal(props: BillingOrganizationModalProps): JSX.Element {
   const { billingOrganizations, organization, opened, onClose } = props;
@@ -57,22 +54,8 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
 
   const validate = (): FormErrors => {
     const result: FormErrors = {};
-    if (!name.trim()) {
-      result.name = 'Name is required';
-    }
-    if (!isValidNpi(npi.trim())) {
-      result.npi = 'NPI must be 10 digits';
-    }
-    if (!/^\d{2}-?\d{7}$/.test(ein.trim())) {
-      result.ein = 'Tax ID (EIN) must be 9 digits, e.g. 12-3456789';
-    }
-    // Phone and address are required, not optional: the billing organization profile the server
-    // validates against needs both, so a missing one is rejected on save rather than here.
     if (!isValidBillingPhone(phone)) {
       result.phone = 'Phone must be 10 digits and not start with 0 or 1';
-    }
-    if (!isCompleteBillingAddress(address)) {
-      result.address = 'Address needs a street, city, two-letter state, and ZIP';
     }
     return result;
   };
@@ -109,19 +92,12 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
     >
       {opened && (
         <Stack gap="md">
-          <TextInput
-            label="Name"
-            required
-            value={name}
-            error={errors.name}
-            onChange={(event) => setName(event.currentTarget.value)}
-          />
+          <TextInput label="Name" required value={name} onChange={(event) => setName(event.currentTarget.value)} />
           <TextInput
             label="NPI"
             required
             description="10 digits"
             value={npi}
-            error={errors.npi}
             onChange={(event) => setNpi(event.currentTarget.value)}
           />
           <TextInput
@@ -129,7 +105,6 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
             required
             description="9 digits; stored without the dash"
             value={ein}
-            error={errors.ein}
             onChange={(event) => setEin(event.currentTarget.value)}
           />
           <TextInput
@@ -145,7 +120,6 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
               Address
             </Input.Label>
             <AddressInput name="address" path="Organization.address" defaultValue={address} onChange={setAddress} />
-            {errors.address && <Input.Error mt={4}>{errors.address}</Input.Error>}
           </div>
           {!!billingOrganizations.candidBotId &&
             !getIdentifierValue(organization, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM) && (
