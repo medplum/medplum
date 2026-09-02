@@ -8,15 +8,14 @@ import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import type { SchedulingRole } from './AppointmentFinder.roles';
-import { ROLE_LABELS, isRoleRequired } from './AppointmentFinder.roles';
+import type { SchedulingActorType } from '../actors';
+import { getActorTypeLabel, isActorTypeRequired } from '../actors';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from './AppointmentFinder.schedules';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 export interface AppointmentActorSelectProps {
-  /** The role being filled. */
-  readonly role: SchedulingRole;
+  readonly actorType: SchedulingActorType;
   /** The service being booked. Nothing is offered until it resolves. */
   readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
   /**
@@ -43,32 +42,32 @@ export interface AppointmentActorSelectProps {
  * @returns The field for one role.
  */
 export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.Element {
-  const { role, service, location, defaultValue, onChange, error, disabled } = props;
+  const { actorType, service, location, defaultValue, onChange, error, disabled } = props;
   const medplum = useMedplum();
   const resolvedService = useResource<HealthcareService>(service);
   const locationReference = location && getReferenceString(location);
-  const label = ROLE_LABELS[role];
+  const label = getActorTypeLabel(actorType);
   const noun = label.toLowerCase();
-  const required = isRoleRequired(role);
+  const required = isActorTypeRequired(actorType);
 
   const search = useCallback(
     async (query: string, signal: AbortSignal): Promise<ScheduleCandidate[]> =>
       resolvedService
         ? searchScheduleCandidates(medplum, resolvedService, {
-            role,
+            actorType,
             query,
             location: locationReference ? { reference: locationReference } : undefined,
             signal,
           })
         : [],
-    [medplum, resolvedService, locationReference, role]
+    [medplum, resolvedService, locationReference, actorType]
   );
 
   const handleChange = useCallback((candidates: ScheduleCandidate[]) => onChange(candidates), [onChange]);
 
   return (
     <AsyncAutocomplete<ScheduleCandidate>
-      name={role}
+      name={actorType}
       label={label}
       required={required}
       description={required ? undefined : `Optional. Leave empty to search without holding a ${noun}.`}

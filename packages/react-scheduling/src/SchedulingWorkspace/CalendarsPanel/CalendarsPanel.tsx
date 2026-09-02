@@ -3,7 +3,9 @@
 import type { MantineThemeColors } from '@mantine/core';
 import { Divider, Stack, Text } from '@mantine/core';
 import { IconMapPinFilled } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Fragment } from 'react';
+import type { BookableActorType } from '../../actors';
 import { CalendarRow } from './CalendarRow';
 import { SectionHeader } from './SectionHeader';
 
@@ -17,16 +19,33 @@ export interface CalendarsPanelItem {
 }
 
 export interface CalendarsPanelProps {
-  /** Shows a loading indicator on the Providers & Staff, Devices, and Rooms sections while their candidates are being fetched. */
+  /** Shows a loading indicator on every section while their candidates are being fetched. */
   readonly candidatesLoading?: boolean;
-  readonly providers: readonly CalendarsPanelItem[];
-  readonly devices: readonly CalendarsPanelItem[];
-  readonly rooms: readonly CalendarsPanelItem[];
-  readonly onToggleProvider?: (id: string) => void;
-  readonly onToggleDevice?: (id: string) => void;
-  readonly onToggleRoom?: (id: string) => void;
+  /** The rows to show in each section, keyed by the actor type whose schedules they are. */
+  readonly items: Readonly<Record<BookableActorType, readonly CalendarsPanelItem[]>>;
+  readonly onToggle?: (actorType: BookableActorType, id: string) => void;
   readonly className?: string;
 }
+
+interface CalendarsPanelSection {
+  readonly actorType: BookableActorType;
+  readonly title: string;
+  /** Names the section's contents in its "No ... found" placeholder. */
+  readonly emptyLabel: string;
+  readonly icon?: ReactNode;
+}
+
+/**
+ * The sections rendered, in the order they are shown.
+ *
+ * Display order is set here rather than taken from `BOOKABLE_ACTOR_TYPES`: what
+ * a user is asked about first is not what reads best down a sidebar.
+ */
+const SECTIONS: readonly CalendarsPanelSection[] = [
+  { actorType: 'Practitioner', title: 'Providers & Staff', emptyLabel: 'providers or staff' },
+  { actorType: 'Device', title: 'Devices', emptyLabel: 'devices' },
+  { actorType: 'Location', title: 'Rooms', emptyLabel: 'rooms', icon: <IconMapPinFilled size={12} /> },
+];
 
 /**
  * A sidebar panel for selecting calendars, grouped under collapsible sections.
@@ -38,16 +57,7 @@ export interface CalendarsPanelProps {
  * @returns A React Node with the Calendars panel UI in it
  */
 export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
-  const { providers, devices, rooms, candidatesLoading, onToggleProvider, onToggleDevice, onToggleRoom, className } =
-    props;
-
-  const renderEmpty = (label: string): JSX.Element => {
-    return (
-      <Text fz="sm" c="dimmed" p="xs">
-        No {label} found
-      </Text>
-    );
-  };
+  const { items, candidatesLoading, onToggle, className } = props;
 
   return (
     <Stack gap="xs" className={className}>
@@ -56,50 +66,33 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
       </Text>
       <Divider />
 
-      <SectionHeader title="Providers & Staff" loading={candidatesLoading}>
-        {providers.length === 0 && !candidatesLoading ? (
-          renderEmpty('providers or staff')
-        ) : (
-          <Stack gap={2}>
-            {providers.map((item) => (
-              <CalendarRow key={item.id} item={item} color={item.color} onToggle={onToggleProvider} />
-            ))}
-          </Stack>
-        )}
-      </SectionHeader>
-      <Divider />
-
-      <SectionHeader title="Devices" loading={candidatesLoading}>
-        {devices.length === 0 && !candidatesLoading ? (
-          renderEmpty('devices')
-        ) : (
-          <Stack gap={2}>
-            {devices.map((item) => (
-              <CalendarRow key={item.id} item={item} color={item.color} onToggle={onToggleDevice} />
-            ))}
-          </Stack>
-        )}
-      </SectionHeader>
-      <Divider />
-
-      <SectionHeader title="Rooms" loading={candidatesLoading}>
-        {rooms.length === 0 && !candidatesLoading ? (
-          renderEmpty('rooms')
-        ) : (
-          <Stack gap={2}>
-            {rooms.map((item) => (
-              <CalendarRow
-                key={item.id}
-                item={item}
-                color={item.color}
-                onToggle={onToggleRoom}
-                icon={<IconMapPinFilled size={12} />}
-              />
-            ))}
-          </Stack>
-        )}
-      </SectionHeader>
-      <Divider />
+      {SECTIONS.map((section) => {
+        const sectionItems = items[section.actorType];
+        return (
+          <Fragment key={section.actorType}>
+            <SectionHeader title={section.title} loading={candidatesLoading}>
+              {sectionItems.length === 0 && !candidatesLoading ? (
+                <Text fz="sm" c="dimmed" p="xs">
+                  No {section.emptyLabel} found
+                </Text>
+              ) : (
+                <Stack gap={2}>
+                  {sectionItems.map((item) => (
+                    <CalendarRow
+                      key={item.id}
+                      item={item}
+                      color={item.color}
+                      onToggle={onToggle && ((id) => onToggle(section.actorType, id))}
+                      icon={section.icon}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </SectionHeader>
+            <Divider />
+          </Fragment>
+        );
+      })}
     </Stack>
   );
 }

@@ -19,12 +19,12 @@ import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/rea
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { SchedulingActorType } from '../actors';
+import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
-import type { SchedulingRole } from './AppointmentFinder.roles';
-import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
 import { formatDateRange, formatDayLabel, getDurationMinutes } from './AppointmentFinder.times';
@@ -299,10 +299,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseService}
         />
 
-        {SCHEDULING_ROLES.map((role) => (
+        {BOOKABLE_ACTOR_TYPES.map((actorType) => (
           <RoleField
-            key={`${role}-${roleFieldsKey}`}
-            role={role}
+            key={`${actorType}-${roleFieldsKey}`}
+            actorType={actorType}
             service={service}
             location={location}
             disabled={!service}
@@ -476,12 +476,11 @@ function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
     <>
       {durationMinutes > 0 && `${durationMinutes} min visit`}
       {actors.map((actor, index) => {
-        const roleLabel = getActorRoleLabel(actor);
+        const actorLabel = getActorTypeLabel(getActorType(actor));
         return (
           <Fragment key={getReferenceString(actor) ?? actor.display}>
             {(index > 0 || durationMinutes > 0) && ' · '}
-            {roleLabel && `${roleLabel}: `}
-            <ReferenceDisplay value={actor} link={false} />
+            {actorLabel}: <ReferenceDisplay value={actor} link={false} />
           </Fragment>
         );
       })}
@@ -503,7 +502,7 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
 }
 
 interface RoleFieldProps {
-  readonly role: SchedulingRole;
+  readonly actorType: SchedulingActorType;
   readonly service: WithId<HealthcareService> | undefined;
   readonly location: WithId<Location> | undefined;
   readonly disabled?: boolean;
@@ -521,16 +520,17 @@ interface RoleFieldProps {
  * @returns The field for that role.
  */
 function RoleField(props: RoleFieldProps): JSX.Element {
-  const { role, service, location, disabled, onChange } = props;
+  const { actorType, service, location, disabled, onChange } = props;
 
   const handleChange = useCallback(
-    (candidates: readonly ScheduleCandidate[]) => onChange((selections) => ({ ...selections, [role]: candidates })),
-    [onChange, role]
+    (candidates: readonly ScheduleCandidate[]) =>
+      onChange((selections) => ({ ...selections, [actorType]: candidates })),
+    [onChange, actorType]
   );
 
   return (
     <AppointmentActorSelect
-      role={role}
+      actorType={actorType}
       service={service}
       location={location}
       disabled={disabled}

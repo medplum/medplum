@@ -7,15 +7,15 @@ import { CalendarsPanel } from './CalendarsPanel';
 
 function setup(overrides?: Partial<CalendarsPanelProps>): void {
   const props: CalendarsPanelProps = {
-    providers: [
-      { id: 'prov-1', label: 'Lisa Caddy', color: 'blue' },
-      { id: 'prov-2', label: 'Michelle Bryant', color: 'teal', selected: false },
-    ],
-    devices: [{ id: 'dev-1', label: 'Ultrasound Machine 1', color: 'pink' }],
-    rooms: [{ id: 'room-1', label: 'Exam Room A', color: 'grape' }],
-    onToggleProvider: vi.fn(),
-    onToggleDevice: vi.fn(),
-    onToggleRoom: vi.fn(),
+    items: {
+      Practitioner: [
+        { id: 'prov-1', label: 'Lisa Caddy', color: 'blue' },
+        { id: 'prov-2', label: 'Michelle Bryant', color: 'teal', selected: false },
+      ],
+      Device: [{ id: 'dev-1', label: 'Ultrasound Machine 1', color: 'pink' }],
+      Location: [{ id: 'room-1', label: 'Exam Room A', color: 'grape' }],
+    },
+    onToggle: vi.fn(),
     ...overrides,
   };
   render(<CalendarsPanel {...props} />);
@@ -38,13 +38,22 @@ describe('CalendarsPanel', () => {
     expect(screen.getByText('Exam Room A')).toBeInTheDocument();
   });
 
-  test('clicking a Providers row fires onToggleProvider with the item id', async () => {
-    const onToggleProvider = vi.fn();
-    setup({ onToggleProvider });
+  test('clicking a Providers row fires onToggle with its actor type and item id', async () => {
+    const onToggle = vi.fn();
+    setup({ onToggle });
 
     await userEvent.click(screen.getByText('Lisa Caddy'));
 
-    expect(onToggleProvider).toHaveBeenCalledWith('prov-1');
+    expect(onToggle).toHaveBeenCalledWith('Practitioner', 'prov-1');
+  });
+
+  test('clicking a Rooms row fires onToggle with its actor type and item id', async () => {
+    const onToggle = vi.fn();
+    setup({ onToggle });
+
+    await userEvent.click(screen.getByText('Exam Room A'));
+
+    expect(onToggle).toHaveBeenCalledWith('Location', 'room-1');
   });
 
   test('a deselected row is aria-pressed=false and shows an eye-off icon', () => {
@@ -71,14 +80,14 @@ describe('CalendarsPanel', () => {
   });
 
   test('an empty section shows dim placeholder text instead of a list', () => {
-    setup({ providers: [], devices: [], rooms: [] });
+    setup({ items: { Practitioner: [], Device: [], Location: [] } });
     expect(screen.getByText('No providers or staff found')).toBeInTheDocument();
     expect(screen.getByText('No devices found')).toBeInTheDocument();
     expect(screen.getByText('No rooms found')).toBeInTheDocument();
   });
 
   test('a candidate section with no items does not show placeholder text while still loading', () => {
-    setup({ providers: [], devices: [], rooms: [], candidatesLoading: true });
+    setup({ items: { Practitioner: [], Device: [], Location: [] }, candidatesLoading: true });
     expect(screen.queryByText('No providers or staff found')).not.toBeInTheDocument();
     expect(screen.queryByText('No devices found')).not.toBeInTheDocument();
     expect(screen.queryByText('No rooms found')).not.toBeInTheDocument();
