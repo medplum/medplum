@@ -3,11 +3,13 @@
 import type { WithId } from '@medplum/core';
 import {
   createReference,
+  deepClone,
   HL7_V2_0203,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
   setScheduleParameter,
   SNOMED,
+  TimezoneExtensionURI,
 } from '@medplum/core';
 import type {
   Appointment,
@@ -15,15 +17,18 @@ import type {
   Bundle,
   CodeableConcept,
   Device,
+  Extension,
   HealthcareService,
   Identifier,
   Location,
   Patient,
   Practitioner,
   PractitionerRole,
+  Resource,
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
+import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** Who an appointment can be held on, as FHIR allows. */
 type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
@@ -375,6 +380,45 @@ export const SchedulingFixtures = [
   ExamRoomBSchedule,
   SatelliteRoomSchedule,
 ];
+
+/**
+ * Moves a set of fixtures onto the viewer's own clock.
+ *
+ * The fixtures are kept in Eastern and Central time, so anything rendered from them is
+ * read from somewhere else — times labelled with their zone, and the calendar's notice
+ * naming the clock it is drawn on. This is for showing the other case, where there is
+ * nothing to disambiguate and none of that appears.
+ *
+ * @param resources - The fixtures to move. Cloned rather than changed.
+ * @returns The same fixtures, with every zone they declare replaced by the viewer's.
+ */
+export function inViewerTimezone(resources: readonly Resource[]): Resource[] {
+  const timezone = getBrowserTimezone();
+  return resources.map((resource) => {
+    const clone = deepClone(resource);
+    if ('extension' in clone) {
+      setTimezones(clone.extension, timezone);
+    }
+    return clone;
+  });
+}
+
+/**
+ * Rewrites every extension naming a timezone, at whatever depth it sits: an actor
+ * declares its zone at the top level, while a service or a schedule declares one inside
+ * its `SchedulingParameters`.
+ *
+ * @param extensions - The extensions to walk, changed in place.
+ * @param timezone - The zone to write.
+ */
+function setTimezones(extensions: Extension[] | undefined, timezone: string): void {
+  for (const extension of extensions ?? []) {
+    if (extension.url === TimezoneExtensionURI || extension.url === 'timezone') {
+      extension.valueCode = timezone;
+    }
+    setTimezones(extension.extension, timezone);
+  }
+}
 
 export interface ProposedAppointmentOptions {
   readonly start: string;

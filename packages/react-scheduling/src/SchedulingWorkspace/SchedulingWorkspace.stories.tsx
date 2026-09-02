@@ -6,15 +6,21 @@ import type { Meta } from '@storybook/react';
 import { IconCalendarCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { withBookStub, withFindStub, withFixtures, withMockedDate } from '../stories/decorators';
-import { CalendarWeekFixtures, PatientFixtures, SchedulingFixtures } from '../stories/scheduling';
+import { CalendarWeekFixtures, inViewerTimezone, PatientFixtures, SchedulingFixtures } from '../stories/scheduling';
 import { SchedulingWorkspace } from './SchedulingWorkspace';
 
-const STORY_FIXTURES = [...SchedulingFixtures, ...CalendarWeekFixtures, ...PatientFixtures];
+/** The clinic as the fixtures keep it: Dr. Rivera in Eastern time, Dr. Okafor in Central. */
+const ELSEWHERE_FIXTURES = [...SchedulingFixtures, ...CalendarWeekFixtures, ...PatientFixtures];
 
+/** The same clinic, moved onto whatever clock the reader is on. */
+const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES);
+
+// Fixtures are per story rather than shared here: the two stories differ in nothing but
+// the zones theirs declare, and a set installed for both would decide that for both.
 export default {
   title: 'Medplum/SchedulingWorkspace',
   component: SchedulingWorkspace,
-  decorators: [withBookStub(), withFindStub(), withFixtures(STORY_FIXTURES), withMockedDate],
+  decorators: [withBookStub(), withFindStub(), withMockedDate],
   parameters: {
     // Default seeding includes a lot of cluttering Slot resources for Dr. Alice Smith; skip it.
     skipDefaultSeeding: true,
@@ -38,26 +44,58 @@ export default {
  * Clicking a different day with the form part-filled re-opens it on the new day and
  * clears the answers; clicking again inside the day already open leaves them alone.
  *
+ * Everything here is kept on your own clock, so no time names a zone and nothing is
+ * said under the calendar. `From A Different Timezone` is the same clinic scheduled
+ * somewhere else.
+ *
  * @returns The story.
  */
-export const Basic = (): JSX.Element => (
+export const Basic = (): JSX.Element => <Workspace />;
+Basic.decorators = [withFixtures(LOCAL_FIXTURES)];
+
+/**
+ * The same workspace when the calendars are not kept on the viewer's clock.
+ *
+ * Dr. Rivera is scheduled in Eastern time and Dr. Okafor in Central. The line under
+ * the grid names the clock it is drawn on — yours — whenever a calendar on show is
+ * kept in another. Deselect both providers and the line goes, because the rooms and
+ * devices never declared a zone.
+ *
+ * Click open time, choose Ultrasound Imaging and Dr. Maya Rivera, then Find a time.
+ * The times are Rivera's Eastern hours, labelled ET, and the form writes the same zone
+ * on the one it keeps.
+ *
+ * A reader on Eastern time is the exception this cannot stage: the calendars are then
+ * on their clock after all, and the story reads like `Basic`.
+ *
+ * @returns The story.
+ */
+export const FromADifferentTimezone = (): JSX.Element => <Workspace />;
+FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
+
+/**
+ * Fills the viewport under the package banner, which is 72px.
+ * @returns The workspace as a host would mount it.
+ */
+function Workspace(): JSX.Element {
   // The workspace fills whatever it is given, so the story hands it the rest of the
   // viewport rather than a fixed height: the calendar and the booking pane both scroll
   // inside it, and a short host makes each of them look cramped for reasons of its own.
-  // 72px is the package banner `withSchedulingHeader` puts above every story here.
-  <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
-    <SchedulingWorkspace
-      onBooked={({ appointment }) => {
-        showNotification({
-          color: 'green',
-          icon: <IconCalendarCheck size={18} />,
-          title: 'Appointment booked',
-          message: describeBooking(appointment),
-        });
-      }}
-    />
-  </div>
-);
+  return (
+    <div style={{ height: 'calc(100vh - 72px)', padding: '1em', boxSizing: 'border-box' }}>
+      <SchedulingWorkspace
+        onBooked={({ appointment }) => {
+          showNotification({
+            color: 'green',
+            icon: <IconCalendarCheck size={18} />,
+            title: 'Appointment booked',
+            message: describeBooking(appointment),
+          });
+        }}
+      />
+    </div>
+  );
+}
 
 /**
  * Names the visit that was booked, for the notification announcing it.
