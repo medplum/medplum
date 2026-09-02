@@ -27,6 +27,8 @@
     "trailingComma": "es5"
   },
   "overrides": {
+    "@graphiql/plugin-history": "0.4.3",
+    "@graphiql/plugin-doc-explorer": "0.4.3",
     "@metriport/shared": {
       "@medplum/core": "5.1.36"
     },
