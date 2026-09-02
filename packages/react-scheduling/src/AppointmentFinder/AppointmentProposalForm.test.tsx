@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { SchedulingRequirement } from '@medplum/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
   extractServiceTypeReferences,
@@ -11,7 +11,7 @@ import {
   SCHEDULING_ELIGIBILITY_SYSTEM,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
-import type { Appointment, Device } from '@medplum/fhirtypes';
+import type { Appointment, Device, Schedule } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { installFindStub } from '../stories/mockFind';
@@ -34,7 +34,6 @@ import {
   Ultrasound1Device,
   UltrasoundImagingService,
   UntypedMrnPatient,
-  withoutActorDisplay,
   YoungerJordanPatient,
 } from '../stories/scheduling';
 import {
@@ -108,6 +107,19 @@ function setup(medplum: MockClient, props?: Partial<AppointmentProposalFormProps
 function proposedAppointment(): Appointment {
   const [proposal] = onBook.mock.calls[0] as [Appointment];
   return proposal;
+}
+
+/**
+ * Strips the name a Schedule copied onto its actor.
+ *
+ * `Schedule.actor.display` is optional, and plenty of real projects never write
+ * it — which is the case where the name has to come from the actor itself.
+ *
+ * @param schedule - The schedule to strip.
+ * @returns The same schedule, with no name on any of its actors.
+ */
+function withoutActorDisplay(schedule: WithId<Schedule>): WithId<Schedule> {
+  return { ...schedule, actor: schedule.actor.map(({ display: _display, ...actor }) => actor) };
 }
 
 describe('AppointmentProposalForm', () => {
