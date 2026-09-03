@@ -18,7 +18,7 @@ import { DelayedError, Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { addFhirRouterTelemetryListeners } from '../fhir/batch-telemetry';
+import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -277,7 +277,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
   const router = new FhirRouter();
-  addFhirRouterTelemetryListeners(router);
+  addBatchTelemetryListeners(router);
 
   if (!isJobActive(asyncJob)) {
     await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
@@ -578,7 +578,7 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
   // itself; it only needed listeners subscribed. See the TODO in `execBatchJob` about the routes a
   // bare FhirRouter exposes.
   const router = new FhirRouter();
-  addFhirRouterTelemetryListeners(router);
+  addBatchTelemetryListeners(router);
   const req: FhirRequest = {
     method: 'POST',
     url: '/',

@@ -10,7 +10,7 @@ import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
-import { addFhirRouterTelemetryListeners } from './batch-telemetry';
+import { addBatchTelemetryListeners } from './batch-telemetry';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
@@ -466,7 +466,11 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/$db-column-statistics', getColumnStatisticsHandler);
   router.add('POST', '/$db-configure-column-statistics', configureColumnStatisticsHandler);
 
-  addFhirRouterTelemetryListeners(router);
+  router.addEventListener('warn', (e: any) => {
+    const ctx = getAuthenticatedContext();
+    ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id });
+  });
+  addBatchTelemetryListeners(router);
 
   return router;
 }

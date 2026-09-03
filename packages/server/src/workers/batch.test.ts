@@ -24,7 +24,13 @@ import { BASE_METRIC_OPTIONS } from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
-import { execBatchJob, execLegacyBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
+import {
+  execBatchJob as execBatchJobImpl,
+  execLegacyBatchJob as execLegacyBatchJobImpl,
+  getBatchQueue,
+  initBatchWorker,
+  queueBatchProcessing,
+} from './batch';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
@@ -62,6 +68,16 @@ function makeLegacyJob(data: LegacyBatchJobData): Job<LegacyBatchJobData> {
     data,
     queueName: 'BatchQueue',
   } as unknown as Job<LegacyBatchJobData>;
+}
+
+async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
+}
+
+async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execLegacyBatchJobImpl(job));
 }
 
 const singleEntryBundle = (): Bundle => ({
@@ -263,8 +279,8 @@ describe('Batch worker', () => {
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201']);
       }));
 
-    // Runs in an authenticated context like the real worker does, since the telemetry listeners
-    // read the project from it and EventTarget.dispatchEvent swallows anything they throw.
+    // EventTarget.dispatchEvent swallows listener errors, so the metric counts also verify that
+    // the authenticated test helper provided the context the telemetry listeners require.
     test('Dispatches batch telemetry once across a delayed and resumed job', () =>
       runInAuthenticatedContext(authState, undefined, undefined, { async: true }, async () => {
         const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
@@ -278,7 +294,7 @@ describe('Batch worker', () => {
           // Process one entry, then report the queue as closing so the job is checkpointed.
           let checks = 0;
           const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 1);
-          await expect(execBatchJob(job)).rejects.toBeInstanceOf(DelayedError);
+          await expect(execBatchJobImpl(job)).rejects.toBeInstanceOf(DelayedError);
           isClosingSpy.mockRestore();
 
           // Preprocessing dispatched the pre-event. Being delayed for another worker to pick up is
@@ -287,7 +303,7 @@ describe('Batch worker', () => {
           expect(countOf('medplum.batch.size')).toStrictEqual(1);
           expect(countOf('medplum.batch.errors')).toStrictEqual(0);
 
-          await expect(execBatchJob(makeReentrantJob(job.data))).resolves.toBeUndefined();
+          await expect(execBatchJobImpl(makeReentrantJob(job.data))).resolves.toBeUndefined();
 
           // Resume rehydrates via fromState, which skips preprocessing, so the pre-event is not
           // repeated. Completion is terminal and reports the whole job's errors exactly once.

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BatchEvent, FhirRouter, LogEvent } from '@medplum/fhir-router';
+import type { BatchEvent, FhirRouter } from '@medplum/fhir-router';
 import { getAuthenticatedContext } from '../context';
 import { recordHistogramValue } from '../otel/otel';
 
@@ -14,13 +14,7 @@ import { recordHistogramValue } from '../otel/otel';
  * Requires an authenticated context, which the workers establish via `runInAuthenticatedContext`.
  * @param router - The router to subscribe to.
  */
-export function addFhirRouterTelemetryListeners(router: FhirRouter): void {
-  router.addEventListener('warn', (e: any) => {
-    const ctx = getAuthenticatedContext();
-    const event = e as LogEvent;
-    ctx.logger.warn(event.message, { ...event.data, project: ctx.project.id });
-  });
-
+export function addBatchTelemetryListeners(router: FhirRouter): void {
   router.addEventListener('batch', (e: any) => {
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
