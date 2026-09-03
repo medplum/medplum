@@ -904,6 +904,50 @@ describe('Search matching', () => {
         expect(matchesSearchRequest(task, search)).toBe(false);
       });
     });
+
+    describe('not-before', () => {
+      test('matches restriction.period.start only', () => {
+        const task: Task = {
+          resourceType: 'Task',
+          status: 'accepted',
+          intent: 'order',
+          restriction: {
+            period: {
+              start: '2025-05-15T12:00:00.000Z',
+              end: '2025-06-15T12:00:00.000Z',
+            },
+          },
+        };
+
+        expect(
+          matchesSearchRequest(task, {
+            resourceType: 'Task',
+            filters: [{ code: 'not-before', operator: Operator.LESS_THAN_OR_EQUALS, value: '2025-05-01' }],
+          })
+        ).toBe(false);
+        expect(
+          matchesSearchRequest(task, {
+            resourceType: 'Task',
+            filters: [{ code: 'not-before', operator: Operator.LESS_THAN_OR_EQUALS, value: '2025-06-01' }],
+          })
+        ).toBe(true);
+      });
+
+      test('does not match a period with only an end', () => {
+        const task: Task = {
+          resourceType: 'Task',
+          status: 'accepted',
+          intent: 'order',
+          restriction: { period: { end: '2025-06-15T12:00:00.000Z' } },
+        };
+        expect(
+          matchesSearchRequest(task, {
+            resourceType: 'Task',
+            filters: [{ code: 'not-before', operator: Operator.LESS_THAN_OR_EQUALS, value: '2025-06-01' }],
+          })
+        ).toBe(false);
+      });
+    });
   });
 
   test('Compartments', () => {
