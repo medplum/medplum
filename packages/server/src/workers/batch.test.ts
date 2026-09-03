@@ -315,6 +315,33 @@ describe('Batch worker', () => {
         }
       }));
 
+    test('Dispatches terminal batch telemetry once when completing the AsyncJob fails', async () => {
+      const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+      const completeJobSpy = vi
+        .spyOn(AsyncJobExecutor.prototype, 'completeJob')
+        .mockRejectedValue(new Error('completeJob failed'));
+      const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+
+      try {
+        const bundle = multiEntryBundle(1);
+        (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+        const { asyncJob, job } = await setupReentrantJob(bundle);
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        // Processing completed and dispatched its terminal event before completeJob failed. The
+        // catch path must fail the AsyncJob without dispatching that terminal event a second time.
+        expect(completeJobSpy).toHaveBeenCalledOnce();
+        expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+        expect(countOf('medplum.batch.size')).toStrictEqual(1);
+        expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('error');
+      } finally {
+        completeJobSpy.mockRestore();
+        histogram.mockRestore();
+      }
+    });
+
     test('Publishes partial results when the AsyncJob was cancelled out of band', () =>
       withTestContext(async () => {
         const bundle = multiEntryBundle(3);
