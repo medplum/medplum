@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   stories: [
+    '../src/stories/Introduction.mdx', // redundant, but ensure Intro goes first
     '../src/**/*.mdx',
     '../src/**/*.stories.@(ts|tsx)',
     '../../react/src/**/*.stories.@(ts|tsx)',
