@@ -168,4 +168,20 @@ The `QuestionnaireForm` component will automatically render a signature input fi
 
 See the [Storybook](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--signature-required) for an example.
 
+## Structured Data Capture (SDC)
+
+Medplum supports the [HL7 Structured Data Capture (SDC) Implementation Guide](https://hl7.org/fhir/uv/sdc/). SDC extensions allow a Questionnaire to carry the templates and FHIRPath expressions needed to turn a completed QuestionnaireResponse into structured FHIR resources.
+
+For template-based extraction, put the target resources in `Questionnaire.contained`, connect them with the `sdc-questionnaire-templateExtract` extension, and place `sdc-questionnaire-templateExtractValue` extensions on the fields to populate. Use `sdc-questionnaire-templateExtractContext` when a mapping should evaluate against a specific response item.
+
+After saving a response, call [`QuestionnaireResponse/$extract`](/docs/api/fhir/operations/extract). Medplum returns a transaction Bundle that can be applied with the batch API:
+
+```typescript
+const response = await medplum.createResource(questionnaireResponse);
+const extracted = await medplum.get<Bundle>(medplum.fhirUrl('QuestionnaireResponse', response.id, '$extract'));
+await medplum.executeBatch(extracted);
+```
+
+See [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) for the complete SDC mapping guide. The [Patient Intake Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-patient-intake-demo) shows a full intake questionnaire using this pattern.
+
 For where the captured signature is stored on the [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) and how to attach it to a consent record, see [Consent and Signatures](/docs/consent).

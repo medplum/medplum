@@ -12,12 +12,13 @@ This example app demonstrates the following:
 - Converting the form data into structured data ([`Patient`](/docs/api/fhir/resources/patient), [`Coverage`](/docs/api/fhir/resources/coverage), [`Observation`](/docs/api/fhir/resources/observation)) for easy retrieval and longitudinal tracking.
 - Implementing conditional flows in questionnaires.
 - Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to build a patient intake form.
+- Using Structured Data Capture (SDC) and the `$extract` operation to create FHIR resources from questionnaire responses.
 
 ### Code Organization
 
 This repo is organized into two main directories: `src` and `data`.
 
-The `src` directory contains the React app that implements the intake form UX. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) to implement the parsing of the questionnaire response into structured data.
+The `src` directory contains the React app that implements the intake form UX. The Questionnaire in `data/core` contains SDC template resources and FHIRPath mappings; submitted responses are processed through the `$extract` operation.
 
 The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
 
@@ -51,15 +52,6 @@ Next, install the dependencies.
 npm install
 ```
 
-Then, build the bots
-
-> [!WARNING]
-> Bots are not on by default for Medplum projects, make sure they are enabled before proceeding.
-
-```bash
-npm run build:bots
-```
-
 Then, run the app
 
 ```bash
@@ -70,9 +62,20 @@ This app should run on `http://localhost:3000/`
 
 ### Uploading sample data
 
-Click `Upload Core data` in the app navigation menu and then click the upload button.
-Click `Upload Example Bots` in the app navigation menu and then click the upload button.
-[Optional] Click `Upload Example data` in the app navigation menu and then click the upload button.
+1. Click `Upload Core data` in the app navigation menu and then click the upload button.
+2. Click `Upload Questionnaire data` in the app navigation menu and then click the upload button.
+3. [Optional] Click `Upload Example data` in the app navigation menu and then click the upload button.
+
+### How SDC extraction works
+
+The Patient Intake Questionnaire uses the HL7 SDC template-based extraction model:
+
+- FHIR resources such as `Patient`, `Observation`, `Coverage`, and `Consent` are stored as templates in `Questionnaire.contained`.
+- `sdc-questionnaire-templateExtract` connects questionnaire groups to their templates.
+- `sdc-questionnaire-templateExtractValue` and `sdc-questionnaire-templateExtractContext` use FHIRPath to map answers into template fields.
+- On submission, the app calls `QuestionnaireResponse/$extract`, then applies the returned transaction Bundle.
+
+This keeps the form definition and its resource mappings together and avoids a separate response-parsing bot.
 
 ### About Medplum
 
