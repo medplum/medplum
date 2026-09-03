@@ -26,7 +26,9 @@ export function addFhirRouterTelemetryListeners(router: FhirRouter): void {
     const projectId = ctx.project.id;
     const { count, errors, errorCount, size, bundleType } = e as BatchEvent;
 
-    const metricOpts = { attributes: { bundleType, projectId } };
+    // It would be nice to include projectId as an attribute, but some metrics destinations
+    // charge per unique attribute combination, so omit projectId to avoid extra costs
+    const metricOpts = { attributes: { bundleType } };
     if (count !== undefined) {
       recordHistogramValue('medplum.batch.entries', count, metricOpts);
     }
@@ -35,7 +37,7 @@ export function addFhirRouterTelemetryListeners(router: FhirRouter): void {
     const totalErrors = errorCount ?? errors?.length;
     if (totalErrors) {
       recordHistogramValue('medplum.batch.errors', totalErrors, metricOpts);
-      ctx.logger.warn('Error processing batch', { bundleType, count, errors, size, project: projectId });
+      ctx.logger.warn('Error processing batch', { bundleType, count, errors, totalErrors, size, project: projectId });
     }
     if (size !== undefined) {
       recordHistogramValue('medplum.batch.size', size, metricOpts);
