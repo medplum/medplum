@@ -68,6 +68,15 @@ describe('SearchParameterImplementation', () => {
     expect(impl.columnName).toStrictEqual('authored');
   });
 
+  test('Task-not-before date param', () => {
+    const notBeforeParam = indexedSearchParams.find((e) => e.id === 'Task-not-before') as SearchParameter;
+    const impl = getSearchParameterImplementation('Task', notBeforeParam);
+    assertRangeColumnImplementation(impl);
+    expect(impl.columnName).toStrictEqual('notBefore');
+    expect(impl.rangeColumnName).toStrictEqual('__notBefore');
+    expect(impl.sortColumnName).toStrictEqual('__notBeforeSort');
+  });
+
   test('Get nested impl', () => {
     // expression: 'Patient.link.other'
     const missingExpressionParam = indexedSearchParams.find((e) => e.id === 'Patient-link') as SearchParameter;

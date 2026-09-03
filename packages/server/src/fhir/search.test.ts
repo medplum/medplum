@@ -4224,6 +4224,45 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       }));
   });
 
+  test('Filter Task by not-before without considering restriction.period.end', () =>
+    withTestContext(async () => {
+      const code = randomUUID();
+      const futureTask = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: { coding: [{ code }] },
+        restriction: { period: { start: '2026-04-01T00:00:00.000Z', end: '2026-04-15T00:00:00.000Z' } },
+      });
+      const taskWithoutStart = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: { coding: [{ code }] },
+        restriction: { period: { end: '2026-04-15T00:00:00.000Z' } },
+      });
+      const currentTask = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: { coding: [{ code }] },
+        restriction: { period: { start: '2026-03-01T00:00:00.000Z', end: '2026-05-01T00:00:00.000Z' } },
+      });
+
+      const bundle = await repo.search<Task>({
+        resourceType: 'Task',
+        filters: [
+          { code: 'code', operator: Operator.EQUALS, value: code },
+          { code: 'not-before', operator: Operator.LESS_THAN_OR_EQUALS, value: '2026-03-06' },
+        ],
+      });
+
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundleContains(bundle, currentTask)).toBeTruthy();
+      expect(bundleContains(bundle, futureTask)).not.toBeTruthy();
+      expect(bundleContains(bundle, taskWithoutStart)).not.toBeTruthy();
+    }));
+
   test('Get estimated count with filter on human name', async () =>
     withTestContext(async () => {
       const result = await repo.search({

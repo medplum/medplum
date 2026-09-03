@@ -799,6 +799,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Task-not-before",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Task-not-before",
+        "url": "https://medplum.com/fhir/SearchParameter/Task-not-before",
+        "version": "4.0.1",
+        "name": "not-before",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search by the date before which a Task cannot be started",
+        "code": "not-before",
+        "base": ["Task"],
+        "type": "date",
+        "expression": "Task.restriction.period.start",
+        "comparator": ["eq", "ne", "gt", "ge", "lt", "le", "sa", "eb", "ap"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Agent-identifier",
       "resource": {
         "resourceType": "SearchParameter",

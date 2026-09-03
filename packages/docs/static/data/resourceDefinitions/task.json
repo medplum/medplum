@@ -1571,6 +1571,12 @@
       "expression": "Task.restriction.period"
     },
     {
+      "name": "not-before",
+      "type": "date",
+      "description": "Search by the date before which a Task cannot be started",
+      "expression": "Task.restriction.period.start"
+    },
+    {
       "name": "priority-order",
       "type": "number",
       "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
