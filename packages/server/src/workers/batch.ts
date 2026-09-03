@@ -276,13 +276,6 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const priorChunkSeq = chunkSeq;
   const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
-  // TODO: A bare FhirRouter exposes only the base FHIR interactions, so async batch entries cannot
-  // reach the custom operations that initInternalFhirRouter adds ($validate, $reindex, $resend, the
-  // $db-* operations, and so on) even though the same entry succeeds in a synchronous batch.
-  // Determine whether that narrower surface is an intentional restriction on async batches or just
-  // a side effect of building the router here, and either document it or switch to
-  // getInternalFhirRouter(). Some of those operations are superadmin-scoped, so widening the
-  // surface needs its own review.
   const router = new FhirRouter();
   addFhirRouterTelemetryListeners(router);
 
@@ -295,6 +288,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   let userConfig: UserConfiguration | undefined;
   let userRepo: Repository | undefined;
   let initialState: BatchInitialState | undefined;
+  let completedDispatched = false;
 
   try {
     userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
@@ -394,6 +388,8 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     // `resultBundle.type` is the response type (`batch-response`); the event reports the request
     // type so it matches what the synchronous path emits.
     dispatchBatchCompleted(router, initialState.bundle.type, errors);
+    completedDispatched = true;
+
     logger.info('completed processing batch', {
       results: getReferenceString(binary),
       entries: resultBundle.entry?.length,
@@ -428,8 +424,11 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
           chunkSeq,
           resultsThisRun
         );
-        // Failure is terminal (DelayedError was re-thrown above), so close out the pre-event.
-        dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
+        if (!completedDispatched) {
+          // Failure is terminal (DelayedError was re-thrown above), so close out the pre-event.
+          dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
+          completedDispatched = true;
+        }
         await exec
           .failJob(failErr, {
             resourceType: 'Parameters',
