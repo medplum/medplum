@@ -35,6 +35,11 @@ describe('CapabilityStatement', () => {
     expect(patient?.searchParam?.length).toBeGreaterThan(0);
     expect(patient?.supportedProfile?.length).toBeGreaterThan(0);
     expect(getResource('Claim')).toBeDefined();
+
+    expect(getResource('Questionnaire')?.operation).toContainEqual({
+      name: 'assemble',
+      definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
+    });
   });
 
   test('Include resource types', () => {
