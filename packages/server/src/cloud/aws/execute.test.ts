@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+import {
+  InvokeCommand,
+  LambdaClient,
+  ListLayerVersionsCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-lambda';
 import { badRequest, ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -164,6 +169,22 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res2).toHaveStatus(400);
+  });
+
+  test('Execute before Lambda deployment returns an actionable error', async () => {
+    mockLambdaClient
+      .on(InvokeCommand)
+      .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
+
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual(
+      'Function not found. Bot likely needs to be deployed: Bot/$deploy first'
+    );
   });
 
   test('Unsupported runtime version', async () => {

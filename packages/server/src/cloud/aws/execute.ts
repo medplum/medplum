@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import { InvokeCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import { BOT_NOT_DEPLOYED_MESSAGE } from '../../bots/utils';
 import { getConfig } from '../../config/loader';
 
 let client: LambdaClient;
@@ -77,9 +78,23 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
   } catch (err) {
     return {
       success: false,
-      logResult: normalizeErrorString(err),
+      logResult: isLambdaFunctionNotFoundError(err)
+        ? `Function not found. ${BOT_NOT_DEPLOYED_MESSAGE}`
+        : normalizeErrorString(err),
     };
   }
+}
+
+/**
+ * Returns true when AWS could not find the Lambda function for a Bot.
+ * @param err - The error returned by AWS.
+ * @returns True if the error indicates a missing Lambda function.
+ */
+export function isLambdaFunctionNotFoundError(err: unknown): boolean {
+  return (
+    err instanceof ResourceNotFoundException ||
+    (typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'ResourceNotFoundException')
+  );
 }
 
 /**

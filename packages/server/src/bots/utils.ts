@@ -41,6 +41,8 @@ import { getBinaryStorage } from '../storage/loader';
 import { findProjectMembership } from '../workers/utils';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
+export const BOT_NOT_DEPLOYED_MESSAGE = 'Bot likely needs to be deployed: Bot/$deploy first';
+
 /**
  * Returns the bot's project membership.
  * If the bot is configured to run as the user, then use the current user's membership.

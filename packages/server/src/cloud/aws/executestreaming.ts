@@ -4,11 +4,13 @@ import { InvokeWithResponseStreamCommand } from '@aws-sdk/client-lambda';
 import { normalizeErrorString } from '@medplum/core';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import { BOT_NOT_DEPLOYED_MESSAGE } from '../../bots/utils';
 import { getLogger } from '../../logger';
 import {
   buildLambdaPayload,
   getExecuteLambdaClient,
   getLambdaFunctionName,
+  isLambdaFunctionNotFoundError,
   parseLambdaLog,
   sanitizeLogResult,
 } from './execute';
@@ -41,7 +43,12 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
 
     return await processEventStream(response.EventStream, responseStream);
   } catch (err) {
-    return { success: false, logResult: normalizeErrorString(err) };
+    return {
+      success: false,
+      logResult: isLambdaFunctionNotFoundError(err)
+        ? `Function not found. ${BOT_NOT_DEPLOYED_MESSAGE}`
+        : normalizeErrorString(err),
+    };
   }
 }
 

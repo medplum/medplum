@@ -18,6 +18,7 @@ import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
 import type { BotExecutionContext, BotExecutionResult } from './types';
+import { BOT_NOT_DEPLOYED_MESSAGE } from './utils';
 
 /*
  * SECURITY NOTE: VMContext Bots execute administrator-provided JavaScript inside
@@ -61,7 +62,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   const codeUrl = bot.executableCode?.url;
   if (!codeUrl) {
-    return { success: false, logResult: 'No executable code' };
+    return { success: false, logResult: `No executable code. ${BOT_NOT_DEPLOYED_MESSAGE}` };
   }
   if (!codeUrl.startsWith('Binary/')) {
     return { success: false, logResult: 'Executable code is not a Binary' };

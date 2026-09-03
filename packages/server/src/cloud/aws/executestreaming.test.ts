@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+import {
+  InvokeWithResponseStreamCommand,
+  LambdaClient,
+  ListLayerVersionsCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-lambda';
 import { badRequest, ContentType, getStatus } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -192,6 +197,23 @@ describe('Execute', () => {
         .send('input');
       expect(res).toHaveStatus(400);
       expect(res.body.issue[0].details.text).toContain('Lambda error: Unhandled');
+    });
+
+    test('Streaming execution before Lambda deployment returns an actionable error', async () => {
+      mockLambdaClient
+        .on(InvokeWithResponseStreamCommand)
+        .rejects(new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' }));
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toStrictEqual(
+        'Function not found. Bot likely needs to be deployed: Bot/$deploy first'
+      );
     });
 
     test('Streaming execution with headers split across chunks', async () => {

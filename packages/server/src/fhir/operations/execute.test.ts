@@ -419,7 +419,9 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res2).toHaveStatus(400);
-    expect(res2.body.issue[0].details.text).toStrictEqual('No executable code');
+    expect(res2.body.issue[0].details.text).toStrictEqual(
+      'No executable code. Bot likely needs to be deployed: Bot/$deploy first'
+    );
 
     // Update the bot with an invalid code URL
     const res3 = await request(app)
