@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { BotResponseStream } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -12,12 +13,25 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bot, OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { executeBot } from '../../bots/execute';
-import { getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
+import { acceptsEventStream, getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { buildOutputParameters } from './utils/parameters';
 
-export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
+/**
+ * Dispatches a `$<code>` request to the Bot named by a matching `OperationDefinition`.
+ * @param req - The FHIR request.
+ * @param repo - The caller's repository.
+ * @param responseStream - Response stream to hand a streaming bot, when the transport can supply one.
+ * @returns The FHIR response, or undefined if no custom operation matches. When a
+ * streaming bot commits the response itself, the transport must check whether the
+ * response was already sent rather than writing the returned outcome.
+ */
+export async function tryCustomOperation(
+  req: FhirRequest,
+  repo: Repository,
+  responseStream?: BotResponseStream
+): Promise<FhirResponse | undefined> {
   // Parse the URL to find the operation code
   const parts = req.url.split('/');
   const operationPart = parts.find((part) => part.startsWith('$'));
@@ -92,6 +106,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
     headers: req.headers,
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
+    responseStream: bot.streamingEnabled && acceptsEventStream(req.headers) ? responseStream : undefined,
   });
 
   if (isOperationOutcome(result)) {

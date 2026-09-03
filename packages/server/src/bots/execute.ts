@@ -29,7 +29,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   let result: BotExecutionResult;
 
   const execStart = process.hrtime.bigint();
-  if (await isBotEnabled(bot)) {
+  if (await isBotEnabled(bot, runAs)) {
     await writeBotInputToStorage(request);
 
     const context: BotExecutionContext = {
