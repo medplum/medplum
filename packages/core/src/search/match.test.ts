@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type {
+  AccessPolicy,
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
@@ -503,6 +504,35 @@ describe('Search matching', () => {
         matchesSearchRequest(resource, {
           resourceType: 'Patient',
           filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'bar' }],
+        })
+      ).toBe(false);
+    });
+
+    test('AccessPolicy identifier filter value', () => {
+      const resource: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        identifier: [{ system: 'https://example.com/policies', value: 'policy-123' }],
+      };
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'AccessPolicy',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: 'https://example.com/policies|policy-123',
+            },
+          ],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'AccessPolicy',
+          filters: [
+            { code: 'identifier', operator: Operator.EQUALS, value: 'https://other.example/policies|policy-123' },
+          ],
         })
       ).toBe(false);
     });

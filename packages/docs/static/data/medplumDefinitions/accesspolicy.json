@@ -160,6 +160,23 @@
       "base": "DomainResource"
     },
     {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AccessPolicy.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this AccessPolicy",
+      "definition": "An identifier for this AccessPolicy.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "name",
       "depth": 1,
       "types": [
@@ -434,6 +451,12 @@
       "type": "string",
       "description": "The name of the access policy",
       "expression": "AccessPolicy.name"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "An identifier for the access policy",
+      "expression": "AccessPolicy.identifier"
     }
   ]
 }

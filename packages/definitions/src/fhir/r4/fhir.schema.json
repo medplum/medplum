@@ -62687,6 +62687,13 @@
           },
           "type": "array"
         },
+        "identifier": {
+          "description": "An identifier for this AccessPolicy.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
         "name": {
           "description": "A name associated with the AccessPolicy.",
           "$ref": "#/definitions/string"

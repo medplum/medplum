@@ -337,8 +337,9 @@ export class Repository extends FhirRepository implements Disposable {
    *                Project.link (https://github.com/medplum/medplum/pull/9159)
    * 16. 06/30/26 - Added search param: Provenance-activity (https://github.com/medplum/medplum/pull/9709)
    * 17. 08/27/26 - Added search param: PractitionerRole-davinci-pdex-network
+   * 18. 09/03/26 - Added AccessPolicy.identifier and search param: AccessPolicy-identifier
    */
-  static readonly VERSION: number = 17;
+  static readonly VERSION: number = 18;
 
   /**
    * Constructs a new Repository instance.
