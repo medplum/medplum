@@ -267,7 +267,7 @@ describe('Batch worker', () => {
     // read the project from it and EventTarget.dispatchEvent swallows anything they throw.
     test('Dispatches batch telemetry once across a delayed and resumed job', () =>
       runInAuthenticatedContext(authState, undefined, undefined, { async: true }, async () => {
-        const histogram = vi.spyOn(otel, 'recordHistogramValue');
+        const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
         const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
         try {
           // One entry succeeds, one 404s, so the terminal event carries a non-zero error count.
