@@ -120,6 +120,11 @@ export const OperationInteraction = {
   code: 'operation',
   display: 'operation',
 } as const;
+export const ExpungeInteraction = {
+  system: 'https://medplum.com/fhir/CodeSystem/restful-interaction',
+  code: 'expunge',
+  display: 'expunge',
+} as const;
 
 /* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 export type AuditEventType = typeof UserAuthenticationEvent | typeof RestfulOperationType;
@@ -137,7 +142,8 @@ export type AuditEventSubtype =
   | typeof SearchInteraction
   | typeof TransactionInteraction
   | typeof BatchInteraction
-  | typeof OperationInteraction;
+  | typeof OperationInteraction
+  | typeof ExpungeInteraction;
 /* eslint-enable @typescript-eslint/no-duplicate-type-constituents */
 
 /**
@@ -162,6 +168,7 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction
   update: 'U',
   patch: 'U',
   delete: 'D',
+  expunge: 'D',
   batch: undefined,
   transaction: undefined,
   operation: undefined,
@@ -257,7 +264,10 @@ export function createAuditEvent(
 
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
-    meta: { project: projectId },
+    meta: {
+      project: projectId,
+      ...(subtype === ExpungeInteraction ? { expunged: true } : {}),
+    },
     type,
     subtype: [subtype],
     action: AuditEventActionLookup[subtype.code],

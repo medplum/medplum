@@ -305,6 +305,7 @@ describe('Bundle tests', () => {
           tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
           versionId: '55555555-5555-5555-5555-555555555555',
           deleted: false,
+          expunged: false,
         },
         active: true,
       };

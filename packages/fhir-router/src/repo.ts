@@ -763,6 +763,19 @@ export class MemoryRepository extends FhirRepository {
     this.resources.get(resourceType)?.delete(id);
   }
 
+  async expungeResource(resourceType: string, id: string): Promise<void> {
+    await this.expungeResources(resourceType, [id]);
+  }
+
+  async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    const resources = this.resources.get(resourceType);
+    const resourceHistory = this.history.get(resourceType);
+    for (const id of ids) {
+      resources?.delete(id);
+      resourceHistory?.delete(id);
+    }
+  }
+
   withTransaction<TResult>(callback: (repo: this) => Promise<TResult>): Promise<TResult> {
     // MockRepository currently does not support transactions
     return callback(this);
