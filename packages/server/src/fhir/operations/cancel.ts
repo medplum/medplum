@@ -3,7 +3,7 @@
 
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, CodeableConcept } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
@@ -15,11 +15,16 @@ const cancelOperation = makeOperationDefinition(
   {
     name: 'cancel',
     code: 'cancel',
-    parameter: [{ use: 'out', name: 'return', type: 'Appointment', min: 1, max: '1' }],
+    parameter: [
+      { use: 'in', name: 'cancelationReason', type: 'CodeableConcept', min: 0, max: '1' },
+      { use: 'out', name: 'return', type: 'Appointment', min: 1, max: '1' },
+    ],
   }
 );
 
-type CancelParameters = {};
+type CancelParameters = {
+  cancelationReason?: CodeableConcept;
+};
 
 /**
  * Handles HTTP requests for the Appointment $cancel operation.
@@ -33,7 +38,7 @@ type CancelParameters = {};
  */
 export async function appointmentCancelHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  parseInputParameters<CancelParameters>(cancelOperation, req);
+  const params = parseInputParameters<CancelParameters>(cancelOperation, req);
   const appointmentId = req.params.id;
 
   const updatedAppointment = await ctx.repo.withTransaction(
@@ -49,6 +54,9 @@ export async function appointmentCancelHandler(req: FhirRequest): Promise<FhirRe
       }
 
       appointment.status = 'cancelled';
+      if (params.cancelationReason) {
+        appointment.cancelationReason = params.cancelationReason;
+      }
 
       const updatedAppointment = await txRepo.updateResource(appointment);
       await Promise.all(slots.map((slot) => txRepo.deleteResource('Slot', slot.id)));
