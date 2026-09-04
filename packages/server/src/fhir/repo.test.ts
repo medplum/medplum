@@ -49,13 +49,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorageKey } from '../storage/base';
 import { getBinaryStorage } from '../storage/loader';
-import {
-  bundleContains,
-  createTestProject,
-  mockStdoutWrite,
-  spyOnQuery,
-  withTestContext,
-} from '../test.setup';
+import { bundleContains, createTestProject, mockStdoutWrite, spyOnQuery, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
@@ -840,7 +834,7 @@ describe('FHIR Repo', () => {
           resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
-          await systemRepo.expungeResource('Patient', patient.id);
+        await systemRepo.expungeResource('Patient', patient.id);
 
         const bundle = await systemRepo.search<AuditEvent>({
           resourceType: 'AuditEvent',
