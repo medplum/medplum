@@ -137,7 +137,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
   // The fields ignore `defaultValue` after mount, so remounting is the only way to
   // clear their pills. Counters, so a field is never remounted out from under a pick.
-  const [roleFieldsKey, setRoleFieldsKey] = useState(0);
+  const [actorFieldsKey, setActorFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
   const [booking, setBooking] = useState(false);
@@ -240,7 +240,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function clearResources(): void {
     setSelections({});
     setChosen(undefined);
-    setRoleFieldsKey((key) => key + 1);
+    setActorFieldsKey((key) => key + 1);
     resetDaySearch();
   }
 
@@ -300,8 +300,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         />
 
         {BOOKABLE_ACTOR_TYPES.map((actorType) => (
-          <RoleField
-            key={`${actorType}-${roleFieldsKey}`}
+          <ActorField
+            key={`${actorType}-${actorFieldsKey}`}
             actorType={actorType}
             service={service}
             location={location}
@@ -501,7 +501,7 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
   return chosen ? 'Change time' : 'Find a time';
 }
 
-interface RoleFieldProps {
+interface ActorFieldProps {
   readonly actorType: SchedulingActorType;
   readonly service: WithId<HealthcareService> | undefined;
   readonly location: WithId<Location> | undefined;
@@ -519,7 +519,7 @@ interface RoleFieldProps {
  * @param props - The React props.
  * @returns The field for that role.
  */
-function RoleField(props: RoleFieldProps): JSX.Element {
+function ActorField(props: ActorFieldProps): JSX.Element {
   const { actorType, service, location, disabled, onChange } = props;
 
   const handleChange = useCallback(
