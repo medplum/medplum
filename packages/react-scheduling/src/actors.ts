@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference } from '@medplum/core';
-import { parseReference } from '@medplum/core';
+import { assertNever, parseReference } from '@medplum/core';
 import type { Schedule } from '@medplum/fhirtypes';
 
 /**
@@ -43,7 +43,11 @@ export function isBookableActorType(value: string | undefined): value is Bookabl
  * @returns The type that the reference refers to.
  */
 export function getActorType(reference: SchedulingActor): SchedulingActorType {
-  return parseReference(reference)[0];
+  const result = parseReference(reference)[0];
+  if (result.startsWith('#')) {
+    throw new Error('Actors as contained resources not supported in scheduling UI');
+  }
+  return result;
 }
 
 /**
@@ -69,7 +73,7 @@ export function getActorTypeLabel(resourceType: SchedulingActorType): string {
     case 'RelatedPerson':
       return 'Related Person';
   }
-  throw new Error(`Got unsupported resourceType "${resourceType}"`);
+  return assertNever(resourceType);
 }
 
 /**
