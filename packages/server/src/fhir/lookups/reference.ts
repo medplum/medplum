@@ -12,6 +12,7 @@ import {
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { systemResourceProjectId } from '../../constants';
 import { getLogger } from '../../logger';
 import type { PgQueryable } from '../sql';
 import { InsertQuery, SelectQuery } from '../sql';
@@ -22,6 +23,7 @@ export interface ReferenceTableRow extends LookupTableRow {
   readonly resourceId: string;
   readonly targetId: string;
   readonly code: string;
+  readonly projectId: string;
 }
 
 /**
@@ -29,7 +31,7 @@ export interface ReferenceTableRow extends LookupTableRow {
  * Each reference is represented as a separate row in the "<ResourceType>_References" table.
  */
 export class ReferenceTable extends LookupTable {
-  static readonly allColumnNames = ['resourceId', 'targetId', 'code'] as const;
+  static readonly allColumnNames = ['resourceId', 'targetId', 'code', 'projectId'] as const;
 
   getTableName(resourceType: ResourceType): string {
     return resourceType + '_References';
@@ -60,6 +62,11 @@ export class ReferenceTable extends LookupTable {
 
     const resourceType = resources[0].resourceType;
 
+    // When `create` is true, existing rows are not read and inserts fall through to
+    // ON CONFLICT DO NOTHING, which would leave a stale `projectId` in place. No caller reaches
+    // this path with pre-existing reference rows: soft delete purges them via
+    // `deleteFromLookupTables`, `purgeResources` deletes them before rewriting, and reindex
+    // passes `create: false`.
     const existingRows = create ? undefined : await this.getExistingRows(client, resources);
     if (existingRows === undefined || existingRows.length === 0) {
       const newRows: ReferenceTableRow[] = [];
@@ -86,7 +93,7 @@ export class ReferenceTable extends LookupTable {
     const newRowsByResource = new Map<string, ReferenceTableRow[]>();
     await this.extractAllValues(newRowsByResource, resources, resourceBatchSize);
 
-    const resourcesWithChangedReferences: Resource[] = [];
+    const resourcesWithChangedReferences: WithId<Resource>[] = [];
     const rowsToInsert: LookupTableRow[] = [];
     for (const resource of resources) {
       const existingHashes = existingHashesByResource.get(resource.id);
@@ -111,7 +118,7 @@ export class ReferenceTable extends LookupTable {
         unchangedCount: resources.length - resourcesWithChangedReferences.length,
         changedCount: resourcesWithChangedReferences.length,
         rowsToInsert: rowsToInsert.length,
-        sampleIds: resourcesWithChangedReferences.slice(0, 5),
+        sampleIds: resourcesWithChangedReferences.slice(0, 5).map((r) => r.id),
       });
     }
 
@@ -207,8 +214,10 @@ export class ReferenceTable extends LookupTable {
     }
     const tableName = this.getTableName(resourceType);
 
-    // Reference lookup tables have a covering primary key, so a conflict means
-    // that the exact desired row already exists in the database
+    // A conflict means a row with the same primary key already exists. `projectId` is not part of
+    // the key, so a conflicting row could in principle differ on it -- but it never does in
+    // practice, because `projectId` is part of the row hash, so a project move is detected as a
+    // change and routed through delete + re-insert rather than reaching a conflicting insert.
     for (let i = 0; i < values.length; i += 10_000) {
       const batchedValues = values.slice(i, i + 10_000);
       const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
@@ -219,8 +228,12 @@ export class ReferenceTable extends LookupTable {
 
 /**
  * Creates a hash string for a reference row for efficient comparison.
+ *
+ * `projectId` is included even though it is not part of the primary key: inserts use
+ * ON CONFLICT DO NOTHING and so can never update it, so a resource moving between projects has to
+ * register as a change here in order to be routed through delete + re-insert.
  * @param row - The reference table row.
- * @returns A hash string combining resourceId, targetId, and code.
+ * @returns A hash string combining all columns of the row.
  */
 function hashRow(row: ReferenceTableRow): string {
   return ReferenceTable.allColumnNames.map((c) => row[c]).join('|');
@@ -277,6 +290,8 @@ function addSearchReferenceResult(
     resourceId: resource.id,
     targetId: targetId,
     code: searchParam.code,
+    // Mirrors `buildResourceRow`, so the reference row and the resource row cannot disagree
+    projectId: resource.meta?.project ?? systemResourceProjectId,
   });
 }
 

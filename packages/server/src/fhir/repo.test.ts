@@ -2008,9 +2008,9 @@ describe('FHIR Repo', () => {
       };
 
       // Postgres uses a 16-bit counter for placeholder formats internally,
-      // so (2^16 + 1) / 3 = (64k + 1) / 3 will definitely overflow it if not sent in smaller batches
-      // the division by three since there are 3 column placeholders per inserted row
-      for (let i = 0; i < Math.ceil((64 * 1024 + 1) / 3); i++) {
+      // so (2^16 + 1) / 4 = (64k + 1) / 4 will definitely overflow it if not sent in smaller batches
+      // the division by four since there are 4 column placeholders per inserted row
+      for (let i = 0; i < Math.ceil((64 * 1024 + 1) / 4); i++) {
         patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
 
