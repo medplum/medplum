@@ -202,6 +202,16 @@ const defaultQuestionnaire: Questionnaire = {
           linkId: 'phone',
           text: 'Phone',
           type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/regex',
+              valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
+            },
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',
+              valueString: '(xxx) xxx-xxxx',
+            },
+          ],
         },
         {
           linkId: 'ssn',
@@ -261,6 +271,16 @@ const defaultQuestionnaire: Questionnaire = {
           linkId: 'emergency-contact-phone',
           text: 'Phone',
           type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/regex',
+              valueString: '^\\+?[0-9\\(\\)\\-.\\s]{7,20}$',
+            },
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/entryFormat',
+              valueString: '(xxx) xxx-xxxx',
+            },
+          ],
         },
       ],
     },
