@@ -184,6 +184,7 @@ export function isFloatConfig(_key: string): boolean {
 
 const booleanKeys = new Set([
   'allowUnsafeOutbound',
+  'autoDownloadEnabled',
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
