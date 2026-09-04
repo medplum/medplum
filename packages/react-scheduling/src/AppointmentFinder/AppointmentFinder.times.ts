@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Reference } from '@medplum/fhirtypes';
-import type { SchedulingActor } from './AppointmentFinder.roles';
+import type { SchedulingActor } from '../actors';
 
 /**
  * The longest window `Appointment/$find` accepts. Requests wider than this are

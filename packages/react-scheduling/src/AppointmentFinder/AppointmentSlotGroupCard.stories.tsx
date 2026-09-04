@@ -24,7 +24,6 @@ const TIMEZONE = 'America/New_York';
 const TIMES = ['13:00', '13:30', '14:00', '15:00', '17:30'].map((time) => `2020-05-05T${time}:00.000Z`);
 
 const RIVERA = { reference: 'Practitioner/dr-rivera', display: 'Dr. Maya Rivera' };
-const CHEN_ROLE = { reference: 'PractitionerRole/role-dr-chen', display: 'Dr. Wei Chen' };
 const EXAM_ROOM = { reference: 'Location/exam-room-a', display: 'Exam Room A' };
 const ULTRASOUND = { reference: 'Device/ultrasound-1', display: 'Ultrasound 1' };
 
@@ -72,7 +71,7 @@ export const OneProvider = (): JSX.Element => <Card group={buildGroup([RIVERA])}
  * A booking that takes a person, a place and a machine, all free at once.
  * @returns The story.
  */
-export const ATeam = (): JSX.Element => <Card group={buildGroup([CHEN_ROLE, EXAM_ROOM, ULTRASOUND], 120)} />;
+export const ATeam = (): JSX.Element => <Card group={buildGroup([RIVERA, EXAM_ROOM, ULTRASOUND], 120)} />;
 
 /**
  * The same card with nothing selectable, which is how it looks while the booking
