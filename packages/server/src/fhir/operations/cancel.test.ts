@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, parseSearchRequest } from '@medplum/core';
-import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { HTTP_TERMINOLOGY_HL7_ORG, createReference, parseSearchRequest } from '@medplum/core';
+import type { Appointment, Parameters, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -10,6 +10,8 @@ import { loadTestConfig } from '../../config/loader';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+
+const CANCELATION_REASON_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/appointment-cancellation-reason`;
 
 const systemRepo = getGlobalSystemRepo();
 const app = express();
@@ -105,6 +107,64 @@ describe('Appointment/$cancel', () => {
 
     const updated = response.body as Appointment;
     expect(updated).toMatchObject({ resourceType: 'Appointment', id: appointment.id, status: 'cancelled' });
+  });
+
+  test('Sets cancelation reason from a plain JSON body', async () => {
+    const appointment = await makeAppointment('booked');
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ cancelationReason: { coding: [{ system: CANCELATION_REASON_SYSTEM, code: 'pat' }], text: 'Patient' } });
+
+    expect(response).toHaveStatus(200);
+    expect(response.body).toMatchObject({
+      resourceType: 'Appointment',
+      status: 'cancelled',
+      cancelationReason: { coding: [{ system: CANCELATION_REASON_SYSTEM, code: 'pat' }], text: 'Patient' },
+    });
+  });
+
+  test('Sets cancelation reason from a Parameters body', async () => {
+    const appointment = await makeAppointment('booked');
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'cancelationReason',
+            valueCodeableConcept: {
+              coding: [{ system: CANCELATION_REASON_SYSTEM, code: 'pat-cpp' }],
+              text: 'Patient: Canceled via Patient Portal',
+            },
+          },
+        ],
+      } satisfies Parameters);
+
+    expect(response).toHaveStatus(200);
+    expect(response.body).toMatchObject({
+      resourceType: 'Appointment',
+      status: 'cancelled',
+      cancelationReason: {
+        coding: [{ system: CANCELATION_REASON_SYSTEM, code: 'pat-cpp' }],
+        text: 'Patient: Canceled via Patient Portal',
+      },
+    });
+  });
+
+  test('Leaves cancelation reason unset when omitted', async () => {
+    const appointment = await makeAppointment('booked');
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response).toHaveStatus(200);
+    expect(response.body).toMatchObject({ resourceType: 'Appointment', status: 'cancelled' });
+    expect(response.body.cancelationReason).toBeUndefined();
   });
 
   test('Deletes the referenced slot', async () => {
