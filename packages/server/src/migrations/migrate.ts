@@ -534,6 +534,10 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
       { columns: ['project', 'userName'], indexType: 'btree', unique: true }
     );
   }
+
+  if (resourceType === 'Observation') {
+    result.indexes.push({ columns: ['subject', 'date'], indexType: 'btree' });
+  }
 }
 
 function buildAddressTable(result: SchemaDefinition): void {
@@ -652,11 +656,7 @@ function buildCodingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'Coding',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
@@ -665,7 +665,6 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'language', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
       {
         columns: ['system', 'code'],
         indexType: 'btree',
@@ -736,11 +735,7 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'CodeSystem_Property',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'type', type: 'TEXT', notNull: true },
@@ -889,7 +884,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'DROP_INVALID_INDEX': {
-        await fns.dropInvalidIndexConcurrently(client, results, action.indexName);
+        await fns.dropInvalidIndexConcurrently(client, results, action.schemaName, action.indexName);
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1060,7 +1055,9 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
         break;
       }
       case 'DROP_INVALID_INDEX': {
-        b.appendNoWrap(`await fns.dropInvalidIndexConcurrently(client, results, ${JSON.stringify(action.indexName)});`);
+        b.appendNoWrap(
+          `await fns.dropInvalidIndexConcurrently(client, results, '${action.schemaName}', '${action.indexName}');`
+        );
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1280,9 +1277,9 @@ export function generateIndexesActions(
     assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
-    const matchingStartIndexes = startTable.indexes.filter(
-      (i) => !matchedIndexes.has(i) && indexDefinitionsEqual(i, targetIndex)
-    );
+    // A physical index can satisfy multiple structurally identical target declarations, such as a unique index
+    // declaration that duplicates a primary key. Preserve that compatibility while preferring the expected name.
+    const matchingStartIndexes = startTable.indexes.filter((i) => indexDefinitionsEqual(i, targetIndex));
     // REINDEX CONCURRENTLY can leave a duplicate _ccnew/_ccold index behind after a failure. Prefer the expected
     // name, then any established legacy name, so the temporary copy is the index classified as unmatched.
     const startIndex =

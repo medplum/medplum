@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
@@ -23,7 +24,13 @@ import { BASE_METRIC_OPTIONS } from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
-import { execBatchJob, execLegacyBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
+import {
+  execBatchJob as execBatchJobImpl,
+  execLegacyBatchJob as execLegacyBatchJobImpl,
+  getBatchQueue,
+  initBatchWorker,
+  queueBatchProcessing,
+} from './batch';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
@@ -61,6 +68,16 @@ function makeLegacyJob(data: LegacyBatchJobData): Job<LegacyBatchJobData> {
     data,
     queueName: 'BatchQueue',
   } as unknown as Job<LegacyBatchJobData>;
+}
+
+async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
+}
+
+async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execLegacyBatchJobImpl(job));
 }
 
 const singleEntryBundle = (): Bundle => ({
@@ -261,6 +278,69 @@ describe('Batch worker', () => {
         expect(results.entry).toHaveLength(2);
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201']);
       }));
+
+    // EventTarget.dispatchEvent swallows listener errors, so the metric counts also verify that
+    // the authenticated test helper provided the context the telemetry listeners require.
+    test('Dispatches batch telemetry once across a delayed and resumed job', () =>
+      runInAuthenticatedContext(authState, undefined, undefined, { async: true }, async () => {
+        const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+        const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+        try {
+          // One entry succeeds, one 404s, so the terminal event carries a non-zero error count.
+          const bundle = multiEntryBundle(1);
+          (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+          const { job } = await setupReentrantJob(bundle);
+
+          // Process one entry, then report the queue as closing so the job is checkpointed.
+          let checks = 0;
+          const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 1);
+          await expect(execBatchJobImpl(job)).rejects.toBeInstanceOf(DelayedError);
+          isClosingSpy.mockRestore();
+
+          // Preprocessing dispatched the pre-event. Being delayed for another worker to pick up is
+          // not terminal, so nothing closes it out yet.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(0);
+
+          await expect(execBatchJobImpl(makeReentrantJob(job.data))).resolves.toBeUndefined();
+
+          // Resume rehydrates via fromState, which skips preprocessing, so the pre-event is not
+          // repeated. Completion is terminal and reports the whole job's errors exactly once.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+        } finally {
+          histogram.mockRestore();
+        }
+      }));
+
+    test('Dispatches terminal batch telemetry once when completing the AsyncJob fails', async () => {
+      const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+      const completeJobSpy = vi
+        .spyOn(AsyncJobExecutor.prototype, 'completeJob')
+        .mockRejectedValue(new Error('completeJob failed'));
+      const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+
+      try {
+        const bundle = multiEntryBundle(1);
+        (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+        const { asyncJob, job } = await setupReentrantJob(bundle);
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        // Processing completed and dispatched its terminal event before completeJob failed. The
+        // catch path must fail the AsyncJob without dispatching that terminal event a second time.
+        expect(completeJobSpy).toHaveBeenCalledOnce();
+        expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+        expect(countOf('medplum.batch.size')).toStrictEqual(1);
+        expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('error');
+      } finally {
+        completeJobSpy.mockRestore();
+        histogram.mockRestore();
+      }
+    });
 
     test('Publishes partial results when the AsyncJob was cancelled out of band', () =>
       withTestContext(async () => {
