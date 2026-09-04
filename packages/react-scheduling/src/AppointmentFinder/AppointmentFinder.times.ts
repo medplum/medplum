@@ -12,6 +12,12 @@ export const MAX_FIND_WINDOW_DAYS = 31;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * The most days one listing will name. A search that grows a few days at a time can
+ * outrun a single `$find` window, so this is bounded independently, at roughly a year.
+ */
+const MAX_LISTED_DAYS = 366;
+
 export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 
 /** A calendar day's worth of available times, split by the actors offering them. */
@@ -32,6 +38,26 @@ export interface AppointmentDay {
   readonly groups: readonly AppointmentSlotGroup[];
 }
 
+// Building an `Intl.DateTimeFormat` costs far more than formatting with one, and a
+// stretch of days formats a time for every appointment on it, on every render.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * Returns a formatter for a set of options, building it the first time it is asked for.
+ * @param key - What tells one formatter apart from another.
+ * @param options - How to format, read only when the formatter is built.
+ * @param locale - The locale to build it in. Defaults to the browser's.
+ * @returns The cached formatter.
+ */
+function getFormatter(key: string, options: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat {
+  let formatter = formatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    formatters.set(key, formatter);
+  }
+  return formatter;
+}
+
 interface ZonedParts {
   readonly year: number;
   readonly month: number;
@@ -48,15 +74,19 @@ interface ZonedParts {
  * @returns The year, month, day, and hour in that timezone.
  */
 function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date);
+  const parts = getFormatter(
+    `parts:${timezone ?? ''}`,
+    {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    },
+    'en-US'
+  ).formatToParts(date);
 
   const read = (type: Intl.DateTimeFormatPartTypes): number => Number(parts.find((p) => p.type === type)?.value);
 
@@ -76,7 +106,7 @@ function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
  * @returns The formatted time.
  */
 export function formatZonedTime(date: Date, timezone?: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return getFormatter(`time:${timezone ?? ''}`, {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
@@ -90,6 +120,15 @@ export function formatZonedTime(date: Date, timezone?: string): string {
  */
 export function formatDayHeading(date: Date): string {
   return new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
+}
+
+/**
+ * Names a calendar day without its weekday (e.g. "July 27").
+ * @param date - Local midnight of the day.
+ * @returns The formatted day.
+ */
+export function formatDayLabel(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric' }).format(date);
 }
 
 /**
@@ -165,17 +204,23 @@ export function filterByTimeOfDay(
  *
  * @param appointments - Proposed appointments from `$find`.
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @param searched - Days to list whether or not they offer anything, so a searched day
+ *   that came back empty still shows up rather than going missing. Read on the local
+ *   calendar, matching how a day is picked.
  * @returns Days in ascending order, each holding its groups.
  */
-export function groupAppointmentsByDay(appointments: readonly Appointment[], timezone?: string): AppointmentDay[] {
+export function groupAppointmentsByDay(
+  appointments: readonly Appointment[],
+  timezone?: string,
+  searched?: DateRange
+): AppointmentDay[] {
   const days = new Map<string, Map<string, Appointment[]>>();
 
   for (const appointment of appointments) {
     if (!appointment.start) {
       continue;
     }
-    const { year, month, day } = getZonedParts(new Date(appointment.start), timezone);
-    const dayKey = `${year}-${pad(month)}-${pad(day)}`;
+    const dayKey = getZonedDayKey(new Date(appointment.start), timezone);
 
     let groups = days.get(dayKey);
     if (!groups) {
@@ -189,6 +234,13 @@ export function groupAppointmentsByDay(appointments: readonly Appointment[], tim
       group.push(appointment);
     } else {
       groups.set(groupKey, [appointment]);
+    }
+  }
+
+  for (const day of enumerateDateRange(searched ?? {}, MAX_LISTED_DAYS)) {
+    const key = getDayKey(day.getFullYear(), day.getMonth() + 1, day.getDate());
+    if (!days.has(key)) {
+      days.set(key, new Map());
     }
   }
 
@@ -263,6 +315,28 @@ export function getAppointmentKey(appointment: Appointment): string {
 }
 
 /**
+ * Keys the calendar day an instant falls on in a timezone.
+ * @param date - The instant to read.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The day as `YYYY-MM-DD`.
+ */
+function getZonedDayKey(date: Date, timezone: string | undefined): string {
+  const { year, month, day } = getZonedParts(date, timezone);
+  return getDayKey(year, month, day);
+}
+
+/**
+ * Writes a calendar date as the key days are held under.
+ * @param year - The full year.
+ * @param month - The month, from 1.
+ * @param day - The day of the month.
+ * @returns The day as `YYYY-MM-DD`.
+ */
+function getDayKey(year: number, month: number, day: number): string {
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+/**
  * Converts a `YYYY-MM-DD` key into local midnight of that calendar day.
  * @param key - A `YYYY-MM-DD` day key.
  * @returns Local midnight of that day.
@@ -288,6 +362,15 @@ function pad(value: number): string {
  */
 export function getNativeInputType(type: 'date' | 'time'): string {
   return import.meta.env.NODE_ENV === 'test' ? 'text' : type;
+}
+
+/**
+ * Returns the first instant of a day, so that a range opens at the top of it.
+ * @param date - Any instant during the day.
+ * @returns Local midnight at the start of that day.
+ */
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 /**
@@ -365,25 +448,40 @@ export function getFindWindowError(range: DateRange): string | undefined {
   if (!start || !end) {
     return undefined;
   }
-  const days = Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
-  return days > MAX_FIND_WINDOW_DAYS ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.` : undefined;
+  return getDayCount(start, end) > MAX_FIND_WINDOW_DAYS
+    ? `Choose at most ${MAX_FIND_WINDOW_DAYS} days at a time.`
+    : undefined;
+}
+
+/**
+ * Counts the days a window covers, a part of a day counting as a whole one.
+ * @param start - The first instant of the window.
+ * @param end - Its last instant.
+ * @returns The number of days the window reaches over.
+ */
+export function getDayCount(start: Date, end: Date): number {
+  return Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
 }
 
 /**
  * Says in words which days a search covers.
  * @param range - The days asked for.
+ * @param formatDay - How to name one day. Defaults to naming it with its weekday.
  * @returns The range as a phrase, or undefined when both ends are open.
  */
-export function formatDateRange(range: DateRange): string | undefined {
+export function formatDateRange(
+  range: DateRange,
+  formatDay: (date: Date) => string = formatDayHeading
+): string | undefined {
   const { start, end } = range;
   if (start && end) {
-    return isSameDay(start, end) ? formatDayHeading(start) : `${formatDayHeading(start)} – ${formatDayHeading(end)}`;
+    return isSameDay(start, end) ? formatDay(start) : `${formatDay(start)} – ${formatDay(end)}`;
   }
   if (start) {
-    return `From ${formatDayHeading(start)}`;
+    return `From ${formatDay(start)}`;
   }
   if (end) {
-    return `Through ${formatDayHeading(end)}`;
+    return `Through ${formatDay(end)}`;
   }
   return undefined;
 }

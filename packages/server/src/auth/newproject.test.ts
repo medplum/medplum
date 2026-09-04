@@ -28,6 +28,7 @@ describe('New project', () => {
 
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
+    getConfig().registerEnabled = undefined;
     fetchMock.mockClear();
     setupRecaptchaMock(true);
   });
@@ -415,5 +416,46 @@ describe('New project', () => {
       projectName: 'Hamilton Project',
     });
     expect(res2).toHaveStatus(200);
+  });
+
+  test('Register disabled', async () => {
+    // Create the user while registration is still enabled
+    const email = `alex${randomUUID()}@example.com`;
+    const res1 = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+      email,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1).toHaveStatus(200);
+
+    getConfig().registerEnabled = false;
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject(badRequest('Registration is disabled'));
+
+    // An existing user must not be able to bypass the check by logging in with projectId "new"
+    const res3 = await request(app).post('/auth/login').type('json').send({
+      email,
+      password: 'password!@#',
+      projectId: 'new',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res3).toHaveStatus(200);
+
+    const res4 = await request(app).post('/auth/newproject').type('json').send({
+      login: res3.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res4).toHaveStatus(400);
+    expect(res4.body).toMatchObject(badRequest('Registration is disabled'));
   });
 });

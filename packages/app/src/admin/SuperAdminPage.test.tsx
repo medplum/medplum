@@ -286,7 +286,7 @@ describe('SuperAdminPage', () => {
     startAsyncRequestSpy.mockRestore();
   });
 
-  test('Reindex database', async () => {
+  test('Rebuild Indexes', async () => {
     setup();
     const startAsyncRequestSpy = vi.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({
       resourceType: 'AsyncJob',
@@ -302,11 +302,11 @@ describe('SuperAdminPage', () => {
       fireEvent.change(screen.getByLabelText('Target name 2 *'), { target: { value: 'Patient_name_idx' } });
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Reindex Database' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Rebuild Indexes' }));
     });
 
     expect(screen.getByText('View AsyncJob')).toBeInTheDocument();
-    expect(startAsyncRequestSpy).toHaveBeenCalledWith('admin/super/reindex-database', {
+    expect(startAsyncRequestSpy).toHaveBeenCalledWith('admin/super/rebuild-index', {
       method: 'POST',
       pollStatusOnAccepted: true,
       body: JSON.stringify({ targets: [{ table: 'Observation' }, { index: 'Patient_name_idx' }] }),
@@ -314,7 +314,7 @@ describe('SuperAdminPage', () => {
     startAsyncRequestSpy.mockRestore();
   });
 
-  test('Reindex database limits targets to 10', async () => {
+  test('Rebuild index limits targets to 10', async () => {
     setup();
     const addTargetButton = screen.getByRole('button', { name: 'Add Target' });
 

@@ -228,6 +228,14 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
 }
 
+/**
+ * Enqueues a batch for the legacy single-shot worker. Only reachable when a project opts out of
+ * re-entrant processing via the `reentrantAsyncBatch` system setting. TODO{v5.2}
+ * @deprecated Can be removed in v5.2+ along with {@link execLegacyBatchJob}.
+ * @param bundle - The batch bundle to process.
+ * @param asyncJob - The AsyncJob tracking this batch.
+ * @returns The enqueued job.
+ */
 export async function queueLegacyBatchProcessing(
   bundle: Bundle,
   asyncJob: WithId<AsyncJob>

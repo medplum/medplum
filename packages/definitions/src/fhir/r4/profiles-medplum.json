@@ -6,6 +6,292 @@
   },
   "type" : "collection",
   "entry" : [{
+    "fullUrl": "https://medplum.com/fhir/StructureDefinition/Enterprise",
+    "resource": {
+      "resourceType": "StructureDefinition",
+      "id": "Enterprise",
+      "name": "Enterprise",
+      "url": "https://medplum.com/fhir/StructureDefinition/Enterprise",
+      "status": "active",
+      "description": "A group of Medplum projects managed as a single enterprise.",
+      "kind": "resource",
+      "abstract": false,
+      "type": "Enterprise",
+      "baseDefinition": "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "snapshot": {
+        "element": [
+          {
+            "id": "Enterprise",
+            "path": "Enterprise",
+            "short": "A group of Medplum projects managed as a single enterprise.",
+            "definition": "A group of Medplum projects managed as a single enterprise.",
+            "min": 0,
+            "max": "*",
+            "base": {
+              "path": "Enterprise",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Enterprise.id",
+            "path": "Enterprise.id",
+            "short": "Logical id of this artifact",
+            "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min": 0,
+            "max": "1",
+            "base": {
+              "path": "Resource.id",
+              "min": 0,
+              "max": "1"
+            },
+            "type": [{
+              "code": "string"
+            }]
+          },
+          {
+            "id": "Enterprise.meta",
+            "path": "Enterprise.meta",
+            "definition": "The metadata about the resource. This is content that is maintained by the infrastructure.",
+            "min": 0,
+            "max": "1",
+            "base": {
+              "path": "Resource.meta",
+              "min": 0,
+              "max": "1"
+            },
+            "type": [{
+              "code": "Meta"
+            }]
+          },
+          {
+            "id": "Enterprise.implicitRules",
+            "path": "Enterprise.implicitRules",
+            "definition": "A reference to a set of rules that were followed when the resource was constructed.",
+            "min": 0,
+            "max": "1",
+            "base": {
+              "path": "Resource.implicitRules",
+              "min": 0,
+              "max": "1"
+            },
+            "type": [{
+              "code": "uri"
+            }]
+          },
+          {
+            "id": "Enterprise.language",
+            "path": "Enterprise.language",
+            "definition": "The base language in which the resource is written.",
+            "min": 0,
+            "max": "1",
+            "base": {
+              "path": "Resource.language",
+              "min": 0,
+              "max": "1"
+            },
+            "type": [{
+              "code": "code"
+            }]
+          },
+          {
+            "id": "Enterprise.text",
+            "path": "Enterprise.text",
+            "short": "Text summary of the resource, for human interpretation",
+            "definition": "A human-readable narrative that contains a summary of the resource.",
+            "min": 0,
+            "max": "1",
+            "base": {
+              "path": "DomainResource.text",
+              "min": 0,
+              "max": "1"
+            },
+            "type": [{
+              "code": "Narrative"
+            }]
+          },
+          {
+            "id": "Enterprise.contained",
+            "path": "Enterprise.contained",
+            "short": "Contained, inline Resources",
+            "definition": "Resources that do not have an independent existence apart from the resource that contains them.",
+            "min": 0,
+            "max": "*",
+            "base": {
+              "path": "DomainResource.contained",
+              "min": 0,
+              "max": "*"
+            },
+            "type": [{
+              "code": "Resource"
+            }]
+          },
+          {
+            "id": "Enterprise.extension",
+            "path": "Enterprise.extension",
+            "short": "Additional content defined by implementations",
+            "definition": "Additional content defined by implementations.",
+            "min": 0,
+            "max": "*",
+            "base": {
+              "path": "DomainResource.extension",
+              "min": 0,
+              "max": "*"
+            },
+            "type": [{
+              "code": "Extension"
+            }]
+          },
+          {
+            "id": "Enterprise.modifierExtension",
+            "path": "Enterprise.modifierExtension",
+            "short": "Extensions that cannot be ignored",
+            "definition": "Extensions that cannot be ignored.",
+            "min": 0,
+            "max": "*",
+            "base": {
+              "path": "DomainResource.modifierExtension",
+              "min": 0,
+              "max": "*"
+            },
+            "type": [{
+              "code": "Extension"
+            }]
+          },
+          {
+            "id": "Enterprise.identifier",
+            "path": "Enterprise.identifier",
+            "definition": "Identifiers for the enterprise.",
+            "min": 0,
+            "max": "*",
+            "type": [{
+              "code": "Identifier"
+            }],
+            "base": {
+              "path": "Enterprise.identifier",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Enterprise.name",
+            "path": "Enterprise.name",
+            "definition": "The name of the enterprise.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "string"
+            }],
+            "base": {
+              "path": "Enterprise.name",
+              "min": 1,
+              "max": "1"
+            }
+          },
+          {
+            "id": "Enterprise.status",
+            "path": "Enterprise.status",
+            "definition": "Whether the enterprise is active or inactive.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "code"
+            }],
+            "base": {
+              "path": "Enterprise.status",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-status"
+            }
+          },
+          {
+            "id": "Enterprise.organization",
+            "path": "Enterprise.organization",
+            "definition": "The organization represented by the enterprise.",
+            "min": 0,
+            "max": "1",
+            "type": [{
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
+            }],
+            "base": {
+              "path": "Enterprise.organization",
+              "min": 0,
+              "max": "1"
+            }
+          },
+          {
+            "id": "Enterprise.code",
+            "path": "Enterprise.code",
+            "definition": "Codes used to classify the enterprise.",
+            "min": 0,
+            "max": "*",
+            "type": [{
+              "code": "CodeableConcept"
+            }],
+            "base": {
+              "path": "Enterprise.code",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Enterprise.project",
+            "path": "Enterprise.project",
+            "definition": "Projects belonging to the enterprise and their deployment environments.",
+            "min": 0,
+            "max": "*",
+            "type": [{
+              "code": "BackboneElement"
+            }],
+            "base": {
+              "path": "Enterprise.project",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Enterprise.project.project",
+            "path": "Enterprise.project.project",
+            "definition": "A project belonging to the enterprise.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "Reference",
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/Project"]
+            }],
+            "base": {
+              "path": "Enterprise.project.project",
+              "min": 1,
+              "max": "1"
+            }
+          },
+          {
+            "id": "Enterprise.project.code",
+            "path": "Enterprise.project.code",
+            "definition": "Whether the project is a production or non-production environment.",
+            "min": 1,
+            "max": "1",
+            "type": [{
+              "code": "code"
+            }],
+            "base": {
+              "path": "Enterprise.project.code",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-project-code"
+            }
+          }
+        ]
+      }
+    }
+  }, {
     "fullUrl" : "https://medplum.com/fhir/StructureDefinition/Project",
     "resource" : {
       "resourceType" : "StructureDefinition",

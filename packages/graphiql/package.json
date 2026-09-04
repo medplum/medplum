@@ -25,7 +25,7 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@graphiql/react": "0.37.7",
+    "@graphiql/react": "0.38.0",
     "@graphiql/toolkit": "0.12.1",
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
@@ -34,15 +34,15 @@
     "@medplum/fhirtypes": "5.1.36",
     "@medplum/react": "5.1.36",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "graphiql": "5.2.4",
+    "@types/react-dom": "19.2.5",
+    "graphiql": "5.3.0",
     "graphql": "17.0.2",
     "graphql-ws": "6.2.1",
     "postcss": "8.5.26",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "vite": "8.2.1",
+    "vite": "8.2.2",
     "vite-plugin-monaco-editor-esm": "2.0.3"
   },
   "engines": {

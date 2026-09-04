@@ -62,6 +62,7 @@ import type { Encounter } from './Encounter.d.ts';
 import type { Endpoint } from './Endpoint.d.ts';
 import type { EnrollmentRequest } from './EnrollmentRequest.d.ts';
 import type { EnrollmentResponse } from './EnrollmentResponse.d.ts';
+import type { Enterprise } from './Enterprise.d.ts';
 import type { EpisodeOfCare } from './EpisodeOfCare.d.ts';
 import type { EventDefinition } from './EventDefinition.d.ts';
 import type { Evidence } from './Evidence.d.ts';
@@ -232,6 +233,7 @@ export type Resource = AccessPolicy
   | Endpoint
   | EnrollmentRequest
   | EnrollmentResponse
+  | Enterprise
   | EpisodeOfCare
   | EventDefinition
   | Evidence

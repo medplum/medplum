@@ -25,18 +25,18 @@
     "@medplum/react": "5.1.36",
     "@tabler/icons-react": "3.46.0",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "@vitejs/plugin-react": "6.0.5",
+    "@types/react-dom": "19.2.5",
+    "@vitejs/plugin-react": "6.1.1",
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.4",
+    "eslint-plugin-react-refresh": "0.5.5",
     "postcss": "8.5.26",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router": "8.3.0",
     "typescript": "6.0.3",
-    "vite": "8.2.1"
+    "vite": "8.2.2"
   },
   "packageManager": "npm@10.9.9",
   "engines": {

@@ -8,7 +8,7 @@ import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
 import type { Mock } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
-import { IndexBloat } from './IndexBloat';
+import { IndexHealth } from './IndexBloat';
 import { formatBytes } from './utils';
 
 vi.mock('./SearchableMultiSelect', () => ({
@@ -20,17 +20,17 @@ vi.mock('./SearchableMultiSelect', () => ({
 }));
 vi.mock('./useAvailableTables', () => ({ useAvailableTables: vi.fn() }));
 
-describe('IndexBloat', () => {
+describe('IndexHealth', () => {
   let medplum: MedplumClient;
   let fetch: Mock<FetchLike>;
 
   function setup(): void {
     render(
       <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={['/admin/super/db/index-bloat']}>
+        <MemoryRouter initialEntries={['/admin/super/db/index-health']}>
           <MantineProvider>
             <Notifications />
-            <IndexBloat />
+            <IndexHealth />
           </MantineProvider>
         </MemoryRouter>
       </MedplumProvider>
@@ -39,24 +39,26 @@ describe('IndexBloat', () => {
 
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    fetch = vi.fn(async () => ({
-      status: 200,
-      headers: { get: () => ContentType.FHIR_JSON },
-      json: vi.fn(async () => ({
-        resourceType: 'Parameters',
-        parameter: [
-          makeGinIndexParameter('Patient', 'Patient_name_idx', 500 * 1024 * 1024, 2.5),
-          makeIndexParameter(
-            'Observation',
-            'Observation_date_idx',
-            'btree',
-            800 * 1024 * 1024,
-            300 * 1024 * 1024,
-            37.5
-          ),
-        ],
-      })),
-    }));
+    fetch = vi.fn(async (url) =>
+      successResponse(
+        String(url).includes('$db-invalid-indexes')
+          ? { resourceType: 'Parameters' }
+          : {
+              resourceType: 'Parameters',
+              parameter: [
+                makeGinIndexParameter('Patient', 'Patient_name_idx', 500 * 1024 * 1024, 2.5),
+                makeIndexParameter(
+                  'Observation',
+                  'Observation_date_idx',
+                  'btree',
+                  800 * 1024 * 1024,
+                  300 * 1024 * 1024,
+                  37.5
+                ),
+              ],
+            }
+      )
+    );
     medplum = new MedplumClient({ fetch });
   });
 
@@ -73,6 +75,7 @@ describe('IndexBloat', () => {
     setup();
 
     expect(getBloatRequests(fetch)).toHaveLength(0);
+    expect(screen.getByRole('heading', { name: 'Index health' })).toBeInTheDocument();
     expect(screen.getByText('Click Analyze to scan indexes for bloat.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
@@ -99,11 +102,7 @@ describe('IndexBloat', () => {
   });
 
   test('Shows an empty state', async () => {
-    fetch.mockImplementationOnce(async () => ({
-      status: 200,
-      headers: { get: () => ContentType.FHIR_JSON },
-      json: vi.fn(async () => ({ resourceType: 'Parameters' })),
-    }));
+    fetch.mockImplementation(async () => successResponse({ resourceType: 'Parameters' }));
     setup();
 
     fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
@@ -111,15 +110,11 @@ describe('IndexBloat', () => {
   });
 
   test('Shows request errors', async () => {
-    fetch.mockImplementationOnce(async () => ({
-      status: 400,
-      statusText: 'Bad Request',
-      headers: { get: () => ContentType.FHIR_JSON },
-      json: vi.fn(async () => ({
-        resourceType: 'OperationOutcome',
-        issue: [{ severity: 'error', code: 'exception', details: { text: 'Unable to analyze indexes' } }],
-      })),
-    }));
+    fetch.mockImplementation(async (url) =>
+      String(url).includes('$db-index-bloat')
+        ? errorResponse('Unable to analyze indexes')
+        : successResponse({ resourceType: 'Parameters' })
+    );
     setup();
 
     fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
@@ -127,6 +122,52 @@ describe('IndexBloat', () => {
       await vi.advanceTimersByTimeAsync(100);
     });
     expect(await screen.findByText('Analysis failed')).toBeInTheDocument();
+  });
+
+  test('Shows invalid indexes separately from bloat', async () => {
+    fetch.mockImplementation(async (url) =>
+      successResponse(
+        String(url).includes('$db-invalid-indexes')
+          ? {
+              resourceType: 'Parameters',
+              parameter: [
+                {
+                  name: 'invalidIndex',
+                  valueString: [
+                    '"AuditEvent_References_pkey_ccnew":',
+                    '  [schema: public]',
+                    '  [table: AuditEvent_References]',
+                    '  [index_status: Invalid but maintained]',
+                    '  [index_size: 47 GB]',
+                    '  [index_type: btree]',
+                    '  [is_primary: false]',
+                    '  [is_unique: true]',
+                  ].join('\n'),
+                },
+              ],
+            }
+          : { resourceType: 'Parameters' }
+      )
+    );
+    setup();
+
+    expect(await screen.findByText('AuditEvent_References_pkey_ccnew')).toBeInTheDocument();
+    expect(screen.getByText('1 invalid index detected')).toBeInTheDocument();
+    expect(screen.getByText(/47\.00 GB/)).toBeInTheDocument();
+    expect(getInvalidIndexRequests(fetch)).toHaveLength(1);
+    expect(getBloatRequests(fetch)).toHaveLength(0);
+  });
+
+  test('Shows invalid index request errors', async () => {
+    fetch.mockImplementation(async (url) =>
+      String(url).includes('$db-invalid-indexes')
+        ? errorResponse('Unable to load index health')
+        : successResponse({ resourceType: 'Parameters' })
+    );
+    setup();
+
+    expect(await screen.findByText('Unable to load invalid indexes')).toBeInTheDocument();
+    expect(screen.getByText('Unable to load index health')).toBeInTheDocument();
   });
 
   test('Formats byte sizes', () => {
@@ -182,4 +223,28 @@ function makeGinIndexParameter(
 
 function getBloatRequests(fetch: Mock<FetchLike>): string[] {
   return fetch.mock.calls.map((call) => String(call[0])).filter((url) => url.includes('$db-index-bloat'));
+}
+
+function getInvalidIndexRequests(fetch: Mock<FetchLike>): string[] {
+  return fetch.mock.calls.map((call) => String(call[0])).filter((url) => url.includes('$db-invalid-indexes'));
+}
+
+function successResponse(resource: object): Response {
+  return {
+    status: 200,
+    headers: { get: () => ContentType.FHIR_JSON },
+    json: vi.fn(async () => resource),
+  } as unknown as Response;
+}
+
+function errorResponse(message: string): Response {
+  return {
+    status: 400,
+    statusText: 'Bad Request',
+    headers: { get: () => ContentType.FHIR_JSON },
+    json: vi.fn(async () => ({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'exception', details: { text: message } }],
+    })),
+  } as unknown as Response;
 }

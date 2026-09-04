@@ -25,6 +25,8 @@
 .bookingPane {
   flex-shrink: 0;
   width: 320px;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
 }
 

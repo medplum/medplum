@@ -90,7 +90,7 @@ describe('Post-Deploy Migration Worker', () => {
     return queue;
   }
 
-  test('prepareCustomMigrationJobData and addPostDeployMigrationJobData', async () => {
+  test('prepareCustomMigrationJobData and addPostDeployMigrationJobData without deduplication', async () => {
     await initWorkers(config);
 
     const queue = getQueueFromRegistryOrThrow();
@@ -127,9 +127,7 @@ describe('Post-Deploy Migration Worker', () => {
           data: data1,
         })
       );
-      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, {
-        deduplication: { id: expect.any(String) },
-      });
+      expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data1, undefined);
     });
 
     // outside of withTestContext, requestId and traceId are undefined
@@ -147,9 +145,7 @@ describe('Post-Deploy Migration Worker', () => {
         data: data2,
       })
     );
-    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, {
-      deduplication: { id: expect.any(String) },
-    });
+    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', data2, undefined);
   });
 
   test.each<[string, Partial<AsyncJob>, boolean]>([

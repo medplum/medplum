@@ -122,6 +122,29 @@ const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
       },
     },
   },
+  // Anonymous IP list blocks requests from VPNs, proxies, Tor nodes, and hosting providers
+  // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html#aws-managed-rule-groups-ip-rep-anonymous
+  {
+    name: 'AWSManagedRulesAnonymousIpList',
+    priority: 50,
+    visibilityConfig: {
+      sampledRequestsEnabled: true,
+      cloudWatchMetricsEnabled: true,
+      metricName: 'AWSManagedRulesAnonymousIpList',
+    },
+    overrideAction: {
+      count: {},
+    },
+    statement: {
+      managedRuleGroupStatement: {
+        vendorName: 'AWS',
+        name: 'AWSManagedRulesAnonymousIpList',
+        // HostingProviderIPList matches every major cloud provider, which covers
+        // legitimate server-to-server API traffic from customer backends and bots
+        excludedRules: [{ name: 'HostingProviderIPList' }],
+      },
+    },
+  },
 ];
 
 /**
@@ -135,7 +158,7 @@ function buildWafRules(ipSetArn: string | undefined): wafv2.CfnWebACL.RuleProper
   if (ipSetArn) {
     const ipAllowRule: wafv2.CfnWebACL.RuleProperty = {
       name: 'IPAllowListRule',
-      priority: 50,
+      priority: 60,
       action: {
         allow: {},
       },

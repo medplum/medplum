@@ -79,10 +79,6 @@ describe('Batch and Transaction processing', () => {
       withClient: true,
       project: {
         features: ['transaction-bundles', 'async-batch'],
-        // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
-        // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
-        // flag the project defaults to the legacy single-shot path.
-        systemSetting: [{ name: 'reentrantAsyncBatch', valueBoolean: true }],
       },
       membership: { admin: true },
     });
@@ -1911,8 +1907,6 @@ describe('Batch and Transaction processing', () => {
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
-          // Opt in to re-entrant async batch processing (see workers/batch.ts).
-          { name: 'reentrantAsyncBatch', valueBoolean: true },
         ],
       },
     });

@@ -1,20 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
+import type { MockInstance } from 'vitest';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
+import { ElderJordanPatient } from '../stories/scheduling';
 import { installAutocompleteTimers } from '../test-utils/asyncAutocomplete';
 import {
   chooseActor,
+  chooseDay,
   chooseImagingService,
+  choosePatient,
+  chooseSecondOfferedTime,
   clickBook,
   fillBooking,
   hasPill,
   lastFindStart,
   MONDAY_MORNING,
   openTimeFinder,
+  patientDetail,
   setupBookingClient,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
@@ -48,7 +55,10 @@ type ClickTarget = keyof typeof CLICK_TARGETS;
  * workspace either way.
  */
 vi.mock('../MultiCalendar/MultiCalendar', () => ({
-  MultiCalendar: (props: { onSelectInterval?: (interval: { start: Date; end: Date }) => void }): JSX.Element => (
+  MultiCalendar: (props: {
+    onSelectInterval?: (interval: { start: Date; end: Date }) => void;
+    selection?: { start: Date; end: Date };
+  }): JSX.Element => (
     <div>
       {Object.entries(CLICK_TARGETS).map(([name, target]) => (
         <button
@@ -62,6 +72,8 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
           click {name}
         </button>
       ))}
+      {/* Stands in for the highlight the real grid draws over the interval it is given. */}
+      <div data-testid="marked-time">{props.selection ? props.selection.start.toISOString() : 'none'}</div>
     </div>
   ),
 }));
@@ -78,6 +90,25 @@ async function clickCalendar(target: ClickTarget = 'tuesday morning'): Promise<v
 
 function bookingPaneHeading(): HTMLElement | null {
   return screen.queryByRole('heading', { name: /book appointment/i });
+}
+
+/**
+ * The proposal that was booked, as `$book` was asked for it.
+ * @param post - A spy on the client's `post`.
+ * @returns The appointment inside the `$book` request.
+ */
+function bookedProposal(post: MockInstance<MockClient['post']>): Appointment {
+  const call = post.mock.calls.find(([url]) => String(url).includes('Appointment/$book'));
+  const parameters = call?.[1] as { parameter: { resource: Appointment }[] };
+  return parameters.parameter[0].resource;
+}
+
+/**
+ * What the calendar is marking.
+ * @returns The marked instant, or 'none' while the calendar is marking nothing.
+ */
+function markedTime(): string {
+  return screen.getByTestId('marked-time').textContent ?? '';
 }
 
 describe('SchedulingWorkspace booking', () => {
@@ -174,6 +205,7 @@ describe('SchedulingWorkspace booking', () => {
     });
 
     expect(bookingPaneHeading()).not.toBeInTheDocument();
+    expect(markedTime()).toBe('none');
   });
 
   test('Re-opens on a different day, clearing what was answered for the old one', async () => {
@@ -198,5 +230,53 @@ describe('SchedulingWorkspace booking', () => {
     // Clicking around inside the day being booked is not a change of mind about which
     // day it is, and must not take the answers away.
     expect(hasPill('Ultrasound Imaging')).toBe(true);
+  });
+
+  describe('Marking the time being booked', () => {
+    test('Marks the time that was clicked', async () => {
+      setup();
+      expect(markedTime()).toBe('none');
+
+      await clickCalendar('tuesday morning');
+
+      expect(markedTime()).toBe(TUESDAY_MORNING.toISOString());
+    });
+
+    test('Moves the mark to the time chosen in the form', async () => {
+      const post = vi.spyOn(medplum, 'post');
+      setup();
+      await clickCalendar('tuesday morning');
+
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      // The second time on offer, because the first is the very time that was
+      // clicked: a mark that never moved would pass for one that followed.
+      await chooseSecondOfferedTime();
+      const marked = markedTime();
+
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      await clickBook();
+
+      // Marked to the instant that got booked, not merely somewhere else.
+      expect(marked).toBe(new Date(bookedProposal(post).start as string).toISOString());
+    });
+
+    test('Takes the mark down when the form drops the time', async () => {
+      setup();
+      await clickCalendar('tuesday morning');
+
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseSecondOfferedTime();
+      expect(markedTime()).not.toBe('none');
+
+      // Searching another day drops the time, and a mark left on the old one would
+      // be pointing at a time nobody has chosen.
+      await chooseDay('19');
+
+      expect(markedTime()).toBe('none');
+    });
   });
 });

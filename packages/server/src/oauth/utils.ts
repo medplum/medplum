@@ -1027,7 +1027,7 @@ export async function getLoginForAccessToken(
   } catch {
     const externalAuthState = await tryExternalAuth(globalSystemRepo, req, accessToken);
     if (externalAuthState) {
-      const repo = await getRepoForLogin(externalAuthState);
+      const repo = await getRepoForLogin(externalAuthState, undefined, req?.ip);
       return { authState: externalAuthState, repo };
     }
     return undefined;
@@ -1061,7 +1061,7 @@ export async function getLoginForAccessToken(
   }
   const project = await globalSystemRepo.readReference<Project>(membership.project);
   const systemRepo = await getProjectSystemRepo(project);
-  return makeAuthResult(systemRepo, req, login, project, membership, { accessToken });
+  return makeAuthResult(systemRepo, req, login, project, membership, { accessToken, remoteAddress: req?.ip });
 }
 
 /**
@@ -1118,7 +1118,7 @@ export async function getLoginForBasicAuth(req: Request, token: string): Promise
     return undefined;
   }
 
-  return makeAuthResult(systemRepo, req, login, project, membership, { profile: client });
+  return makeAuthResult(systemRepo, req, login, project, membership, { profile: client, remoteAddress: req.ip });
 }
 
 async function makeAuthResult(
@@ -1130,6 +1130,7 @@ async function makeAuthResult(
   opts?: {
     profile?: WithId<ProfileResource | Bot | ClientApplication>;
     accessToken?: string;
+    remoteAddress?: string;
   }
 ): Promise<AuthenticationResult> {
   const extendedMode = req ? isExtendedMode(req) : true;
@@ -1147,10 +1148,10 @@ async function makeAuthResult(
     accessToken: opts?.accessToken,
     profile: opts?.profile,
   };
-  let repo = await getRepoForLogin(authState, extendedMode);
+  let repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
   await tryAddOnBehalfOf(repo, req, authState);
   if (authState.onBehalfOf) {
-    repo = await getRepoForLogin(authState, extendedMode);
+    repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
   }
   return { authState, repo };
 }
