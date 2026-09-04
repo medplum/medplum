@@ -2087,6 +2087,81 @@ describe('scheduling flow integration test', () => {
     expect(appointments[0]).not.toHaveProperty('contained');
   });
 
+  test('every $find proposal can be booked when overbooking and buffers are configured', async () => {
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: toServiceTypeCodeableConcepts(service),
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+            { url: 'service', valueReference: createReference(service) },
+            { url: 'slotCapacity', valuePositiveInt: 2 },
+            { url: 'bufferBefore', valueDuration: { value: 20, unit: 'min' } },
+            { url: 'bufferAfter', valueDuration: { value: 20, unit: 'min' } },
+          ],
+        },
+      ],
+    });
+
+    // An existing capacity-2 booking inside the search window. It has room for another
+    // appointment, but its time is exclusive as far as buffer time is concerned.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: new Date('2026-01-28T09:00:00.000-07:00').toISOString(),
+      end: new Date('2026-01-28T10:00:00.000-07:00').toISOString(),
+      extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 }],
+    });
+
+    const findResponse = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .query({
+        start: new Date('2026-01-28T07:00:00.000-07:00').toISOString(),
+        end: new Date('2026-01-28T17:00:00.000-07:00').toISOString(),
+        'service-type-reference': `HealthcareService/${service.id}`,
+        schedule: `Schedule/${schedule.id}`,
+      });
+
+    expect(findResponse).toHaveStatus(200);
+    const proposals: Appointment[] = ((findResponse.body as Bundle<Appointment>).entry ?? [])
+      .map((entry) => entry.resource)
+      .filter(isDefined);
+    expect(proposals.length).toBeGreaterThan(0);
+
+    // Anything $find proposes must be bookable. Each proposal is booked against the same
+    // starting state, so the resources created by one are removed before the next.
+    for (const proposal of proposals) {
+      const bookResponse = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'appointment', resource: proposal }],
+        });
+
+      expect(bookResponse, `booking the proposal starting at ${proposal.start}`).toHaveStatus(201);
+
+      const created = ((bookResponse.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+      for (const resource of created) {
+        await systemRepo.deleteResource(resource.resourceType, resource.id as string);
+      }
+    }
+  });
+
   test('booking a slot as a patient with a minimal access policy', async () => {
     const practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',

@@ -641,6 +641,146 @@ describe('Appointment/$find', () => {
     expect(starts).toContain(threePm.toISOString()); // 3pm EDT
   });
 
+  test('with slotCapacity > 1, $find offers a time whose buffers clear an overlapping booking', async () => {
+    const schedule = await makeSchedule(
+      [
+        {
+          service: genericVisit,
+          duration: 60,
+          slotCapacity: 2,
+          bufferBefore: 20,
+          bufferAfter: 20,
+          availability: monTueAvailability,
+        },
+      ],
+      { actor: [createReference(practitioner)] }
+    );
+    // Existing capacity-2 booking, same duration as the grid: 11am-12pm EDT Tue.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: '2026-03-17T11:00:00-04:00',
+      end: '2026-03-17T12:00:00-04:00',
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+    expect(response).toHaveStatus(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    // 11am is the overbooking instant: booking overlaps the existing capacity-2 booking
+    // (allowed), buffers 10:40-11:00 and 12:00-12:20 do not touch it (half-open).
+    expect(starts).toContain(new Date('2026-03-17T11:00:00-04:00').toISOString());
+  });
+
+  test('with slotCapacity > 1, bufferBefore is still exclusive', async () => {
+    const schedule = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 2, bufferBefore: 20, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    // Existing capacity-2 booking at 11am-12pm EDT Tue. It has room for one more
+    // appointment, but buffer time laid over it cannot be overbooked.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: '2026-03-17T11:00:00-04:00',
+      end: '2026-03-17T12:00:00-04:00',
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+    expect(response).toHaveStatus(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    // 12pm buffer-before (11:40am-12pm) lands on the existing booking
+    expect(starts).not.toContain(new Date('2026-03-17T12:00:00-04:00').toISOString());
+    // 11am overlaps the booking itself, which capacity 2 allows
+    expect(starts).toContain(new Date('2026-03-17T11:00:00-04:00').toISOString());
+    expect(starts).toContain(new Date('2026-03-17T13:00:00-04:00').toISOString());
+  });
+
+  test('with slotCapacity > 1, bufferAfter is still exclusive', async () => {
+    const schedule = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 2, bufferAfter: 20, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    // Existing capacity-2 booking at 12pm-1pm EDT Tue.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: '2026-03-17T12:00:00-04:00',
+      end: '2026-03-17T13:00:00-04:00',
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: `Schedule/${schedule.id}`,
+    });
+    expect(response).toHaveStatus(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    // 11am buffer-after (12pm-12:20pm) lands on the existing booking
+    expect(starts).not.toContain(new Date('2026-03-17T11:00:00-04:00').toISOString());
+    expect(starts).toContain(new Date('2026-03-17T10:00:00-04:00').toISOString());
+    // 12pm overlaps the booking itself, which capacity 2 allows
+    expect(starts).toContain(new Date('2026-03-17T12:00:00-04:00').toISOString());
+  });
+
+  test('multi-schedule intersection applies buffers from the overbookable schedule', async () => {
+    // Schedule A: capacity 2 with a 20-min bufferBefore; Schedule B: capacity 1, no
+    // buffers. Availability overlap is Tue 1pm-5pm.
+    const scheduleA = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 2, bufferBefore: 20, availability: monTueAvailability }],
+      { actor: [createReference(practitioner)] }
+    );
+    const scheduleB = await makeSchedule(
+      [{ service: genericVisit, duration: 60, slotCapacity: 1, availability: tueWedAvailability }],
+      { actor: [createReference(location)] }
+    );
+
+    // Existing capacity-2 booking on A at Tue 2pm-3pm EDT; B is wide open.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(scheduleA),
+      status: 'busy',
+      start: '2026-03-17T14:00:00-04:00',
+      end: '2026-03-17T15:00:00-04:00',
+      extension: [{ url: SchedulingSlotCapacityURI, valuePositiveInt: 2 }],
+    });
+
+    const response = await makeRequest({
+      start: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+      'service-type-reference': `HealthcareService/${genericVisit.id}`,
+      schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+    });
+
+    expect(response).toHaveStatus(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    // 3pm buffer-before (2:40pm-3pm) lands on A's booking, which buffers cannot overbook
+    expect(starts).not.toContain(new Date('2026-03-17T15:00:00-04:00').toISOString());
+    // 2pm overlaps A's booking itself, which capacity 2 allows
+    expect(starts).toContain(new Date('2026-03-17T14:00:00-04:00').toISOString());
+    expect(starts).toContain(new Date('2026-03-17T16:00:00-04:00').toISOString());
+  });
+
   test('a capacity-1 booking is not overbooked by a capacity-2 $find', async () => {
     // Capacity-2 schedule, but an existing exclusive (capacity-1, unstamped) booking at
     // 10am — e.g. from a capacity-1 service on the same actor — must not be offered.
