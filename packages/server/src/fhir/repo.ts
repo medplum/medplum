@@ -1799,7 +1799,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param resourceType - The resource type.
    * @returns The permitted project IDs or undefined if all projects are permitted
    */
-  private getPermittedProjectIds(resourceType: string): string[] | undefined {
+  getPermittedProjectIds(resourceType: string): string[] | undefined {
     if (!this.context.projects?.length) {
       // The repository is system-level, so all projects are permitted.
       return undefined;
