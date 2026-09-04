@@ -42,6 +42,7 @@ import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
 import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import {
@@ -118,16 +119,16 @@ describe('Subscription Worker', () => {
 
     repo = _repo;
     systemRepo = repo.getSystemRepo();
-    superAdminRepo = new Repository({ extendedMode: true, superAdmin: true, author: createReference(client) });
+    superAdminRepo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+      extendedMode: true,
+      superAdmin: true,
+      author: createReference(client),
+    });
 
     // Create another project, this one with bots enabled
-    const botProjectDetails = await createTestProject({ withClient: true });
-    botRepo = new Repository({
-      extendedMode: true,
-      projects: [botProjectDetails.project],
-      author: createReference(botProjectDetails.client),
-      currentProject: botProjectDetails.project,
-    });
+    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+    botRepo = botProjectDetails.repo;
 
     mockLambdaClient = mockClient(LambdaClient);
     mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {

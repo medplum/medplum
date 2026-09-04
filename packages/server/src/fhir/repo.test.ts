@@ -78,6 +78,7 @@ describe('FHIR Repo', () => {
     });
     systemRepo = await getProjectSystemRepo(testProject);
     testProjectRepo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       projects: [testProject],
       extendedMode: true,
       strictMode: true,
@@ -252,6 +253,7 @@ describe('FHIR Repo', () => {
     const versionId = binary.meta?.versionId as string;
 
     const repoWithoutPatientAccess = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       author: { reference: 'Practitioner/' + randomUUID() },
       accessPolicy: {
         resourceType: 'AccessPolicy',
@@ -266,6 +268,7 @@ describe('FHIR Repo', () => {
     expect(deniedReferences[0]).toBeInstanceOf(Error);
 
     const repoWithPatientAccess = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       author: { reference: 'Practitioner/' + randomUUID() },
       accessPolicy: {
         resourceType: 'AccessPolicy',
@@ -795,6 +798,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         author: {
           reference: author,
@@ -815,6 +819,7 @@ describe('FHIR Repo', () => {
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         author: {
           reference: author,
@@ -843,6 +848,7 @@ describe('FHIR Repo', () => {
       const { project } = await createTestProject();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         projects: [project],
         currentProject: project,
         extendedMode: true,
@@ -901,6 +907,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         author: {
           reference: author,
@@ -2194,21 +2201,19 @@ describe('FHIR Repo', () => {
       resourceType: 'Project',
       id: randomUUID(),
     };
-    const context = {
+    const repo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       projects: [project],
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
-    };
-
-    const repo = new Repository(context);
+    });
     const clonedRepo = repo.clone();
 
     // Repository construction mutates the shared context in place, but repeated
     // construction from that context must not append duplicate synthetic projects.
-    expect(context.projects.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
-    expect(repo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
-    expect(clonedRepo.getConfig().projects?.filter((p) => p.id === r4ProjectId)).toHaveLength(1);
+    expect(repo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
+    expect(clonedRepo.getConfig().projects?.map((p) => p.id)).toStrictEqual([project.id, r4ProjectId]);
   });
 });
 

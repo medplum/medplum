@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { DeleteFunctionCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
-import { createReference } from '@medplum/core';
 import type { Bot, Patient } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import { findAndExecDispatchJob } from './test-utils';
@@ -21,12 +20,8 @@ describe('Dispatch Worker', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const botProjectDetails = await createTestProject({ withClient: true });
-    botRepo = new Repository({
-      extendedMode: true,
-      projects: [botProjectDetails.project],
-      author: createReference(botProjectDetails.client),
-    });
+    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+    botRepo = botProjectDetails.repo;
   });
 
   afterAll(async () => {

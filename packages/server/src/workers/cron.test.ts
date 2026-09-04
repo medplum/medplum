@@ -8,6 +8,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
 import { convertTimingToCron, execBot, getCronQueue } from './cron';
@@ -23,13 +24,9 @@ describe('Cron Worker', () => {
     await initAppServices(config);
 
     // Create a project
-    const botProjectDetails = await createTestProject({ withClient: true });
+    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
     botProject = botProjectDetails.project;
-    botRepo = new Repository({
-      extendedMode: true,
-      projects: [botProjectDetails.project],
-      author: createReference(botProjectDetails.client),
-    });
+    botRepo = botProjectDetails.repo;
     systemRepo = botRepo.getSystemRepo();
   });
 
@@ -48,6 +45,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -117,6 +115,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -129,6 +128,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 10,
+            periodUnit: 'd',
             dayOfWeek: ['mon'],
           },
         },
@@ -158,6 +158,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 10,
+            periodUnit: 'd',
             dayOfWeek: ['mon'],
           },
         },
@@ -177,17 +178,14 @@ describe('Cron Worker', () => {
       const testProject = await systemRepo.createResource<Project>({
         resourceType: 'Project',
         name: 'Test Project',
-        owner: {
-          reference: 'User/' + randomUUID(),
-        },
+        owner: { reference: 'User/' + randomUUID() },
       });
 
       const repo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         extendedMode: true,
         projects: [testProject],
-        author: {
-          reference: 'ClientApplication/' + randomUUID(),
-        },
+        author: { reference: 'ClientApplication/' + randomUUID() },
       });
 
       const bot = await repo.createResource<Bot>({
@@ -196,6 +194,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
@@ -216,6 +215,7 @@ describe('Cron Worker', () => {
         cronTiming: {
           repeat: {
             period: 30,
+            periodUnit: 'd',
             dayOfWeek: ['mon', 'wed', 'fri'],
           },
         },
