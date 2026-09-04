@@ -2508,6 +2508,7 @@ export class Repository extends FhirRepository implements Disposable {
   /**
    * Persists expunge AuditEvents on one cloned repo and one transaction so a bulk
    * `$expunge` batch does not open a pool connection per deleted id.
+   * @param auditEvents - AuditEvents to persist.
    */
   private async persistExpungeAuditEvents(auditEvents: AuditEvent[]): Promise<void> {
     if (auditEvents.length === 0 || !getConfig().saveAuditEvents) {
@@ -2525,7 +2526,7 @@ export class Repository extends FhirRepository implements Disposable {
         { resourceTypes: 'AuditEvent', source: 'repo.expungeResources.auditEvents' }
       );
     } catch (err) {
-      getLogger().error('Failed to save AuditEvent', err);
+      getLogger().error('Failed to save AuditEvent', { err });
     } finally {
       saveRepo[Symbol.dispose]();
     }
