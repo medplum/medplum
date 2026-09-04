@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED } from '@medplum/core';
 import type {
+  AccessPolicy,
   Bundle,
   Condition,
   Identifier,
@@ -516,6 +517,31 @@ test('Search on system', () =>
     expect(searchResult2.entry?.length).toStrictEqual(1);
     expect(bundleContains(searchResult2, patient1)).toBeUndefined();
     expect(bundleContains(searchResult2, patient2)).toBeDefined();
+  }));
+
+test('AccessPolicy identifier exact search', () =>
+  withTestContext(async () => {
+    const system1 = 'https://foo.example.com/policies';
+    const system2 = 'https://bar.example.com/policies';
+    const identifier = randomUUID();
+
+    const accessPolicy1 = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      identifier: [{ system: system1, value: identifier }],
+    });
+
+    const accessPolicy2 = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      identifier: [{ system: system2, value: identifier }],
+    });
+
+    const searchResult = await systemRepo.search({
+      resourceType: 'AccessPolicy',
+      filters: [{ code: 'identifier', operator: Operator.EXACT, value: `${system1}|${identifier}` }],
+    });
+    expect(searchResult.entry?.length).toStrictEqual(1);
+    expect(bundleContains(searchResult, accessPolicy1)).toBeDefined();
+    expect(bundleContains(searchResult, accessPolicy2)).toBeUndefined();
   }));
 
 test('Non-array identifier', () =>

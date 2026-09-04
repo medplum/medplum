@@ -257,6 +257,16 @@ describe('SearchParameterImplementation', () => {
     }
   );
 
+  test('AccessPolicy-identifier uses dedicated token columns', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'AccessPolicy-identifier') as SearchParameter;
+    const impl = getSearchParameterImplementation('AccessPolicy', searchParam);
+    expectTokenColumnImplementation(impl);
+    expect(impl.hasDedicatedColumns).toBe(true);
+    expect(impl.tokenColumnName).toStrictEqual('__identifier');
+    expect(impl.textSearchColumnName).toStrictEqual('__identifierText');
+    expect(impl.sortColumnName).toStrictEqual('__identifierSort');
+  });
+
   test('MedicationRequest-code legacy behavior', () => {
     const searchParam = indexedSearchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
     const impl = getSearchParameterImplementation('MedicationRequest', searchParam);

@@ -7,6 +7,7 @@
 
 import type { Expression } from './Expression.d.ts';
 import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
 import type { Meta } from './Meta.d.ts';
 import type { Narrative } from './Narrative.d.ts';
 import type { Reference } from './Reference.d.ts';
@@ -93,6 +94,11 @@ export interface AccessPolicy {
    * modifierExtension itself).
    */
   modifierExtension?: Extension[];
+
+  /**
+   * An identifier for this AccessPolicy.
+   */
+  identifier?: Identifier[];
 
   /**
    * A name associated with the AccessPolicy.
