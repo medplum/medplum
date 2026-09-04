@@ -1,6 +1,6 @@
 {
   "name": "@medplum/scriptsure-react",
-  "version": "5.1.36",
+  "version": "5.1.37",
   "description": "Medplum ScriptSure React SDK",
   "keywords": [
     "medplum",
@@ -58,10 +58,10 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "5.1.36",
-    "@medplum/fhirtypes": "5.1.36",
-    "@medplum/mock": "5.1.36",
-    "@medplum/react-hooks": "5.1.36",
+    "@medplum/core": "5.1.37",
+    "@medplum/fhirtypes": "5.1.37",
+    "@medplum/mock": "5.1.37",
+    "@medplum/react-hooks": "5.1.37",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.2.18",
@@ -71,9 +71,9 @@
     "react-dom": "19.2.8"
   },
   "peerDependencies": {
-    "@medplum/core": "5.1.36",
-    "@medplum/fhirtypes": "5.1.36",
-    "@medplum/react-hooks": "5.1.36",
+    "@medplum/core": "5.1.37",
+    "@medplum/fhirtypes": "5.1.37",
+    "@medplum/react-hooks": "5.1.37",
     "react": "^18.0.0 || ^19.0.0"
   },
   "engines": {
