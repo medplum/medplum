@@ -55,7 +55,7 @@ export function getCandidateDisplay(candidate: ScheduleCandidate): string {
 }
 
 /**
- * What an appointment is being asked for: the schedules chosen, per role.
+ * What an appointment is being asked for: the schedules chosen, per actor type.
  * Everything named attends.
  */
 export type ActorSelections = Partial<Record<SchedulingActorType, readonly ScheduleCandidate[]>>;
@@ -63,7 +63,7 @@ export type ActorSelections = Partial<Record<SchedulingActorType, readonly Sched
 export interface SearchScheduleCandidatesOptions {
   /** Which of the service's actors to offer. */
   readonly actorType: SchedulingActorType;
-  /** What the user typed. Empty offers whatever the role has, unfiltered by name. */
+  /** What the user typed. Empty offers whatever the actor type has, unfiltered by name. */
   readonly query: string;
   /**
    * The site being booked at. Actors sited elsewhere are left out: a room or a
@@ -80,7 +80,7 @@ export interface SearchScheduleCandidatesOptions {
 const DEFAULT_COUNT = 25;
 
 /**
- * The chained filters that scope a Schedule search to one role's actors.
+ * The chained filters that scope a Schedule search to actors of one type.
  * @param actorType - The type of actors to offer.
  * @param query - What the user typed, or empty to match any name.
  * @returns The `actor:` criteria to search with.

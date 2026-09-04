@@ -31,7 +31,7 @@ export interface AppointmentActorSelectProps {
 }
 
 /**
- * Chooses the actors an appointment is held on, for one role.
+ * Chooses the actors an appointment is held on, for one actor type.
  *
  * Everything chosen attends: `$find` intersects the schedules behind them,
  * so naming a second actor narrows the times to the ones both are free for.
@@ -39,7 +39,7 @@ export interface AppointmentActorSelectProps {
  * Schedules are searched for as the name is typed (via `AsyncAutocomplete`).
  *
  * @param props - The React props.
- * @returns The field for one role.
+ * @returns The field for one actor type.
  */
 export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.Element {
   const { actorType, service, location, defaultValue, onChange, error, disabled } = props;
