@@ -19,8 +19,10 @@ const SEARCH_PAGE_SIZE = 20;
  * State and operations for the Candid payer directory.
  *
  * - `botId` — ID of the candid-get-payers bot; undefined while looking up, '' when not deployed.
- * - `importedPayers` — payers imported into the project, recognized by the Candid payer UUID identifier.
- * - `importedUuids` — Candid payer UUIDs of the imported payers.
+ * - `importedUuids` — Candid payer UUIDs of the payers imported into the project, recognized by the
+ *   Candid payer UUID identifier.
+ * - `payersVersion` — increments whenever an import or a refresh changes the imported payers, so
+ *   the list can refetch.
  * - `searchResults` — the current page of directory search results, or undefined before the first search.
  * - `pageCount` — pages reachable in the pagination control: loaded pages plus one past them
  *   when the directory has more.
@@ -33,8 +35,8 @@ const SEARCH_PAGE_SIZE = 20;
  */
 export interface CandidPayerDirectory {
   botId: string | undefined;
-  importedPayers: WithId<Organization>[];
   importedUuids: Set<string>;
+  payersVersion: number;
   searchResults: Organization[] | undefined;
   pageCount: number;
   page: number;
@@ -52,7 +54,7 @@ export interface CandidPayerDirectory {
 export function useCandidPayerDirectory(): CandidPayerDirectory {
   const medplum = useMedplum();
   const [importedPayers, setImportedPayers] = useState<WithId<Organization>[]>([]);
-  const [reload, setReload] = useState(0);
+  const [payersVersion, setPayersVersion] = useState(0);
   const [botId, setBotId] = useState<string | undefined>(undefined);
   const [activeTerm, setActiveTerm] = useState('');
   // All loaded search results, appended batch by batch; displayed SEARCH_PAGE_SIZE at a time.
@@ -64,6 +66,8 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
   const [importing, setImporting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Only feeds importedUuids, which marks directory search results as already imported; the
+  // enrolled payers list runs its own paged search.
   useEffect(() => {
     medplum
       .searchResources('Organization', {
@@ -73,7 +77,7 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
       })
       .then(setImportedPayers)
       .catch(showErrorNotification);
-  }, [medplum, reload]);
+  }, [medplum, payersVersion]);
 
   useEffect(() => {
     medplum
@@ -166,7 +170,7 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
       }
     }
     setImporting(false);
-    setReload((r) => r + 1);
+    setPayersVersion((version) => version + 1);
     const importedCount = toImport.length - failures.length;
     if (importedCount > 0) {
       showSuccessNotification({
@@ -193,7 +197,7 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
         return undefined;
       }
       const updated = await medplum.patchResource('Organization', org.id, ops);
-      setReload((r) => r + 1);
+      setPayersVersion((version) => version + 1);
       showSuccessNotification({ title: 'Refresh complete', message: 'Payer updated from the directory' });
       return updated;
     } catch (error) {
@@ -207,7 +211,7 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
           const updated = await medplum.patchResource('Organization', org.id, [
             { op: 'add', path: '/active', value: false },
           ]);
-          setReload((r) => r + 1);
+          setPayersVersion((version) => version + 1);
           showErrorNotification(
             new Error('This payer is no longer in the Candid payer directory and has been marked inactive.')
           );
@@ -224,8 +228,8 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
 
   return {
     botId,
-    importedPayers,
     importedUuids,
+    payersVersion,
     searchResults: results
       ? results.slice(pageIndex * SEARCH_PAGE_SIZE, (pageIndex + 1) * SEARCH_PAGE_SIZE)
       : undefined,
