@@ -14,7 +14,7 @@ import { createTestProject, withTestContext } from '../../test.setup';
 import { queueRegistry } from '../../workers/utils';
 import type { MigrationActionResult } from '../types';
 import type { CustomPostDeployMigrationJobData } from './types';
-import { callback as migrationFn } from './v45';
+import { callback as migrationFn } from './v46';
 
 describe('v45', () => {
   let client: PoolClient;
