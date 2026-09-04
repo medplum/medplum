@@ -2489,9 +2489,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
             id: linkedPatient.id,
           });
 
-          const result = await linkedToRepo.search(
-            parseSearchRequest(`Patient?_has:Observation:subject:code=${code}`)
-          );
+          const result = await linkedToRepo.search(parseSearchRequest(`Patient?_has:Observation:subject:code=${code}`));
           expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual([ownPatient.id]);
         }));
 

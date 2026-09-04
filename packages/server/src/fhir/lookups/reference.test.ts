@@ -240,7 +240,6 @@ describe('ReferenceTable', () => {
         infoSpy.mockRestore();
       }
     });
-
   });
 
   describe('extractValues', () => {
