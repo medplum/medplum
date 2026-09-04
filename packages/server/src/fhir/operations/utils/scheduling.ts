@@ -326,10 +326,10 @@ function intervalsExceedingCapacityOne(slots: Slot[]): Interval[] {
       const start = new Date(slot.start);
       const end = new Date(slot.end);
       if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
-        throw new Error('Got Slot with invalid start or end time');
+        throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has invalid start or end time`));
       }
       if (end < start) {
-        throw new Error('Got Slot with start time before end time');
+        throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has with end time before start time`));
       }
       result.push({ start, end });
     }
@@ -351,10 +351,10 @@ function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
     const start = new Date(slot.start).valueOf();
     const end = new Date(slot.end).valueOf();
     if (Number.isNaN(start) || Number.isNaN(end)) {
-      throw new Error('Got Slot with invalid start or end time');
+      throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has invalid start or end time`));
     }
     if (end < start) {
-      throw new Error('Got Slot with start time before end time');
+      throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has end time before start time`));
     }
 
     const capacity = getSlotCapacity(slot);
