@@ -79,6 +79,7 @@ export type * from './Encounter.d.ts';
 export type * from './Endpoint.d.ts';
 export type * from './EnrollmentRequest.d.ts';
 export type * from './EnrollmentResponse.d.ts';
+export type * from './Enterprise.d.ts';
 export type * from './EpisodeOfCare.d.ts';
 export type * from './EventDefinition.d.ts';
 export type * from './Evidence.d.ts';

@@ -133,12 +133,83 @@ export async function openTimeFinder(): Promise<void> {
 }
 
 /**
+ * A day in the time search's calendar.
+ * @param dayOfMonth - The number the cell is labelled with.
+ * @returns The button for that day.
+ */
+export function dayCell(dayOfMonth: string): HTMLElement {
+  return screen.getByRole('button', { name: dayOfMonth });
+}
+
+/**
  * Clicks a day in the time search's calendar.
  * @param dayOfMonth - The number the cell is labelled with.
  */
 export async function chooseDay(dayOfMonth: string): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: dayOfMonth }));
+    fireEvent.click(dayCell(dayOfMonth));
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Drags across the calendar, which asks for the stretch of days the drag covered.
+ *
+ * Only the two ends are travelled: a drag asks for the days between where it began and
+ * where it was let go, so the days passed over on the way change nothing but the band
+ * drawn mid-drag, which `CalendarDateInput` proves for itself. Don't restore a step per
+ * day here — it costs a render each and settles nothing.
+ *
+ * One step per act, though, because the day a drag has reached is read back out of
+ * state on the next render: a press and a move inside one act would leave the move
+ * looking at a drag that had not begun, and the release would ask for a single day.
+ * The release goes to the window, where the calendar listens for it — a drag is let go
+ * of wherever the pointer has got to, which need not be a day.
+ *
+ * @param from - The number the cell the drag begins on is labelled with.
+ * @param to - The number the cell it is let go on is labelled with.
+ */
+export async function dragDays(from: string, to: string): Promise<void> {
+  await act(async () => {
+    fireEvent.pointerDown(dayCell(from));
+  });
+  await act(async () => {
+    fireEvent.pointerOver(dayCell(to));
+  });
+  await act(async () => {
+    fireEvent.pointerUp(window);
+  });
+  await settleAutocomplete();
+}
+
+/**
+ * Shift-clicks a day, which moves the nearer end of the days on show to it.
+ *
+ * Fires only the click, which is what carries the shift: surviving the press that a
+ * real shift-click follows (the same press that would otherwise start a drag) is
+ * `CalendarDateInput`'s own concern, and is covered by its own tests.
+ *
+ * @param dayOfMonth - The number the cell is labelled with.
+ */
+export async function shiftChooseDay(dayOfMonth: string): Promise<void> {
+  await act(async () => {
+    fireEvent.click(dayCell(dayOfMonth), { shiftKey: true });
+  });
+  await settleAutocomplete();
+}
+
+/** Pages the calendar on to the next month. */
+export async function showNextMonth(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /next month/i }));
+  });
+  await settleAutocomplete();
+}
+
+/** Asks for the next couple of days under the ones already on screen. */
+export async function showMoreDays(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /show more days/i }));
   });
   await settleAutocomplete();
 }
@@ -205,16 +276,33 @@ export function isBefore(first: Element, second: Element): boolean {
 }
 
 /**
+ * Every `$find` the form has asked for, in the order it asked.
+ * @param get - A spy on the client's `get`.
+ * @returns The request urls.
+ */
+export function findRequests(get: MockInstance<MedplumClient['get']>): string[] {
+  return get.mock.calls
+    .map(([url]) => String(url))
+    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
+}
+
+/**
+ * What the most recent `$find` asked for.
+ * @param get - A spy on the client's `get`.
+ * @returns The search parameters, or undefined when nothing was asked.
+ */
+export function lastFindParams(get: MockInstance<MedplumClient['get']>): URLSearchParams | undefined {
+  const last = findRequests(get).at(-1);
+  return last ? new URL(last, 'https://example.com').searchParams : undefined;
+}
+
+/**
  * The `start` the most recent `$find` asked for.
  * @param get - A spy on the client's `get`.
  * @returns The `start` parameter, or undefined when nothing was asked.
  */
 export function lastFindStart(get: MockInstance<MedplumClient['get']>): string | undefined {
-  const urls = get.mock.calls
-    .map(([url]) => String(url))
-    .filter((url) => url.includes('Appointment/$find') || url.includes('Appointment/%24find'));
-  const last = urls.at(-1);
-  return last ? (new URL(last, 'https://example.com').searchParams.get('start') ?? undefined) : undefined;
+  return lastFindParams(get)?.get('start') ?? undefined;
 }
 
 /**

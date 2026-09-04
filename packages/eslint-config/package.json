@@ -31,8 +31,8 @@
     "eslint-plugin-jsdoc": "63.3.3",
     "eslint-plugin-no-only-tests": "3.4.0",
     "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.4",
-    "typescript-eslint": "8.67.0"
+    "eslint-plugin-react-refresh": "0.5.5",
+    "typescript-eslint": "8.68.0"
   },
   "peerDependencies": {
     "eslint": "^9",

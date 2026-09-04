@@ -11,16 +11,33 @@
   flex-wrap: wrap;
   gap: var(--mantine-spacing-lg);
   align-items: flex-start;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
+/* Each column scrolls on its own, so a wide stretch of days does not carry the form
+   off the top of the screen. Resolves to no bound at all where the layout has no
+   height to speak of, which is what leaves an unbounded host scrolling as one. */
 .form {
   flex: 1 1 300px;
   min-width: 0;
   max-width: 420px;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 /* Only present while the time search is open, which is what widens the panel. */
 .results {
   flex: 1 1 380px;
   min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+/* Both columns are stacks, so everything in them is a flex item, and a clamped column
+   squeezes its items to fit before it agrees to scroll — enough to press a button flat.
+   They keep their own heights and the column scrolls instead. */
+.form > *,
+.results > * {
+  flex-shrink: 0;
 }

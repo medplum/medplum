@@ -19,6 +19,7 @@ import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/rea
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -26,12 +27,11 @@ import type { SchedulingRole } from './AppointmentFinder.roles';
 import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
-import type { DateRange } from './AppointmentFinder.times';
-import { endOfDay, getDurationMinutes, getFindWindowError, groupAppointmentsByDay } from './AppointmentFinder.times';
+import { formatDateRange, formatDayLabel, getDurationMinutes } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
-import { useProposedAppointments } from './useProposedAppointments';
+import { useDaySearch } from './useDaySearch';
 
 // Excludes what a room is rather than admitting what a site is: `physicalType` is
 // optional, so `physical-type=si,bu` would hide a Location that never declared one.
@@ -44,6 +44,11 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
+
+// Shown beneath the calendar, since dragging or shift-clicking leaves no visible mark.
+const DAY_GESTURE_HINT = 'drag or shift-click to search more days';
+
+const HINT_SEPARATOR = ' · ';
 
 export interface AppointmentProposalFormProps {
   /** Pre-fills where the visit is, for a host that already knows. */
@@ -75,6 +80,14 @@ export interface AppointmentProposalFormProps {
   readonly onToggleTimeFinder?: (open: boolean) => void;
   /** Called with the visit type as it changes. */
   readonly onChangeService?: (service: WithId<HealthcareService> | undefined) => void;
+  /**
+   * Called with the time chosen, and with `undefined` once it is dropped.
+   *
+   * Every answer above the time drops it — a different day, a different provider —
+   * so a host pointing at the time on a calendar of its own takes the marker down
+   * rather than leaving it on a time nobody chose.
+   */
+  readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
   /**
    * Performs the booking with the proposal the form assembled.
    *
@@ -112,13 +125,13 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     mrnSystem,
     onToggleTimeFinder,
     onChangeService,
+    onChangeTime,
     onBook,
   } = props;
 
   const [location, setLocation] = useState<WithId<Location> | undefined>(defaultLocation);
   const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
   const [selections, setSelections] = useState<ActorSelections>({});
-  const [range, setRange] = useState<DateRange>(() => oneDay(defaultStart ?? new Date()));
   const [month, setMonth] = useState<Date | undefined>(defaultStart);
   const [finding, setFinding] = useState(false);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
@@ -132,7 +145,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
-  const windowError = getFindWindowError(range);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -140,12 +152,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // Nothing is searched until the time search is open, so the answers above cost no
   // request per keystroke.
-  const combinations = useMemo(
-    () => (searching && !windowError ? getActorCombinations(selections) : []),
-    [searching, windowError, selections]
-  );
-
-  const search = useProposedAppointments({ service, combinations, range });
+  const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
   // The first actor's schedule answers for all of them: every actor in one search
   // shares the scheduling parameters, or `$find` rejects the request.
@@ -154,7 +161,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
   }, [service, selections]);
 
-  const days = useMemo(() => groupAppointmentsByDay(search.appointments, timezone), [search.appointments, timezone]);
+  // A proposal carries the Slots it was found for, so it cannot outlive the days it
+  // was offered from.
+  const clearChosen = useCallback((): void => setChosen(undefined), []);
+
+  const daySearch = useDaySearch({ service, combinations, timezone, defaultStart, onDaysChanged: clearChosen });
+  const { reset: resetDaySearch } = daySearch;
+
+  // The first window is back and nothing is holding the search up, so what it found —
+  // even if that is nothing — is what is on screen.
+  const settled = !daySearch.loadingFirstDays && !daySearch.findRequestError && !daySearch.windowError;
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
@@ -165,6 +181,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       onToggleTimeFinder?.(searching);
     }
   }, [searching, onToggleTimeFinder]);
+
+  // Same shape as above: the ref holds the last time reported, so mounting takes down
+  // no marker the host put up, and clearing a time nobody chose reports no drop.
+  const reportedTime = useRef<Appointment | undefined>(undefined);
+  useEffect(() => {
+    if (reportedTime.current !== chosen) {
+      reportedTime.current = chosen;
+      onChangeTime?.(toRange(chosen));
+    }
+  }, [chosen, onChangeTime]);
 
   const patientItem = useCallback(
     (option: AsyncAutocompleteOption<WithId<Patient>>) => (
@@ -177,13 +203,17 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setFinding(!finding);
   }
 
-  const chooseResources = useCallback((update: (selections: ActorSelections) => ActorSelections): void => {
-    setSelections(update);
-    // A chosen time is a proposal carrying the Slots it was found for. Booked after
-    // a resource changes it would hold whoever is named inside the proposal, and
-    // `$book` cannot catch that: the proposal is internally consistent.
-    setChosen(undefined);
-  }, []);
+  const chooseResources = useCallback(
+    (update: (selections: ActorSelections) => ActorSelections): void => {
+      setSelections(update);
+      // A chosen time is a proposal carrying the Slots it was found for. Booked after
+      // a resource changes it would hold whoever is named inside the proposal, and
+      // `$book` cannot catch that: the proposal is internally consistent.
+      setChosen(undefined);
+      resetDaySearch();
+    },
+    [resetDaySearch]
+  );
 
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
@@ -211,11 +241,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setSelections({});
     setChosen(undefined);
     setRoleFieldsKey((key) => key + 1);
-  }
-
-  function chooseDay(date: Date): void {
-    setRange(oneDay(date));
-    setChosen(undefined);
+    resetDaySearch();
   }
 
   // The two answers a written booking can still be changed by. Everything else
@@ -299,11 +325,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               allowUnavailableDates
               earliestDate={new Date()}
               month={month}
-              selected={range.start}
+              range={daySearch.selectedDayRange}
               onChangeMonth={setMonth}
-              onClick={chooseDay}
+              onClick={daySearch.chooseDayRange}
+              onSelectRange={daySearch.chooseDayRange}
             />
-            {windowError && <Alert color="yellow">{windowError}</Alert>}
+            <Text size="xs" c="dimmed">
+              {getSearchedDaysHint(daySearch.selectedDayRange)}
+            </Text>
+            {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
         )}
 
@@ -335,11 +365,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
       {searching && (
         <Stack className={classes.results} gap="lg">
-          {search.loading && <Loader size="sm" />}
-          {search.error && <Alert color="red">{normalizeErrorString(search.error)}</Alert>}
-          {!search.loading &&
-            !search.error &&
-            days.map((day) => (
+          {daySearch.loadingFirstDays && <Loader size="sm" />}
+          {daySearch.findRequestError && <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>}
+          {!daySearch.loadingFirstDays &&
+            daySearch.hasTimes &&
+            daySearch.timeResultsByDay.map((day) => (
               <AppointmentDayTimes
                 key={day.key}
                 date={day.date}
@@ -349,10 +379,18 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 onSelectAppointment={chooseTime}
               />
             ))}
-          {!search.loading && !search.error && !windowError && days.length === 0 && (
-            <Text c="dimmed" ta="center">
-              No times are available for this selection.
-            </Text>
+          {settled && (
+            <>
+              {!daySearch.hasTimes && (
+                <Text c="dimmed" ta="center">
+                  No times are available for this selection.
+                </Text>
+              )}
+              {/* No signal for how far ahead there's anything to find, so this has no end state. */}
+              <Button variant="subtle" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
+                Show more days
+              </Button>
+            </>
           )}
         </Stack>
       )}
@@ -550,19 +588,25 @@ function getMedicalRecordNumber(patient: WithId<Patient>, mrnSystem: string | un
 }
 
 /**
- * Returns the range covering the bookable part of one day.
+ * Reads the interval a proposal runs over.
  *
- * `$find` treats `start` as a hard floor, so a day already under way starts from now
- * rather than midnight: the calendar hands back local midnight, and asking from there
- * would offer times that have already passed.
- *
- * @param date - Any instant during the day.
- * @returns The day from now at the earliest, both ends closed, as `$find` requires.
+ * @param appointment - The chosen proposal, if one has been chosen.
+ * @returns When the visit starts and ends, or undefined until a time is chosen.
  */
-function oneDay(date: Date): DateRange {
-  const now = new Date();
-  const start = date > now ? date : now;
-  return { start, end: endOfDay(start) };
+function toRange(appointment: Appointment | undefined): DateTimeRange | undefined {
+  if (!appointment?.start || !appointment.end) {
+    return undefined;
+  }
+  return { start: new Date(appointment.start), end: new Date(appointment.end) };
+}
+
+/**
+ * The line under the calendar: which days are being searched, and how to ask for others.
+ * @param range - The days being searched.
+ * @returns The line to show beneath the calendar.
+ */
+function getSearchedDaysHint(range: DateTimeRange): string {
+  return [formatDateRange(range, formatDayLabel), DAY_GESTURE_HINT].filter(isDefined).join(HINT_SEPARATOR);
 }
 
 /**

@@ -29,6 +29,8 @@ let DEBUG: string | undefined = env['SQL_DEBUG'];
  */
 export type PgQueryable = Pick<Pool, 'query'> & Pick<PoolClient, 'query'>;
 
+export const PUBLIC_SCHEMA = 'public';
+
 export function setSqlDebug(value: string | undefined): void {
   DEBUG = value;
 }

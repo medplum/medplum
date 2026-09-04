@@ -35,8 +35,8 @@
     "@tabler/icons-react": "3.46.0",
     "@types/node": "22.20.1",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "@vitejs/plugin-react": "6.0.5",
+    "@types/react-dom": "19.2.5",
+    "@vitejs/plugin-react": "6.1.1",
     "chart.js": "4.5.1",
     "esbuild": "0.28.2",
     "postcss": "8.5.26",
@@ -46,10 +46,10 @@
     "react-dom": "19.2.8",
     "react-router": "8.3.0",
     "rimraf": "6.1.3",
-    "tsx": "4.23.12",
+    "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "vite": "8.2.1",
-    "vitest": "4.1.10"
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
   },
   "packageManager": "npm@10.9.9",
   "engines": {

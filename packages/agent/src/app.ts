@@ -64,7 +64,7 @@ import type { AgentRetryDefaults, ChannelQueueWorker } from './queue/worker';
 import { isRetryMode, parseDispatchCallback } from './queue/worker';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
-import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH, parseDownloadUrl } from './upgrader-utils';
+import { UPGRADE_MANIFEST_PATH, getUpgraderLogPath, parseDownloadUrl } from './upgrader-utils';
 
 async function execAsync(
   command: string,
@@ -1609,7 +1609,7 @@ export class App {
 
     try {
       const command = __filename;
-      const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
+      const logFile = openSync(getUpgraderLogPath(), 'w+');
       child = spawn(command, message.version ? ['--upgrade', message.version] : ['--upgrade'], {
         detached: true,
         stdio: ['ignore', logFile, logFile, 'ipc'],

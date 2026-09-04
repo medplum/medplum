@@ -128,7 +128,7 @@ async function setupSubscriptionHandler(): Promise<void> {
     let resource: WithId<Resource>;
     let subEventArgsArr: [string, SubEventsOptions][];
 
-    // TODO: v5.2.0+ - Deprecate v1
+    // TODO{v5.2} - Deprecate v1
     if (isV1SubEventPayload(subEventPayload)) {
       resource = subEventPayload[0][0];
       subEventArgsArr = subEventPayload.map((entry) => [entry[1], entry[2]]);

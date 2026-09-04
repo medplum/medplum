@@ -38,8 +38,15 @@ export const TODO_SHARD_ID = 'todo';
  */
 export const globalShardResourceTypes: ReadonlySet<ResourceType> = new Set([
   'Project', // inherently global since a Project's shard is stored in the Project itself
-  'ProjectMembership',
-  'User',
+  'ProjectMembership', // server-scoped User login flow
+  'User', // read by email for server-scoped login flow
+  'UserSecurityRequest', // read by id for verifyemail and setpassword
+  'ClientApplication', // read by id
+  'JsonWebKey', // used for signing and verifying JWTs, which is part of the login flow
+  'Login', // read by id in auth flow
+  'SmartHealthLink', // currently read by id, TODO add projectId to URLs and throw if not available so this line can be removed
+  'SmartAppLaunch', // read by id during login
+  'DomainConfiguration', // read by domain for external auth flow
 ]);
 
 /**
