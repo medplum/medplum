@@ -5322,6 +5322,46 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         expect(seenResources.length).toBe(50);
       }));
 
+    test('Cursor pagination advances through a full page of identical lastUpdated', () =>
+      withTestContext(async () => {
+        const identifier = randomUUID();
+        const lastUpdated = new Date();
+        lastUpdated.setMilliseconds(0);
+
+        const expectedIds: string[] = [];
+        for (let i = 0; i < 50; i++) {
+          const task = await systemRepo.createResource<Task>({
+            resourceType: 'Task',
+            status: 'accepted',
+            intent: 'unknown',
+            identifier: [{ value: identifier }],
+            meta: { lastUpdated: lastUpdated.toISOString() },
+          });
+          expectedIds.push(task.id);
+        }
+
+        let url = `Task?identifier=${identifier}&_sort=_lastUpdated&_count=20`;
+        const seenIds: string[] = [];
+        let pageCount = 0;
+        while (url) {
+          const bundle = await systemRepo.search(parseSearchRequest(url));
+          pageCount++;
+          for (const entry of bundle.entry ?? []) {
+            seenIds.push(entry.resource?.id as string);
+          }
+
+          const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+          if (link) {
+            expect(link).toContain('_cursor=3-');
+            url = link;
+          } else {
+            url = '';
+          }
+        }
+        expect(pageCount).toBe(3);
+        expect(seenIds).toContainExactly(expectedIds);
+      }));
+
     test('Cursor pagination with multiple resource types from _type', () =>
       withTestContext(async () => {
         const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
@@ -5380,6 +5420,55 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v2Cursor}`)
         );
         expect(bundleContains(bundle2, task)).toBeUndefined();
+
+        // The same string body parses as a resumption point in the V3 format: id >= task.id
+        const v3Cursor = `3-${nextInstant}-${task.id}`;
+        const bundle3 = await repo.search(
+          parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v3Cursor}`)
+        );
+        expect(bundleContains(bundle3, task)).toBeDefined();
+
+        // A V3 cursor with an unparseable timestamp is treated as an invalid cursor, not an error
+        const malformedCursor = `3-not-a-time-${task.id}`;
+        const bundle4 = await repo.search(
+          parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${malformedCursor}`)
+        );
+        expect(bundleContains(bundle4, task)).toBeDefined();
+      }));
+
+    test('V3 cursor resumes within a lastUpdated tie', () =>
+      withTestContext(async () => {
+        const identifier = randomUUID();
+        const lastUpdated = new Date();
+        lastUpdated.setMilliseconds(0);
+
+        const tasks: WithId<Task>[] = [];
+        for (let i = 0; i < 2; i++) {
+          tasks.push(
+            await systemRepo.createResource<Task>({
+              resourceType: 'Task',
+              status: 'accepted',
+              intent: 'unknown',
+              identifier: [{ value: identifier }],
+              meta: { lastUpdated: lastUpdated.toISOString() },
+            })
+          );
+        }
+        // Postgres compares uuids bytewise, which matches comparing their hex representations
+        const [lower, higher] = tasks.sort((a, b) => (a.id < b.id ? -1 : 1));
+        const nextInstant = lastUpdated.getTime();
+
+        const fromLower = await systemRepo.search(
+          parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=3-${nextInstant}-${lower.id}`)
+        );
+        expect(bundleContains(fromLower, lower)).toBeDefined();
+        expect(bundleContains(fromLower, higher)).toBeDefined();
+
+        const fromHigher = await systemRepo.search(
+          parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=3-${nextInstant}-${higher.id}`)
+        );
+        expect(bundleContains(fromHigher, lower)).toBeUndefined();
+        expect(bundleContains(fromHigher, higher)).toBeDefined();
       }));
   });
 
