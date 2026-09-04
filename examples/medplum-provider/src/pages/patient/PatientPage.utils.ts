@@ -43,11 +43,12 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
  * @param options.hasDoseSpotAccess - When provided, controls DoseSpot tab visibility directly
  *   (supports self-enrollment via PractitionerRole in addition to existing identifiers).
  *   When omitted, falls back to checking the membership for a DoseSpot identifier.
+ * @param options.hasHieImportAccess - Whether the patient and linked-project capability checks allow HIE import.
  * @returns Filtered array of patient page tabs.
  */
 export function getPatientPageTabs(
   membership: ProjectMembership | undefined,
-  options?: { hasDoseSpotAccess?: boolean }
+  options?: { hasDoseSpotAccess?: boolean; hasHieImportAccess?: boolean }
 ): PatientPageTabInfo[] {
   const hasDoseSpot = options?.hasDoseSpotAccess ?? hasDoseSpotIdentifier(membership);
   const hasScriptSure = hasScriptSureIdentifier(membership);
@@ -57,6 +58,9 @@ export function getPatientPageTabs(
     }
     if (tab.id === 'scriptsure') {
       return hasScriptSure;
+    }
+    if (tab.id === 'hie-import') {
+      return options?.hasHieImportAccess === true;
     }
     return true;
   });
@@ -104,4 +108,5 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   { id: 'message', url: 'Communication', label: 'Messages' },
   { id: 'export', url: 'export', label: 'Export' },
+  { id: 'hie-import', url: 'hie-import', label: 'HIE Import' },
 ];

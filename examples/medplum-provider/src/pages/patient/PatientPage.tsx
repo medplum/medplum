@@ -17,6 +17,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { useDoseSpotAccess } from '../../hooks/useDoseSpotAccess';
+import { useHealthGorillaHieImportEligibility } from '../../hooks/useHealthGorillaHieImportEligibility';
 import { usePatient } from '../../hooks/usePatient';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
 import classes from './PatientPage.module.css';
@@ -28,10 +29,15 @@ export function PatientPage(): JSX.Element {
   const membership = medplum.getProjectMembership();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
+  const [patientSummaryVersion, setPatientSummaryVersion] = useState(0);
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
   const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
-  const tabs = getPatientPageTabs(membership, { hasDoseSpotAccess });
+  const hieImportEligibility = useHealthGorillaHieImportEligibility(patient);
+  const tabs = getPatientPageTabs(membership, {
+    hasDoseSpotAccess,
+    hasHieImportAccess: hieImportEligibility.eligible,
+  });
   const resolvedTabs = useMemo(
     () =>
       tabs.map((t) => ({
@@ -43,7 +49,11 @@ export function PatientPage(): JSX.Element {
 
   const handleCloseLabsModal = useCallback(() => {
     setIsLabsModalOpen(false);
-  }, []);
+  }, [setIsLabsModalOpen]);
+
+  const refreshPatientSidebar = useCallback(() => {
+    setPatientSummaryVersion((version) => version + 1);
+  }, [setPatientSummaryVersion]);
 
   const sections = useMemo(
     () =>
@@ -76,6 +86,7 @@ export function PatientPage(): JSX.Element {
         <div className={classes.sidebar}>
           <ScrollArea className={classes.scrollArea}>
             <PatientSummary
+              key={patientSummaryVersion}
               patient={patient}
               onClickResource={(resource) =>
                 navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
@@ -89,6 +100,7 @@ export function PatientPage(): JSX.Element {
           <Paper w="100%" radius={0} style={{ borderBottom: '1px solid var(--app-shell-border-color)' }}>
             <ScrollArea>
               <LinkTabs
+                key={`hie-import-${hieImportEligibility.eligible}`}
                 baseUrl={patientPathPrefix(patientId)}
                 tabs={resolvedTabs}
                 variant="unstyled"
@@ -98,7 +110,7 @@ export function PatientPage(): JSX.Element {
             </ScrollArea>
           </Paper>
           <div className={classes.contentBody}>
-            <Outlet />
+            <Outlet context={{ hieImportEligibility, refreshPatientSidebar }} />
           </div>
         </div>
       </div>

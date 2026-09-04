@@ -65,8 +65,8 @@ Medplum supports the following first party integrations.
     <tr>
       <td><a href="https://www.healthgorilla.com/">Health Gorilla Patient 360</a></td>
       <td>HIE</td>
-      <td>Integrated records and ADT data</td>
-      <td><a href="/docs/integration/health-gorilla">Health Gorilla Integration</a></td>
+      <td>Production-only longitudinal record retrieval and clinical data sharing</td>
+      <td><a href="/docs/integration/health-information-exchange">Health Information Exchange</a></td>
     </tr>
     <tr>
       <td><a href="https://zushealth.com/">Zus Health</a></td>
