@@ -7,7 +7,8 @@ describe('getActorType', () => {
   test('Practitioner', () => expect(getActorType({ reference: 'Practitioner/456' })).toEqual('Practitioner'));
   test('Device', () =>
     expect(getActorType({ reference: 'Device/789', display: 'Ultrasound machine 1' })).toEqual('Device'));
-  test('Unsupported reference', () => expect(() => getActorType({ display: 'My Weird Reference' })).toThrow());
+  test('Reference without `reference`', () => expect(() => getActorType({ display: 'My Weird Reference' })).toThrow());
+  test('Contained reference', () => expect(() => getActorType({ reference: '#contained-id' })).toThrow());
 });
 
 describe('getActorTypeLabel', () => {
