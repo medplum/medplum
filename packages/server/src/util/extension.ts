@@ -150,6 +150,32 @@ export function assertExtensionReference<T extends Resource = Resource>(
 }
 
 /**
+ * Asserts that an Extension has a valuePositiveInt field holding a FHIR
+ * `positiveInt` (an integer >= 1).
+ *
+ * The extension to test should have been annotated using `withPath` so that we can
+ * emit a useful error message if it does not match.
+ *
+ * @param extension - The extension to test
+ */
+export function assertExtensionPositiveInt(
+  extension: WithPath<Extension>
+): asserts extension is WithPath<Extension> & { valuePositiveInt: number } {
+  if (!('valuePositiveInt' in extension)) {
+    throw new OperationOutcomeError(badRequest('Extension valuePositiveInt missing', getPath(extension)));
+  }
+  if (
+    typeof extension.valuePositiveInt !== 'number' ||
+    !Number.isInteger(extension.valuePositiveInt) ||
+    extension.valuePositiveInt < 1
+  ) {
+    throw new OperationOutcomeError(
+      badRequest('Extension valuePositiveInt must be an integer >= 1', getPath(extension))
+    );
+  }
+}
+
+/**
  * Asserts that an Extension has a valueTime field present
  *
  * The extension to test should have been annotated using `withPath` so that we can

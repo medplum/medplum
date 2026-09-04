@@ -75,6 +75,7 @@ When using scheduling APIs to interact with multiple `Schedule` resources at onc
 | `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | 0 minutes                                   | Shifts allowed start times by this offset (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)                |                                                               | Recommended to prefer setting this on `HealthcareService` |
 | `alignmentTimezone` | Code                                                        | 'Etc/UTC'                                   | Anchors the alignment grid to local midnight of the given timezone, keeping start times stable across DST transitions.                                                  |                                                               | Recommended to prefer setting this on `HealthcareService` |
 | `service`           | `Reference(HealthcareService)`                              | *none*                                      | Pointer to the `HealthcareService` that these parameters  should override.                                                                                              | Not permitted                                                 |                                                           |
+| `slotCapacity`      | positiveInt                                                 | 1 (no overbooking)                          | Maximum number of appointments that may occupy a time concurrently. A value above 1 enables [overbooking](#overbooking).                                                |                                                               |                                                           |
 | `availability`      | [Nested Extension](#availability-extension)                 | Always available                            | Weekly recurring availability windows. When set, appointments must fit inside these windows.                                                                            | Not permitted (use `HealthcareService.availableTime` instead) |                                                           |
 
 <details>
@@ -246,7 +247,7 @@ This means you only need to specify what differs. For example, to restrict avail
 
 1. The field value from the Schedule's `SchedulingParameters` extension for that service
 2. The field value from the HealthcareService's `SchedulingParameters` extension
-3. The system default (0 for buffers and offset; 60 minutes for alignment interval; always-available for availability)
+3. The system default (0 for buffers and offset; 60 minutes for alignment interval; 1 for slot capacity; always-available for availability)
 4. Per-actor timezone information (via `Schedule.actor`; only for `timezone` attribute)
 
 If a Schedule has **no** `SchedulingParameters` extension at all, all parameters are inherited from this chain.
@@ -261,6 +262,50 @@ Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that bloc
 
 - **With serviceType**: Blocks only that specific service
 - **Without serviceType**: Blocks all services
+
+## Overbooking
+
+By default each time holds a single appointment: once a `busy` Slot covers it, `$find` stops offering that time and `$book` rejects it. Setting `slotCapacity` above 1 lets that many appointments occupy the same time concurrently. This supports:
+
+- **Intentional double-booking** — offer the same slot to more than one patient to absorb expected no-shows.
+- **Group visits** — a single session that seats several patients (e.g. a shared medical appointment).
+- **Shared resources with multiple stations** — an infusion suite with several chairs or a lab bay with multiple stations, modeled as one `Schedule` whose capacity equals the number of stations.
+
+`slotCapacity` may be set on the `HealthcareService` (applying to every Schedule that books the type) or on an individual `Schedule` (overriding the service for that actor).
+
+:::info[Overbooking and buffers]
+
+Slots created to reserve time for `bufferBefore` or `bufferAfter` settings do not get `slotCapacity` applied to them. When combining these settings, the blocks created by the buffers would prevent a second appointment with the same settings from overbooking (as it could not overlay the buffer slots).
+
+:::
+
+<details>
+<summary>Example: a Schedule that allows overbooking</summary>
+
+<MedplumCodeBlock language="ts" selectBlocks="overbookingSchedule">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+</details>
+
+### How capacity is counted
+
+Each booking carries the overlap tolerance it was made under — its resolved `slotCapacity`. A time admits a new booking only when the number of bookings already covering it stays below **both** the new booking's capacity **and** the tolerance of every booking already there. The **strictest** limit among the bookings sharing a time wins. Two consequences:
+
+- **A `slotCapacity: 1` booking is exclusive.** Nothing may overlap it — not even a higher-capacity service booked afterward. This holds regardless of order: whichever booking is placed first, an incompatible one is rejected.
+- **Overbooking only stacks among bookings that all permit it.** Two `slotCapacity: 2` bookings can share a time; a `slotCapacity: 2` and a `slotCapacity: 3` booking cap each other at 2 (the stricter of the two) while they overlap.
+- **A Slot without explicit capacity is exclusive.** Unqualified slots are treated as though they have `slotCapacity: 1`.
+
+`$find` keeps offering a time until it is full by this rule, and `$book` enforces the same limit atomically, so concurrent requests cannot push a time past capacity. `$book` automatically applies the extension tracking this capacity to Slot resources it creates.
+
+When [booking across multiple Schedules at once](#example-3-location-specific-complex-surgical-scheduling), each Schedule's capacity applies independently: a time is offered only while **every** required Schedule still has room, so the Schedule with the least remaining capacity gates the result.
+
+:::warning[Changing `slotCapacity` does not affect existing bookings]
+
+`slotCapacity` is resolved and stamped onto each Slot at the moment it is booked — the Slot carries its own capacity from then on. Raising or lowering `slotCapacity` on the `HealthcareService` or `Schedule` only changes the limit applied to *new* bookings; it does not retroactively change the capacity of Slots that were already booked under the old value.
+
+:::
+
 
 ## Timezone Resolution
 
