@@ -525,6 +525,10 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
       { columns: ['project', 'userName'], indexType: 'btree', unique: true }
     );
   }
+
+  if (resourceType === 'Observation') {
+    result.indexes.push({ columns: ['subject', 'date'], indexType: 'btree' });
+  }
 }
 
 function buildAddressTable(result: SchemaDefinition): void {
