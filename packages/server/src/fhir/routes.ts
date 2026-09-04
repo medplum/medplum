@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
-import type { BatchEvent, FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter } from '@medplum/fhir-router';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
@@ -10,7 +10,7 @@ import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
-import { recordHistogramValue } from '../otel/otel';
+import { addBatchTelemetryListeners } from './batch-telemetry';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
@@ -470,24 +470,7 @@ function initInternalFhirRouter(): FhirRouter {
     const ctx = getAuthenticatedContext();
     ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id });
   });
-
-  router.addEventListener('batch', (event: any) => {
-    const ctx = getAuthenticatedContext();
-    const projectId = ctx.project.id;
-    const { count, errors, size, bundleType } = event as BatchEvent;
-
-    const metricOpts = { attributes: { bundleType, projectId } };
-    if (count !== undefined) {
-      recordHistogramValue('medplum.batch.entries', count, metricOpts);
-    }
-    if (errors?.length) {
-      recordHistogramValue('medplum.batch.errors', errors.length, metricOpts);
-      ctx.logger.warn('Error processing batch', { bundleType, count, errors, size, project: projectId });
-    }
-    if (size !== undefined) {
-      recordHistogramValue('medplum.batch.size', size, metricOpts);
-    }
-  });
+  addBatchTelemetryListeners(router);
 
   return router;
 }
