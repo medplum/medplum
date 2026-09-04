@@ -99,6 +99,7 @@ describe('Appointment/$book', () => {
     service?: WithId<HealthcareService>;
     duration?: number;
     slotCapacity?: number;
+    bufferBefore?: number;
   }): SchedulingParametersExtension {
     const duration = opts?.duration ?? 60;
     const extension: SchedulingParametersExtension = {
@@ -121,6 +122,10 @@ describe('Appointment/$book', () => {
 
     if (opts?.slotCapacity !== undefined) {
       extension.extension.push({ url: 'slotCapacity', valuePositiveInt: opts.slotCapacity });
+    }
+
+    if (opts?.bufferBefore !== undefined) {
+      extension.extension.push({ url: 'bufferBefore', valueDuration: { value: opts.bufferBefore, unit: 'min' } });
     }
 
     return extension;
@@ -1926,6 +1931,76 @@ describe('Appointment/$book', () => {
       });
     expect(response).toHaveStatus(400);
     expect(response.body.issue[0].details.text).toBe('Appointment falls outside schedule planning horizon');
+  });
+
+  test('slotCapacity does not apply to bufferBefore', async () => {
+    // Capacity-2 schedule, but an existing exclusive (capacity-1, unstamped) booking at
+    // 10am — e.g. from a capacity-1 service on the same actor — must not be offered.
+    const schedule = await makeSchedule({
+      actor: practitioner1,
+      extension: [
+        makeSchedulingExtension({
+          service: officeVisitService,
+          slotCapacity: 2,
+          bufferBefore: 20,
+        }),
+      ],
+    });
+
+    // Create an existing slot with capacity 2; the appointment we are trying to book
+    // will have `bufferBefore` that overlaps this, and so should be disallowed.
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.project.id },
+      schedule: createReference(schedule),
+      status: 'busy',
+      start: '2026-03-17T11:00:00-04:00', // 11am EDT
+      end: '2026-03-17T12:00:00-04:00', // 12am EDT
+      extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/SchedulingSlotCapacity', valuePositiveInt: 2 }],
+    });
+
+    const start = '2026-03-17T12:00:00-04:00'; // 12am EDT
+    const end = '2026-03-17T13:00:00-04:00'; // 1pm EDT
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              status: 'proposed',
+              start,
+              end,
+              serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+              participant: [{ actor: schedule.actor[0], status: 'tentative' }],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  status: 'busy',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                } satisfies Slot,
+                {
+                  resourceType: 'Slot',
+                  status: 'busy-unavailable',
+                  schedule: createReference(schedule),
+                  start: '2026-03-17T11:40:00-04:00', // 11:40am EDT
+                  end: '2026-03-17T12:00:00-04:00', // 12pm EDT
+                  comment: 'buffer before appointment',
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toBe('Requested time slot is not available');
   });
 });
 

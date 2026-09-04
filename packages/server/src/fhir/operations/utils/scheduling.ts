@@ -317,21 +317,30 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
 
 type CapacityEvent = { time: number; capacity: number; entering: boolean };
 
+function slotToInterval(slot: Slot, path?: string): Interval {
+  const start = new Date(slot.start);
+  const end = new Date(slot.end);
+  // Proposed slots are not persisted yet and have no id; identify those by path instead.
+  const label = slot.id ? `Slot/${slot.id}` : 'Slot';
+  // FHIR dateTime type allows leap seconds like "2016-12-31T23:59:60"; In JS this
+  // is read as an invalid date whose value is `NaN`. For now we are disallowing
+  // using such times as boundaries in scheduling to keep things simple.
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
+    throw new OperationOutcomeError(badRequest(`${label} has invalid start or end time`, path));
+  }
+  if (end < start) {
+    throw new OperationOutcomeError(badRequest(`${label} has end time before start time`, path));
+  }
+  return { start, end };
+}
+
 // Performance optimization: a faster implementation of `intervalsExceedingCapacity`
 // for the common case of "slotCapacity=1" (i.e.  no overbooking allowed).
 function intervalsExceedingCapacityOne(slots: Slot[]): Interval[] {
   const result: Interval[] = [];
   for (const slot of slots) {
     if (slot.status !== 'free' && slot.status !== 'entered-in-error') {
-      const start = new Date(slot.start);
-      const end = new Date(slot.end);
-      if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
-        throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has invalid start or end time`));
-      }
-      if (end < start) {
-        throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has with end time before start time`));
-      }
-      result.push({ start, end });
+      result.push(slotToInterval(slot));
     }
   }
   return normalizeIntervals(result);
@@ -344,21 +353,12 @@ function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
     if (slot.status === 'free' || slot.status === 'entered-in-error') {
       continue;
     }
-
-    // FHIR dateTime type allows leap seconds like "2016-12-31T23:59:60"; In JS this
-    // is read as an invalid date whose value is `NaN`. For now we are disallowing
-    // using such times as boundaries in scheduling to keep things simple.
-    const start = new Date(slot.start).valueOf();
-    const end = new Date(slot.end).valueOf();
-    if (Number.isNaN(start) || Number.isNaN(end)) {
-      throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has invalid start or end time`));
-    }
-    if (end < start) {
-      throw new OperationOutcomeError(badRequest(`Slot/${slot.id} has end time before start time`));
-    }
-
+    const { start, end } = slotToInterval(slot);
     const capacity = getSlotCapacity(slot);
-    events.push({ time: start, capacity, entering: true }, { time: end, capacity, entering: false });
+    events.push(
+      { time: start.valueOf(), capacity, entering: true },
+      { time: end.valueOf(), capacity, entering: false }
+    );
   }
   return events.sort((a, b) => a.time - b.time);
 }
@@ -459,7 +459,7 @@ export function applyExistingSlots(params: {
   const freeSlotIntervals = params.slots
     .filter((slot) => slot.status === 'free')
     .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY))
-    .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, params.range))
+    .map((slot) => intersectIntervals(slotToInterval(slot), params.range))
     .filter(isDefined);
 
   const busySlots = params.slots
@@ -680,23 +680,80 @@ function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters
   }
 }
 
+/**
+ * Validates that every proposed slot can be placed on `schedule`.
+ *
+ * Each slot is validated at its own capacity: the booking may overlap existing bookings
+ * up to the resolved `slotCapacity`, while the buffer around it (`busy-unavailable`) is
+ * exclusive and so is validated at capacity 1.
+ *
+ * @param repo - Repository used to load existing slots
+ * @param healthcareService - The service being booked
+ * @param schedule - The schedule being booked against
+ * @param parameters - Resolved scheduling parameters for `schedule`
+ * @param slots - The proposed slots to test, all belonging to `schedule`
+ */
 async function validateAvailability(
   repo: Repository,
   healthcareService: HealthcareService,
   schedule: WithId<Schedule>,
   parameters: LayeredDict<SchedulingParameters & { timezone: string }>,
-  interval: Interval
+  slots: WithPath<Slot>[]
 ): Promise<void> {
-  const existingSlots = await slotsOverlappingInterval(repo, [schedule], interval);
-  let availability = resolveAvailability(parameters, interval, parameters.get('timezone'));
-  availability = applyExistingSlots({
-    availability,
-    slots: existingSlots,
-    range: interval,
-    serviceType: healthcareService.type,
-    capacity: parameters.get('slotCapacity'),
+  const intervals = slots.map((slot) => slotToInterval(slot, getPath(slot)));
+  const start = earliest(intervals.map((interval) => interval.start));
+  const end = latest(intervals.map((interval) => interval.end));
+  assert(start && end);
+  const fullInterval = { start, end };
+
+  if (schedule.planningHorizon?.start) {
+    const horizonStart = new Date(schedule.planningHorizon.start);
+    if (fullInterval.start < horizonStart) {
+      throw new OperationOutcomeError(
+        badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+      );
+    }
+  }
+  if (schedule.planningHorizon?.end) {
+    const horizonEnd = new Date(schedule.planningHorizon.end);
+    if (fullInterval.end > horizonEnd) {
+      throw new OperationOutcomeError(
+        badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
+      );
+    }
+  }
+
+  const existingSlots = await slotsOverlappingInterval(repo, [schedule], fullInterval);
+  const resolvedAvailability = resolveAvailability(parameters, fullInterval, parameters.get('timezone'));
+
+  // Availability only varies by the capacity it is resolved at, and there are at most
+  // two distinct capacities in play (the booking's and the buffers'), so cache it
+  // rather than re-sweeping every existing slot once per proposed slot.
+  const availabilityByCapacity = new Map<number, Interval[]>();
+  const availabilityAtCapacity = (capacity: number): Interval[] => {
+    let availability = availabilityByCapacity.get(capacity);
+    if (!availability) {
+      availability = applyExistingSlots({
+        availability: resolvedAvailability,
+        slots: existingSlots,
+        range: fullInterval,
+        serviceType: healthcareService.type,
+        capacity,
+      });
+      availabilityByCapacity.set(capacity, availability);
+    }
+    return availability;
+  };
+
+  const hasAvailability = slots.every((slot, idx) => {
+    const interval = intervals[idx];
+    // bufferBefore/bufferAfter slots have status "busy-unavailable" and are always
+    // treated as having capacity=1.
+    const capacity = slot.status === 'busy-unavailable' ? 1 : parameters.get('slotCapacity');
+    const availability = availabilityAtCapacity(capacity);
+    return availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
   });
-  const hasAvailability = availability.some((avail) => avail.start <= interval.start && avail.end >= interval.end);
+
   if (!hasAvailability) {
     // Include structured JSON in diagnostics so automated tooling can
     // programmatically inspect which slots are blocking the request.
@@ -811,29 +868,8 @@ export async function validateAllAvailability(
     const slots = groupedSlots[refstr];
     delete groupedSlots[refstr];
     assert(slots);
-    const start = earliest(slots.map((slot) => new Date(slot.start)));
-    const end = latest(slots.map((slot) => new Date(slot.end)));
-    assert(start && end);
-    const interval = { start, end };
 
-    if (schedule.planningHorizon?.start) {
-      const horizonStart = new Date(schedule.planningHorizon.start);
-      if (interval.start < horizonStart) {
-        throw new OperationOutcomeError(
-          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
-        );
-      }
-    }
-    if (schedule.planningHorizon?.end) {
-      const horizonEnd = new Date(schedule.planningHorizon.end);
-      if (interval.end > horizonEnd) {
-        throw new OperationOutcomeError(
-          badRequest('Appointment falls outside schedule planning horizon', getPath(schedule))
-        );
-      }
-    }
-
-    await validateAvailability(repo, healthcareService, schedule, parameters, interval);
+    await validateAvailability(repo, healthcareService, schedule, parameters, slots);
   }
 
   // Any unprocessed slots represent some kind of error
