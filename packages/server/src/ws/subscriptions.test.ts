@@ -26,8 +26,7 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type * as Constants from '../constants';
 import { WEBSOCKET_SUB_PUBLISH_CHANNEL } from '../constants';
-import type { SystemRepository } from '../fhir/repo';
-import { Repository } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import type * as FhirRewrite from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
@@ -1939,19 +1938,13 @@ describe('Subscription Heartbeat', () => {
       createTestProject({
         project: { features: ['websocket-subscriptions'] },
         withAccessToken: true,
+        withRepo: true,
       })
     );
 
     project = result.project;
+    repo = result.repo;
     accessToken = result.accessToken;
-
-    repo = new Repository({
-      extendedMode: true,
-      projects: [project],
-      author: {
-        reference: 'ClientApplication/' + randomUUID(),
-      },
-    });
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8521, resolve);

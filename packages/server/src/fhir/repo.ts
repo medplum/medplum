@@ -51,7 +51,6 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
-  ClientApplication,
   Meta,
   OperationDefinition,
   OperationDefinitionParameter,
@@ -122,6 +121,7 @@ import type {
 } from './repository/repository-connection';
 import type { ConnectionEntry } from './repository/repository-connections';
 import { RepositoryConnections } from './repository/repository-connections';
+import type { RepositoryContext } from './repository/repository-context';
 import type { CacheEntry } from './repository/resource-cache';
 import {
   deleteResourceCacheEntries,
@@ -143,114 +143,10 @@ import { rewriteAttachments, RewriteMode } from './rewrite';
 import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { lookupTables } from './searchparameter';
+import type { ShardRouting } from './sharding';
 import { GLOBAL_SHARD_ID, normalizeShardId, resolveShardId, shardRoutingError } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
-
-/**
- * The RepositoryContext interface defines standard metadata for repository actions.
- * In practice, there will be one Repository per HTTP request.
- * And the RepositoryContext represents the context of that request,
- * such as "who is the current user?" and "what is the current project?"
- */
-export interface RepositoryContext {
-  /**
-   * The shard ID for this repository, i.e. where its project-scoped resources live.
-   * Defaults to GLOBAL_SHARD_ID if not specified. See {@link normalizeShardId}.
-   */
-  shardId?: string;
-
-  /**
-   * The current author reference.
-   * This should be a FHIR reference string (i.e., "resourceType/id").
-   * Where resource type is ClientApplication, Patient, Practitioner, etc.
-   * This value will be included in every resource as meta.author.
-   */
-  author: Reference;
-
-  /**
-   * Optional individual, device, or organization for whom the change was made.
-   * This value will be included in every resource as meta.onBehalfOf.
-   */
-  onBehalfOf?: Reference;
-
-  /**
-   * The authenticating ClientApplication for the current login, when present.
-   * This is the application that obtained the access token, which may differ
-   * from the acting `author` (e.g. when using `X-Medplum-On-Behalf-Of`, or for
-   * a SMART on FHIR app acting on behalf of a user). It is recorded as an
-   * additional non-requestor `agent[]` participant on per-interaction AuditEvents
-   * so the audit trail captures which client performed an action.
-   * Absent on the pure `client_credentials` / system paths.
-   */
-  client?: Reference<ClientApplication>;
-
-  remoteAddress?: string;
-
-  /**
-   * Projects that the Repository is allowed to access.
-   * This should include the ID/UUID of the current project, but may also include other accessory Projects.
-   * If this is undefined, the current user is a server user (e.g. Super Admin)
-   * The usual case has two elements: the user's Project and the base R4 Project
-   * The user's "primary" Project will be the first element in the array (i.e. projects[0])
-   * This value will be included in every resource as meta.project.
-   */
-  projects?: WithId<Project>[];
-
-  /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: WithId<Project>;
-
-  /**
-   * Optional compartment restriction.
-   * If the compartments array is provided,
-   * all queries will be restricted to those compartments.
-   */
-  accessPolicy?: AccessPolicy;
-
-  /**
-   * Optional flag for system administrators,
-   * which grants system-level access.
-   */
-  superAdmin?: boolean;
-
-  /**
-   * Optional flag for project administrators,
-   * which grants additional project-level access.
-   */
-  projectAdmin?: boolean;
-
-  /**
-   * Optional flag to validate resources in strict mode.
-   * Strict mode validates resources against StructureDefinition resources,
-   * which includes strict date validation, backbone elements, and more.
-   * Non-strict mode uses the official FHIR JSONSchema definition, which is
-   * significantly more relaxed.
-   */
-  strictMode?: boolean;
-
-  /**
-   * Optional flag to validate references on write operations.
-   * If enabled, the repository will check that all references are valid,
-   * and that the current user has access to the referenced resource.
-   */
-  checkReferencesOnWrite?: boolean;
-
-  validateTerminology?: boolean;
-
-  /**
-   * Optional flag to include Medplum extended meta fields.
-   * Medplum tracks additional metadata for each resource, such as:
-   * 1) "author" - Reference to the last user who modified the resource.
-   * 2) "project" - Reference to the project that owns the resource.
-   * 3) "compartment" - References to all compartments the resource is in.
-   */
-  extendedMode?: boolean;
-
-  /**
-   * Optional flag to skip scheduling background jobs for writes.
-   */
-  skipBackgroundJobs?: boolean;
-}
 
 export interface InteractionOptions {
   verbose?: boolean;
@@ -356,7 +252,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
-    this._normalizedShardId = normalizeShardId(context.shardId);
+    if (context.routing.kind === 'global-only') {
+      this._normalizedShardId = normalizeShardId(GLOBAL_SHARD_ID);
+    } else {
+      this._normalizedShardId = normalizeShardId(context.routing.shardId);
+    }
     this.ownsConnections = connections === undefined;
     this.connections = connections ?? new RepositoryConnections();
     // `transaction` is not validated for liveness here: it legitimately outlives its
@@ -393,7 +293,7 @@ export class Repository extends FhirRepository implements Disposable {
    */
   private connectionFor(options: RepositoryAccessOptions): { entry: ConnectionEntry; scope: ConnectionScope } {
     const { source } = options;
-    const shardId = resolveShardId(this.shardId, normalizeResourceTypes(options.resourceTypes), source);
+    const shardId = resolveShardId(this.context.routing, normalizeResourceTypes(options.resourceTypes), source);
     this.assertShardReachable(shardId, source);
     const entry = this.connections.entryFor(shardId, source);
     return { entry, scope: this.scopeFor(entry) };
@@ -475,9 +375,9 @@ export class Repository extends FhirRepository implements Disposable {
 
     let systemRepo: SystemRepository;
     if (this.connections.hasConnection()) {
-      systemRepo = createSystemRepository(this.shardId, this.connections, this.transaction, contextDefaults);
+      systemRepo = createSystemRepository(this.context.routing, this.connections, this.transaction, contextDefaults);
     } else {
-      systemRepo = createSystemRepository(this.shardId, undefined, undefined, contextDefaults);
+      systemRepo = createSystemRepository(this.context.routing, undefined, undefined, contextDefaults);
     }
     return systemRepo;
   }
@@ -2764,14 +2664,14 @@ type SystemRepositoryContextDefaults = Pick<RepositoryContext, 'skipBackgroundJo
 
 /**
  * Creates a SystemRepository for the specified shard.
- * @param shardId - The shard ID.
+ * @param routing - Shard routing information.
  * @param connections - Optional connection set to share, for transaction support.
  * @param transaction - Optional transaction binding to inherit from the sharing repository.
  * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository instance.
  */
 function createSystemRepository(
-  shardId: string,
+  routing: ShardRouting,
   connections?: RepositoryConnections,
   transaction?: TransactionBinding,
   contextDefaults?: SystemRepositoryContextDefaults
@@ -2779,7 +2679,7 @@ function createSystemRepository(
   return new SystemRepository(
     {
       ...contextDefaults,
-      shardId,
+      routing,
       superAdmin: true,
       strictMode: true,
       extendedMode: true,
@@ -2815,15 +2715,10 @@ mostly intended for system-level, super-admin triggered operations against a par
  * - Looking up Users, Logins, ClientApplications
  * - Cross-project operations by super admins
  *
- * @param connection - Optional repository connection to use in new Repository.
- * @param contextDefaults - Optional context defaults to apply before the fixed SystemRepository context.
  * @returns A SystemRepository for the global shard.
  */
-export function getGlobalSystemRepo(
-  connection?: RepositoryConnection,
-  contextDefaults?: SystemRepositoryContextDefaults
-): SystemRepository {
-  return getShardSystemRepo(GLOBAL_SHARD_ID, connection, contextDefaults);
+export function getGlobalSystemRepo(): SystemRepository {
+  return createSystemRepository({ kind: 'global-only' });
 }
 
 /**
@@ -2842,7 +2737,7 @@ export function getShardSystemRepo(
   contextDefaults?: SystemRepositoryContextDefaults
 ): SystemRepository {
   return createSystemRepository(
-    shardId,
+    { kind: 'project-shard', shardId },
     connection && new RepositoryConnections(connection),
     undefined,
     contextDefaults

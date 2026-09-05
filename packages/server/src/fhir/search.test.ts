@@ -66,6 +66,7 @@ import type { ChainedSearchLink } from './search';
 import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import { loadStructureDefinitions } from './structure';
 
@@ -81,6 +82,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     await initAppServices(config);
     const { project } = await createTestProject({ project: { features } });
     repo = new Repository({
+      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
       strictMode: true,
       projects: [project],
       currentProject: project,
