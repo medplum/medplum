@@ -543,6 +543,78 @@ describe('WebSocket Subscription', () => {
         .expectClosed();
     }));
 
+  test.each([
+    ['project-scoped', (projectId: string) => `/projects/${projectId}/ws/subscriptions-r4`],
+    ['project-scoped with /api prefix', (projectId: string) => `/api/projects/${projectId}/ws/subscriptions-r4`],
+    ['/api prefix', () => '/api/ws/subscriptions-r4'],
+  ])('Binds on a %s URL', (_name, buildPath) =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+      expect(token).toBeDefined();
+
+      await request(server)
+        .ws(buildPath(project.id))
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        .close()
+        .expectClosed();
+    })
+  );
+
+  test('Rejects binding on a URL scoped to another project', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+      expect(token).toBeDefined();
+
+      await request(server)
+        .ws(`/projects/${randomUUID()}/ws/subscriptions-r4`)
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'OperationOutcome',
+            issue: [{ severity: 'error', code: 'forbidden' }],
+          });
+        })
+        .close()
+        .expectClosed();
+    }));
+
   test('Should respond with a pong if sent a ping', () =>
     withTestContext(async () => {
       await request(server)
