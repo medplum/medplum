@@ -53,8 +53,8 @@ import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import { buildTraceparent } from '../util/tracing';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { SubEventsOptions } from '../ws/subscriptions';
 import {

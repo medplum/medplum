@@ -15,9 +15,9 @@ import vm from 'node:vm';
 import { getConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
-import { buildTraceparent } from '../util/tracing';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
+import { buildTraceparent } from '../util/tracing';
 import type { BotExecutionContext, BotExecutionResult } from './types';
 
 /*
