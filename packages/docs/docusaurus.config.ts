@@ -35,7 +35,7 @@ const config: Config = {
   // https://github.com/facebook/docusaurus/issues/10556
   future: {
     v4: true,
-    faster: true,
+    faster: false,
   },
 
   clientModules: ['./src/clientModules/gtagDevShim.ts'],
