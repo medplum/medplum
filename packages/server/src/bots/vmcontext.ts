@@ -15,6 +15,7 @@ import vm from 'node:vm';
 import { getConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
+import { buildTraceparent } from '../util/tracing';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
 import type { BotExecutionContext, BotExecutionResult } from './types';
@@ -94,6 +95,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       contentType,
       secrets: request.secrets,
       traceId,
+      traceparent: buildTraceparent(traceId),
       headers,
       defaultHeaders: request.defaultHeaders,
       responseStream: request.responseStream,
@@ -114,14 +116,16 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, responseStream } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers, defaultHeaders, responseStream } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
       fetch: function(url, options = {}) {
         options.headers ||= {};
         options.headers['X-Trace-Id'] = traceId;
-        options.headers['traceparent'] = traceId;
+        if (traceparent) {
+          options.headers['traceparent'] = traceparent;
+        }
         return fetch(url, options);
       },
     });
