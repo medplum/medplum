@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken } from '../../test.setup';
 
 describe('$db-invalid-indexes', () => {
   const app = express();
@@ -34,7 +34,7 @@ describe('$db-invalid-indexes', () => {
       ['CarePlan_replaces_idx']
     );
 
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post('/fhir/R4/$db-invalid-indexes')

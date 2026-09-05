@@ -11,7 +11,7 @@ import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
-import { initTestAuth, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { getSuperAdminAccessToken, initTestAuth, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 import { PRACTITIONER_READONLY_RESOURCE_TYPES } from './projectinit';
 
@@ -36,7 +36,7 @@ describe('Project $init', () => {
   });
 
   test('Success', async () => {
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const projectName = 'Test Init Project ' + randomUUID();
     const owner = await createUser({
@@ -119,7 +119,7 @@ describe('Project $init', () => {
   });
 
   test('Requires project name', async () => {
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     const owner = await createUser({
       email: randomUUID() + '@example.com',
@@ -146,7 +146,7 @@ describe('Project $init', () => {
   });
 
   test('Requires owner to be User', async () => {
-    const superAdminClientToken = await initTestAuth({ superAdmin: true });
+    const superAdminClientToken = await getSuperAdminAccessToken();
     expect(superAdminClientToken).toBeDefined();
 
     const doc = await withTestContext(() =>

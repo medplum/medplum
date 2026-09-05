@@ -22,7 +22,7 @@ import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { createTestProject, getSuperAdminTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import type { CronJobData } from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
 import type { LambdaCleanerJobData } from '../workers/lambda-cleaner';
@@ -168,7 +168,7 @@ describe('Super Admin routes', () => {
     await initApp(app, config);
 
     let repo: Repository;
-    ({ project, repo } = await createTestProject({ withClient: true, superAdmin: true, withRepo: true }));
+    ({ project, repo } = await getSuperAdminTestProject());
 
     const normalProject = await createTestProject();
 

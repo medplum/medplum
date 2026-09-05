@@ -10,7 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { createTestClient, createTestProject, withTestContext } from '../test.setup';
+import { createTestClient, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 
@@ -347,7 +347,7 @@ describe('Auth middleware', () => {
   });
 
   test('Basic auth with super admin client', async () => {
-    const { client, project } = await createTestProject({ superAdmin: true, withClient: true });
+    const { client, project } = await getSuperAdminTestProject();
     const { project: otherProject } = await createTestProject({ withClient: false });
     const res = await request(app)
       .get(`/fhir/R4/Project?_total=accurate&_id=${project.id},${otherProject.id}`)

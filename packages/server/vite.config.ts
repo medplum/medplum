@@ -50,6 +50,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/test.setup.ts'],
+    globalSetup: ['./src/test.global-setup.ts'],
     // Jest used a single `testTimeout` for both tests and lifecycle hooks (beforeAll, afterAll, etc.).
     // Vitest splits these into `testTimeout` and `hookTimeout`, so both must be set explicitly.
     // Jest config: testTimeout 30_000; `test:seed` overrode it to 400_000 for tests and hooks alike.
