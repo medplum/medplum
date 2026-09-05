@@ -5,11 +5,13 @@ import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fh
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { Response as SuperAgentResponse } from 'superagent';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject } from '../test.setup';
 import { handleSearchSeries } from './qido-rs';
@@ -22,13 +24,18 @@ const { DicomDict, DicomMetaDictionary } = data;
 describe('DICOM Routes', () => {
   const app = express();
   let accessToken: string;
+  let projectId: string;
+  let issuer: string;
+  let getProjectScopedAccessToken: (projectId: string) => Promise<string>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    issuer = config.issuer;
 
     const testProject = await createTestProject({
       withAccessToken: true,
+      withClient: true,
       withRepo: true,
     });
 
@@ -97,6 +104,21 @@ describe('DICOM Routes', () => {
     });
 
     accessToken = testProject.accessToken;
+    projectId = testProject.project.id;
+
+    const { client, login } = testProject;
+    getProjectScopedAccessToken = (scopedProjectId: string) =>
+      generateAccessToken(
+        {
+          login_id: login.id,
+          sub: client.id,
+          username: client.id,
+          client_id: client.id,
+          profile: `${client.resourceType}/${client.id}`,
+          scope: login.scope as string,
+        },
+        { issuer: `${issuer}projects/${scopedProjectId}/` }
+      );
   });
 
   afterAll(async () => {
@@ -109,6 +131,33 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
+  });
+
+  test('Get studies with /api prefix', async () => {
+    const res = await request(app)
+      .get(`/api/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(200);
+    expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
+  });
+
+  test('Get studies with project-scoped URL', async () => {
+    const scopedAccessToken = await getProjectScopedAccessToken(projectId);
+    for (const prefix of [`/projects/${projectId}`, `/api/projects/${projectId}`]) {
+      const res = await request(app)
+        .get(`${prefix}/dicomweb/studies`)
+        .set('Authorization', 'Bearer ' + scopedAccessToken);
+      expect(res).toHaveStatus(200);
+      expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
+    }
+  });
+
+  test('Cannot use another project scope', async () => {
+    const otherProjectId = randomUUID();
+    const res = await request(app)
+      .get(`/projects/${otherProjectId}/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + (await getProjectScopedAccessToken(otherProjectId)));
+    expect(res).toHaveStatus(403);
   });
 
   test('Create study wrong content-type', async () => {
