@@ -1,0 +1,110 @@
+---
+slug: awell-panels-case-study
+title: 'Awell Panels: Worklists That Update Themselves'
+authors: thomas
+tags: [case-study, fhir-datastore, self-host, careplan]
+---
+
+[Awell](https://www.awellhealth.com/) builds care orchestration infrastructure, and on top of it **Panels**, a work surface where care teams define a patient population, configure how they work it, and trigger what happens next. Panels is population and workflow agnostic by design: intake, surgery prep, prescription refill, chronic care management and post-discharge follow-up each need to see different data and follow different steps.
+
+At a national post-acute provider running 180+ inpatient facilities, post-discharge follow-up runs on Panels at roughly 250,000 discharges a year, with about 500 weekly users. Panels did not exist before this project. It went from its first two hospitals to all 180 in nine months, on self-hosted Medplum. [Guideway Care](https://www.guidewaycare.com/) assembled the solution, implemented it, and ran the rollout.
+
+{/* truncate */}
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/pH7ME9FRPLY" title="Awell Panels - Patient worklists that update themselves" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+</div>
+
+## The load profile
+
+![Daily discharges enter Awell orchestration, which drives the Bland.ai voice agent and writes to Awell Panels on Medplum, where the care team works the list.](/img/blog/awell-panels-architecture.png)
+
+Discharges arrive as two files each morning. Each file starts a care flow for every discharged patient, and every flow writes as it goes: risk score, discharge disposition, enrolment, facility defaults, local timezone, contact order, scheduled call attempts. Panel rows have to carry the right values, in the right views, before anyone looks at them.
+
+People are already looking. Facilities run from Puerto Rico to the west coast, so by the time the second batch lands, care teams on the east coast are working their queues. The writing never stops during the day either: a call connects, a call reaches voicemail, an assistant completes a task that fires the next step in the flow.
+
+One data store and one set of views serve all 180 facilities, with access controls scoping each to its own patients and leadership to the whole enterprise. No per-tenant database, no per-timezone shard. The store absorbs a batch write spike, continuous orchestration writes, and live filtered reads from care teams simultaneously, all day, and worklists still load in under two seconds.
+
+## Why an operational FHIR store
+
+In early 2024 Awell evaluated FHIR stores for a different product. One line from a conversation with Medplum's team ended up shaping the architecture two years later: if you need a sub-second answer when someone clicks a button, pagination, and a system that reacts to events, that is one kind of store. If you need to compute quality measures across a million joins, that is a different kind of store.
+
+Most FHIR conversations start with exchange: can I receive a Bundle, expose an API, pass certification. A store can do all of that well and still be the wrong place to run an operation.
+
+|                       | Analytical               | Operational                                       |
+| --------------------- | ------------------------ | ------------------------------------------------- |
+| Who waits on the read | A report                 | A care team member with a phone in hand           |
+| Write pattern         | Scheduled bulk load      | Continuous mutation from an orchestration engine  |
+| Consistency           | Yesterday is fine        | Read your writes: the agent's output is the human's input |
+| Change                | Re-run the job           | The store fires an event                          |
+
+The failure mode is not simply slowness. It is building an operational product on an analytical foundation, then compensating with a cache and a second database.
+
+## Built on Medplum
+
+- **[Subscriptions](/docs/subscriptions)**: change events leave the store as webhooks and queue through BullMQ, updating only affected panel rows. Reacting to change is a property of the data layer instead of a polling loop.
+- **[Bots](/docs/bots)**: care flows emit data through webhooks, and Bots turn that data into FHIR resources.
+- **[Access policies](/docs/access/access-policies)**: facility-scoped visibility over one shared configuration, which is how 180 hospitals run on a single panel and four views without seeing each other's patients.
+- **[FHIR search](/docs/search/basic-search) and [GraphQL](/docs/graphql)**: a patient detail view assembles the discharge summary, care team, task history and episode timeline in one retrieval instead of six.
+- **[Self-hosting](/docs/self-hosting)**: Awell runs Medplum on GCP.
+
+## Reading Medplum's tables directly
+
+Self-hosting matters more here than you might expect. Medplum stores each FHIR resource type in its own PostgreSQL table, in a schema that is public because the project is open source. Panels runs on the same Postgres instance, so for bulk panel reads Awell queries those tables directly instead of going through the FHIR REST API, and uses Medplum's `compartments` column for tenant isolation.
+
+Nobody at Medplum proposed this. Awell did not have to ask, because the design was readable.
+
+It is real coupling and Awell treats it as such: an upstream schema change can break these queries, it requires a shared Postgres instance, resource types are whitelisted because table names are dynamic, and missing tables degrade gracefully. A supported contract was deliberately traded for a faster one. That trade is not available against a managed store, not because managed stores are worse, but because the option does not exist.
+
+## What changed while scaling
+
+What works at 2 facilities breaks at 50. The Awell team wanted to move quickly and learn while scale was happening, without overengineering early. Three things changed on the way to 180 facilities.
+
+### Reading through the API, then not
+
+The first version of Panels fetched from the FHIR API and sorted in the browser, which sorts only the page you fetched. Sorting the whole list means holding the whole list in memory. That worked at 2 facilities and started breaking between 20 and 50.
+
+### A projection layer
+
+FHIR normalizes a patient's record into resources and joins them with references. A [Task](/docs/api/fhir/resources/task) points at the patient it is for. An [Encounter](/docs/api/fhir/resources/encounter) points at the organization that provided it. Nothing is repeated, which means almost nothing you want in a column lives on the resource the row is built from.
+
+Take D/C Days, the number of days since a patient was discharged. It is on every row of the task list. The row is a Task, and the Task does not store when the patient went home. The discharge date is on the Encounter, as the end of the admission period, so the column follows the reference and subtracts. That is one reference, and a panel routinely has 15+ columns, each a different walk across resource types.
+
+No resource holds D/C Days. It is a walk plus a subtraction, and it changes every morning while all three resources stay exactly as they were. Nothing was written, so nothing fires an event. Columns like these are recomputed on read.
+
+![A Panels view with each column labelled by the FHIR resource it is assembled from: Patient, Task, Encounter, Communication and CarePlan.](/img/blog/awell-panels-fhir-mapping.png)
+
+Call Status behaves the opposite way. It is written to an Observation when a call ends: pending, unable to contact, successful. It goes stale the instant that write lands, and it can land three times for one patient in a day. Same panel, two reasons to go stale: something happened that triggered a write, or the day moved on.
+
+Neither can be sorted or filtered where it lives. Postgres cannot index a value that has not been computed, and FHIR search cannot filter on the result of an arbitrary expression. So Awell computes the columns up front and writes tabular data to a table it can index: one row per resource per panel, column values as JSONB keyed by column id, GIN indexes for containment filters. The read-time arithmetic runs on top of that.
+
+Two more fields came out of the same problem. A computed value arrives with no record of what it depends on or where it came from. One field records which resources feed each row, which is memoization with an explicit dependency set: when a resource changes, only the rows that depend on it recompute. The other records which resource and which expression produced each value. Nothing invalidates on it. It answers "where did this number come from", which is the first thing anyone asks about a number they do not believe.
+
+### Deleting the cache
+
+You cannot assemble a table of computed columns by pulling pages over an API. The resources have to be sitting in a database that can be queried, so the second version of Panels had one: a local table of raw FHIR, kept current from the operational Medplum database by subscription. That copy came with three sync paths, an initial bulk load, incremental updates as resources changed, and a full re-materialisation whenever someone changed a column definition, plus a table to track how far behind each of them was. It also opened a window in which Medplum was right and Panels was not. Short, usually. Not always.
+
+Except the resources were already sitting in a database that could be queried. A Panels build worker now reads Medplum's tables directly, resolves the referenced resources, evaluates the expressions, and upserts the panel rows. The cache is gone, and so is the sync-state table. Subscriptions still do the incremental work: a write lands, the affected rows recompute. They just no longer feed a copy.
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/e_jwOw4lo8E" title="Awell Panels - build a Panel from scratch" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+</div>
+
+## What the care team gets
+
+- **Live worklists, not reports.** Views for every discharge, outreach pending, outreach completed, and follow-up needed. Current state, filtered and sorted on demand.
+- **One surface for humans and agents.** The voice agent's output is the assistant's input minutes later, on the same resources under the same access model. No second console to reconcile.
+- **Rules that change without code.** Adding an exclusion to the eligibility logic takes under five minutes and is live in the next flow that starts. Guideway does it themselves.
+
+56% of discharged patients are now reached, up from just under 30% under the previous manual process. Medication was the most common problem the calls surfaced: over eight months, a little over 3,000 patients reported a barrier to taking their medication, whether cost, difficulty collecting a prescription, or a question about what they were meant to be taking. All of them had been classified as non-high risk at discharge.
+
+None of this is exotic clinical work. A prescription that was never collected is fixed by a phone call, a refill, or somebody arranging delivery. What makes these problems dangerous is that they are silent: the hospital does not find out, the patient does not call, and the first anyone hears of it is at the next admission. Finding them means asking every patient the same questions and writing down what they say, at 250,000 discharges a year, in a form somebody can act on the same morning.
+
+## References
+
+- [Awell](https://www.awellhealth.com/)
+- [Awell Panels walkthrough](https://youtu.be/pH7ME9FRPLY) and [building a Panel](https://youtu.be/e_jwOw4lo8E)
+- [Medplum Subscriptions](/docs/subscriptions) and [Bots](/docs/bots)
+- [Medplum Access Policies](/docs/access/access-policies)
+- [Medplum Self-Hosting](/docs/self-hosting)
+- [Medplum FHIR Datastore](/docs/fhir-datastore)
