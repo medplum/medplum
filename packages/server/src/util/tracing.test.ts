@@ -197,6 +197,26 @@ describe('getTraceId', () => {
     ).toBe('67891233abcdef012345678912345678');
   });
 
+  test('falls through a traceparent that parses but carries an invalid trace ID', () => {
+    // An all-zero trace ID is well-formed but invalid per the W3C spec. It should not end the
+    // search, otherwise a caller sending both headers loses correlation it could have kept.
+    const zeroTraceparent = `00-${ZERO_TRACE_ID}-3456789012345678-01`;
+    expect(getTraceId(mockRequest({ traceparent: zeroTraceparent, 'x-trace-id': HEX_TRACE_ID }))).toBe(HEX_TRACE_ID);
+    expect(
+      getTraceId(
+        mockRequest({ traceparent: zeroTraceparent, 'x-amzn-trace-id': 'Root=1-67891233-abcdef012345678912345678' })
+      )
+    ).toBe('67891233abcdef012345678912345678');
+  });
+
+  test('returns undefined when every source is unusable', () => {
+    expect(
+      getTraceId(
+        mockRequest({ traceparent: `00-${ZERO_TRACE_ID}-3456789012345678-01`, 'x-trace-id': 'not a trace id' })
+      )
+    ).toBeUndefined();
+  });
+
   test('rejects unsafe values', () => {
     expect(getTraceId(mockRequest({ 'x-trace-id': 'abc\ndef' }))).toBeUndefined();
     expect(getTraceId(mockRequest({ 'x-trace-id': 'a'.repeat(65) }))).toBeUndefined();

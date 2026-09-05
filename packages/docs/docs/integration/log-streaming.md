@@ -56,7 +56,9 @@ Values that represent a 128 bit trace ID are normalized to canonical W3C form, w
 
 A trace ID must be at most 64 characters of letters, digits, `-`, and `.`. Medplum generates a trace ID when the request does not carry a valid one.
 
-When Medplum makes an outbound request on behalf of a request, such as invoking a bot or delivering a subscription, it sends both `X-Trace-Id` and a well-formed `traceparent` with a new span ID.
+When Medplum makes an outbound request on behalf of a request, such as invoking a bot or delivering a subscription, it sends `X-Trace-Id`, and a well-formed `traceparent` with a new span ID whenever the trace ID is a W3C trace ID.
+
+A trace ID that is not a 128 bit value, such as a ULID or a Datadog decimal ID, cannot be expressed as a `traceparent`. Medplum sends `X-Trace-Id` alone in that case rather than emitting a malformed header, so W3C trace context propagation stops at Medplum for those callers. Send `traceparent` if you need the trace to continue downstream in W3C form.
 
 <details>
 <summary>

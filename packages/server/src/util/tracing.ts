@@ -131,29 +131,27 @@ export function buildTraceparent(traceId: string | undefined): string | undefine
  * `traceparent` is checked first because it is the W3C standard and is what OpenTelemetry SDKs
  * emit. `x-trace-id` remains supported for callers that do not implement trace context.
  *
+ * Each source is tried in turn, and a source that yields no usable trace ID falls through to the
+ * next rather than ending the search. A caller that sends both an unusable `traceparent` and a
+ * valid `x-trace-id` keeps its correlation.
+ *
  * @param req - The incoming HTTP request.
  * @returns The normalized trace ID, or undefined if the request does not carry a usable one.
  */
 export function getTraceId(req: Request): string | undefined {
   const traceparent = req.header('traceparent');
-  const parsed = traceparent ? parseTraceparent(traceparent) : null;
-  if (parsed) {
-    return normalizeTraceId(parsed.traceId);
-  }
+  const amznTraceId = req.header('x-amzn-trace-id');
 
-  const xTraceId = req.header('x-trace-id');
-  if (xTraceId) {
-    const normalized = normalizeTraceId(xTraceId);
+  const candidates = [
+    parseTraceparent(traceparent ?? '')?.traceId,
+    req.header('x-trace-id'),
+    amznTraceId ? extractAmazonTraceId(amznTraceId) : undefined,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = candidate ? normalizeTraceId(candidate) : undefined;
     if (normalized) {
       return normalized;
-    }
-  }
-
-  const amznTraceId = req.header('x-amzn-trace-id');
-  if (amznTraceId) {
-    const root = extractAmazonTraceId(amznTraceId);
-    if (root) {
-      return normalizeTraceId(root);
     }
   }
 
