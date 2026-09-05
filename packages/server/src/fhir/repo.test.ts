@@ -37,6 +37,7 @@ import type {
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { MockInstance } from 'vitest';
 import { vi } from 'vitest';
@@ -753,6 +754,107 @@ describe('FHIR Repo', () => {
       });
       expect(searchResult.entry?.length).toBe(1);
       expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Jones');
+    }));
+
+  test('Create Patient ignores submitted meta.expunged', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        meta: {
+          expunged: true,
+        },
+      });
+
+      expect(patient.meta?.expunged).toBeUndefined();
+    }));
+
+  test('Update Patient ignores submitted meta.expunged', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const updated = await systemRepo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Alice'], family: 'Jones' }],
+        meta: {
+          ...patient.meta,
+          expunged: true,
+        },
+      });
+
+      expect(updated.meta?.expunged).toBeUndefined();
+    }));
+
+  test('Create AuditEvent ignores submitted meta.expunged', () =>
+    withTestContext(async () => {
+      const auditEvent = await systemRepo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        recorded: new Date().toISOString(),
+        agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+        source: { observer: { identifier: { value: 'test' } } },
+        meta: {
+          expunged: true,
+        },
+      });
+
+      expect(auditEvent.meta?.expunged).toBeUndefined();
+    }));
+
+  test('Update AuditEvent ignores submitted meta.expunged', () =>
+    withTestContext(async () => {
+      const auditEvent = await systemRepo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+        recorded: new Date().toISOString(),
+        agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+        source: { observer: { identifier: { value: 'test' } } },
+      });
+
+      const updated = await systemRepo.updateResource<AuditEvent>({
+        ...auditEvent,
+        meta: {
+          ...auditEvent.meta,
+          expunged: true,
+        },
+      });
+
+      expect(updated.meta?.expunged).toBeUndefined();
+    }));
+
+  test('Update cannot clear meta.expunged on an expunge AuditEvent', () =>
+    withTestContext(async () => {
+      const previousSaveAuditEvents = getConfig().saveAuditEvents;
+      getConfig().saveAuditEvents = true;
+      try {
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        await systemRepo.expungeResource('Patient', patient.id);
+
+        const bundle = await systemRepo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+        });
+        const auditEvent = bundle.entry?.map((e) => e.resource).find((r) => r?.meta?.expunged);
+        expect(auditEvent).toBeDefined();
+        assert(auditEvent);
+
+        const updated = await systemRepo.updateResource<AuditEvent>({
+          ...auditEvent,
+          meta: {
+            ...auditEvent.meta,
+            expunged: false,
+          },
+        });
+        expect(updated.meta?.expunged).toBe(true);
+      } finally {
+        getConfig().saveAuditEvents = previousSaveAuditEvents;
+      }
     }));
 
   test('Create Patient as ClientApplication with no author', () =>
@@ -1651,6 +1753,55 @@ describe('FHIR Repo', () => {
         } finally {
           deleteFile.mockRestore();
         }
+      }));
+
+    test('expungeResource writes AuditEvent with meta.expunged', () =>
+      withTestContext(async () => {
+        const previousSaveAuditEvents = getConfig().saveAuditEvents;
+        getConfig().saveAuditEvents = true;
+        try {
+          const patient = await createPatient(systemRepo);
+          await systemRepo.expungeResource('Patient', patient.id);
+          await expectPatientExpunged(patient);
+
+          const bundle = await systemRepo.search<AuditEvent>({
+            resourceType: 'AuditEvent',
+            filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+          });
+          const auditEvent = bundle.entry?.map((e) => e.resource).find((r) => r?.meta?.expunged);
+          expect(auditEvent).toBeDefined();
+          expect(auditEvent?.entity?.[0]?.what?.reference).toStrictEqual(getReferenceString(patient));
+          expect(auditEvent?.entity?.[0]?.what?.display).toBeUndefined();
+        } finally {
+          getConfig().saveAuditEvents = previousSaveAuditEvents;
+        }
+      }));
+
+    test('Super admin cannot expunge AuditEvent', () =>
+      withTestContext(async () => {
+        const target = await systemRepo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+          source: { observer: { identifier: { value: 'test' } } },
+        });
+        await expect(systemRepo.expungeResource('AuditEvent', target.id)).rejects.toThrow('Forbidden');
+        await expect(systemRepo.readResource('AuditEvent', target.id)).resolves.toMatchObject({ id: target.id });
+      }));
+
+    test('Project admin cannot expunge AuditEvent', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+        const target = await repo.createResource<AuditEvent>({
+          resourceType: 'AuditEvent',
+          type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+          recorded: new Date().toISOString(),
+          agent: [{ requestor: true, who: { reference: 'Practitioner/' + randomUUID() } }],
+          source: { observer: { identifier: { value: 'test' } } },
+        });
+        await expect(repo.expungeResource('AuditEvent', target.id)).rejects.toThrow('Forbidden');
+        await expect(repo.readResource('AuditEvent', target.id)).resolves.toMatchObject({ id: target.id });
       }));
   });
 

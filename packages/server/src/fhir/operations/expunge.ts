@@ -81,6 +81,9 @@ export class Expunger {
     if (resourceType === 'Binary') {
       return;
     }
+    if (resourceType === 'AuditEvent') {
+      return;
+    }
 
     // Skip resource types the repository is not allowed to search (e.g. protected
     // resource types such as Login/JsonWebKey/DomainConfiguration for non-super-admins).

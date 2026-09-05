@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, LOINC } from '@medplum/core';
-import type { Observation, Patient } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, LOINC, Operator } from '@medplum/core';
+import type { AuditEvent, Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config/loader';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getCacheRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
@@ -180,9 +180,19 @@ describe('Expunge', () => {
       code: { coding: [{ system: LOINC, code: '12345-6' }] },
       subject: { reference: 'Patient/' + patient.id },
     });
+    const auditEvent = await systemRepo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      meta: { project: project.id },
+      type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+      recorded: new Date().toISOString(),
+      agent: [{ requestor: true, who: { reference: 'Patient/' + patient.id } }],
+      source: { observer: { identifier: { value: 'test' } } },
+      entity: [{ what: { reference: 'Patient/' + patient.id } }],
+    });
 
     expect(await existsInDatabase('Patient', patient.id)).toBe(true);
     expect(await existsInDatabase('Observation', obs.id)).toBe(true);
+    expect(await existsInDatabase('AuditEvent', auditEvent.id)).toBe(true);
 
     const res = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$expunge?everything=true`)
@@ -200,6 +210,7 @@ describe('Expunge', () => {
     // Both the patient and its compartment resources should be expunged
     expect(await existsInDatabase('Patient', patient.id)).toBe(false);
     expect(await existsInDatabase('Observation', obs.id)).toBe(false);
+    expect(await existsInDatabase('AuditEvent', auditEvent.id)).toBe(true);
   });
 
   test('Project admin cannot expunge patient everything in another project', async () => {
@@ -264,6 +275,14 @@ describe('Expunge', () => {
       subject: { reference: 'Patient/' + patient.id },
     });
     expect(obs).toBeDefined();
+    const auditEvent = await systemRepo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      meta: { project: project.id },
+      type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+      recorded: new Date().toISOString(),
+      agent: [{ requestor: true, who: { reference: 'Patient/' + patient.id } }],
+      source: { observer: { identifier: { value: 'test' } } },
+    });
 
     expect(await existsInCache('Project', project.id)).toBe(true);
     expect(await existsInCache('ClientApplication', client.id)).toBe(true);
@@ -297,6 +316,9 @@ describe('Expunge', () => {
     expect(await existsInDatabase('Observation', obs.id)).toBe(false);
     expect(await existsInDatabase('Observation_History', obs.id)).toBe(false);
 
+    expect(await existsInDatabase('AuditEvent', auditEvent.id)).toBe(true);
+    expect(await existsInDatabase('AuditEvent_History', auditEvent.id)).toBe(true);
+
     expect(await existsInCache('Project', project.id)).toBe(false);
     expect(await existsInCache('ClientApplication', client.id)).toBe(false);
     expect(await existsInCache('ProjectMembership', membership.id)).toBe(false);
@@ -305,6 +327,54 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient3.id)).toBe(false);
     expect(await existsInCache('Observation', obs.id)).toBe(false);
   });
+
+  test('Expunger skips AuditEvent', async () => {
+    const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    const auditEvent = await repo.createResource<AuditEvent>({
+      resourceType: 'AuditEvent',
+      type: { system: 'http://terminology.hl7.org/CodeSystem/audit-event-type', code: 'rest' },
+      recorded: new Date().toISOString(),
+      agent: [{ requestor: true, who: { reference: 'Patient/' + patient.id } }],
+      source: { observer: { identifier: { value: 'test' } } },
+    });
+
+    await new Expunger(repo, project.id, 2).expunge();
+
+    expect(await existsInDatabase('Patient', patient.id)).toBe(false);
+    expect(await existsInDatabase('AuditEvent', auditEvent.id)).toBe(true);
+  });
+
+  test('Expunger leaves meta.expunged AuditEvents', () =>
+    withTestContext(async () => {
+      const previousSaveAuditEvents = getConfig().saveAuditEvents;
+      getConfig().saveAuditEvents = true;
+      try {
+        const { project } = await createTestProject();
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { project: project.id },
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await new Expunger(systemRepo, project.id).expunge();
+
+        expect(await existsInDatabase('Patient', patient.id)).toBe(false);
+
+        const bundle = await systemRepo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(patient) }],
+        });
+        const auditEvent = bundle.entry?.map((e) => e.resource).find((r) => r?.meta?.expunged);
+        expect(auditEvent).toBeDefined();
+        expect(await existsInDatabase('AuditEvent', auditEvent?.id)).toBe(true);
+      } finally {
+        getConfig().saveAuditEvents = previousSaveAuditEvents;
+      }
+    }));
 });
 
 async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {

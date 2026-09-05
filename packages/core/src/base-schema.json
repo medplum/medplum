@@ -2935,6 +2935,13 @@
             "code": "boolean"
           }
         ]
+      },
+      "expunged": {
+        "type": [
+          {
+            "code": "boolean"
+          }
+        ]
       }
     }
   },

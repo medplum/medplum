@@ -13,6 +13,7 @@ import {
   createAuditEvent,
   createBotAuditEvent,
   CreateInteraction,
+  ExpungeInteraction,
   logAuditEvent,
   ReadInteraction,
   RestfulOperationType,
@@ -244,5 +245,24 @@ describe('AuditEvent utils', () => {
 
     await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, 'foo');
     expect(writeSpy).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"foo"`));
+  });
+
+  test('Expunge interaction sets meta.expunged', () => {
+    const id = randomUUID();
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
+      ExpungeInteraction,
+      randomUUID(),
+      { reference: 'Practitioner/123' },
+      undefined,
+      AuditEventOutcome.Success,
+      { resource: { resourceType: 'Patient', id } }
+    );
+
+    expect(auditEvent.meta?.expunged).toBe(true);
+    expect(auditEvent.action).toBe('D');
+    expect(auditEvent.subtype).toStrictEqual([ExpungeInteraction]);
+    expect(auditEvent.entity?.[0]?.what?.reference).toBe(`Patient/${id}`);
+    expect(auditEvent.entity?.[0]?.what?.display).toBeUndefined();
   });
 });

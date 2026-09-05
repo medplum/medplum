@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEvent,
   AuditEventEntityDetail,
   Binary,
   Bundle,
@@ -86,6 +87,7 @@ import {
   createAuditEvent,
   CreateInteraction,
   DeleteInteraction,
+  ExpungeInteraction,
   HistoryInteraction,
   isReadOnlyAction,
   logAuditEvent,
@@ -1048,7 +1050,7 @@ export class Repository extends FhirRepository implements Disposable {
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
-    options?: UpdateResourceOptions
+    options?: UpdateResourceOptions & { persistExpunged?: boolean }
   ): Promise<WithId<T>> {
     // Promote before pre-commit validation and existing-resource reads.
     this.setMode(RepositoryMode.WRITER);
@@ -1094,7 +1096,11 @@ export class Repository extends FhirRepository implements Disposable {
       lastUpdated: this.getLastUpdated(existing, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
-      deleted: undefined,
+      deleted: undefined, // Tombstones are written elsewhere; clients cannot set this.
+      expunged:
+        updated.resourceType === 'AuditEvent' && (options?.persistExpunged || existing?.meta?.expunged)
+          ? true
+          : undefined,
     };
 
     const result = { ...updated, meta: resultMeta };
@@ -1604,6 +1610,9 @@ export class Repository extends FhirRepository implements Disposable {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    if (resourceType === 'AuditEvent') {
+      throw new OperationOutcomeError(forbidden);
+    }
     if (ids.length === 0) {
       return;
     }
@@ -1611,6 +1620,7 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(badRequest('Expunge request contains too many IDs'));
     }
 
+    const startTime = Date.now();
     const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
@@ -1652,6 +1662,22 @@ export class Repository extends FhirRepository implements Disposable {
           const storageKeys = historyResult.map((row) => getBinaryStorageKey(row.id, row.versionId));
           await txRepo.postCommit(() => deleteBinaryStorageObjects(storageKeys));
         }
+
+        const durationMs = Date.now() - startTime;
+        await txRepo.postCommit(async () => {
+          const auditEvents: AuditEvent[] = [];
+          for (const id of deletedIds) {
+            const auditEvent = txRepo.logEvent(ExpungeInteraction, AuditEventOutcome.Success, undefined, {
+              resource: { resourceType, id } as Resource,
+              durationMs,
+              persist: false,
+            });
+            if (auditEvent) {
+              auditEvents.push(auditEvent);
+            }
+          }
+          await txRepo.persistExpungeAuditEvents(auditEvents);
+        });
 
         return deletedIds;
       },
@@ -2327,6 +2353,7 @@ export class Repository extends FhirRepository implements Disposable {
       meta.accounts = undefined;
       meta.compartment = undefined;
       meta.deleted = undefined;
+      meta.expunged = undefined;
     }
     return input;
   }
@@ -2388,6 +2415,8 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
    * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
+   * @param options.persist - When false, skip writing the AuditEvent (metrics and the logger still run).
+   * @returns The AuditEvent when one was created; undefined when logging is skipped.
    */
   private logEvent(
     subtype: AuditEventSubtype,
@@ -2398,8 +2427,9 @@ export class Repository extends FhirRepository implements Disposable {
       searchRequest?: SearchRequest;
       entityDetail?: AuditEventEntityDetail[];
       durationMs?: number;
+      persist?: boolean;
     }
-  ): void {
+  ): AuditEvent | undefined {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
     const resourceType = isResource(resource) ? resource?.resourceType : undefined;
@@ -2421,9 +2451,9 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
-      // Don't log system read or audit events
-      return;
+    if (isSystem && (isReadOnlyAction(subtype) || (resourceType === 'AuditEvent' && subtype !== ExpungeInteraction))) {
+      // Don't log system reads or ordinary AuditEvent interactions
+      return undefined;
     }
     let outcomeDesc: string | undefined = undefined;
     if (description) {
@@ -2452,7 +2482,12 @@ export class Repository extends FhirRepository implements Disposable {
     );
     logAuditEvent(auditEvent);
 
-    if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
+    if (
+      options?.persist !== false &&
+      getConfig().saveAuditEvents &&
+      isResource(resource) &&
+      (resource.resourceType !== 'AuditEvent' || subtype === ExpungeInteraction)
+    ) {
       auditEvent.id = this.generateId();
       // Clone the repository to obtain a separate RepositoryConnection for two reasons:
       // 1. the un-awaited save must outlive the current repo's connection scope, which is marked 'ended'
@@ -2463,9 +2498,37 @@ export class Repository extends FhirRepository implements Disposable {
       // by pushing them onto an in-process queue (or BullMQ) and drain/write them to the DB on an interval.
       const saveRepo = this.clone({ skipBackgroundJobs: true });
       saveRepo
-        .updateResourceImpl(auditEvent, true)
+        .updateResourceImpl(auditEvent, true, subtype === ExpungeInteraction ? { persistExpunged: true } : undefined)
         .catch((err) => getLogger().error('Failed to save AuditEvent', err))
         .finally(() => saveRepo[Symbol.dispose]());
+    }
+    return auditEvent;
+  }
+
+  /**
+   * Persists expunge AuditEvents on one cloned repo and one transaction so a bulk
+   * `$expunge` batch does not open a pool connection per deleted id.
+   * @param auditEvents - AuditEvents to persist.
+   */
+  private async persistExpungeAuditEvents(auditEvents: AuditEvent[]): Promise<void> {
+    if (auditEvents.length === 0 || !getConfig().saveAuditEvents) {
+      return;
+    }
+    const saveRepo = this.clone({ skipBackgroundJobs: true });
+    try {
+      await saveRepo.withTransaction(
+        async (auditTxRepo) => {
+          for (const auditEvent of auditEvents) {
+            auditEvent.id = auditTxRepo.generateId();
+            await auditTxRepo.updateResourceImpl(auditEvent, true, { persistExpunged: true });
+          }
+        },
+        { resourceTypes: 'AuditEvent', source: 'repo.expungeResources.auditEvents' }
+      );
+    } catch (err) {
+      getLogger().error('Failed to save AuditEvent', { err });
+    } finally {
+      saveRepo[Symbol.dispose]();
     }
   }
 

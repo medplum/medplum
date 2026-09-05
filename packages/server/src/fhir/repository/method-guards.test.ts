@@ -86,6 +86,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'isCacheOnly',
   'restoreReadonlyFields',
   'logEvent',
+  'persistExpungeAuditEvents',
   'getCacheEntry',
   'getCacheEntries',
   'setCacheEntry',

@@ -22045,6 +22045,22 @@
           "type" : [{
             "code" : "boolean"
           }]
+        },
+        {
+          "id" : "Meta.expunged",
+          "path" : "Meta.expunged",
+          "short" : "True when this AuditEvent records an expunge (physical delete).",
+          "definition" : "True when this AuditEvent records an expunge (physical delete).",
+          "min" : 0,
+          "max" : "1",
+          "base" : {
+            "path" : "Meta.expunged",
+            "min" : 0,
+            "max" : "1"
+          },
+          "type" : [{
+            "code" : "boolean"
+          }]
         }]
       },
       "differential" : {
