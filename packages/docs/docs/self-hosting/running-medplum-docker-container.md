@@ -27,3 +27,5 @@ If you are looking to get started fast or want to develop against a local copy o
 we also have a [full-stack Docker setup](/docs/self-hosting/running-full-medplum-stack-in-docker) that you can start up with just two commands!
 
 :::
+
+The published `medplum/medplum-app` image is configured at container start through environment variables, including `MEDPLUM_BASE_URL`. See [Pointing the app image at your API server](/docs/self-hosting/running-full-medplum-stack-in-docker#pointing-the-app-image-at-your-api-server).
