@@ -14,6 +14,7 @@ import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
+import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
@@ -174,6 +175,174 @@ describe('Set Password', () => {
       scope: 'openid',
     });
     expect(res4).toHaveStatus(200);
+  });
+
+  test('Expired UserSecurityRequest', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const usr = await withTestContext(async () =>
+      systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: { project: project.id },
+        type: 'reset',
+        user: createReference(user),
+        secret: generateSecret(16),
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+      })
+    );
+
+    const res = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Expired'));
+
+    // The old password still works
+    const res2 = await request(app).post('/auth/login').type('json').send({
+      email,
+      password: 'password!@#',
+      scope: 'openid',
+    });
+    expect(res2).toHaveStatus(200);
+  });
+
+  test('UserSecurityRequest without expiresAt expires from lastUpdated', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    // Predates the expiresAt field, so it falls back to lastUpdated plus the reset window
+    const systemRepo = await getProjectSystemRepo(project);
+    const usr = await withTestContext(async () =>
+      systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: {
+          project: project.id,
+          lastUpdated: new Date(Date.now() - USER_SECURITY_REQUEST_EXPIRATION_MS.reset - 60_000).toISOString(),
+        },
+        type: 'reset',
+        user: createReference(user),
+        secret: generateSecret(16),
+      })
+    );
+    expect(usr.expiresAt).toBeUndefined();
+
+    const res = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Expired'));
+  });
+
+  test('UserSecurityRequest cannot be used twice', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const usr = await withTestContext(async () =>
+      systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: { project: project.id },
+        type: 'reset',
+        user: createReference(user),
+        secret: generateSecret(16),
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      })
+    );
+
+    const res = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res).toHaveStatus(200);
+
+    const res2 = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-second-password',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject(badRequest('Already used'));
+  });
+
+  test('Breached password does not consume the UserSecurityRequest', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const usr = await withTestContext(async () =>
+      systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: { project: project.id },
+        type: 'reset',
+        user: createReference(user),
+        secret: generateSecret(16),
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      })
+    );
+
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 10);
+    const res = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'breached-password',
+    });
+    expect(res).toHaveStatus(400);
+
+    // The link still works with an acceptable password
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    const res2 = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res2).toHaveStatus(200);
   });
 
   test('UserSecurityRequest invalid type', async () => {
