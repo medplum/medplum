@@ -965,7 +965,10 @@ export async function createProposedAppointment(
   const createdResources = await repo.withTransaction(
     async (txRepo) => {
       await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
-      const createdSlots = await Promise.all(slots.map((slot) => txRepo.createResource<Slot>(slot)));
+      const createdSlots = new Array<WithId<Slot>>(slots.length);
+      for (const [i, slot] of slots.entries()) {
+        createdSlots[i] = await txRepo.createResource<Slot>(slot);
+      }
       const createdAppointment = await txRepo.createResource<Appointment>({
         ...appointment,
         slot: createdSlots.map((slot) => createReference(slot)),
