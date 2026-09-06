@@ -3,7 +3,7 @@
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { escapeIdentifier } from 'pg';
 import type { UpdateQuery } from '../fhir/sql';
-import { isValidPostgresIdentifier, PUBLIC_SCHEMA, SqlBuilder } from '../fhir/sql';
+import { isValidPostgresIdentifier, SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
@@ -54,13 +54,17 @@ export async function reindexConcurrently(
 export async function dropInvalidIndexConcurrently(
   client: PoolClient,
   results: MigrationActionResult[],
+  schemaName: string,
   indexName: string
 ): Promise<void> {
+  if (!isValidPostgresIdentifier(schemaName)) {
+    throw new Error(`Invalid PostgreSQL schema name: ${schemaName}`);
+  }
   if (!isValidPostgresIdentifier(indexName)) {
     throw new Error(`Invalid PostgreSQL index name: ${indexName}`);
   }
 
-  const qualifiedIndexName = `${escapeIdentifier(PUBLIC_SCHEMA)}.${escapeIdentifier(indexName)}`;
+  const qualifiedIndexName = `${escapeIdentifier(schemaName)}.${escapeIdentifier(indexName)}`;
   const indexResult = await client.query<{
     is_valid: boolean;
     is_primary: boolean;
@@ -84,7 +88,7 @@ export async function dropInvalidIndexConcurrently(
     JOIN pg_class index_class ON index_class.oid = i.indexrelid
     JOIN pg_namespace index_namespace ON index_namespace.oid = index_class.relnamespace
     WHERE index_namespace.nspname = $1 AND index_class.relname = $2`,
-    [PUBLIC_SCHEMA, indexName]
+    [schemaName, indexName]
   );
 
   if (indexResult.rows.length === 0) {

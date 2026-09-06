@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "5.1.36",
+  "version": "5.1.37",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -30,7 +30,7 @@
     "@graphiql/plugin-history": "0.4.3",
     "@graphiql/plugin-doc-explorer": "0.4.3",
     "@metriport/shared": {
-      "@medplum/core": "5.1.36"
+      "@medplum/core": "5.1.37"
     },
     "@microsoft/api-documenter": {
       "js-yaml": "4.3.1"

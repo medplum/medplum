@@ -926,8 +926,8 @@ describe('Database migrations', () => {
     describe('Drop invalid indexes', () => {
       test('Queues explicitly selected invalid index cleanup actions', async () => {
         const targets = [
-          { index: 'AuditEvent_References_pkey_ccnew' },
-          { index: 'AuditEvent_References_targetId_code_idx_ccnew' },
+          { schema: 'public', index: 'AuditEvent_References_pkey_ccnew' },
+          { schema: 'pg_toast', index: 'pg_toast_2539493_index_ccnew' },
         ];
         const queueAddSpy = getQueueAddSpy();
 
@@ -949,18 +949,20 @@ describe('Database migrations', () => {
             postDeploy: [
               {
                 type: 'DROP_INVALID_INDEX',
+                schemaName: 'public',
                 indexName: 'AuditEvent_References_pkey_ccnew',
               },
               {
                 type: 'DROP_INVALID_INDEX',
-                indexName: 'AuditEvent_References_targetId_code_idx_ccnew',
+                schemaName: 'pg_toast',
+                indexName: 'pg_toast_2539493_index_ccnew',
               },
             ],
           },
         });
         const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
         expect(asyncJob.request).toBe(
-          '/admin/super/drop-invalid-indexes?index=AuditEvent_References_pkey_ccnew&index=AuditEvent_References_targetId_code_idx_ccnew'
+          '/admin/super/drop-invalid-indexes?index=public.AuditEvent_References_pkey_ccnew&index=pg_toast.pg_toast_2539493_index_ccnew'
         );
         expect(asyncJob.meta?.project).toBeUndefined();
       });
@@ -968,15 +970,17 @@ describe('Database migrations', () => {
       test.each([
         {},
         { targets: [] },
-        { targets: Array.from({ length: 11 }, (_, index) => ({ index: `Index${index}` })) },
+        { targets: Array.from({ length: 11 }, (_, index) => ({ schema: 'public', index: `Index${index}` })) },
         { targets: 'AuditEvent_References_pkey_ccnew' },
         { targets: [123] },
         { targets: [{}] },
         { targets: [{ schema: 'public' }] },
-        { targets: [{ schema: 'public', index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ index: 'AuditEvent_References_pkey_ccnew' }] },
         { targets: [{ schema: 'public', index: 'AuditEvent_References_pkey_ccnew', extra: true }] },
-        { targets: [{ index: 123 }] },
-        { targets: [{ index: 'index; DROP TABLE Patient' }] },
+        { targets: [{ schema: 123, index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'schema; DROP SCHEMA public', index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'public', index: 123 }] },
+        { targets: [{ schema: 'public', index: 'index; DROP TABLE Patient' }] },
       ])('Rejects invalid input: %j', async (body) => {
         const queueAddSpy = getQueueAddSpy();
 

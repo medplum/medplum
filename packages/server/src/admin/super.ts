@@ -518,8 +518,14 @@ superAdminRouter.post(
       .isObject({ strict: true })
       .withMessage('Each target must be an object')
       .bail()
-      .custom((target) => Object.keys(target).length === 1 && 'index' in target)
-      .withMessage('Each target must contain exactly index'),
+      .custom((target) => Object.keys(target).length === 2 && 'schema' in target && 'index' in target)
+      .withMessage('Each target must contain exactly schema and index'),
+    body('targets.*.schema')
+      .isString()
+      .withMessage('Schema name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid schema name'),
     body('targets.*.index')
       .isString()
       .withMessage('Index name must be a string')
@@ -543,13 +549,14 @@ superAdminRouter.post(
       preDeploy: [],
       postDeploy: targets.map((target) => ({
         type: 'DROP_INVALID_INDEX' as const,
+        schemaName: target.schema,
         indexName: target.index,
       })),
     };
 
     const requestParams = new URLSearchParams();
     for (const target of targets) {
-      requestParams.append('index', target.index);
+      requestParams.append('index', `${target.schema}.${target.index}`);
     }
 
     const exec = new AsyncJobExecutor(ctx.systemRepo);
@@ -564,7 +571,7 @@ superAdminRouter.post(
   }
 );
 
-type DropInvalidIndexTarget = { index: string };
+type DropInvalidIndexTarget = { schema: string; index: string };
 
 // POST to /admin/super/setdataversion
 // to set the data version of the database.

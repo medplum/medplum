@@ -441,6 +441,33 @@ describe('Generator', () => {
   });
 
   describe('generateIndexesActions', () => {
+    test('allows a primary key to satisfy a structurally identical unique index declaration', () => {
+      const startTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [
+          {
+            columns: ['id'],
+            indexType: 'btree',
+            unique: true,
+            indexdef: 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({ preDeploy: [], postDeploy: [] });
+    });
+
     test('drops concurrent rebuild indexes instead of valid indexes with the same definition', () => {
       const primaryKeyDefinition = {
         columns: ['resourceId', 'targetId', 'code'],
@@ -714,13 +741,15 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
   },
   {
     name: 'DROP_INVALID_INDEX',
-    action: {
-      type: 'DROP_INVALID_INDEX',
-      indexName: 'Patient_name_idx_ccnew',
-    },
-    builderExpected: 'await fns.dropInvalidIndexConcurrently(client, results, "Patient_name_idx_ccnew");',
+    action: { type: 'DROP_INVALID_INDEX', schemaName: 'public', indexName: 'Patient_name_idx_ccnew' },
+    builderExpected: "await fns.dropInvalidIndexConcurrently(client, results, 'public', 'Patient_name_idx_ccnew');",
     executionCheck: ({ mockDropInvalidIndexConcurrently, mockClient, results }) => {
-      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(mockClient, results, 'Patient_name_idx_ccnew');
+      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(
+        mockClient,
+        results,
+        'public',
+        'Patient_name_idx_ccnew'
+      );
     },
   },
   {
