@@ -48,21 +48,9 @@ The failure mode is not simply slowness. It is building an operational product o
 - **[FHIR search](/docs/search/basic-search) and [GraphQL](/docs/graphql)**: a patient detail view assembles the discharge summary, care team, task history and episode timeline in one retrieval instead of six.
 - **[Self-hosting](/docs/self-hosting)**: Awell runs Medplum on GCP.
 
-## Reading Medplum's tables directly
+## How Panels evolved
 
-Self-hosting matters more here than you might expect. Medplum stores each FHIR resource type in its own PostgreSQL table, in a schema that is public because the project is open source. Panels runs on the same Postgres instance, so for bulk panel reads Awell queries those tables directly instead of going through the FHIR REST API, and uses Medplum's `compartments` column for tenant isolation.
-
-Nobody at Medplum proposed this. Awell did not have to ask, because the design was readable.
-
-It is real coupling and Awell treats it as such: an upstream schema change can break these queries, it requires a shared Postgres instance, resource types are whitelisted because table names are dynamic, and missing tables degrade gracefully. A supported contract was deliberately traded for a faster one. That trade is not available against a managed store, not because managed stores are worse, but because the option does not exist.
-
-## What changed while scaling
-
-What works at 2 facilities breaks at 50. The Awell team wanted to move quickly and learn while scale was happening, without overengineering early. Three things changed on the way to 180 facilities.
-
-### Reading through the API, then not
-
-The first version of Panels fetched from the FHIR API and sorted in the browser, which sorts only the page you fetched. Sorting the whole list means holding the whole list in memory. That worked at 2 facilities and started breaking between 20 and 50.
+The Awell team wanted to move quickly and learn while scale was happening, without overengineering early. Two things changed on the way to 180 facilities.
 
 ### A projection layer
 
@@ -76,15 +64,17 @@ No resource holds D/C Days. It is a walk plus a subtraction, and it changes ever
 
 Call Status behaves the opposite way. It is written to an Observation when a call ends: pending, unable to contact, successful. It goes stale the instant that write lands, and it can land three times for one patient in a day. Same panel, two reasons to go stale: something happened that triggered a write, or the day moved on.
 
-Neither can be sorted or filtered where it lives. Postgres cannot index a value that has not been computed, and FHIR search cannot filter on the result of an arbitrary expression. So Awell computes the columns up front and writes tabular data to a table it can index: one row per resource per panel, column values as JSONB keyed by column id, GIN indexes for containment filters. The read-time arithmetic runs on top of that.
+Neither can be sorted or filtered where it lives. Nothing can index a value that has not been computed, and FHIR search cannot filter on the result of an arbitrary expression. So Panels materialises what a worklist needs into a projection built for that shape: one indexed, denormalised row per resource per panel, column values as JSONB keyed by column id, GIN indexes for containment filters. Interactive sorting and filtering run against the projection, and the read-time arithmetic runs on top of it.
 
 Two more fields came out of the same problem. A computed value arrives with no record of what it depends on or where it came from. One field records which resources feed each row, which is memoization with an explicit dependency set: when a resource changes, only the rows that depend on it recompute. The other records which resource and which expression produced each value. Nothing invalidates on it. It answers "where did this number come from", which is the first thing anyone asks about a number they do not believe.
 
 ### Deleting the cache
 
-You cannot assemble a table of computed columns by pulling pages over an API. The resources have to be sitting in a database that can be queried, so the second version of Panels had one: a local table of raw FHIR, kept current from the operational Medplum database by subscription. That copy came with three sync paths, an initial bulk load, incremental updates as resources changed, and a full re-materialisation whenever someone changed a column definition, plus a table to track how far behind each of them was. It also opened a window in which Medplum was right and Panels was not. Short, usually. Not always.
+Building a row means walking references across several resources, so the second version of Panels kept its own copy of the raw FHIR to walk: a local table of resources, kept current from Medplum by Subscriptions, that the build worker read while evaluating expressions. That copy came with three sync paths, an initial bulk load, incremental updates as resources changed, and a full re-materialisation whenever someone changed a column definition, plus a table to track how far behind each of them was. It also opened a window in which Medplum was right and Panels was not. Short, usually. Not always.
 
-Except the resources were already sitting in a database that could be queried. A Panels build worker now reads Medplum's tables directly, resolves the referenced resources, evaluates the expressions, and upserts the panel rows. The cache is gone, and so is the sync-state table. Subscriptions still do the incremental work: a write lands, the affected rows recompute. They just no longer feed a copy.
+The copy was a second materialisation of data Medplum already held. Medplum is the operational source of truth and it is already queryable, so the only thing Panels actually needs to maintain is the projection. The build worker now resolves the resources it needs from Medplum as it builds a panel, evaluates the expressions, and upserts the panel rows in one pass. The raw FHIR copy is gone, and so is the sync-state table. Subscriptions still do the incremental work: a write lands, the affected rows recompute. They just no longer feed a copy.
+
+One materialised representation instead of two, and it is the one that has to exist. Removing the duplicate removed three sync paths, the table that tracked how far behind each of them was, and the window in which the two could disagree.
 
 <div className="responsive-iframe-wrapper">
   <iframe src="https://www.youtube.com/embed/e_jwOw4lo8E" title="Awell Panels - build a Panel from scratch" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
@@ -99,6 +89,12 @@ Except the resources were already sitting in a database that could be queried. A
 56% of discharged patients are now reached, up from just under 30% under the previous manual process. Medication was the most common problem the calls surfaced: over eight months, a little over 3,000 patients reported a barrier to taking their medication, whether cost, difficulty collecting a prescription, or a question about what they were meant to be taking. All of them had been classified as non-high risk at discharge.
 
 None of this is exotic clinical work. A prescription that was never collected is fixed by a phone call, a refill, or somebody arranging delivery. What makes these problems dangerous is that they are silent: the hospital does not find out, the patient does not call, and the first anyone hears of it is at the next admission. Finding them means asking every patient the same questions and writing down what they say, at 250,000 discharges a year, in a form somebody can act on the same morning.
+
+:::info[From the Medplum team]
+
+Panels maintains its own projection because of a gap we are working on. Medplum's new database sharding architecture is in Early Access, and it brings custom search parameters, custom resource types, and indexes on compound search parameters, which move much of this work back behind the FHIR API. It is [pre-GA](/docs/compliance/alpha-beta), so if you are running an operational workload like this one and want to try it, tell us at [hello@medplum.com](mailto:hello@medplum.com). Thanks to the Awell and Guideway teams for sharing this, and for the feedback that makes Medplum better for everyone.
+
+:::
 
 ## References
 
