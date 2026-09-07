@@ -9,8 +9,8 @@ import {
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
-  CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
+  CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
   CANDID_PRACTITIONER_PROFILE,
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
@@ -359,10 +359,7 @@ export function buildUpdatedPractitioner(
  * @param billsIndividually - Whether claims are billed under the practitioner rather than an organization.
  * @returns The Practitioner with the Candid provider flags set.
  */
-export function withCandidPractitionerExtensions(
-  practitioner: Practitioner,
-  billsIndividually: boolean
-): Practitioner {
+export function withCandidPractitionerExtensions(practitioner: Practitioner, billsIndividually: boolean): Practitioner {
   return {
     ...practitioner,
     extension: [

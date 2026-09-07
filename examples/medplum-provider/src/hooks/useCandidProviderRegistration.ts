@@ -76,9 +76,7 @@ export function useCandidProviderRegistration(
             .find((r): r is ProviderResource => r?.resourceType === resourceType);
           const candidProviderId = match && getIdentifier(match, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
           setRegistration(
-            candidProviderId
-              ? { status: 'registered', candidProviderId, npi: trimmedNpi }
-              : { status: 'unregistered' }
+            candidProviderId ? { status: 'registered', candidProviderId, npi: trimmedNpi } : { status: 'unregistered' }
           );
         })
         .catch((error) => {

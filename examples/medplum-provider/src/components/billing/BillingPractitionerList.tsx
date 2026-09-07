@@ -97,13 +97,14 @@ export function BillingPractitionerList(props: BillingPractitionerListProps): JS
         hideFilters
         onLoad={handleLoad}
         onChange={(e) => setSearch(e.definition)}
-        onClick={(e) => onSelectPractitioner(e.resource as WithId<Practitioner>, billsUnder[`Practitioner/${e.resource.id}`])}
+        onClick={(e) =>
+          onSelectPractitioner(e.resource as WithId<Practitioner>, billsUnder[`Practitioner/${e.resource.id}`])
+        }
       />
 
       <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
-        Every practitioner in the project is listed here. A claim names the practitioner as its
-        rendering provider, and bills under the organization on their role — or under the
-        practitioner themselves when they have none.
+        Every practitioner in the project is listed here. A claim names the practitioner as its rendering provider, and
+        bills under the organization on their role — or under the practitioner themselves when they have none.
       </Alert>
     </Stack>
   );

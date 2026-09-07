@@ -8,8 +8,8 @@ import { AddressInput, Modal } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
-import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
+import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 export interface BillingOrganizationModalProps {

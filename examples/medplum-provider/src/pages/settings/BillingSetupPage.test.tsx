@@ -26,9 +26,9 @@ import {
   CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
   CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
   CANDID_GET_PAYERS_BOT_IDENTIFIER,
-  CANDID_LIST_PROVIDERS_BOT_IDENTIFIER,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
+  CANDID_LIST_PROVIDERS_BOT_IDENTIFIER,
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
@@ -1146,7 +1146,6 @@ describe('BillingSetupPage', () => {
     });
   });
 
-
   describe('Candid registration lookup', () => {
     // What Candid returns for an NPI it already holds a provider for.
     const candidOrg: Organization = {
@@ -1360,5 +1359,4 @@ describe('BillingSetupPage', () => {
       expect(executeSpy).not.toHaveBeenCalled();
     });
   });
-
 });

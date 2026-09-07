@@ -8,6 +8,7 @@ import { AddressInput, Modal, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingPractitioners } from '../../hooks/useBillingPractitioners';
+import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
   EIN_SYSTEM,
@@ -16,7 +17,6 @@ import {
   isCompleteBillingAddress,
   isValidNpi,
 } from '../../utils/billing';
-import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 export interface BillingPractitionerModalProps {
@@ -132,8 +132,8 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
               onChange={setOrganization}
             />
             <Input.Description mt={4}>
-              Claims name this organization as the billing provider. Leave it empty to bill under the practitioner's
-              own NPI.
+              Claims name this organization as the billing provider. Leave it empty to bill under the practitioner's own
+              NPI.
             </Input.Description>
           </div>
           <TextInput
