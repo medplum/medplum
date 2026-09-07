@@ -93,6 +93,21 @@ Medplum supports the following first party integrations.
       <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>E-Prescribe</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.dosespot.com/">DoseSpot</a></td>
+      <td>E-Prescribe</td>
+      <td>Embedded iFrame e-prescribing, including EPCS</td>
+      <td><a href="/docs/integration/dosespot">DoseSpot Integration</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.dawsystems.com/">ScriptSure</a></td>
+      <td>E-Prescribe</td>
+      <td>API-driven e-prescribing with custom FHIR operations and bots</td>
+      <td><a href="/docs/integration/scriptsure">ScriptSure Integration</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Communications</strong></td>
     </tr>
     <tr>
@@ -115,6 +130,12 @@ Medplum supports the following first party integrations.
       <td>Billing</td>
       <td>Revenue cycle and insurance eligibility check</td>
       <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.stedi.com/">Stedi</a></td>
+      <td>Billing</td>
+      <td>Insurance eligibility checks (X12 270/271) and professional claim submission (X12 837P/277/835)</td>
+      <td><a href="/docs/integration/stedi">Stedi Integration</a></td>
     </tr>
     <tr style={{backgroundColor: '#f6f8fa'}}>
       <td colspan="4"><strong>Data and Observability</strong></td>

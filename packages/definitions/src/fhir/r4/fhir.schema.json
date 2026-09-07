@@ -203,7 +203,9 @@
       "ProjectDefaultAccessPolicies": "#/definitions/ProjectDefaultAccessPolicies",
       "DicomStudy": "#/definitions/DicomStudy",
       "DicomSeries": "#/definitions/DicomSeries",
-      "DicomInstance": "#/definitions/DicomInstance"
+      "DicomInstance": "#/definitions/DicomInstance",
+      "Enterprise": "#/definitions/Enterprise",
+      "EnterpriseProject": "#/definitions/EnterpriseProject"
     }
   },
   "oneOf": [
@@ -803,6 +805,12 @@
     },
     {
       "$ref": "#/definitions/DicomInstance"
+    },
+    {
+      "$ref": "#/definitions/Enterprise"
+    },
+    {
+      "$ref": "#/definitions/EnterpriseProject"
     }
   ],
   "definitions": {
@@ -1404,6 +1412,12 @@
         },
         {
           "$ref": "#/definitions/DicomInstance"
+        },
+        {
+          "$ref": "#/definitions/Enterprise"
+        },
+        {
+          "$ref": "#/definitions/EnterpriseProject"
         }
       ]
     },
@@ -65664,6 +65678,119 @@
         "sopInstanceUid",
         "metadata",
         "raw"
+      ]
+    },
+    "Enterprise": {
+      "description": "A group of Medplum projects managed as a single enterprise.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a Enterprise resource",
+          "const": "Enterprise"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/string"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "text": {
+          "description": "A human-readable narrative that contains a summary of the resource.",
+          "$ref": "#/definitions/Narrative"
+        },
+        "contained": {
+          "description": "Resources that do not have an independent existence apart from the resource that contains them.",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          },
+          "type": "array"
+        },
+        "extension": {
+          "description": "Additional content defined by implementations.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "Extensions that cannot be ignored.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "identifier": {
+          "description": "Identifiers for the enterprise.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the enterprise.",
+          "$ref": "#/definitions/string"
+        },
+        "status": {
+          "description": "Whether the enterprise is active or inactive.",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "organization": {
+          "description": "The organization represented by the enterprise.",
+          "$ref": "#/definitions/Reference"
+        },
+        "code": {
+          "description": "Codes used to classify the enterprise.",
+          "items": {
+            "$ref": "#/definitions/CodeableConcept"
+          },
+          "type": "array"
+        },
+        "project": {
+          "description": "Projects belonging to the enterprise and their deployment environments.",
+          "items": {
+            "$ref": "#/definitions/EnterpriseProject"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "name",
+        "status"
+      ]
+    },
+    "EnterpriseProject": {
+      "description": "Projects belonging to the enterprise and their deployment environments.",
+      "properties": {
+        "project": {
+          "description": "A project belonging to the enterprise.",
+          "$ref": "#/definitions/Reference"
+        },
+        "code": {
+          "description": "Whether the project is a production or non-production environment.",
+          "enum": [
+            "production",
+            "non-production"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "project",
+        "code"
       ]
     }
   }

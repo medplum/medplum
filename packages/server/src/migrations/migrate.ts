@@ -525,6 +525,10 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
       { columns: ['project', 'userName'], indexType: 'btree', unique: true }
     );
   }
+
+  if (resourceType === 'Observation') {
+    result.indexes.push({ columns: ['subject', 'date'], indexType: 'btree' });
+  }
 }
 
 function buildAddressTable(result: SchemaDefinition): void {
@@ -643,11 +647,7 @@ function buildCodingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'Coding',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
@@ -656,7 +656,6 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'language', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
       {
         columns: ['system', 'code'],
         indexType: 'btree',
@@ -727,11 +726,7 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'CodeSystem_Property',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'type', type: 'TEXT', notNull: true },
@@ -879,6 +874,10 @@ export async function executeMigrationActions(
         await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
+      case 'DROP_INVALID_INDEX': {
+        await fns.dropInvalidIndexConcurrently(client, results, action.schemaName, action.indexName);
+        break;
+      }
       case 'REINDEX_CONCURRENTLY': {
         await fns.reindexConcurrently(client, results, action.target, action.name);
         break;
@@ -919,6 +918,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
 
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
   b.newLine();
 
   for (const action of actions) {
@@ -1043,6 +1043,12 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
         b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        break;
+      }
+      case 'DROP_INVALID_INDEX': {
+        b.appendNoWrap(
+          `await fns.dropInvalidIndexConcurrently(client, results, '${action.schemaName}', '${action.indexName}');`
+        );
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1221,7 +1227,7 @@ function getDropIndexQuery(indexName: string): string {
   return `DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"`;
 }
 
-function generateIndexesActions(
+export function generateIndexesActions(
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
@@ -1262,7 +1268,15 @@ function generateIndexesActions(
     assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
-    const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
+    // A physical index can satisfy multiple structurally identical target declarations, such as a unique index
+    // declaration that duplicates a primary key. Preserve that compatibility while preferring the expected name.
+    const matchingStartIndexes = startTable.indexes.filter((i) => indexDefinitionsEqual(i, targetIndex));
+    // REINDEX CONCURRENTLY can leave a duplicate _ccnew/_ccold index behind after a failure. Prefer the expected
+    // name, then any established legacy name, so the temporary copy is the index classified as unmatched.
+    const startIndex =
+      matchingStartIndexes.find((i) => parseIndexName(i.indexdef ?? '') === indexName) ??
+      matchingStartIndexes.find((i) => !isConcurrentReindexTemporaryIndex(i)) ??
+      matchingStartIndexes[0];
     if (startIndex) {
       matchedIndexes.add(startIndex);
     } else {
@@ -1287,6 +1301,10 @@ function generateIndexesActions(
     }
   }
   return actions;
+}
+
+function isConcurrentReindexTemporaryIndex(index: IndexDefinition): boolean {
+  return /_cc(?:new|old)\d*$/.test(parseIndexName(index.indexdef ?? '') ?? '');
 }
 
 export function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {

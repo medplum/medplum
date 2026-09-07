@@ -58,7 +58,8 @@ export function isValidNpi(npi: string): boolean {
 
 /**
  * Validates a billing phone number: 10 digits (after stripping formatting) whose first digit is
- * not 0 or 1. X12 claim submitters reject numbers starting with 0 or 1.
+ * not 0 or 1. X12 claim submitters reject numbers starting with 0 or 1. The billing organization
+ * profile only requires that a phone exist, so this format rule is enforced here.
  * @param phone - The candidate phone string, formatting allowed.
  * @returns True when the phone is usable on a claim.
  */
@@ -274,9 +275,10 @@ export function buildUpdatedOrganization(
 
 /**
  * Whether an address carries everything Candid requires of a provider address: street line, city,
- * two-letter state, and ZIP. The candid-create-provider bot rejects a partial address, so the form
- * validates it here rather than letting the registration fail.
- * @param address - The address entered on the billing organization form.
+ * two-letter state, and ZIP. The candid-create-provider bot rejects a partial address, so forms whose
+ * address the server profile cannot require (a practitioner's is only needed when they bill
+ * individually) validate it here rather than letting the registration fail.
+ * @param address - The address entered on a billing form.
  * @returns True when the address is complete enough to register with Candid.
  */
 export function isCompleteBillingAddress(address: Address | undefined): boolean {
