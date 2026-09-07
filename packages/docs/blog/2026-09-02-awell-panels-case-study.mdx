@@ -5,9 +5,9 @@ authors: thomas
 tags: [case-study, fhir-datastore, self-host, careplan]
 ---
 
-[Awell](https://www.awellhealth.com/) builds care orchestration infrastructure, and on top of it **Panels**, a work surface where care teams define a patient population, configure how they work it, and trigger what happens next. Panels is population and workflow agnostic by design: intake, surgery prep, prescription refill, chronic care management and post-discharge follow-up each need to see different data and follow different steps.
+[Awell](https://www.awellhealth.com/) builds care orchestration infrastructure, and on top of it **[Panels](https://panels.health)**, a work surface where care teams define a patient population, configure how they work it, and trigger what happens next. Panels is population and workflow agnostic by design: intake, surgery prep, prescription refill, chronic care management and post-discharge follow-up each need to see different data and follow different steps.
 
-At a national post-acute provider running 180+ inpatient facilities, post-discharge follow-up runs on Panels at roughly 250,000 discharges a year, with about 500 weekly users. Panels did not exist before this project. It went from its first two hospitals to all 180 in nine months, on self-hosted Medplum. [Guideway Care](https://www.guidewaycare.com/) assembled the solution, implemented it, and ran the rollout.
+At a national post-acute provider running 180+ inpatient facilities, post-discharge follow-up runs on Panels at roughly 250,000 discharges a year, with about 500 weekly users. A voice AI agent handles routine outreach; case manager assistants handle everyone the eligibility rules exclude. Both work the same panel. Panels did not exist before this project. It went from its first two hospitals to all 180 in nine months, on self-hosted Medplum. [Guideway Care](https://www.guidewaycare.com/) assembled the solution, implemented it, and ran the rollout.
 
 {/* truncate */}
 
@@ -18,6 +18,8 @@ At a national post-acute provider running 180+ inpatient facilities, post-discha
 ## The load profile
 
 ![Daily discharges enter Awell orchestration, which drives the Bland.ai voice agent and writes to Awell Panels on Medplum, where the care team works the list.](/img/blog/awell-panels-architecture.png)
+
+Awell's orchestration engine runs the 14-day post-discharge episode and owns every step in it; [Bland.ai](https://www.bland.ai/) places the calls; Panels is the single surface where every discharge lands, the ones the voice agent handles and the ones it does not.
 
 Discharges arrive as two files each morning. Each file starts a care flow for every discharged patient, and every flow writes as it goes: risk score, discharge disposition, enrolment, facility defaults, local timezone, contact order, scheduled call attempts. Panel rows have to carry the right values, in the right views, before anyone looks at them.
 
@@ -46,7 +48,7 @@ The failure mode is not simply slowness. It is building an operational product o
 - **[Bots](/docs/bots)**: care flows emit data through webhooks, and Bots turn that data into FHIR resources.
 - **[Access policies](/docs/access/access-policies)**: facility-scoped visibility over one shared configuration, which is how 180 hospitals run on a single panel and four views without seeing each other's patients.
 - **[FHIR search](/docs/search/basic-search) and [GraphQL](/docs/graphql)**: a patient detail view assembles the discharge summary, care team, task history and episode timeline in one retrieval instead of six.
-- **[Self-hosting](/docs/self-hosting)**: Awell runs Medplum on GCP.
+- **[Self-hosting](/docs/self-hosting)**: Awell runs Medplum on GCP. Self-hosting an open source store leaves trades available that a managed store cannot offer. Not because managed stores are worse, but because the option does not exist. The ceiling on what you can build is set by how much of the system you can see.
 
 ## How Panels evolved
 
@@ -98,7 +100,8 @@ Panels maintains its own projection because of a gap we are working on. Medplum'
 
 ## References
 
-- [Awell](https://www.awellhealth.com/)
+- [Awell](https://www.awellhealth.com/) and [Awell Panels](https://panels.health)
+- [Guideway Care](https://www.guidewaycare.com/)
 - [Awell Panels walkthrough](https://youtu.be/pH7ME9FRPLY) and [building a Panel](https://youtu.be/e_jwOw4lo8E)
 - [Medplum Subscriptions](/docs/subscriptions) and [Bots](/docs/bots)
 - [Medplum Access Policies](/docs/access/access-policies)
