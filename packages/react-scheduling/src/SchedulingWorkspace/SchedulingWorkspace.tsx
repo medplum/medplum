@@ -45,6 +45,10 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ * - Highlights the time last chosen, wherever it was chosen: the click that opened the
+ *   pane, then whatever the form's time search settles on, and nothing while the form
+ *   holds no time. The calendar is never moved to reach it — a highlight off the week
+ *   on screen is kept, and is drawn again on paging back to it.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -66,7 +70,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [range, setRange] = useState<DateTimeRange>();
 
+  // What was clicked
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  // What the calendar highlights
+  const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per schedulable role.
@@ -148,8 +155,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  const startBooking = useCallback((interval: DateTimeRange): void => {
+    setBookingSelection(interval);
+    setHighlight(interval);
+  }, []);
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
+    setHighlight(undefined);
     setTimeFinderOpen(false);
   }, []);
 
@@ -199,8 +212,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading}
-          onSelectInterval={setBookingSelection}
-          selection={bookingSelection}
+          onSelectInterval={startBooking}
+          selection={highlight}
         />
       </div>
       {bookingSelection && (
@@ -213,6 +226,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             key={bookingSelection.start.toDateString()}
             defaultStart={bookingSelection.start}
             onToggleTimeFinder={setTimeFinderOpen}
+            onChangeTime={setHighlight}
             onBooked={finishBooking}
           />
         </div>

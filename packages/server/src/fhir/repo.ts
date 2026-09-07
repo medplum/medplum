@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEventEntityDetail,
   Binary,
   Bundle,
   BundleEntry,
@@ -86,7 +87,9 @@ import {
   CreateInteraction,
   DeleteInteraction,
   HistoryInteraction,
+  isReadOnlyAction,
   logAuditEvent,
+  numResultsDetail,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
@@ -1697,7 +1700,11 @@ export class Repository extends FhirRepository implements Disposable {
       // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
+        searchRequest,
+        entityDetail: numResultsDetail(result.entry?.length ?? 0),
+        durationMs,
+      });
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
@@ -1753,6 +1760,7 @@ export class Repository extends FhirRepository implements Disposable {
         };
         this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
           searchRequest: refSearch,
+          entityDetail: numResultsDetail(result[ref]?.length ?? 0),
           durationMs,
         });
       }
@@ -2378,6 +2386,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options -
    * @param options.resource - Optional resource to associate with the AuditEvent.
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
+   * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
    */
   private logEvent(
@@ -2387,18 +2396,20 @@ export class Repository extends FhirRepository implements Disposable {
     options?: {
       resource?: Resource | Reference;
       searchRequest?: SearchRequest;
+      entityDetail?: AuditEventEntityDetail[];
       durationMs?: number;
     }
   ): void {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
+    const resourceType = isResource(resource) ? resource?.resourceType : undefined;
 
     if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
           system: isSystem,
-          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+          resourceType,
         },
       });
     }
@@ -2410,8 +2421,8 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if (isSystem) {
-      // Don't log system events.
+    if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
+      // Don't log system read or audit events
       return;
     }
     let outcomeDesc: string | undefined = undefined;
@@ -2434,6 +2445,7 @@ export class Repository extends FhirRepository implements Disposable {
         description: outcomeDesc,
         resource,
         searchQuery: query,
+        entityDetail: options?.entityDetail,
         durationMs: options?.durationMs,
         client: this.context.client,
       }

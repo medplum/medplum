@@ -4,6 +4,127 @@
   "type": "collection",
   "entry": [
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "An identifier for the enterprise",
+        "code": "identifier",
+        "base": ["Enterprise"],
+        "type": "token",
+        "expression": "Enterprise.identifier"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-name",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-name",
+        "version": "4.0.1",
+        "name": "name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the enterprise",
+        "code": "name",
+        "base": ["Enterprise"],
+        "type": "string",
+        "expression": "Enterprise.name"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The status of the enterprise",
+        "code": "status",
+        "base": ["Enterprise"],
+        "type": "token",
+        "expression": "Enterprise.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-organization",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-organization",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-organization",
+        "version": "4.0.1",
+        "name": "organization",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The organization represented by the enterprise",
+        "code": "organization",
+        "base": ["Enterprise"],
+        "type": "reference",
+        "expression": "Enterprise.organization",
+        "target": ["Organization"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-code",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-code",
+        "version": "4.0.1",
+        "name": "code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "A code that classifies the enterprise",
+        "code": "code",
+        "base": ["Enterprise"],
+        "type": "token",
+        "expression": "Enterprise.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-project",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-project",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-project",
+        "version": "4.0.1",
+        "name": "project",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "A project belonging to the enterprise",
+        "code": "project",
+        "base": ["Enterprise"],
+        "type": "reference",
+        "expression": "Enterprise.project.project",
+        "target": ["Project"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Enterprise-project-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Enterprise-project-code",
+        "url": "https://medplum.com/fhir/SearchParameter/Enterprise-project-code",
+        "version": "4.0.1",
+        "name": "project-code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The deployment environment of a project in the enterprise",
+        "code": "project-code",
+        "base": ["Enterprise"],
+        "type": "token",
+        "expression": "Enterprise.project.code"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/Project-identifier",
       "resource": {
         "resourceType": "SearchParameter",

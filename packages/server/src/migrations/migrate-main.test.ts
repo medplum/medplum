@@ -52,9 +52,18 @@ vi.mock('node:fs', async (importOriginal) => {
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as loggerModule from '../logger';
+import * as dataMigrations from './data';
 import * as migrate from './migrate';
-import { addDataMigrationToManifest, buildMigrationExports, DATA_DIR, runFromCli, SCHEMA_DIR } from './migrate-main';
+import {
+  addDataMigrationToManifest,
+  buildMigrationExports,
+  DATA_DIR,
+  getMigrationFilenames,
+  runFromCli,
+  SCHEMA_DIR,
+} from './migrate-main';
 import { getPostDeployMigrationVersions, getPreDeployMigrationVersions } from './migration-versions';
+import * as schemaMigrations from './schema';
 
 describe('addDataMigrationToManifest', () => {
   beforeEach(() => {
@@ -131,6 +140,15 @@ describe('addDataMigrationToManifest', () => {
 });
 
 describe('buildMigrationExports', () => {
+  test.each([
+    ['schema', SCHEMA_DIR, schemaMigrations],
+    ['data', DATA_DIR, dataMigrations],
+  ])('%s index registers every migration file', (name, directory, registeredMigrations) => {
+    const migrationFiles = getMigrationFilenames(directory).map((filename) => filename.slice(0, -3));
+
+    expect(Object.keys(registeredMigrations)).toContainExactly(migrationFiles);
+  });
+
   test('exports versions in numeric order, guarding each digit-count boundary', () => {
     const guard = [
       '/* CAUTION: LOAD-BEARING COMMENT */',

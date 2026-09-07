@@ -7,9 +7,11 @@ import type { JSX } from 'react';
 import { ArrayColumnPadding } from './db/ArrayColumnPadding';
 import { ColumnStatistics } from './db/ColumnStatistics';
 import { GINIndexes } from './db/GINIndexes';
+import { IndexHealth } from './db/IndexBloat';
 
 const tabs = [
   { label: 'GIN Indexes', value: 'gin-indexes' },
+  { label: 'Index Health', value: 'index-health' },
   { label: 'Column Statistics', value: 'column-statistics' },
   { label: 'Array Column Padding', value: 'array-padding' },
 ];
@@ -28,6 +30,9 @@ export function DatabaseToolsPage(): JSX.Element {
         <LinkTabs baseUrl="/admin/super/db" tabs={tabs}>
           <Tabs.Panel value="gin-indexes" pt="md">
             <GINIndexes />
+          </Tabs.Panel>
+          <Tabs.Panel value="index-health" pt="md">
+            <IndexHealth />
           </Tabs.Panel>
           <Tabs.Panel value="column-statistics" pt="md">
             <ColumnStatistics />
