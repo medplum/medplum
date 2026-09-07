@@ -140,9 +140,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<DicomNotif
 }
 ```
 
-In `dicomweb` mode this is the natural place to reconcile imaging against the chart — look up the
-`DicomStudy` the server just created, match `patientId` against your MRN identifier system, and link
-the two. See [Relationship to FHIR ImagingStudy](./data-model.md#relationship-to-fhir-imagingstudy).
+In `dicomweb` mode the server already creates an `ImagingStudy` and resolves its `subject` when the
+DICOM Patient ID matches exactly one `Patient` in the project. A Bot is the place to handle the cases
+that need judgment — studies whose patient could not be resolved, or one matched to the wrong record.
+Correcting `ImagingStudy.subject` by hand sticks; the server never downgrades it. See
+[Relationship to FHIR ImagingStudy](./data-model.md#relationship-to-fhir-imagingstudy).
 
 ## Testing a channel
 

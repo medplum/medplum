@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ResourceNotFoundException } from '@aws-sdk/client-lambda';
 import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
+import { resolveId } from '@medplum/core';
 import type { DicomInstance, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
@@ -13,7 +14,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { addCronJobs } from './cron';
-import { addDicomJobs } from './dicom';
+import { addDicomJobs, addDicomStudyJob } from './dicom';
 import { addDownloadJobs } from './download';
 import { addSubscriptionJobs } from './subscription';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
@@ -156,6 +157,20 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     });
   }
 
+  if (interaction === 'delete') {
+    // Deletes are otherwise excluded from this block, but a removed instance or series leaves the
+    // study's Q/R counts and its ImagingStudy overstating what is actually retrievable.
+    try {
+      await addDicomStudyJobForDeletedResource(resource);
+    } catch (err) {
+      getLogger().error('Error adding DICOM study job for delete', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        err,
+      });
+    }
+  }
+
   if (interaction !== 'delete') {
     try {
       await addDownloadJobs(resource, previousVersion, context);
@@ -188,5 +203,22 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
         });
       }
     }
+  }
+}
+
+/**
+ * Recomputes the parent study when a DICOM instance or series is deleted.
+ * @param resource - The deleted resource.
+ */
+async function addDicomStudyJobForDeletedResource(resource: Resource): Promise<void> {
+  let studyId: string | undefined;
+  if (resource.resourceType === 'DicomInstance' || resource.resourceType === 'DicomSeries') {
+    studyId = resolveId(resource.study);
+  } else if (resource.resourceType === 'DicomStudy') {
+    return; // The study itself is gone; there is nothing left to recompute.
+  }
+
+  if (studyId) {
+    await addDicomStudyJob(studyId);
   }
 }

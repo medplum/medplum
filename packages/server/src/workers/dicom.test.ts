@@ -117,6 +117,33 @@ describe('DICOM Worker', () => {
     });
   });
 
+  test('addDicomJobs also queues the study job, deduplicated per study', async () => {
+    const add = vi.fn();
+    vi.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);
+
+    await withTestContext(
+      () =>
+        addDicomJobs(
+          {
+            resourceType: 'DicomInstance',
+            id: 'instance-id',
+            study: { reference: 'DicomStudy/study-id' },
+            raw: { reference: 'Binary/new' },
+          } as WithId<DicomInstance>,
+          {} as DicomInstance
+        ),
+      { requestId: 'request-id', traceId: 'trace-id' }
+    );
+
+    // Same queue as the instance job, discriminated by name. The deduplication id is what collapses
+    // a burst of instances into roughly one recomputation of their study.
+    expect(add).toHaveBeenCalledWith(
+      'DicomStudyJobData',
+      { studyId: 'study-id', requestId: 'request-id', traceId: 'trace-id' },
+      { deduplication: { id: 'dicom-study:study-id', keepLastIfActive: true } }
+    );
+  });
+
   test('addDicomJobs skips job when raw binary is unchanged', async () => {
     const add = vi.fn();
     vi.spyOn(queueRegistry, 'get').mockReturnValue({ add } as any);

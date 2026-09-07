@@ -39,5 +39,9 @@ async function notImplementedStub(req: Request, res: Response): Promise<void> {
     path: req.path,
     query: req.query,
   });
-  res.sendStatus(200);
+  // Not the empty 200 this used to send: an ImagingStudy advertises a WADO-RS Endpoint, and a client
+  // following it to a route we do not serve must not read success-with-no-content as "this study is
+  // empty". 404 rather than 501 because an unbuilt route is not a server fault and should not page
+  // anyone; the body is what distinguishes it from a study that genuinely does not exist.
+  res.status(404).json({ error: 'DICOMweb endpoint not implemented' });
 }
