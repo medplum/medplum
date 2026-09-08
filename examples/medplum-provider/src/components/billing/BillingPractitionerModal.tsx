@@ -20,11 +20,8 @@ import {
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
- * Props for the practitioner billing modal.
- *
- * - `practitioner` — the practitioner to edit; undefined keeps the modal closed.
- * - `billingOrganization` — the organization on the practitioner's active role, from the row that
- *   opened the modal.
+ * Props for the practitioner billing modal. `practitioner` is the one to edit (undefined keeps the modal
+ * closed); `billingOrganization` is the organization on their active role, from the row that opened it.
  */
 export interface BillingPractitionerModalProps {
   readonly billingPractitioners: BillingPractitioners;

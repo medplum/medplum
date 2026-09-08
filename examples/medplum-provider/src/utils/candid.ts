@@ -36,10 +36,8 @@ export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
 };
 
 /**
- * Profile the medplum-ee candid-health package publishes for billing organizations: it requires the
- * NPI and Tax ID identifiers, the 'prov' organization type, and a complete address. Saving a billing
- * organization claims it so the server enforces those on write; a project without the Candid package
- * deployed has no such StructureDefinition, and the server skips a profile it cannot resolve.
+ * Profile the medplum-ee candid-health package publishes for billing organizations (NPI, Tax ID, `prov` type,
+ * complete address). Saving claims it so the server enforces those; an unresolvable profile is skipped.
  */
 export const CANDID_BILLING_ORGANIZATION_PROFILE =
   'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization';
@@ -61,9 +59,8 @@ export const CANDID_EDIT_PROVIDER_BOT_IDENTIFIER = {
 };
 
 /**
- * Bot that lists the organization providers registered in Candid, as FHIR resources. Looked up by
- * NPI, it answers whether Candid already knows a provider — the resource identifier below only
- * records that a registration once succeeded from here.
+ * Bot that lists the organization providers registered in Candid, by NPI, as FHIR resources. It answers whether
+ * Candid knows a provider now; the identifier below only records that a registration once succeeded here.
  */
 export const CANDID_LIST_PROVIDERS_BOT_IDENTIFIER = {
   system: CANDID_INTEGRATION_SYSTEM,
@@ -77,9 +74,8 @@ export const CANDID_LIST_PROVIDERS_BOT_IDENTIFIER = {
 export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';
 
 /**
- * Candid requires isBilling/isRendering on every organization provider and FHIR has no native
- * field for them, so candid-create-provider reads them from these extensions and rejects a
- * resource that carries neither.
+ * Extensions candid-create-provider reads isBilling/isRendering from, since FHIR has no native field for them;
+ * a resource carrying neither is rejected.
  */
 export const CANDID_IS_BILLING_PROVIDER_EXTENSION =
   'https://candidhealth.com/fhir/StructureDefinition/is-billing-provider';

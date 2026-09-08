@@ -19,10 +19,8 @@ const SEARCH_PAGE_SIZE = 20;
  * State and operations for the Candid payer directory.
  *
  * - `botId` — ID of the candid-get-payers bot; undefined while looking up, '' when not deployed.
- * - `importedUuids` — Candid payer UUIDs of the payers imported into the project, recognized by the
- *   Candid payer UUID identifier.
- * - `payersVersion` — increments whenever an import or a refresh changes the imported payers, so
- *   the list can refetch.
+ * - `importedUuids` — Candid payer UUIDs of the payers imported into the project.
+ * - `payersVersion` — increments whenever an import or refresh changes the imported payers, so the list can refetch.
  * - `searchResults` — the current page of directory search results, or undefined before the first search.
  * - `pageCount` — pages reachable in the pagination control: loaded pages plus one past them
  *   when the directory has more.

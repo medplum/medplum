@@ -26,9 +26,8 @@ export const PAYER_ORGANIZATION_TYPE = 'pay';
 export const PROVIDER_ORGANIZATION_TYPE = 'prov';
 
 /**
- * Marker identifier stamped on organizations managed through Billing Settings. The billing
- * organization list filters on it, so unrelated Organizations (payers, facilities, synthetic data)
- * never appear no matter how many the project holds.
+ * Marker identifier stamped on organizations managed through Billing Settings; the billing organization
+ * list filters on it so unrelated Organizations (payers, facilities) never appear.
  */
 export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
 export const BILLING_ORGANIZATION_IDENTIFIER_VALUE = 'billing-organization';
@@ -59,9 +58,8 @@ export function isValidNpi(npi: string): boolean {
 }
 
 /**
- * Validates a billing phone number: 10 digits (after stripping formatting) whose first digit is
- * not 0 or 1. X12 claim submitters reject numbers starting with 0 or 1. The billing organization
- * profile only requires that a phone exist, so this format rule is enforced here.
+ * Validates a billing phone: 10 digits after stripping formatting, not starting with 0 or 1, which X12
+ * claim submitters reject. The server profile only requires that a phone exist.
  * @param phone - The candidate phone string, formatting allowed.
  * @returns True when the phone is usable on a claim.
  */
@@ -225,10 +223,8 @@ export interface BillingOrganizationFormValues {
 }
 
 /**
- * Applies billing form values onto an Organization, stamping the `prov` (Healthcare Provider)
- * organization type so the org is found by the encounter billing picker, and the provider-app
- * marker identifier so it is listed in Billing Settings. Identifiers with unrelated systems and
- * all other existing fields are preserved.
+ * Applies billing form values onto an Organization, stamping the `prov` type (so the encounter billing picker
+ * finds it) and the provider-app marker identifier (so Billing Settings lists it). Other fields are preserved.
  * @param organization - The existing Organization, or a bare `{resourceType: 'Organization'}` for create.
  * @param fields - The billing form values.
  * @returns The updated Organization resource (not persisted).
@@ -274,10 +270,8 @@ export function buildUpdatedOrganization(
 }
 
 /**
- * Whether an address carries everything Candid requires of a provider address: street line, city,
- * two-letter state, and ZIP. The candid-create-provider bot rejects a partial address, so forms whose
- * address the server profile cannot require (a practitioner's is only needed when they bill
- * individually) validate it here rather than letting the registration fail.
+ * Whether an address has the street, city, two-letter state and ZIP Candid requires of a provider. The
+ * server profile cannot require a practitioner's address, so forms check it here before registration.
  * @param address - The address entered on a billing form.
  * @returns True when the address is complete enough to register with Candid.
  */
@@ -286,10 +280,8 @@ export function isCompleteBillingAddress(address: Address | undefined): boolean 
 }
 
 /**
- * Returns a copy of the Organization carrying the isBilling/isRendering extensions that
- * candid-create-provider requires. Billing organizations bill under their own NPI while the
- * rendering provider is the practitioner, so isBilling is true and isRendering false. Extensions
- * with other URLs are preserved.
+ * Returns a copy of the Organization with the isBilling/isRendering extensions candid-create-provider requires:
+ * a billing organization bills under its own NPI while the practitioner renders, so isBilling only.
  * @param organization - The billing organization.
  * @returns The Organization with the Candid provider flags set.
  */
@@ -307,9 +299,8 @@ export function withCandidProviderExtensions(organization: Organization): Organi
 }
 
 /**
- * The billing fields the practitioner form edits. The tax ID and address are only needed when the
- * practitioner bills individually: with a billing organization on their role, the organization is
- * the billing provider and supplies both.
+ * The billing fields the practitioner form edits. Tax ID and address are only needed when the practitioner
+ * bills individually; otherwise the billing organization on their role supplies both.
  */
 export interface BillingPractitionerFormValues {
   npi: string;
@@ -318,10 +309,8 @@ export interface BillingPractitionerFormValues {
 }
 
 /**
- * Returns a copy of the Practitioner with the NPI identifier, tax ID and address the Candid
- * integration needs, claiming the practitioner profile so the server validates them. Also stamps the
- * provider-app marker identifier, recording that this practitioner was set up for billing here.
- * Qualifications are left untouched: the taxonomy is not collected here.
+ * Returns a copy of the Practitioner with the NPI, tax ID and address Candid needs, claiming the practitioner
+ * profile and stamping the provider-app marker identifier. Qualifications (taxonomy) are left untouched.
  * @param practitioner - The practitioner being edited.
  * @param fields - The billing fields from the form.
  * @returns The updated Practitioner, ready to store.
@@ -352,9 +341,8 @@ export function buildUpdatedPractitioner(
 }
 
 /**
- * Returns a copy of the Practitioner carrying the isBilling/isRendering extensions
- * candid-create-provider requires. A practitioner always renders the care; they are the billing
- * provider only when they bill individually, i.e. no billing organization is on their role.
+ * Returns a copy of the Practitioner with the isBilling/isRendering extensions candid-create-provider requires.
+ * A practitioner always renders; they bill only when no billing organization is on their role.
  * @param practitioner - The practitioner being registered.
  * @param billsIndividually - Whether claims are billed under the practitioner rather than an organization.
  * @returns The Practitioner with the Candid provider flags set.
@@ -373,10 +361,8 @@ export function withCandidPractitionerExtensions(practitioner: Practitioner, bil
 }
 
 /**
- * Records the Candid provider ID a live lookup found, when the resource does not carry it already.
- * Candid registers a provider once per NPI, so a second create is rejected as a duplicate: a
- * resource whose registration succeeded in Candid but whose write-back did not is stranded until
- * its ID is recorded, which stamping it here does on the next save.
+ * Stamps the Candid provider ID a live lookup found onto a resource that does not carry it yet, so a
+ * registration whose write-back failed is not re-created (Candid rejects a second provider per NPI).
  * @param resource - The organization or practitioner being saved.
  * @param candidProviderId - The provider ID Candid returned for this NPI, if any.
  * @returns The resource carrying the Candid provider identifier.

@@ -16,17 +16,13 @@ import { showErrorNotification, showSuccessNotification } from '../utils/notific
 import type { CandidProviderRegistration } from './useCandidProviderRegistration';
 
 /**
- * State and operations for the billing organizations claims are billed under. The list itself is
- * searched by the search control; this hook covers what a search cannot.
+ * Operations for the billing organizations claims are billed under; the list itself is a search control.
  *
- * - `candidBotId` — ID of the candid-create-provider bot; undefined while looking up, '' when not deployed.
- * - `candidEditBotId` — ID of the candid-edit-provider bot, which pushes changes to a provider
- *   Candid already holds; undefined while looking up, '' when not deployed.
+ * - `candidBotId` — candid-create-provider bot ID; undefined while looking up, '' when not deployed.
+ * - `candidEditBotId` — candid-edit-provider bot ID, which updates a provider Candid already holds; same states.
  * - `savedVersion` — increments on every successful save, so the list can refetch.
- * - `saveOrganization` — creates or updates a billing organization from form values and, when the
- *   bots are deployed, either registers it with Candid or, when Candid already holds the provider,
- *   pushes the change up to it. Returns the saved Organization, or undefined when the save itself
- *   failed; a failed Candid call leaves the saved Organization in place, so saving again retries.
+ * - `saveOrganization` — saves the form values, then registers with Candid or updates the provider it holds.
+ *   Returns the saved Organization, or undefined when the save failed; a failed Candid call is retried by saving again.
  */
 export interface BillingOrganizations {
   candidBotId: string | undefined;

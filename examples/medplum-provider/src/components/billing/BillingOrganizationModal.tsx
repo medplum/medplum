@@ -12,11 +12,7 @@ import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegi
 import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
-/**
- * Props for the billing organization modal.
- *
- * - `organization` — the organization to edit, or undefined to create a new one.
- */
+/** Props for the billing organization modal; `organization` is the one to edit, or undefined to create a new one. */
 export interface BillingOrganizationModalProps {
   readonly billingOrganizations: BillingOrganizations;
   readonly organization: WithId<Organization> | undefined;
@@ -25,9 +21,8 @@ export interface BillingOrganizationModalProps {
 }
 
 /**
- * The billing organization profile the server validates against covers name, NPI, Tax ID and
- * address, so a bad value there is reported by the save. Only the phone format is checked here:
- * the profile requires a phone to exist but cannot express the X12 rule on its digits.
+ * The server profile validates name, NPI, Tax ID and address on save. Only the phone format is checked
+ * here: the profile requires a phone but cannot express the X12 rule on its digits.
  */
 type FormErrors = Partial<Record<'phone', string>>;
 

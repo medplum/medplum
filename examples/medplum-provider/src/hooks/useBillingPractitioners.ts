@@ -16,19 +16,13 @@ import { showErrorNotification, showSuccessNotification } from '../utils/notific
 import type { CandidProviderRegistration } from './useCandidProviderRegistration';
 
 /**
- * State and operations for the practitioners claims are rendered by. The list itself is searched by
- * the search control; this hook covers what a search cannot.
+ * Operations for the practitioners claims are rendered by; the list itself is a search control.
  *
- * - `candidBotId` — ID of the candid-create-provider bot; undefined while looking up, '' when not deployed.
- * - `candidEditBotId` — ID of the candid-edit-provider bot, which pushes changes to a provider
- *   Candid already holds; undefined while looking up, '' when not deployed.
+ * - `candidBotId` — candid-create-provider bot ID; undefined while looking up, '' when not deployed.
+ * - `candidEditBotId` — candid-edit-provider bot ID, which updates a provider Candid already holds; same states.
  * - `savedVersion` — increments on every successful save, so the list can refetch.
- * - `savePractitioner` — writes the NPI and taxonomy onto the Practitioner, points their active
- *   PractitionerRole at the chosen billing organization (or clears it for individual billing), and,
- *   when the bots are deployed, either registers them with Candid or, when Candid already holds the
- *   provider, pushes the change up to it. Returns the
- *   saved Practitioner, or undefined when the save itself failed; a failed Candid registration
- *   leaves the saved Practitioner in place, unregistered, so saving again retries it.
+ * - `savePractitioner` — writes NPI and taxonomy, points the active PractitionerRole at the billing organization
+ *   (or clears it), then registers with or updates Candid. Returns the saved Practitioner, or undefined on failure.
  */
 export interface BillingPractitioners {
   candidBotId: string | undefined;
@@ -85,10 +79,8 @@ export function useBillingPractitioners(): BillingPractitioners {
   };
 
   /**
-   * Points the practitioner's active role at the chosen billing organization. The role is what the
-   * encounter billing tab reads to decide whether a claim bills under an organization, so clearing
-   * the organization — rather than deactivating the role — is what switches them to individual
-   * billing; the role carries unrelated authorizations that must survive.
+   * Points the practitioner's active role at the billing organization, or clears it for individual billing.
+   * The role is cleared rather than deactivated: it carries unrelated authorizations that must survive.
    * @param practitioner - The stored practitioner whose role is being pointed.
    * @param billingOrganization - The organization to bill under, or undefined for individual billing.
    */

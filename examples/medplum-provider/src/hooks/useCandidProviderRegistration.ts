@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useDebouncedValue } from '@mantine/hooks';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne } from '@medplum/react';
@@ -15,11 +16,9 @@ const LOOKUP_DEBOUNCE_MS = 400;
 /**
  * Whether Candid already knows the provider being edited.
  *
- * - `unavailable` — nothing to ask about: no form open, no complete NPI to look up, or the
- *   candid-list-providers bot is not deployed.
+ * - `unavailable` — no form open, no complete NPI to look up, or the candid-list-providers bot is not deployed.
  * - `loading` — the lookup is in flight.
- * - `registered` — Candid has a provider under `npi`; `candidProviderId` is its ID there, which the
- *   resource may not carry yet.
+ * - `registered` — Candid holds a provider under `npi`; `candidProviderId` is its ID, maybe not yet on the resource.
  * - `unregistered` — Candid has no provider with this NPI.
  * - `failed` — the lookup itself failed, so registration state is unknown.
  */
@@ -31,11 +30,8 @@ export type CandidProviderRegistration =
   | { status: 'failed'; message: string };
 
 /**
- * Asks Candid whether it already has a provider for an NPI, rather than trusting the identifier a
- * past registration stamped locally: the two disagree when a registration succeeded in Candid but
- * its write-back did not, and re-registering that NPI is rejected as a duplicate. The NPI comes
- * from the form rather than the stored resource, so a provider being given one for the first time
- * is checked before the save tries to register it.
+ * Asks Candid whether it already holds a provider for the NPI on the form, instead of trusting a locally
+ * stamped identifier: a registration whose write-back failed would otherwise be re-registered and rejected.
  * @param resourceType - The kind of provider being edited; undefined while no form is open.
  * @param npi - The NPI as entered on the form; anything but a complete NPI is not looked up.
  * @returns What Candid knows about this provider.
@@ -51,7 +47,7 @@ export function useCandidProviderRegistration(
   const listBotId = listBotOutcome === undefined ? undefined : (listBot?.id ?? '');
   const [registration, setRegistration] = useState<CandidProviderRegistration>({ status: 'unavailable' });
 
-  const trimmedNpi = npi.trim();
+  const [trimmedNpi] = useDebouncedValue(npi.trim(), LOOKUP_DEBOUNCE_MS);
 
   useEffect(() => {
     if (listBotId === undefined) {
@@ -64,31 +60,28 @@ export function useCandidProviderRegistration(
 
     let cancelled = false;
     setRegistration({ status: 'loading' });
-    const timer = setTimeout(() => {
-      medplum
-        .executeBot(listBotId, { npi: trimmedNpi }, 'application/json')
-        .then((result: Parameters) => {
-          if (cancelled) {
-            return;
-          }
-          const match = (result?.parameter ?? [])
-            .map((parameter) => parameter.resource)
-            .find((r): r is ProviderResource => r?.resourceType === resourceType);
-          const candidProviderId = match && getIdentifier(match, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
-          setRegistration(
-            candidProviderId ? { status: 'registered', candidProviderId, npi: trimmedNpi } : { status: 'unregistered' }
-          );
-        })
-        .catch((error) => {
-          if (!cancelled) {
-            setRegistration({ status: 'failed', message: normalizeErrorString(error) });
-          }
-        });
-    }, LOOKUP_DEBOUNCE_MS);
+    medplum
+      .executeBot(listBotId, { npi: trimmedNpi }, 'application/json')
+      .then((result: Parameters) => {
+        if (cancelled) {
+          return;
+        }
+        const match = (result?.parameter ?? [])
+          .map((parameter) => parameter.resource)
+          .find((r): r is ProviderResource => r?.resourceType === resourceType);
+        const candidProviderId = match && getIdentifier(match, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+        setRegistration(
+          candidProviderId ? { status: 'registered', candidProviderId, npi: trimmedNpi } : { status: 'unregistered' }
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setRegistration({ status: 'failed', message: normalizeErrorString(error) });
+        }
+      });
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
     };
   }, [medplum, listBotId, trimmedNpi, resourceType]);
 
