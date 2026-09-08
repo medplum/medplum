@@ -310,6 +310,12 @@ describe('Batch worker', () => {
           expect(countOf('medplum.batch.entries')).toStrictEqual(1);
           expect(countOf('medplum.batch.size')).toStrictEqual(1);
           expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+          expect(histogram).toHaveBeenCalledWith('medplum.batch.entries', 2, {
+            attributes: { bundleType: 'batch', async: true },
+          });
+          expect(histogram).toHaveBeenCalledWith('medplum.batch.errors', 1, {
+            attributes: { bundleType: 'batch', async: true },
+          });
         } finally {
           histogram.mockRestore();
         }
