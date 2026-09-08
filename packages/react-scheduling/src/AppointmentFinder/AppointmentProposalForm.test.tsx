@@ -384,7 +384,9 @@ describe('AppointmentProposalForm', () => {
 
       expect(await screen.findByText(/Thursday, August 20/)).toBeInTheDocument();
       expect(screen.queryByText(/Friday, August 21/)).not.toBeInTheDocument();
-      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(20);
+      // The window closes on the 21st because that is the site's next midnight; no time on
+      // the 21st itself fits inside it.
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(21);
     });
 
     test('Asks about the one day picked, with a page wide enough for it', async () => {
@@ -395,7 +397,9 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
 
       const params = lastFindParams(get) as URLSearchParams;
-      expect(new Date(params.get('end') as string).getDate()).toBe(17);
+      // `$find` only offers a time that fits inside the window, so one day is asked about
+      // up to the following midnight rather than to the last instant of the day itself.
+      expect(new Date(params.get('end') as string).getDate()).toBe(18);
       expect(Number(params.get('_count'))).toBe(50);
     });
 
@@ -424,10 +428,10 @@ describe('AppointmentProposalForm', () => {
 
       await showMoreDays();
 
-      // Not the days already answered: re-asking would waste a request per click.
-      const start = new Date(lastFindStart(get) as string);
-      expect(start.getDate()).toBe(18);
-      expect(start.getHours()).toBe(0);
+      // Not the days already answered: re-asking would waste a request per click. It opens
+      // on the midnight the first window closed on, which is the site's rather than the
+      // viewer's: midnight in Eastern time is 04:00 UTC, the clock the runner keeps.
+      expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
       expect(Number(lastFindParams(get)?.get('_count'))).toBe(100);
     });
 
@@ -520,7 +524,7 @@ describe('AppointmentProposalForm', () => {
       // `$find` pages a window at once: one request for all five days, wide enough to hold them.
       expect(findRequests(get)).toHaveLength(1);
       const params = lastFindParams(get) as URLSearchParams;
-      expect(new Date(params.get('end') as string).getDate()).toBe(21);
+      expect(new Date(params.get('end') as string).getDate()).toBe(22);
       expect(Number(params.get('_count'))).toBe(250);
     });
 
@@ -550,7 +554,7 @@ describe('AppointmentProposalForm', () => {
       expect(await screen.findByText(/Friday, August 21/)).toBeInTheDocument();
       // Grew from the day picked, rather than starting over at the day shift-clicked.
       expect(screen.getByText(/Tuesday, August 18/)).toBeInTheDocument();
-      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(21);
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(22);
     });
 
     test('Searches a stretch reaching back over today from now rather than from midnight', async () => {
@@ -684,7 +688,9 @@ describe('AppointmentProposalForm', () => {
       // 17th to 8pm on the 18th at the site: the clinic's morning missed, and its evening
       // fetched under the following day's heading.
       expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
-      expect(lastFindEnd(get)).toBe('2026-08-19T03:59:59.999Z');
+      // `$find` only offers a time that fits inside the window, so it runs to the site's
+      // next midnight: stopping short would drop the last hours the clinic is open.
+      expect(lastFindEnd(get)).toBe('2026-08-19T04:00:00.000Z');
     });
 
     test('Records the instant the site-local time stands for', async () => {
