@@ -101,7 +101,8 @@ fi
 # otplib - version 13+ requires ESM, holding back until server supports ESM
 # @mantine/* - version 9 has a few small backwards-incompatible changes, namely affecting at least our `PatientSummary` component, which would make it hard to support both Mantine 8 and 9 simultaneously
 # typescript - v7 needs us to do some work before we can use it
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/* typescript"
+# vitest - v5 needs to wait until our mock libraries can catch up on compatibility
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm zod otplib @mantine/* typescript vitest @vitest/coverage-v8"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
