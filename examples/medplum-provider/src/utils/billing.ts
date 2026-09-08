@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PatchOperation } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
-import type { Identifier, Organization, Parameters } from '@medplum/fhirtypes';
+import type { Address, ContactPoint, Identifier, Organization, Parameters } from '@medplum/fhirtypes';
 import {
+  CANDID_BILLING_ORGANIZATION_PROFILE,
   CANDID_ELIGIBILITY_PAYER_ID_SYSTEM,
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
+  CANDID_IS_BILLING_PROVIDER_EXTENSION,
+  CANDID_IS_RENDERING_PROVIDER_EXTENSION,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
@@ -14,8 +17,17 @@ import {
   CHC_PAYER_ID_SYSTEM,
 } from './candid';
 
+export const NPI_SYSTEM = 'http://hl7.org/fhir/sid/us-npi';
+export const EIN_SYSTEM = 'http://hl7.org/fhir/sid/us-ein';
 export const ORGANIZATION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/organization-type';
 export const PAYER_ORGANIZATION_TYPE = 'pay';
+export const PROVIDER_ORGANIZATION_TYPE = 'prov';
+
+// Marker identifier stamped on organizations managed through Billing Settings. The billing
+// organization list filters on it, so unrelated Organizations (payers, facilities, synthetic data)
+// never appear no matter how many the project holds.
+export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
+export const BILLING_ORGANIZATION_IDENTIFIER_VALUE = 'billing-organization';
 
 // The payer Organization fields the candid-get-payers bot owns; refresh syncs exactly these,
 // leaving identifiers and extensions from other systems untouched.
@@ -30,6 +42,18 @@ const CANDID_SUPPORT_EXTENSION_URLS = [
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
   CANDID_REMITTANCE_SUPPORT_EXTENSION,
 ];
+
+/**
+ * Validates a billing phone number: 10 digits (after stripping formatting) whose first digit is
+ * not 0 or 1. X12 claim submitters reject numbers starting with 0 or 1. The billing organization
+ * profile only requires that a phone exist, so this format rule is enforced here.
+ * @param phone - The candidate phone string, formatting allowed.
+ * @returns True when the phone is usable on a claim.
+ */
+export function isValidBillingPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length === 10 && !digits.startsWith('0') && !digits.startsWith('1');
+}
 
 /**
  * Returns a copy of the identifier list with the value for the given system
@@ -50,6 +74,21 @@ export function upsertIdentifier(
   const others = identifiers?.filter((id) => id.system !== system) ?? [];
   const existing = identifiers?.find((id) => id.system === system);
   const result = trimmed ? [...others, { ...existing, system, value: trimmed }] : others;
+  return result.length > 0 ? result : undefined;
+}
+
+/**
+ * Returns a copy of the telecom list with the first phone entry's value replaced (or a phone entry
+ * appended). Non-phone entries (email, fax) are untouched. An empty value removes the phone entry.
+ * @param telecom - The current telecom list.
+ * @param phone - The new phone value; empty/whitespace removes the entry.
+ * @returns The updated telecom list, or undefined when it would be empty.
+ */
+export function upsertPhone(telecom: ContactPoint[] | undefined, phone: string): ContactPoint[] | undefined {
+  const trimmed = phone.trim();
+  const others = telecom?.filter((t) => t.system !== 'phone') ?? [];
+  const existing = telecom?.find((t) => t.system === 'phone');
+  const result = trimmed ? [...others, { ...existing, system: 'phone' as const, value: trimmed }] : others;
   return result.length > 0 ? result : undefined;
 }
 
@@ -159,4 +198,85 @@ function appendSyncOp(
  */
 export function isPayerNotFoundError(error: unknown): boolean {
   return /EntityNotFoundError|HTTP 404|not found/i.test(normalizeErrorString(error));
+}
+
+export interface BillingOrganizationFormValues {
+  name: string;
+  npi: string;
+  /** EIN; dashes accepted, stored digits-only. */
+  ein: string;
+  phone: string;
+  address?: Address;
+}
+
+/**
+ * Applies billing form values onto an Organization, stamping the `prov` (Healthcare Provider)
+ * organization type so the org is found by the encounter billing picker, and the provider-app
+ * marker identifier so it is listed in Billing Settings. Identifiers with unrelated systems and
+ * all other existing fields are preserved.
+ * @param organization - The existing Organization, or a bare `{resourceType: 'Organization'}` for create.
+ * @param fields - The billing form values.
+ * @returns The updated Organization resource (not persisted).
+ */
+export function buildUpdatedOrganization(
+  organization: Organization,
+  fields: BillingOrganizationFormValues
+): Organization {
+  let identifier = upsertIdentifier(organization.identifier, NPI_SYSTEM, fields.npi);
+  identifier = upsertIdentifier(identifier, EIN_SYSTEM, fields.ein.replace(/\D/g, ''));
+  identifier = upsertIdentifier(identifier, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, BILLING_ORGANIZATION_IDENTIFIER_VALUE);
+
+  const hasProviderType = organization.type?.some((t) =>
+    t.coding?.some((c) => c.system === ORGANIZATION_TYPE_SYSTEM && c.code === PROVIDER_ORGANIZATION_TYPE)
+  );
+  const type = hasProviderType
+    ? organization.type
+    : [
+        ...(organization.type ?? []),
+        {
+          coding: [
+            { system: ORGANIZATION_TYPE_SYSTEM, code: PROVIDER_ORGANIZATION_TYPE, display: 'Healthcare Provider' },
+          ],
+        },
+      ];
+
+  const profile = organization.meta?.profile ?? [];
+
+  return {
+    ...organization,
+    meta: {
+      ...organization.meta,
+      // Claiming the profile is what makes the server validate these organizations; every writer
+      // that skips it is unvalidated, so stamp it on save.
+      profile: profile.includes(CANDID_BILLING_ORGANIZATION_PROFILE)
+        ? profile
+        : [...profile, CANDID_BILLING_ORGANIZATION_PROFILE],
+    },
+    name: fields.name.trim(),
+    identifier,
+    type,
+    telecom: upsertPhone(organization.telecom, fields.phone),
+    address: fields.address ? [fields.address, ...(organization.address?.slice(1) ?? [])] : organization.address,
+  };
+}
+
+/**
+ * Returns a copy of the Organization carrying the isBilling/isRendering extensions that
+ * candid-create-provider requires. Billing organizations bill under their own NPI while the
+ * rendering provider is the practitioner, so isBilling is true and isRendering false. Extensions
+ * with other URLs are preserved.
+ * @param organization - The billing organization.
+ * @returns The Organization with the Candid provider flags set.
+ */
+export function withCandidProviderExtensions(organization: Organization): Organization {
+  return {
+    ...organization,
+    extension: [
+      ...(organization.extension?.filter(
+        (e) => e.url !== CANDID_IS_BILLING_PROVIDER_EXTENSION && e.url !== CANDID_IS_RENDERING_PROVIDER_EXTENSION
+      ) ?? []),
+      { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
+      { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: false },
+    ],
+  };
 }

@@ -63,6 +63,11 @@
             "definition": "Domain specific configuration for the Medplum application."
           },
           {
+            "code": "Enterprise",
+            "display": "Enterprise",
+            "definition": "A group of Medplum projects managed as a single enterprise."
+          },
+          {
             "code": "IdentityProvider",
             "display": "IdentityProvider",
             "definition": "External Identity Provider (IdP) configuration details."
@@ -146,6 +151,80 @@
               "system": "https://medplum.com/fhir/CodeSystem/resource-types"
             }
           ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/enterprise-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "enterprise-status",
+        "url": "https://medplum.com/fhir/CodeSystem/enterprise-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "The enterprise is active."
+          },
+          {
+            "code": "inactive",
+            "display": "Inactive",
+            "definition": "The enterprise is inactive."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/enterprise-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "enterprise-status",
+        "url": "https://medplum.com/fhir/ValueSet/enterprise-status",
+        "status": "active",
+        "compose": {
+          "include": [{
+            "system": "https://medplum.com/fhir/CodeSystem/enterprise-status"
+          }]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/enterprise-project-code",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "enterprise-project-code",
+        "url": "https://medplum.com/fhir/CodeSystem/enterprise-project-code",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "production",
+            "display": "Production",
+            "definition": "The project is a production environment."
+          },
+          {
+            "code": "non-production",
+            "display": "Non-Production",
+            "definition": "The project is not a production environment."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "enterprise-project-code",
+        "url": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+        "status": "active",
+        "compose": {
+          "include": [{
+            "system": "https://medplum.com/fhir/CodeSystem/enterprise-project-code"
+          }]
         }
       }
     },

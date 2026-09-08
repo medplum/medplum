@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   created,
@@ -104,6 +105,11 @@ describe('FHIR Repo', () => {
         userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid reference');
+  });
+
+  test('Enterprise access is limited to super admins', () => {
+    expect(testProjectRepo.supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(false);
+    expect(globalSystemRepo.supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(true);
   });
 
   describe('setMode routes reads to reader until writer promotion', () => {

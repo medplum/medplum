@@ -59,10 +59,12 @@ function ColorSchemeWrapper({ children }: { children: React.ReactNode }) {
   const { setColorScheme } = useMantineColorScheme();
   useEffect(() => {
     const channel = addons.getChannel();
-    channel.on(DARK_MODE_EVENT_NAME, (darkMode: boolean) => {
+    const handleDarkMode = (darkMode: boolean): void => {
       setColorScheme(darkMode ? 'dark' : 'light');
-    });
-  }, []);
+    };
+    channel.on(DARK_MODE_EVENT_NAME, handleDarkMode);
+    return () => channel.off(DARK_MODE_EVENT_NAME, handleDarkMode);
+  }, [setColorScheme]);
   return <>{children}</>;
 }
 

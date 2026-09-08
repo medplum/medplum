@@ -206,11 +206,14 @@ export class BatchProcessor {
    * @returns The bundle response.
    */
   async run(): Promise<Bundle> {
+    // preprocess() dispatches the pre-event, so it is not repeated per transaction attempt below.
     await this.preprocess();
     const bundleInfo = this.bundleInfo as BundlePreprocessInfo;
 
     if (!this.isTransaction()) {
-      return this.processEntriesAndBuild();
+      const result = await this.processEntriesAndBuild();
+      this.dispatchPostEvent();
+      return result;
     }
 
     // withTransaction re-runs this callback on a retryable failure (e.g. a serialization conflict,
@@ -222,7 +225,7 @@ export class BatchProcessor {
     // Preprocessing (ID assignment, conditional-URL rewriting) is intentionally NOT redone, so
     // reprocessed entries reuse the same resource IDs and remain idempotent across attempts.
     const preTransactionState = cloneState(this.state);
-    return this.repo.withTransaction(
+    const result = await this.repo.withTransaction(
       (txRepo) =>
         this.withRepo(txRepo, () => {
           this.state = cloneState(preTransactionState);
@@ -233,6 +236,8 @@ export class BatchProcessor {
         resourceTypes: bundleInfo.resourceTypes,
       }
     );
+    this.dispatchPostEvent();
+    return result;
   }
 
   /**
@@ -242,6 +247,11 @@ export class BatchProcessor {
    * For the re-entrant flow, the returned {@link BatchInitialState} should be persisted to
    * durable storage before processing entries so that the processor can be rehydrated via
    * {@link BatchProcessor.fromState} after a restart.
+   *
+   * Dispatches the pre-batch telemetry event once the bundle is known to be well formed. This is
+   * the one step both flows perform exactly once — a transaction retry reuses the existing
+   * preprocessing, and a resumed async job enters through {@link BatchProcessor.fromState} — so
+   * the event describes the bundle once however it is processed.
    * @returns The durable initial state for the batch.
    */
   async preprocess(): Promise<BatchInitialState> {
@@ -263,6 +273,8 @@ export class BatchProcessor {
         throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
       }
     }
+
+    this.dispatchPreEvent();
 
     // Capture any result entries produced during preprocessing itself (error responses for
     // malformed entries). These are never re-processed, so they belong in the initial state.
@@ -353,12 +365,14 @@ export class BatchProcessor {
     return out;
   }
 
+  /**
+   * Processes remaining entries. Re-run per attempt for transactions, so emit no telemetry.
+   * @returns The response bundle.
+   */
   private async processEntriesAndBuild(): Promise<Bundle> {
-    this.dispatchPreEvent();
     while (this.hasMoreEntries()) {
       await this.processNextEntryImpl();
     }
-    this.dispatchPostEvent();
     return this.buildResultBundle();
   }
 
@@ -372,6 +386,14 @@ export class BatchProcessor {
     this.router.dispatchEvent(preEvent);
   }
 
+  /**
+   * Dispatches the post-batch telemetry event, closing out the pre-event sent by
+   * {@link BatchProcessor.preprocess}.
+   *
+   * Only the one-shot {@link BatchProcessor.run} flow uses this. The re-entrant flow spans multiple
+   * processors, so no single instance knows when the batch is finished or what every run before it
+   * produced; its driver emits the terminal event itself once the job reaches a terminal state.
+   */
   private dispatchPostEvent(): void {
     const postEvent: BatchEvent = {
       type: 'batch',
@@ -985,7 +1007,14 @@ export function buildBatchResponseBundle(
 export interface BatchEvent extends Event {
   bundleType: Bundle['type'];
   count?: number;
+  /** Error messages from the entries processed by this processor. */
   errors?: string[];
+  /**
+   * Total failed entries, when that is known more accurately than `errors`. A re-entrant (async)
+   * batch resumed after a restart only holds the errors from its own run, so its caller supplies
+   * the count from the fully assembled response bundle instead.
+   */
+  errorCount?: number;
   size?: number;
 }
 
