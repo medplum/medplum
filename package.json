@@ -45,7 +45,7 @@
     "@types/jsdom": "30.0.0",
     "@types/node": "22.20.1",
     "@vitejs/plugin-react": "6.1.1",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.0",
     "cross-env": "10.1.0",
     "esbuild": "0.28.2",
     "formidable": "3.5.4",
@@ -62,7 +62,7 @@
     "turbo": "2.10.12",
     "typescript": "6.0.3",
     "vite": "8.2.2",
-    "vitest": "4.1.11",
+    "vitest": "5.0.0",
     "vitest-websocket-mock": "0.5.0"
   },
   "packageManager": "npm@10.9.9",

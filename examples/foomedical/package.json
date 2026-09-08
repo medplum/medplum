@@ -17,7 +17,7 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.0",
     "@mantine/core": "8.3.18",
     "@mantine/hooks": "8.3.18",
     "@mantine/notifications": "8.3.18",
@@ -44,7 +44,7 @@
     "react-router": "8.3.0",
     "typescript": "6.0.3",
     "vite": "8.2.2",
-    "vitest": "4.1.11"
+    "vitest": "5.0.0"
   },
   "packageManager": "npm@10.9.9",
   "engines": {
