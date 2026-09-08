@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ServiceTypeReferenceURI } from '@medplum/core';
+import { parseReference, ServiceTypeReferenceURI } from '@medplum/core';
 import type { Device, HealthcareService, Location, Practitioner, PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SchedulingActorType } from '../actors';
@@ -570,7 +570,10 @@ describe('narrowing to a location', () => {
 
 function namesOfActorType(candidates: readonly ScheduleCandidate[], actorType: SchedulingActorType): string[] {
   return candidates
-    .filter((candidate) => getCandidateActor(candidate).reference?.startsWith(actorType))
+    .filter((candidate) => {
+      const [resourceType] = parseReference(getCandidateActor(candidate));
+      return resourceType === actorType;
+    })
     .map(getCandidateDisplay);
 }
 
