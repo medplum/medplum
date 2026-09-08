@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { Claim, ClaimResponse } from '@medplum/fhirtypes';
+import type { Claim, ClaimResponse, Contract } from '@medplum/fhirtypes';
 
 // Identifier system shared by the deployed Candid Health integration bots. The bots are looked up
 // by identifier so nothing renders (or runs) in projects where they are not deployed.
@@ -66,6 +66,18 @@ export const CANDID_LIST_PROVIDERS_BOT_IDENTIFIER = {
   system: CANDID_INTEGRATION_SYSTEM,
   value: 'candid-list-providers',
 };
+
+/**
+ * Bot that fetches a provider's Candid payer contracts as FHIR Contract resources. Contracts belong to the
+ * contracting (billing) provider, so it is queried with that provider's Candid organization provider ID.
+ */
+export const CANDID_GET_CONTRACTS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-get-contracts',
+};
+
+/** Identifier the candid-get-contracts bot stamps on each Contract it maps from Candid. */
+export const CANDID_CONTRACT_ID_SYSTEM = 'https://candidhealth.com/contract-id';
 
 /**
  * Identifier the candid-create-provider bot writes onto the registered resource; its presence
@@ -156,4 +168,34 @@ export async function refreshCandidClaimResponse(
   }
   await medplum.executeBot(bot.id, { encounterId }, 'application/json');
   return true;
+}
+
+/**
+ * Whether a Contract mapped by candid-get-contracts is in force: Candid marked it effective (FHIR `executed`) and
+ * today falls within its applies window. Candid sends plain dates, so the comparison is on the calendar date.
+ * @param contract - The Contract as returned by the candid-get-contracts bot.
+ * @param today - The date to test against; defaults to now.
+ * @returns True when the contract is executed and today is within its start/end dates.
+ */
+export function isContractInForce(contract: Contract, today: Date = new Date()): boolean {
+  if (contract.status !== 'executed') {
+    return false;
+  }
+  const start = contract.applies?.start?.slice(0, 10);
+  if (!start) {
+    return false;
+  }
+  const date = today.toISOString().slice(0, 10);
+  const end = contract.applies?.end?.slice(0, 10);
+  return start <= date && (!end || end >= date);
+}
+
+/**
+ * The payer names the contracts stand under, deduplicated in order of first appearance.
+ * @param contracts - Contracts as returned by the candid-get-contracts bot.
+ * @returns The distinct payer display names.
+ */
+export function getContractPayerNames(contracts: Contract[]): string[] {
+  const names = contracts.map((contract) => contract.authority?.[0]?.display).filter((name): name is string => !!name);
+  return Array.from(new Set(names));
 }

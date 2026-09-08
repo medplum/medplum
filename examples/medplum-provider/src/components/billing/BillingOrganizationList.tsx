@@ -63,7 +63,7 @@ export function BillingOrganizationList(props: BillingOrganizationListProps): JS
 
       <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
         {candidBotId
-          ? 'Saving an organization here also registers it with Candid as an organization provider. Its payer contracts are still set up offline in the Candid portal.'
+          ? 'Saving an organization here also registers it with Candid as an organization provider. Its payer contracts are still set up in the Candid portal; open an organization to see which are active.'
           : 'Candid requires the NPI and Tax ID entered here to match a provider registered in Candid with a payer contract, set up offline in the Candid portal.'}
       </Alert>
     </Stack>

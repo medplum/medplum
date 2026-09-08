@@ -4,10 +4,11 @@ import { Button, Input, Stack, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, getIdentifier } from '@medplum/core';
 import type { Address, Organization, Practitioner, Reference } from '@medplum/fhirtypes';
-import { AddressInput, Modal, ResourceInput } from '@medplum/react';
+import { AddressInput, Modal, ResourceInput, useResource } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingPractitioners } from '../../hooks/useBillingPractitioners';
+import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
@@ -17,6 +18,8 @@ import {
   isCompleteBillingAddress,
   isValidNpi,
 } from '../../utils/billing';
+import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
+import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
@@ -43,6 +46,12 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
   const billsIndividually = !organization;
 
   const registration = useCandidProviderRegistration(practitioner && 'Practitioner', npi);
+  const billingOrg = useResource<Organization>(organization);
+  const registeredProviderId = registration.status === 'registered' ? registration.candidProviderId : undefined;
+  const contractingProviderId = billsIndividually
+    ? registeredProviderId
+    : billingOrg && getIdentifier(billingOrg, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
+  const contracts = useCandidProviderContracts(practitioner ? contractingProviderId : undefined);
 
   const [seededFor, setSeededFor] = useState<string | undefined>(undefined);
   if (practitioner?.id !== seededFor) {
@@ -102,6 +111,10 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
           <CandidRegistrationAlert
             registration={registration}
             registersAs={billingPractitioners.candidBotId ? 'this practitioner as a rendering provider' : undefined}
+          />
+          <CandidContractAlert
+            contracts={contracts}
+            subject={billsIndividually ? 'this practitioner' : (billingOrg?.name ?? 'the billing organization')}
           />
           <TextInput
             label="NPI"

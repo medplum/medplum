@@ -8,9 +8,11 @@ import { AddressInput, Modal } from '@medplum/react';
 import type { FormEvent, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
+import { useCandidProviderContracts } from '../../hooks/useCandidProviderContracts';
 import type { CandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
+import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
 /**
@@ -47,11 +49,7 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       size="lg"
       title={organization ? 'Edit billing organization' : 'New billing organization'}
       actions={
-        <Button
-          type="submit"
-          form={FORM_ID}
-          loading={billingOrganizations.saving || registrationStatus === 'loading'}
-        >
+        <Button type="submit" form={FORM_ID} loading={billingOrganizations.saving || registrationStatus === 'loading'}>
           {registrationStatus === 'registered' ? 'Edit' : 'Save'}
         </Button>
       }
@@ -104,6 +102,9 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
   const [errors, setErrors] = useState<FormErrors>({});
 
   const registration = useCandidProviderRegistration('Organization', npi);
+  const contracts = useCandidProviderContracts(
+    registration.status === 'registered' ? registration.candidProviderId : undefined
+  );
 
   useEffect(() => {
     onRegistrationStatusChange(registration.status);
@@ -153,6 +154,7 @@ function BillingOrganizationForm(props: BillingOrganizationFormProps): JSX.Eleme
               : undefined
           }
         />
+        <CandidContractAlert contracts={contracts} subject="this organization" />
         <TextInput label="Name" required value={name} onChange={(event) => setName(event.currentTarget.value)} />
         <TextInput
           label="NPI"
