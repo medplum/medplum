@@ -43,11 +43,7 @@ export function isBookableActorType(value: string | undefined): value is Bookabl
  * @returns The type that the reference refers to.
  */
 export function getActorType(reference: SchedulingActor): SchedulingActorType {
-  const result = parseReference(reference)[0];
-  if (result.startsWith('#')) {
-    throw new Error('Actors as contained resources not supported in scheduling UI');
-  }
-  return result;
+  return parseReference(reference)[0];
 }
 
 /**
