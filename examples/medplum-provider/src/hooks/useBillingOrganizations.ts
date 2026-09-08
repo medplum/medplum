@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useSearchOne } from '@medplum/react';
 import { useState } from 'react';
 import type { BillingOrganizationFormValues } from '../utils/billing';
 import { buildUpdatedOrganization, withCandidProviderExtensions, withCandidProviderId } from '../utils/billing';
@@ -13,7 +13,6 @@ import {
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
 } from '../utils/candid';
 import { showErrorNotification, showSuccessNotification } from '../utils/notifications';
-import { useCandidBot } from './useCandidBot';
 import type { CandidProviderRegistration } from './useCandidProviderRegistration';
 
 /**
@@ -43,15 +42,19 @@ export interface BillingOrganizations {
 
 export function useBillingOrganizations(): BillingOrganizations {
   const medplum = useMedplum();
-  const candidBotId = useCandidBot(CANDID_CREATE_PROVIDER_BOT_IDENTIFIER);
-  const candidEditBotId = useCandidBot(CANDID_EDIT_PROVIDER_BOT_IDENTIFIER);
+  const [createBot, , createBotOutcome] = useSearchOne('Bot', {
+    identifier: `${CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_CREATE_PROVIDER_BOT_IDENTIFIER.value}`,
+  });
+  const candidBotId = createBotOutcome === undefined ? undefined : (createBot?.id ?? '');
+  const [editBot, , editBotOutcome] = useSearchOne('Bot', {
+    identifier: `${CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.system}|${CANDID_EDIT_PROVIDER_BOT_IDENTIFIER.value}`,
+  });
+  const candidEditBotId = editBotOutcome === undefined ? undefined : (editBot?.id ?? '');
   const [savedVersion, setSavedVersion] = useState(0);
   const [saving, setSaving] = useState(false);
 
   const registerWithCandid = async (organization: WithId<Organization>): Promise<void> => {
     try {
-      // The bot needs a stored resource: it registers the provider with Candid and stamps the
-      // Candid provider ID back onto the Organization.
       await medplum.executeBot(candidBotId as string, organization, 'application/fhir+json');
       showSuccessNotification({ title: 'Success', message: 'Registered with Candid' });
     } catch (error) {
@@ -90,9 +93,6 @@ export function useBillingOrganizations(): BillingOrganizations {
         built,
         registration.status === 'registered' ? registration.candidProviderId : undefined
       );
-      // Candid holds one provider per NPI: register a new one, and push changes to one it already
-      // has. Which applies is decided by the provider identifier, live from Candid when the lookup
-      // could answer and from the resource otherwise.
       const candidProviderId = getIdentifier(built, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
       const registering = !candidProviderId && !!candidBotId;
       const updating = !!candidProviderId && !!candidEditBotId;
@@ -111,8 +111,6 @@ export function useBillingOrganizations(): BillingOrganizations {
       } else if (updating) {
         await updateInCandid(saved);
       }
-      // The create/update invalidated the client's Organization searches, so the refetch this
-      // triggers sees the identifier the registration bot stamps server-side.
       setSavedVersion((version) => version + 1);
       return saved;
     } catch (error) {

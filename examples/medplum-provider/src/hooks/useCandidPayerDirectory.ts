@@ -66,8 +66,6 @@ export function useCandidPayerDirectory(): CandidPayerDirectory {
   const [importing, setImporting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Only feeds importedUuids, which marks directory search results as already imported; the
-  // enrolled payers list runs its own paged search.
   useEffect(() => {
     medplum
       .searchResources('Organization', {

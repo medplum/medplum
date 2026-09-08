@@ -30,11 +30,9 @@ export function BillingSetupPage(): JSX.Element {
   const billingOrganizations = useBillingOrganizations();
   const billingPractitioners = useBillingPractitioners();
   const directory = useCandidPayerDirectory();
-  // An existing organization to edit, or `{}` for a new one; undefined keeps the modal closed.
   const [editingOrganization, setEditingOrganization] = useState<{ organization?: WithId<Organization> } | undefined>(
     undefined
   );
-  // The practitioner being edited, with the organization their role already points at.
   const [editingPractitioner, setEditingPractitioner] = useState<
     { practitioner: WithId<Practitioner>; billingOrganization?: Reference<Organization> } | undefined
   >(undefined);

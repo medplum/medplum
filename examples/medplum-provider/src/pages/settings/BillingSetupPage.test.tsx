@@ -26,9 +26,9 @@ import {
   CANDID_CREATE_PROVIDER_BOT_IDENTIFIER,
   CANDID_EDIT_PROVIDER_BOT_IDENTIFIER,
   CANDID_GET_PAYERS_BOT_IDENTIFIER,
-  CANDID_LIST_PROVIDERS_BOT_IDENTIFIER,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
+  CANDID_LIST_PROVIDERS_BOT_IDENTIFIER,
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
   CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
@@ -46,7 +46,11 @@ const createProviderBot: WithId<Bot> = {
 const listProvidersBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-list-providers', name: 'Candid List Providers' };
 const editProviderBot: WithId<Bot> = { resourceType: 'Bot', id: 'bot-edit-provider', name: 'Candid Edit Provider' };
 
-// What candid-list-providers returns: the providers Candid holds for an NPI, as FHIR resources.
+/**
+ * What candid-list-providers returns: the providers Candid holds for an NPI, as FHIR resources.
+ * @param providers - The providers Candid holds for the NPI.
+ * @returns The bot's Parameters response.
+ */
 function makeProviderSearchResult(providers: (Organization | Practitioner)[]): Parameters {
   return { resourceType: 'Parameters', parameter: providers.map((resource) => ({ name: 'provider', resource })) };
 }
@@ -79,7 +83,7 @@ function makeSearchResult(orgs: Organization[], nextPageToken?: string): Paramet
 
 const importedPayerOrg: Organization = { ...makeDirectoryPayer('uuid-aetna', '60054', 'AETNA'), id: 'org-aetna' };
 
-// A billing organization as the modal saves it.
+/** A billing organization as the modal saves it. */
 const billingOrg: WithId<Organization> = {
   resourceType: 'Organization',
   id: 'org-practice',
@@ -101,15 +105,17 @@ const drSmith: WithId<Practitioner> = {
   identifier: [{ system: NPI_SYSTEM, value: '1234567893' }],
 };
 
-// A practitioner nobody has set up for billing yet.
+/** A practitioner nobody has set up for billing yet. */
 const drJones: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'prac-jones',
   name: [{ given: ['Bob'], family: 'Jones' }],
 };
 
-// Billing individually: the practitioner is the billing provider, so they carry their own tax ID
-// and address rather than an organization's.
+/**
+ * Billing individually: the practitioner is the billing provider, so they carry their own tax ID
+ * and address rather than an organization's.
+ */
 const drDiaz: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'prac-diaz',
@@ -129,7 +135,10 @@ const smithBillsUnderPractice: WithId<PractitionerRole> = {
   organization: { reference: 'Organization/org-practice', display: 'Test Medical Practice LLC' },
 };
 
-// More billing organizations than fit on one page.
+/**
+ * More billing organizations than fit on one page.
+ * @returns Twelve billing organizations.
+ */
 function manyOrganizations(): WithId<Organization>[] {
   return Array.from({ length: 12 }, (_, i) => ({
     ...billingOrg,
@@ -138,8 +147,13 @@ function manyOrganizations(): WithId<Organization>[] {
   }));
 }
 
-// Both lists are search controls over Organization and pass their search as a query string; pick
-// out the queries the list filtering on the given identifier system sent.
+/**
+ * Both lists are search controls over Organization and pass their search as a query string; pick
+ * out the queries the list filtering on the given identifier system sent.
+ * @param searchSpy - The spy on the client's search method.
+ * @param identifierSystem - The identifier system the list filters on.
+ * @returns The query strings that list sent.
+ */
 function searchQueries(searchSpy: ReturnType<typeof vi.spyOn>, identifierSystem: string): URLSearchParams[] {
   return (searchSpy.mock.calls as unknown[][])
     .map((call) => new URLSearchParams(call[1] as string))
@@ -149,11 +163,6 @@ function searchQueries(searchSpy: ReturnType<typeof vi.spyOn>, identifierSystem:
 describe('BillingSetupPage', () => {
   let medplum: MockClient;
 
-  // Every tab searches through the same two client methods: the search controls pass a query string,
-  // the payer directory and the role lookups pass an object. Route both the same way — by resource
-  // type, then by the identifier the Organization lists filter on — so a tab only ever sees its own
-  // resources. Search controls page server-side, so serve the requested window and report the full
-  // count on the bundle.
   const mockSearches = (
     resources: {
       organizations?: Organization[];
@@ -189,8 +198,6 @@ describe('BillingSetupPage', () => {
     }) as any);
   };
 
-  // Each tab looks up its own Candid bot by identifier, so a project can have the payer directory
-  // deployed without the provider registration bot, and vice versa.
   const mockBots = (
     bots: {
       payers?: boolean;
@@ -201,7 +208,6 @@ describe('BillingSetupPage', () => {
     } = {}
   ): ReturnType<typeof vi.spyOn> =>
     vi.spyOn(medplum, 'searchOne').mockImplementation((async (resourceType: string, query: any) => {
-      // The practitioner form and its save both resolve the practitioner's active role this way
       if (resourceType !== 'Bot') {
         return resourceType === 'PractitionerRole' ? bots.practitionerRole : undefined;
       }
@@ -221,12 +227,9 @@ describe('BillingSetupPage', () => {
   beforeEach(() => {
     medplum = new MockClient();
     notifications.clean();
-    // Every tab issues its search on each render of the page, whichever tab is open.
     mockSearches();
   });
 
-  // Phone and address are required, so every save has to fill them in. AddressInput labels its
-  // fields with placeholders, not labels.
   const fillPhoneAndAddress = async (user: UserEvent, dialog: HTMLElement, phone = '6175550142'): Promise<void> => {
     await user.type(within(dialog).getByLabelText(/Phone/), phone);
     await user.type(within(dialog).getByPlaceholderText('Line 1'), '456 Medical Center Drive');
@@ -235,8 +238,6 @@ describe('BillingSetupPage', () => {
     await user.type(within(dialog).getByPlaceholderText('Postal Code'), '02101');
   };
 
-  // Billing individually makes the practitioner the billing provider on the claim, so the form then
-  // requires the tax ID and address an organization would otherwise supply.
   const fillPractitionerBillingIdentity = async (user: UserEvent, dialog: HTMLElement): Promise<void> => {
     await user.type(within(dialog).getByLabelText(/Tax ID/), '123456789');
     await user.type(within(dialog).getByPlaceholderText('Line 1'), '1 Clinic Way');
@@ -245,8 +246,6 @@ describe('BillingSetupPage', () => {
     await user.type(within(dialog).getByPlaceholderText('Postal Code'), '02101');
   };
 
-  // LinkTabs reads the initial tab from the URL, so a test can open the page straight on the tab
-  // it exercises: Mantine keeps inactive panels in the DOM, but hidden from role queries.
   const setup = (tab = 'Organizations'): ReturnType<typeof render> => {
     window.history.pushState({}, '', `/Settings/Billing/${tab}`);
     return render(
@@ -268,7 +267,6 @@ describe('BillingSetupPage', () => {
 
     expect(screen.getByText('Billing Settings')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Billing Organizations' })).toHaveAttribute('aria-selected', 'true');
-    // Both lists render an empty search control, so look only at the open tab's panel
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Enrolled Payers' }));
@@ -287,12 +285,8 @@ describe('BillingSetupPage', () => {
     expect(await screen.findByText('Test Medical Practice LLC')).toBeInTheDocument();
     expect(screen.getByText('3564119220')).toBeInTheDocument();
     expect(screen.getByText('123456789')).toBeInTheDocument();
-    // The address and telecom columns render off datatypes the client loads separately, so they can
-    // land a tick after the row itself
     expect(await screen.findByText(/456 Medical Center Drive/)).toBeInTheDocument();
     expect(await screen.findByText(/6175550142/)).toBeInTheDocument();
-    // Filters on the marker identifier, not on organization type or NPI, so unrelated
-    // Organizations never appear and a misconfigured billing organization stays visible
     expect(searchQueries(searchSpy, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM)[0]?.get('identifier')).toBe(
       `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`
     );
@@ -314,7 +308,6 @@ describe('BillingSetupPage', () => {
 
     await user.click(screen.getByRole('button', { name: '2' }));
 
-    // The second page is fetched, not sliced out of the first
     expect(await screen.findByText('PRACTICE 10')).toBeInTheDocument();
     expect(screen.getByText('PRACTICE 11')).toBeInTheDocument();
     expect(screen.queryByText('PRACTICE 00')).not.toBeInTheDocument();
@@ -330,7 +323,6 @@ describe('BillingSetupPage', () => {
 
     expect(await within(screen.getByRole('tabpanel')).findByText('No results')).toBeInTheDocument();
 
-    // The saved organization is only visible to the next search
     mockSearches({ organizations: [billingOrg] });
     await user.click(screen.getByRole('button', { name: 'New...' }));
     const dialog = await screen.findByRole('dialog');
@@ -381,14 +373,11 @@ describe('BillingSetupPage', () => {
     expect(created.type?.[0]?.coding?.[0]?.code).toBe(PROVIDER_ORGANIZATION_TYPE);
     expect(created.meta?.profile).toEqual([CANDID_BILLING_ORGANIZATION_PROFILE]);
     expect(created.telecom).toEqual([{ system: 'phone', value: '(617) 555-0142' }]);
-    // The modal closes on a successful save
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
 
-  // The profile requires a phone but cannot express the X12 rule on its digits, so this is the one
-  // field the modal still validates itself.
   test('blocks save on an unusable phone', async () => {
     const user = userEvent.setup();
     mockBots({ payers: true });
@@ -490,13 +479,11 @@ describe('BillingSetupPage', () => {
     await waitFor(() => {
       expect(executeSpy).toHaveBeenCalled();
     });
-    // Candid requires the billing/rendering flags, so they are persisted before registering
     const created = createSpy.mock.calls[0][0] as Organization;
     expect(created.extension).toEqual([
       { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
       { url: CANDID_IS_RENDERING_PROVIDER_EXTENSION, valueBoolean: false },
     ]);
-    // The bot registers the stored resource: it stamps the Candid provider ID back onto it
     expect(executeSpy).toHaveBeenCalledWith(
       'bot-create-provider',
       expect.objectContaining({ resourceType: 'Organization', id: 'org-practice' }),
@@ -546,8 +533,6 @@ describe('BillingSetupPage', () => {
     await fillPhoneAndAddress(user, dialog);
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-    // The Organization is stored and the form closes: only the registration failed, and reopening
-    // the organization asks Candid again
     await waitFor(() => {
       expect(createSpy).toHaveBeenCalled();
     });
@@ -585,7 +570,6 @@ describe('BillingSetupPage', () => {
     expect(executeSpy).not.toHaveBeenCalled();
   });
 
-  // An address Candid would reject is caught by the profile on the server, not by the form.
   test('reports the server rejection and keeps the modal open', async () => {
     const user = userEvent.setup();
     mockSearches({ organizations: [{ ...billingOrg, address: [{ city: 'Boston' }] }] });
@@ -859,7 +843,6 @@ describe('BillingSetupPage', () => {
     setup('Payers');
 
     await user.click(await screen.findByText('AETNA'));
-    // The patched payer is only visible to the next search
     mockSearches({ payers: [{ ...importedPayerOrg, name: 'AETNA HEALTH' }] });
     await user.click(await screen.findByRole('button', { name: /Refresh from directory/ }));
 
@@ -871,7 +854,6 @@ describe('BillingSetupPage', () => {
     // The modal reflects the patched resource
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'AETNA HEALTH' })).toBeInTheDocument();
-    // ...and so does the list, refetched under the patched name
     await waitFor(() => {
       expect(screen.queryByText('AETNA')).not.toBeInTheDocument();
     });
@@ -982,7 +964,6 @@ describe('BillingSetupPage', () => {
 
       expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
       expect(screen.getByText('1234567893')).toBeInTheDocument();
-      // The billing organization lives on the practitioner's role, not the practitioner
       expect(await screen.findByText('Test Medical Practice LLC')).toBeInTheDocument();
     });
 
@@ -993,8 +974,6 @@ describe('BillingSetupPage', () => {
       setup('Practitioners');
 
       expect(await screen.findByText('Test Medical Practice LLC')).toBeInTheDocument();
-      // Resolving the billing organizations sets state; the search control reloads whenever its
-      // onLoad handler changes identity, which would spin
       const practitionerSearches = (searchSpy.mock.calls as unknown[][]).filter((call) => call[0] === 'Practitioner');
       expect(practitionerSearches).toHaveLength(1);
     });
@@ -1006,7 +985,6 @@ describe('BillingSetupPage', () => {
       setup('Practitioners');
 
       expect(await screen.findByText(/Missing NPI/)).toBeInTheDocument();
-      // No role means the practitioner bills under their own NPI
       expect(screen.getByText('Individually')).toBeInTheDocument();
     });
 
@@ -1016,11 +994,8 @@ describe('BillingSetupPage', () => {
 
       setup('Practitioners');
 
-      // Alice bills under an organization, which is the billing provider and supplies both, even
-      // though she carries neither; Cara bills individually and carries her own
       expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
       expect(screen.getByText('Cara Diaz')).toBeInTheDocument();
-      // Leaving Bob, who bills individually with neither
       expect(screen.getAllByText('Missing Tax ID')).toHaveLength(1);
       expect(screen.getAllByText('Incomplete address')).toHaveLength(1);
     });
@@ -1038,9 +1013,7 @@ describe('BillingSetupPage', () => {
 
       const dialog = await screen.findByRole('dialog');
       await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
-      // The picker searches the billing organizations, so it needs no tax ID or address here
       await user.type(within(dialog).getByRole('searchbox'), 'Test');
-      // The autocomplete dropdown portals outside the modal, which the modal marks aria-hidden
       await user.click(await screen.findByRole('option', { name: /Test Medical Practice LLC/, hidden: true }));
       await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
@@ -1053,7 +1026,6 @@ describe('BillingSetupPage', () => {
         { system: MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM, value: BILLING_PRACTITIONER_IDENTIFIER_VALUE },
       ]);
       expect(updated.meta?.profile).toEqual([CANDID_PRACTITIONER_PROFILE]);
-      // A practitioner with no role gets one pointing at the organization they bill under
       await waitFor(() => {
         expect(createSpy).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -1070,7 +1042,6 @@ describe('BillingSetupPage', () => {
       const user = userEvent.setup();
       mockSearches({ practitioners: [drSmith], organizations: [billingOrg], roles: [smithBillsUnderPractice] });
       mockBots({ payers: true, practitionerRole: smithBillsUnderPractice });
-      // The picker resolves the reference the row handed it, to show what the role points at now
       vi.spyOn(medplum, 'readReference').mockResolvedValue(billingOrg);
       vi.spyOn(medplum, 'updateResource').mockResolvedValue(drSmith);
       const patchSpy = vi.spyOn(medplum, 'patchResource').mockResolvedValue(smithBillsUnderPractice);
@@ -1080,14 +1051,11 @@ describe('BillingSetupPage', () => {
       await user.click(await screen.findByText('Alice Smith'));
 
       const dialog = await screen.findByRole('dialog');
-      // The form opens on the organization the role already points at
       expect(await within(dialog).findByText('Test Medical Practice LLC')).toBeInTheDocument();
       await user.click(within(dialog).getByTitle('Clear all'));
-      // Billing individually makes the practitioner the billing provider, so they need their own
       await fillPractitionerBillingIdentity(user, dialog);
       await user.click(within(dialog).getByRole('button', { name: 'Save' }));
 
-      // Only the organization is dropped: the role carries unrelated authorizations
       await waitFor(() => {
         expect(patchSpy).toHaveBeenCalledWith('PractitionerRole', 'role-smith', [
           { op: 'remove', path: '/organization' },
@@ -1114,7 +1082,6 @@ describe('BillingSetupPage', () => {
       await waitFor(() => {
         expect(executeSpy).toHaveBeenCalled();
       });
-      // A practitioner always renders; billing individually here, since no organization was chosen
       const updated = updateSpy.mock.calls[0][0] as Practitioner;
       expect(updated.extension).toEqual([
         { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
@@ -1146,9 +1113,7 @@ describe('BillingSetupPage', () => {
     });
   });
 
-
   describe('Candid registration lookup', () => {
-    // What Candid returns for an NPI it already holds a provider for.
     const candidOrg: Organization = {
       resourceType: 'Organization',
       identifier: [
@@ -1164,7 +1129,6 @@ describe('BillingSetupPage', () => {
       ],
     };
 
-    // The organization as stored before any registration wrote its Candid ID back.
     const unstamped: WithId<Organization> = {
       ...billingOrg,
       identifier: billingOrg.identifier?.filter((i) => i.system !== CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM),
@@ -1181,7 +1145,6 @@ describe('BillingSetupPage', () => {
       await user.click(await screen.findByText('Test Medical Practice LLC'));
 
       expect(await screen.findByText(/Registered with Candid under NPI 3564119220/)).toBeInTheDocument();
-      // Looked up by NPI against Candid, not read off the stored resource
       expect(executeSpy).toHaveBeenCalledWith('bot-list-providers', { npi: '3564119220' }, 'application/json');
     });
 
@@ -1199,8 +1162,6 @@ describe('BillingSetupPage', () => {
       await screen.findByText(/Registered with Candid/);
       await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
 
-      // Candid registers one provider per NPI, so creating a second is rejected as a duplicate:
-      // the ID it already has is stamped on instead
       await waitFor(() => {
         expect(updateSpy).toHaveBeenCalled();
       });
@@ -1223,7 +1184,6 @@ describe('BillingSetupPage', () => {
 
       await user.click(await screen.findByText('Test Medical Practice LLC'));
       const dialog = await screen.findByRole('dialog');
-      // Candid already holds this provider, so the action edits it rather than registering another
       expect(await screen.findByText(/Registered with Candid/)).toBeInTheDocument();
       await user.click(within(dialog).getByRole('button', { name: 'Edit' }));
 
@@ -1234,7 +1194,6 @@ describe('BillingSetupPage', () => {
           'application/fhir+json'
         );
       });
-      // One provider per NPI: registering a second is what Candid would reject
       expect(executeSpy).not.toHaveBeenCalledWith('bot-create-provider', expect.anything(), expect.anything());
     });
 
@@ -1242,7 +1201,6 @@ describe('BillingSetupPage', () => {
       const user = userEvent.setup();
       mockSearches({ practitioners: [drSmith], organizations: [billingOrg] });
       mockBots({ createProvider: true, editProvider: true, listProviders: true });
-      // The bot is handed the stored resource, so echo what the save wrote
       vi.spyOn(medplum, 'updateResource').mockImplementation((async (resource: Practitioner) => resource) as any);
       const executeSpy = vi
         .spyOn(medplum, 'executeBot')
@@ -1259,7 +1217,6 @@ describe('BillingSetupPage', () => {
       await waitFor(() => {
         expect(executeSpy).toHaveBeenCalledWith(
           'bot-edit-provider',
-          // Billing individually, so Candid is told they are the billing provider too
           expect.objectContaining({
             extension: [
               { url: CANDID_IS_BILLING_PROVIDER_EXTENSION, valueBoolean: true },
@@ -1311,7 +1268,6 @@ describe('BillingSetupPage', () => {
       const user = userEvent.setup();
       mockSearches({ practitioners: [drSmith] });
       mockBots({ createProvider: true, listProviders: true });
-      // Candid can hold an organization under the same NPI; only the individual provider applies
       const executeSpy = vi
         .spyOn(medplum, 'executeBot')
         .mockResolvedValue(makeProviderSearchResult([candidOrg, candidPractitioner]));
@@ -1326,7 +1282,6 @@ describe('BillingSetupPage', () => {
 
     test('checks the NPI as it is typed, before a first registration is attempted', async () => {
       const user = userEvent.setup();
-      // Bob has no NPI stored, so there is nothing to look up until one is entered
       mockSearches({ practitioners: [drJones] });
       mockBots({ createProvider: true, listProviders: true });
       const executeSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValue(makeProviderSearchResult([candidOrg]));
@@ -1339,8 +1294,6 @@ describe('BillingSetupPage', () => {
 
       await user.type(within(dialog).getByLabelText(/NPI/), '3564119220');
 
-      // Candid holds an organization under that NPI, not an individual provider, so registering
-      // this practitioner is still the right move
       expect(await screen.findByText(/Not registered with Candid/)).toBeInTheDocument();
       expect(executeSpy).toHaveBeenCalledWith('bot-list-providers', { npi: '3564119220' }, 'application/json');
     });
@@ -1360,5 +1313,4 @@ describe('BillingSetupPage', () => {
       expect(executeSpy).not.toHaveBeenCalled();
     });
   });
-
 });

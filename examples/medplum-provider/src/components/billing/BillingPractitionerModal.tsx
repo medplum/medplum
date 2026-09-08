@@ -8,6 +8,7 @@ import { AddressInput, Modal, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingPractitioners } from '../../hooks/useBillingPractitioners';
+import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import {
   BILLING_ORGANIZATION_IDENTIFIER_VALUE,
   EIN_SYSTEM,
@@ -16,14 +17,18 @@ import {
   isCompleteBillingAddress,
   isValidNpi,
 } from '../../utils/billing';
-import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
+/**
+ * Props for the practitioner billing modal.
+ *
+ * - `practitioner` — the practitioner to edit; undefined keeps the modal closed.
+ * - `billingOrganization` — the organization on the practitioner's active role, from the row that
+ *   opened the modal.
+ */
 export interface BillingPractitionerModalProps {
   readonly billingPractitioners: BillingPractitioners;
-  /** The practitioner to edit; undefined keeps the modal closed. */
   readonly practitioner: WithId<Practitioner> | undefined;
-  /** The organization on the practitioner's active role, from the row that opened the modal. */
   readonly billingOrganization: Reference<Organization> | undefined;
   readonly onClose: () => void;
 }
@@ -38,15 +43,8 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
   const [address, setAddress] = useState<Address | undefined>(undefined);
   const [organization, setOrganization] = useState<Reference<Organization> | Organization | undefined>(undefined);
   const [errors, setErrors] = useState<FormErrors>({});
-  // With a billing organization on their role, the organization is the billing provider on the
-  // claim and supplies the tax ID and address; without one, the practitioner has to carry both.
   const billsIndividually = !organization;
 
-  // The modal stays mounted between opens (the page only swaps the practitioner), so re-seed every
-  // field whenever a different one is selected. This runs during render — before the
-  // `{practitioner && ...}` form remounts — so the uncontrolled AddressInput picks up the fresh
-  // defaultValue; a useEffect would fire too late for it.
-  // Ask Candid directly rather than trusting the identifier a past registration stamped locally.
   const registration = useCandidProviderRegistration(practitioner && 'Practitioner', npi);
 
   const [seededFor, setSeededFor] = useState<string | undefined>(undefined);
@@ -96,7 +94,6 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
       actions={
         <Button
           onClick={() => handleSave().catch(console.error)}
-          // The lookup decides whether saving registers or edits in Candid, so wait for its answer
           loading={billingPractitioners.saving || registration.status === 'loading'}
         >
           {registration.status === 'registered' ? 'Edit' : 'Save'}
@@ -123,8 +120,6 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
               name="billing-organization"
               label="Bills under"
               placeholder="The practitioner (individual billing)"
-              // Only the organizations the Billing Organizations tab manages; the project's payers
-              // and facilities are Organizations too.
               searchCriteria={{
                 identifier: `${MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM}|${BILLING_ORGANIZATION_IDENTIFIER_VALUE}`,
               }}
@@ -132,8 +127,8 @@ export function BillingPractitionerModal(props: BillingPractitionerModalProps): 
               onChange={setOrganization}
             />
             <Input.Description mt={4}>
-              Claims name this organization as the billing provider. Leave it empty to bill under the practitioner's
-              own NPI.
+              Claims name this organization as the billing provider. Leave it empty to bill under the practitioner's own
+              NPI.
             </Input.Description>
           </div>
           <TextInput

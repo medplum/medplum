@@ -19,9 +19,6 @@ import {
 
 const DEFAULT_SEARCH: SearchRequest = {
   resourceType: 'Organization',
-  // Filter on the marker identifier stamped by saveOrganization, not on organization type: projects
-  // can hold hundreds of unrelated Organizations. No NPI filter — an organization missing its NPI
-  // must stay visible here so it can be fixed.
   filters: [
     {
       code: 'identifier',
@@ -55,7 +52,6 @@ export function BillingOrganizationList(props: BillingOrganizationListProps): JS
   return (
     <Stack gap="sm">
       <SearchControl
-        // Remounting refetches, so the list picks up the organization the modal just saved.
         key={savedVersion}
         search={search}
         additionalColumns={additionalColumns}

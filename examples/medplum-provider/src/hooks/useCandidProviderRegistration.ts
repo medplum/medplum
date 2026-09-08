@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useSearchOne } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { isValidNpi } from '../utils/billing';
 import { CANDID_LIST_PROVIDERS_BOT_IDENTIFIER, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../utils/candid';
-import { useCandidBot } from './useCandidBot';
 
 export type ProviderResource = Organization | Practitioner;
 
-// The NPI is looked up as it is typed, so wait for the typing to settle.
+/** The NPI is looked up as it is typed, so wait for the typing to settle. */
 const LOOKUP_DEBOUNCE_MS = 400;
 
 /**
@@ -46,7 +45,10 @@ export function useCandidProviderRegistration(
   npi: string
 ): CandidProviderRegistration {
   const medplum = useMedplum();
-  const listBotId = useCandidBot(CANDID_LIST_PROVIDERS_BOT_IDENTIFIER);
+  const [listBot, , listBotOutcome] = useSearchOne('Bot', {
+    identifier: `${CANDID_LIST_PROVIDERS_BOT_IDENTIFIER.system}|${CANDID_LIST_PROVIDERS_BOT_IDENTIFIER.value}`,
+  });
+  const listBotId = listBotOutcome === undefined ? undefined : (listBot?.id ?? '');
   const [registration, setRegistration] = useState<CandidProviderRegistration>({ status: 'unavailable' });
 
   const trimmedNpi = npi.trim();
@@ -69,16 +71,12 @@ export function useCandidProviderRegistration(
           if (cancelled) {
             return;
           }
-          // Candid can hold an individual and an organization provider under one NPI, so match the
-          // kind of resource being edited.
           const match = (result?.parameter ?? [])
             .map((parameter) => parameter.resource)
             .find((r): r is ProviderResource => r?.resourceType === resourceType);
           const candidProviderId = match && getIdentifier(match, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM);
           setRegistration(
-            candidProviderId
-              ? { status: 'registered', candidProviderId, npi: trimmedNpi }
-              : { status: 'unregistered' }
+            candidProviderId ? { status: 'registered', candidProviderId, npi: trimmedNpi } : { status: 'unregistered' }
           );
         })
         .catch((error) => {

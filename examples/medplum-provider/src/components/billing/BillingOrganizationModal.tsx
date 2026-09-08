@@ -8,21 +8,27 @@ import { AddressInput, Modal } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import type { BillingOrganizations } from '../../hooks/useBillingOrganizations';
-import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
 import { useCandidProviderRegistration } from '../../hooks/useCandidProviderRegistration';
+import { EIN_SYSTEM, NPI_SYSTEM, isValidBillingPhone } from '../../utils/billing';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
 
+/**
+ * Props for the billing organization modal.
+ *
+ * - `organization` — the organization to edit, or undefined to create a new one.
+ */
 export interface BillingOrganizationModalProps {
   readonly billingOrganizations: BillingOrganizations;
-  /** The organization to edit, or undefined to create a new one. */
   readonly organization: WithId<Organization> | undefined;
   readonly opened: boolean;
   readonly onClose: () => void;
 }
 
-// The billing organization profile the server validates against covers name, NPI, Tax ID and
-// address, so a bad value there is reported by the save. Only the phone format is checked here:
-// the profile requires a phone to exist but cannot express the X12 rule on its digits.
+/**
+ * The billing organization profile the server validates against covers name, NPI, Tax ID and
+ * address, so a bad value there is reported by the save. Only the phone format is checked here:
+ * the profile requires a phone to exist but cannot express the X12 rule on its digits.
+ */
 type FormErrors = Partial<Record<'phone', string>>;
 
 export function BillingOrganizationModal(props: BillingOrganizationModalProps): JSX.Element {
@@ -35,11 +41,6 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
   const [address, setAddress] = useState<Address | undefined>(() => organization?.address?.[0]);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // The modal stays mounted between opens (the page only toggles `opened`), so re-seed every field
-  // from the organization each time it opens. This runs during render — before the
-  // `{opened && ...}` form remounts — so the uncontrolled AddressInput picks up the fresh
-  // defaultValue; a useEffect would fire too late for it.
-  // Ask Candid directly rather than trusting the identifier a past registration stamped locally.
   const registration = useCandidProviderRegistration(opened ? 'Organization' : undefined, npi);
 
   const [prevOpened, setPrevOpened] = useState(opened);
@@ -88,7 +89,6 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       actions={
         <Button
           onClick={() => handleSave().catch(console.error)}
-          // The lookup decides whether saving registers or edits in Candid, so wait for its answer
           loading={billingOrganizations.saving || registration.status === 'loading'}
         >
           {registration.status === 'registered' ? 'Edit' : 'Save'}

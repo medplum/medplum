@@ -443,6 +443,4 @@ describe('billing utils', () => {
       ]);
     });
   });
-
-
 });

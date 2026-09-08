@@ -34,13 +34,8 @@ export function BillingPractitionerList(props: BillingPractitionerListProps): JS
   const { savedVersion } = billingPractitioners;
   const medplum = useMedplum();
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
-  // Which organization each listed practitioner bills under, keyed by reference string. The billing
-  // organization lives on the PractitionerRole, not the Practitioner, so it takes a second search —
-  // scoped to the page the control just loaded rather than every practitioner in the project.
   const [billsUnder, setBillsUnder] = useState<Record<string, Reference<Organization>>>({});
 
-  // Memoized because the search control reloads whenever its onLoad handler changes identity, and
-  // this one sets state on every load.
   const handleLoad = useCallback(
     (e: SearchLoadEvent): void => {
       const references = (e.response.entry ?? []).map((entry) => `Practitioner/${entry.resource?.id}`);
@@ -77,7 +72,6 @@ export function BillingPractitionerList(props: BillingPractitionerListProps): JS
             </Text>
           );
         }
-        // References written here carry a display; ones written elsewhere may not, and are resolved.
         return organization.display ?? <ResourceName value={organization} />;
       },
     },
@@ -90,20 +84,20 @@ export function BillingPractitionerList(props: BillingPractitionerListProps): JS
   return (
     <Stack gap="sm">
       <SearchControl
-        // Remounting refetches, so the list picks up the practitioner the modal just saved.
         key={savedVersion}
         search={search}
         additionalColumns={additionalColumns}
         hideFilters
         onLoad={handleLoad}
         onChange={(e) => setSearch(e.definition)}
-        onClick={(e) => onSelectPractitioner(e.resource as WithId<Practitioner>, billsUnder[`Practitioner/${e.resource.id}`])}
+        onClick={(e) =>
+          onSelectPractitioner(e.resource as WithId<Practitioner>, billsUnder[`Practitioner/${e.resource.id}`])
+        }
       />
 
       <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
-        Every practitioner in the project is listed here. A claim names the practitioner as its
-        rendering provider, and bills under the organization on their role — or under the
-        practitioner themselves when they have none.
+        Every practitioner in the project is listed here. A claim names the practitioner as its rendering provider, and
+        bills under the organization on their role — or under the practitioner themselves when they have none.
       </Alert>
     </Stack>
   );
@@ -117,8 +111,6 @@ function renderStatus(resource: Resource, billsIndividually: boolean): JSX.Eleme
           Missing NPI
         </Badge>
       )}
-      {/* An organization on the role is the billing provider and supplies these; without one the
-          claim is billed under the practitioner, and submitting fails without them. */}
       {billsIndividually && !getIdentifier(resource, EIN_SYSTEM) && (
         <Badge color="yellow" variant="light">
           Missing Tax ID

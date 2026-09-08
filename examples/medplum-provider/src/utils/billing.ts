@@ -9,8 +9,8 @@ import {
   CANDID_ELIGIBILITY_SUPPORT_EXTENSION,
   CANDID_IS_BILLING_PROVIDER_EXTENSION,
   CANDID_IS_RENDERING_PROVIDER_EXTENSION,
-  CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM,
+  CANDID_PAYER_CATEGORY_SYSTEM,
   CANDID_PAYER_UUID_SYSTEM,
   CANDID_PRACTITIONER_PROFILE,
   CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION,
@@ -25,9 +25,11 @@ export const ORGANIZATION_TYPE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/o
 export const PAYER_ORGANIZATION_TYPE = 'pay';
 export const PROVIDER_ORGANIZATION_TYPE = 'prov';
 
-// Marker identifier stamped on organizations managed through Billing Settings. The billing
-// organization list filters on it, so unrelated Organizations (payers, facilities, synthetic data)
-// never appear no matter how many the project holds.
+/**
+ * Marker identifier stamped on organizations managed through Billing Settings. The billing
+ * organization list filters on it, so unrelated Organizations (payers, facilities, synthetic data)
+ * never appear no matter how many the project holds.
+ */
 export const MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM = 'https://www.medplum.com/provider';
 export const BILLING_ORGANIZATION_IDENTIFIER_VALUE = 'billing-organization';
 export const BILLING_PRACTITIONER_IDENTIFIER_VALUE = 'billing-practitioner';
@@ -259,8 +261,6 @@ export function buildUpdatedOrganization(
     ...organization,
     meta: {
       ...organization.meta,
-      // Claiming the profile is what makes the server validate these organizations; every writer
-      // that skips it is unvalidated, so stamp it on save.
       profile: profile.includes(CANDID_BILLING_ORGANIZATION_PROFILE)
         ? profile
         : [...profile, CANDID_BILLING_ORGANIZATION_PROFILE],
@@ -359,10 +359,7 @@ export function buildUpdatedPractitioner(
  * @param billsIndividually - Whether claims are billed under the practitioner rather than an organization.
  * @returns The Practitioner with the Candid provider flags set.
  */
-export function withCandidPractitionerExtensions(
-  practitioner: Practitioner,
-  billsIndividually: boolean
-): Practitioner {
+export function withCandidPractitionerExtensions(practitioner: Practitioner, billsIndividually: boolean): Practitioner {
   return {
     ...practitioner,
     extension: [
