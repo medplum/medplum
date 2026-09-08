@@ -30,6 +30,7 @@ import type {
   Binary,
   Bot,
   Device,
+  Project,
   Reference,
   Resource,
   SearchParameter,
@@ -103,9 +104,25 @@ export interface MockClientOptions extends Pick<
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
   /**
+   * Override the active project returned by `getProject()`. Defaults to `TestProject`,
+   * which has all features enabled. Specifying null results in `getProject()` returning
+   * undefined, as if there were no active project.
+   */
+  readonly project?: Project | null;
+  /**
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
+  /**
+   * Whether to seed the mock repository with default example data (Homer Simpson, Dr. Alice Smith,
+   * the example message thread, `TestProject`, etc.) on first request. Defaults to `true`.
+   *
+   * Set to `false` to start with an empty repository, e.g. to avoid this example data colliding with
+   * a test's own fixtures. Note that `getProfile()`/`getProject()` still return their defaults
+   * (`DrAliceSmith`/`TestProject`) even when seeding is skipped, since those come from in-memory
+   * client state rather than the repository.
+   */
+  readonly seedDefaultData?: boolean;
 }
 
 /**
@@ -120,6 +137,7 @@ export type MockFetchOverrideOptions = {
 interface MockClientTestMethods {
   withSeeding: <T>(fn: () => T | Promise<T>) => Promise<T>;
   setProfile: (profile: ProfileResource | undefined) => void;
+  setProject: (project: Project | undefined) => void;
   setAgentAvailable: (value: boolean) => void;
   setSubscriptionManager: (subManager: MockSubscriptionManager) => void;
 }
@@ -132,6 +150,7 @@ export class MockClient extends MedplumClient {
   activeLoginOverride?: LoginState;
   private agentAvailable = true;
   private profile: ReturnType<MedplumClient['getProfile']>;
+  private project: Project | undefined;
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
@@ -155,7 +174,10 @@ export class MockClient extends MedplumClient {
     } else {
       router = new FhirRouter();
       repo = new MemoryRepository();
-      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+      client = new MockFetchClient(router, repo, baseUrl, {
+        debug: clientOptions?.debug,
+        seedDefaultData: clientOptions?.seedDefaultData,
+      });
     }
 
     super({
@@ -180,6 +202,8 @@ export class MockClient extends MedplumClient {
     this.client = client;
     // if null is specified, treat it as if no one is logged in
     this.profile = clientOptions?.profile === null ? undefined : (clientOptions?.profile ?? DrAliceSmith);
+    // if null is specified, treat it as if there is no active project
+    this.project = clientOptions?.project === null ? undefined : (clientOptions?.project ?? TestProject);
     this.debug = !!clientOptions?.debug;
   }
 
@@ -193,6 +217,10 @@ export class MockClient extends MedplumClient {
       },
       setProfile: (profile: ProfileResource | undefined): void => {
         this.profile = profile;
+        this.dispatchEvent({ type: 'change' });
+      },
+      setProject: (project: Project | undefined): void => {
+        this.project = project;
         this.dispatchEvent({ type: 'change' });
       },
       setAgentAvailable: (value: boolean): void => {
@@ -226,6 +254,10 @@ export class MockClient extends MedplumClient {
 
   getProfile(): ProfileResource | undefined {
     return this.profile;
+  }
+
+  getProject(): Project | undefined {
+    return this.project;
   }
 
   getUserConfiguration(): WithId<UserConfiguration> | undefined {
@@ -441,19 +473,26 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   }
 }
 
+interface MockFetchClientOptions {
+  debug?: boolean;
+  seedDefaultData?: boolean;
+}
+
 export class MockFetchClient {
   readonly router: FhirRouter;
   readonly repo: MemoryRepository;
   readonly baseUrl: string;
   readonly debug: boolean;
+  readonly seedDefaultData: boolean;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false) {
+  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, options?: MockFetchClientOptions) {
     this.router = router;
     this.repo = repo;
     this.baseUrl = baseUrl;
-    this.debug = debug;
+    this.debug = options?.debug ?? false;
+    this.seedDefaultData = options?.seedDefaultData ?? true;
   }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
@@ -787,6 +826,24 @@ export class MockFetchClient {
   }
 
   private async initMockRepo(): Promise<void> {
+    if (this.seedDefaultData) {
+      await this.seedDefaultResources();
+    }
+
+    for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
+      structureDefinition.kind = 'resource';
+      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
+      loadDataType(structureDefinition);
+      await this.repo.createResource(structureDefinition);
+    }
+
+    for (const searchParameter of SearchParameterList) {
+      indexSearchParameter(searchParameter as SearchParameter);
+      await this.repo.createResource(searchParameter as SearchParameter);
+    }
+  }
+
+  private async seedDefaultResources(): Promise<void> {
     await this.repo.withSeeding(async () => {
       const defaultResources = [
         HomerSimpsonPreviousVersion,
@@ -849,21 +906,9 @@ export class MockFetchClient {
       for (const resource of updateResources) {
         await this.repo.updateResource(resource);
       }
+
+      makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
     });
-
-    for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
-      structureDefinition.kind = 'resource';
-      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
-      loadDataType(structureDefinition);
-      await this.repo.createResource(structureDefinition);
-    }
-
-    for (const searchParameter of SearchParameterList) {
-      indexSearchParameter(searchParameter as SearchParameter);
-      await this.repo.createResource(searchParameter as SearchParameter);
-    }
-
-    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {

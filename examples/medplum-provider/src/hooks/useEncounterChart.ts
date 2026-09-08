@@ -43,6 +43,12 @@ export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encou
   const [clinicalImpression, setClinicalImpression] = useState<WithId<ClinicalImpression> | undefined>();
   const [appointment, setAppointment] = useState<WithId<Appointment> | undefined>();
 
+  // Discard optimistic state from a previous encounter when the hook is reused across
+  // selections without a remount.
+  if (encounterState && encounterResource && encounterState.id !== encounterResource.id) {
+    setEncounter(encounterResource);
+  }
+
   // Prefer encounterState (explicitly set via setEncounter) for immediate optimistic updates.
   // Falls back to encounterResource on initial load before any explicit set.
   const encounterToUse = encounterState ?? encounterResource;

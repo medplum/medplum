@@ -14,3 +14,7 @@ export const NDC = 'http://hl7.org/fhir/sid/ndc';
 // e.g. https://rules.sonarsource.com/javascript/type/Security%20Hotspot/RSPEC-5332/
 export const HTTP_HL7_ORG = 'http://hl7.org';
 export const HTTP_TERMINOLOGY_HL7_ORG = 'http://terminology.hl7.org';
+
+// HL7 v2 Table 0203 "Identifier Type", the code system for Identifier.type,
+// see https://terminology.hl7.org/CodeSystem-v2-0203.html
+export const HL7_V2_0203 = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v2-0203`;

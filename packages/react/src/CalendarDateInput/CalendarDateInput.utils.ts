@@ -11,8 +11,71 @@ export function getMonthString(date: Date): string {
 }
 
 export function getStartMonth(): Date {
-  const result = new Date();
-  result.setDate(1);
-  result.setHours(0, 0, 0, 0);
-  return result;
+  return startOfMonth(new Date());
+}
+
+/**
+ * Returns local midnight on the first of a date's month.
+ * @param date - Any date within the month.
+ * @returns The first day of that month.
+ */
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+/**
+ * Returns local midnight of the day a date falls on.
+ * @param date - Any instant within the day.
+ * @returns The day it falls on, at midnight.
+ */
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Numbers the day a date falls on, so two days can be counted apart.
+ *
+ * Local midnights are 23 or 25 hours apart across a daylight-saving change — enough to make a day
+ * exactly between two others look nearer to one of them — so the day is numbered rather than
+ * measured. Taking the local day as though it were UTC lands on an exact multiple of a day.
+ * @param date - Any instant within the day.
+ * @returns A number that steps by exactly one day per day.
+ */
+export function dayNumber(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Returns whether a day falls before another, ignoring the time of day.
+ * @param day - Local midnight of the day in question.
+ * @param limit - The instant the day is measured against.
+ * @returns True when the day ends before the limit.
+ */
+export function isBeforeDay(day: Date, limit: Date): boolean {
+  return day.getTime() < startOfDay(limit).getTime();
+}
+
+/**
+ * Puts the ends of a range in order.
+ * @param from - The day the range began on.
+ * @param to - The day it has reached.
+ * @returns The earlier day as the start.
+ */
+export function sortEnds(from: Date, to: Date): { start: Date; end: Date } {
+  return from <= to ? { start: from, end: to } : { start: to, end: from };
+}
+
+/**
+ * Returns whether two dates fall on the same day in the local timezone.
+ * @param left - The first date.
+ * @param right - The second date, which may be absent.
+ * @returns True when both dates are present and share a calendar day.
+ */
+export function isSameDay(left: Date, right: Date | undefined): boolean {
+  return (
+    !!right &&
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
 }

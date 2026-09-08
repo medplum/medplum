@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { QueryResult, QueryResultRow } from 'pg';
+import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { escapeIdentifier } from 'pg';
 import type { UpdateQuery } from '../fhir/sql';
-import { SqlBuilder } from '../fhir/sql';
+import { isValidPostgresIdentifier, SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
-import type { CheckConstraintDefinition, DbClient, MigrationActionResult } from './types';
+import type { CheckConstraintDefinition, MigrationActionResult } from './types';
 
 export async function query<R extends QueryResultRow = any>(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   queryStr: string,
   params?: any[]
@@ -21,6 +21,111 @@ export async function query<R extends QueryResultRow = any>(
   return result;
 }
 
+export async function reindexConcurrently(
+  client: PoolClient,
+  results: MigrationActionResult[],
+  target: 'INDEX' | 'TABLE',
+  name: string
+): Promise<void> {
+  if (target !== 'INDEX' && target !== 'TABLE') {
+    throw new Error(`Invalid REINDEX target: ${target}`);
+  }
+  if (!isValidPostgresIdentifier(name)) {
+    throw new Error(`Invalid PostgreSQL identifier: ${name}`);
+  }
+  const queryStr = `REINDEX (VERBOSE) ${target} CONCURRENTLY ${escapeIdentifier(name)}`;
+  const notices: string[] = [];
+  const noticeListener = (notice: { message?: string }): void => {
+    if (notice.message) {
+      notices.push(notice.message);
+    }
+  };
+  client.on('notice', noticeListener);
+  try {
+    await query(client, results, queryStr);
+    if (notices.length > 0) {
+      results[results.length - 1].notices = notices.join('\n');
+    }
+  } finally {
+    client.removeListener('notice', noticeListener);
+  }
+}
+
+export async function dropInvalidIndexConcurrently(
+  client: PoolClient,
+  results: MigrationActionResult[],
+  schemaName: string,
+  indexName: string
+): Promise<void> {
+  if (!isValidPostgresIdentifier(schemaName)) {
+    throw new Error(`Invalid PostgreSQL schema name: ${schemaName}`);
+  }
+  if (!isValidPostgresIdentifier(indexName)) {
+    throw new Error(`Invalid PostgreSQL index name: ${indexName}`);
+  }
+
+  const qualifiedIndexName = `${escapeIdentifier(schemaName)}.${escapeIdentifier(indexName)}`;
+  const indexResult = await client.query<{
+    is_valid: boolean;
+    is_primary: boolean;
+    is_replica_identity: boolean;
+    is_constraint_backed: boolean;
+    is_partitioned: boolean;
+    is_partition: boolean;
+    build_in_progress: boolean;
+  }>(
+    `SELECT
+      i.indisvalid AS is_valid,
+      i.indisprimary AS is_primary,
+      i.indisreplident AS is_replica_identity,
+      EXISTS (SELECT 1 FROM pg_constraint constraint_def WHERE constraint_def.conindid = index_class.oid)
+        AS is_constraint_backed,
+      index_class.relkind = 'I' AS is_partitioned,
+      index_class.relispartition AS is_partition,
+      EXISTS (SELECT 1 FROM pg_stat_progress_create_index progress WHERE progress.relid = i.indrelid)
+        AS build_in_progress
+    FROM pg_index i
+    JOIN pg_class index_class ON index_class.oid = i.indexrelid
+    JOIN pg_namespace index_namespace ON index_namespace.oid = index_class.relnamespace
+    WHERE index_namespace.nspname = $1 AND index_class.relname = $2`,
+    [schemaName, indexName]
+  );
+
+  if (indexResult.rows.length === 0) {
+    results.push({
+      name: `DROP INDEX CONCURRENTLY IF EXISTS ${qualifiedIndexName}`,
+      durationMs: 0,
+      skipped: 'Index does not exist',
+    });
+    return;
+  }
+
+  const index = indexResult.rows[0];
+  if (index.build_in_progress) {
+    throw new Error(`Cannot drop index ${qualifiedIndexName} while an index build is active on its table`);
+  }
+  if (index.is_valid) {
+    throw new Error(`Cannot drop valid index ${qualifiedIndexName}`);
+  }
+  if (index.is_primary) {
+    throw new Error(`Cannot drop primary index ${qualifiedIndexName}`);
+  }
+  if (index.is_replica_identity) {
+    throw new Error(`Cannot drop replica identity index ${qualifiedIndexName}`);
+  }
+  if (index.is_constraint_backed) {
+    throw new Error(`Cannot drop constraint-backed index ${qualifiedIndexName}`);
+  }
+  if (index.is_partitioned) {
+    throw new Error(`Cannot concurrently drop partitioned index ${qualifiedIndexName}`);
+  }
+  if (index.is_partition) {
+    throw new Error(`Cannot drop index partition ${qualifiedIndexName}`);
+  }
+
+  await query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS ${qualifiedIndexName}`);
+}
+
 /**
  * Creates an index if it does not exist. If the index exists but is invalid, it will be dropped and recreated.
  * If the index exists and is valid, no action will be taken. This function is useful to recover from
@@ -28,13 +133,13 @@ export async function query<R extends QueryResultRow = any>(
  * index that could take many minutes to complete is interrupted due to a server deployment or the worker
  * performing the migration is interrupted/crashes for any other reason.
  *
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param results - The list of action results to push operations performed.
  * @param indexName - The name of the index to create.
  * @param createIndexSql - The SQL to create the index.
  */
 export async function idempotentCreateIndex(
-  client: DbClient,
+  client: PoolClient,
   results: MigrationActionResult[],
   indexName: string,
   createIndexSql: string
@@ -77,7 +182,7 @@ export async function idempotentCreateIndex(
 }
 
 export async function analyzeTable(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string
 ): Promise<void> {
@@ -93,14 +198,14 @@ export async function analyzeTable(
  * Adds a constraint to a table without blocking concurrent updates.
  * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
  *
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param actions - The list of action results to push operations performed.
  * @param tableName - The name of the table to add the constraint to.
  * @param constraintName - The name of the constraint to add.
  * @param constraintExpression - The expression for the constraint.
  */
 export async function nonBlockingAddCheckConstraint(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
@@ -140,7 +245,7 @@ export async function nonBlockingAddCheckConstraint(
 }
 
 async function getExistingConstraint(
-  client: DbClient,
+  client: PoolClient,
   tableName: string,
   constraintName: string
 ): Promise<CheckConstraintDefinition | undefined> {
@@ -152,13 +257,13 @@ async function getExistingConstraint(
  * Non-blocking alter column NOT NULL utilizing a temporary table constraint. Throws if any rows contain NULL values.
  * See {@link https://www.postgresql.org/docs/16/sql-altertable.html#SQL-ALTERTABLE-NOTES} for details.
  *
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param actions - The list of action results to push operations performed.
  * @param tableName - The name of the table to analyze.
  * @param columnName - The name of the column to analyze.
  */
 export async function nonBlockingAlterColumnNotNull(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   columnName: string
@@ -220,7 +325,7 @@ export function getCheckConstraintQuery(
 }
 
 export async function addCheckConstraint(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   tableName: string,
   constraintName: string,
@@ -232,13 +337,13 @@ export async function addCheckConstraint(
 
 /**
  * Updates rows in batches to avoid locking the table.
- * @param client - The database client or pool.
+ * @param client - A checked-out database client.
  * @param actions - The list of action results to push operations performed.
  * @param updateQuery - The update query to execute. The query must include a RETURNING clause and return no rows when there are no rows to update.
  * @param maxIterations - The maximum number of iterations to perform, Infinity is valid.
  */
 export async function batchedUpdate(
-  client: DbClient,
+  client: PoolClient,
   actions: MigrationActionResult[],
   updateQuery: UpdateQuery,
   maxIterations: number

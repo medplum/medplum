@@ -202,19 +202,25 @@ describe('CodeSystem validate-code', () => {
   });
 
   test('Lookup using specific CodeSystem version', async () => {
-    const updatedCodeSystem: CodeSystem = {
-      ...testCodeSystem,
-      content: 'complete',
-      version: '3.1.4',
-      concept: [{ code: '5', display: 'Neologism' }],
-    };
-    const res = await request(app)
-      .post('/fhir/R4/CodeSystem')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send(updatedCodeSystem);
-    expect(res).toHaveStatus(201);
-    const codeSystem = res.body as CodeSystem;
+    const versionedUrl = 'http://example.com/versioned-code-system-' + randomUUID();
+    for (const [version, display] of [
+      ['2.7.1', 'Archaism'],
+      ['3.1.4', 'Neologism'],
+    ]) {
+      const versionedCodeSystem: CodeSystem = {
+        ...testCodeSystem,
+        url: versionedUrl,
+        content: 'complete',
+        version,
+        concept: [{ code: '5', display }],
+      };
+      const res = await request(app)
+        .post('/fhir/R4/CodeSystem')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(versionedCodeSystem);
+      expect(res).toHaveStatus(201);
+    }
 
     const res2 = await request(app)
       .post('/fhir/R4/CodeSystem/$validate-code')
@@ -223,8 +229,8 @@ describe('CodeSystem validate-code', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
-          { name: 'coding', valueCoding: { system: codeSystem.url, code: '5' } },
-          { name: 'version', valueString: '3.1.4' },
+          { name: 'coding', valueCoding: { system: versionedUrl, code: '5' } },
+          { name: 'version', valueString: '2.7.1' },
         ],
       });
     expect(res2).toHaveStatus(200);
@@ -232,7 +238,7 @@ describe('CodeSystem validate-code', () => {
       resourceType: 'Parameters',
       parameter: [
         { name: 'result', valueBoolean: true },
-        { name: 'display', valueString: 'Neologism' },
+        { name: 'display', valueString: 'Archaism' },
       ],
     });
   });

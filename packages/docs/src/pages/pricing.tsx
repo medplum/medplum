@@ -201,6 +201,20 @@ export default function PricingPage(): JSX.Element {
               </tr>
               <tr>
                 <td>
+                  Data Warehouse
+                  <sup>
+                    <a href="#note18">18</a>
+                  </sup>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td></td>
+                <td>✔️</td>
+              </tr>
+              <tr>
+                <td>
                   <b>Communications</b>
                 </td>
                 <td></td>
@@ -585,6 +599,12 @@ export default function PricingPage(): JSX.Element {
                   AWS Marketplace
                 </Link>
                 .
+              </li>
+              <li id="note18">
+                <strong> Data Warehouse</strong>: scheduled synchronization of FHIR resources to open Apache Iceberg
+                tables, queried in place from{' '}
+                <Link href="https://www.medplum.com/docs/analytics/snowflake">Snowflake</Link>,{' '}
+                <Link href="https://www.medplum.com/docs/analytics/redshift">Amazon Redshift</Link> and other engines.
               </li>
             </ol>
           </div>

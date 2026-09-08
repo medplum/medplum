@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, createReference, forbidden, OperationOutcomeError } from '@medplum/core';
+import { badRequest, createReference, forbidden, notFound, OperationOutcomeError } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -32,12 +32,20 @@ export async function preAuthorizeHandler(req: Request, res: Response): Promise<
     throw new OperationOutcomeError(badRequest('Pre-authorization requires onBehalfOfMembership'));
   }
 
+  // X-Medplum-On-Behalf-Of rebuilds the request repo as the target membership's AccessPolicy.
+  // Resolve ClientApplication with the admin/system repo so minting does not require the target
+  // user to be able to read ClientApplication (e.g. RelatedPerson magic-link flows).
+  const systemRepo = repo.getSystemRepo();
+  const client = await systemRepo.readResource<ClientApplication>('ClientApplication', req.body.clientId);
+  if (client.meta?.project !== project.id) {
+    throw new OperationOutcomeError(notFound);
+  }
+
   const preAuthorizedCode = generateSecret(128);
   const preAuthorizedCodeHash = createHash('sha256').update(preAuthorizedCode).digest('hex');
   const expiresIn = req.body.expiresIn ?? DEFAULT_PRE_AUTH_CODE_TTL;
   const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-  const client = await repo.readResource<ClientApplication>('ClientApplication', req.body.clientId);
-  await repo.getSystemRepo().createResource<Login>({
+  await systemRepo.createResource<Login>({
     resourceType: 'Login',
     authMethod: 'pre-authorized',
     project: createReference(project),

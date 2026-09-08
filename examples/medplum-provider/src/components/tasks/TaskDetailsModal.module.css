@@ -1,16 +1,7 @@
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--mantine-spacing-md);
-  height: 70px;
-}
-
-[data-mantine-color-scheme='dark'] .taskDetails,
-[data-mantine-color-scheme='dark'] .footer {
+[data-mantine-color-scheme='dark'] .taskDetails {
   background-color: var(--mantine-color-dark-8);
 }
 
-[data-mantine-color-scheme='light'] .taskDetails,
-[data-mantine-color-scheme='light'] .footer {
+[data-mantine-color-scheme='light'] .taskDetails {
   background-color: var(--mantine-color-gray-1);
 }

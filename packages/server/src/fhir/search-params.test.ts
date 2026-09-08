@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, getReferenceString, Operator } from '@medplum/core';
-import type { Appointment, DiagnosticReport, Flag, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  DiagnosticReport,
+  Flag,
+  Organization,
+  Patient,
+  Practitioner,
+  PractitionerRole,
+  Slot,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -369,5 +378,46 @@ describe('Medplum Custom Search Parameters', () => {
 
       expect(result.entry).toHaveLength(1);
       expect(result.entry?.[0]?.resource).toMatchObject(practitioner1);
+    }));
+
+  test('Search for PractitionerRole by network', () =>
+    withTestContext(async () => {
+      const network1 = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Network One',
+      });
+      const network2 = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Network Two',
+      });
+
+      const role1 = await repo.createResource<PractitionerRole>({
+        resourceType: 'PractitionerRole',
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference',
+            valueReference: createReference(network1),
+          },
+        ],
+      });
+
+      const role2 = await repo.createResource<PractitionerRole>({
+        resourceType: 'PractitionerRole',
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/network-reference',
+            valueReference: createReference(network2),
+          },
+        ],
+      });
+      expect(role2).toBeDefined();
+
+      const result = await repo.search({
+        resourceType: 'PractitionerRole',
+        filters: [{ code: 'network', operator: Operator.EQUALS, value: getReferenceString(network1) }],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource).toMatchObject(role1);
     }));
 });

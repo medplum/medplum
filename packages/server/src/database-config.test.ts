@@ -176,6 +176,7 @@ describe('Database config', () => {
     const config = await loadTestConfig();
     config.database.maxConnections = 20;
     config.database.minConnections = 5;
+    config.database.maxConnectionUses = 555;
     config.database.idleTimeoutMs = 30_000;
     config.database.connectionTimeoutMs = 10_000;
 
@@ -185,6 +186,7 @@ describe('Database config', () => {
       expect.objectContaining({
         max: 20,
         min: 5,
+        maxUses: 555,
         idleTimeoutMillis: 30_000,
         connectionTimeoutMillis: 10_000,
       })

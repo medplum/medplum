@@ -39,9 +39,15 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * This method ensures that the repository is setup correctly.
  * @param authState - The authentication state.
  * @param extendedMode - Optional flag to enable extended mode for custom Medplum properties.
+ * @param remoteAddress - Optional current request IP, used for AuditEvents instead of `login.remoteAddress`
+ *   (which is only as fresh as the last token issuance/refresh).
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
+export async function getRepoForLogin(
+  authState: AuthState,
+  extendedMode?: boolean,
+  remoteAddress?: string
+): Promise<Repository> {
   const { login, membership: realMembership, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
@@ -90,7 +96,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     projects: allowedProjects,
     currentProject: project,
     author: profile ? createReference(profile) : realMembership.profile,
-    remoteAddress: login.remoteAddress,
+    remoteAddress: remoteAddress ?? login.remoteAddress,
     superAdmin: project.superAdmin,
     projectAdmin: membership.admin,
     accessPolicy,

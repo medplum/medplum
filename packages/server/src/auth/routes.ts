@@ -1,7 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest } from '@medplum/core';
-import type { OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Router } from 'express';
 import { authenticateRequest } from '../oauth/middleware';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
@@ -23,7 +21,7 @@ import { revokeHandler, revokeValidator } from './revoke';
 import { scopeHandler, scopeValidator } from './scope';
 import { setPasswordHandler, setPasswordValidator } from './setpassword';
 import { statusHandler, statusValidator } from './status';
-import { validateRecaptcha } from './utils';
+import { projectRegistrationAllowed, validateRecaptcha } from './utils';
 import { verifyEmailHandler, verifyEmailValidator } from './verifyemail';
 
 export const authRouter = Router();
@@ -47,10 +45,3 @@ authRouter.post('/revoke', authenticateRequest, revokeValidator, revokeHandler);
 authRouter.post('/preauthorize', authenticateRequest, preAuthorizeValidator, preAuthorizeHandler);
 authRouter.get('/login/:login', statusValidator, statusHandler);
 authRouter.get('/clientinfo/:clientId', clientInfoHandler);
-
-function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
-  if (!project.defaultPatientAccessPolicy) {
-    return badRequest('Project does not allow open registration');
-  }
-  return undefined;
-}

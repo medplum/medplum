@@ -1,0 +1,49 @@
+/* The whole week is one grid, so every day's controls line up on the same
+   columns without any of them being given a width of its own. Each block of
+   hours is a row, placed by column rather than in document order, so a day's
+   second and later blocks simply leave the day column empty. */
+.week {
+  display: grid;
+  grid-template-columns: repeat(5, max-content) 1fr;
+  align-items: center;
+  column-gap: var(--mantine-spacing-xs);
+  row-gap: var(--mantine-spacing-xs);
+  /* Mantine's default input height, so a day with no hours is the same height
+     as one with a block of them. */
+  grid-auto-rows: minmax(calc(2.25rem * var(--mantine-scale)), auto);
+}
+
+.dayCell {
+  grid-column: 1;
+  /* A wider gutter between a day and its hours than between the controls. */
+  padding-right: var(--mantine-spacing-sm);
+}
+
+.rangeStart {
+  grid-column: 2;
+}
+
+.rangeSeparator {
+  grid-column: 3;
+}
+
+.rangeEnd {
+  grid-column: 4;
+}
+
+.addAction {
+  grid-column: 5;
+}
+
+.removeAction {
+  grid-column: 6;
+}
+
+.unavailable {
+  grid-column: 2 / -1;
+}
+
+/* Sits above the grid, so it matches the row height rather than inheriting it. */
+.overrideToggle {
+  min-height: calc(2.25rem * var(--mantine-scale));
+}

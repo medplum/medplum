@@ -7,6 +7,7 @@ import {
   isDayOfWeek,
   isDefined,
   OperationOutcomeError,
+  schedulingDurationToMinutes,
   SchedulingParametersURI,
 } from '@medplum/core';
 import type {
@@ -145,7 +146,7 @@ function isReferenceTo<T extends Resource>(reference: Reference<T> | undefined, 
   return refType === resource.resourceType && id === resource.id;
 }
 
-function durationToMinutes(extension: WithPath<Extension>): number {
+function extensionDurationToMinutes(extension: WithPath<Extension>): number {
   assertExtensionDuration(extension);
 
   const { value, unit } = extension.valueDuration;
@@ -157,18 +158,11 @@ function durationToMinutes(extension: WithPath<Extension>): number {
     throw new OperationOutcomeError(badRequest('Got duration with negative value', getPath(extension)));
   }
 
-  switch (unit) {
-    case 'wk':
-      return value * 60 * 24 * 7;
-    case 'd':
-      return value * 60 * 24;
-    case 'h':
-      return value * 60;
-    case 'min':
-      return value;
-    default:
-      throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
+  const minutes = schedulingDurationToMinutes(extension.valueDuration);
+  if (minutes === undefined) {
+    throw new OperationOutcomeError(badRequest(`Got unhandled duration unit "${unit}"`, getPath(extension)));
   }
+  return minutes;
 }
 
 function assertValidTimezone(ext: WithPath<Extension>): void {
@@ -346,7 +340,7 @@ function extractAvailability(
 // ("align to the hour") and rejects values > 1440 min (one day), since the
 // per-day grid anchoring in findAlignedSlotTimes makes longer intervals meaningless.
 function extractAlignmentInterval(ext: WithPath<Extension>): number {
-  const value = durationToMinutes(ext);
+  const value = extensionDurationToMinutes(ext);
   if (value === 0) {
     return 60;
   }
@@ -424,10 +418,10 @@ export function getHealthcareServiceSchedulingParameters(
   return result.patchLayer(
     withPath(
       {
-        ...(durationExt && { duration: durationToMinutes(durationExt) }),
-        ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
-        ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
-        ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+        ...(durationExt && { duration: extensionDurationToMinutes(durationExt) }),
+        ...(bufferBeforeExt && { bufferBefore: extensionDurationToMinutes(bufferBeforeExt) }),
+        ...(bufferAfterExt && { bufferAfter: extensionDurationToMinutes(bufferAfterExt) }),
+        ...(alignmentOffsetExt && { alignmentOffset: extensionDurationToMinutes(alignmentOffsetExt) }),
         ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
         ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
         ...(timezoneExt && { timezone: timezoneExt.valueCode }),
@@ -501,10 +495,10 @@ export function getScheduleSchedulingParameters(
   const layer = withPath(
     {
       ...(availabilityExt.length && { availability: availabilityExt.flatMap(extractAvailabilityR4) }),
-      ...(durationExt && { duration: durationToMinutes(durationExt) }),
-      ...(bufferBeforeExt && { bufferBefore: durationToMinutes(bufferBeforeExt) }),
-      ...(bufferAfterExt && { bufferAfter: durationToMinutes(bufferAfterExt) }),
-      ...(alignmentOffsetExt && { alignmentOffset: durationToMinutes(alignmentOffsetExt) }),
+      ...(durationExt && { duration: extensionDurationToMinutes(durationExt) }),
+      ...(bufferBeforeExt && { bufferBefore: extensionDurationToMinutes(bufferBeforeExt) }),
+      ...(bufferAfterExt && { bufferAfter: extensionDurationToMinutes(bufferAfterExt) }),
+      ...(alignmentOffsetExt && { alignmentOffset: extensionDurationToMinutes(alignmentOffsetExt) }),
       ...(alignmentIntervalExt && { alignmentInterval: extractAlignmentInterval(alignmentIntervalExt) }),
       ...(alignmentTimezoneExt && { alignmentTimezone: alignmentTimezoneExt.valueCode }),
       ...(timezoneExt && { timezone: timezoneExt.valueCode }),

@@ -134,12 +134,14 @@ describe('Config', () => {
     setEnv('MEDPLUM_LOG_REQUESTS', 'false');
     setEnv('MEDPLUM_BOT_CUSTOM_FUNCTIONS_ENABLED', 'true');
     setEnv('MEDPLUM_RATE_LIMITS_ENABLED', 'false');
+    setEnv('MEDPLUM_REQUIRE_VERIFIED_EMAIL_FOR_PROJECT_CREATION', 'false');
 
     const config = await loadConfig('env');
     expect(config.registerEnabled).toBe(true);
     expect(config.logRequests).toBe(false);
     expect(config.botCustomFunctionsEnabled).toBe(true);
     expect(config.rateLimitsEnabled).toBe(false);
+    expect(config.requireVerifiedEmailForProjectCreation).toBe(false);
   });
 
   test('Env config externalAuthProviders as JSON array', async () => {

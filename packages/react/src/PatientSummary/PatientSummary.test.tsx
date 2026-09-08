@@ -312,17 +312,19 @@ describe('PatientSummary', () => {
 
   test('getDefaultSections returns all built-in sections', () => {
     const sections = getDefaultSections();
-    expect(sections).toHaveLength(10);
+    expect(sections).toHaveLength(12);
     expect(sections.map((s) => s.key)).toEqual([
       'demographics',
       'insurance',
       'allergies',
       'problemList',
       'medications',
+      'immunizations',
       'labs',
       'sexualOrientation',
       'smokingStatus',
       'vitals',
+      'goals',
       'pharmacies',
     ]);
   });

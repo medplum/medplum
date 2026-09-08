@@ -29,13 +29,16 @@ Note the following peer dependencies:
 
 ## Basic Usage
 
-This is intended to be used inside an application built using [`@medplum/react`](https://www.npmjs.com/package/@medplum/react).
+These components are intended to be used inside an application built using [`@medplum/react`](https://www.npmjs.com/package/@medplum/react). Components expect to be mounted inside a `<MedplumProvider>` and a `<MantineProvider>`.
+
+Learn more about setting up your application at https://www.medplum.com/docs/react.
 
 ```tsx
 import { getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
 import { useSearchResources } from '@medplum/react';
-import { Calendar } from '@medplum/react-scheduling'
+import { Calendar } from '@medplum/react-scheduling';
+import '@medplum/react-scheduling/styles.css';
 
 export function ScheduleView(props: { practitioner: Practitioner }) {
   const [appointments, loading] = useSearchResources(
@@ -47,7 +50,7 @@ export function ScheduleView(props: { practitioner: Practitioner }) {
   if (loading) {
     return <>Loading...</>;
   }
-  return <Calendar appointments={appointments} slots={[]} />
+  return <Calendar appointments={appointments} />;
 }
 ```
 

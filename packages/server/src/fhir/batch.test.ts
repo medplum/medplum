@@ -29,9 +29,10 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { generateAccessToken } from '../oauth/keys';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { ReentrantBatchJobData } from '../workers/batch';
-import { execBatchJob, getBatchQueue } from '../workers/batch';
+import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
 import { PostgresError } from './sql';
 
@@ -58,27 +59,47 @@ function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, un
   return job as Job<ReentrantBatchJobData>;
 }
 
+async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
+}
+
 describe('Batch and Transaction processing', () => {
   const app = express();
   let accessToken: string;
+  let baseUrl: string;
+  let projectScopedAccessToken: string;
+  let projectId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    baseUrl = config.baseUrl;
     // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
     // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
     // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
     config.asyncDelayScaling = 0;
     await initApp(app, config);
-    accessToken = await initTestAuth({
+    const testProject = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
       project: {
         features: ['transaction-bundles', 'async-batch'],
-        // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
-        // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
-        // flag the project defaults to the legacy single-shot path.
-        systemSetting: [{ name: 'reentrantAsyncBatch', valueBoolean: true }],
       },
       membership: { admin: true },
     });
+    accessToken = testProject.accessToken;
+    projectId = testProject.project.id;
+    projectScopedAccessToken = await generateAccessToken(
+      {
+        login_id: testProject.login.id,
+        sub: testProject.client.id,
+        username: testProject.client.id,
+        client_id: testProject.client.id,
+        profile: `${testProject.client.resourceType}/${testProject.client.id}`,
+        scope: testProject.login.scope as string,
+      },
+      { issuer: `${config.issuer}projects/${projectId}/` }
+    );
   });
 
   afterEach(() => {
@@ -245,8 +266,8 @@ describe('Batch and Transaction processing', () => {
     };
 
     const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .post(`/projects/${projectId}/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + projectScopedAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(batch);
     expect(res).toHaveStatus(200);
@@ -1435,14 +1456,14 @@ describe('Batch and Transaction processing', () => {
     };
 
     const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .post(`/projects/${projectId}/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + projectScopedAccessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Prefer', 'respond-async')
       .send(bundle);
     expect(res).toHaveStatus(202);
     const outcome = res.body as OperationOutcome;
-    expect(outcome.issue[0].diagnostics).toMatch('http://');
+    expect(outcome.issue[0].diagnostics).toMatch(`${baseUrl}projects/${projectId}/fhir/R4/job/`);
 
     // Manually push through BullMQ job. The bundle travels via object storage, not the job data (#9124).
     expect(queue.add).toHaveBeenCalledWith(
@@ -1458,7 +1479,7 @@ describe('Batch and Transaction processing', () => {
     await expect(execBatchJob(job)).resolves.toBe(undefined);
 
     const jobUrl = outcome.issue[0].diagnostics as string;
-    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    const asyncJob = await waitForAsyncJob(jobUrl, app, projectScopedAccessToken);
     expect(asyncJob.output).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
@@ -1506,7 +1527,13 @@ describe('Batch and Transaction processing', () => {
     const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
-    await expect(execBatchJob(job)).resolves.toBe(undefined);
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      await expect(execBatchJob(job)).resolves.toBe(undefined);
+      expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized bundle type: pergola'));
+    } finally {
+      stdoutWriteSpy.mockRestore();
+    }
 
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
@@ -1891,8 +1918,6 @@ describe('Batch and Transaction processing', () => {
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
-          // Opt in to re-entrant async batch processing (see workers/batch.ts).
-          { name: 'reentrantAsyncBatch', valueBoolean: true },
         ],
       },
     });
@@ -1968,7 +1993,7 @@ describe('Batch and Transaction processing', () => {
       undefined,
       undefined,
       { async: true },
-      () => execBatchJob(job)
+      () => execBatchJobImpl(job)
     );
 
     await expect(jobResult).resolves.toBe(undefined);

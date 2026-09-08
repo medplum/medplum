@@ -18,14 +18,19 @@ export interface ConceptMapTranslateParameters {
 export interface ConceptMapTranslateMatch {
   equivalence?: string;
   concept?: Coding;
-  property?: ConceptMapTranslateMatchAttribute[];
+  property?: ConceptMapTranslateMatchProperty[];
   dependsOn?: ConceptMapTranslateMatchAttribute[];
   product?: ConceptMapTranslateMatchAttribute[];
   source?: string;
 }
 
+export interface ConceptMapTranslateMatchProperty {
+  uri: string;
+  value: TypedValue;
+}
+
 export interface ConceptMapTranslateMatchAttribute {
-  key: string;
+  attribute: string;
   value: TypedValue;
 }
 
@@ -47,11 +52,7 @@ export function conceptMapTranslate(map: ConceptMap, params: ConceptMapTranslate
   );
 
   const result = matches.length > 0;
-
-  return {
-    result,
-    match: result ? matches : undefined,
-  };
+  return { result, match: result ? matches : undefined };
 }
 
 export function indexConceptMapCodings(params: ConceptMapTranslateParameters): Record<string, string[]> {

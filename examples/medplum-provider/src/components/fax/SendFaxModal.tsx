@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Box, Button, Divider, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type {
@@ -11,7 +11,7 @@ import type {
   Patient,
   Reference,
 } from '@medplum/fhirtypes';
-import { ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import { Modal, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleOff, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -258,141 +258,120 @@ export function SendFaxModal({
       size="lg"
       title="Send Fax"
       centered
-      styles={{
-        body: { padding: 0 },
-        header: {
-          padding: 'var(--mantine-spacing-md) var(--mantine-spacing-lg)',
-          backgroundImage: `linear-gradient(var(--mantine-color-gray-2), var(--mantine-color-gray-2))`,
-          backgroundSize: 'calc(100% - 2 * var(--mantine-spacing-lg)) 1px',
-          backgroundPosition: 'center bottom',
-          backgroundRepeat: 'no-repeat',
-        },
-      }}
+      actions={
+        <Button variant="filled" onClick={handleSend} loading={isSubmitting}>
+          Send Fax
+        </Button>
+      }
     >
-      <Stack h="100%" justify="space-between" gap={0}>
-        <Box flex={1} miw={0}>
-          <Stack gap="lg" p="lg">
-            {!defaultAttachment && (
-              <>
-                <Stack gap={4}>
-                  <Text size="sm" fw={500}>
-                    Document <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
+      <Stack gap="lg">
+        {!defaultAttachment && (
+          <>
+            <Stack gap={4}>
+              <Text size="sm" fw={500}>
+                Document <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
+              </Text>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                accept=".pdf,.png,.jpg,.jpeg,.tiff"
+                style={{ display: 'none' }}
+              />
+              <Box
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const dropped = e.dataTransfer.files?.[0];
+                  if (dropped) {
+                    setFile(dropped);
+                  }
+                }}
+                style={{
+                  border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-3)'}`,
+                  borderRadius: 'var(--mantine-radius-md)',
+                  padding: 'var(--mantine-spacing-xl) var(--mantine-spacing-md)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  backgroundColor: isDragging ? 'var(--mantine-color-blue-0)' : undefined,
+                  transition: 'border-color 150ms ease, background-color 150ms ease',
+                }}
+              >
+                <Stack align="center" gap={4}>
+                  <IconUpload size={24} color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'} />
+                  <Text size="sm" c={file ? undefined : 'dimmed'}>
+                    {file ? file.name : 'Drag a file here or click to browse'}
                   </Text>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                    accept=".pdf,.png,.jpg,.jpeg,.tiff"
-                    style={{ display: 'none' }}
-                  />
-                  <Box
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                      const dropped = e.dataTransfer.files?.[0];
-                      if (dropped) {
-                        setFile(dropped);
-                      }
-                    }}
-                    style={{
-                      border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-3)'}`,
-                      borderRadius: 'var(--mantine-radius-md)',
-                      padding: 'var(--mantine-spacing-xl) var(--mantine-spacing-md)',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      backgroundColor: isDragging ? 'var(--mantine-color-blue-0)' : undefined,
-                      transition: 'border-color 150ms ease, background-color 150ms ease',
-                    }}
-                  >
-                    <Stack align="center" gap={4}>
-                      <IconUpload
-                        size={24}
-                        color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'}
-                      />
-                      <Text size="sm" c={file ? undefined : 'dimmed'}>
-                        {file ? file.name : 'Drag a file here or click to browse'}
-                      </Text>
-                      {!file && (
-                        <Text size="xs" c="gray.5">
-                          PDF, PNG, JPG, TIFF
-                        </Text>
-                      )}
-                    </Stack>
-                  </Box>
+                  {!file && (
+                    <Text size="xs" c="gray.5">
+                      PDF, PNG, JPG, TIFF
+                    </Text>
+                  )}
                 </Stack>
-                <Box py="xs">
-                  <Divider />
-                </Box>
-              </>
-            )}
-            <TextInput
-              label="Subject (optional)"
-              placeholder="Enter subject"
-              value={subject}
-              onChange={(e) => setSubject(e.currentTarget.value)}
-            />
-            <Textarea
-              label="Cover Page Note (optional)"
-              placeholder="Enter cover page message..."
-              value={coverNote}
-              onChange={(e) => setCoverNote(e.currentTarget.value)}
-              minRows={3}
-              autosize
-              maxRows={6}
-            />
+              </Box>
+            </Stack>
             <Box py="xs">
               <Divider />
             </Box>
-
-            <ResourceInput<Organization>
-              resourceType="Organization"
-              name="recipientOrg"
-              label="Recipient Organization (optional)"
-              placeholder="Search for an organization..."
-              onChange={handleOrgChange}
-            />
-            <TextInput
-              label="Recipient Name (optional)"
-              placeholder="Enter recipient name"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.currentTarget.value)}
-            />
-
-            <TextInput
-              label={
-                <>
-                  Fax Number <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
-                </>
-              }
-              placeholder="+1 (555) 123-4567"
-              value={faxNumber}
-              onChange={(e) => setFaxNumber(e.currentTarget.value)}
-            />
-            <ResourceInput<Patient>
-              resourceType="Patient"
-              name="patient"
-              label="Patient (optional)"
-              placeholder="Link to a patient..."
-              defaultValue={defaultPatient}
-              onChange={(value: Patient | undefined) => setPatient(value ? createReference(value) : undefined)}
-            />
-            <Box pt="xs">
-              <Divider />
-            </Box>
-          </Stack>
+          </>
+        )}
+        <TextInput
+          label="Subject (optional)"
+          placeholder="Enter subject"
+          value={subject}
+          onChange={(e) => setSubject(e.currentTarget.value)}
+        />
+        <Textarea
+          label="Cover Page Note (optional)"
+          placeholder="Enter cover page message..."
+          value={coverNote}
+          onChange={(e) => setCoverNote(e.currentTarget.value)}
+          minRows={3}
+          autosize
+          maxRows={6}
+        />
+        <Box py="xs">
+          <Divider />
         </Box>
 
-        <Box px="lg" pb="lg">
-          <Button variant="filled" w="100%" onClick={handleSend} loading={isSubmitting}>
-            Send Fax
-          </Button>
-        </Box>
+        <ResourceInput<Organization>
+          resourceType="Organization"
+          name="recipientOrg"
+          label="Recipient Organization (optional)"
+          placeholder="Search for an organization..."
+          onChange={handleOrgChange}
+        />
+        <TextInput
+          label="Recipient Name (optional)"
+          placeholder="Enter recipient name"
+          value={recipientName}
+          onChange={(e) => setRecipientName(e.currentTarget.value)}
+        />
+
+        <TextInput
+          label={
+            <>
+              Fax Number <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
+            </>
+          }
+          placeholder="+1 (555) 123-4567"
+          value={faxNumber}
+          onChange={(e) => setFaxNumber(e.currentTarget.value)}
+        />
+        <ResourceInput<Patient>
+          resourceType="Patient"
+          name="patient"
+          label="Patient (optional)"
+          placeholder="Link to a patient..."
+          defaultValue={defaultPatient}
+          onChange={(value: Patient | undefined) => setPatient(value ? createReference(value) : undefined)}
+        />
       </Stack>
     </Modal>
   );

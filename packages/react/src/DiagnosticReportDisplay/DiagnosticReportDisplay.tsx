@@ -293,10 +293,49 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
 
   const critical = isCritical(observation);
 
+  const depth = props.ancestorIds?.length ?? 0;
+
+  const memberRows = observation.hasMember && (
+    <ObservationRowGroup
+      value={observation.hasMember as Reference<Observation>[]}
+      ancestorIds={props.ancestorIds ? [...props.ancestorIds, observation.id] : [observation.id]}
+      hideObservationNotes={props.hideObservationNotes}
+    />
+  );
+
+  if (isGroupingObservation(observation)) {
+    return (
+      <>
+        <tr className={classes.groupHeaderRow}>
+          <td colSpan={7} style={indentStyle(depth)}>
+            <Group gap="sm">
+              <MedplumLink to={observation}>
+                <CodeableConceptDisplay value={observation.code} />
+              </MedplumLink>
+              {observation.effectiveDateTime && (
+                <Text size="sm" c="dimmed" fw={400}>
+                  Collected: {formatDateTime(observation.effectiveDateTime)}
+                </Text>
+              )}
+            </Group>
+          </td>
+        </tr>
+        {displayNotes && (
+          <tr>
+            <td colSpan={7} style={indentStyle(depth + 1)}>
+              <NoteDisplay value={observation.note} />
+            </td>
+          </tr>
+        )}
+        {memberRows}
+      </>
+    );
+  }
+
   return (
     <>
       <tr className={cx({ [classes.criticalRow]: critical })}>
-        <td rowSpan={displayNotes ? 2 : 1}>
+        <td rowSpan={displayNotes ? 2 : 1} style={indentStyle(depth)}>
           <MedplumLink to={observation}>
             <CodeableConceptDisplay value={observation.code} />
           </MedplumLink>
@@ -330,13 +369,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>
-      {observation.hasMember && (
-        <ObservationRowGroup
-          value={observation.hasMember as Reference<Observation>[]}
-          ancestorIds={props.ancestorIds ? [...props.ancestorIds, observation.id] : [observation.id]}
-          hideObservationNotes={props.hideObservationNotes}
-        />
-      )}
+      {memberRows}
       {displayNotes && (
         <tr>
           <td colSpan={6}>
@@ -382,6 +415,36 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
     return <>{range.text}</>;
   }
   return <RangeDisplay value={range} />;
+}
+
+/**
+ * Indents a table cell by nesting depth, so members read as belonging to the group above them.
+ * @param depth - The nesting depth of the observation, where the report's own results are depth 0.
+ * @returns Style props for the cell.
+ */
+function indentStyle(depth: number): { paddingInlineStart: string } | undefined {
+  return depth > 0 ? { paddingInlineStart: `calc(4px + ${depth} * var(--mantine-spacing-md))` } : undefined;
+}
+
+/**
+ * Returns true if the observation exists only to group its members.
+ *
+ * Panel headers - such as Health Gorilla's `hg-observaton-group` - carry a code and members but no
+ * result of their own, so a normal row for them renders with every data column blank. Labs consider
+ * such a row misleading, so they are rendered as a section header spanning the table instead.
+ * @param observation - The FHIR observation.
+ * @returns True if the observation has members and nothing of its own to display.
+ */
+function isGroupingObservation(observation: Observation): boolean {
+  if (!observation.hasMember?.length) {
+    return false;
+  }
+  return !(
+    formatObservationValue(observation) ||
+    observation.dataAbsentReason ||
+    observation.interpretation?.length ||
+    observation.referenceRange?.length
+  );
 }
 
 /**

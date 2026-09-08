@@ -248,7 +248,7 @@ Decide how you build a valid claim from charges and coverage, and how it leaves 
 | Situation | Approach |
 | :---- | :---- |
 | Build the claim | `Claim` referencing the `Coverage` (`Claim.insurance`), charges (`Claim.item`), and ICD-10 diagnoses (`Claim.diagnosis`) with item-level pointers. |
-| Billing provider | Set on `Claim.provider`, but backends read it differently (billing provider vs. rendering provider with the billing `Organization` via `PractitionerRole`); confirm per integration. |
+| Billing provider | Set on `Claim.provider`: the billing `Organization` (or a `Practitioner` for individual billing). The rendering provider goes on `Claim.careTeam` with role `primary`. |
 | Electronic (you own the cycle) | The clearinghouse submit operation sends an 837P and writes a correlation id back to the `Claim`. |
 | RCM partner | The partner's submit operation returns a `ClaimResponse`; the partner owns scrubbing, denials, resubmission, and remittance on its platform, and billing tasks sync back into Medplum as `Task`s (3.8). |
 | Manual / paper / portal | [`Claim/$export`](/docs/api/fhir/operations/claim-export) generates a [CMS-1500 PDF](/docs/billing/creating-cms1500) (`Binary`; experimental); log the outbound document. |

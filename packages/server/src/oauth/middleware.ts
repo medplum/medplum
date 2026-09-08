@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { OperationOutcomeError, unauthorized } from '@medplum/core';
+import { forbidden, OperationOutcomeError, unauthorized } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -16,6 +16,7 @@ import type { IncomingMessage } from 'node:http';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import type { Repository } from '../fhir/repo';
+import { getProjectIdFromUrl } from '../util/url';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
 
 export type AuthState = {
@@ -41,6 +42,11 @@ export const PROMPT_BASIC_AUTH_PARAM = '_medplum-prompt-basic-auth';
 export function authenticateRequest(req: Request, res: Response, next: NextFunction): void {
   const ctx = getRequestContext();
   if (ctx instanceof AuthenticatedRequestContext) {
+    const projectId = getProjectIdFromUrl(req.originalUrl);
+    if (projectId && projectId !== ctx.project.id) {
+      next(new OperationOutcomeError(forbidden));
+      return;
+    }
     next();
   } else {
     const requestAuthScheme = req.headers.authorization?.split(' ')[0] ?? 'Bearer';

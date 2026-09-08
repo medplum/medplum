@@ -10,11 +10,20 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
+  HealthGorillaCholesterolObservation,
+  HealthGorillaClinicalPdfGroup,
+  HealthGorillaClinicalPdfObservation,
   HealthGorillaDiagnosticReport,
+  HealthGorillaHdlObservation,
+  HealthGorillaLipidPanelDiagnosticReport,
+  HealthGorillaLipidPanelGroup,
   HealthGorillaObservation1,
   HealthGorillaObservation2,
   HealthGorillaObservationGroup1,
   HealthGorillaObservationGroup2,
+  HealthGorillaQuestLabSacramento,
+  HealthGorillaQuestParentLab,
+  HealthGorillaTriglyceridesObservation,
 } from '../stories/healthgorilla';
 import { LabPanelDiagnosticReport, LabPanelObservations, LabPanelSpecimen } from '../stories/labPanel';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
@@ -63,27 +72,28 @@ export const Simple = (): JSX.Element => (
 
 export const WithCategories = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    (async (): Promise<boolean> => {
+    (async (): Promise<DiagnosticReport> => {
       const obs = await medplum.createResource(CreatinineObservation);
-      ExampleReport.result = [createReference(obs)];
+      // Clone to avoid mutating the shared fixture across story renders.
+      const report = deepClone(ExampleReport);
+      report.result = [createReference(obs)];
 
-      await medplum.updateResource(ExampleReport);
-      return true;
+      return medplum.updateResource(report);
     })()
-      .then(setLoaded)
+      .then(setReport)
       .catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay value={ExampleReport} />
+      <DiagnosticReportDisplay value={report} />
     </Document>
   );
 };
@@ -109,27 +119,28 @@ export const HideSpecimenInfo = (): JSX.Element => {
 
 export const HideNotes = (): JSX.Element => {
   const medplum = useMedplum();
-  const [loaded, setLoaded] = useState(false);
+  const [report, setReport] = useState<DiagnosticReport>();
 
   useEffect(() => {
-    (async (): Promise<boolean> => {
+    (async (): Promise<DiagnosticReport> => {
       const obs = await medplum.createResource({ ...CreatinineObservation, category: undefined });
-      (HomerDiagnosticReport.result as Reference<Observation>[]).push(createReference(obs));
+      // Clone to avoid mutating the shared fixture across story renders.
+      const report = deepClone(HomerDiagnosticReport);
+      (report.result as Reference<Observation>[]).push(createReference(obs));
 
-      await medplum.updateResource(HomerDiagnosticReport);
-      return true;
+      return medplum.updateResource(report);
     })()
-      .then(setLoaded)
+      .then(setReport)
       .catch(console.log);
   }, [medplum]);
 
-  if (!loaded) {
+  if (!report) {
     return <></>;
   }
 
   return (
     <Document>
-      <DiagnosticReportDisplay hideObservationNotes value={HomerDiagnosticReport} />
+      <DiagnosticReportDisplay hideObservationNotes value={report} />
     </Document>
   );
 };
@@ -256,6 +267,46 @@ export const ObservationGroups = (): JSX.Element => {
 
   useEffect(() => {
     createHealthGorillaReport(medplum).then(setReport).catch(console.log);
+  }, [medplum]);
+
+  if (!report) {
+    return <></>;
+  }
+
+  return (
+    <Document>
+      <DiagnosticReportDisplay value={report} />
+    </Document>
+  );
+};
+
+/**
+ * A Health Gorilla lipid panel. Neither group has a value of its own to put in the table, so each
+ * renders as a section header with its members indented beneath.
+ * @returns The observation group hierarchy story.
+ */
+export const ObservationGroupHierarchy = (): JSX.Element => {
+  const medplum = useMedplum();
+  const [report, setReport] = useState<DiagnosticReport>();
+
+  useEffect(() => {
+    (async (): Promise<DiagnosticReport> => {
+      for (const resource of [
+        HealthGorillaQuestParentLab,
+        HealthGorillaQuestLabSacramento,
+        HealthGorillaCholesterolObservation,
+        HealthGorillaHdlObservation,
+        HealthGorillaTriglyceridesObservation,
+        HealthGorillaLipidPanelGroup,
+        HealthGorillaClinicalPdfObservation,
+        HealthGorillaClinicalPdfGroup,
+      ]) {
+        await medplum.createResource(deepClone(resource));
+      }
+      return HealthGorillaLipidPanelDiagnosticReport;
+    })()
+      .then(setReport)
+      .catch(console.log);
   }, [medplum]);
 
   if (!report) {

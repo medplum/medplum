@@ -157,13 +157,13 @@ Instead, use `comment` — a free-text field that's a good place for a human-rea
 
 :::
 
-#### Choosing the actor: `Practitioner` vs `PractitionerRole`
+#### Choosing the actor
 
-`Schedule.actor` may reference a [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device). When the actor is a person:
+`Schedule.actor` may reference a [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location), or [`Device`](/docs/api/fhir/resources/device). When the actor is a person, reference the **`Practitioner`** — a provider's availability lives on their Schedule regardless of how many services or locations they work across.
 
-- Use **`Practitioner`** when availability is for the individual regardless of role or location.
-- Use **`PractitionerRole`** when availability is specific to a role, organization, or location binding (for example, when licensure varies by state — see [state-by-state licensure](/docs/scheduling/state-by-state-licensure)).
+To vary a provider's availability by location, model the variation on the service rather than the actor: create one [`HealthcareService`](/docs/api/fhir/resources/healthcareservice) per location (for example "Office Visit — Downtown" and "Office Visit — Northside", each pointing at its own `HealthcareService.location`), and put that site's hours on each service's `availableTime`. The practitioner's Schedule lists both services in `serviceType`, and `$find` is called with the service for the location the patient is booking into.
 
+If a provider's hours at one site differ from that site's default, add a [per-service override](#override-behavior) on their Schedule. Scope the override to that service — a Schedule-level `availability` with no `service` pointer replaces the service hours everywhere.
 
 ### `availability` Extension
 
@@ -181,6 +181,20 @@ The `availability` sub-extension mirrors the FHIR R5+ [`Availability`](https://h
 <MedplumCodeBlock language="ts" selectBlocks="scheduleAvailability">
   {ExampleCode}
 </MedplumCodeBlock>
+
+#### Windows that cross midnight
+
+When `availableEndTime` is less than or equal to `availableStartTime`, the window is read as continuing into the following day. An entry of `{ daysOfWeek: ['tue'], availableStartTime: '22:00:00', availableEndTime: '06:00:00' }` means 10pm Tuesday until 6am Wednesday. This is also how 24-hour availability is expressed without `allDay`: `00:00:00` to `00:00:00` on all seven days, since the FHIR [`time`](https://hl7.org/fhir/R4/datatypes.html#time) type does not permit `24:00`.
+
+Because `00:00:00` is read as the following midnight rather than as the start of the same day, it is the correct way to say "until end of day". Do not use `23:59:59` for this: it leaves a one-second gap that splits the window in two, which prevents booking anything that spans midnight.
+
+A window is keyed to the day it **starts** on, and only that day needs to appear in `daysOfWeek`. An entry on `fri` ending at `06:00:00` makes Saturday morning bookable without `sat` being listed anywhere.
+
+:::note[Windows that cross midnight and other FHIR systems]
+
+This reading is Medplum's convention. The FHIR specification does not define what an end time before a start time means, and imposes no invariant either way, so the data is valid FHIR but other systems may not interpret it the same way.
+
+:::
 
 ## Service Level Availability
 
@@ -271,7 +285,7 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 1. If `timezone` is specified in the `scheduling-parameters` extension of a `Schedule` resource, use that time zone
 2. If `timezone` is specified in the `scheduling-parameters` extension of a `HealthcareService` resource, use that time zone
-3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, PractitionerRole, Location, or Device)
+3. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
 
 **Important Notes:**
 
@@ -289,6 +303,14 @@ In this example:
 - Cardiac surgery availability is defined in `America/Los_Angeles` time zone (Mon-Wed 11am-3pm America/Los Angeles)
 - Call Center availability is defined in `America/New_York` time zone (Mon-Wed 9am-5pm Eastern)
 - Each service type's availability times are interpreted independently based on their respective timezones
+
+## Editing Availability in a React App
+
+Rather than hand-authoring the [`availability` extension](#availability-extension), the [`@medplum/react-scheduling`](https://www.npmjs.com/package/@medplum/react-scheduling) library provides a `ScheduleAvailabilityEditor` component. It edits a Schedule's weekly `availability` override for a given visit service type, or, with the `schedule` prop omitted, the [service-level default](#service-level-availability) hours themselves. It implements the [override behavior](#override-behavior) described above through a single switch, and is used in the [Medplum Provider](https://github.com/medplum/medplum/tree/main/examples/medplum-provider) example app.
+
+The helpers the component reads and writes the override through, `getEffectiveAvailability` and `setScheduleAvailability`, are exported from the same library. They are plain functions over FHIR resources, so a custom editor can use them without the component. `@medplum/core` holds the generic scheduling parameter helpers underneath them — `getScheduleParameters`, `setScheduleParameter`, and `clearScheduleParameter` — which read and write any parameter, `availability` included, as extensions.
+
+See the [`ScheduleAvailabilityEditor` docs in Storybook](https://storybook.medplum.com/?path=/docs/medplum-scheduleavailabilityeditor--docs) for interactive examples, the behavior in detail, and the full component and utility API.
 
 ## Examples
 
@@ -392,7 +414,7 @@ This Schedule uses the shared availability from the "Follow-Up" service (Mon-Fri
 graph TD
     A1[HealthcareService<br/>*New Patient Visit*] -. overridden on<br/>Schedule .-> B[Schedule<br/>*Dr. Chen's Schedule*]
     A2[HealthcareService<br/>*Follow-up Visit*] -.-> B
-    C[PractitionerRole<br/>*Dr. Chen*] --> B
+    C[Practitioner<br/>*Dr. Chen*] --> B
 
     B --> D1[Slot<br/>*status: busy*<br/>new patient]
 
@@ -582,3 +604,6 @@ A few constraints trip people up most often when configuring availability:
 The Scheduling API is under active development. This [beta](/docs/compliance/alpha-beta) release of the scheduling API is expected to gain additional capabilities.
 
 - `bookingLimit` - An upcoming scheduling parameter that will allow you to express how often a given service type may be added to a schedule. This is not yet implemented.
+- Editing availability on a calendar view, by dragging hours across days rather than picking times, is a possible future enhancement to the example app. The `ScheduleAvailabilityEditor` component covers this today with time pickers.
+
+Major changes to these APIs during the beta period are tracked in the [beta changelog](/docs/scheduling/beta-changelog).

@@ -186,6 +186,11 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
   return resource;
 }
 
+/**
+ * Returns the distinct resource types named by a set of references.
+ * @param references - The references to inspect.
+ * @returns The resource types, with unparseable references skipped.
+ */
 export function getResourceTypesFromReferences(references: Iterable<Reference>): ResourceType[] {
   const resourceTypes = new Set<ResourceType>();
   for (const reference of references) {

@@ -4,7 +4,7 @@ import { isUUID } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
-import { loadTestConfig } from './config/loader';
+import { getConfig, loadTestConfig } from './config/loader';
 
 const app = express();
 
@@ -75,6 +75,36 @@ describe('Well Known', () => {
     expect(res.body.subject_types_supported).toBeDefined();
   });
 
+  test('Get project-scoped OpenID configuration', async () => {
+    const projectId = '00000000-0000-0000-0000-000000000000';
+    const projectBaseUrl = `${getConfig().baseUrl}projects/${projectId}/`;
+    const res = await request(app).get(`/projects/${projectId}/.well-known/openid-configuration`);
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject({
+      issuer: projectBaseUrl,
+      authorization_endpoint: `${projectBaseUrl}oauth2/authorize`,
+      token_endpoint: `${projectBaseUrl}oauth2/token`,
+      userinfo_endpoint: `${projectBaseUrl}oauth2/userinfo`,
+      jwks_uri: `${projectBaseUrl}.well-known/jwks.json`,
+      introspection_endpoint: `${projectBaseUrl}oauth2/introspect`,
+      registration_endpoint: `${projectBaseUrl}oauth2/register`,
+    });
+  });
+
+  test('Get project-scoped SMART configuration', async () => {
+    const projectId = '00000000-0000-0000-0000-000000000000';
+    const projectBaseUrl = `${getConfig().baseUrl}projects/${projectId}/`;
+    const res = await request(app).get(`/projects/${projectId}/.well-known/smart-configuration`);
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject({
+      issuer: projectBaseUrl,
+      authorization_endpoint: `${projectBaseUrl}oauth2/authorize`,
+      token_endpoint: `${projectBaseUrl}oauth2/token`,
+      jwks_uri: `${projectBaseUrl}.well-known/jwks.json`,
+      introspection_endpoint: `${projectBaseUrl}oauth2/introspect`,
+    });
+  });
+
   test('Get /.well-known/oauth-authorization-server', async () => {
     const res = await request(app).get('/.well-known/oauth-authorization-server');
     expect(res).toHaveStatus(200);
@@ -97,6 +127,19 @@ describe('Well Known', () => {
     expect(res.body.scopes_supported).toBeDefined();
     expect(res.body.bearer_methods_supported).toBeDefined();
     expect(res.body.introspection_endpoint).toBeDefined();
+  });
+
+  test('Get project-scoped protected resource configuration', async () => {
+    const projectId = '00000000-0000-0000-0000-000000000000';
+    const projectBaseUrl = `${getConfig().baseUrl}projects/${projectId}/`;
+    const res = await request(app).get(`/projects/${projectId}/.well-known/oauth-protected-resource`);
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject({
+      resource: projectBaseUrl,
+      issuer: projectBaseUrl,
+      authorization_servers: [projectBaseUrl],
+      introspection_endpoint: `${projectBaseUrl}oauth2/introspect`,
+    });
   });
 
   test('Protected resource with custom request', async () => {

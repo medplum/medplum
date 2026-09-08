@@ -7,7 +7,6 @@ import {
   EMPTY,
   Operator,
   createReference,
-  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -655,7 +654,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
     // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
     // They would get if they did a search
-    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, deepClone(versionedResource));
+    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, versionedResource);
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;

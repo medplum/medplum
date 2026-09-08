@@ -5,7 +5,7 @@ import type { DicomSeries, DicomStudy } from '@medplum/fhirtypes';
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
-import { medplumSeriesToDcmjsSeries, medplumStudyToDcmjsStudy } from './utils';
+import { medplumSeriesToDcmjsSeries, medplumStudyToDcmjsStudy, parseQueryInt } from './utils';
 
 // eslint-disable-next-line import/no-named-as-default-member
 const { data } = dcmjs;
@@ -23,7 +23,11 @@ const { DicomMetaDictionary } = data;
  */
 export async function handleSearchStudies(req: Request, res: Response): Promise<void> {
   const { repo } = getAuthenticatedContext();
-  const studies = await repo.searchResources<DicomStudy>({ resourceType: 'DicomStudy' });
+  const studies = await repo.searchResources<DicomStudy>({
+    resourceType: 'DicomStudy',
+    count: parseQueryInt(req.query.limit),
+    offset: parseQueryInt(req.query.offset),
+  });
   res
     .status(200)
     .type(ContentType.DICOM_JSON)
@@ -61,6 +65,8 @@ export async function handleSearchSeries(req: Request, res: Response): Promise<v
   const seriesList = await repo.searchResources<DicomSeries>({
     resourceType: 'DicomSeries',
     filters: [{ code: 'study', operator: Operator.EQUALS, value: `DicomStudy/${study.id}` }],
+    count: parseQueryInt(req.query.limit),
+    offset: parseQueryInt(req.query.offset),
   });
 
   res

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import assert from 'node:assert';
-import type { Pool, PoolClient, QueryResult } from 'pg';
+import type { QueryResult } from 'pg';
+import type { PgQueryable } from './fhir/sql';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 
 // These are exported for the sake of intercepting and mocking in tests
@@ -11,7 +12,7 @@ export const GetDataVersionSql = 'SELECT "dataVersion", "firstBoot" FROM "Databa
 // The rowId parameterized version is not exported and should only be used in tests
 const GetDataVersionSqlWithRowId = 'SELECT "dataVersion", "firstBoot" FROM "DatabaseMigration" WHERE "id" = $1';
 
-export async function getPreDeployVersion(client: Pool | PoolClient): Promise<number> {
+export async function getPreDeployVersion(client: PgQueryable): Promise<number> {
   // This generic type is not technically correct, but leads to the desired forced checks for undefined `version` and `dataVersion`
   // Technically pg should infer that rows could have zero length, but adding optionality to all fields forces handling the undefined case when the row is empty
   const result = await client.query<{ version?: number }>(GetVersionSql);
@@ -19,7 +20,7 @@ export async function getPreDeployVersion(client: Pool | PoolClient): Promise<nu
 }
 
 export const getPostDeployVersion = async (
-  client: Pool | PoolClient,
+  client: PgQueryable,
   options?: { ignoreFirstBoot?: boolean; rowId?: number }
 ): Promise<number> => {
   const rowId = options?.rowId ?? 1;
@@ -41,7 +42,7 @@ export const getPostDeployVersion = async (
 };
 
 export const markPostDeployMigrationCompleted = async (
-  client: Pool | PoolClient,
+  client: PgQueryable,
   dataVersion: number,
   options?: {
     rowId?: number;

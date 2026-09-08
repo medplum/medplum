@@ -87,9 +87,68 @@ describe('ClaimSubmittedPanel', () => {
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
 
-  test('shows Submitted status badge', () => {
+  test('shows no status badge when the ClaimResponse has no source claim status', () => {
     setup();
-    expect(screen.getByText('Submitted')).toBeInTheDocument();
+    expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+    expect(screen.queryByText('Submitted')).not.toBeInTheDocument();
+  });
+
+  test('shows the Candid status from the source-claim-status extension when present', () => {
+    setup({
+      ...baseClaimResponse,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+          valueCodeableConcept: {
+            coding: [{ system: 'https://candidhealth.com/claim-status', code: 'waiting_for_provider' }],
+          },
+        },
+      ],
+    });
+    expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
+    expect(screen.queryByText('Submitted')).not.toBeInTheDocument();
+  });
+
+  test('shows a short label derived from the X12 status category for a Stedi claim', () => {
+    setup({
+      ...baseClaimResponse,
+      identifier: [{ system: 'https://www.stedi.com/claims', value: '01M00V1PM9V1WXN77YRMD00MZ2' }],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'https://codesystem.x12.org/external/507',
+                code: 'A1',
+                display: 'Acknowledgement/Receipt - The claim/encounter has been received.',
+              },
+              { system: 'https://codesystem.x12.org/external/508', code: '16' },
+            ],
+          },
+        },
+      ],
+    });
+    expect(screen.getByText('Received')).toBeInTheDocument();
+  });
+
+  test('prefers the Candid status when both status codings are present', () => {
+    setup({
+      ...baseClaimResponse,
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/source-claim-status',
+          valueCodeableConcept: {
+            coding: [
+              { system: 'https://candidhealth.com/claim-status', code: 'paid' },
+              { system: 'https://codesystem.x12.org/external/507', code: 'A1' },
+            ],
+          },
+        },
+      ],
+    });
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+    expect(screen.queryByText('Received')).not.toBeInTheDocument();
   });
 
   test('shows submission date when created is provided', () => {
@@ -117,7 +176,7 @@ describe('ClaimSubmittedPanel', () => {
     await deployCandidBot();
     const { identifier: _identifier, ...nonCandid } = baseClaimResponse;
     setup(nonCandid);
-    await waitFor(() => expect(screen.getByText('Submitted')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Claim Status:')).toBeInTheDocument());
     expect(medplum.executeBot).not.toHaveBeenCalled();
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
@@ -126,7 +185,7 @@ describe('ClaimSubmittedPanel', () => {
     await deployCandidBot(undefined);
     setup();
     // Give the bot lookup/execution a chance to resolve before asserting absence.
-    await waitFor(() => expect(screen.getByText('Submitted')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Claim Status:')).toBeInTheDocument());
     expect(screen.queryByText('View Claim on Candid')).not.toBeInTheDocument();
   });
 

@@ -738,6 +738,27 @@ describe('FHIRPath functions', () => {
     ]);
   });
 
+  // SQL-on-FHIR utilities
+
+  test('getResourceKey', () => {
+    expect(functions.getResourceKey(context, [toTypedValue({ resourceType: 'Patient', id: '123' })])).toStrictEqual([
+      { type: PropertyType.id, value: '123' },
+    ]);
+    expect(functions.getResourceKey(context, [])).toStrictEqual([]);
+  });
+
+  test('getReferenceKey', () => {
+    const reference = toTypedValue({ reference: 'Patient/123' });
+    expect(functions.getReferenceKey(context, [reference], undefined as unknown as Atom)).toStrictEqual([
+      { type: PropertyType.id, value: '123' },
+    ]);
+    expect(functions.getReferenceKey(context, [reference], new SymbolAtom('Patient'))).toStrictEqual([
+      { type: PropertyType.id, value: '123' },
+    ]);
+    expect(functions.getReferenceKey(context, [reference], new SymbolAtom('Observation'))).toStrictEqual([]);
+    expect(functions.getReferenceKey(context, [], undefined as unknown as Atom)).toStrictEqual([]);
+  });
+
   // 12. Formal Specifications
 
   test('type', () => {

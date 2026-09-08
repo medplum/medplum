@@ -9,6 +9,16 @@ on:
         description: "PR number to check"
         required: true
         type: number
+      # A matrix of workflow_call jobs can't return per-job outputs (they all
+      # write to the same `needs.<job>.outputs`, last writer wins), so the
+      # backlog sweep collects one small artifact per PR instead and renders
+      # them in a single summary job. Off for the event-triggered path, where
+      # a one-row report would just be noise.
+      report-artifact:
+        description: "Upload a one-PR JSON result artifact for a caller to aggregate"
+        required: false
+        default: false
+        type: boolean
 
 name: "Vouch - Check PR (shared)"
 
@@ -23,6 +33,23 @@ jobs:
       pull-requests: write
       contents: read
     steps:
+      # Read once up front so both the close message and the result artifact
+      # share one lookup. There's no event payload to read the author from
+      # here (this runs the same way whether called from an event or a
+      # backlog matrix), so it has to come from the API either way. Kept in a
+      # file rather than step outputs so the untrusted PR title is never
+      # interpolated into a shell script.
+      - name: Look up PR metadata
+        id: pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr-number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json number,author,title > "$RUNNER_TEMP/pr.json"
+          jq -r '"author=" + .author.login' "$RUNNER_TEMP/pr.json" >> "$GITHUB_OUTPUT"
+
       # require-vouch is false so this step only ever auto-closes denounced
       # users, which are always blocked with no exception. A merely-unvouched
       # (never vouched, never denounced) author comes back as "allowed", and
@@ -92,18 +119,15 @@ jobs:
           sparse-checkout: .github/pr-unvouched-message
 
       # Not part of the vouch action, so it doesn't get dry-run for free --
-      # gated on the same VOUCH_DRY_RUN repo variable by hand. No event
-      # payload to read the author from here (this runs the same way
-      # whether called from an event or a backlog matrix), so it's looked
-      # up explicitly via the API.
+      # gated on the same VOUCH_DRY_RUN repo variable by hand.
       - name: Close PR (unvouched, no linked issue with the community-PR label)
+        id: close
         if: steps.vouch.outputs.status == 'allowed' && steps.label-check.outputs.has-label == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+          PR_AUTHOR: ${{ steps.pr.outputs.author }}
         run: |
-          PR_AUTHOR=$(gh pr view "${{ inputs.pr-number }}" --repo "${{ github.repository }}" --json author --jq '.author.login')
-
           MESSAGE=$(cat .github/pr-unvouched-message)
           MESSAGE="${MESSAGE//\{author\}/$PR_AUTHOR}"
           MESSAGE="${MESSAGE//\{label\}/$COMMUNITY_PR_LABEL}"
@@ -116,3 +140,78 @@ jobs:
             gh pr comment "${{ inputs.pr-number }}" --repo "${{ github.repository }}" --body "$MESSAGE"
             gh pr close "${{ inputs.pr-number }}" --repo "${{ github.repository }}"
           fi
+
+      # Collapses the two independent gates (the vouch action's own verdict,
+      # then the linked-issue check) into a single outcome describing what this
+      # job actually did -- or, under dry-run, would have done. Runs even when
+      # an earlier step failed, so a broken PR shows up in the summary as an
+      # error rather than silently vanishing from it.
+      - name: Record result
+        if: ${{ !cancelled() && inputs.report-artifact }}
+        env:
+          PR_NUMBER: ${{ inputs.pr-number }}
+          VOUCH_RESULT: ${{ steps.vouch.outcome }}
+          VOUCH_STATUS: ${{ steps.vouch.outputs.status }}
+          HAS_LABEL: ${{ steps.label-check.outputs.has-label }}
+          CLOSE_RESULT: ${{ steps.close.outcome }}
+          DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+        run: |
+          set -euo pipefail
+
+          if [ "$DRY_RUN" = "true" ]; then WOULD="would-"; else WOULD=""; fi
+
+          if [ "$VOUCH_RESULT" != "success" ]; then
+            OUTCOME="error"
+          else
+            case "$VOUCH_STATUS" in
+              skipped) OUTCOME="bot" ;;
+              vouched) OUTCOME="vouched" ;;
+              closed) OUTCOME="${WOULD}close-denounced" ;;
+              allowed)
+                case "$HAS_LABEL" in
+                  true) OUTCOME="linked-issue" ;;
+                  false)
+                    if [ "$CLOSE_RESULT" = "success" ]; then
+                      OUTCOME="${WOULD}close-unvouched"
+                    else
+                      OUTCOME="error"
+                    fi
+                    ;;
+                  *) OUTCOME="error" ;;
+                esac
+                ;;
+              *) OUTCOME="error" ;;
+            esac
+          fi
+
+          # The metadata step failing is itself an error worth reporting, so
+          # fall back to a number-only record rather than failing this step.
+          if [ ! -f "$RUNNER_TEMP/pr.json" ]; then
+            echo "{\"number\": $PR_NUMBER, \"author\": {\"login\": \"unknown\"}, \"title\": \"(lookup failed)\"}" \
+              > "$RUNNER_TEMP/pr.json"
+            OUTCOME="error"
+          fi
+
+          mkdir -p "$RUNNER_TEMP/vouch-result"
+          jq -c \
+            --arg outcome "$OUTCOME" \
+            --arg vouch_status "$VOUCH_STATUS" \
+            --arg has_label "$HAS_LABEL" \
+            --arg dry_run "$DRY_RUN" \
+            '{
+              number,
+              author: .author.login,
+              title,
+              outcome: $outcome,
+              vouch_status: $vouch_status,
+              has_label: $has_label,
+              dry_run: ($dry_run == "true")
+            }' "$RUNNER_TEMP/pr.json" | tee "$RUNNER_TEMP/vouch-result/$PR_NUMBER.json"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() && inputs.report-artifact }}
+        with:
+          name: vouch-result-${{ inputs.pr-number }}
+          path: ${{ runner.temp }}/vouch-result/${{ inputs.pr-number }}.json
+          if-no-files-found: error
+          retention-days: 7

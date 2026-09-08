@@ -3,7 +3,7 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../aliases.mjs';
 
 export default defineConfig({
   plugins: [
@@ -28,6 +28,7 @@ export default defineConfig({
     alias: medplumAliases,
   },
   test: {
+    name: '@medplum/react-scheduling',
     globals: true,
     environment: 'jsdom',
     environmentOptions: {

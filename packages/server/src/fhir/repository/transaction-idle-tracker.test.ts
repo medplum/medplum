@@ -8,6 +8,7 @@ import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import * as otelModule from '../../otel/otel';
 import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { repoAccess } from './access-tracker';
 import { RepositoryConnection } from './repository-connection';
 import { TransactionIdleTracker } from './transaction-idle-tracker';
@@ -40,8 +41,8 @@ describe('TransactionIdleTracker', () => {
         release: vi.fn(),
       } as unknown as PoolClient;
       const repo = getShardSystemRepo(
-        'test-shard',
-        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+        PLACEHOLDER_SHARD_ID,
+        RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
       );
       const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
       const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -49,10 +50,10 @@ describe('TransactionIdleTracker', () => {
       try {
         await repo.withTransaction(
           async (txRepo) => {
-            const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+            const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
             await client.query('SELECT 1');
           },
-          { resourceTypes: [] }
+          { resourceTypes: 'Patient' }
         );
 
         expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
@@ -88,8 +89,8 @@ describe('TransactionIdleTracker', () => {
       release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      PLACEHOLDER_SHARD_ID,
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -97,12 +98,12 @@ describe('TransactionIdleTracker', () => {
     try {
       await repo.withTransaction(
         async (txRepo) => {
-          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+          const client = txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
           await new Promise<void>((resolve, reject) => {
             client.query('SELECT 1', (err) => (err ? reject(err) : resolve()));
           });
         },
-        { resourceTypes: [] }
+        { resourceTypes: 'Patient' }
       );
 
       expect(client.query).toBe(query);
@@ -126,8 +127,8 @@ describe('TransactionIdleTracker', () => {
       release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      PLACEHOLDER_SHARD_ID,
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -139,7 +140,7 @@ describe('TransactionIdleTracker', () => {
             now += 10;
             throw new Error('work failed');
           },
-          { resourceTypes: [] }
+          { resourceTypes: 'Patient' }
         )
       ).rejects.toThrow('work failed');
 
@@ -184,8 +185,8 @@ describe('TransactionIdleTracker', () => {
       release: vi.fn(),
     } as unknown as PoolClient;
     const repo = getShardSystemRepo(
-      'test-shard',
-      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER })
+      PLACEHOLDER_SHARD_ID,
+      RepositoryConnection.borrowClient(client, { mode: DatabaseMode.WRITER, shardId: PLACEHOLDER_SHARD_ID })
     );
     const warnSpy = vi.spyOn(getLogger(), 'warn').mockImplementation(() => {});
     const recordHistogramValueSpy = vi.spyOn(otelModule, 'recordHistogramValue').mockImplementation(() => true);
@@ -197,14 +198,14 @@ describe('TransactionIdleTracker', () => {
           await txRepo.withTransaction(
             async (nestedTxRepo) => {
               now += 20;
-              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
               await client.query('SELECT 1');
             },
-            { resourceTypes: [] }
+            { resourceTypes: 'Patient' }
           );
           now += 10;
         },
-        { resourceTypes: [] }
+        { resourceTypes: 'Patient' }
       );
 
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
@@ -218,15 +219,15 @@ describe('TransactionIdleTracker', () => {
           now += 20;
           await txRepo.withTransaction(
             async (nestedTxRepo) => {
-              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig());
+              const client = nestedTxRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'));
               now += 5;
               await client.query('SELECT 1');
             },
-            { resourceTypes: [] }
+            { resourceTypes: 'Patient' }
           );
           now += 50;
         },
-        { resourceTypes: [] }
+        { resourceTypes: 'Patient' }
       );
 
       expect(query.mock.calls.map(([sql]) => sql)).toStrictEqual([
@@ -256,7 +257,7 @@ describe('TransactionIdleTracker', () => {
           serializable: false,
           status: 'committed',
           thresholdMs: 50,
-          transactionAttempts: 2,
+          transactionAttempts: 3,
           transactionDurationMs: 100,
         })
       );

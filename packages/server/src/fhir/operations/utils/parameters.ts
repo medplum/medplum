@@ -9,6 +9,7 @@ import {
   isResource,
   isResourceType,
   isTypedValue,
+  tryGetDataType,
   validateResource,
 } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
@@ -192,7 +193,9 @@ export function parseParametersFromDefinitions(
           // Parse as TypedValue
           for (const key of Object.keys(v)) {
             if (key.startsWith('value')) {
-              return { type: key.substring(5), value: v[key as keyof ParametersParameter] };
+              const str = key.substring(5);
+              const dataType = tryGetDataType(str) ?? tryGetDataType(key[5].toLowerCase() + key.substring(6));
+              return { type: dataType?.name ?? str, value: v[key as keyof ParametersParameter] };
             }
           }
           return undefined;
@@ -291,13 +294,13 @@ function makeParameter(param: OperationDefinitionParameter, value: unknown): Par
   const type = getParameterType(param);
   if (type?.length === 1) {
     return { name: param.name, ['value' + capitalize(type[0])]: value };
-  } else if (isTypedValue(value) && value.value !== undefined && type?.length) {
-    // Handle TypedValue
-    for (const t of type) {
-      if (value.type === t) {
-        return { name: param.name, ['value' + capitalize(t)]: value.value };
-      }
+  } else if (isTypedValue(value) && value.value !== undefined) {
+    if (type?.length && !type.includes(value.type)) {
+      throw new Error(
+        `Expected value of type ${type.join(' | ')} for output parameter ${param.name}, got ${value.type}`
+      );
     }
+    return { name: param.name, ['value' + capitalize(value.type)]: value.value };
   }
   return undefined;
 }

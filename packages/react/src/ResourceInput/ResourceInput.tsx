@@ -6,9 +6,6 @@ import { useCallback } from 'react';
 import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { MultiResourceInput } from './MultiResourceInput';
 
-/**
- * @deprecated Use MultiResourceInput instead, which supports multiple default and selected values.
- */
 export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
   readonly name: string;

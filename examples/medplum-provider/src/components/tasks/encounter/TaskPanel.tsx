@@ -9,7 +9,7 @@ import type { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhi
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
@@ -25,10 +25,12 @@ interface TaskPanelProps {
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, enabled = true, onUpdateTask } = props;
   const navigate = useNavigate();
+  const location = useLocation();
   const medplum = useMedplum();
 
   const onActionButtonClicked = async (): Promise<void> => {
-    navigate(`Task/${task.id}`)?.catch(console.error);
+    // Keep the search query (relative navigation drops it by default).
+    navigate(`Task/${task.id}${location.search}`)?.catch(console.error);
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
