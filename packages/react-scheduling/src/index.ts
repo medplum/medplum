@@ -17,9 +17,11 @@ export * from './AppointmentFinder/AppointmentSlotGroupCard';
 export * from './Calendar/Calendar';
 export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
+export * from './SchedulingWorkspace/SchedulingWorkspace';
 
 // Hooks that load what the components display
 export * from './AppointmentFinder/useProposedAppointments';
+export * from './hooks/useSchedulingResources';
 
 // Helpers the components are built on, usable without them
 export * from './availability';

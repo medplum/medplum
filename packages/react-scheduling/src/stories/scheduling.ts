@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { HL7_V2_0203, SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
+import { createReference, HL7_V2_0203, SchedulingParametersURI, ServiceTypeReferenceURI, SNOMED } from '@medplum/core';
 import type {
   Appointment,
   AppointmentParticipant,
@@ -15,6 +15,7 @@ import type {
   Practitioner,
   PractitionerRole,
   Schedule,
+  Slot,
 } from '@medplum/fhirtypes';
 
 /** Who an appointment can be held on, as FHIR allows. */
@@ -486,3 +487,84 @@ export const UntypedMrnPatient = buildPatient('sam-whitfield', 'Sam', 'Whitfield
 });
 
 export const PatientFixtures = [ElderJordanPatient, YoungerJordanPatient, UntypedMrnPatient];
+
+/**
+ * Appointments and Slots for the calendar view, dated within the week of Monday,
+ * May 4 2020 — the date `MockDateWrapper` freezes the clock to, so `timeGridWeek`
+ * always renders Sun May 3 through Sat May 9.
+ */
+
+/**
+ * A same-day imaging visit needing the provider, the device, and the room together.
+ *
+ * Carries a `Patient` participant even though nothing here books against one: the
+ * calendar titles an appointment event with the patient's name, so without one it
+ * would just read "No Patient".
+ */
+export const RiveraImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-rivera-imaging-tue',
+  status: 'booked',
+  start: '2020-05-05T17:00:00Z',
+  end: '2020-05-05T17:30:00Z',
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-cooper', display: 'Miles Cooper' } },
+    { status: 'accepted', actor: createReference(DrRiveraPractitioner) },
+    { status: 'accepted', actor: createReference(Ultrasound1Device) },
+    { status: 'accepted', actor: createReference(ExamRoomA) },
+  ],
+};
+
+export const OkaforImagingAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-okafor-imaging-wed',
+  status: 'booked',
+  start: '2020-05-06T18:00:00Z',
+  end: '2020-05-06T18:30:00Z',
+  participant: [
+    { status: 'accepted', actor: { reference: 'Patient/pt-alvarez', display: 'Renee Alvarez' } },
+    { status: 'accepted', actor: createReference(DrOkaforPractitioner) },
+    { status: 'accepted', actor: createReference(Ultrasound2Device) },
+    { status: 'accepted', actor: createReference(ExamRoomB) },
+  ],
+};
+
+/** Open availability outside the booked visits, on the pinned "today." */
+export const RiveraFreeSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-rivera-free-mon',
+  status: 'free',
+  start: '2020-05-04T14:00:00Z',
+  end: '2020-05-04T16:00:00Z',
+  schedule: createReference(DrRiveraSchedule),
+  comment: 'Open for same-day imaging consults',
+};
+
+/** Blocked time, shown distinctly from a booked appointment. */
+export const ExamRoomABlockedSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-exam-room-a-blocked-thu',
+  status: 'busy-unavailable',
+  start: '2020-05-07T15:00:00Z',
+  end: '2020-05-07T17:00:00Z',
+  schedule: createReference(ExamRoomASchedule),
+  comment: 'Equipment maintenance',
+};
+
+/** Availability at the satellite site, for when the location filter is switched. */
+export const SatelliteRoomFreeSlot: WithId<Slot> = {
+  resourceType: 'Slot',
+  id: 'slot-satellite-room-free-fri',
+  status: 'free',
+  start: '2020-05-08T13:00:00Z',
+  end: '2020-05-08T15:00:00Z',
+  schedule: createReference(SatelliteRoomSchedule),
+};
+
+export const CalendarWeekFixtures = [
+  RiveraImagingAppointment,
+  OkaforImagingAppointment,
+  RiveraFreeSlot,
+  ExamRoomABlockedSlot,
+  SatelliteRoomFreeSlot,
+];

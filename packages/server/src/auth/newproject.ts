@@ -31,6 +31,13 @@ export const newProjectValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newProjectHandler(req: Request, res: Response): Promise<void> {
+  const config = getConfig();
+  if (config.registerEnabled === false) {
+    // Explicitly check for "false" because the config value may be undefined
+    sendOutcome(res, badRequest('Registration is disabled'));
+    return;
+  }
+
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
@@ -41,7 +48,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
 
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
-  if (getConfig().requireVerifiedEmailForProjectCreation && !user.emailVerified) {
+  if (config.requireVerifiedEmailForProjectCreation && !user.emailVerified) {
     sendOutcome(res, badRequest('Email verification is required to create a project'));
     return;
   }

@@ -1,12 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  ContentType,
+  createReference,
+  getReferenceString,
+  normalizeErrorString,
+} from '@medplum/core';
 import type {
   AccessPolicy,
   BundleEntry,
   Patient,
   Practitioner,
+  Project,
   ProjectMembership,
   Reference,
   RelatedPerson,
@@ -23,7 +32,7 @@ import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
@@ -32,6 +41,16 @@ import { inviteUser } from './invite';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
+
+async function addAllowedEmailDomain(project: WithId<Project>, domain: string): Promise<WithId<Project>> {
+  const systemRepo = await getProjectSystemRepo(project);
+  return withTestContext(() =>
+    systemRepo.updateResource<Project>({
+      ...project,
+      setting: [...(project.setting ?? []), { name: 'allowedPractitionerEmailDomain', valueString: domain }],
+    })
+  );
+}
 
 describe('Admin Invite', () => {
   let mockSESv2Client: AwsClientStub<SESv2Client>;
@@ -52,6 +71,7 @@ describe('Admin Invite', () => {
 
     fetchMock.mockClear();
     setupRecaptchaMock(true);
+    getConfig().blockedEmailDomains = undefined;
   });
 
   afterEach(() => {
@@ -2115,4 +2135,165 @@ describe('Admin Invite', () => {
 
       expect(membership.accessPolicy).toBeUndefined();
     }));
+
+  test('Invite with allowed email domain succeeds', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
+
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@allowed.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+  });
+
+  test('Invite with disallowed email domain is rejected', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
+
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@other.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
+  });
+
+  test('Invite by externalId is unaffected by allowed domain restrictions', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
+
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: randomUUID(),
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+  });
+
+  test('Super admin invite bypasses allowed domain restriction', async () => {
+    const { project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'allowed.example.com');
+
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@other.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+  });
+
+  test('Invite with blocked email domain is rejected even without project restrictions', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@blocked.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
+  });
+
+  test('Invite with blocked email domain takes precedence over an allowed domain setting', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const restricted = await addAllowedEmailDomain(project, 'blocked.example.com');
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    const res = await request(app)
+      .post('/admin/projects/' + restricted.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@blocked.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
+  });
 });

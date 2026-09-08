@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { EventApi, EventClickInfo, EventInput, EventSourceInput } from '@fullcalendar/react';
+import type { CalendarRef, EventApi, EventClickInfo, EventInput, EventSourceInput } from '@fullcalendar/react';
 import FullCalendar, { useCalendarController } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/react/daygrid';
 import interactionPlugin from '@fullcalendar/react/interaction';
@@ -9,7 +9,7 @@ import themePlugin from '@fullcalendar/react/themes/classic';
 import '@fullcalendar/react/themes/classic/palette.css';
 import '@fullcalendar/react/themes/classic/theme.css';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
-import { Button, Group, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
+import { Button, Group, Loader, SegmentedControl, Title, useComputedColorScheme } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { assertNever } from '@medplum/core';
@@ -94,18 +94,20 @@ function slotsToEvents(
 export interface CalendarBaseProps extends Omit<
   React.ComponentProps<typeof FullCalendar>,
   // disallow specifying some FullCalendar props that we rely on
-  'controller' | 'headerToolbar' | 'datesSet' | 'eventDidMount' | 'businessHours' | 'plugins' | 'eventClick'
+  'controller' | 'headerToolbar' | 'datesSet' | 'eventDidMount' | 'businessHours' | 'plugins' | 'eventClick' | 'loading'
 > {
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectInterval?: (interval: DateTimeRange) => void;
+  selection?: DateTimeRange;
   eventSources: FhirEventSource[];
 
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
+  loading?: boolean;
 }
 
 // Some common calendar features:
@@ -125,6 +127,8 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
     onDoubleClickAppointment,
     onDoubleClickSlot,
     onSelectInterval,
+    selection,
+    loading,
     ...fullCalendarProps
   } = props;
 
@@ -216,6 +220,27 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
 
   const businessHours = availableTime?.flatMap(availableTimeToBusinessHoursEntry);
 
+  const selectable = Boolean(onSelectInterval || selection);
+
+  // FullCalendar owns the highlight and only a pointer gesture ever sets it, so the
+  // prop has to be pushed in. Keyed on the instants rather than the object: a host
+  // reporting the interval back hands over a fresh pair of `Date`s each time, and
+  // clearing is its own case only because `unselectAuto` is false.
+  const calendarRef = useRef<CalendarRef>(null);
+  const startMs = selection?.start.getTime();
+  const endMs = selection?.end.getTime();
+  useEffect(() => {
+    const api = calendarRef.current?.getApi();
+    if (!api) {
+      return;
+    }
+    if (startMs !== undefined && endMs !== undefined) {
+      api.select(startMs, endMs);
+    } else {
+      api.unselect();
+    }
+  }, [startMs, endMs]);
+
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)}>
       <Group justify="space-between" pb="sm">
@@ -231,7 +256,10 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
               <IconChevronRight size={12} />
             </Button>
           </Button.Group>
-          <Title order={4}>{controller.view?.title}</Title>
+          <Group>
+            <Title order={4}>{controller.view?.title}</Title>
+            {loading && <Loader size="sm" />}
+          </Group>
         </Group>
         <SegmentedControl
           size="xs"
@@ -260,11 +288,18 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
             allDaySlot: false,
           },
         }}
-        selectable={Boolean(onSelectInterval)}
+        selectable={selectable}
+        unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
         select={(eventInfo) => {
+          // `api.select` above comes back through here with a null `jsEvent`; only a
+          // pointer gesture is news to the host.
+          if (!eventInfo.jsEvent) {
+            return;
+          }
           onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end });
         }}
         {...fullCalendarProps}
+        ref={calendarRef}
         eventSources={eventSources}
         controller={controller}
         headerToolbar={false}
@@ -280,7 +315,7 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         eventClick={eventClick}
         eventClass={(evt) =>
           cx(props.eventClass, classes.event, {
-            [classes.interactiveEvent]: evt.isInteractive,
+            [classes.clickable]: evt.isInteractive,
             [classes.shortEvent]: evt.isShort,
           })
         }
@@ -291,6 +326,9 @@ export function CalendarBase(props: CalendarBaseProps): JSX.Element {
         backgroundEventInnerClass={cx(props.backgroundEventInnerClass, classes.backgroundEventInner)}
         listItemEventBeforeClass={cx(props.listItemEventBeforeClass, classes.listItemEventBefore)}
         nonBusinessHoursClass={cx(props.nonBusinessHoursClass, classes.nonBusinessHours)}
+        dayLaneClass={cx(props.dayLaneClass, selectable && classes.clickable)}
+        dayCellClass={cx(props.dayCellClass, selectable && classes.clickable)}
+        highlightClass={cx(props.highlightClass, classes.selectedRange)}
       />
     </div>
   );

@@ -11,7 +11,6 @@ import {
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { stubChainedActorSearch } from '../test-utils/chainedActorSearch';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import type { SchedulingRole } from './AppointmentFinder.roles';
@@ -24,8 +23,6 @@ async function setupClient(): Promise<MockClient> {
   for (const resource of SchedulingFixtures) {
     await medplum.createResource(resource);
   }
-  stubChainedActorSearch(medplum);
-  // Over the stub, so tests can assert on whether the field searched at all.
   vi.spyOn(medplum, 'search');
   return medplum;
 }

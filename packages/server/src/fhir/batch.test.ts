@@ -32,7 +32,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { generateAccessToken } from '../oauth/keys';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { ReentrantBatchJobData } from '../workers/batch';
-import { execBatchJob, getBatchQueue } from '../workers/batch';
+import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
 import { queueRegistry } from '../workers/utils';
 import { PostgresError } from './sql';
 
@@ -59,6 +59,11 @@ function mockBatchJob(data: ReentrantBatchJobData, overrides?: Record<string, un
   return job as Job<ReentrantBatchJobData>;
 }
 
+async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
+}
+
 describe('Batch and Transaction processing', () => {
   const app = express();
   let accessToken: string;
@@ -79,10 +84,6 @@ describe('Batch and Transaction processing', () => {
       withClient: true,
       project: {
         features: ['transaction-bundles', 'async-batch'],
-        // Opt in to re-entrant async batch processing (see workers/batch.ts). The async batch tests
-        // below exercise the re-entrant worker (checkpoints, resume, cancellation); without this
-        // flag the project defaults to the legacy single-shot path.
-        systemSetting: [{ name: 'reentrantAsyncBatch', valueBoolean: true }],
       },
       membership: { admin: true },
     });
@@ -1526,7 +1527,13 @@ describe('Batch and Transaction processing', () => {
     const job = mockBatchJob(enqueued);
     queue.add.mockClear();
 
-    await expect(execBatchJob(job)).resolves.toBe(undefined);
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    try {
+      await expect(execBatchJob(job)).resolves.toBe(undefined);
+      expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('Unrecognized bundle type: pergola'));
+    } finally {
+      stdoutWriteSpy.mockRestore();
+    }
 
     const jobUrl = outcome.issue[0].diagnostics as string;
     const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
@@ -1911,8 +1918,6 @@ describe('Batch and Transaction processing', () => {
         systemSetting: [
           { name: 'userFhirQuota', valueInteger: 200 },
           { name: 'enableFhirQuota', valueBoolean: true },
-          // Opt in to re-entrant async batch processing (see workers/batch.ts).
-          { name: 'reentrantAsyncBatch', valueBoolean: true },
         ],
       },
     });
@@ -1988,7 +1993,7 @@ describe('Batch and Transaction processing', () => {
       undefined,
       undefined,
       { async: true },
-      () => execBatchJob(job)
+      () => execBatchJobImpl(job)
     );
 
     await expect(jobResult).resolves.toBe(undefined);

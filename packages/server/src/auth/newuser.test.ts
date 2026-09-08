@@ -28,6 +28,7 @@ describe('New user', () => {
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
+    getConfig().blockedEmailDomains = undefined;
   });
 
   afterAll(async () => {

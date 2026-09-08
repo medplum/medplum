@@ -25,10 +25,12 @@
   display: none;
 }
 
-
-/* Make it clearer that events are clickable */
-.interactiveEvent {
+.clickable {
   cursor: pointer;
+}
+
+.selectedRange {
+  background-color: light-dark(#228be62e, #4dabf73d);
 }
 
 /* Put more important title info first */
@@ -87,4 +89,12 @@
 
 .nonBusinessHours {
   background-color: light-dark(#0000000A, #FFFFFF2A);
+}
+
+:global(.dayGridMonth) .event {
+  background-color: var(--fc-event-color);
+
+  .eventInner {
+    color: var(--fc-event-contrast-color);
+  }
 }
