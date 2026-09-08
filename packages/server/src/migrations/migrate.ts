@@ -454,6 +454,9 @@ export const ResourceIndexAugmentations: Partial<Record<ResourceType, Record<str
       status: { ...PROJECT_ID_PREFIX, suffix: ['lastUpdated'] },
       _tag: PROJECT_ID_PREFIX,
     },
+    Communication: {
+      sent: PROJECT_ID_PREFIX,
+    }
   };
 
 function getIndexAugmentation(resourceType: string, code: string): IndexAugmentation | undefined {
