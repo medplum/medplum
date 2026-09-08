@@ -3,40 +3,40 @@
 import { CPT, ICD10 } from '@medplum/core';
 import {
   EMPTY_AUTHORIZATION_VALUES,
-  hasRequiredAuthorizationCodes,
+  hasRequiredAuthorizationValues,
   toCodings,
 } from './AppointmentFinder.authorization';
 
-describe('hasRequiredAuthorizationCodes', () => {
+describe('hasRequiredAuthorizationValues', () => {
   const procedure = [{ system: CPT, code: '96365' }];
   const diagnosis = [{ system: ICD10, code: 'D63.1' }];
 
   test('Nothing given is not enough', () => {
-    expect(hasRequiredAuthorizationCodes(EMPTY_AUTHORIZATION_VALUES)).toBe(false);
+    expect(hasRequiredAuthorizationValues(EMPTY_AUTHORIZATION_VALUES)).toBe(false);
   });
 
   test('One field on its own is not enough', () => {
-    expect(hasRequiredAuthorizationCodes({ ...EMPTY_AUTHORIZATION_VALUES, procedure })).toBe(false);
-    expect(hasRequiredAuthorizationCodes({ ...EMPTY_AUTHORIZATION_VALUES, diagnosis })).toBe(false);
+    expect(hasRequiredAuthorizationValues({ ...EMPTY_AUTHORIZATION_VALUES, procedure })).toBe(false);
+    expect(hasRequiredAuthorizationValues({ ...EMPTY_AUTHORIZATION_VALUES, diagnosis })).toBe(false);
+    expect(hasRequiredAuthorizationValues({ ...EMPTY_AUTHORIZATION_VALUES, medicalNecessity: true })).toBe(false);
   });
 
-  test('One of each is', () => {
-    expect(hasRequiredAuthorizationCodes({ procedure, diagnosis, medicalNecessity: false })).toBe(true);
+  test('One of each code, with medical necessity confirmed, is', () => {
+    expect(hasRequiredAuthorizationValues({ procedure, diagnosis, medicalNecessity: true })).toBe(true);
   });
 
   test('Several of each is too, since one of each is a floor rather than a quota', () => {
     expect(
-      hasRequiredAuthorizationCodes({
+      hasRequiredAuthorizationValues({
         procedure: [...procedure, { system: CPT, code: '96366' }],
         diagnosis: [...diagnosis, { system: ICD10, code: 'E86.0' }],
-        medicalNecessity: false,
+        medicalNecessity: true,
       })
     ).toBe(true);
   });
 
-  test('Medical necessity is captured rather than required, so it does not decide this', () => {
-    expect(hasRequiredAuthorizationCodes({ procedure, diagnosis, medicalNecessity: false })).toBe(true);
-    expect(hasRequiredAuthorizationCodes({ ...EMPTY_AUTHORIZATION_VALUES, medicalNecessity: true })).toBe(false);
+  test('Medical necessity is required rather than merely captured, so both codes are not enough', () => {
+    expect(hasRequiredAuthorizationValues({ procedure, diagnosis, medicalNecessity: false })).toBe(false);
   });
 });
 

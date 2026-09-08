@@ -25,7 +25,7 @@ import {
   choosePatient,
   chooseSecondOfferedTime,
   clickBook,
-  enterAuthorizationCodes,
+  enterAuthorizationDetails,
   fillAuthorizedBooking,
   fillBooking,
   hasPill,
@@ -321,7 +321,7 @@ describe('SchedulingWorkspace booking', () => {
       await clickCalendar();
 
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
       await clickBook();
 
       // On the appointment rather than beside it, so that the write that books the visit is the
@@ -329,7 +329,7 @@ describe('SchedulingWorkspace booking', () => {
       const proposal = bookedProposal(post);
       expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
       expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
-      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(false);
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(true);
     });
 
     test('Reports what was booked with the codes on it', async () => {
@@ -338,7 +338,7 @@ describe('SchedulingWorkspace booking', () => {
       await clickCalendar();
 
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
       await clickBook();
 
       // The host reads the codes off the appointment it is handed, so nothing extra is threaded

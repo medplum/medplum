@@ -76,18 +76,27 @@ export async function enterCode(label: RegExp, coding: Coding): Promise<void> {
   await settleAutocomplete();
 }
 
-/** Gives one of each code, which is what a designated visit type cannot be booked without. */
-export async function enterAuthorizationCodes(): Promise<void> {
-  await enterCode(/procedure code/i, ProcedureCodes[0]);
-  await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+/**
+ * The box attesting the supporting documentation was verified.
+ * @returns The checkbox.
+ */
+export function medicalNecessityBox(): HTMLElement {
+  return screen.getByRole('checkbox', { name: /medical necessity/i });
 }
 
 /** Ticks the box attesting the supporting documentation was verified. */
 export async function confirmMedicalNecessity(): Promise<void> {
   await act(async () => {
-    fireEvent.click(screen.getByRole('checkbox', { name: /medical necessity/i }));
+    fireEvent.click(medicalNecessityBox());
   });
   await settleAutocomplete();
+}
+
+/** Gives one of each code and the attestation, which is all a designated visit type needs. */
+export async function enterAuthorizationDetails(): Promise<void> {
+  await enterCode(/procedure code/i, ProcedureCodes[0]);
+  await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+  await confirmMedicalNecessity();
 }
 
 /**
@@ -432,10 +441,10 @@ export async function fillBooking(): Promise<void> {
 }
 
 /**
- * Answers everything a booking of a designated visit type needs except the codes.
+ * Answers everything a booking of a designated visit type needs except the authorization fields.
  *
  * They are left out so that a test can find the form holding every other answer, which is what
- * proves the codes are the thing blocking it.
+ * proves those fields are the thing blocking it.
  */
 export async function fillAuthorizedBooking(): Promise<void> {
   await chooseAuthorizedService();

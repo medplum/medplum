@@ -107,8 +107,7 @@ SurgicalTeam.decorators = [withFindStub()];
  *
  * "Infusion Therapy" carries the `requires-prior-auth` code on `HealthcareService.eligibility`, so
  * the booking form asks for a procedure code, a diagnosis code, and the medical necessity
- * attestation, after the patient. "Book appointment" stays unusable until both codes are given; the
- * checkbox is captured but does not block.
+ * attestation, after the patient. "Book appointment" stays unusable until all three are answered.
  *
  * Neither code field takes anything but a code its value set offered, so the codes on the
  * appointment are always ones a project published. Switch the visit type to "Ultrasound Imaging"

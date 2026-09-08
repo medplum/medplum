@@ -49,3 +49,9 @@
 .codePill {
   max-width: 14rem;
 }
+
+/* Mantine doesn't include asterisks for Checkboxes marked as required, so we add them here. */
+.requiredLabel::after {
+  content: ' *';
+  color: var(--mantine-color-error);
+}

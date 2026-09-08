@@ -29,7 +29,7 @@ import { AppointmentDayTimes } from './AppointmentDayTimes';
 import type { BookingAuthorizationValues } from './AppointmentFinder.authorization';
 import {
   EMPTY_AUTHORIZATION_VALUES,
-  hasRequiredAuthorizationCodes,
+  hasRequiredAuthorizationValues,
   toCodings,
 } from './AppointmentFinder.authorization';
 import classes from './AppointmentFinder.module.css';
@@ -161,9 +161,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = getSelectionError(selections);
 
-  // Only a visit type requiring prior authorization is asked for codes.
-  const needsCodes = requiresPriorAuthorization(service);
-  const codesOutstanding = needsCodes && !hasRequiredAuthorizationCodes(authorization);
+  // Only a visit type requiring prior authorization is asked for these.
+  const needsAuthorization = requiresPriorAuthorization(service);
+  const authorizationOutstanding = needsAuthorization && !hasRequiredAuthorizationValues(authorization);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -281,14 +281,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   async function bookAppointment(): Promise<void> {
-    if (!chosen || !patient || codesOutstanding) {
+    if (!chosen || !patient || authorizationOutstanding) {
       return;
     }
 
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient, needsCodes ? authorization : undefined));
+      await onBook(buildBooking(chosen, patient, needsAuthorization ? authorization : undefined));
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -371,7 +371,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         />
 
         {/* Fields specific to visit types that require authorization. */}
-        {needsCodes && service && (
+        {needsAuthorization && service && (
           <Fragment key={service.id}>
             <ValueSetAutocomplete
               name="procedure-code"
@@ -404,7 +404,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               }
             />
             <Checkbox
+              classNames={{ label: classes.requiredLabel }}
               label="Medical necessity confirmed"
+              required
               checked={authorization.medicalNecessity}
               onChange={(event) =>
                 chooseAuthorization({ ...authorization, medicalNecessity: event.currentTarget.checked })
@@ -416,7 +418,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
         <Button
           fullWidth
-          disabled={!chosen || !patient || booked || codesOutstanding}
+          disabled={!chosen || !patient || booked || authorizationOutstanding}
           loading={booking}
           onClick={bookAppointment}
         >
@@ -658,7 +660,7 @@ function ActorField(props: ActorFieldProps): JSX.Element {
  *
  * @param proposal - The time that was chosen, as `$find` offered it.
  * @param patient - Who the visit is for.
- * @param authorization - The codes given, for a visit type that requires them.
+ * @param authorization - The codes and attestation given, for a visit type that requires them.
  * @returns The appointment to book.
  */
 function buildBooking(

@@ -46,7 +46,7 @@ import {
   confirmMedicalNecessity,
   dayCell,
   dragDays,
-  enterAuthorizationCodes,
+  enterAuthorizationDetails,
   enterCode,
   field,
   fillAuthorizedBooking,
@@ -58,6 +58,7 @@ import {
   lastFindEnd,
   lastFindParams,
   lastFindStart,
+  medicalNecessityBox,
   MONDAY_MORNING,
   openRoleField,
   openTimeFinder,
@@ -1238,7 +1239,10 @@ describe('AppointmentProposalForm', () => {
 
       expect(field(/procedure code/i)).toBeInTheDocument();
       expect(field(/diagnosis code/i)).toBeInTheDocument();
-      expect(screen.getByRole('checkbox', { name: /medical necessity/i })).toBeInTheDocument();
+
+      // Required like the two code fields, since nothing here is optional once a practice
+      // designated the visit type.
+      expect(medicalNecessityBox()).toBeRequired();
     });
 
     test('Asks for them after the patient, as the last of the visit details', async () => {
@@ -1249,21 +1253,24 @@ describe('AppointmentProposalForm', () => {
       expect(isBefore(field(/procedure code/i), field(/diagnosis code/i))).toBe(true);
     });
 
-    test('Will not book until both codes are given', async () => {
+    test('Will not book until both codes are given and medical necessity is confirmed', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
 
-      // Everything else a booking needs has been answered, so the codes are what is left.
+      // Everything else a booking needs has been answered, so these fields are what is left.
       expect(bookButton()).toBeDisabled();
 
       await enterCode(/procedure code/i, ProcedureCodes[0]);
       expect(bookButton()).toBeDisabled();
 
       await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      expect(bookButton()).toBeDisabled();
+
+      await confirmMedicalNecessity();
       expect(bookButton()).toBeEnabled();
     });
 
-    test('Does not book when the action is clicked while codes are missing', async () => {
+    test('Does not book when the action is clicked while an authorization field is unanswered', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
       await clickBook();
@@ -1274,7 +1281,7 @@ describe('AppointmentProposalForm', () => {
     test('Writes the diagnosis as a reason and the procedure as a service type', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
       await clickBook();
 
       const proposal = proposedAppointment();
@@ -1294,7 +1301,7 @@ describe('AppointmentProposalForm', () => {
     test("Records each code under the value set's own system rather than a guessed one", async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
       await clickBook();
 
       // The fixture's diagnoses are ICD-10-CM, which is what a US practice bills under, and not the
@@ -1305,25 +1312,24 @@ describe('AppointmentProposalForm', () => {
       expect(proposal.serviceType?.at(-1)?.coding?.[0]?.system).toBe(CPT);
     });
 
-    test('Records whether medical necessity was confirmed', async () => {
+    test('Records that medical necessity was confirmed', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
-      await confirmMedicalNecessity();
+      await enterAuthorizationDetails();
       await clickBook();
 
       expect(getExtensionValue(proposedAppointment(), SchedulingMedicalNecessityURI)).toBe(true);
     });
 
-    test('Books without medical necessity, which is captured rather than required', async () => {
+    test('Blocks booking again when medical necessity is unticked', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
-
+      await enterAuthorizationDetails();
       expect(bookButton()).toBeEnabled();
-      await clickBook();
 
-      expect(getExtensionValue(proposedAppointment(), SchedulingMedicalNecessityURI)).toBe(false);
+      await confirmMedicalNecessity();
+
+      expect(bookButton()).toBeDisabled();
     });
 
     test('Writes no codes for a visit type that was never asked for any', async () => {
@@ -1373,29 +1379,31 @@ describe('AppointmentProposalForm', () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
 
-      // Both fields take themselves out of use and say why, rather than sitting there uncompletable.
+      // Both code fields take themselves out of use and say why, rather than sitting there uncompletable.
       expect(screen.getAllByText('This field is unavailable.')).toHaveLength(2);
       expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
       expect(bookButton()).toBeDisabled();
     });
 
-    test('Drops the codes when the visit type changes, and asks again', async () => {
+    test('Drops the answers when the visit type changes, and asks again', async () => {
       setupWithCodeValueSets();
       await chooseAuthorizedService();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
 
       // Asserted before the change too, so this cannot pass by looking for a code nothing offers.
       expect(hasPill(codePill(ProcedureCodes[0]))).toBe(true);
       expect(hasPill(codePill(DiagnosisCodes[0]))).toBe(true);
+      expect(medicalNecessityBox()).toBeChecked();
 
       await removePill('Infusion Therapy');
       await chooseAuthorizedService();
 
-      // The fields keep their own value once mounted, so this is what proves they were remounted
-      // rather than merely cleared behind the scenes.
+      // The code fields keep their own value once mounted, so this is what proves they were
+      // remounted rather than merely cleared behind the scenes.
       expect(hasPill(codePill(ProcedureCodes[0]))).toBe(false);
       expect(hasPill(codePill(DiagnosisCodes[0]))).toBe(false);
+      expect(medicalNecessityBox()).not.toBeChecked();
     });
 
     test('Takes the codes away when the visit type no longer needs them', async () => {
@@ -1410,7 +1418,7 @@ describe('AppointmentProposalForm', () => {
     test('Offers to book again after a code changes, since that changes what is written', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
       await clickBook();
       expect(bookButton()).toBeDisabled();
 
@@ -1422,7 +1430,7 @@ describe('AppointmentProposalForm', () => {
     test('Blocks booking again when the last code in a field is taken back out', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
       expect(bookButton()).toBeEnabled();
 
       await removePill(codePill(ProcedureCodes[0]));
@@ -1433,7 +1441,7 @@ describe('AppointmentProposalForm', () => {
     test('Takes more than one of each code', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
 
       await enterCode(/procedure code/i, ProcedureCodes[1]);
       await enterCode(/diagnosis code/i, DiagnosisCodes[1]);
@@ -1455,7 +1463,7 @@ describe('AppointmentProposalForm', () => {
     test('Still books on one of each, so the second code is never owed', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
-      await enterAuthorizationCodes();
+      await enterAuthorizationDetails();
 
       expect(bookButton()).toBeEnabled();
       await clickBook();
