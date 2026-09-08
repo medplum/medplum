@@ -306,6 +306,15 @@ export function lastFindStart(get: MockInstance<MedplumClient['get']>): string |
 }
 
 /**
+ * The `end` of the window the last `$find` asked for.
+ * @param get - The spy on the client's `get`.
+ * @returns The `end` search parameter, or undefined when nothing was searched.
+ */
+export function lastFindEnd(get: MockInstance<MedplumClient['get']>): string | undefined {
+  return lastFindParams(get)?.get('end') ?? undefined;
+}
+
+/**
  * The action that finds a time, under whichever of its three labels.
  * @returns The button.
  */
