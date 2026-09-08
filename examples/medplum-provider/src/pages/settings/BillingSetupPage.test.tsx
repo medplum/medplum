@@ -353,6 +353,32 @@ describe('BillingSetupPage', () => {
     );
   });
 
+  test('resets the form when reopened for a different organization', async () => {
+    const user = userEvent.setup();
+    mockSearches({ organizations: [billingOrg] });
+    mockBots({ payers: true });
+
+    setup();
+
+    await user.click(await screen.findByText('Test Medical Practice LLC'));
+    let dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Edit billing organization' })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/NPI/)).toHaveValue('3564119220');
+    expect(within(dialog).getByPlaceholderText('City')).toHaveValue('Boston');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'New...' }));
+    dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'New billing organization' })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/^Name/)).toHaveValue('');
+    expect(within(dialog).getByLabelText(/NPI/)).toHaveValue('');
+    expect(within(dialog).getByPlaceholderText('City')).toHaveValue('');
+  });
+
   test('lists imported payers, filtering on the Candid payer UUID identifier', async () => {
     const searchSpy = mockSearches({ payers: [importedPayerOrg] });
     mockBots({ payers: true });
