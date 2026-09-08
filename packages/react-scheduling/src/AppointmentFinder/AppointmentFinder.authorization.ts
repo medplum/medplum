@@ -22,10 +22,10 @@ export const EMPTY_AUTHORIZATION_VALUES: BookingAuthorizationValues = {
 /**
  * Whether all the required authorization values have been filled in.
  * @param values - Values captured from the authorization fields.
- * @returns True once both code fields hold at least one code.
+ * @returns True once both code fields hold at least one code and medical necessity is confirmed.
  */
-export function hasRequiredAuthorizationCodes(values: BookingAuthorizationValues): boolean {
-  return values.procedure.length > 0 && values.diagnosis.length > 0;
+export function hasRequiredAuthorizationValues(values: BookingAuthorizationValues): boolean {
+  return values.procedure.length > 0 && values.diagnosis.length > 0 && values.medicalNecessity;
 }
 
 /**
