@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  EMPTY,
+  forbidden,
+  normalizeErrorString,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { Bundle, Project, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
@@ -30,6 +37,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getProjectIdFromUrl } from '../util/url';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -402,6 +410,21 @@ export async function handleR4SubscriptionConnection(socket: WebSocket, request:
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+
+    // When the socket was opened on a project-scoped URL, the project in the URL must match the
+    // subscription's project. This mirrors the check that authenticateRequest applies to HTTP
+    // requests, so that a project-scoped WebSocket URL means the same thing as a project-scoped
+    // HTTP URL rather than being decorative.
+    const urlProjectId = getProjectIdFromUrl(request.url ?? '');
+    if (urlProjectId && urlProjectId !== cacheEntry.projectId) {
+      globalLogger.warn('[WS] Subscription project does not match the project-scoped URL', {
+        socketId,
+        subscriptionId: verifiedToken.subscription_id,
+        urlProjectId,
+      });
+      socket.send(JSON.stringify(forbidden));
+      return;
+    }
 
     // We can cast here because these criteria are proven to be valid when calling $get-ws-binding-token
     const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;
