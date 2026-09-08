@@ -456,7 +456,7 @@ export const ResourceIndexAugmentations: Partial<Record<ResourceType, Record<str
     },
     Communication: {
       sent: PROJECT_ID_PREFIX,
-    }
+    },
   };
 
 function getIndexAugmentation(resourceType: string, code: string): IndexAugmentation | undefined {
