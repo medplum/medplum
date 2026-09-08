@@ -17,7 +17,7 @@ const LOOKUP_DEBOUNCE_MS = 400;
  * Whether Candid already knows the provider being edited.
  *
  * - `unavailable` — no form open, no complete NPI to look up, or the candid-list-providers bot is not deployed.
- * - `loading` — the lookup is in flight.
+ * - `loading` — the NPI is still being typed, or the lookup is in flight.
  * - `registered` — Candid holds a provider under `npi`; `candidProviderId` is its ID, maybe not yet on the resource.
  * - `unregistered` — Candid has no provider with this NPI.
  * - `failed` — the lookup itself failed, so registration state is unknown.
@@ -47,7 +47,8 @@ export function useCandidProviderRegistration(
   const listBotId = listBotOutcome === undefined ? undefined : (listBot?.id ?? '');
   const [registration, setRegistration] = useState<CandidProviderRegistration>({ status: 'unavailable' });
 
-  const [trimmedNpi] = useDebouncedValue(npi.trim(), LOOKUP_DEBOUNCE_MS);
+  const currentNpi = npi.trim();
+  const [trimmedNpi] = useDebouncedValue(currentNpi, LOOKUP_DEBOUNCE_MS);
 
   useEffect(() => {
     if (listBotId === undefined) {
@@ -85,5 +86,8 @@ export function useCandidProviderRegistration(
     };
   }, [medplum, listBotId, trimmedNpi, resourceType]);
 
+  if (trimmedNpi !== currentNpi && listBotId && resourceType) {
+    return { status: 'loading' };
+  }
   return registration;
 }

@@ -1197,6 +1197,35 @@ describe('BillingSetupPage', () => {
       expect(executeSpy).not.toHaveBeenCalledWith('bot-create-provider', expect.anything(), expect.anything());
     });
 
+    test('holds the save while an edited NPI waits to be looked up', async () => {
+      const user = userEvent.setup();
+      mockSearches({ organizations: [unstamped] });
+      mockBots({ createProvider: true, editProvider: true, listProviders: true });
+      const executeSpy = vi
+        .spyOn(medplum, 'executeBot')
+        .mockResolvedValueOnce(makeProviderSearchResult([candidOrg]))
+        .mockResolvedValue(makeProviderSearchResult([]));
+
+      setup();
+
+      await user.click(await screen.findByText('Test Medical Practice LLC'));
+      const dialog = await screen.findByRole('dialog');
+      expect(await screen.findByText(/Registered with Candid/)).toBeInTheDocument();
+
+      const npiInput = within(dialog).getByLabelText(/NPI/);
+      await user.clear(npiInput);
+      await user.type(npiInput, '1234567893');
+
+      const saveButton = within(dialog).getByRole('button', { name: /Save|Edit/ });
+      expect(saveButton).toHaveAttribute('data-loading');
+      expect(screen.queryByText(/Registered with Candid/)).not.toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(executeSpy).toHaveBeenCalledWith('bot-list-providers', { npi: '1234567893' }, 'application/json');
+      });
+      expect(await within(dialog).findByRole('button', { name: 'Save' })).not.toHaveAttribute('data-loading');
+    });
+
     test('updates a practitioner in Candid, carrying the billing flags with it', async () => {
       const user = userEvent.setup();
       mockSearches({ practitioners: [drSmith], organizations: [billingOrg] });
