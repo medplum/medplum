@@ -14,7 +14,6 @@ import {
   normalizeErrorString,
   requiresPriorAuthorization,
   SchedulingMedicalNecessityURI,
-  SchedulingProcedureCodingURI,
 } from '@medplum/core';
 import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
@@ -684,14 +683,11 @@ function buildBooking(
 
   return {
     ...booking,
-    // One `reasonCode` per diagnosis
+    serviceType: [...(booking.serviceType ?? []), ...authorization.procedure.map((coding) => ({ coding: [coding] }))],
     reasonCode: [...(booking.reasonCode ?? []), ...authorization.diagnosis.map((coding) => ({ coding: [coding] }))],
     extension: [
       ...(booking.extension ?? []),
-      // One extension for medical necessity
       { url: SchedulingMedicalNecessityURI, valueBoolean: authorization.medicalNecessity },
-      // One extension per procedure code
-      ...authorization.procedure.map((coding) => ({ url: SchedulingProcedureCodingURI, valueCoding: coding })),
     ],
   };
 }

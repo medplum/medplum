@@ -1,13 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  CPT,
-  getExtensions,
-  getExtensionValue,
-  SchedulingMedicalNecessityURI,
-  SchedulingProcedureCodingURI,
-} from '@medplum/core';
-import type { Appointment, Coding, Device } from '@medplum/fhirtypes';
+import { CPT, extractServiceTypeReferences, getExtensionValue, SchedulingMedicalNecessityURI } from '@medplum/core';
+import type { Appointment, Device } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
 import { installFindStub } from '../stories/mockFind';
@@ -17,6 +11,7 @@ import {
   DIAGNOSIS_VALUE_SET,
   DiagnosisCodes,
   ElderJordanPatient,
+  InfusionService,
   MainClinic,
   MRN_SYSTEM,
   PROCEDURE_VALUE_SET,
@@ -1276,7 +1271,7 @@ describe('AppointmentProposalForm', () => {
       expect(onBook).not.toHaveBeenCalled();
     });
 
-    test('Writes the diagnosis as a reason and the procedure as an extension', async () => {
+    test('Writes the diagnosis as a reason and the procedure as a service type', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
       await enterAuthorizationCodes();
@@ -1284,7 +1279,16 @@ describe('AppointmentProposalForm', () => {
 
       const proposal = proposedAppointment();
       expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
-      expect(getExtensionValue(proposal, SchedulingProcedureCodingURI)).toEqual(ProcedureCodes[0]);
+
+      // Appended after the concept `$find` put there naming the visit type, which booking leaves alone.
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+
+      // A procedure concept carries no service reference, so the appointment still names exactly one
+      // visit type. That is what `serviceTypeIncludesService` reads to match a schedule to a service,
+      // and a procedure code answering to it would be read as a visit type of its own.
+      expect(extractServiceTypeReferences(proposal.serviceType)).toEqual([
+        { reference: `HealthcareService/${InfusionService.id}` },
+      ]);
     });
 
     test("Records each code under the value set's own system rather than a guessed one", async () => {
@@ -1298,7 +1302,7 @@ describe('AppointmentProposalForm', () => {
       // said is the only thing that knows.
       const proposal = proposedAppointment();
       expect(proposal.reasonCode?.[0]?.coding?.[0]?.system).toBe('http://hl7.org/fhir/sid/icd-10-cm');
-      expect((getExtensionValue(proposal, SchedulingProcedureCodingURI) as Coding).system).toBe(CPT);
+      expect(proposal.serviceType?.at(-1)?.coding?.[0]?.system).toBe(CPT);
     });
 
     test('Records whether medical necessity was confirmed', async () => {
@@ -1329,7 +1333,8 @@ describe('AppointmentProposalForm', () => {
 
       const proposal = proposedAppointment();
       expect(proposal.reasonCode).toBeUndefined();
-      expect(getExtensionValue(proposal, SchedulingProcedureCodingURI)).toBeUndefined();
+      // Just the concept `$find` put there naming the visit type: nothing was appended to it.
+      expect(proposal.serviceType).toHaveLength(1);
       expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBeUndefined();
     });
 
@@ -1439,11 +1444,11 @@ describe('AppointmentProposalForm', () => {
       const proposal = proposedAppointment();
       expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }, { coding: [DiagnosisCodes[1]] }]);
 
-      // Repeated extensions rather than one holding a list, which is how an extension carries more
-      // than one value.
-      expect(getExtensions(proposal, SchedulingProcedureCodingURI).map((extension) => extension.valueCoding)).toEqual([
-        ProcedureCodes[0],
-        ProcedureCodes[1],
+      // One `serviceType` concept per procedure, for the same reason: two codings inside one concept
+      // would be one procedure encoded twice rather than two procedures.
+      expect(proposal.serviceType?.slice(1)).toEqual([
+        { coding: [ProcedureCodes[0]] },
+        { coding: [ProcedureCodes[1]] },
       ]);
     });
 

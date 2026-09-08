@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getExtensionValue, SchedulingMedicalNecessityURI, SchedulingProcedureCodingURI } from '@medplum/core';
+import { getExtensionValue, SchedulingMedicalNecessityURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -328,7 +328,7 @@ describe('SchedulingWorkspace booking', () => {
       // same write that records what it was authorized for.
       const proposal = bookedProposal(post);
       expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
-      expect(getExtensionValue(proposal, SchedulingProcedureCodingURI)).toEqual(ProcedureCodes[0]);
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
       expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(false);
     });
 
@@ -345,9 +345,7 @@ describe('SchedulingWorkspace booking', () => {
       // through the components between here and the form to carry them.
       const [booking] = onBooked.mock.calls[0] as [AppointmentBooking];
       expect(booking.appointment.reasonCode?.[0]?.coding?.[0]?.code).toBe(DiagnosisCodes[0].code);
-      expect(getExtensionValue(booking.appointment, SchedulingProcedureCodingURI)).toMatchObject({
-        code: ProcedureCodes[0].code,
-      });
+      expect(booking.appointment.serviceType?.at(-1)?.coding?.[0]?.code).toBe(ProcedureCodes[0].code);
     });
   });
 });

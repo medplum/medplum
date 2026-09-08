@@ -31,9 +31,6 @@ export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSyste
 /** The eligibility code marking a visit type that cannot be booked without authorization codes. */
 export const REQUIRES_PRIOR_AUTH_CODE = 'requires-prior-auth';
 
-/** Extension on an Appointment holding the procedure coding captured when it was booked. */
-export const SchedulingProcedureCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingProcedureCoding';
-
 /** Extension on an Appointment recording that medical necessity was confirmed when it was booked. */
 export const SchedulingMedicalNecessityURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingMedicalNecessity';
 
