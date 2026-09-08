@@ -296,7 +296,17 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   addBatchTelemetryListeners(router);
 
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, identitySeq, authState, resultsThisRun, router);
+    await finalizeInterrupted(
+      logger,
+      systemRepo,
+      store,
+      asyncJob,
+      chunkSeq,
+      identitySeq,
+      authState,
+      resultsThisRun,
+      router
+    );
     return;
   }
 
