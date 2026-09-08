@@ -22,7 +22,9 @@ import type { CandidProviderRegistration } from './useCandidProviderRegistration
  * - `candidEditBotId` — candid-edit-provider bot ID, which updates a provider Candid already holds; same states.
  * - `savedVersion` — increments on every successful save, so the list can refetch.
  * - `saveOrganization` — saves the form values, then registers with Candid or updates the provider it holds.
- *   Returns the saved Organization, or undefined when the save failed; a failed Candid call is retried by saving again.
+ *   Returns the saved Organization, or undefined when the save itself failed; the hook has already shown the
+ *   error notification by then, so callers only need to keep their form open. A failed Candid call leaves the
+ *   saved Organization in place, so saving again retries it.
  */
 export interface BillingOrganizations {
   candidBotId: string | undefined;
