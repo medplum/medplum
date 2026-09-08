@@ -805,6 +805,60 @@ describe('Appointment/$book', () => {
     expect(bookB).toHaveStatus(400);
   });
 
+  // Regression: `validateSlots` only checks `busy-unavailable` slots when the corresponding buffer
+  // is non-zero, so with both buffers at 0 a zero-length one used to slip through.
+  test('a zero-length contained Slot does not split the availability window', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule({
+      actor: practitioner,
+      extension: [makeSchedulingExtension({ service: officeVisitService })], // slotCapacity defaults to 1
+    });
+
+    const book = (start: string, end: string, extra?: Slot): ReturnType<typeof request.post> =>
+      request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'appointment',
+              resource: {
+                resourceType: 'Appointment',
+                status: 'proposed',
+                start,
+                end,
+                serviceType: toServiceTypeCodeableConcepts(officeVisitService),
+                participant: [{ actor: createReference(practitioner), status: 'tentative' }],
+                contained: [
+                  { resourceType: 'Slot', status: 'busy', schedule: createReference(schedule), start, end },
+                  ...(extra ? [extra] : []),
+                ],
+              } satisfies Appointment,
+            },
+          ],
+        });
+
+    // An ordinary 9am booking, carrying a zero-length blocker at 1:30pm the same day.
+    const blocker = '2026-01-15T18:30:00Z'; // Thu 1:30pm EST, mid-way through an available window
+    const first = await book('2026-01-15T14:00:00Z', '2026-01-15T15:00:00Z', {
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: createReference(schedule),
+      start: blocker,
+      end: blocker,
+    });
+    expect(first).toHaveStatus(400);
+
+    // The rejection is total — neither the blocker nor the booking it rode in on was created.
+    const stored = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(stored).toHaveLength(0);
+
+    // 1pm-2pm straddles the blocker's instant, and stays bookable because no blocker survived.
+    const second = await book('2026-01-15T18:00:00Z', '2026-01-15T19:00:00Z');
+    expect(second).toHaveStatus(201);
+  });
+
   test('fails without a HealthcareService reference embedded in serviceType', async () => {
     const schedule = await makeSchedule({ actor: practitioner1 });
     const response = await request

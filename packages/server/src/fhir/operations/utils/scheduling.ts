@@ -594,6 +594,22 @@ export async function slotsOverlappingInterval(
 
 // Ensures that the input slots match our scheduling parameter constraints
 function validateSlots(slots: WithPath<Slot>[], parameters: SchedulingParameters): void {
+  // A proposal only ever describes the booking itself ('busy') and its buffers
+  // ('busy-unavailable'); the checks below only reason about those two, so reject anything
+  // else rather than passing it through unexamined. Zero-length slots are rejected for the
+  // same reason: they escape the duration checks below but still land in availability.
+  for (const slot of slots) {
+    if (slot.status !== 'busy' && slot.status !== 'busy-unavailable') {
+      throw new OperationOutcomeError(
+        badRequest(`Slot status must be 'busy' or 'busy-unavailable', got '${slot.status}'`, getPath(slot))
+      );
+    }
+    const { start, end } = slotToInterval(slot, getPath(slot));
+    if (end <= start) {
+      throw new OperationOutcomeError(badRequest('Slot must cover a positive duration', getPath(slot)));
+    }
+  }
+
   // Expect exactly one 'busy' slot with duration matching parameters.duration
   const busySlots = slots.filter((slot) => slot.status === 'busy');
   if (busySlots.length !== 1) {
@@ -885,9 +901,10 @@ export async function validateAllAvailability(
 }
 
 /**
- * Stamps each booked (`busy`) Slot with the overlap capacity it was created
- * under — the resolved `slotCapacity` for its schedule — so later bookings of
- * other services respect this booking's limit.
+ * Stamps each booking Slot with the overlap capacity it was created under — the resolved
+ * `slotCapacity` for its schedule — so later bookings of other services respect this
+ * booking's limit. Buffer (`busy-unavailable`) Slots are left unstamped: buffer time is
+ * exclusive, matching the capacity `validateAvailability` admitted them at.
  *
  * Capacity 1 (the default) is left unstamped, keeping ordinary bookings minimal.
  *
@@ -910,7 +927,7 @@ function stampBookingCapacity(
 
     // We don't apply capacity to `busy-unavailable` slots, which represent "buffer" that should
     // not be overbooked.
-    if (capacity !== undefined && capacity > 1 && slot.status === 'busy') {
+    if (capacity !== undefined && capacity > 1 && slot.status !== 'busy-unavailable') {
       extension.push({ url: SchedulingSlotCapacityURI, valuePositiveInt: capacity });
     }
     if (extension.length > 0) {

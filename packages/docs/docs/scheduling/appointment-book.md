@@ -99,6 +99,8 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Appointment/$book' \
 
 The `appointment` parameter accepts a proposed `Appointment` resource, exactly as returned by [`$find`](/docs/scheduling/appointment-find). The Appointment must include `contained` Slot resources that describe when to book each Schedule.
 
+Every contained Slot must have `status: "busy"` (the booking itself) or `status: "busy-unavailable"` (a buffer), and must cover a positive duration. Any other status — or a Slot whose `end` is not after its `start` — is rejected, since `$book` has no defined capacity semantics for it.
+
 ```json
 {
   "resourceType": "Parameters",

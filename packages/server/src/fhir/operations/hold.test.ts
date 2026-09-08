@@ -899,7 +899,7 @@ describe('Appointment/$hold', () => {
     expect(response.body).toHaveProperty('issue', [
       expect.objectContaining({
         severity: 'error',
-        details: { text: "Expected exactly one 'busy' slot per schedule" },
+        details: { text: "Slot status must be 'busy' or 'busy-unavailable', got 'free'" },
       }),
     ]);
     expect(response).toHaveStatus(400);
