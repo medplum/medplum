@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { formatDate } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Coding, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { MockInstance } from 'vitest';
 import {
+  AuthorizationFixtures,
+  DiagnosisCodes,
   ElderJordanPatient,
   PatientFixtures,
+  ProcedureCodes,
   SchedulingFixtures,
   SubClinicProviderFixtures,
   SurgicalFixtures,
@@ -27,6 +30,7 @@ export async function setupBookingClient(): Promise<MockClient> {
   for (const resource of [
     ...SchedulingFixtures,
     ...SurgicalFixtures,
+    ...AuthorizationFixtures,
     ...SubClinicProviderFixtures,
     ...PatientFixtures,
   ]) {
@@ -42,6 +46,47 @@ export function field(label: RegExp): HTMLElement {
 export async function chooseImagingService(): Promise<void> {
   await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
   await clickAutocompleteOption('Ultrasound Imaging');
+  await settleAutocomplete();
+}
+
+/**
+ * Names the visit type a practice designated as needing authorization codes.
+ */
+export async function chooseAuthorizedService(): Promise<void> {
+  await typeInAutocomplete(field(/visit type/i), 'Infusion');
+  await clickAutocompleteOption('Infusion Therapy');
+  await settleAutocomplete();
+}
+
+/**
+ * Gives one of the authorization codes, by searching its code and taking it off the list.
+ *
+ * Searching by code is what a scheduler does, and it is what tells two codes apart when their
+ * descriptions share a long prefix. Only a code the value set offered can be given, so a test
+ * cannot put a code onto an appointment that no project would have offered a scheduler.
+ *
+ * @param label - Matches the label above the field.
+ * @param coding - The code to give, as the value set holds it.
+ */
+export async function enterCode(label: RegExp, coding: Coding): Promise<void> {
+  const listbox = await searchField(label, coding.code as string);
+  await act(async () => {
+    fireEvent.click(within(listbox).getByText(coding.display as string));
+  });
+  await settleAutocomplete();
+}
+
+/** Gives one of each code, which is what a designated visit type cannot be booked without. */
+export async function enterAuthorizationCodes(): Promise<void> {
+  await enterCode(/procedure code/i, ProcedureCodes[0]);
+  await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+}
+
+/** Ticks the box attesting the supporting documentation was verified. */
+export async function confirmMedicalNecessity(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('checkbox', { name: /medical necessity/i }));
+  });
   await settleAutocomplete();
 }
 
@@ -97,13 +142,13 @@ export async function chooseActor(role: RegExp, query: string, name: string): Pr
  *
  * @param name - The value currently chosen.
  */
-export async function removePill(name: string): Promise<void> {
+export async function removePill(name: string | RegExp): Promise<void> {
   // Scoped to the pill, since a named resource is also on the slot card and in the
   // chosen time's description. Mantine's remove button is `aria-hidden`.
   const pill = screen.queryAllByText(name).find((node) => node.className.includes('Pill'));
   const remove = pill?.parentElement?.querySelector('button');
   if (!remove) {
-    throw new Error(`No remove button on the ${name} pill`);
+    throw new Error(`No remove button on the ${String(name)} pill`);
   }
   await act(async () => {
     fireEvent.click(remove);
@@ -240,13 +285,26 @@ export async function chooseSecondOfferedTime(): Promise<void> {
 }
 
 /**
+ * Matches the pill holding one authorization code.
+ *
+ * A code pill leads with the code and continues with its description, so it is matched on the code
+ * it starts with rather than on the whole of what it reads.
+ *
+ * @param coding - The code the pill should be holding.
+ * @returns A matcher for that pill.
+ */
+export function codePill(coding: Coding): RegExp {
+  return new RegExp(`^${(coding.code as string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} `);
+}
+
+/**
  * Whether a field is holding a value, read off the pill rather than the state: the
  * fields ignore `defaultValue` after mount, so a cleared form could still show one.
  *
  * @param name - The value's label.
  * @returns Whether a pill is showing it.
  */
-export function hasPill(name: string): boolean {
+export function hasPill(name: string | RegExp): boolean {
   return screen.queryAllByText(name).some((node) => node.className.includes('Pill'));
 }
 
@@ -368,6 +426,20 @@ export async function choosePatient(query: string, detail: string): Promise<void
 export async function fillBooking(): Promise<void> {
   await chooseImagingService();
   await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+  await openTimeFinder();
+  await chooseFirstOfferedTime();
+  await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+}
+
+/**
+ * Answers everything a booking of a designated visit type needs except the codes.
+ *
+ * They are left out so that a test can find the form holding every other answer, which is what
+ * proves the codes are the thing blocking it.
+ */
+export async function fillAuthorizedBooking(): Promise<void> {
+  await chooseAuthorizedService();
+  await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
   await openTimeFinder();
   await chooseFirstOfferedTime();
   await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));

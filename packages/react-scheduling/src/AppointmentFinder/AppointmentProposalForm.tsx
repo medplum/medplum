@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Loader, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Button, Checkbox, Group, Loader, Pill, Stack, Text, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   createReference,
@@ -12,11 +12,14 @@ import {
   isDefined,
   MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
+  requiresPriorAuthorization,
+  SchedulingMedicalNecessityURI,
+  SchedulingProcedureCodingURI,
 } from '@medplum/core';
-import type { Appointment, HealthcareService, Location, Patient } from '@medplum/fhirtypes';
+import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/react';
-import { IconCalendarSearch } from '@tabler/icons-react';
+import { CalendarDateInput, ReferenceDisplay, ResourceInput, ValueSetAutocomplete } from '@medplum/react';
+import { IconCalendarSearch, IconCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
@@ -24,6 +27,12 @@ import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
+import type { BookingAuthorizationValues } from './AppointmentFinder.authorization';
+import {
+  EMPTY_AUTHORIZATION_VALUES,
+  hasRequiredAuthorizationCodes,
+  toCodings,
+} from './AppointmentFinder.authorization';
 import classes from './AppointmentFinder.module.css';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
@@ -88,6 +97,10 @@ export interface AppointmentProposalFormProps {
    * rather than leaving it on a time nobody chose.
    */
   readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
+  /** The ValueSet the procedure code field binds to. */
+  readonly procedureBinding?: string;
+  /** The ValueSet the diagnosis code field binds to. */
+  readonly diagnosisBinding?: string;
   /**
    * Performs the booking with the proposal the form assembled.
    *
@@ -126,6 +139,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onToggleTimeFinder,
     onChangeService,
     onChangeTime,
+    procedureBinding,
+    diagnosisBinding,
     onBook,
   } = props;
 
@@ -140,11 +155,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [actorFieldsKey, setActorFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
+  const [authorization, setAuthorization] = useState<BookingAuthorizationValues>(EMPTY_AUTHORIZATION_VALUES);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
+
+  // Only a visit type requiring prior authorization is asked for codes.
+  const needsCodes = requiresPriorAuthorization(service);
+  const codesOutstanding = needsCodes && !hasRequiredAuthorizationCodes(authorization);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -219,6 +239,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
     onChangeService?.(next);
+    setAuthorization(EMPTY_AUTHORIZATION_VALUES);
     clearResources();
   }
 
@@ -245,9 +266,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     resetDaySearch();
   }
 
-  // The two answers a written booking can still be changed by. Everything else
-  // above clears the chosen time, which disables the button on its own; these
-  // are what re-enable it, because changing either makes it a different visit.
   function chooseTime(next: Appointment): void {
     setChosen(next);
     setBooked(false);
@@ -258,15 +276,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setBooked(false);
   }
 
+  function chooseAuthorization(next: BookingAuthorizationValues): void {
+    setAuthorization(next);
+    setBooked(false);
+  }
+
   async function bookAppointment(): Promise<void> {
-    if (!chosen || !patient) {
+    if (!chosen || !patient || codesOutstanding) {
       return;
     }
 
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient));
+      await onBook(buildBooking(chosen, patient, needsCodes ? authorization : undefined));
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -279,8 +302,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   return (
     <div className={classes.layout}>
-      {/* Not a `form` element: this mounts inside a host's own surface, which may
-          already be one, and a form cannot be nested in a form. */}
       <Stack className={classes.form} gap="sm">
         <ResourceInput<WithId<Location>>
           resourceType="Location"
@@ -350,13 +371,53 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={choosePatient}
         />
 
+        {/* Fields specific to visit types that require authorization. */}
+        {needsCodes && service && (
+          <Fragment key={service.id}>
+            <ValueSetAutocomplete
+              name="procedure-code"
+              label="Procedure codes"
+              required
+              creatable={false}
+              itemComponent={AuthorizationCodeItem}
+              pillComponent={AuthorizationCodePill}
+              binding={procedureBinding}
+              onChange={(elements) =>
+                chooseAuthorization({
+                  ...authorization,
+                  procedure: toCodings(elements),
+                })
+              }
+            />
+            <ValueSetAutocomplete
+              name="diagnosis-code"
+              label="Diagnosis codes"
+              required
+              creatable={false}
+              itemComponent={AuthorizationCodeItem}
+              pillComponent={AuthorizationCodePill}
+              binding={diagnosisBinding}
+              onChange={(elements) =>
+                chooseAuthorization({
+                  ...authorization,
+                  diagnosis: toCodings(elements),
+                })
+              }
+            />
+            <Checkbox
+              label="Medical necessity confirmed"
+              checked={authorization.medicalNecessity}
+              onChange={(event) =>
+                chooseAuthorization({ ...authorization, medicalNecessity: event.currentTarget.checked })
+              }
+            />
+          </Fragment>
+        )}
+
         {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
         <Button
           fullWidth
-          // A booking that was written is not written again: every answer is
-          // still on screen, and clicking through a second time would book the
-          // same time twice. Changing one of them makes it a new request.
-          disabled={!chosen || !patient || booked}
+          disabled={!chosen || !patient || booked || codesOutstanding}
           loading={booking}
           onClick={bookAppointment}
         >
@@ -502,6 +563,59 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
   return chosen ? 'Change time' : 'Find a time';
 }
 
+/**
+ * One code on offer, led by the code itself.
+ *
+ * The code is what a scheduler searches on and what a biller reads, and two infusion codes can
+ * share sixty characters of description before they differ, so the description alone does not tell
+ * them apart. The system is left out: both fields are bound to one value set each, so naming it on
+ * every row is a url repeated down the list and nothing more.
+ *
+ * @param props - The option to render.
+ * @returns The row.
+ */
+function AuthorizationCodeItem(props: AsyncAutocompleteOption<ValueSetExpansionContains>): JSX.Element {
+  const { label, resource, active } = props;
+  return (
+    <Group wrap="nowrap" gap="xs">
+      {active && <IconCheck size={12} />}
+      <Text size="sm">
+        <Text span fw={600}>
+          {resource.code}
+        </Text>{' '}
+        <Text span>{label}</Text>
+      </Text>
+    </Group>
+  );
+}
+
+interface AuthorizationCodePillProps {
+  readonly item: AsyncAutocompleteOption<ValueSetExpansionContains>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
+}
+
+/**
+ * A code that has been given, led by the code.
+ *
+ * What a scheduler checks a filled-in form against, and what a biller reads off it, is the code, so
+ * it comes first and stays readable however narrow the pill gets. The description follows and is
+ * clipped, since a dozen words times three pills would bury the rest of the form. The full text is
+ * on the pill's `title`.
+ *
+ * @param props - The chosen option, and how to take it back out.
+ * @returns The pill.
+ */
+function AuthorizationCodePill(props: AuthorizationCodePillProps): JSX.Element {
+  const { item, disabled, onRemove } = props;
+  const code = item.resource.code;
+  return (
+    <Pill className={classes.codePill} withRemoveButton={!disabled} onRemove={onRemove} title={item.label}>
+      {code ? `${code} · ${item.label}` : item.label}
+    </Pill>
+  );
+}
+
 interface ActorFieldProps {
   readonly actorType: BookableActorType;
   readonly service: WithId<HealthcareService> | undefined;
@@ -541,21 +655,43 @@ function ActorField(props: ActorFieldProps): JSX.Element {
 }
 
 /**
- * Puts the patient onto the proposal that will be booked.
+ * Puts the patient, and anything the visit type required, onto the proposal that will be booked.
  *
  * @param proposal - The time that was chosen, as `$find` offered it.
  * @param patient - Who the visit is for.
+ * @param authorization - The codes given, for a visit type that requires them.
  * @returns The appointment to book.
  */
-function buildBooking(proposal: Appointment, patient: WithId<Patient>): Appointment {
+function buildBooking(
+  proposal: Appointment,
+  patient: WithId<Patient>,
+  authorization: BookingAuthorizationValues | undefined
+): Appointment {
   const patientReference = getReferenceString(patient);
-  return {
+  const booking: Appointment = {
     ...proposal,
     participant: [
       // A proposal knows nothing about patients, but a host may have put one on
       // the appointment it handed over, and naming them twice books them twice.
       ...proposal.participant.filter((participant) => participant.actor?.reference !== patientReference),
       { actor: createReference(patient), required: 'required', status: 'needs-action' },
+    ],
+  };
+
+  if (!authorization) {
+    return booking;
+  }
+
+  return {
+    ...booking,
+    // One `reasonCode` per diagnosis
+    reasonCode: [...(booking.reasonCode ?? []), ...authorization.diagnosis.map((coding) => ({ coding: [coding] }))],
+    extension: [
+      ...(booking.extension ?? []),
+      // One extension for medical necessity
+      { url: SchedulingMedicalNecessityURI, valueBoolean: authorization.medicalNecessity },
+      // One extension per procedure code
+      ...authorization.procedure.map((coding) => ({ url: SchedulingProcedureCodingURI, valueCoding: coding })),
     ],
   };
 }

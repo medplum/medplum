@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
+import type { Coding, Extension, HealthcareService, Practitioner, Schedule } from '@medplum/fhirtypes';
 import {
   clearScheduleParameter,
   extractServiceTypeReferences,
   getScheduleParameters,
   getSchedulingTimezone,
+  REQUIRES_PRIOR_AUTH_CODE,
+  requiresPriorAuthorization,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
   serviceTypeIncludesService,
@@ -292,5 +295,44 @@ describe('schedulingDurationToMinutes', () => {
     expect(schedulingDurationToMinutes({ unit: 'min' })).toBeUndefined();
     expect(schedulingDurationToMinutes({ value: -30, unit: 'min' })).toBeUndefined();
     expect(schedulingDurationToMinutes(undefined)).toBeUndefined();
+  });
+});
+
+describe('requiresPriorAuthorization', () => {
+  function withEligibility(...codings: Coding[]): HealthcareService {
+    return { ...service, eligibility: codings.map((coding) => ({ code: { coding: [coding] } })) };
+  }
+
+  const designated: Coding = { system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_PRIOR_AUTH_CODE };
+
+  test('Designated visit type requires authorization', () => {
+    expect(requiresPriorAuthorization(withEligibility(designated))).toBe(true);
+  });
+
+  test('Visit type with no eligibility requirements does not', () => {
+    expect(requiresPriorAuthorization(service)).toBe(false);
+  });
+
+  test('Undefined service does not, so nothing is asked before a visit type is chosen', () => {
+    expect(requiresPriorAuthorization(undefined)).toBe(false);
+  });
+
+  test('Finds the code among other eligibility requirements', () => {
+    const other: Coding = { system: SCHEDULING_ELIGIBILITY_SYSTEM, code: 'referral-required' };
+    expect(requiresPriorAuthorization(withEligibility(other, designated))).toBe(true);
+  });
+
+  test('Another system using the same code does not count', () => {
+    const impostor: Coding = { system: 'http://example.com/eligibility', code: REQUIRES_PRIOR_AUTH_CODE };
+    expect(requiresPriorAuthorization(withEligibility(impostor))).toBe(false);
+  });
+
+  test('Another code in the same system does not count', () => {
+    const other: Coding = { system: SCHEDULING_ELIGIBILITY_SYSTEM, code: 'referral-required' };
+    expect(requiresPriorAuthorization(withEligibility(other))).toBe(false);
+  });
+
+  test('Eligibility carrying no coding does not throw', () => {
+    expect(requiresPriorAuthorization({ ...service, eligibility: [{ comment: 'Ask the front desk' }] })).toBe(false);
   });
 });

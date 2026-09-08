@@ -25,6 +25,18 @@ export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureD
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
 export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
 
+/** Code system for scheduling requirements, recorded on `HealthcareService.eligibility.code`. */
+export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-eligibility';
+
+/** The eligibility code marking a visit type that cannot be booked without authorization codes. */
+export const REQUIRES_PRIOR_AUTH_CODE = 'requires-prior-auth';
+
+/** Extension on an Appointment holding the procedure coding captured when it was booked. */
+export const SchedulingProcedureCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingProcedureCoding';
+
+/** Extension on an Appointment recording that medical necessity was confirmed when it was booked. */
+export const SchedulingMedicalNecessityURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingMedicalNecessity';
+
 /**
  * Extension URI holding a `Reference<HealthcareService>` on a `serviceType` CodeableConcept.
  *
@@ -70,6 +82,20 @@ export function isDayOfWeek(value: string | undefined): value is DayOfWeek {
  */
 export function hasSchedulingParameters(resource: Schedule | HealthcareService): boolean {
   return !!getExtension(resource, SchedulingParametersURI);
+}
+
+/**
+ * Returns whether a visit type may only be booked once authorization codes (CPT, ICD-10, etc.)
+ * have been provided. Based on `HealthcareService.eligibility` codes.
+ * @param service - The visit type being booked, if one has been chosen yet.
+ * @returns True when booking it requires authorization codes.
+ */
+export function requiresPriorAuthorization(service: HealthcareService | undefined): boolean {
+  return !!service?.eligibility?.some((eligibility) =>
+    eligibility.code?.coding?.some(
+      (coding) => coding.system === SCHEDULING_ELIGIBILITY_SYSTEM && coding.code === REQUIRES_PRIOR_AUTH_CODE
+    )
+  );
 }
 
 // Scheduling matches a `service` reference on resourceType and id, so a stored reference carrying a version
