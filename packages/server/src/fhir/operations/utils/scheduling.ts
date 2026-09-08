@@ -720,10 +720,20 @@ export async function validateAllAvailability(
   }
 }
 
+export type CreateProposedAppointmentOptions = {
+  /**
+   * Runs inside the same serializable transaction, before availability is
+   * checked and new Slot/Appointment resources are written. Used by $reschedule
+   * to cancel the previous appointment so its slots no longer block the new time.
+   */
+  beforeCreate?: (repo: Repository) => Promise<void>;
+};
+
 export async function createProposedAppointment(
   repo: Repository,
   proposedAppointment: WithPath<Appointment>,
-  customizer: (appointment: Appointment, slots: Slot[]) => void
+  customizer: (appointment: Appointment, slots: Slot[]) => void,
+  options?: CreateProposedAppointmentOptions
 ): Promise<Bundle<Appointment | Slot>> {
   const [appointment, slots, healthcareService, schedulingParametersGroup] = await validateProposedAppointment(
     repo,
@@ -741,6 +751,7 @@ export async function createProposedAppointment(
 
   const createdResources = await repo.withTransaction(
     async (txRepo) => {
+      await options?.beforeCreate?.(txRepo);
       await validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup);
       const createdSlots = await Promise.all(slots.map((slot) => txRepo.createResource<Slot>(slot)));
       const createdAppointment = await txRepo.createResource<Appointment>({

@@ -292,6 +292,7 @@ The Scheduling API is under active development. This [beta](/docs/compliance/alp
 
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available Slots before booking
 - [Appointment `$hold`](/docs/scheduling/appointment-hold) - Reserve an unconfirmed appointment
+- [Appointment `$reschedule`](/docs/scheduling/appointment-reschedule) - Cancel and book a new Appointment atomically
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)

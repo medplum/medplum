@@ -75,10 +75,11 @@ Once a desired slot has been found, the appointment booking process can be handl
 
 | Operation                                          | Description                     | Status   |
 | -------------------------------------------------- | ------------------------------- | -------- |
-| [`$book`](/docs/scheduling/appointment-book)       | Book an appointment in one step | **Beta** |
-| [`$hold`](/docs/scheduling/appointment-hold)       | Create a pending appointment    | **Beta** |
-| [`$confirm`](/docs/scheduling/appointment-confirm) | Confirm a held appointment      | **Beta** |
-| [`$cancel`](/docs/scheduling/appointment-cancel)   | Cancel an appointment           | **Beta** |
+| [`$book`](/docs/scheduling/appointment-book)             | Book an appointment in one step                         | **Beta** |
+| [`$hold`](/docs/scheduling/appointment-hold)             | Create a pending appointment                            | **Beta** |
+| [`$confirm`](/docs/scheduling/appointment-confirm)       | Confirm a held appointment                              | **Beta** |
+| [`$cancel`](/docs/scheduling/appointment-cancel)         | Cancel an appointment                                   | **Beta** |
+| [`$reschedule`](/docs/scheduling/appointment-reschedule) | Cancel and book a new appointment in one transaction    | **Beta** |
 
 ---
 

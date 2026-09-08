@@ -124,6 +124,7 @@ All `Slot` resources that were referenced by the Appointment are deleted and do 
 ## Related
 
 - [Appointment `$book`](/docs/scheduling/appointment-book) - Book an Appointment (the inverse operation)
+- [Appointment `$reschedule`](/docs/scheduling/appointment-reschedule) - Cancel and book a new Appointment atomically
 - [Appointment `$find`](/docs/scheduling/appointment-find) - Find available slots
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Appointment` resource](/docs/api/fhir/resources/appointment)
