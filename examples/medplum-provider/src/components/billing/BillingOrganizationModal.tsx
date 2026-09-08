@@ -47,11 +47,7 @@ export function BillingOrganizationModal(props: BillingOrganizationModalProps): 
       size="lg"
       title={organization ? 'Edit billing organization' : 'New billing organization'}
       actions={
-        <Button
-          type="submit"
-          form={FORM_ID}
-          loading={billingOrganizations.saving || registrationStatus === 'loading'}
-        >
+        <Button type="submit" form={FORM_ID} loading={billingOrganizations.saving || registrationStatus === 'loading'}>
           {registrationStatus === 'registered' ? 'Edit' : 'Save'}
         </Button>
       }
