@@ -8,14 +8,14 @@ import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import type { SchedulingActorType } from '../actors';
+import type { BookableActorType } from '../actors';
 import { getActorTypeLabel, isActorTypeRequired } from '../actors';
 import type { ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from './AppointmentFinder.schedules';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 export interface AppointmentActorSelectProps {
-  readonly actorType: SchedulingActorType;
+  readonly actorType: BookableActorType;
   /** The service being booked. Nothing is offered until it resolves. */
   readonly service: Reference<HealthcareService> | WithId<HealthcareService> | undefined;
   /**

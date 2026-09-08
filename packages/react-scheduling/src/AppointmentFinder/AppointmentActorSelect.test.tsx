@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
-import type { SchedulingActorType } from '../actors';
+import type { BookableActorType } from '../actors';
 import { SatelliteClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
 import {
   clickAutocompleteOption,
@@ -28,7 +28,7 @@ async function setupClient(): Promise<MockClient> {
 }
 
 interface SetupProps {
-  readonly actorType?: SchedulingActorType;
+  readonly actorType?: BookableActorType;
   readonly service?: WithId<HealthcareService>;
   readonly location?: WithId<Location>;
   readonly disabled?: boolean;

@@ -19,7 +19,7 @@ import { CalendarDateInput, ReferenceDisplay, ResourceInput } from '@medplum/rea
 import { IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { SchedulingActorType } from '../actors';
+import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors';
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
@@ -502,7 +502,7 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
 }
 
 interface ActorFieldProps {
-  readonly actorType: SchedulingActorType;
+  readonly actorType: BookableActorType;
   readonly service: WithId<HealthcareService> | undefined;
   readonly location: WithId<Location> | undefined;
   readonly disabled?: boolean;

@@ -7,7 +7,7 @@ import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import type { SchedulingActorType } from '../actors';
+import type { BookableActorType } from '../actors';
 import { withFixtures } from '../stories/decorators';
 import { MainClinic, SchedulingFixtures, UltrasoundImagingService, WalkInService } from '../stories/scheduling';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
@@ -28,7 +28,7 @@ export default {
  * @returns The field, once the fixtures are in.
  */
 function Field(props: {
-  readonly actorType: SchedulingActorType;
+  readonly actorType: BookableActorType;
   readonly service: WithId<HealthcareService>;
   readonly location?: WithId<Location>;
 }): JSX.Element | null {
