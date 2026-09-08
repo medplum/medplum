@@ -4,11 +4,16 @@ import { Alert, List, Stack, Text } from '@mantine/core';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import { withBookStub, withFindStub, withFixtures, withMockedDate } from '../stories/decorators';
+import { withBookStub, withFindStub, withFixtures, withMockedDate, withValueSets } from '../stories/decorators';
 import {
+  AuthorizationFixtures,
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  InfusionService,
   MainClinic,
   MRN_SYSTEM,
   PatientFixtures,
+  PROCEDURE_VALUE_SET,
   SchedulingFixtures,
   SubClinicProviderFixtures,
   SurgeryService,
@@ -18,7 +23,13 @@ import {
 import type { AppointmentBooking } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
 
-const STORY_FIXTURES = [...SchedulingFixtures, ...SurgicalFixtures, ...SubClinicProviderFixtures, ...PatientFixtures];
+const STORY_FIXTURES = [
+  ...SchedulingFixtures,
+  ...SurgicalFixtures,
+  ...AuthorizationFixtures,
+  ...SubClinicProviderFixtures,
+  ...PatientFixtures,
+];
 
 /**
  * Stands in for the host, which is the only thing a story has to supply.
@@ -34,7 +45,7 @@ function reportBooking(booking: AppointmentBooking): void {
 export default {
   title: 'Medplum/AppointmentBookingForm',
   component: AppointmentBookingForm,
-  decorators: [withBookStub(), withFixtures(STORY_FIXTURES), withMockedDate],
+  decorators: [withBookStub(), withValueSets(AuthorizationValueSets), withFixtures(STORY_FIXTURES), withMockedDate],
 } as Meta;
 
 /**
@@ -90,6 +101,56 @@ export const SurgicalTeam = (): JSX.Element => (
   </Document>
 );
 SurgicalTeam.decorators = [withFindStub()];
+
+/**
+ * A visit type the practice designated as requiring prior authorization.
+ *
+ * "Infusion Therapy" carries the `requires-prior-auth` code on `HealthcareService.eligibility`, so
+ * the booking form asks for a procedure code, a diagnosis code, and the medical necessity
+ * attestation, after the patient. "Book appointment" stays unusable until both codes are given; the
+ * checkbox is captured but does not block.
+ *
+ * Neither code field takes anything but a code its value set offered, so the codes on the
+ * appointment are always ones a project published. Switch the visit type to "Ultrasound Imaging"
+ * and the fields go, since only designated visit types are asked, which is what keeps a first visit
+ * bookable for a patient with no diagnosis on file.
+ * @returns The story.
+ */
+export const AuthRequired = (): JSX.Element => (
+  <Document>
+    <AppointmentBookingForm
+      defaultService={InfusionService}
+      defaultLocation={MainClinic}
+      procedureBinding={PROCEDURE_VALUE_SET}
+      diagnosisBinding={DIAGNOSIS_VALUE_SET}
+      onBooked={reportBooking}
+    />
+  </Document>
+);
+AuthRequired.decorators = [withFindStub()];
+
+/**
+ * The same visit type, pointed at value sets the project never imported.
+ *
+ * The cost of taking only what a value set offers. Both fields take themselves out of use, saying
+ * "This field is unavailable", and the visit cannot be booked at all: there is no free text to fall
+ * back to. Deliberate for fields gating an authorization, but it does mean a terminology gap stops
+ * these visit types being booked rather than degrading quietly, so importing the two value sets is
+ * part of what has to be in place before go-live.
+ * @returns The story.
+ */
+export const AuthRequiredMissingValueSets = (): JSX.Element => (
+  <Document>
+    <AppointmentBookingForm
+      defaultService={InfusionService}
+      defaultLocation={MainClinic}
+      procedureBinding={PROCEDURE_VALUE_SET}
+      diagnosisBinding={DIAGNOSIS_VALUE_SET}
+      onBooked={reportBooking}
+    />
+  </Document>
+);
+AuthRequiredMissingValueSets.decorators = [withFindStub(), withValueSets({})];
 
 /**
  * A fully configured visit type with nothing free.

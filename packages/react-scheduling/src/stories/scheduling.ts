@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  CPT,
   createReference,
   deepClone,
   HL7_V2_0203,
+  REQUIRES_PRIOR_AUTH_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
   setScheduleParameter,
@@ -16,6 +19,7 @@ import type {
   AppointmentParticipant,
   Bundle,
   CodeableConcept,
+  Coding,
   Device,
   Extension,
   HealthcareService,
@@ -122,6 +126,8 @@ export interface SchedulableServiceOptions {
   readonly alignmentMinutes: number;
   /** The sites holding it, omitted entirely by a visit type held nowhere in particular. */
   readonly locationIds?: readonly string[];
+  /** Whether booking it is blocked until authorization codes are given. */
+  readonly requiresPriorAuth?: boolean;
 }
 
 /**
@@ -140,6 +146,9 @@ export function buildSchedulableService(options: SchedulableServiceOptions): Wit
       location: locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
     }),
     type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
+    ...(options.requiresPriorAuth && {
+      eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_PRIOR_AUTH_CODE }] } }],
+    }),
     extension: [
       {
         url: SchedulingParametersURI,
@@ -219,6 +228,7 @@ interface ScheduledService {
 
 const IMAGING: ScheduledService = { id: 'ultrasound-imaging', name: 'Ultrasound Imaging' };
 const SURGERY: ScheduledService = { id: 'bariatric-surgery', name: 'Bariatric Surgery' };
+const INFUSION: ScheduledService = { id: 'infusion-therapy', name: 'Infusion Therapy' };
 
 function buildSchedule(
   id: string,
@@ -282,6 +292,92 @@ export const SatelliteRoomSchedule = buildSchedule(
  */
 const PRACTITIONER_ROLE_SYSTEM = 'http://terminology.hl7.org/CodeSystem/practitioner-role';
 
+/** A project's own curated code value sets, which is what the code fields bind to. */
+export const PROCEDURE_VALUE_SET = 'http://example.com/ValueSet/billable-procedures';
+export const DIAGNOSIS_VALUE_SET = 'http://example.com/ValueSet/billable-diagnoses';
+
+export const ProcedureCodes: Coding[] = [
+  {
+    system: CPT,
+    code: '96365',
+    display: 'Intravenous infusion, for therapy, prophylaxis, or diagnosis; initial, up to 1 hour',
+  },
+  {
+    system: CPT,
+    code: '96366',
+    display: 'Intravenous infusion, for therapy, prophylaxis, or diagnosis; each additional hour',
+  },
+  { system: CPT, code: '96360', display: 'Intravenous infusion, hydration; initial, 31 minutes to 1 hour' },
+  { system: CPT, code: '96361', display: 'Intravenous infusion, hydration; each additional hour' },
+  {
+    system: CPT,
+    code: '96372',
+    display: 'Therapeutic, prophylactic, or diagnostic injection; subcutaneous or intramuscular',
+  },
+  {
+    system: CPT,
+    code: '96374',
+    display: 'Therapeutic, prophylactic, or diagnostic injection; intravenous push, single or initial substance',
+  },
+  {
+    system: CPT,
+    code: '96375',
+    display: 'Therapeutic, prophylactic, or diagnostic injection; each additional sequential intravenous push',
+  },
+  {
+    system: CPT,
+    code: '96401',
+    display: 'Chemotherapy administration, subcutaneous or intramuscular; non-hormonal anti-neoplastic',
+  },
+  {
+    system: CPT,
+    code: '96413',
+    display: 'Chemotherapy administration, intravenous infusion technique; up to 1 hour, single or initial substance',
+  },
+  {
+    system: CPT,
+    code: '96415',
+    display: 'Chemotherapy administration, intravenous infusion technique; each additional hour',
+  },
+  {
+    system: CPT,
+    code: '96417',
+    display: 'Chemotherapy administration, intravenous infusion technique; each additional sequential infusion',
+  },
+  { system: CPT, code: '20605', display: 'Arthrocentesis, aspiration and/or injection, intermediate joint or bursa' },
+  { system: CPT, code: '20610', display: 'Arthrocentesis, aspiration and/or injection, major joint or bursa' },
+  { system: CPT, code: '11900', display: 'Injection, intralesional; up to and including 7 lesions' },
+  { system: CPT, code: '36415', display: 'Collection of venous blood by venipuncture' },
+];
+
+// ICD-10-CM rather than ICD-10, which is what a US practice bills under: what the field records is
+// whatever the value set said, so the two must be able to differ.
+const ICD10CM = 'http://hl7.org/fhir/sid/icd-10-cm';
+
+export const DiagnosisCodes: Coding[] = [
+  { system: ICD10CM, code: 'D63.1', display: 'Anemia in chronic kidney disease' },
+  { system: ICD10CM, code: 'E86.0', display: 'Dehydration' },
+  { system: ICD10CM, code: 'D50.9', display: 'Iron deficiency anemia, unspecified' },
+  { system: ICD10CM, code: 'D51.0', display: 'Vitamin B12 deficiency anemia due to intrinsic factor deficiency' },
+  { system: ICD10CM, code: 'Z51.11', display: 'Encounter for antineoplastic chemotherapy' },
+  { system: ICD10CM, code: 'N18.30', display: 'Chronic kidney disease, stage 3 unspecified' },
+  { system: ICD10CM, code: 'E11.9', display: 'Type 2 diabetes mellitus without complications' },
+  { system: ICD10CM, code: 'K50.90', display: "Crohn's disease, unspecified, without complications" },
+  { system: ICD10CM, code: 'K51.90', display: 'Ulcerative colitis, unspecified, without complications' },
+  { system: ICD10CM, code: 'M06.9', display: 'Rheumatoid arthritis, unspecified' },
+  { system: ICD10CM, code: 'M17.11', display: 'Unilateral primary osteoarthritis, right knee' },
+  { system: ICD10CM, code: 'G35', display: 'Multiple sclerosis' },
+  { system: ICD10CM, code: 'L40.0', display: 'Psoriasis vulgaris' },
+  { system: ICD10CM, code: 'J45.909', display: 'Unspecified asthma, uncomplicated' },
+  { system: ICD10CM, code: 'D69.6', display: 'Thrombocytopenia, unspecified' },
+];
+
+/** Both value sets, for a test or story standing up a project that imported them. */
+export const AuthorizationValueSets: Record<string, Coding[]> = {
+  [PROCEDURE_VALUE_SET]: ProcedureCodes,
+  [DIAGNOSIS_VALUE_SET]: DiagnosisCodes,
+};
+
 export const SurgeryService = buildSchedulableService({
   id: 'bariatric-surgery',
   name: 'Bariatric Surgery',
@@ -341,6 +437,30 @@ export const DrMartinezSchedule = buildSchedule(
 export const DrChenSchedule = buildSchedule('schedule-dr-chen', 'Practitioner/dr-chen', 'Dr. Wei Chen', SURGERY);
 export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'Practitioner/dr-kim', 'Dr. James Kim', SURGERY);
 export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/or-3', 'Operating Room 3', SURGERY);
+
+/**
+ * A visit type the practice designated as needing authorization, which is what makes the booking
+ * form ask for codes. An injection, since that is one of the two kinds the requirement names.
+ */
+export const InfusionService = buildSchedulableService({
+  id: 'infusion-therapy',
+  name: 'Infusion Therapy',
+  category: 'Treatment',
+  durationMinutes: 60,
+  alignmentMinutes: 30,
+  locationIds: ['main-clinic'],
+  requiresPriorAuth: true,
+});
+
+export const DrChenInfusionSchedule = buildSchedule(
+  'schedule-dr-chen-infusion',
+  'Practitioner/dr-chen',
+  'Dr. Wei Chen',
+  INFUSION
+);
+
+/** The designated visit type and somewhere to book it, on top of {@link SurgicalFixtures}. */
+export const AuthorizationFixtures = [InfusionService, DrChenInfusionSchedule];
 
 export const SurgicalFixtures = [
   SurgeryService,
