@@ -31,8 +31,8 @@
     "@metriport/api-sdk": "18.20.0",
     "@types/node": "22.20.1",
     "@types/ssh2-sftp-client": "9.0.6",
-    "@vitest/coverage-v8": "4.1.11",
-    "@vitest/ui": "4.1.11",
+    "@vitest/coverage-v8": "5.0.0",
+    "@vitest/ui": "5.0.0",
     "dotenv": "17.4.2",
     "esbuild": "0.28.2",
     "fast-glob": "3.3.3",
@@ -44,7 +44,7 @@
     "stripe": "22.6.1",
     "twilio": "^6.1.0",
     "typescript": "6.0.3",
-    "vitest": "4.1.11"
+    "vitest": "5.0.0"
   },
   "packageManager": "npm@10.9.9",
   "engines": {
