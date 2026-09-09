@@ -84,7 +84,7 @@ describe('Keys', () => {
 
     // Construct a broken JWT with empty "kid"
     const accessToken = await new SignJWT({})
-      .setProtectedHeader({ alg: 'ES256', kid: '', typ: 'JWT' })
+      .setProtectedHeader({ alg: 'ES384', kid: '', typ: 'JWT' })
       .setIssuedAt()
       .setIssuer(config.issuer)
       .setAudience('my-audience')
@@ -155,6 +155,27 @@ describe('Keys', () => {
     expect(result.payload.login_id).toStrictEqual('123');
   });
 
+  test('Generate access token with project-scoped issuer', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+    const projectIssuer = `${config.issuer}projects/00000000-0000-0000-0000-000000000000/`;
+
+    const token = await generateAccessToken(
+      {
+        login_id: '123',
+        username: 'username',
+        scope: 'scope',
+        profile: 'profile',
+      },
+      { issuer: projectIssuer }
+    );
+
+    const result = await verifyJwt(token, projectIssuer);
+    expect(result.payload.iss).toBe(projectIssuer);
+    expect(result.payload.aud).toBe(projectIssuer);
+    await expect(verifyJwt(token)).rejects.toThrow();
+  });
+
   test('Generate refresh token', async () => {
     const config = await loadTestConfig();
     await initKeys(config);
@@ -223,7 +244,7 @@ describe('Keys', () => {
     await initKeys(config);
 
     expect(getSigningKey()).toBeDefined();
-    expect(getSigningKey('ES256')).toBeDefined();
+    expect(getSigningKey('ES384')).toBeDefined();
     expect(() => getSigningKey('none')).toThrow('Signing key not found for alg: none');
   });
 

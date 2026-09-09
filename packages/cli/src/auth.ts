@@ -5,9 +5,12 @@ import { ContentType, getDisplayString, MEDPLUM_CLI_CLIENT_ID, normalizeErrorStr
 import { exec } from 'node:child_process';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
+import { promisify } from 'node:util';
 import { createMedplumClient } from './util/client';
 import type { Profile } from './utils';
 import { jwtAssertionLogin, jwtBearerLogin, MedplumCommand, saveProfile } from './utils';
+
+const execAsync = promisify(exec);
 
 const clientId = MEDPLUM_CLI_CLIENT_ID;
 const redirectUri = 'http://localhost:9615';
@@ -45,7 +48,7 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
   const authType = profile?.authType ?? 'authorization-code';
   switch (authType) {
     case 'authorization-code':
-      await medplumAuthorizationCodeLogin(medplum);
+      await medplumAuthorizationCodeLogin(medplum, profile);
       break;
     case 'basic':
       medplum.setBasicAuth(profile.clientId as string, profile.clientSecret as string);
@@ -116,19 +119,7 @@ async function openBrowser(url: string): Promise<void> {
     default:
       throw new Error('Unsupported platform: ' + os);
   }
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error, _, stderr) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      if (stderr) {
-        reject(new Error('Could not open browser: ' + stderr));
-        return;
-      }
-      resolve();
-    });
-  });
+  await execAsync(cmd);
 }
 
 /**
@@ -146,12 +137,12 @@ function printMe(medplum: MedplumClient): void {
   }
 }
 
-async function medplumAuthorizationCodeLogin(medplum: MedplumClient): Promise<void> {
+async function medplumAuthorizationCodeLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   await startWebServer(medplum);
   const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
-  loginUrl.searchParams.set('scope', 'openid');
+  loginUrl.searchParams.set('scope', profile.scope ?? 'openid offline_access');
   loginUrl.searchParams.set('response_type', 'code');
   loginUrl.searchParams.set('prompt', 'login');
   await openBrowser(loginUrl.toString());

@@ -4,7 +4,7 @@ import { Button, Group, Modal, Stack, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import type { DiagnosticReport, Organization, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import type { LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
-import { useMedplum, useResource } from '@medplum/react';
+import { DiagnosticReportDisplay, useMedplum, useResource } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -25,6 +25,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
   const serviceRequest = useResource(task.focus as Reference<ServiceRequest>);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [labServiceRequest, setLabServiceRequest] = useState<ServiceRequest | undefined>(undefined);
+  const [diagnosticReport, setDiagnosticReport] = useState<DiagnosticReport | undefined>(undefined);
   const [performingLab, setPerformingLab] = useState<LabOrganization | undefined>(undefined);
   const performerReferences = serviceRequest?.performer;
 
@@ -61,6 +62,22 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
     fetchServiceRequest().catch(showErrorNotification);
   }, [medplum, task.focus]);
 
+  useEffect(() => {
+    const fetchDiagnosticReport = async (): Promise<void> => {
+      if (!labServiceRequest?.id) {
+        setDiagnosticReport(undefined);
+        return;
+      }
+      const report = await medplum.searchOne('DiagnosticReport', {
+        'based-on': `ServiceRequest/${labServiceRequest.id}`,
+        'status:not': 'cancelled,entered-in-error',
+        _sort: '-_lastUpdated',
+      });
+      setDiagnosticReport(report);
+    };
+    fetchDiagnosticReport().catch(showErrorNotification);
+  }, [medplum, labServiceRequest?.id]);
+
   const handleNewOrderCreated = async (serviceRequest?: ServiceRequest): Promise<void> => {
     setNewOrderModalOpened(false);
     setLabServiceRequest(serviceRequest);
@@ -85,8 +102,24 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           </Group>
         )}
 
+        {diagnosticReport && task.for && (
+          <>
+            <DiagnosticReportDisplay value={diagnosticReport} />
+            <Group>
+              <Button
+                component="a"
+                target="_blank"
+                href={`/${task.for.reference}/DiagnosticReport/${diagnosticReport.id}`}
+              >
+                View Report
+              </Button>
+            </Group>
+          </>
+        )}
+
         {isLabServiceRequest &&
           task.for &&
+          !diagnosticReport &&
           labServiceRequest?.status !== 'draft' &&
           labServiceRequest?.status !== 'on-hold' &&
           labServiceRequest?.id && (

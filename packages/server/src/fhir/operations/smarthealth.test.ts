@@ -124,9 +124,9 @@ describe('SMART Health operations', () => {
 
   test('Verifies external SMART Health Card signatures without trusting issuer', async () => {
     const issuer = 'https://issuer.example.com';
-    const { privateKey, publicKey } = await generateKeyPair('ES256', { extractable: true });
+    const { privateKey, publicKey } = await generateKeyPair('ES384', { extractable: true });
     const publicJwk = await exportJWK(publicKey);
-    publicJwk.alg = 'ES256';
+    publicJwk.alg = 'ES384';
     publicJwk.kid = 'external-key';
     publicJwk.use = 'sig';
 
@@ -797,6 +797,6 @@ async function createSmartHealthCardCredential(options: {
     },
   };
   return new CompactSign(deflateRawSync(Buffer.from(JSON.stringify(payload))))
-    .setProtectedHeader({ alg: 'ES256', kid: options.keyId, zip: 'DEF' })
+    .setProtectedHeader({ alg: 'ES384', kid: options.keyId, zip: 'DEF' })
     .sign(options.privateKey);
 }

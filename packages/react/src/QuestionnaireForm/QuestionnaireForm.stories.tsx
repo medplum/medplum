@@ -1085,6 +1085,105 @@ export const Choices = (): JSX.Element => (
   </Document>
 );
 
+export const OptionExclusive = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'option-exclusive',
+        title: 'Option Exclusive Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1 - Checkbox (selecting "No known allergies" clears the others)',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Peanuts',
+              },
+              {
+                valueString: 'Shellfish',
+              },
+              {
+                valueString: 'Penicillin',
+              },
+              {
+                valueString: 'No known allergies',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-optionExclusive',
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check box',
+                    },
+                  ],
+                  text: 'Check box',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            text: 'Question 2 - Multiselect Dropdown (selecting "None of the above" clears the others)',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Headache',
+              },
+              {
+                valueString: 'Fever',
+              },
+              {
+                valueString: 'Cough',
+              },
+              {
+                valueString: 'None of the above',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-optionExclusive',
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const EnableWhen = (): JSX.Element => (
   <Document>
     <QuestionnaireForm

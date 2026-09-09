@@ -417,6 +417,12 @@ describe('ThreadChat', () => {
         status: 'in-progress',
       })
     );
+
+    // The thread header is touched with the message's sent time, so thread lists
+    // sorted by -_lastUpdated order by latest message activity.
+    const sentMessage = onMessageSent.mock.calls[0][0] as Communication;
+    const updatedThread = await defaultMedplum.readResource('Communication', thread.id as string);
+    expect(updatedThread.sent).toBe(sentMessage.sent);
   });
 
   test('Not rendered when no profile', async () => {

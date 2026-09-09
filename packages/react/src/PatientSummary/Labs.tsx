@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Flex, Group, Modal, Text } from '@mantine/core';
+import { Box, Flex, Group, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, getDisplayString } from '@medplum/core';
 import type { CodeableConcept, DiagnosticReport, Patient, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
+import { Modal } from '../Modal/Modal';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import SummaryItem from './SummaryItem';
@@ -122,7 +123,7 @@ export function Labs(props: LabsProps): JSX.Element {
           {filteredServiceRequests.length === 0 && filteredDiagnosticReports.length === 0 && <Text>(none)</Text>}
         </Flex>
       </CollapsibleSection>
-      <Modal opened={reportDialogOpened} onClose={closeReportDialog} size="80%">
+      <Modal opened={reportDialogOpened} onClose={closeReportDialog} title="Lab Results" size="80%">
         {selectedReport && <DiagnosticReportDisplay value={selectedReport} hideSubject={true} />}
       </Modal>
     </>

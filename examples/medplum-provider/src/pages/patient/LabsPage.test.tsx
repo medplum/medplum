@@ -106,6 +106,17 @@ describe('LabsPage', () => {
     meta: { lastUpdated: '2024-01-02T10:00:00Z' },
   };
 
+  const revokedOrder: ServiceRequest = {
+    resourceType: 'ServiceRequest',
+    id: 'revoked-1',
+    status: 'revoked',
+    intent: 'order',
+    code: { text: 'Revoked Panel' },
+    subject: { reference: `Patient/${HomerSimpson.id}` },
+    requisition: { value: 'REQ-003' },
+    meta: { lastUpdated: '2024-01-03T10:00:00Z' },
+  };
+
   test('renders tabs and order button', async () => {
     mockSearch([], []);
     setup();
@@ -113,6 +124,7 @@ describe('LabsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Completed')).toBeInTheDocument();
       expect(screen.getByText('Open')).toBeInTheDocument();
+      expect(screen.getByText('Revoked')).toBeInTheDocument();
     });
 
     expect(screen.getByRole('button', { name: 'Order Labs' })).toBeInTheDocument();
@@ -231,6 +243,52 @@ describe('LabsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Draft Order')).toBeInTheDocument();
+    });
+  });
+
+  test('shows empty state for the revoked tab when no orders are found', async () => {
+    mockSearch([], []);
+    setup(`/Patient/${HomerSimpson.id}/ServiceRequest?status=revoked`);
+
+    await waitFor(() => {
+      expect(screen.getByText(/No revoked labs to display/i)).toBeInTheDocument();
+    });
+  });
+
+  test('queries only top-level revoked orders for the revoked tab', async () => {
+    mockSearch([revokedOrder], []);
+    setup(`/Patient/${HomerSimpson.id}/ServiceRequest?status=revoked`);
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoked Panel')).toBeInTheDocument();
+    });
+
+    const query = queryFor('ServiceRequest');
+    expect(query).toBeDefined();
+    expect(query).toContain('status=revoked');
+    expect(query).toContain('based-on:missing=true');
+    expect(query).toContain('_sort=-_lastUpdated');
+  });
+
+  test('switches to the revoked tab', async () => {
+    medplum.searchResources = vi.fn().mockImplementation((resourceType: string, query: string) => {
+      if (resourceType === 'DiagnosticReport') {
+        return Promise.resolve([completedReport]);
+      }
+      return Promise.resolve(query.includes('status=revoked') ? [revokedOrder] : []);
+    });
+    setup();
+
+    // Starts on the Completed tab.
+    await waitFor(() => {
+      expect(screen.getByText('Lipid Panel')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Revoked'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Revoked Panel')).toBeInTheDocument();
+      expect(screen.queryByText('Lipid Panel')).not.toBeInTheDocument();
     });
   });
 

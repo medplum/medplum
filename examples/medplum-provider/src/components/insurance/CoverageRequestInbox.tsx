@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Divider, Flex, Pagination, Paper, ScrollArea, Skeleton, Stack, Text } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
 import type { Coverage, CoverageEligibilityRequest, Organization, Reference } from '@medplum/fhirtypes';
@@ -38,7 +37,6 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
   const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
   const currentSearch = useMemo(() => parseSearchRequest(`CoverageEligibilityRequest?${query}`), [query]);
 
-  const [eligibilityBot] = useSearchOne('Bot', { identifier: 'https://www.medplum.com/bots|eligibility' });
   const [practitionerRole] = useSearchOne(
     'PractitionerRole',
     profile ? { practitioner: getReferenceString(profile) } : undefined,
@@ -101,10 +99,6 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
   };
 
   const handleCheckEligibility = async (): Promise<void> => {
-    if (!eligibilityBot) {
-      showErrorNotification(new Error('To enable Insurance Eligibility please contact support.'));
-      return;
-    }
     if (!practitionerRole) {
       showErrorNotification(new Error('No PractitionerRole found for the assigned practitioner.'));
       return;
@@ -126,16 +120,9 @@ export function CoverageRequestInbox(props: CoverageRequestInboxProps): JSX.Elem
       };
       const savedRequest = await medplum.createResource(requestBody);
       try {
-        await medplum.executeBot(eligibilityBot.id, savedRequest, 'application/fhir+json');
+        await medplum.post(medplum.fhirUrl('CoverageEligibilityRequest', savedRequest.id, '$submit'));
       } catch (err) {
-        let errorMessage: string | undefined;
-        try {
-          const parsed = JSON.parse((err as Error).message);
-          errorMessage = parsed?.errorMessage;
-          showNotification({ color: 'red', title: 'Error', message: errorMessage });
-        } catch {
-          showErrorNotification(err);
-        }
+        showErrorNotification(err);
       }
       await fetchRequests();
       navigate(getRequestHref(coverage, savedRequest))?.catch(console.error);

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import type { Login, Patient, Project, Questionnaire, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -193,6 +193,14 @@ describe('Reference checks', () => {
 
   test('ProjectMembership reference validation', () =>
     withTestContext(async () => {
+      // User is server-scoped admin of other project
+      const { user } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
       let { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -211,13 +219,9 @@ describe('Reference checks', () => {
         userConfig: {} as UserConfiguration,
       });
 
-      // Checking the externalId change is ancillary; mostly confirming that the update
-      // doesn't throw due to reference validation failure
-      const id = randomUUID();
-      expect(membership.externalId).toBeUndefined();
-      membership.externalId = id;
-      membership = await repo.updateResource(membership);
-      expect(membership.externalId).toStrictEqual(id);
+      // User reference should validate
+      membership = await repo.updateResource({ ...membership, invitedBy: createReference(user) });
+      expect(membership.invitedBy?.reference).toStrictEqual(getReferenceString(user));
     }));
 
   test('Check references with non-literal reference', () =>

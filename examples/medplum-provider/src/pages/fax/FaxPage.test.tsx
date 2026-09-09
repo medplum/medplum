@@ -7,6 +7,7 @@ import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { FaxPage } from './FaxPage';
@@ -72,8 +73,10 @@ describe('FaxPage', () => {
           <MantineProvider>
             <Notifications />
             <Routes>
-              <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
               <Route path="/Fax/Communication" element={<FaxPage />} />
+              <Route path="/Fax/Communication/new" element={<FaxPage />} />
+              <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
+              <Route path="/Fax/Communication/:faxId/new" element={<FaxPage />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -149,6 +152,74 @@ describe('FaxPage', () => {
       const buttons = screen.getAllByRole('button');
       const sendButton = buttons.find((btn) => btn.querySelector('.tabler-icon-send'));
       expect(sendButton).toBeInTheDocument();
+    });
+  });
+
+  test('opens send fax modal when URL is /Fax/Communication/new', async () => {
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup('/Fax/Communication/new');
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Send Fax').length).toBeGreaterThan(0);
+    });
+  });
+
+  test('opens send fax modal over a fax when URL is /Fax/Communication/:faxId/new', async () => {
+    medplum.search = vi.fn().mockResolvedValue(bundleOf(INBOX_FAX));
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(INBOX_FAX);
+
+    setup(`/Fax/Communication/${INBOX_FAX.id}/new`);
+
+    await waitFor(() => {
+      expect(screen.getByText('Referral for patient')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Send Fax').length).toBeGreaterThan(0);
+    });
+  });
+
+  test('does not open send fax modal on the list view', async () => {
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('No faxes in your inbox.')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Send Fax')).not.toBeInTheDocument();
+  });
+
+  test('clicking send fax button opens the modal via /new and closing returns to the list', async () => {
+    const user = userEvent.setup();
+    medplum.search = vi.fn().mockResolvedValue(bundleOf());
+    vi.spyOn(medplum, 'post').mockResolvedValue({});
+
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('No faxes in your inbox.')).toBeInTheDocument();
+    });
+
+    const sendButton = screen.getAllByRole('button').find((btn) => btn.querySelector('.tabler-icon-send'));
+    expect(sendButton).toBeDefined();
+    await user.click(sendButton as HTMLElement);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Send Fax').length).toBeGreaterThan(0);
+    });
+
+    const closeButton = document.querySelector('.mantine-Modal-close');
+    expect(closeButton).not.toBeNull();
+    await user.click(closeButton as Element);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Send Fax')).not.toBeInTheDocument();
     });
   });
 

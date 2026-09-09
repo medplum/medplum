@@ -1,0 +1,16 @@
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+name: "Vouch - Check PR"
+
+jobs:
+  check:
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    uses: ./.github/workflows/vouch-check-pr-shared.yml
+    with:
+      pr-number: ${{ github.event.pull_request.number }}
+    secrets: inherit

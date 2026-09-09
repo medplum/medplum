@@ -36,12 +36,32 @@
   --layout-padding: 2rem;
   --layout-padding-md: 1.5rem;
   --layout-padding-sm: 1rem;
+
+  /* The gutter for the current viewport, resolved from the three widths above.
+     Content columns read this one property instead of restating the breakpoints
+     (see LandingContainer.module.css), and a section that wants a different gutter
+     redefines it locally rather than fighting the cascade. */
+  --layout-gutter: var(--layout-padding);
+}
+
+@media screen and (max-width: 996px) {
+  :root {
+    --layout-gutter: var(--layout-padding-md);
+  }
+}
+
+@media screen and (max-width: 600px) {
+  :root {
+    --layout-gutter: var(--layout-padding-sm);
+  }
 }
 
 *,
 *::before,
 *::after {
-  font-feature-settings: 'ss02' on, 'ss04' on;
+  font-feature-settings:
+    'ss02' on,
+    'ss04' on;
 }
 
 [data-theme='dark'] {
@@ -351,7 +371,11 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   overflow: hidden;
 }
 
-.responsive-iframe-wrapper iframe {
+/* Applies to youtube iframe, cookieYes video placeholder (which is
+ * dropped in as a replacement when the viewer has not accepted
+ * cookies). */
+.responsive-iframe-wrapper iframe,
+.responsive-iframe-wrapper > .video-placeholder-youtube {
   position: absolute;
   top: 0;
   left: 0;
@@ -417,4 +441,3 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   background-color: var(--oc-grape-9);
   border-color: var(--oc-grape-9);
 }
-

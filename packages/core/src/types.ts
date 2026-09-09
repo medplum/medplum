@@ -178,6 +178,8 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
     globalSchema.types[resourceType] = typeSchema;
   }
 
+  let compartmentTargets: string[] | undefined; // Lazy-loaded
+
   // Binary has no search parameters; not even those inherited from Resource
   if (!typeSchema.searchParams && resourceType !== 'Binary') {
     typeSchema.searchParams = {
@@ -198,6 +200,13 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
         code: '_compartment',
         type: 'reference',
         expression: resourceType + '.meta.compartment',
+        // Must be lazy-loaded: `getOrInitTypeSchema` runs to pre-populate
+        // each resource type's search parameters, before the entire list
+        // of resource types is available
+        get target(): string[] {
+          compartmentTargets ??= getResourceTypes();
+          return compartmentTargets;
+        },
       } as SearchParameter,
       _profile: {
         base: [resourceType],
@@ -366,7 +375,7 @@ export function getPropertyDisplayName(propertyName: string): string {
   return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replaceAll(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['CDS', 'ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);
+const capitalizedWords = new Set(['CDS', 'ID', 'IP', 'JWKS', 'PKCE', 'OMB', 'OID', 'SOP', 'UDI', 'UID', 'URI', 'URL']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();

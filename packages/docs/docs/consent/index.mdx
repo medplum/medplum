@@ -1,0 +1,271 @@
+---
+sidebar_position: 1
+title: Consent and Signatures
+tags: [consent, signature, e-signature, intake, compliance, questionnaire]
+keywords: [Consent, Signature, QuestionnaireResponse, e-signature, consent capture, signatureRequired, SignatureInput, audit trail]
+---
+
+# Consent and Signatures
+
+Medplum captures consents and signatures as structured, versioned FHIR data rather than as opaque PDFs. The [`Consent`](/docs/api/fhir/resources/consent) resource is the primitive: it records what a patient agreed to, when they agreed, which policy governed the agreement, and — because every write is versioned — who recorded it and what changed afterward.
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/9Ck2FEa4ALg"
+    title="YouTube video player" frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+<br/>
+
+This page covers:
+
+- The `Consent` resource and how to code one
+- Auditing who recorded or changed a consent
+- Capturing consents through a questionnaire
+- Capturing a handwritten digital signature and linking it to a consent
+
+## The Consent Resource
+
+A single `Consent` represents one agreement. Do not bundle several agreements into one resource — a patient who accepts treatment but declines a payment agreement needs two independently statused records.
+
+| Element | Purpose |
+| --- | --- |
+| `status` | `draft`, `proposed`, `active`, `rejected`, `inactive`, or `entered-in-error`. A declined agreement is a `rejected` Consent, not a missing one. |
+| `scope` | The broad context of the consent — privacy, treatment, research, or advance care directive. Required. |
+| `category` | The type of consent document. Required, and repeatable so you can carry both a LOINC document type and an act code. |
+| `patient` | The patient the consent is about. |
+| `dateTime` | When the consent was given. This is the clinically meaningful date, distinct from `meta.lastUpdated`. |
+| `performer` | Who granted the consent — the patient, or a `RelatedPerson` acting for them. |
+| `organization` | The organization holding the consent. |
+| `policy` | The governing agreement, as an `authority` plus a `uri` pointing at the actual document. |
+| `policyRule` | A coded reference to a known regulatory policy. |
+| `sourceAttachment` / `sourceReference` | The underlying artifact — see [Linking a Signature to a Consent](#linking-a-signature-to-a-consent). |
+| `verification` | Whether the consent was verified, with whom, and on what date. |
+| `provision` | Fine-grained permit/deny rules. Most consent capture flows do not populate this. |
+
+The example below is a privacy consent that governs data disclosure to a third-party e-prescribing vendor. Note that it uses `policy` with a live `uri` rather than `policyRule`, because the governing document is the vendor's terms of service rather than a coded regulation:
+
+```json
+{
+  "resourceType": "Consent",
+  "status": "active",
+  "scope": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/consentscope",
+        "code": "patient-privacy",
+        "display": "Patient Privacy"
+      }
+    ],
+    "text": "Patient Privacy"
+  },
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "59284-0",
+          "display": "Privacy Consent Document"
+        }
+      ]
+    },
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "IDSCL",
+          "display": "information disclosure"
+        }
+      ]
+    }
+  ],
+  "patient": {
+    "reference": "Patient/e9232f44-6287-4506-8bbc-b4091a284054",
+    "display": "Frodo Baggins"
+  },
+  "dateTime": "2026-07-28T21:28:10.866Z",
+  "policy": [
+    {
+      "authority": "DoseSpot",
+      "uri": "https://dosespot.com/exhibit-a-terms-of-service/"
+    }
+  ]
+}
+```
+
+### Coding a Consent
+
+Consent coding is where most implementations diverge, because it encodes organizational policy rather than clinical fact. Three elements carry the meaning:
+
+- **`scope`** uses [consentscope](http://terminology.hl7.org/CodeSystem/consentscope) — `patient-privacy`, `treatment`, `research`, or `adr`.
+- **`category`** identifies the document type. LOINC `59284-0` (Privacy Consent Document) is common, as are [v3-ActCode](http://terminology.hl7.org/CodeSystem/v3-ActCode) values such as `nopp`, `pay`, and `med`.
+- **`policyRule`** points at a coded policy such as `hipaa-npp` or `hipaa-self-pay`. Use `policy` with an `authority` and `uri` instead when the governing document is a specific contract or terms-of-service page.
+
+For a table mapping common intake consent types to specific scope, category, and policyRule combinations, see [modeling Consent resources in intake questionnaires](/docs/intake/intake-questionnaires#modeling-consent-resources).
+
+:::note[Coding varies by organization]
+
+The code systems above are HL7 standards, but which combination represents "consent for treatment" at your organization is a policy decision. Agree on the coding before building extraction logic, because changing it later means migrating historical consents.
+
+:::
+
+### Status and Re-consent
+
+Consent is not a one-time event. Policies change, patients move between sites, and many organizations re-consent annually. Model this as a sequence of resources rather than by editing one in place:
+
+- The patient agrees → `status: active`
+- The patient declines → `status: rejected` (still a recorded decision, and still auditable)
+- A newer consent supersedes it → the prior Consent moves to `status: inactive` and a new Consent is created with the current `dateTime`
+- The consent was recorded in error → `status: entered-in-error`
+
+Superseding rather than editing preserves the answer to "what had this patient agreed to on a given date," which is the question an audit actually asks.
+
+## Auditing Consent Changes
+
+Medplum stores every version of every resource, so a consent carries its own audit trail with no additional configuration. In the [Medplum App](https://app.medplum.com), open a Consent and use:
+
+- **History** — every version, with the timestamp and the user account responsible. Selecting a version shows a diff against the prior one. Available directly at `https://app.medplum.com/Consent/:id/history`.
+- **Blame** — the current resource annotated line by line with the version and user that last touched each field. This answers "who changed the status of this consent, and when" without reading through diffs.
+- **JSON** — the raw resource, including the code systems and `meta.lastUpdated`.
+
+The same history is available over the API:
+
+```bash
+GET /fhir/R4/Consent/:id/_history
+```
+
+See [Resource History](/docs/fhir-datastore/resource-history) for the full history API, including reading a specific version.
+
+## Capturing Consent in a Form
+
+Most consents are captured as part of a larger form rather than on their own. In a patient intake flow, each acknowledgement in the questionnaire becomes its own Consent resource:
+
+| Intake acknowledgement | `scope` | `category` |
+| --- | --- | --- |
+| Consent for Treatment | `treatment` | `med` |
+| Agreement to Pay for Treatment | `treatment` | `pay` |
+| Notice of Privacy Practices | `patient-privacy` | `nopp` |
+| Acknowledgement for Advance Directives | `adr` | `acd` |
+
+Two mappings matter when you write the extraction logic:
+
+- The **checkbox** drives `status` — checked becomes `active`, unchecked becomes `rejected`. Creating nothing when the box is unchecked loses the fact that the patient was asked and declined.
+- The **date field** drives `dateTime`, not `meta.lastUpdated`. A form completed on paper and entered later has a consent date earlier than its creation timestamp.
+
+Extraction runs either through SDC `extract` extensions or through a Bot. For the mechanics of both, along with linkId conventions, see [Intake Questionnaires: Design and Extraction](/docs/intake/intake-questionnaires). For how Consent fits the wider set of resources an intake response produces, see the [Intake Data Model](/docs/intake/intake-data-model). The clinician-facing walkthrough of this step is in the [Provider app patient profile guide](/docs/provider/patient-profile).
+
+## Capturing a Digital Signature
+
+Some consents need a handwritten signature rather than a checkbox. Add the `questionnaire-signatureRequired` extension to a [`Questionnaire`](/docs/api/fhir/resources/questionnaire) and the `QuestionnaireForm` component renders a signature pad below the form and blocks submission until it is signed:
+
+```json
+{
+  "resourceType": "Questionnaire",
+  "status": "active",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired",
+      "valueCodeableConcept": {
+        "coding": [
+          {
+            "system": "urn:iso-astm:E1762-95:2013",
+            "code": "1.2.840.10065.1.12.1.1",
+            "display": "Author's Signature"
+          }
+        ]
+      }
+    }
+  ],
+  "item": [{ "linkId": "consent-text", "type": "display", "text": "..." }]
+}
+```
+
+Pair the pad with a plain `string` item labeled "Print Name" when your compliance posture requires the signer's printed name alongside the mark.
+
+### Where the Signature Is Stored
+
+On submit, the signature is written to the [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) as a `questionnaireresponse-signature` extension holding a FHIR `Signature`:
+
+```json
+{
+  "resourceType": "QuestionnaireResponse",
+  "status": "completed",
+  "authored": "2026-07-28T21:28:10.866Z",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/questionnaireresponse-signature",
+      "valueSignature": {
+        "type": [
+          {
+            "system": "http://hl7.org/fhir/signature-type",
+            "code": "ProofOfOrigin",
+            "display": "Proof of Origin"
+          }
+        ],
+        "when": "2026-07-28T21:28:10.866Z",
+        "who": { "reference": "Practitioner/dc1c2b39-9dd5-4f4a-8e7d-2b1e3a5c6d70" },
+        "data": "iVBORw0KGgoAAAANSUhEUg..."
+      }
+    }
+  ]
+}
+```
+
+The three fields that make this an evidentiary record are `who` (the authenticated profile that signed, defaulting to the logged-in user), `when` (the moment the stroke completed), and `data` (the signature image as a base64-encoded PNG). The submitted response also carries `source` and `authored`, so the signing identity is recorded independently of the signature itself.
+
+:::caution[Signature capture and paginated forms]
+
+The signature pad renders only on single-page questionnaires. If a questionnaire uses pagination *and* carries the `signatureRequired` extension, submission is blocked but no pad is shown — leaving the form unsubmittable. Keep signature-required questionnaires unpaginated, or collect the signature in a separate step.
+
+:::
+
+To use the pad outside a questionnaire — in a custom consent screen, for example — render the [`SignatureInput`](https://storybook.medplum.com/?path=/story/medplum-signatureinput--basic) component directly. It accepts a `who` reference so you can attribute the signature to a patient rather than the logged-in user.
+
+Working examples are in Storybook: [QuestionnaireForm with a required signature](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--signature-required) and [SignatureInput on its own](https://storybook.medplum.com/?path=/story/medplum-signatureinput--basic).
+
+## Linking a Signature to a Consent
+
+A signature captured on a QuestionnaireResponse is not automatically attached to the Consent resources extracted from it. Creating that link is part of your extraction logic, and it is what makes the consent record self-contained. Two options:
+
+**Reference the response.** `Consent.sourceReference` accepts a `QuestionnaireResponse`, so the consent can point at the exact submission that produced it — signature extension included:
+
+```json
+{
+  "resourceType": "Consent",
+  "status": "active",
+  "patient": { "reference": "Patient/e9232f44-6287-4506-8bbc-b4091a284054" },
+  "dateTime": "2026-07-28T21:28:10.866Z",
+  "sourceReference": { "reference": "QuestionnaireResponse/a1b2c3d4-5678-90ab-cdef-1234567890ab" }
+}
+```
+
+This is the lighter-weight option and keeps one signature serving every consent extracted from the form.
+
+**Attach the artifact.** Where each consent needs to stand alone — for disclosure to a payer, or export to another system — store the rendered document as a [`Binary`](/docs/api/fhir/resources/binary) and reference it from `Consent.sourceAttachment`. See [Binary Data](/docs/fhir-datastore/binary-data) for upload mechanics.
+
+Reference the response when the form is the record of truth; attach the artifact when the consent must travel on its own.
+
+## Compliance Considerations
+
+Electronic signatures under [21 CFR Part 11](/docs/compliance/cfr11) §11.50 must record the signer's printed name, the date and time, and the meaning of the signature. The captured `Signature` maps onto these directly:
+
+| Requirement | Where it lives |
+| --- | --- |
+| Identity of the signer | `Signature.who`, plus `QuestionnaireResponse.source` |
+| Date and time of signing | `Signature.when` |
+| Meaning of the signature | `Signature.type`, and the `signatureRequired` extension's declared type |
+| Printed name | A `string` item in the questionnaire, resolved through `Signature.who` |
+| Signature/record linking (§11.70) | `Consent.sourceReference` or `sourceAttachment`, plus resource versioning |
+
+Resource history supplies the tamper-evidence: because Medplum retains every version with its author, an altered consent shows the change, the author, and the timestamp. Assess whether this satisfies your specific regulatory obligations with your compliance team — see the [compliance overview](/docs/compliance) and [HIPAA](/docs/compliance/hipaa) for Medplum's broader posture.
+
+## Related Materials
+
+- [Consent Capture in Medplum](https://youtu.be/9Ck2FEa4ALg) on YouTube — walkthrough of the Consent resource, its audit trail, intake capture, and signature panels
+- [Intake Questionnaires: Design and Extraction](/docs/intake/intake-questionnaires) — modeling consents captured during intake
+- [Intake Data Model](/docs/intake/intake-data-model) — the full resource graph an intake response produces
+- [Questionnaires and Responses](/docs/questionnaires/questionnaires-and-responses) — the `signatureRequired` extension in the wider questionnaire feature set
+- [Intake and Registration decision guide](/docs/decision-guides/intake) — design questions for conditional consents and re-consent
+- [Resource History](/docs/fhir-datastore/resource-history) — the versioning that underpins the consent audit trail
+- [21 CFR Part 11](/docs/compliance/cfr11) — electronic records and signatures compliance matrix
+- [`Consent` resource reference](/docs/api/fhir/resources/consent) — full element and search parameter listing

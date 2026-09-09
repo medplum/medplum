@@ -1,0 +1,64 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
+import { defineConfig } from 'vitest/config';
+import { medplumAliases } from '../../aliases.mjs';
+
+/*
+ * Default the runner's timezone. This package renders times in one zone and reads them in another
+ * throughout, and several tests turn on the two differing, so a suite that inherits whatever zone
+ * the machine is set to is a different suite on a laptop than on CI. UTC is what CI already runs
+ * in, so this only makes a local run agree with it by default.
+ *
+ * Daylight saving is still exercised: the tests that turn on it pass their zone explicitly, and an
+ * explicit zone observes DST whatever the runner is set to. Only the browser-default paths follow
+ * this, which is why it stays overridable: `TZ=America/New_York npm test` runs those in a zone
+ * that changes twice a year.
+ */
+process.env.TZ ??= 'UTC';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    /*
+     * Replace CSS module imports with an identity proxy (see test-mocks/cssModuleProxy.ts).
+     * Jest used identity-obj-proxy for the same purpose: `styles.foo` resolves to "foo"
+     * so components render without parsing or applying real CSS in jsdom.
+     */
+    {
+      name: 'css-module-identity-proxy',
+      enforce: 'pre',
+      resolveId(source) {
+        if (source.endsWith('.module.css')) {
+          return resolve(import.meta.dirname, 'src/test-mocks/cssModuleProxy.ts');
+        }
+        return undefined;
+      },
+    },
+  ],
+  resolve: {
+    alias: medplumAliases,
+  },
+  test: {
+    name: '@medplum/react-scheduling',
+    globals: true,
+    environment: 'jsdom',
+    environmentOptions: {
+      jsdom: {
+        /* Base URL for relative links and window.location in component tests. */
+        url: 'http://localhost/',
+      },
+    },
+    setupFiles: ['./src/test.setup.ts'],
+    testTimeout: 10_000,
+    pool: 'threads',
+    fakeTimers: {
+      /*
+       * Advance mocked timers automatically (e.g. debounced search inputs) instead of
+       * requiring manual vi.advanceTimersByTime in every test.
+       */
+      shouldAdvanceTime: true,
+    },
+  },
+});

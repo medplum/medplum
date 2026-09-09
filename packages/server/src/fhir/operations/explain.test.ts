@@ -10,10 +10,12 @@ import { createTestProject, initTestAuth } from '../../test.setup';
 
 describe('$explain', () => {
   const app = express();
+  let accessToken: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    accessToken = await initTestAuth({ project: { superAdmin: true } });
   });
 
   afterAll(async () => {
@@ -21,8 +23,6 @@ describe('$explain', () => {
   });
 
   test.each(['json', 'text'])('Success with %s format', async (format) => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
-
     const res1 = await request(app)
       .post('/fhir/R4/$explain')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -45,9 +45,24 @@ describe('$explain', () => {
     ]);
   });
 
-  test('Returns count when count parameter is true', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+  test.each(['json', 'text'])('Unicode characters in explain output escaped', async (format) => {
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        query: 'Observation?code:text=hemoglobin',
+        analyze: true,
+        count: false,
+        format,
+      });
+    expect(res).toHaveStatus(200);
 
+    const output = res.body.parameter as ParametersParameter[];
+    expect(output).toContainEqual({ name: 'parameters', valueString: expect.stringContaining('\\x03') });
+  });
+
+  test('Returns count when count parameter is true', async () => {
     const res = await request(app)
       .post('/fhir/R4/$explain')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -67,8 +82,6 @@ describe('$explain', () => {
   });
 
   test('Does not return count when count parameter is omitted', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
-
     const res = await request(app)
       .post('/fhir/R4/$explain')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -90,8 +103,6 @@ describe('$explain', () => {
       withClient: true,
       project: { link: [{ project: createReference(linkedProject) }] },
     });
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
-
     const res1 = await request(app)
       .post('/fhir/R4/$explain')
       .set('Authorization', 'Bearer ' + accessToken)

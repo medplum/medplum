@@ -1,0 +1,217 @@
+on:
+  # Not meant to run on its own -- only triggered via workflow_call, from
+  # vouch-check-pr.yml (event-triggered) and vouch-check-pr-backlog.yml
+  # (matrix over the existing backlog). Holds the shared check -> label-check
+  # -> close logic so it isn't duplicated between the two.
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "PR number to check"
+        required: true
+        type: number
+      # A matrix of workflow_call jobs can't return per-job outputs (they all
+      # write to the same `needs.<job>.outputs`, last writer wins), so the
+      # backlog sweep collects one small artifact per PR instead and renders
+      # them in a single summary job. Off for the event-triggered path, where
+      # a one-row report would just be noise.
+      report-artifact:
+        description: "Upload a one-PR JSON result artifact for a caller to aggregate"
+        required: false
+        default: false
+        type: boolean
+
+name: "Vouch - Check PR (shared)"
+
+env:
+  COMMUNITY_PR_LABEL: open-to-community
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    steps:
+      # Read once up front so both the close message and the result artifact
+      # share one lookup. There's no event payload to read the author from
+      # here (this runs the same way whether called from an event or a
+      # backlog matrix), so it has to come from the API either way. Kept in a
+      # file rather than step outputs so the untrusted PR title is never
+      # interpolated into a shell script.
+      - name: Look up PR metadata
+        id: pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr-number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json number,author,title > "$RUNNER_TEMP/pr.json"
+          jq -r '"author=" + .author.login' "$RUNNER_TEMP/pr.json" >> "$GITHUB_OUTPUT"
+
+      # require-vouch is false so this step only ever auto-closes denounced
+      # users, which are always blocked with no exception. A merely-unvouched
+      # (never vouched, never denounced) author comes back as "allowed", and
+      # gets a second, narrower check below rather than being closed outright.
+      #
+      # Defaults to dry-run (safe) until the VOUCH_DRY_RUN repo variable
+      # (Settings -> Secrets and variables -> Actions -> Variables) is
+      # explicitly set to "false" -- flip it there, no workflow edit needed,
+      # once you're ready to actually close PRs for real. The `status`
+      # output (and so the rest of this workflow's branching) is computed
+      # the same either way.
+      - uses: mitchellh/vouch/action/check-pr@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
+        id: vouch
+        with:
+          pr-number: ${{ inputs.pr-number }}
+          require-vouch: false
+          auto-close: true
+          dry-run: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # closingIssuesReferences reflects GitHub's own "linked issue" concept
+      # (a closing keyword like "Fixes #123" in the PR body, or a manual link
+      # via the Development panel) rather than just a mention of a number
+      # somewhere in the PR text. Note it isn't scoped to this repo: it also
+      # returns cross-repo closing references (e.g. "Fixes other/repo#123"),
+      # so a same-named label on an unrelated repo's issue would incorrectly
+      # satisfy this check. Not filtered here since we don't expect cross-repo
+      # linking in practice, but worth tightening if that changes.
+      #
+      # Uses GITHUB_REPOSITORY rather than github.event.repository.name --
+      # the latter depends on the triggering event's payload shape, which
+      # isn't guaranteed under workflow_call.
+      - name: Check for a linked issue with the community-PR label
+        id: label-check
+        if: steps.vouch.outputs.status == 'allowed'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HAS_LABEL=$(gh api graphql \
+            -f query='
+              query($owner: String!, $name: String!, $number: Int!) {
+                repository(owner: $owner, name: $name) {
+                  pullRequest(number: $number) {
+                    closingIssuesReferences(first: 20) {
+                      nodes {
+                        labels(first: 50) {
+                          nodes { name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' \
+            -f owner="${GITHUB_REPOSITORY%%/*}" \
+            -f name="${GITHUB_REPOSITORY#*/}" \
+            -F number="${{ inputs.pr-number }}" \
+            --jq "[.data.repository.pullRequest.closingIssuesReferences.nodes[].labels.nodes[].name] | any(. == \"$COMMUNITY_PR_LABEL\")")
+
+          echo "has-label=$HAS_LABEL" >> "$GITHUB_OUTPUT"
+
+      # Sparse-checkout of the base ref only, never untrusted PR code, so
+      # this is just pulling a maintainer-controlled template file.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.vouch.outputs.status == 'allowed' && steps.label-check.outputs.has-label == 'false'
+        with:
+          sparse-checkout: .github/pr-unvouched-message
+
+      # Not part of the vouch action, so it doesn't get dry-run for free --
+      # gated on the same VOUCH_DRY_RUN repo variable by hand.
+      - name: Close PR (unvouched, no linked issue with the community-PR label)
+        id: close
+        if: steps.vouch.outputs.status == 'allowed' && steps.label-check.outputs.has-label == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+          PR_AUTHOR: ${{ steps.pr.outputs.author }}
+        run: |
+          MESSAGE=$(cat .github/pr-unvouched-message)
+          MESSAGE="${MESSAGE//\{author\}/$PR_AUTHOR}"
+          MESSAGE="${MESSAGE//\{label\}/$COMMUNITY_PR_LABEL}"
+          MESSAGE="${MESSAGE//\{repo\}/${{ github.repository }}}"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "(dry-run) Would post comment and close PR #${{ inputs.pr-number }}. Comment body:"
+            echo "$MESSAGE"
+          else
+            gh pr comment "${{ inputs.pr-number }}" --repo "${{ github.repository }}" --body "$MESSAGE"
+            gh pr close "${{ inputs.pr-number }}" --repo "${{ github.repository }}"
+          fi
+
+      # Collapses the two independent gates (the vouch action's own verdict,
+      # then the linked-issue check) into a single outcome describing what this
+      # job actually did -- or, under dry-run, would have done. Runs even when
+      # an earlier step failed, so a broken PR shows up in the summary as an
+      # error rather than silently vanishing from it.
+      - name: Record result
+        if: ${{ !cancelled() && inputs.report-artifact }}
+        env:
+          PR_NUMBER: ${{ inputs.pr-number }}
+          VOUCH_RESULT: ${{ steps.vouch.outcome }}
+          VOUCH_STATUS: ${{ steps.vouch.outputs.status }}
+          HAS_LABEL: ${{ steps.label-check.outputs.has-label }}
+          CLOSE_RESULT: ${{ steps.close.outcome }}
+          DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+        run: |
+          set -euo pipefail
+
+          if [ "$DRY_RUN" = "true" ]; then WOULD="would-"; else WOULD=""; fi
+
+          if [ "$VOUCH_RESULT" != "success" ]; then
+            OUTCOME="error"
+          else
+            case "$VOUCH_STATUS" in
+              skipped) OUTCOME="bot" ;;
+              vouched) OUTCOME="vouched" ;;
+              closed) OUTCOME="${WOULD}close-denounced" ;;
+              allowed)
+                case "$HAS_LABEL" in
+                  true) OUTCOME="linked-issue" ;;
+                  false)
+                    if [ "$CLOSE_RESULT" = "success" ]; then
+                      OUTCOME="${WOULD}close-unvouched"
+                    else
+                      OUTCOME="error"
+                    fi
+                    ;;
+                  *) OUTCOME="error" ;;
+                esac
+                ;;
+              *) OUTCOME="error" ;;
+            esac
+          fi
+
+          # The metadata step failing is itself an error worth reporting, so
+          # fall back to a number-only record rather than failing this step.
+          if [ ! -f "$RUNNER_TEMP/pr.json" ]; then
+            echo "{\"number\": $PR_NUMBER, \"author\": {\"login\": \"unknown\"}, \"title\": \"(lookup failed)\"}" \
+              > "$RUNNER_TEMP/pr.json"
+            OUTCOME="error"
+          fi
+
+          mkdir -p "$RUNNER_TEMP/vouch-result"
+          jq -c \
+            --arg outcome "$OUTCOME" \
+            --arg vouch_status "$VOUCH_STATUS" \
+            --arg has_label "$HAS_LABEL" \
+            --arg dry_run "$DRY_RUN" \
+            '{
+              number,
+              author: .author.login,
+              title,
+              outcome: $outcome,
+              vouch_status: $vouch_status,
+              has_label: $has_label,
+              dry_run: ($dry_run == "true")
+            }' "$RUNNER_TEMP/pr.json" | tee "$RUNNER_TEMP/vouch-result/$PR_NUMBER.json"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() && inputs.report-artifact }}
+        with:
+          name: vouch-result-${{ inputs.pr-number }}
+          path: ${{ runner.temp }}/vouch-result/${{ inputs.pr-number }}.json
+          if-no-files-found: error
+          retention-days: 7

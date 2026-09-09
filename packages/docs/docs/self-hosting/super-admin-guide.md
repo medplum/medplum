@@ -63,3 +63,7 @@ User accounts are global, and can be members of multiple projects. Therefore, no
 ### Inviting Users to Projects
 
 When logged in as super admin you can invite users to any project. To do so navigate to the `admin/invite` page. The first field on the page will allow you to specify which project you want to invite a user to as well as whether you want them to be an admin. This functionality is also available via the [API](/docs/user-management#invite-via-api).
+
+## Server-Scoped Subscriptions
+
+Because only super admins can create project-less (system-scoped) resources, they can create **server-scoped Subscriptions** — a single `Subscription` that evaluates resource changes across every project on the server. This is useful for project-per-tenant deployments that need a central, server-wide data-processing flow. This feature is self-hosted only and must be enabled with the `serverScopedSubscriptionsEnabled` [server config flag](/docs/self-hosting/server-config#serverscopedsubscriptionsenabled). See [Server-Scoped Subscriptions](/docs/subscriptions/server-scoped-subscriptions) for details.

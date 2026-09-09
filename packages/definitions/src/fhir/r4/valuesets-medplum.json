@@ -43,9 +43,29 @@
             "definition": "Medplum client application for automated access."
           },
           {
+            "code": "DicomInstance",
+            "display": "DicomInstance",
+            "definition": "A single DICOM instance (image or other data) within a series."
+          },
+          {
+            "code": "DicomSeries",
+            "display": "DicomSeries",
+            "definition": "A series of DICOM instances (images or other data) within a study."
+          },
+          {
+            "code": "DicomStudy",
+            "display": "DicomStudy",
+            "definition": "A study of DICOM instances (images or other data) within a patient."
+          },
+          {
             "code": "DomainConfiguration",
             "display": "DomainConfiguration",
             "definition": "Domain specific configuration for the Medplum application."
+          },
+          {
+            "code": "Enterprise",
+            "display": "Enterprise",
+            "definition": "A group of Medplum projects managed as a single enterprise."
           },
           {
             "code": "IdentityProvider",
@@ -66,6 +86,21 @@
             "code": "UserSecurityRequest",
             "display": "UserSecurityRequest",
             "definition": "User security request for the 'forgot password' flow or email verification."
+          },
+          {
+            "code": "Package",
+            "display": "Package",
+            "definition": "Marketplace package that can be installed into a Medplum project. A package contains FHIR resources that are automatically installed when the package is installed."
+          },
+          {
+            "code": "PackageRelease",
+            "display": "PackageRelease",
+            "definition": "A specific release of a marketplace package."
+          },
+          {
+            "code": "PackageInstallation",
+            "display": "PackageInstallation",
+            "definition": "An installation of a marketplace package into a Medplum project."
           },
           {
             "code": "Project",
@@ -120,6 +155,80 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/enterprise-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "enterprise-status",
+        "url": "https://medplum.com/fhir/CodeSystem/enterprise-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "The enterprise is active."
+          },
+          {
+            "code": "inactive",
+            "display": "Inactive",
+            "definition": "The enterprise is inactive."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/enterprise-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "enterprise-status",
+        "url": "https://medplum.com/fhir/ValueSet/enterprise-status",
+        "status": "active",
+        "compose": {
+          "include": [{
+            "system": "https://medplum.com/fhir/CodeSystem/enterprise-status"
+          }]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/enterprise-project-code",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "enterprise-project-code",
+        "url": "https://medplum.com/fhir/CodeSystem/enterprise-project-code",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "production",
+            "display": "Production",
+            "definition": "The project is a production environment."
+          },
+          {
+            "code": "non-production",
+            "display": "Non-Production",
+            "definition": "The project is not a production environment."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "enterprise-project-code",
+        "url": "https://medplum.com/fhir/ValueSet/enterprise-project-code",
+        "status": "active",
+        "compose": {
+          "include": [{
+            "system": "https://medplum.com/fhir/CodeSystem/enterprise-project-code"
+          }]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/project-feature",
       "resource": {
         "resourceType": "CodeSystem",
@@ -148,6 +257,11 @@
             "code": "aws-textract",
             "display": "AWS Textract",
             "definition": "AWS Textract"
+          },
+          {
+            "code": "billing",
+            "display": "Billing",
+            "definition": "Billing"
           },
           {
             "code": "bots",
@@ -203,6 +317,11 @@
             "code": "log-streaming",
             "display": "Log Streaming",
             "definition": "Real-time streaming of log data for monitoring and analysis"
+          },
+          {
+            "code": "async-batch",
+            "display": "Async Batch",
+            "definition": "Asynchronous processing of FHIR Batch requests for bulk data import"
           }
         ]
       }

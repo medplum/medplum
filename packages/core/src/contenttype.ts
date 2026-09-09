@@ -7,6 +7,7 @@
 export const ContentType = {
   CSS: 'text/css',
   DICOM: 'application/dicom',
+  DICOM_JSON: 'application/dicom+json',
   EVENT_STREAM: 'text/event-stream',
   FAVICON: 'image/vnd.microsoft.icon',
   FHIR_JSON: 'application/fhir+json',
@@ -18,6 +19,8 @@ export const ContentType = {
   JSON: 'application/json',
   JSON_PATCH: 'application/json-patch+json',
   JWT: 'application/jwt',
+  // See: https://www.rfc-editor.org/rfc/rfc9264.html
+  LINKSET_JSON: 'application/linkset+json',
   MULTIPART_FORM_DATA: 'multipart/form-data',
   PNG: 'image/png',
   SCIM_JSON: 'application/scim+json',

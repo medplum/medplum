@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, PlanDefinition, Slot } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -12,7 +13,6 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 import { BookAppointmentForm } from './BookAppointmentForm';
 
 vi.mock('../../utils/notifications');

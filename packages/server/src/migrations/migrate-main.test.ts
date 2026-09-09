@@ -49,9 +49,21 @@ vi.mock('node:fs', async (importOriginal) => {
   };
 });
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import * as loggerModule from '../logger';
+import * as dataMigrations from './data';
 import * as migrate from './migrate';
-import { addDataMigrationToManifest, runFromCli } from './migrate-main';
+import {
+  addDataMigrationToManifest,
+  buildMigrationExports,
+  DATA_DIR,
+  getMigrationFilenames,
+  runFromCli,
+  SCHEMA_DIR,
+} from './migrate-main';
+import { getPostDeployMigrationVersions, getPreDeployMigrationVersions } from './migration-versions';
+import * as schemaMigrations from './schema';
 
 describe('addDataMigrationToManifest', () => {
   beforeEach(() => {
@@ -124,6 +136,50 @@ describe('addDataMigrationToManifest', () => {
 
     expect(places.v1).toBeLessThan(places.v2);
     expect(places.v2).toBeLessThan(places.v9999);
+  });
+});
+
+describe('buildMigrationExports', () => {
+  test.each([
+    ['schema', SCHEMA_DIR, schemaMigrations],
+    ['data', DATA_DIR, dataMigrations],
+  ])('%s index registers every migration file', (name, directory, registeredMigrations) => {
+    const migrationFiles = getMigrationFilenames(directory).map((filename) => filename.slice(0, -3));
+
+    expect(Object.keys(registeredMigrations)).toContainExactly(migrationFiles);
+  });
+
+  test('exports versions in numeric order, guarding each digit-count boundary', () => {
+    const guard = [
+      '/* CAUTION: LOAD-BEARING COMMENT */',
+      '/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */',
+    ];
+    const output = buildMigrationExports([8, 9, 10, 11, 99, 100, 101]);
+
+    // Guards belong only where the digit count grows — before v10 and v100, not v9, v11 or v101
+    expect(output.slice(output.indexOf('export * as'))).toStrictEqual(
+      [
+        `export * as v8 from './v8';`,
+        `export * as v9 from './v9';`,
+        ...guard,
+        `export * as v10 from './v10';`,
+        `export * as v11 from './v11';`,
+        `export * as v99 from './v99';`,
+        ...guard,
+        `export * as v100 from './v100';`,
+        `export * as v101 from './v101';`,
+        '',
+      ].join('\n')
+    );
+  });
+
+  test('reproduces the checked-in index files', () => {
+    expect(buildMigrationExports(getPreDeployMigrationVersions())).toStrictEqual(
+      readFileSync(join(SCHEMA_DIR, 'index.ts'), 'utf8')
+    );
+    expect(buildMigrationExports(getPostDeployMigrationVersions())).toStrictEqual(
+      readFileSync(join(DATA_DIR, 'index.ts'), 'utf8')
+    );
   });
 });
 

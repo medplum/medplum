@@ -17,7 +17,7 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
       ca: proxyCaCert,
       cert: clientCert,
       key: clientKey,
-      rejectUnauthorized: false, // Ignore self-signed certificate errors
+      rejectUnauthorized: true,
     },
   });
 

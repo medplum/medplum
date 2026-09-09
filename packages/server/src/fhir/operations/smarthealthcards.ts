@@ -20,7 +20,7 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const SHC_VC_TYPE = ['https://smarthealth.cards#health-card'];
 const FHIR_VERSION = '4.0.1';
-const SHC_SIGNING_ALG = OAuthSigningAlgorithm.ES256;
+const SHC_SIGNING_ALG = OAuthSigningAlgorithm.ES384;
 
 // Upper bound on the decompressed size of a SMART Health Card payload. Guards against decompression bombs in
 // attacker-supplied credentials, since the payload is inflated before its signature can be verified.

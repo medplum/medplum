@@ -24,7 +24,6 @@ export interface UseResourceBoardProps<T extends Resource = Resource> {
   readonly reloadKey?: unknown;
 
   // Callbacks
-  readonly onSelectFirst?: (item: WithId<T>) => void;
   readonly onLoad?: (items: WithId<T>[], total: number | undefined) => void;
   readonly onError?: (error: unknown) => void;
 }
@@ -106,9 +105,6 @@ export function useResourceBoard<T extends Resource = Resource>(
       setItems(result.items);
       setTotal(result.total);
       optionsRef.current.onLoad?.(result.items, result.total);
-      if (optionsRef.current.selectedId === undefined && result.items.length > 0) {
-        optionsRef.current.onSelectFirst?.(result.items[0]);
-      }
     } catch (error) {
       if (requestId === loadRequestIdRef.current) {
         (optionsRef.current.onError ?? console.error)(error);

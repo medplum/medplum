@@ -1,0 +1,9 @@
+/**
+ * This stub is here to allow importing "@medplum/react-scheduling/styles.css"
+ * when using development servers that pull in this package via source instead
+ * of the bundled CSS file provided in the packaged `dist` folders.
+ *
+ * It is intentionally empty, as each exported component imports the relevant
+ * CSS internally.
+ */
+

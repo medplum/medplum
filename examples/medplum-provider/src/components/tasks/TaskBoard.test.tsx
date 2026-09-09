@@ -130,6 +130,47 @@ describe('TaskBoard', () => {
     }
   });
 
+  test('shows new task modal when newTaskOpened is true', async () => {
+    setup('', { newTaskOpened: true, onNewTaskOpen: vi.fn(), onNewTaskClose: vi.fn() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+  });
+
+  test('calls onNewTaskOpen instead of opening modal when controlled', async () => {
+    const user = userEvent.setup();
+    const onNewTaskOpen = vi.fn();
+    setup('', { newTaskOpened: false, onNewTaskOpen, onNewTaskClose: vi.fn() });
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    const plusButton = screen.getAllByRole('button').find((btn) => btn.querySelector('svg.tabler-icon-plus'));
+    expect(plusButton).toBeDefined();
+    await user.click(plusButton as HTMLElement);
+
+    expect(onNewTaskOpen).toHaveBeenCalled();
+    expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
+  });
+
+  test('calls onNewTaskClose when controlled modal is closed', async () => {
+    const user = userEvent.setup();
+    const onNewTaskClose = vi.fn();
+    setup('', { newTaskOpened: true, onNewTaskOpen: vi.fn(), onNewTaskClose });
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+
+    const closeButton = document.querySelector('.mantine-Modal-close');
+    expect(closeButton).not.toBeNull();
+    await user.click(closeButton as Element);
+
+    expect(onNewTaskClose).toHaveBeenCalled();
+  });
+
   test('displays selected task in detail panel', async () => {
     await medplum.createResource(mockTask);
     setup('', { selectedTaskId: 'task-123' });

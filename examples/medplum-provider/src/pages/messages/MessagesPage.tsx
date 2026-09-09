@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
+import { useNewInUrl } from '../../hooks/useNewInUrl';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 import classes from './MessagesPage.module.css';
 /**
@@ -32,16 +33,24 @@ export function MessagesPage(): JSX.Element {
     [currentSearch]
   );
 
+  const basePath = messageId ? `/Communication/${messageId}` : '/Communication';
+  const {
+    isNew: isNewMessage,
+    openNew: onNewTopicOpen,
+    closeNew: onNewTopicClose,
+  } = useNewInUrl(basePath, formatSearchQuery(parsedSearch));
+
   useEffect(() => {
     const isDetailView = Boolean(messageId);
     if (!isDetailView && normalizedSearch !== currentSearch) {
       const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
-      navigate(`/Communication${prefix}`, { replace: true })?.catch(console.error);
+      navigate(`${isNewMessage ? `${basePath}/new` : basePath}${prefix}`, { replace: true })?.catch(console.error);
     }
-  }, [currentSearch, navigate, normalizedSearch, messageId]);
+  }, [currentSearch, navigate, normalizedSearch, messageId, isNewMessage, basePath]);
 
   const onChange = (search: SearchRequest): void => {
-    navigate(`/Communication${formatSearchQuery(search)}`)?.catch(console.error);
+    // Keep the selected thread open when the list search changes (pagination, filters)
+    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
   const getThreadUri = (topic: Communication): string => {
@@ -71,6 +80,10 @@ export function MessagesPage(): JSX.Element {
     navigate(getThreadUri(message))?.catch(console.error);
   };
 
+  const onSelectFirst = (thread: Communication): void => {
+    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
+  };
+
   const onViewInDocuments = (reference: Reference<DocumentReference>): void => {
     medplum
       .readReference(reference)
@@ -91,7 +104,11 @@ export function MessagesPage(): JSX.Element {
         sections={sections}
         allowPatientSelection={true}
         onNew={onNew}
+        onSelectFirst={onSelectFirst}
         getThreadUri={getThreadUri}
+        newTopicOpened={isNewMessage}
+        onNewTopicOpen={onNewTopicOpen}
+        onNewTopicClose={onNewTopicClose}
         onViewInDocuments={onViewInDocuments}
         onChange={onChange}
         inProgressUri={inProgressUri}

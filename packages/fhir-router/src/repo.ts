@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Operation, SearchRequest, SortRule, WithId } from '@medplum/core';
+import type { Filter, Operation, SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   EMPTY,
   OperationOutcomeError,
@@ -20,11 +20,21 @@ import {
   normalizeOperationOutcome,
   notFound,
   parseFhirPathPatchParameters,
+  parseSearchRequest,
   preconditionFailed,
   stringify,
   toTypedValue,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  BundleEntry,
+  OperationOutcome,
+  Parameters,
+  Reference,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
+import { getExtraEntries } from './search-include';
 
 export type CreateResourceOptions = {
   assignedId?: boolean;
@@ -595,7 +605,15 @@ export class MemoryRepository extends FhirRepository {
   async readReferences<T extends Resource>(
     references: readonly Reference<T>[]
   ): Promise<(T | OperationOutcomeError)[]> {
-    return Promise.all(references.map((r) => this.readReference<T>(r)));
+    // Unresolvable references are returned as errors rather than rejecting the whole batch,
+    // matching the `(T | Error)[]` contract on FhirRepository.
+    return Promise.all(
+      references.map(async (r) =>
+        this.readReference<T>(r).catch((err) =>
+          err instanceof OperationOutcomeError ? err : new OperationOutcomeError(normalizeOperationOutcome(err))
+        )
+      )
+    );
   }
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
@@ -625,13 +643,37 @@ export class MemoryRepository extends FhirRepository {
   private searchSync<T extends Resource>(searchRequest: SearchRequest<T>): Bundle<WithId<T>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
+
+    // Chained filters (e.g. `actor:Practitioner.name`) have no entry in the flat search
+    // parameter table, so `matchesSearchRequest` can't evaluate them directly. Split them
+    // out and resolve each one against the referenced resource instead.
+    const plainFilters: Filter[] = [];
+    const chainedFilters: ChainedFilter[] = [];
+    for (const filter of searchRequest.filters ?? EMPTY) {
+      const chain = parseChainedFilter(resourceType, filter);
+      if (chain) {
+        chainedFilters.push(chain);
+      } else {
+        plainFilters.push(filter);
+      }
+    }
+    const baseRequest: SearchRequest<T> = chainedFilters.length
+      ? { ...searchRequest, filters: plainFilters }
+      : searchRequest;
+
     const result = [];
     for (const resource of resources.values()) {
-      if (matchesSearchRequest(resource, searchRequest)) {
+      if (
+        matchesSearchRequest(resource, baseRequest) &&
+        chainedFilters.every((chain) => matchesChainedFilter(this.resources, resource, chain))
+      ) {
         result.push(resource);
       }
     }
-    let entry = result.map((resource) => ({ resource: deepClone(resource) }));
+    let entry = result.map((resource): BundleEntry<WithId<T>> => ({
+      search: { mode: 'match' },
+      resource: deepClone(resource),
+    }));
     for (const sortRule of searchRequest.sortRules ?? EMPTY) {
       entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));
     }
@@ -650,7 +692,15 @@ export class MemoryRepository extends FhirRepository {
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
-    return this.searchSync(searchRequest);
+    const bundle = this.searchSync(searchRequest);
+    if ((searchRequest.include || searchRequest.revInclude) && bundle.entry?.length) {
+      // `total` intentionally continues to reflect only the matched resources.
+      const entries = bundle.entry as BundleEntry[];
+      const resources = entries.map((e) => e.resource as WithId<T>);
+      await getExtraEntries(this, searchRequest, resources, entries);
+      bundle.entry = entries as BundleEntry<WithId<T>>[];
+    }
+    return bundle;
   }
 
   async conditionalCreate<T extends Resource>(
@@ -717,6 +767,87 @@ export class MemoryRepository extends FhirRepository {
     // MockRepository currently does not support transactions
     return callback(this);
   }
+}
+
+interface ChainedFilter {
+  /** The FHIRPath expression that reads the reference field being chained through. */
+  expression: string;
+  /** The resource type the chain resolves to, either given explicitly or the parameter's sole target. */
+  targetType: string;
+  /** The chained parameter, parsed as a search request against `targetType`. */
+  chained: SearchRequest;
+}
+
+/**
+ * Recognizes a forward-chained filter, e.g. `actor:Practitioner.name`, and resolves everything
+ * needed to evaluate it: how to read the reference off the source resource, which resource type
+ * it points to, and the chained parameter parsed as its own search request. Reverse chaining
+ * (`_has`) is not supported.
+ * @param resourceType - The resource type being searched.
+ * @param filter - The filter to inspect.
+ * @returns The resolved chain, or undefined if the filter isn't a supported forward chain.
+ */
+function parseChainedFilter(resourceType: string, filter: Filter): ChainedFilter | undefined {
+  const dotIndex = filter.code.indexOf('.');
+  if (dotIndex < 0 || filter.code.startsWith('_has:')) {
+    return undefined;
+  }
+
+  if (filter.operator !== Operator.EQUALS) {
+    throw new Error('MemoryRepository does not support this chained filter yet.');
+  }
+
+  const left = filter.code.slice(0, dotIndex);
+  const chainedKey = filter.code.slice(dotIndex + 1);
+  const colonIndex = left.indexOf(':');
+  const refCode = colonIndex < 0 ? left : left.slice(0, colonIndex);
+
+  const searchParam = globalSchema.types[resourceType]?.searchParams?.[refCode];
+
+  // With no explicit `:Type`, only an unambiguous (single-target) reference param can chain.
+  if (colonIndex === -1 && searchParam?.target?.length !== 1) {
+    throw new OperationOutcomeError(
+      badRequest(`Unable to identify next resource type for search parameter: ${resourceType}?${refCode}`)
+    );
+  }
+  const targetType = colonIndex < 0 ? searchParam?.target?.[0] : left.slice(colonIndex + 1);
+
+  if (!searchParam?.expression || !targetType) {
+    return undefined;
+  }
+
+  return {
+    expression: searchParam.expression,
+    targetType,
+    chained: parseSearchRequest(targetType, { [chainedKey]: filter.value }),
+  };
+}
+
+/**
+ * Evaluates a resolved chain against one resource: does any reference it holds through
+ * `chain.expression` point to a `chain.targetType` resource satisfying `chain.chained`?
+ * @param resources - All repository resources, keyed by resource type then id.
+ * @param resource - The resource being tested.
+ * @param chain - The resolved chain to evaluate.
+ * @returns Whether the resource satisfies the chained filter.
+ */
+function matchesChainedFilter(
+  resources: Map<string, Map<string, Resource>>,
+  resource: Resource,
+  chain: ChainedFilter
+): boolean {
+  const references = evalFhirPath(chain.expression, resource) as (Reference | undefined)[];
+  for (const reference of references) {
+    const [refType, refId] = reference?.reference?.split('/') ?? [];
+    if (refType !== chain.targetType || !refId) {
+      continue;
+    }
+    const target = resources.get(refType)?.get(refId);
+    if (target && matchesSearchRequest(target, chain.chained)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): number => {

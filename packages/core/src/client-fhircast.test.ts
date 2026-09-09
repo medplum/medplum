@@ -40,7 +40,6 @@ describe('FHIRcast', () => {
           method: 'POST',
           body: serializedSubRequest,
           headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
-          cache: 'no-cache',
         })
       );
       expect(subRequest).toStrictEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));

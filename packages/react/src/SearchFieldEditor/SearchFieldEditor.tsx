@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Modal, MultiSelect, Stack } from '@mantine/core';
+import { Button, Group, MultiSelect } from '@mantine/core';
 import type { InternalTypeSchema, SearchRequest } from '@medplum/core';
 import { getDataType, getSearchParameters, sortStringArray, stringify } from '@medplum/core';
 import type { SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Modal } from '../Modal/Modal';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
@@ -47,7 +48,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   return (
     <Modal
       title="Fields"
-      closeButtonProps={{ 'aria-label': 'Close' }}
       opened={props.visible}
       onClose={() => {
         props.onCancel();
@@ -93,28 +93,28 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
         },
         children: <div data-testid="overlay-child" />, // can't specify testid on the overlay itself
       }}
-    >
-      <Stack>
-        <MultiSelect
-          // withinPortal={true}
-          style={{ width: 550 }}
-          placeholder="Select fields to display"
-          data={allFields}
-          value={state.search.fields ?? []}
-          onChange={handleChange}
-          onDropdownOpen={() => setIsDropdownOpen(true)}
-          onDropdownClose={() => setIsDropdownOpen(false)}
-          /* shows at most ~6.5 items; the extra half to provide a hint that there are more entries to scroll through */
-          maxDropdownHeight="250px"
-          // dropdownPosition="bottom"
-          clearButtonProps={{ 'aria-label': 'Clear selection' }}
-          clearable
-          searchable
-        />
+      actions={
         <Group justify="flex-end">
           <Button onClick={() => props.onOk(state.search)}>OK</Button>
         </Group>
-      </Stack>
+      }
+    >
+      <MultiSelect
+        // withinPortal={true}
+        style={{ width: 550 }}
+        placeholder="Select fields to display"
+        data={allFields}
+        value={state.search.fields ?? []}
+        onChange={handleChange}
+        onDropdownOpen={() => setIsDropdownOpen(true)}
+        onDropdownClose={() => setIsDropdownOpen(false)}
+        /* shows at most ~6.5 items; the extra half to provide a hint that there are more entries to scroll through */
+        maxDropdownHeight="250px"
+        // dropdownPosition="bottom"
+        clearButtonProps={{ 'aria-label': 'Clear selection' }}
+        clearable
+        searchable
+      />
     </Modal>
   );
 }

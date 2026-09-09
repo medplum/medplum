@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
+import type { Meter } from '@opentelemetry/api';
+import { metrics } from '@opentelemetry/api';
 import type { Pool } from 'pg';
 import { vi } from 'vitest';
 import * as databaseModule from '../database';
@@ -11,8 +13,11 @@ import * as downloadModule from '../workers/download';
 import * as setAccountsModule from '../workers/set-accounts';
 import * as subscriptionModule from '../workers/subscription';
 import {
+  addToUpDownCounter,
   cleanupOtelHeartbeat,
   getGauge,
+  getQueueMetricName,
+  getUpDownCounter,
   incrementCounter,
   initOtelHeartbeat,
   recordHistogramValue,
@@ -22,12 +27,29 @@ import {
 const createMockQueue = (): {
   getWaitingCount: ReturnType<typeof vi.fn>;
   getDelayedCount: ReturnType<typeof vi.fn>;
+  getActiveCount: ReturnType<typeof vi.fn>;
 } => ({
   getWaitingCount: vi.fn().mockResolvedValue(5),
   getDelayedCount: vi.fn().mockResolvedValue(3),
+  getActiveCount: vi.fn().mockResolvedValue(2),
 });
 
 let mockSharedQueue: ReturnType<typeof createMockQueue> | undefined = createMockQueue();
+
+// Without a registered SDK, `metrics.getMeter()` returns a no-op meter whose instruments are shared
+// singletons across every metric name, so spying on one cannot distinguish metrics. Mocking the meter
+// gives each name its own mock. otel.ts memoizes instruments by name, so the mock must be installed
+// before the first instrument is created.
+const gaugeRecorders = new Map<string, ReturnType<typeof vi.fn>>();
+
+function gaugeRecorder(name: string): ReturnType<typeof vi.fn> {
+  let record = gaugeRecorders.get(name);
+  if (!record) {
+    record = vi.fn();
+    gaugeRecorders.set(name, record);
+  }
+  return record;
+}
 
 function mockQueueGetters(queue: ReturnType<typeof createMockQueue> | undefined): void {
   vi.spyOn(subscriptionModule, 'getSubscriptionQueue').mockReturnValue(queue as never);
@@ -40,12 +62,24 @@ function mockQueueGetters(queue: ReturnType<typeof createMockQueue> | undefined)
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
 
+  beforeAll(() => {
+    vi.spyOn(metrics, 'getMeter').mockReturnValue({
+      createCounter: () => ({ add: vi.fn() }),
+      createHistogram: () => ({ record: vi.fn() }),
+      createUpDownCounter: () => ({ add: vi.fn() }),
+      createGauge: (name: string) => ({ record: gaugeRecorder(name) }),
+    } as unknown as Meter);
+  });
+
   beforeEach(() => {
     process.env = { ...OLD_ENV };
     // Reset mockSharedQueue to a fresh queue for each test
     mockSharedQueue = createMockQueue();
     mockQueueGetters(mockSharedQueue);
     cleanupOtelHeartbeat();
+    for (const record of gaugeRecorders.values()) {
+      record.mockClear();
+    }
   });
 
   afterAll(async () => {
@@ -112,6 +146,29 @@ describe('OpenTelemetry', () => {
     getGauge('test');
   });
 
+  test('Get queue metric name', () => {
+    expect(getQueueMetricName('batch', 'activeCount')).toBe('medplum.batch.activeCount');
+    expect(getQueueMetricName('set-accounts', 'waitingCount')).toBe('medplum.set-accounts.waitingCount');
+    expect(getQueueMetricName('subscription', 'inFlightJobs')).toBe('medplum.subscription.inFlightJobs');
+    expect(getQueueMetricName('cron', 'jobsCompleted')).toBe('medplum.cron.jobsCompleted');
+  });
+
+  test('Add to up down counter, disabled', async () => {
+    expect(addToUpDownCounter('test', 1)).toBe(false);
+  });
+
+  test('Add to up down counter, enabled', async () => {
+    process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+    expect(addToUpDownCounter('test', 1)).toBe(true);
+    expect(addToUpDownCounter('test', -1)).toBe(true);
+  });
+
+  test('Add to up down counter, enabled, attributes and options specified', async () => {
+    process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
+    expect(addToUpDownCounter('test', 1, { attributes: { queue: 'batch' }, options: { unit: '{job}' } })).toBe(true);
+    getUpDownCounter('test');
+  });
+
   test('initOtelHeartbeat', () => {
     const heartbeatAddListenerSpy = vi.spyOn(heartbeat, 'addEventListener');
     const heartbeatRemoveListenerSpy = vi.spyOn(heartbeat, 'removeEventListener');
@@ -160,9 +217,16 @@ describe('OpenTelemetry', () => {
     // We call getDatabasePool at the beginning of the listener callback
     expect(getDatabasePoolSpy).toHaveBeenCalled();
 
-    // Check that the queue methods were called for all 4 queues (subscription, cron, download, batch)
+    // Every queue is read: subscription, cron, download, batch, set-accounts
     expect(mockSharedQueue.getWaitingCount).toHaveBeenCalledTimes(5);
     expect(mockSharedQueue.getDelayedCount).toHaveBeenCalledTimes(5);
+    expect(mockSharedQueue.getActiveCount).toHaveBeenCalledTimes(5);
+
+    // Each count is published under its per-queue metric name, carrying the mocked value
+    expect(gaugeRecorder('medplum.batch.waitingCount')).toHaveBeenCalledWith(5, undefined);
+    expect(gaugeRecorder('medplum.batch.delayedCount')).toHaveBeenCalledWith(3, undefined);
+    expect(gaugeRecorder('medplum.batch.activeCount')).toHaveBeenCalledWith(2, undefined);
+    expect(gaugeRecorder('medplum.set-accounts.activeCount')).toHaveBeenCalledWith(2, undefined);
 
     cleanupOtelHeartbeat();
     getDatabasePoolSpy.mockRestore();

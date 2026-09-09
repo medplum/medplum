@@ -60,6 +60,50 @@ describe('URL rewrite', () => {
     expect(output).toMatchObject(input);
   });
 
+  test('Returns input unchanged when there are no attachments', async () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      extension: [{ url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex', valueCode: 'F' }],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, patient);
+    expect(result).toBe(patient);
+  });
+
+  test('Does not mutate the input when rewriting', async () => {
+    const url = `Binary/${binary.id}`;
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [{ contentType: 'image/jpeg', url }],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
+    expect(result).not.toBe(practitioner);
+    expect(result.photo?.[0].url).not.toBe(url);
+    expect(practitioner.photo?.[0].url).toBe(url);
+  });
+
+  test('Finds attachments nested below a non-binary url property', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Practitioner',
+            extension: [{ url: 'http://example.com/not-a-binary' }],
+            photo: [{ contentType: 'image/jpeg', url: `Binary/${binary.id}` }],
+          },
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, bundle);
+    const photo = (result.entry?.[0].resource as Practitioner).photo?.[0];
+    expect(photo?.url).toContain('Signature');
+  });
+
   test('Other URL', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',

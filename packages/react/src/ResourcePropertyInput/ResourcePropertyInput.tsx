@@ -238,6 +238,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
 
     case PropertyType.SystemString:
     case PropertyType.canonical:
+    case PropertyType.id:
     case PropertyType.string:
     case PropertyType.uri:
     case PropertyType.url:

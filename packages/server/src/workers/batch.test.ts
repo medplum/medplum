@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { AsyncJob, Binary, Bundle } from '@medplum/fhirtypes';
+import type { AsyncJob, Binary, Bundle, BundleEntry } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { DelayedError, Worker } from 'bullmq';
-import type { Mock } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import type { Mock, MockInstance } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getUserConfiguration } from '../auth/me';
 import { loadTestConfig } from '../config/loader';
@@ -18,10 +19,18 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import * as otelModule from '../otel/otel';
+import { BASE_METRIC_OPTIONS } from '../otel/otel';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject, streamToString, withTestContext } from '../test.setup';
 import type { LegacyBatchJobData, ReentrantBatchJobData } from './batch';
-import { execBatchJob, execLegacyBatchJob, getBatchQueue, initBatchWorker, queueBatchProcessing } from './batch';
+import {
+  execBatchJob as execBatchJobImpl,
+  execLegacyBatchJob as execLegacyBatchJobImpl,
+  getBatchQueue,
+  initBatchWorker,
+  queueBatchProcessing,
+} from './batch';
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
@@ -59,6 +68,16 @@ function makeLegacyJob(data: LegacyBatchJobData): Job<LegacyBatchJobData> {
     data,
     queueName: 'BatchQueue',
   } as unknown as Job<LegacyBatchJobData>;
+}
+
+async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execBatchJobImpl(job));
+}
+
+async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<void> {
+  const { authState, requestId, traceId } = job.data;
+  await runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => execLegacyBatchJobImpl(job));
 }
 
 const singleEntryBundle = (): Bundle => ({
@@ -260,6 +279,75 @@ describe('Batch worker', () => {
         expect(results.entry?.map((e) => e.response?.status)).toStrictEqual(['201', '201']);
       }));
 
+    // EventTarget.dispatchEvent swallows listener errors, so the metric counts also verify that
+    // the authenticated test helper provided the context the telemetry listeners require.
+    test('Dispatches batch telemetry once across a delayed and resumed job', () =>
+      runInAuthenticatedContext(authState, undefined, undefined, { async: true }, async () => {
+        const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+        const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+        try {
+          // One entry succeeds, one 404s, so the terminal event carries a non-zero error count.
+          const bundle = multiEntryBundle(1);
+          (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+          const { job } = await setupReentrantJob(bundle);
+
+          // Process one entry, then report the queue as closing so the job is checkpointed.
+          let checks = 0;
+          const isClosingSpy = vi.spyOn(queueRegistry, 'isClosing').mockImplementation(() => checks++ >= 1);
+          await expect(execBatchJobImpl(job)).rejects.toBeInstanceOf(DelayedError);
+          isClosingSpy.mockRestore();
+
+          // Preprocessing dispatched the pre-event. Being delayed for another worker to pick up is
+          // not terminal, so nothing closes it out yet.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(0);
+
+          await expect(execBatchJobImpl(makeReentrantJob(job.data))).resolves.toBeUndefined();
+
+          // Resume rehydrates via fromState, which skips preprocessing, so the pre-event is not
+          // repeated. Completion is terminal and reports the whole job's errors exactly once.
+          expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+          expect(countOf('medplum.batch.size')).toStrictEqual(1);
+          expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+          expect(histogram).toHaveBeenCalledWith('medplum.batch.entries', 2, {
+            attributes: { bundleType: 'batch', async: true },
+          });
+          expect(histogram).toHaveBeenCalledWith('medplum.batch.errors', 1, {
+            attributes: { bundleType: 'batch', async: true },
+          });
+        } finally {
+          histogram.mockRestore();
+        }
+      }));
+
+    test('Dispatches terminal batch telemetry once when completing the AsyncJob fails', async () => {
+      const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
+      const completeJobSpy = vi
+        .spyOn(AsyncJobExecutor.prototype, 'completeJob')
+        .mockRejectedValue(new Error('completeJob failed'));
+      const countOf = (name: string): number => histogram.mock.calls.filter((call) => call[0] === name).length;
+
+      try {
+        const bundle = multiEntryBundle(1);
+        (bundle.entry as BundleEntry[]).push({ request: { method: 'GET', url: 'Patient/' + randomUUID() } });
+        const { asyncJob, job } = await setupReentrantJob(bundle);
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        // Processing completed and dispatched its terminal event before completeJob failed. The
+        // catch path must fail the AsyncJob without dispatching that terminal event a second time.
+        expect(completeJobSpy).toHaveBeenCalledOnce();
+        expect(countOf('medplum.batch.entries')).toStrictEqual(1);
+        expect(countOf('medplum.batch.size')).toStrictEqual(1);
+        expect(countOf('medplum.batch.errors')).toStrictEqual(1);
+        expect((await readAsyncJob(asyncJob.id)).status).toStrictEqual('error');
+      } finally {
+        completeJobSpy.mockRestore();
+        histogram.mockRestore();
+      }
+    });
+
     test('Publishes partial results when the AsyncJob was cancelled out of band', () =>
       withTestContext(async () => {
         const bundle = multiEntryBundle(3);
@@ -422,6 +510,58 @@ describe('Batch worker', () => {
         const finished = await readAsyncJob(asyncJob.id);
         expect(finished.status).toStrictEqual('error');
         writeSpy.mockRestore();
+      }));
+  });
+
+  // The hostname attribute is asserted because a dashboard grouping by host shows no series without it.
+  describe('entriesProcessed metric', () => {
+    const METRIC = 'medplum.batch.entriesProcessed';
+    let counterSpy: MockInstance<typeof otelModule.incrementCounter>;
+
+    beforeEach(() => {
+      counterSpy = vi.spyOn(otelModule, 'incrementCounter');
+    });
+
+    function entriesProcessedCalls(): Parameters<typeof otelModule.incrementCounter>[] {
+      return counterSpy.mock.calls.filter((call) => call[0] === METRIC);
+    }
+
+    test('Re-entrant path counts one entry at a time', () =>
+      withTestContext(async () => {
+        const { job } = await setupReentrantJob(multiEntryBundle(3));
+
+        await expect(execBatchJob(job)).resolves.toBeUndefined();
+
+        const calls = entriesProcessedCalls();
+        expect(calls).toHaveLength(3);
+        for (const call of calls) {
+          expect(call[1]).toStrictEqual(BASE_METRIC_OPTIONS);
+          expect(call[2]).toBeUndefined();
+        }
+      }));
+
+    test('Legacy path counts the whole bundle in a single call', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        const job = makeLegacyJob({ asyncJob, bundle: multiEntryBundle(2), authState });
+
+        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
+
+        expect(entriesProcessedCalls()).toStrictEqual([[METRIC, BASE_METRIC_OPTIONS, 2]]);
+      }));
+
+    test('Legacy path counts nothing when the batch request fails', () =>
+      withTestContext(async () => {
+        const asyncJob = await createAsyncJob();
+        const job = makeLegacyJob({
+          asyncJob,
+          bundle: { resourceType: 'Bundle', type: 'pergola' as Bundle['type'] },
+          authState,
+        });
+
+        await expect(execLegacyBatchJob(job)).resolves.toBeUndefined();
+
+        expect(entriesProcessedCalls()).toHaveLength(0);
       }));
   });
 

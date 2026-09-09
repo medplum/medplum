@@ -13,6 +13,7 @@ import classes from './AppShell.module.css';
 import { Header } from './Header';
 import type { NavbarMenu } from './Navbar';
 import { Navbar } from './Navbar';
+import type { SpotlightLinkAction } from './Spotlight';
 
 const OPEN_WIDTH = 250;
 const CLOSED_WIDTH = 59;
@@ -36,6 +37,7 @@ export interface AppShellProps {
   readonly layoutVersion?: 'v1' | 'v2';
   readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
+  readonly spotlightActions?: SpotlightLinkAction[];
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -124,6 +126,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         opened={navbarOpen}
         spotlightEnabled={true}
         patientsOnly={props.spotlightPatientsOnly}
+        spotlightActions={props.spotlightActions}
         userMenuEnabled={true}
         version={props.version}
         showLayoutVersionToggle={props.showLayoutVersionToggle}
@@ -165,6 +168,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           displayAddBookmark={props.displayAddBookmark}
           resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
           patientsOnly={props.spotlightPatientsOnly}
+          spotlightActions={props.spotlightActions}
         />
       ) : undefined;
   }

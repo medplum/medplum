@@ -3,6 +3,7 @@
 import { WS } from 'vitest-websocket-mock';
 import type {
   FhircastConnectEvent,
+  FhircastConnectionOptions,
   FhircastDiagnosticReportOpenContext,
   FhircastDiagnosticReportUpdateContext,
   FhircastDisconnectEvent,
@@ -23,6 +24,7 @@ import {
 } from '.';
 import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
+import { sleep } from '../utils';
 
 describe('validateFhircastSubscriptionRequest', () => {
   test('Valid subscription requests', () => {
@@ -195,7 +197,23 @@ describe('serializeFhircastSubscriptionRequest', () => {
         endpoint: 'wss://abc.com/hub',
       })
     ).toStrictEqual(
-      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
+    );
+  });
+
+  // The endpoint names the subscription being cancelled, and the Hub holds the events it was
+  // issued for, so an unsubscribe has no reason to repeat them
+  test('Valid unsubscribe request omits the events', () => {
+    expect(
+      serializeFhircastSubscriptionRequest({
+        mode: 'unsubscribe',
+        channelType: 'websocket',
+        topic: 'abc123',
+        events: ['Patient-open'],
+        endpoint: 'wss://abc.com/hub',
+      })
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=unsubscribe&hub.topic=abc123&hub.channel.endpoint=wss%3A%2F%2Fabc.com%2Fhub'
     );
   });
 
@@ -722,6 +740,113 @@ describe('FhircastConnection', () => {
       connection.addEventListener('disconnect', handler);
       connection.disconnect();
     }));
+
+  // The Hub denies a subscription it has stopped honoring, so there is nothing left to hold the
+  // socket open for. A denial the Hub could not resolve an endpoint for names no topic, so
+  // `hub.topic` alone does not identify one. Uses its own server, since the mock broadcasts.
+  test('.addEventListener("message") - Denial disconnects', async () => {
+    const deniedServer = new WS('ws://localhost:1235', { jsonProtocol: true });
+    const deniedConnection = new FhircastConnection({
+      topic: 'abc123',
+      mode: 'subscribe',
+      channelType: 'websocket',
+      events: ['Patient-open'],
+      endpoint: 'ws://localhost:1235',
+    } satisfies SubscriptionRequest);
+
+    await new Promise<void>((resolve) => {
+      deniedConnection.addEventListener('connect', () => resolve());
+    });
+    const disconnected = new Promise<FhircastDisconnectEvent>((resolve) => {
+      deniedConnection.addEventListener('disconnect', resolve);
+    });
+
+    deniedServer.send({ 'hub.mode': 'denied', 'hub.topic': '', 'hub.events': '', 'hub.reason': 'invalid endpoint' });
+    await expect(disconnected).resolves.toMatchObject({ type: 'disconnect' });
+  });
+
+  // Reconnects use their own Hub, since the mock server broadcasts to every client of a URL, and
+  // their own backoff, since the default first delay is seconds long.
+  const reconnectOptions: FhircastConnectionOptions = {
+    minReconnectionDelay: 10,
+    maxReconnectionDelay: 20,
+    connectionTimeout: 500,
+  };
+
+  function connectionAt(endpoint: string, options?: FhircastConnectionOptions): FhircastConnection {
+    return new FhircastConnection(
+      { topic: 'abc123', mode: 'subscribe', channelType: 'websocket', events: ['Patient-open'], endpoint },
+      options
+    );
+  }
+
+  function nthConnect(connection: FhircastConnection, n: number): Promise<void> {
+    let count = 0;
+    return new Promise<void>((resolve) => {
+      connection.addEventListener('connect', () => {
+        if (++count === n) {
+          resolve();
+        }
+      });
+    });
+  }
+
+  test('Reconnects after the Hub drops the socket', async () => {
+    const server = new WS('ws://localhost:1236', { jsonProtocol: true });
+    const connection = connectionAt('ws://localhost:1236', reconnectOptions);
+    try {
+      const reconnected = nthConnect(connection, 2);
+      const disconnected = new Promise<void>((resolve) => {
+        connection.addEventListener('disconnect', () => resolve());
+      });
+      await server.connected;
+
+      server.server.clients()[0].close();
+      await disconnected;
+      await reconnected;
+
+      // The message listener is bound to the `ReconnectingWebSocket` rather than to the socket that
+      // just went away, so the payload arrives exactly once over the new socket.
+      const messages: FhircastMessagePayload[] = [];
+      connection.addEventListener('message', (event) => messages.push(event.payload));
+      const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      });
+      server.send(message);
+
+      // The client acknowledges every message it dispatches, so the ack landing means the dispatch happened
+      await expect(server.nextMessage).resolves.toMatchObject({ id: message.id });
+      expect(messages).toStrictEqual([message]);
+    } finally {
+      connection.disconnect();
+    }
+  });
+
+  // A denied subscription is one the Hub has stopped honoring, so reconnecting to that endpoint
+  // would only be denied again.
+  test('.addEventListener("message") - Denial does not reconnect', async () => {
+    const server = new WS('ws://localhost:1237', { jsonProtocol: true });
+    const connection = connectionAt('ws://localhost:1237', reconnectOptions);
+    try {
+      let connects = 0;
+      connection.addEventListener('connect', () => connects++);
+      const disconnected = new Promise<void>((resolve) => {
+        connection.addEventListener('disconnect', () => resolve());
+      });
+      await server.connected;
+
+      server.send({ 'hub.mode': 'denied', 'hub.topic': '', 'hub.events': '', 'hub.reason': 'invalid endpoint' });
+      await disconnected;
+
+      // Long enough for several attempts at the backoff above, had the connection intended to make any
+      await sleep(200);
+      expect(connects).toStrictEqual(1);
+      expect(server.server.clients()).toHaveLength(0);
+    } finally {
+      connection.disconnect();
+    }
+  });
 
   test('Invalid SubscriptionRequest in constructor', () => {
     expect(

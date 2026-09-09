@@ -3,7 +3,9 @@
 import type { Login, SmartAppLaunch } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTPayload } from 'jose';
+import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { getProjectScopedUrl } from '../util/url';
 import { verifyJwt } from './keys';
 
 /**
@@ -20,7 +22,7 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
   }
 
   try {
-    const decodedToken = await verifyJwt(token);
+    const decodedToken = await verifyJwt(token, getProjectScopedUrl(req.originalUrl, getConfig().issuer));
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', decodedToken.payload.login_id as string);

@@ -22,7 +22,6 @@ Note the following peer dependencies:
 
 Note the following optional peer dependencies:
 
-- [@emotion/react](https://www.npmjs.com/package/@emotion/react)
 - [@mantine/core](https://www.npmjs.com/package/@mantine/core)
 - [@mantine/hooks](https://www.npmjs.com/package/@mantine/hooks)
 - [@mantine/notifications](https://www.npmjs.com/package/@mantine/notifications)

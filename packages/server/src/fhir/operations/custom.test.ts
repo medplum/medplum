@@ -280,6 +280,71 @@ describe('Custom operation', () => {
     });
   });
 
+  test('Returns Parameters from bot unchanged', async () => {
+    const botRes = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Parameters Custom Operation Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(botRes).toHaveStatus(201);
+
+    const bot = botRes.body as WithId<Bot>;
+
+    const deployRes = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function () {
+            return {
+              resourceType: 'Parameters',
+              parameter: [{ name: 'message', valueString: 'hello' }],
+            };
+          };
+          `,
+      });
+    expect(deployRes).toHaveStatus(200);
+
+    const operationRes = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-parameters-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-parameters-operation',
+        system: true,
+        type: false,
+        instance: false,
+        parameter: [{ use: 'out', name: 'result', type: 'boolean', min: 1, max: '1' }],
+      });
+    expect(operationRes).toHaveStatus(201);
+
+    const result = await request(app)
+      .post('/fhir/R4/$my-parameters-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(result).toHaveStatus(200);
+    expect(result.body).toEqual({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'message', valueString: 'hello' }],
+    });
+  });
+
   test('Error value returned all the way to the client', async () => {
     const res1 = await request(app)
       .post('/fhir/R4/Bot')

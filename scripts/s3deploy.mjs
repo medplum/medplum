@@ -91,6 +91,9 @@ async function main() {
     if (relativePath === 'index.html') {
       // Special case for root index.html
       s3Key += 'index.html';
+    } else if (relativePath === 'iframe.html') {
+      // Special case for root iframe.html (Storybook nested page)
+      s3Key += 'iframe.html';
     } else if (relativePath.endsWith('/index.html')) {
       // Special case for directories with index.html
       s3Key += relativePath.slice(0, -'index.html'.length);
@@ -148,4 +151,7 @@ async function uploadAll(requests) {
   await Promise.all(uploads);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

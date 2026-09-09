@@ -117,7 +117,8 @@ export interface User {
   externalId?: string;
 
   /**
-   * The email address that uniquely identifies the user.
+   * The email address that uniquely identifies the user. Must be all
+   * lowercase.
    */
   email?: string;
 

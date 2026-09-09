@@ -3975,6 +3975,58 @@ describe('Client', () => {
       );
       expect(await blob.text()).toStrictEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
     });
+
+    test('Downloading external URLs should NOT include credentials', async () => {
+      const externalUrl = 'https://external-site.example.com/document.pdf';
+      const fetch = mockFetch(200, () => 'external content');
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
+      await client.download(externalUrl);
+
+      // Verify the Authorization header was NOT sent to external URL
+      expect(fetch).toHaveBeenCalledWith(
+        externalUrl,
+        expect.objectContaining({
+          headers: {
+            Accept: '*/*',
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+
+      // Verify Authorization header is NOT present
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[1].headers.Authorization).toBeUndefined();
+
+      // Verify credentials are NOT included for external URLs
+      expect(callArgs[1].credentials).toBeUndefined();
+    });
+
+    test('Downloading from baseUrl path should include credentials', async () => {
+      // URLs under the baseUrl should still get credentials (legitimate Medplum endpoints)
+      const internalUrl = 'https://api.medplum.com/admin/projects/123';
+      const fetch = mockFetch(200, () => 'internal content');
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
+      await client.download(internalUrl);
+
+      // Verify the Authorization header WAS sent to internal URL
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[1].headers.Authorization).toBe(`Bearer ${accessToken}`);
+      expect(callArgs[1].credentials).toBe('include');
+    });
+
+    test('Downloading from subdomain should NOT include credentials', async () => {
+      const externalUrl = 'https://evil.api.medplum.com/malicious';
+      const fetch = mockFetch(200, () => 'external content');
+      const client = new MedplumClient({ fetch, baseUrl, fhirUrlPath });
+      client.setAccessToken(accessToken);
+      await client.download(externalUrl);
+
+      // Verify the Authorization header was NOT sent
+      const callArgs = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(callArgs[1].headers.Authorization).toBeUndefined();
+    });
   });
 
   describe('Media', () => {

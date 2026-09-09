@@ -102,7 +102,6 @@ export const Basic = (): JSX.Element => {
         refresh={async () => {}}
         tabs={tabs}
         activeTab="in-progress"
-        onTabChange={() => {}}
         headerActions={headerActions}
         renderItem={(item) => (
           <div onClick={() => setSelectedId(item.id)} onKeyDown={() => {}} role="presentation">

@@ -26,10 +26,11 @@ packages/graphiql/public/
 storybook-static/
 
 # Chromatic
-packages/react/build-storybook.log
+packages/storybook/build-storybook.log
 
-# Jest code coverage
+# Vitest code coverage
 coverage/
+.vitest-reports/
 
 # TypeScript incremental build
 tsconfig.tsbuildinfo
@@ -107,7 +108,8 @@ playwright/.cache/
 .cursor/
 
 # Claude
-.claude/
+.claude/*
+!.claude/skills/
 CLAUDE.md
 AGENTS.md
 

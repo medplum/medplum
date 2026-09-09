@@ -7,6 +7,7 @@ import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
+import '@medplum/react-scheduling/styles.css';
 import '@medplum/react/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

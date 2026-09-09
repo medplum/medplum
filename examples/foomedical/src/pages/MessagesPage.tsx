@@ -39,8 +39,11 @@ export function MessagesPage(): JSX.Element {
     }
   }, [currentSearch, navigate, normalizedSearch, messageId]);
 
+  const basePath = messageId ? `/Communication/${messageId}` : '/Communication';
+
   const onChange = (search: SearchRequest): void => {
-    navigate(`/Communication${formatSearchQuery(search)}`)?.catch(console.error);
+    // Keep the selected thread open when the list search changes (pagination, filters)
+    navigate(`${basePath}${formatSearchQuery(search)}`)?.catch(console.error);
   };
 
   const getThreadUri = (topic: Communication): string => {
@@ -64,6 +67,10 @@ export function MessagesPage(): JSX.Element {
     navigate(getThreadUri(message))?.catch(console.error);
   };
 
+  const onSelectFirst = (thread: Communication): void => {
+    navigate(getThreadUri(thread), { replace: true })?.catch(console.error);
+  };
+
   return (
     <div className={classes.container}>
       <ThreadInbox
@@ -71,6 +78,7 @@ export function MessagesPage(): JSX.Element {
         query={formatSearchQuery(parsedSearch).substring(1)}
         subject={profile?.resourceType === 'Patient' ? profile : undefined}
         onNew={onNew}
+        onSelectFirst={onSelectFirst}
         getThreadUri={getThreadUri}
         onChange={onChange}
         inProgressUri={inProgressUri}

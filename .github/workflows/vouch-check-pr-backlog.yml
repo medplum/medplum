@@ -1,0 +1,214 @@
+on:
+  # Manual only: a one-off (or occasional, re-runnable) sweep of PRs that
+  # predate this vouch system, or that need re-checking after issues get
+  # labeled. vouch-check-pr.yml only ever sees PRs as they're opened/reopened,
+  # so it never touches the existing backlog on its own.
+  workflow_dispatch:
+    inputs:
+      pr-numbers:
+        description: "Comma-separated PR numbers to check (empty = all open PRs)"
+        required: false
+        default: ""
+
+name: "Vouch - Check PR Backlog"
+
+jobs:
+  list-prs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      pr-numbers: ${{ steps.list.outputs.numbers }}
+      considered: ${{ steps.list.outputs.considered }}
+      skipped-count: ${{ steps.list.outputs.skipped-count }}
+    steps:
+      # Sparse-checkout of the base ref only, so `vouch check` below has a
+      # vouched list to read. Path matches the vouch action's own
+      # `vouched-file` default, which the check jobs rely on.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/VOUCHED.td
+
+      # Puts the `vouch` CLI on PATH (installing Nushell if needed), so the
+      # prefilter can ask the tool who's vouched instead of parsing
+      # VOUCHED.td here and drifting from how the check jobs read it.
+      - uses: mitchellh/vouch/action/setup-vouch@d66fa29a64600490892131ad87597c30c91fcac4 # v1.5.0
+
+      # Most of the open-PR backlog belongs to maintainers and other vouched
+      # contributors, whose PRs the check can only ever leave alone. Dropping
+      # them here roughly halves the matrix.
+      - name: List target PRs
+        id: list
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBERS_INPUT: ${{ github.event.inputs.pr-numbers }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # An explicitly named list is taken as given -- no filtering -- which
+          # doubles as the way to force a re-check of a PR whose author is
+          # vouched. tonumber doubles as input validation before anything
+          # reaches a command line; the trim makes "1, 2, 3" work too.
+          if [ -n "$PR_NUMBERS_INPUT" ]; then
+            NUMBERS=$(echo "$PR_NUMBERS_INPUT" | tr ',' '\n' \
+              | jq -R -r 'gsub("^\\s+|\\s+$"; "") | select(length > 0) | tonumber' \
+              | jq -s -c '.')
+            SKIPPED="[]"
+          else
+            # `vouch check` resolves .github/VOUCHED.td from the repo root on
+            # its own, the same default the check jobs use. Assert it landed
+            # rather than quietly prefiltering nothing if checkout missed it.
+            test -f .github/VOUCHED.td
+
+            CANDIDATES=$(gh pr list --repo "$REPO" --state open --limit 1000 --json number,author)
+
+            # One `vouch check` per distinct author, not per PR. It exits 0
+            # for vouched, 1 for denounced and 2 for unknown -- only the
+            # first is safe to skip, since denounced PRs are precisely the
+            # ones that get closed. Its own output is the audit trail for
+            # what this filter decided.
+            VOUCHED="[]"
+            for LOGIN in $(jq -r '[.[].author.login] | unique | .[]' <<<"$CANDIDATES"); do
+              if vouch check "$LOGIN"; then
+                VOUCHED=$(jq -c --arg login "$LOGIN" '. + [$login]' <<<"$VOUCHED")
+              fi
+            done
+
+            PARTITION=$(jq -c --argjson vouched "$VOUCHED" '
+              ($vouched | INDEX(.)) as $set
+              | [.[] | {number, login: .author.login}]
+              | {
+                  numbers: (map(select($set[.login] == null) | .number) | sort),
+                  skipped: (map(select($set[.login] != null) | .number) | sort)
+                }' <<<"$CANDIDATES")
+            NUMBERS=$(jq -c '.numbers' <<<"$PARTITION")
+            SKIPPED=$(jq -c '.skipped' <<<"$PARTITION")
+          fi
+
+          # The skipped count carries into the summary so it can account for
+          # every PR the sweep looked at, not just the ones it checked.
+          {
+            echo "numbers=$NUMBERS"
+            echo "considered=$(( $(jq 'length' <<<"$NUMBERS") + $(jq 'length' <<<"$SKIPPED") ))"
+            echo "skipped-count=$(jq 'length' <<<"$SKIPPED")"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Skipping vouched authors' PRs: $SKIPPED"
+          echo "Targeting PR numbers: $NUMBERS"
+
+  # Matrix jobs cap out at 256 -- if the unvouched backlog ever exceeds that,
+  # batch it manually across a few runs using the pr-numbers input instead
+  # of trying to sweep everything in one go.
+  check:
+    needs: list-prs
+    if: needs.list-prs.outputs.pr-numbers != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        pr-number: ${{ fromJson(needs.list-prs.outputs.pr-numbers) }}
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    uses: ./.github/workflows/vouch-check-pr-shared.yml
+    with:
+      pr-number: ${{ matrix.pr-number }}
+      report-artifact: true
+    secrets: inherit
+
+  # Rolls the per-PR result artifacts up into one table, so a 50-job sweep
+  # can be read (and, in dry-run mode, acted on) without opening every job.
+  summary:
+    needs: [list-prs, check]
+    if: ${{ !cancelled() && needs.list-prs.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      # download-artifact errors out when nothing matches the pattern, which
+      # is a legitimate state here (every PR got filtered out, or every check
+      # job died before uploading). Let it fail and have the renderer below
+      # account for the missing results instead.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        id: download
+        continue-on-error: true
+        with:
+          path: results
+          pattern: vouch-result-*
+
+      - name: Render summary
+        env:
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ vars.VOUCH_DRY_RUN || 'true' }}
+          TARGETED: ${{ needs.list-prs.outputs.pr-numbers }}
+          CONSIDERED: ${{ needs.list-prs.outputs.considered }}
+          SKIPPED_COUNT: ${{ needs.list-prs.outputs.skipped-count }}
+        run: |
+          set -euo pipefail
+
+          RESULTS="[]"
+          if [ -d results ]; then
+            RESULTS=$(find results -name '*.json' -print0 | xargs -0 -r cat | jq -s -c '.')
+          fi
+
+          jq -n -r \
+            --argjson results "$RESULTS" \
+            --argjson targeted "$TARGETED" \
+            --argjson considered "$CONSIDERED" \
+            --argjson skipped_count "$SKIPPED_COUNT" \
+            --arg repo "$REPO" \
+            --arg dry_run "$DRY_RUN" '
+            ($dry_run == "true") as $dry
+
+            # PR titles are arbitrary text; keep them from breaking out of a
+            # table cell.
+            | def cell: (. // "") | gsub("\r?\n"; " ") | gsub("\\|"; "\\|")
+              | if length > 80 then .[0:77] + "..." else . end;
+            def link: "[#\(.)](https://github.com/\($repo)/pull/\(.))";
+            def section($title; $rows):
+              if ($rows | length) == 0 then empty
+              else "", "### \($title) (\($rows | length))", "",
+                "| PR | Author | Title |", "| --- | --- | --- |",
+                ($rows | map("| \(.number | link) | \(.author) | \(.title | cell) |") | .[])
+              end;
+
+            # Every outcome the shared workflow can record, in the order a
+            # reviewer cares about: what got closed first, then failures,
+            # then the PRs it deliberately left alone.
+            [ {key: "close-denounced", label: "Closed: denounced author"},
+              {key: "would-close-denounced", label: "Would close: denounced author"},
+              {key: "close-unvouched", label: "Closed: unvouched author, no linked `open-to-community` issue"},
+              {key: "would-close-unvouched", label: "Would close: unvouched author, no linked `open-to-community` issue"},
+              {key: "error", label: "Errored (check the job logs)"},
+              {key: "linked-issue", label: "Left open: linked issue has the `open-to-community` label"},
+              {key: "vouched", label: "Left open: the action vouched the author itself (repo write access)"},
+              {key: "bot", label: "Left open: author is a bot"}
+            ] as $outcomes
+            | ($results | group_by(.outcome) | map({key: .[0].outcome, rows: sort_by(.number)})
+               | INDEX(.key)) as $byOutcome
+            | ($targeted - ($results | map(.number))) as $missing
+            | ($byOutcome | keys - ($outcomes | map(.key))) as $unknown
+
+            | [ "## Vouch backlog sweep",
+                "",
+                if $dry then
+                  "**Dry run** (`VOUCH_DRY_RUN` is not `false`): nothing was commented on or closed. Flip the repo variable to act for real."
+                else
+                  "**Live run**: unvouched and denounced PRs listed below were commented on and closed."
+                end,
+                "",
+                "- Considered: **\($considered)** PR(s)",
+                "- Skipped without checking, author is vouched in `.github/VOUCHED.td`: **\($skipped_count)**",
+                "- Checked: **\($targeted | length)**",
+                if ($missing | length) > 0 then
+                  "- No result reported (job failed or was cancelled): **\($missing | length)** (\($missing | map(link) | join(", ")))"
+                else empty end,
+
+                ($outcomes[] | section(.label; $byOutcome[.key].rows // [])),
+                ($unknown[] | section("Unrecognized outcome `\(.)`"; $byOutcome[.].rows))
+              ]
+            | join("\n")
+          ' | tee -a "$GITHUB_STEP_SUMMARY"

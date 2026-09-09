@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
+import type { DayOfWeek } from '@medplum/core';
 import { formatTiming } from '@medplum/core';
 import type { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -13,9 +14,9 @@ import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePro
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { ArrayRemoveButton } from '../buttons/ArrayRemoveButton';
 
+// Sunday-first, unlike the Monday-first `DAYS_OF_WEEK` in core, because this
+// drives the order the day chips are rendered in.
 const daysOfWeek: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-type DayOfWeek = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 
 type PeriodUnit = 'a' | 's' | 'min' | 'h' | 'd' | 'wk' | 'mo';
 

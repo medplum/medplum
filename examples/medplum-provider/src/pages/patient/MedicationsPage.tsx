@@ -158,14 +158,10 @@ export function MedicationsPage(): JSX.Element {
   /** MR id whose "remove from cart" request is in flight (drives the row spinner). */
   const [removingId, setRemovingId] = useState<string | undefined>();
 
-  const orderFromList = useMemo(
-    () => (medicationRequestId ? orders.find((mr) => mr.id === medicationRequestId) : undefined),
-    [medicationRequestId, orders]
-  );
-
-  const currentOrder = medicationRequestId
-    ? (orderFromList ?? (fetchedOrder?.id === medicationRequestId ? fetchedOrder : undefined))
-    : undefined;
+  // The tab query intentionally requests a compact `_fields` projection for
+  // list rows. Never use that partial resource for the details panel: changing
+  // tabs would otherwise switch between projected and full resource shapes.
+  const currentOrder = medicationRequestId && fetchedOrder?.id === medicationRequestId ? fetchedOrder : undefined;
 
   const patient = usePatient();
   const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
@@ -231,16 +227,17 @@ export function MedicationsPage(): JSX.Element {
 
   const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
-      return `/Patient/${patientId}/MedicationRequest/${order.id}`;
+      const query = searchParams.toString();
+      return `/Patient/${patientId}/MedicationRequest/${order.id}${query ? `?${query}` : ''}`;
     },
-    [patientId]
+    [patientId, searchParams]
   );
 
   useEffect(() => {
     let cancelled = false;
-    if (medicationRequestId && !orderFromList) {
+    if (medicationRequestId) {
       medplum
-        .readResource('MedicationRequest', medicationRequestId)
+        .readResource('MedicationRequest', medicationRequestId, { cache: 'reload' })
         .then((mr) => {
           if (!cancelled) {
             setFetchedOrder(mr);
@@ -251,7 +248,7 @@ export function MedicationsPage(): JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [medicationRequestId, orderFromList, medplum]);
+  }, [medicationRequestId, medplum, statusParam]);
 
   useEffect(() => {
     if (!hasDoseSpot || !patient?.id) {
@@ -260,6 +257,7 @@ export function MedicationsPage(): JSX.Element {
     const today = new Date().toISOString().split('T')[0];
     const notificationId = 'dosespot-sync';
     let cancelled = false;
+    let syncing = true;
     showNotification({
       id: notificationId,
       loading: true,
@@ -301,10 +299,17 @@ export function MedicationsPage(): JSX.Element {
           hideNotification(notificationId);
           showErrorNotification(err);
         }
+      } finally {
+        syncing = false;
       }
     })().catch(showErrorNotification);
     return () => {
       cancelled = true;
+      // Dismiss the persistent loading toast if sync is still in flight when we
+      // unmount; otherwise the global notification lingers forever after navigating away.
+      if (syncing) {
+        hideNotification(notificationId);
+      }
     };
   }, [hasDoseSpot, medplum, patient?.id]);
 
@@ -320,7 +325,9 @@ export function MedicationsPage(): JSX.Element {
       setTab('draft');
       await fetchData();
       if (result.medicationRequestId && patientId) {
-        navigate(`/Patient/${patientId}/MedicationRequest/${result.medicationRequestId}`)?.catch(console.error);
+        navigate(
+          `/Patient/${patientId}/MedicationRequest/${result.medicationRequestId}?status=${TAB_TO_STATUS_PARAM.draft}`
+        )?.catch(console.error);
       }
     },
     [fetchData, navigate, patientId, setTab]

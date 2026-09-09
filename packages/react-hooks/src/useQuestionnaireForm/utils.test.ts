@@ -10,6 +10,7 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import {
+  applyOptionExclusive,
   buildInitialResponse,
   evaluateCalculatedExpressionsInQuestionnaire,
   getNewMultiSelectValues,
@@ -17,6 +18,7 @@ import {
   getQuestionnaireItemReferenceTargetTypes,
   isChoiceQuestion,
   isQuestionEnabled,
+  QUESTIONNAIRE_OPTION_EXCLUSIVE_URL,
   setQuestionnaireItemReferenceTargetTypes,
   typedValueToResponseItem,
 } from './utils';
@@ -26,6 +28,94 @@ describe('Questionnaire Utils', () => {
     expect(isChoiceQuestion({ linkId: 'q3', type: 'string' })).toBe(false);
     expect(isChoiceQuestion({ linkId: 'q3', type: 'choice' })).toBe(true);
     expect(isChoiceQuestion({ linkId: 'q3', type: 'open-choice' })).toBe(true);
+  });
+});
+
+describe('applyOptionExclusive', () => {
+  const item: QuestionnaireItem = {
+    linkId: 'q1',
+    type: 'choice',
+    repeats: true,
+    answerOption: [
+      { valueString: 'Peanuts' },
+      { valueString: 'Shellfish' },
+      {
+        valueString: 'No known allergies',
+        extension: [{ url: QUESTIONNAIRE_OPTION_EXCLUSIVE_URL, valueBoolean: true }],
+      },
+    ],
+  };
+
+  test('returns answers unchanged when no options are exclusive', () => {
+    const plainItem: QuestionnaireItem = {
+      linkId: 'q1',
+      type: 'choice',
+      repeats: true,
+      answerOption: [{ valueString: 'Peanuts' }, { valueString: 'Shellfish' }],
+    };
+    const next = [{ valueString: 'Peanuts' }, { valueString: 'Shellfish' }];
+    expect(applyOptionExclusive(plainItem, [{ valueString: 'Peanuts' }], next)).toBe(next);
+  });
+
+  test('selecting an exclusive option clears other answers', () => {
+    const prev = [{ valueString: 'Peanuts' }, { valueString: 'Shellfish' }];
+    const next = [...prev, { valueString: 'No known allergies' }];
+    expect(applyOptionExclusive(item, prev, next)).toEqual([{ valueString: 'No known allergies' }]);
+  });
+
+  test('selecting a non-exclusive option clears the exclusive answer', () => {
+    const prev = [{ valueString: 'No known allergies' }];
+    const next = [...prev, { valueString: 'Peanuts' }];
+    expect(applyOptionExclusive(item, prev, next)).toEqual([{ valueString: 'Peanuts' }]);
+  });
+
+  test('removing an answer leaves the rest unchanged', () => {
+    const prev = [{ valueString: 'Peanuts' }, { valueString: 'Shellfish' }];
+    const next = [{ valueString: 'Peanuts' }];
+    expect(applyOptionExclusive(item, prev, next)).toBe(next);
+  });
+
+  test('first selection can be the exclusive option', () => {
+    expect(applyOptionExclusive(item, undefined, [{ valueString: 'No known allergies' }])).toEqual([
+      { valueString: 'No known allergies' },
+    ]);
+  });
+
+  test('extension with valueBoolean false is not exclusive', () => {
+    const nonExclusiveItem: QuestionnaireItem = {
+      linkId: 'q1',
+      type: 'choice',
+      repeats: true,
+      answerOption: [
+        { valueString: 'Peanuts' },
+        {
+          valueString: 'No known allergies',
+          extension: [{ url: QUESTIONNAIRE_OPTION_EXCLUSIVE_URL, valueBoolean: false }],
+        },
+      ],
+    };
+    const next = [{ valueString: 'Peanuts' }, { valueString: 'No known allergies' }];
+    expect(applyOptionExclusive(nonExclusiveItem, [{ valueString: 'Peanuts' }], next)).toBe(next);
+  });
+
+  test('supports valueCoding options', () => {
+    const codingItem: QuestionnaireItem = {
+      linkId: 'q1',
+      type: 'choice',
+      repeats: true,
+      answerOption: [
+        { valueCoding: { system: 'x', code: 'peanuts' } },
+        {
+          valueCoding: { system: 'x', code: 'no-known-allergies' },
+          extension: [{ url: QUESTIONNAIRE_OPTION_EXCLUSIVE_URL, valueBoolean: true }],
+        },
+      ],
+    };
+    const prev = [{ valueCoding: { system: 'x', code: 'peanuts' } }];
+    const next = [...prev, { valueCoding: { system: 'x', code: 'no-known-allergies' } }];
+    expect(applyOptionExclusive(codingItem, prev, next)).toEqual([
+      { valueCoding: { system: 'x', code: 'no-known-allergies' } },
+    ]);
   });
 });
 

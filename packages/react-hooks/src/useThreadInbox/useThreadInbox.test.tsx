@@ -350,6 +350,39 @@ describe('useThreadInbox', () => {
     consoleErrorSpy.mockRestore();
   });
 
+  test('reports loading synchronously when the query changes', async () => {
+    await medplum.createResource(mockCommunication1);
+    await medplum.createResource(mockCommunication2);
+
+    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+      data: {
+        thread_comm1: [mockCommunication2],
+      },
+    } as any);
+
+    const { result, rerender } = renderHook<ReturnType<typeof useThreadInbox>, { query: string }>(
+      ({ query }) => useThreadInbox({ query, threadId: undefined }),
+      {
+        wrapper,
+        initialProps: { query: 'status=in-progress' },
+      }
+    );
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Switching tabs changes the query; loading must be true on the very next render so
+    // consumers never act on the previous query's threadMessages (e.g. auto-selecting the
+    // old tab's first thread).
+    rerender({ query: 'status=completed' });
+    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+  });
+
   test('clears selected thread when threadId becomes undefined', async () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);

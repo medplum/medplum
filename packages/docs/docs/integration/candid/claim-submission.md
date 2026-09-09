@@ -18,8 +18,6 @@ flowchart TD
 
     Practitioner["<div style='text-align: center;'><strong>Practitioner (Rendering Provider)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br><u>qualification[0].code</u>:<br>  system: http://nucc.org/provider-taxonomy</div>"]
 
-    PractitionerRole["<div style='text-align: center;'><strong>PractitionerRole</strong></div>"]
-
     BillingOrg["<div style='text-align: center;'><strong>Organization (Billing Provider)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: http://hl7.org/fhir/sid/us-npi<br>  system: http://hl7.org/fhir/sid/us-ein</div>"]
 
     PayerOrg["<div style='text-align: center;'><strong>Organization (Payer)</strong></div><div style='border: 1px solid #333; padding: 4px; margin: 4px;'><u>identifier</u>:<br>  system: https://www.cms.gov/payer-id</div>"]
@@ -29,16 +27,14 @@ flowchart TD
     Encounter["<div style='text-align: center;'><strong>Encounter</strong></div>"]
 
     Claim -->|patient| Patient
-    Claim -->|provider| Practitioner
+    Claim -->|provider| BillingOrg
+    Claim -->|"careTeam.provider (role: primary)"| Practitioner
     Claim -->|insurance.coverage| Coverage
     Claim -->|item.encounter| Encounter
 
     Coverage -->|subscriber| Patient
     Coverage -->|beneficiary| Patient
     Coverage -->|payor| PayerOrg
-
-    PractitionerRole -->|practitioner| Practitioner
-    PractitionerRole -->|organization| BillingOrg
 
     classDef claim fill:#8B57C4,stroke:#333,stroke-width:2px,color:#fff
     classDef organization fill:#B088E1,stroke:#333,stroke-width:2px,color:#fff
@@ -48,7 +44,6 @@ flowchart TD
 
     class Claim claim
     class BillingOrg,PayerOrg organization
-    class PractitionerRole organization
     class Patient patient
     class Coverage coverage
     class Encounter encounter
@@ -60,21 +55,26 @@ flowchart TD
 | Field | Description | Required |
 |-------|-------------|----------|
 | `patient` | Reference to the Patient | Yes |
-| `provider` | Reference to the rendering Practitioner | Yes |
-| `created` | Date the claim was created (used as fallback service date) | Yes |
+| `provider` | Reference to the billing provider: an Organization for organization billing (the common case), or a Practitioner for individual billing | Yes |
+| `careTeam` | Care team member with role `primary` (system: `http://terminology.hl7.org/CodeSystem/claimcareteamrole`) referencing the rendering Practitioner | Yes* |
+| `careTeam` | Optional: care team member with role `referral` referencing the referring Practitioner. Required by some payers (e.g. Medicare MNT). The Practitioner can be a contained resource with just a name and NPI — no stored resource needed for external referrers. | No |
+| `billablePeriod.start` | Preferred date of service when service lines carry no individual `servicedDate` | No |
+| `created` | Fallback date of service when `billablePeriod.start` is also absent | No |
 | `insurance[0].coverage` | Reference to the Coverage resource | Yes |
 | `diagnosis` | Array of ICD-10-CM diagnoses with `sequence` (1-based) and `diagnosisCodeableConcept` | Yes |
 | `item` | Array of service lines (see below) | Yes |
+
+\* The rendering Practitioner is resolved in this order: the `careTeam` member with role `primary`, then the first `careTeam` member referencing a Practitioner, then `Claim.provider` itself when it is a Practitioner (individual billing). Contained resources (e.g. `"reference": "#rendering-practitioner"`) are supported for both `provider` and `careTeam.provider`.
 
 Each `Claim.item` (service line) requires:
 
 | Field | Description | Required |
 |-------|-------------|----------|
 | `productOrService` | CPT code (system: `http://www.ama-assn.org/go/cpt`) | Yes |
-| `servicedDate` | Date of service | Yes |
-| `unitPrice` | Charge amount in USD | Yes |
+| `servicedDate` | Date of service for this line. Falls back to `Claim.billablePeriod.start`, then `Claim.created` | No |
+| `unitPrice` | Charge amount in USD. Optional if a chargemaster entry exists in Candid for the CPT code — Candid will use the chargemaster amount and ignore this value if present. | No |
 | `quantity` | Number of units | Yes |
-| `locationCodeableConcept` | Place of service code (system: `https://www.cms.gov/Medicare/Coding/place-of-service-codes`) | Yes |
+| `locationCodeableConcept` | Place of service code (system: `https://www.cms.gov/Medicare/Coding/place-of-service-codes`). If omitted, the encounter defaults to `11` (Office). | No |
 | `encounter` | Reference to the Encounter resource | Yes |
 | `diagnosisSequence` | Array of 1-based indices into `Claim.diagnosis` (up to 4) | Yes |
 | `modifier` | CPT modifier codes | No |
@@ -91,6 +91,8 @@ Each `Claim.item` (service line) requires:
 
 ### Practitioner (Rendering Provider)
 
+The rendering provider is referenced from `Claim.careTeam` (role `primary`).
+
 | Field | Description | Required |
 |-------|-------------|----------|
 | `identifier` | System must be `http://hl7.org/fhir/sid/us-npi` | Yes |
@@ -99,7 +101,7 @@ Each `Claim.item` (service line) requires:
 
 ### Organization (Billing Provider)
 
-The billing provider Organization is linked to the Practitioner via a `PractitionerRole` resource.
+The billing provider Organization is referenced directly from `Claim.provider`. For individual billing, `Claim.provider` may instead reference a Practitioner, in which case no billing Organization is needed.
 
 | Field | Description | Required |
 |-------|-------------|----------|
@@ -110,12 +112,19 @@ The billing provider Organization is linked to the Practitioner via a `Practitio
 
 ### Organization (Payer)
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `identifier` | CMS payer ID (system: `https://www.cms.gov/payer-id`) | Yes |
-| `name` | Payer name (used to look up the payer in Candid's network) | Yes |
+The bot resolves the payer in Candid's directory using these identifiers in priority order:
 
-### Coverage
+| Priority | Identifier | System | Behavior |
+|----------|-----------|--------|----------|
+| 1 | Candid payer UUID | `https://www.joincandidhealth.com/payer-uuid` | Direct lookup — skips name search entirely |
+| 2 | CMS payer ID | `https://www.cms.gov/payer-id` | Name search filtered by ID |
+| 3 | CHC payer ID | `https://www.joincandidhealth.com/chc-payerid` | Name search filtered by ID |
+
+At least one identifier is required. `name` is also required (used in the name search for options 2 and 3). The bot hard-fails if no match is found in Candid's directory.
+
+### Coverage (Insured)
+
+For insured claims, use the `CandidCoverage` profile. `Coverage.payor` must reference a payer Organization.
 
 | Field | Description | Required |
 |-------|-------------|----------|
@@ -127,6 +136,21 @@ The billing provider Organization is linked to the Practitioner via a `Practitio
 | `relationship` | Patient's relationship to the subscriber (system: `http://terminology.hl7.org/CodeSystem/subscriber-relationship`, e.g. `self`, `spouse`, `child`) | Yes |
 | `class` | Group number (type: `group`) and plan info | No |
 | `period` | Coverage effective dates | No |
+
+### Coverage (Self-Pay)
+
+For self-pay claims, set `Coverage.payor` to reference the `Patient` directly. Do **not** apply the `CandidCoverage` profile to self-pay Coverage resources. No `subscriberId` is required.
+
+```json
+{
+  "resourceType": "Coverage",
+  "status": "active",
+  "beneficiary": { "reference": "Patient/{id}" },
+  "payor": [{ "reference": "Patient/{id}" }]
+}
+```
+
+The bot detects self-pay when `payor` references a `Patient` or `RelatedPerson`, skips payer lookup, and submits the claim to Candid with `responsibleParty: SELF_PAY`.
 
 ### Encounter
 
@@ -246,18 +270,6 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
       "request": { "method": "POST", "url": "Practitioner", "ifNoneExist": "identifier=http://hl7.org/fhir/sid/us-npi|1234567890" }
     },
     {
-      "fullUrl": "urn:uuid:practitioner-role",
-      "resource": {
-        "resourceType": "PractitionerRole",
-        "meta": {
-          "profile": ["https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-practitioner-role"]
-        },
-        "practitioner": { "reference": "urn:uuid:practitioner" },
-        "organization": { "reference": "urn:uuid:billing-org" }
-      },
-      "request": { "method": "POST", "url": "PractitionerRole" }
-    },
-    {
       "fullUrl": "urn:uuid:payer-org",
       "resource": {
         "resourceType": "Organization",
@@ -317,7 +329,14 @@ The operation is idempotent. If an active `ClaimResponse` already exists for the
         "type": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional", "display": "Professional" }] },
         "patient": { "reference": "urn:uuid:patient" },
         "created": "2025-01-15T10:00:00Z",
-        "provider": { "reference": "urn:uuid:practitioner" },
+        "provider": { "reference": "urn:uuid:billing-org" },
+        "careTeam": [
+          {
+            "sequence": 1,
+            "provider": { "reference": "urn:uuid:practitioner" },
+            "role": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/claimcareteamrole", "code": "primary" }] }
+          }
+        ],
         "priority": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/processpriority", "code": "normal" }] },
         "insurance": [{ "sequence": 1, "focal": true, "coverage": { "reference": "urn:uuid:coverage" } }],
         "diagnosis": [
@@ -361,6 +380,11 @@ Once the operation is invoked, the bot runs the following steps:
 1. **Encounter Creation** — The bot creates a Candid encounter with patient demographics, provider info, and all diagnoses. Candid returns an `encounterId` and `claimId`. On transient failures the bot retries up to 3 times; if the encounter already exists in Candid (identified by the FHIR `Encounter.id` as the external ID) it is fetched instead of re-created.
 2. **Service Line Creation** — For each `Claim.item`, the bot creates a Candid service line with the CPT code, charge amount, and diagnosis pointers. This step is skipped if the encounter was recovered rather than freshly created to avoid duplicating service lines.
 3. **ClaimResponse Creation** — The bot saves a `ClaimResponse` to Medplum with `outcome: complete` and writes the Candid `claim-id` and `encounter-id` back onto both the `ClaimResponse` and the original `Claim` as identifiers.
+4. **Debug Documents** — The bot stores the outgoing Candid encounter request and the raw Candid response as `DocumentReference` resources for troubleshooting. Each document is linked to the originating Claim (via `context.related`) and Patient (via `subject`). Query them with:
+   ```
+   GET {base}/fhir/R4/DocumentReference?type=https://candidhealth.com/document-type|encounter-request
+   GET {base}/fhir/R4/DocumentReference?type=https://candidhealth.com/document-type|encounter-response
+   ```
 
 ### Common Claim Status Values
 

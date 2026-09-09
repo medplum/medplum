@@ -179,10 +179,27 @@ describe('ResourceBoard', () => {
       ],
       activeTab: 'inbox',
     });
+    // The tab itself is the anchor — no button wrapper — so the whole pill is one link.
     expect(screen.getByText('Inbox').closest('a')).toHaveAttribute('href', '/inbox');
     expect(screen.getByText('Sent').closest('a')).toHaveAttribute('href', '/sent');
-    expect(screen.getByText('Inbox').closest('button')).toHaveAttribute('data-active');
-    expect(screen.getByText('Sent').closest('button')).not.toHaveAttribute('data-active');
+    expect(screen.getByText('Inbox').closest('button')).toBeNull();
+    expect(screen.getByText('Inbox').closest('a')).toHaveAttribute('data-active');
+    expect(screen.getByText('Sent').closest('a')).not.toHaveAttribute('data-active');
+  });
+
+  test('clicking the tab pill outside the label still navigates', async () => {
+    await setup({
+      tabs: [
+        { value: 'inbox', label: 'Inbox', uri: '/inbox' },
+        { value: 'sent', label: 'Sent', uri: '/sent' },
+      ],
+      activeTab: 'inbox',
+    });
+    // The pill's padding is part of the link, not a dead zone around it.
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sent').closest('a') as HTMLElement);
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('/sent');
   });
 
   test('aux tab click is left to the browser', async () => {

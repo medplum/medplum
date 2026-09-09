@@ -92,7 +92,7 @@ vi.mock('../oauth/utils', async (importOriginal) => {
 describe('WebSocket Subscription', () => {
   let config: MedplumServerConfig;
   let server: Server;
-  let project: Project;
+  let project: WithId<Project>;
   let repo: Repository;
   let app: Express;
   let accessToken: string;
@@ -204,11 +204,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'Patient',
-                `Subscription/${patientSubscription?.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -242,8 +238,7 @@ describe('WebSocket Subscription', () => {
       while (subActive || inCache) {
         await sleep(0);
         subActive =
-          (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) ===
-          1;
+          (await isSubscriptionActive(project.id, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
         try {
           await repo.readResource<Subscription>('Subscription', patientSubscription?.id);
           inCache = true;
@@ -336,11 +331,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'Patient',
-                `Subscription/${patientSubscription?.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -367,11 +358,7 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'Patient',
-                `Subscription/${patientSubscription?.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(false);
         })
@@ -452,11 +439,9 @@ describe('WebSocket Subscription', () => {
           let observationActive = false;
           while (!patientActive || !observationActive) {
             await sleep(0);
-            patientActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
+            patientActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${patientSub.id}`)) === 1;
             observationActive =
-              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
-              1;
+              (await isSubscriptionActive(project.id, 'Observation', `Subscription/${observationSub.id}`)) === 1;
           }
           expect(patientActive).toStrictEqual(true);
           expect(observationActive).toStrictEqual(true);
@@ -469,11 +454,9 @@ describe('WebSocket Subscription', () => {
           let observationActive = true;
           while (patientActive || observationActive) {
             await sleep(0);
-            patientActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
+            patientActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${patientSub.id}`)) === 1;
             observationActive =
-              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
-              1;
+              (await isSubscriptionActive(project.id, 'Observation', `Subscription/${observationSub.id}`)) === 1;
           }
           expect(patientActive).toStrictEqual(false);
           expect(observationActive).toStrictEqual(false);
@@ -543,6 +526,78 @@ describe('WebSocket Subscription', () => {
         .expectClosed();
     }));
 
+  test.each([
+    ['project-scoped', (projectId: string) => `/projects/${projectId}/ws/subscriptions-r4`],
+    ['project-scoped with /api prefix', (projectId: string) => `/api/projects/${projectId}/ws/subscriptions-r4`],
+    ['/api prefix', () => '/api/ws/subscriptions-r4'],
+  ])('Binds on a %s URL', (_name, buildPath) =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+      expect(token).toBeDefined();
+
+      await request(server)
+        .ws(buildPath(project.id))
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        .close()
+        .expectClosed();
+    })
+  );
+
+  test('Rejects binding on a URL scoped to another project', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as FhirParameters).parameter?.[0]?.valueString as string;
+      expect(token).toBeDefined();
+
+      await request(server)
+        .ws(`/projects/${randomUUID()}/ws/subscriptions-r4`)
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'OperationOutcome',
+            issue: [{ severity: 'error', code: 'forbidden' }],
+          });
+        })
+        .close()
+        .expectClosed();
+    }));
+
   test('Should respond with a pong if sent a ping', () =>
     withTestContext(async () => {
       await request(server)
@@ -588,8 +643,7 @@ describe('WebSocket Subscription', () => {
           let subActive = false;
           while (!subActive) {
             await sleep(0);
-            subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+            subActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
           }
           // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
           const v1Payload = [[patient, subscription.id, { includeResource: true }]];
@@ -656,8 +710,7 @@ describe('WebSocket Subscription', () => {
           let subActive = false;
           while (!subActive) {
             await sleep(0);
-            subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+            subActive = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`)) === 1;
           }
           // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
           const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
@@ -752,10 +805,8 @@ describe('WebSocket Subscription', () => {
           let sub2Active = false;
           while (!sub1Active || !sub2Active) {
             await sleep(0);
-            sub1Active =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription1.id}`)) === 1;
-            sub2Active =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription2.id}`)) === 1;
+            sub1Active = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription1.id}`)) === 1;
+            sub2Active = (await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription2.id}`)) === 1;
           }
           // Publish a single v2 payload with both subscriptions in the events array
           const v2Payload = {
@@ -886,11 +937,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'DocumentReference',
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1082,11 +1129,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'DocumentReference',
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1288,11 +1331,7 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'DocumentReference',
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(false);
         })
@@ -1371,11 +1410,7 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(
-                project.id as string,
-                'DocumentReference',
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
 
           // Reset the spy call count
@@ -1625,7 +1660,7 @@ describe('WebSocket Subscription', () => {
         )
         .exec(async () => {
           await sleep(1000);
-          const active = await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`);
+          const active = await isSubscriptionActive(project.id, 'Patient', `Subscription/${subscription.id}`);
           expect(active).toBe(0);
         })
         .expectClosed()

@@ -51,6 +51,9 @@ import type { DeviceMetric } from './DeviceMetric.d.ts';
 import type { DeviceRequest } from './DeviceRequest.d.ts';
 import type { DeviceUseStatement } from './DeviceUseStatement.d.ts';
 import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { DicomInstance } from './DicomInstance.d.ts';
+import type { DicomSeries } from './DicomSeries.d.ts';
+import type { DicomStudy } from './DicomStudy.d.ts';
 import type { DocumentManifest } from './DocumentManifest.d.ts';
 import type { DocumentReference } from './DocumentReference.d.ts';
 import type { DomainConfiguration } from './DomainConfiguration.d.ts';
@@ -59,6 +62,7 @@ import type { Encounter } from './Encounter.d.ts';
 import type { Endpoint } from './Endpoint.d.ts';
 import type { EnrollmentRequest } from './EnrollmentRequest.d.ts';
 import type { EnrollmentResponse } from './EnrollmentResponse.d.ts';
+import type { Enterprise } from './Enterprise.d.ts';
 import type { EpisodeOfCare } from './EpisodeOfCare.d.ts';
 import type { EventDefinition } from './EventDefinition.d.ts';
 import type { Evidence } from './Evidence.d.ts';
@@ -218,6 +222,9 @@ export type Resource = AccessPolicy
   | DeviceRequest
   | DeviceUseStatement
   | DiagnosticReport
+  | DicomInstance
+  | DicomSeries
+  | DicomStudy
   | DocumentManifest
   | DocumentReference
   | DomainConfiguration
@@ -226,6 +233,7 @@ export type Resource = AccessPolicy
   | Endpoint
   | EnrollmentRequest
   | EnrollmentResponse
+  | Enterprise
   | EpisodeOfCare
   | EventDefinition
   | Evidence

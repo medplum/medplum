@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { globalSchema, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  getSearchParameter,
+  globalSchema,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { AddressTable } from './lookups/address';
@@ -188,6 +193,13 @@ describe('SearchParameterImplementation', () => {
     const impl = getSearchParameterImplementation('Account', searchParam);
     assertColumnImplementation(impl);
     expect(impl.columnName).toStrictEqual('patient');
+  });
+
+  test('_compartment maps to the compartments column', () => {
+    const searchParam = getSearchParameter('Patient', '_compartment') as SearchParameter;
+    const impl = getSearchParameterImplementation('Patient', searchParam);
+    assertColumnImplementation(impl);
+    expect(impl.columnName).toStrictEqual('compartments');
   });
 
   test('ActivityDefinition-composed-of', () => {

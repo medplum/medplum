@@ -92,6 +92,13 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'deleteCacheEntry',
   'deleteCacheEntries',
   'createTransactionScopedRepo',
+  'scopeFor',
+  'connectionFor',
+  'assertShardReachable',
+  'callbackTarget',
+  'boundEntry',
+  'inOwnTransaction',
+  'recordCacheAccess',
   'assertUsable',
   'authorizeBinarySecurityContext',
 ]);
@@ -115,7 +122,7 @@ const guardedInvocations: MethodInvocation[] = [
   {
     name: 'getDatabaseClient',
     kind: 'method',
-    invoke: (repo) => repo.getDatabaseClient(repoAccess.sqlWriteConfig()),
+    invoke: (repo) => repo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient')),
   },
   {
     name: 'sqlRead',
@@ -146,27 +153,35 @@ const guardedInvocations: MethodInvocation[] = [
       repo.executeRawSql('SELECT 1', [], {
         mode: DatabaseMode.WRITER,
         operation: 'read',
-        resourceTypes: [],
+        resourceTypes: ['Patient'],
         source: 'test',
       }),
   },
   {
     name: 'withTransaction',
     kind: 'method',
-    invoke: (repo) => repo.withTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' }),
+    invoke: (repo) =>
+      repo.withTransaction(async () => undefined, {
+        resourceTypes: 'Patient',
+        source: 'repo-guard.test',
+      }),
   },
   { name: 'withOverrideConfig', kind: 'method', invoke: (repo) => repo.withOverrideConfig({ extendedMode: true }) },
   {
     name: 'withStatementTimeout',
     kind: 'method',
-    invoke: (repo) => repo.withStatementTimeout({ timeoutMs: 1 }, async () => undefined),
+    invoke: (repo) => repo.withStatementTimeout({ timeoutMs: 1, resourceTypes: 'Patient' }, async () => undefined),
   },
   { name: 'preCommit', kind: 'method', invoke: (repo) => repo.preCommit(async () => undefined) },
   { name: 'postCommit', kind: 'method', invoke: (repo) => repo.postCommit(async () => undefined) },
   {
     name: 'ensureInTransaction',
     kind: 'method',
-    invoke: (repo) => repo.ensureInTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' }),
+    invoke: (repo) =>
+      repo.ensureInTransaction(async () => undefined, {
+        resourceTypes: 'Patient',
+        source: 'repo-guard.test',
+      }),
   },
   { name: 'recordFhirQuota', kind: 'method', invoke: (repo) => repo.recordFhirQuota(1) },
 
@@ -405,7 +420,7 @@ describe('transaction-scoped repository guards', () => {
               observedError = err;
             }
           },
-          { resourceTypes: [], source: 'repo-guard.test' }
+          { resourceTypes: 'Patient', source: 'repo-guard.test' }
         );
         expect(observedError).toBeInstanceOf(Error);
         expect((observedError as Error).message).toContain('transaction-scoped repository');
@@ -418,10 +433,13 @@ describe('transaction-scoped repository guards', () => {
       const cloned = repo.clone();
       cloned[Symbol.dispose]();
 
-      expect(() => cloned.getDatabaseClient(repoAccess.sqlWriteConfig())).toThrow('Already closed');
+      expect(() => cloned.getDatabaseClient(repoAccess.sqlWriteConfig('Patient'))).toThrow('Already closed');
       await expect(cloned.createResource<Patient>({ resourceType: 'Patient' })).rejects.toThrow('Already closed');
       await expect(
-        cloned.withTransaction(async () => undefined, { resourceTypes: [], source: 'repo-guard.test' })
+        cloned.withTransaction(async () => undefined, {
+          resourceTypes: 'Patient',
+          source: 'repo-guard.test',
+        })
       ).rejects.toThrow('Already closed');
     }));
 });

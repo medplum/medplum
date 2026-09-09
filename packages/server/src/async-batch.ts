@@ -10,6 +10,7 @@ import type { MedplumServerConfig } from './config/types';
 import { getAuthenticatedContext } from './context';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { sendOutcome } from './fhir/outcomes';
+import { getProjectScopedUrl } from './util/url';
 import { queueBatchProcessing, queueLegacyBatchProcessing } from './workers/batch';
 
 export function asyncBatchHandler(
@@ -20,6 +21,10 @@ export function asyncBatchHandler(
     if (req.get('prefer') !== 'respond-async') {
       next();
       return;
+    }
+
+    if (!project.features?.includes('async-batch')) {
+      throw new OperationOutcomeError(badRequest('Async Batch feature not available'));
     }
 
     await runMiddleware(req, res, json({ type: JSON_TYPE, limit: config.maxBatchSize }));
@@ -45,10 +50,16 @@ export function asyncBatchHandler(
     });
 
     const { baseUrl } = getConfig();
-    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+    sendOutcome(res, accepted(exec.getContentLocation(getProjectScopedUrl(req.originalUrl, baseUrl))));
   };
 }
 
+/**
+ * Determines whether a project opts out of re-entrant async batch processing. Re-entrant processing
+ * (see workers/batch.ts) is the default unless the  `reentrantAsyncBatch` system setting is explicitly false.
+ * @param project - The submitting project.
+ * @returns True if the batch should be processed by the legacy worker.
+ */
 function useLegacyBatchProcessing(project: Project): boolean {
-  return !project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean;
+  return project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean === false;
 }

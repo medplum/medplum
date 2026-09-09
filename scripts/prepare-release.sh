@@ -69,6 +69,10 @@ sed -i'' -E -e "s/\"version\": \"[^\"]+\"/\"version\": \"$NEW_VERSION\"/g" packa
 find examples -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 
+# The root's only @medplum/* pin is under "overrides"; if it drifts from the workspace
+# version, npm resolves a second copy from the registry instead of deduping
+sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g" package.json
+
 # Set version in charts/Chart.yaml (Helm)
 sed -i'' -E -e "s/^appVersion: ['\"][^\'\"]+['\"]/appVersion: '$NEW_VERSION'/g" charts/Chart.yaml
 sed -i'' -E -e "s/^version: ['\"]?[^'\"]+['\"]?/version: '$NEW_VERSION'/g" charts/Chart.yaml

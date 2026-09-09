@@ -15,7 +15,7 @@ export async function handler(): Promise<Client.FileInfo[] | boolean> {
     await sftp.connect({
       host: 'test.rebex.net',
       username: 'demo',
-      password: 'password',
+      password: process.env.SFTP_PASSWORD,
     });
     data = await sftp.list('.');
     console.log('data', data);

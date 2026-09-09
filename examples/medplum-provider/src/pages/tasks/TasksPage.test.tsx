@@ -5,6 +5,7 @@ import type { Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { NavigateFunction } from 'react-router';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -28,7 +29,10 @@ describe('TasksPage', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Routes>
-              <Route path="/Task/:taskId?" element={<TasksPage />} />
+              <Route path="/Task" element={<TasksPage />} />
+              <Route path="/Task/new" element={<TasksPage />} />
+              <Route path="/Task/:taskId" element={<TasksPage />} />
+              <Route path="/Task/:taskId/new" element={<TasksPage />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -109,6 +113,89 @@ describe('TasksPage', () => {
       const queryString = searchCalls[0][1] as string;
       expect(queryString).toContain('_sort=-_lastUpdated');
     });
+  });
+
+  test('opens new task modal when URL is /Task/new', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup('/Task/new?_sort=-_lastUpdated&_count=20&_total=accurate');
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+  });
+
+  test('opens new task modal over a task when URL is /Task/:taskId/new', async () => {
+    await medplum.createResource(mockTask);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockTask);
+
+    setup('/Task/task-123/new?_sort=-_lastUpdated&_count=20&_total=accurate');
+
+    await waitFor(
+      () => {
+        expect(medplum.readResource).toHaveBeenCalledWith('Task', 'task-123');
+      },
+      { timeout: 3000 }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+  });
+
+  test('does not open new task modal on the list view', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup('/Task?_sort=-_lastUpdated&_count=20&_total=accurate');
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
+  });
+
+  test('clicking new task button navigates to /Task/new', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup('/Task?_sort=-_lastUpdated&_count=20&_total=accurate');
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    const plusButton = screen.getAllByRole('button').find((btn) => btn.querySelector('.tabler-icon-plus'));
+    expect(plusButton).toBeDefined();
+    await user.click(plusButton as HTMLElement);
+
+    expect(navigateSpy).toHaveBeenCalledWith(expect.stringMatching(/^\/Task\/new\?/));
+    expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
   });
 
   test('passes undefined selectedTaskId when no taskId in URL', async () => {

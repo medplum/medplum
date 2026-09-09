@@ -14,6 +14,7 @@ import {
   isResource,
   parseReference,
   resolveId,
+  ServiceTypeReferenceURI,
 } from '@medplum/core';
 import type { Appointment, Bundle, CodeableConcept, Patient, Slot } from '@medplum/fhirtypes';
 import {
@@ -33,7 +34,6 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { ServiceTypeReferenceURI } from '../../utils/servicetype';
 import classes from './AppointmentDetails.module.css';
 import { CreateEncounterForm } from './CreateEncounterForm';
 

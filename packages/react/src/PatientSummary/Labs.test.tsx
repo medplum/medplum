@@ -66,8 +66,8 @@ describe('PatientSummary - Labs', () => {
       fireEvent.click(screen.getByText('Test Report'));
     });
 
-    const modalTitle = await screen.findByText('Diagnostic Report');
-    expect(modalTitle).toBeInTheDocument();
+    expect(await screen.findByText('Lab Results')).toBeInTheDocument();
+    expect(screen.getByText('Diagnostic Report')).toBeInTheDocument();
   });
 
   test('Renders only first ServiceRequest when multiple have same requisition number', async () => {

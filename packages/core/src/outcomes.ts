@@ -3,6 +3,7 @@
 import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { arrayify } from './array';
 import type { Constraint } from './typeschema/types';
+import { EMPTY } from './utils';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -18,6 +19,7 @@ const CONTENT_TOO_LARGE_ID = 'content-too-large';
 const UNSUPPORTED_MEDIA_TYPE_ID = 'unsupported-media-type';
 const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
+export const RATE_LIMIT_RESET_EXTENSION_URL = 'https://medplum.com/fhir/StructureDefinition/rate-limit-reset';
 const ACCEPTED_ID = 'accepted';
 const SERVER_TIMEOUT_ID = 'server-timeout';
 const BUSINESS_RULE = 'business-rule';
@@ -217,6 +219,45 @@ export const tooManyRequests: OperationOutcome = {
     },
   ],
 };
+
+/**
+ * Adds the rate limit reset delay to an OperationOutcome.
+ * @param outcome - The rate limit outcome.
+ * @param msBeforeNext - Milliseconds until the rate limit resets.
+ */
+export function setRateLimitReset(outcome: OperationOutcome, msBeforeNext: number): void {
+  outcome.extension = [
+    ...(outcome.extension ?? EMPTY).filter((e) => e.url !== RATE_LIMIT_RESET_EXTENSION_URL),
+    {
+      url: RATE_LIMIT_RESET_EXTENSION_URL,
+      valueUnsignedInt: Math.ceil(msBeforeNext / 1000),
+    },
+  ];
+}
+
+/**
+ * Returns the number of milliseconds until a rate limit resets.
+ * @param outcome - The rate limit outcome.
+ * @returns Milliseconds until reset, or undefined if not present.
+ */
+export function getRateLimitReset(outcome: OperationOutcome): number | undefined {
+  const seconds = outcome.extension?.find((e) => e.url === RATE_LIMIT_RESET_EXTENSION_URL)?.valueUnsignedInt;
+  if (seconds !== undefined) {
+    return seconds * 1000;
+  }
+
+  for (const issue of outcome.issue) {
+    try {
+      const diagnostics = JSON.parse(issue.diagnostics ?? '') as { msBeforeNext?: unknown };
+      if (typeof diagnostics.msBeforeNext === 'number') {
+        return diagnostics.msBeforeNext;
+      }
+    } catch {
+      // Ignore diagnostics that are not JSON rate limit metadata.
+    }
+  }
+  return undefined;
+}
 
 export function accepted(location: string): OperationOutcome {
   return {
@@ -562,7 +603,7 @@ export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): str
 }
 
 export type IssueSeverity = 'error' | 'fatal' | 'warning' | 'information';
-export type IssueType = 'structure' | 'invariant' | 'processing';
+export type IssueType = 'structure' | 'invariant' | 'processing' | 'required';
 
 export function createOperationOutcomeIssue(
   severity: IssueSeverity,

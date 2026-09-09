@@ -25,10 +25,9 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
-import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
-import { isValidTableName } from '../fhir/sql';
+import { isValidPostgresIdentifier } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
@@ -438,6 +437,142 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
 });
 
+// POST to /admin/super/rebuild-index
+// to rebuild one or more PostgreSQL indexes without blocking writes.
+superAdminRouter.post(
+  '/rebuild-index',
+  [
+    body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
+    body('targets.*')
+      .isObject({ strict: true })
+      .withMessage('Each target must be an object')
+      .bail()
+      .custom((target) => Object.keys(target).length === 1 && ('table' in target || 'index' in target))
+      .withMessage('Each target must contain exactly one of table or index'),
+    body('targets.*.table')
+      .optional()
+      .isString()
+      .withMessage('Table name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid table name'),
+    body('targets.*.index')
+      .optional()
+      .isString()
+      .withMessage('Index name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid index name'),
+    checkExact(),
+  ],
+  async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const targets = req.body.targets as RebuildIndexTarget[];
+    const migrationActions = {
+      preDeploy: [],
+      postDeploy: targets.map((target) =>
+        'table' in target
+          ? { type: 'REINDEX_CONCURRENTLY' as const, target: 'TABLE' as const, name: target.table }
+          : { type: 'REINDEX_CONCURRENTLY' as const, target: 'INDEX' as const, name: target.index }
+      ),
+    };
+
+    const requestParams = new URLSearchParams();
+    for (const target of targets) {
+      if ('table' in target) {
+        requestParams.append('table', target.table);
+      } else {
+        requestParams.append('index', target.index);
+      }
+    }
+
+    const exec = new AsyncJobExecutor(ctx.systemRepo);
+    await exec.init(`${req.originalUrl}?${requestParams}`);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  }
+);
+
+type RebuildIndexTarget = { table: string } | { index: string };
+
+// POST to /admin/super/drop-invalid-indexes
+// to drop explicitly selected PostgreSQL indexes after verifying that they are still invalid and safe to remove.
+superAdminRouter.post(
+  '/drop-invalid-indexes',
+  [
+    body('targets').isArray({ min: 1, max: 10 }).withMessage('targets must be an array containing 1 to 10 items'),
+    body('targets.*')
+      .isObject({ strict: true })
+      .withMessage('Each target must be an object')
+      .bail()
+      .custom((target) => Object.keys(target).length === 2 && 'schema' in target && 'index' in target)
+      .withMessage('Each target must contain exactly schema and index'),
+    body('targets.*.schema')
+      .isString()
+      .withMessage('Schema name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid schema name'),
+    body('targets.*.index')
+      .isString()
+      .withMessage('Index name must be a string')
+      .bail()
+      .custom(isValidPostgresIdentifier)
+      .withMessage('Invalid index name'),
+    checkExact(),
+  ],
+  async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const targets = req.body.targets as DropInvalidIndexTarget[];
+    const migrationActions = {
+      preDeploy: [],
+      postDeploy: targets.map((target) => ({
+        type: 'DROP_INVALID_INDEX' as const,
+        schemaName: target.schema,
+        indexName: target.index,
+      })),
+    };
+
+    const requestParams = new URLSearchParams();
+    for (const target of targets) {
+      requestParams.append('index', `${target.schema}.${target.index}`);
+    }
+
+    const exec = new AsyncJobExecutor(ctx.systemRepo);
+    await exec.init(`${req.originalUrl}?${requestParams}`);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  }
+);
+
+type DropInvalidIndexTarget = { schema: string; index: string };
+
 // POST to /admin/super/setdataversion
 // to set the data version of the database.
 // This is intended to allow you to set the data version and skip over a data migration YOUR ARE SURE you do not need to apply.
@@ -469,7 +604,7 @@ superAdminRouter.post(
     body('tableName')
       .isString()
       .withMessage('Table name must be a string')
-      .custom(isValidTableName)
+      .custom(isValidPostgresIdentifier)
       .withMessage('Table name must be a snake_cased_string'),
     body('settings')
       .isObject()
@@ -516,12 +651,7 @@ superAdminRouter.post(
       .join(', ')});`;
 
     const startTime = Date.now();
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-    await systemRepo.executeRawSql(
-      query,
-      undefined,
-      repoAccess.sqlWriteConfig({ source: 'superAdminRouter.tableSettings' })
-    );
+    await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -541,7 +671,7 @@ superAdminRouter.post(
     body('tableNames.*')
       .isString()
       .withMessage('Table name(s) must be a string')
-      .custom(isValidTableName)
+      .custom(isValidPostgresIdentifier)
       .withMessage('Table name(s) must be a snake_cased_string')
       .optional(),
     body('analyze').isBoolean().optional().default(false),
@@ -571,12 +701,7 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
-      const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
-      await systemRepo.executeRawSql(
-        query,
-        undefined,
-        repoAccess.sqlWriteConfig({ source: 'superAdminRouter.vacuum' })
-      );
+      await getDatabasePool(DatabaseMode.WRITER).query(query); // shardId will be an input to this route
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

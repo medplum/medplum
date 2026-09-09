@@ -5,6 +5,9 @@ import type { Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { NavigateFunction } from 'react-router';
+import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TasksTab } from './TasksTab';
@@ -14,7 +17,8 @@ describe('TasksTab', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-    vi.clearAllMocks();
+    // restore, not just clear: a leaked useNavigate spy would stub out navigation for later tests
+    vi.restoreAllMocks();
   });
 
   const setup = (initialPath = '/Patient/patient-123/Task'): ReturnType<typeof render> => {
@@ -24,7 +28,9 @@ describe('TasksTab', () => {
           <MantineProvider>
             <Routes>
               <Route path="/Patient/:patientId/Task" element={<TasksTab />} />
+              <Route path="/Patient/:patientId/Task/new" element={<TasksTab />} />
               <Route path="/Patient/:patientId/Task/:taskId" element={<TasksTab />} />
+              <Route path="/Patient/:patientId/Task/:taskId/new" element={<TasksTab />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
@@ -166,6 +172,90 @@ describe('TasksTab', () => {
     expect(taskLink).toBeDefined();
     // getTaskUri includes the query string, so check that href starts with the expected path
     expect(taskLink?.getAttribute('href')).toMatch(/^\/Patient\/patient-456\/Task\/task-456/);
+  });
+
+  test('opens new task modal when URL is /Patient/:patientId/Task/new', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup('/Patient/patient-123/Task/new?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123');
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+  });
+
+  test('opens new task modal over a task when URL is /Patient/:patientId/Task/:taskId/new', async () => {
+    await medplum.createResource(mockTask);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockTask as any);
+
+    setup(
+      '/Patient/patient-123/Task/task-123/new?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123'
+    );
+
+    await waitFor(
+      () => {
+        expect(medplum.readResource).toHaveBeenCalledWith('Task', 'task-123');
+      },
+      { timeout: 3000 }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    });
+  });
+
+  test('does not open new task modal on the list view', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup('/Patient/patient-123/Task?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123');
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
+  });
+
+  test('clicking new task button navigates to the patient-scoped /new URL', async () => {
+    const navigateSpy = vi.fn() as NavigateFunction;
+    vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateSpy);
+    const user = userEvent.setup();
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    setup(
+      '/Patient/patient-123/Task/task-123?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123'
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('My Tasks')).toBeInTheDocument();
+    });
+
+    const plusButton = screen.getAllByRole('button').find((btn) => btn.querySelector('.tabler-icon-plus'));
+    expect(plusButton).toBeDefined();
+    await user.click(plusButton as HTMLElement);
+
+    expect(navigateSpy).toHaveBeenCalledWith(expect.stringMatching(/^\/Patient\/patient-123\/Task\/task-123\/new\?/));
   });
 
   test('shows empty state when no tasks found', async () => {

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { deepClone, LRUCache, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, setRateLimitReset, tooManyRequests } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Handler, Request, Response } from 'express';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
@@ -8,6 +8,7 @@ import { RateLimiterRedis } from 'rate-limiter-flexible';
 import type { MedplumServerConfig } from './config/types';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRateLimitRedis } from './redis';
+import { getNormalizedPath } from './util/url';
 
 // There are three separate rate limits:
 // 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints
@@ -99,6 +100,7 @@ function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimite
   addRateLimitHeader(result, res);
   const outcome: OperationOutcome = deepClone(tooManyRequests);
   outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: limiter.points });
+  setRateLimitReset(outcome, result.msBeforeNext);
   res.status(429).json(outcome).end();
 }
 
@@ -149,7 +151,7 @@ function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): num
 }
 
 function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
-  const url = req.originalUrl;
+  const url = getNormalizedPath(req.originalUrl);
   for (let i = 0; i < categories.length - 1; i++) {
     const category = categories[i];
     if (category.matchesUrl(url)) {

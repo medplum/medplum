@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '@medplum/core';
 import type { HealthcareService, PlanDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -7,7 +8,6 @@ import { within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent, waitFor } from '../../test-utils/render';
-import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '../../utils/scheduling';
 import { ResourceSchedulingPage } from './ResourceSchedulingPage';
 
 vi.mock('../../utils/notifications', () => ({

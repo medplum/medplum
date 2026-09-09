@@ -1,0 +1,36 @@
+/* Add color strips for appointment statuses */
+:global(.appointment) .eventInner {
+  margin-left: 8px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    bottom: 2px;
+    border-radius: 8px;
+    background-color: var(--status-color);
+  }
+}
+
+:global(.appointment.pending),
+:global(.appointment.proposed) {
+  --status-color: var(--mantine-color-yellow-3);
+}
+
+:global(.appointment.booked),
+:global(.appointment.arrived),
+:global(.appointment.fulfilled),
+:global(.appointment.checked-in) {
+  --status-color: var(--mantine-color-blue-3);
+}
+
+:global(.appointment.cancelled),
+:global(.appointment.noshow) {
+  --status-color: var(--mantine-color-red-3);
+}
+
+.eventTime {
+  color: var(--mantine-color-gray-2);
+}

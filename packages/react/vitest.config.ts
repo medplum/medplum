@@ -3,7 +3,7 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { medplumAliases } from '../../vitest.config';
+import { medplumAliases } from '../../aliases.mjs';
 
 export default defineConfig({
   plugins: [
@@ -31,6 +31,7 @@ export default defineConfig({
     },
   },
   test: {
+    name: '@medplum/react',
     globals: true,
     environment: 'jsdom',
     environmentOptions: {

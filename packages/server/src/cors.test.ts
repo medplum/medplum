@@ -109,6 +109,37 @@ describe('CORS', () => {
     expect(callback).toHaveBeenCalledWith(null, { origin: false });
   });
 
+  test('Allow FHIRcast hub alias', () => {
+    for (const path of ['/hub', '/api/hub', '/api/hub/.well-known/fhircast-configuration']) {
+      const req = {
+        header: () => 'http://localhost:3000',
+        path,
+      } as unknown as Request;
+      const callback = vi.fn();
+      corsOptions(req, callback);
+      expect(callback).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ credentials: true, origin: 'http://localhost:3000' })
+      );
+    }
+  });
+
+  test.each(['/api/fhir/R4/Patient', '/projects/123/fhir/R4/Patient', '/api/projects/123/fhir/R4/Patient'])(
+    'Allow mounted FHIR path %s',
+    (path) => {
+      const req = {
+        header: () => 'http://localhost:3000',
+        path,
+      } as unknown as Request;
+      const callback = vi.fn();
+      corsOptions(req, callback);
+      expect(callback).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({ credentials: true, origin: 'http://localhost:3000' })
+      );
+    }
+  );
+
   test('FHIR response includes RateLimit in Access-Control-Expose-Headers', async () => {
     const app = express();
     const config = await loadTestConfig();

@@ -1,0 +1,35 @@
+---
+title: DicomSeries
+sidebar_position: 20
+---
+
+import Link from '@docusaurus/Link';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import definition from '@site/static/data/medplumDefinitions/dicomseries.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DicomSeries
+
+Definition of a DICOM series, which represents a collection of DICOM images and related metadata that are part of a DICOM study.
+
+<Tabs queryString="section">
+  <TabItem value="schema" label="Schema" default>
+
+## Elements
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Elements
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+  </TabItem>
+
+</Tabs>

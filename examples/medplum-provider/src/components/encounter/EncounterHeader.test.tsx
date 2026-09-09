@@ -261,9 +261,175 @@ describe('EncounterHeader', () => {
     expect(screen.getByText(/Dr\. Test/)).toBeInTheDocument();
   });
 
+  test('renders detail without date when encounter has no period', () => {
+    setup({ encounter: { ...mockEncounter, period: undefined }, practitioner: mockPractitioner });
+
+    expect(screen.getByText('Dr. Test')).toBeInTheDocument();
+  });
+
   test('renders with unknown provider when practitioner is not provided', () => {
     setup({ practitioner: undefined });
 
     expect(screen.getByText(/Unknown Provider/)).toBeInTheDocument();
+  });
+
+  const openStatusMenu = async (
+    user: ReturnType<typeof userEvent.setup>,
+    buttonText: string,
+    itemText: string
+  ): Promise<void> => {
+    await user.click(screen.getByText(buttonText));
+    await waitFor(() => {
+      expect(screen.getByText(itemText)).toBeInTheDocument();
+    });
+  };
+
+  test('shows all transitions for planned encounters and moves to arrived', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'planned' }, onStatusChange });
+
+    await openStatusMenu(user, 'Planned', 'Arrived');
+
+    expect(screen.getByText('Arrived')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
+    expect(screen.getByText('Finished')).toBeInTheDocument();
+    expect(screen.getByText('Cancelled')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Arrived'));
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith('arrived');
+    });
+  });
+
+  test('moves planned encounter to in-progress', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'planned' }, onStatusChange });
+
+    await openStatusMenu(user, 'Planned', 'In Progress');
+    await user.click(screen.getByText('In Progress'));
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith('in-progress');
+    });
+  });
+
+  test('moves planned encounter to finished', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'planned' }, onStatusChange });
+
+    await openStatusMenu(user, 'Planned', 'Finished');
+    await user.click(screen.getByText('Finished'));
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith('finished');
+    });
+  });
+
+  test('asks for confirmation when cancelling a planned encounter', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'planned' }, onStatusChange });
+
+    await openStatusMenu(user, 'Planned', 'Cancelled');
+    await user.click(screen.getByText('Cancelled'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Are you sure you want to cancel this encounter?')).toBeInTheDocument();
+    });
+    expect(onStatusChange).not.toHaveBeenCalled();
+  });
+
+  test('moves arrived encounter to in-progress', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'arrived' }, onStatusChange });
+
+    await openStatusMenu(user, 'Arrived', 'In Progress');
+    await user.click(screen.getByText('In Progress'));
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith('in-progress');
+    });
+  });
+
+  test('moves arrived encounter to finished', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'arrived' }, onStatusChange });
+
+    await openStatusMenu(user, 'Arrived', 'In Progress');
+    await user.click(screen.getByText('Finished'));
+
+    await waitFor(() => {
+      expect(onStatusChange).toHaveBeenCalledWith('finished');
+    });
+  });
+
+  test('asks for confirmation when cancelling an arrived encounter', async () => {
+    const user = userEvent.setup();
+    const onStatusChange = vi.fn();
+    setup({ encounter: { ...mockEncounter, status: 'arrived' }, onStatusChange });
+
+    await openStatusMenu(user, 'Arrived', 'Cancelled');
+    await user.click(screen.getByText('Cancelled'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Are you sure you want to cancel this encounter?')).toBeInTheDocument();
+    });
+    expect(onStatusChange).not.toHaveBeenCalled();
+  });
+
+  test('renders empty menu and gray status for unsupported statuses', async () => {
+    const user = userEvent.setup();
+    setup({ encounter: { ...mockEncounter, status: 'triaged' } });
+
+    const statusButton = screen.getByRole('button', { name: 'Triaged' });
+    await user.click(statusButton);
+
+    await waitFor(() => {
+      expect(statusButton).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(screen.queryAllByRole('menuitem')).toHaveLength(0);
+  });
+
+  test('opens sign dialog for finished signed encounters', async () => {
+    const user = userEvent.setup();
+    setup({ encounter: { ...mockEncounter, status: 'finished' }, chartNoteStatus: ChartNoteStatus.Signed });
+
+    const signButtons = screen.getAllByRole('button');
+    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
+    expect(signButton).toBeDefined();
+    await user.click(signButton as HTMLElement);
+
+    await waitFor(() => {
+      expect(screen.getByText('Signing As')).toBeInTheDocument();
+    });
+  });
+
+  test('does not open sign dialog when chart note is signed and locked', async () => {
+    const user = userEvent.setup();
+    setup({ encounter: { ...mockEncounter, status: 'finished' }, chartNoteStatus: ChartNoteStatus.SignedAndLocked });
+
+    const signButtons = screen.getAllByRole('button');
+    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
+    expect(signButton).toBeDefined();
+    await user.click(signButton as HTMLElement);
+
+    expect(screen.queryByText('Signing As')).not.toBeInTheDocument();
+  });
+
+  test('opens insurance eligibility modal', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('button', { name: /Insurance Eligibility/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Insurance')).toBeInTheDocument();
+    });
   });
 });

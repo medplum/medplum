@@ -1,0 +1,54 @@
+/*
+ * The `.modal` ancestor is load-bearing, not redundant scoping: these rules override Mantine's own
+ * slot styles, which are a single class each, so they need two classes to win. Removing the
+ * ancestor drops the specificity to a tie and Mantine's values apply instead.
+ *
+ * `.modal` is the root slot, an ancestor of every other slot. The classes below are the slot
+ * classes themselves, so each selector matches exactly one element.
+ */
+.modal .content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal .header {
+  flex: 0 0 auto;
+  position: static;
+  padding-block: var(--mantine-spacing-sm);
+  padding-inline-start: var(--mantine-spacing-lg);
+  padding-inline-end: var(--mantine-spacing-sm);
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.modal .title {
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 700;
+}
+
+.modal .body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: var(--medplum-modal-body-height, auto);
+  padding: 0;
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--mb-padding, var(--mantine-spacing-lg));
+}
+
+.footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mb-padding, var(--mantine-spacing-lg));
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}

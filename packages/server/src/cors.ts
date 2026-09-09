@@ -3,6 +3,7 @@
 import type cors from 'cors';
 import type { Request } from 'express';
 import { getConfig } from './config/loader';
+import { getNormalizedPath } from './util/url';
 
 const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location', 'RateLimit'];
 
@@ -13,7 +14,7 @@ const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location',
  */
 export const corsOptions: cors.CorsOptionsDelegate<Request> = (req, callback) => {
   const origin = req.header('Origin');
-  const allow = isOriginAllowed(origin) && isPathAllowed(req.path);
+  const allow = isOriginAllowed(origin) && isPathAllowed(getNormalizedPath(req.path));
   if (allow) {
     callback(null, { origin, credentials: true, exposedHeaders, maxAge: 600 });
   } else {
@@ -44,9 +45,14 @@ const prefixes = [
   '/admin/',
   '/auth/',
   '/cds-services',
+  '/dicomweb/',
   '/email/',
   '/fhir/',
   '/fhircast/',
+  // The `/api` variant is spelled out because subscribers pointed at the FHIRcast alias
+  // send preflights to `/api/hub` rather than the root-mounted `/hub`.
+  '/hub',
+  '/api/hub',
   '/oauth2/',
   '/keyvalue/',
   '/shl/',

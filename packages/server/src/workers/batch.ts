@@ -10,7 +10,7 @@ import {
   OperationOutcomeError,
   serverError,
 } from '@medplum/core';
-import type { BatchInitialState, FhirRequest } from '@medplum/fhir-router';
+import type { BatchEvent, BatchInitialState, FhirRequest } from '@medplum/fhir-router';
 import { BatchProcessor, buildBatchResponseBundle, FhirRouter } from '@medplum/fhir-router';
 import type { AsyncJob, Binary, Bundle, BundleEntry, Parameters, UserConfiguration } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
@@ -18,6 +18,7 @@ import { DelayedError, Queue, Worker } from 'bullmq';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
+import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -26,6 +27,7 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { BASE_METRIC_OPTIONS, incrementCounter } from '../otel/otel';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -34,6 +36,7 @@ import {
   isJobActive,
   moveToDelayedAndThrow,
   queueRegistry,
+  trackJobMetrics,
   updateAsyncJobOutput,
 } from './utils';
 
@@ -104,6 +107,12 @@ const jobName = 'BatchJobData';
 const defaultCheckpointEntries = 10;
 const defaultCheckpointIntervalMs = 5000;
 
+// Entry-level throughput, counted here because no other queue has a sub-job unit of work; whole jobs
+// are counted for every queue as `jobsCompleted` (see `trackJobMetrics`). Both paths contribute, but the
+// legacy path hands the whole bundle to the router in one call, so its entries land as a single burst at
+// job end rather than ticking up as they process.
+const PROCESSED_ENTRIES_METRIC = 'medplum.batch.entriesProcessed';
+
 export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const queueOptions = defaultQueueOptions(config);
   const queue = new Queue<BatchJobData>(queueName, {
@@ -118,7 +127,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
   if (options?.workerEnabled !== false) {
     worker = new Worker<BatchJobData>(
       queueName,
-      (job) => {
+      trackJobMetrics('batch', (job) => {
         const { authState, requestId, traceId } = job.data;
         return runInAuthenticatedContext(authState, requestId, traceId, { async: true }, () => {
           if ('asyncJob' in job.data) {
@@ -129,7 +138,7 @@ export const initBatchWorker: WorkerInitializer = (config, options?: WorkerIniti
             throw new TypeError('Unrecognized BatchJobData', { cause: job.data });
           }
         });
-      },
+      }),
       getWorkerBullmqConfig(config, 'batch', queueOptions, { concurrency: 15 })
     );
 
@@ -220,6 +229,14 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
   return addBatchJobData({ asyncJobId: asyncJob.id, authState, requestId, traceId });
 }
 
+/**
+ * Enqueues a batch for the legacy single-shot worker. Only reachable when a project opts out of
+ * re-entrant processing via the `reentrantAsyncBatch` system setting. TODO{v5.2}
+ * @deprecated Can be removed in v5.2+ along with {@link execLegacyBatchJob}.
+ * @param bundle - The batch bundle to process.
+ * @param asyncJob - The AsyncJob tracking this batch.
+ * @returns The enqueued job.
+ */
 export async function queueLegacyBatchProcessing(
   bundle: Bundle,
   asyncJob: WithId<AsyncJob>
@@ -267,8 +284,11 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   const priorChunkSeq = chunkSeq;
   const resultsThisRun: Record<number, BundleEntry> = Object.create(null);
 
+  const router = new FhirRouter();
+  addBatchTelemetryListeners(router);
+
   if (!isJobActive(asyncJob)) {
-    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
+    await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
     return;
   }
 
@@ -276,12 +296,12 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
   let userConfig: UserConfiguration | undefined;
   let userRepo: Repository | undefined;
   let initialState: BatchInitialState | undefined;
+  let completedDispatched = false;
 
   try {
     userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
     userRepo = await getBatchUserRepo(authState, userConfig);
 
-    const router = new FhirRouter();
     const req: FhirRequest = {
       method: 'POST',
       url: '/',
@@ -342,13 +362,14 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
 
       await processor.processNextEntry();
       sinceCheckpoint++;
+      incrementCounter(PROCESSED_ENTRIES_METRIC, BASE_METRIC_OPTIONS);
 
       if (sinceCheckpoint >= checkpointEntries || Date.now() - lastCheckpointTime >= checkpointIntervalMs) {
         await checkpoint();
 
         asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
         if (!isJobActive(asyncJob)) {
-          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun);
+          await finalizeInterrupted(logger, systemRepo, store, asyncJob, chunkSeq, authState, resultsThisRun, router);
           return;
         }
       }
@@ -372,6 +393,11 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
       resultsThisRun
     );
     const errors = countBundleErrors(resultBundle);
+    // `resultBundle.type` is the response type (`batch-response`); the event reports the request
+    // type so it matches what the synchronous path emits.
+    dispatchBatchCompleted(router, initialState.bundle.type, errors);
+    completedDispatched = true;
+
     logger.info('completed processing batch', {
       results: getReferenceString(binary),
       entries: resultBundle.entry?.length,
@@ -399,7 +425,18 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
     try {
       if (userRepo && initialState) {
         // attach whatever partial results were persisted and fail the job
-        const { binary } = await assembleResultBundle(userRepo.clone(), store, initialState, chunkSeq, resultsThisRun);
+        const { binary, bundle } = await assembleResultBundle(
+          userRepo.clone(),
+          store,
+          initialState,
+          chunkSeq,
+          resultsThisRun
+        );
+        if (!completedDispatched) {
+          // Failure is terminal (DelayedError was re-thrown above), so close out the pre-event.
+          dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
+          completedDispatched = true;
+        }
         await exec
           .failJob(failErr, {
             resourceType: 'Parameters',
@@ -434,6 +471,7 @@ export async function execBatchJob(job: Job<ReentrantBatchJobData>): Promise<voi
  * @param chunkSeq - The number of result chunks written so far.
  * @param authState - The auth state captured when the batch was submitted.
  * @param inMemoryResults - Result entries produced during this run, i.e. checkpointed during this run.
+ * @param router - The router to dispatch the terminal batch event on.
  */
 async function finalizeInterrupted(
   logger: ILogger,
@@ -442,7 +480,8 @@ async function finalizeInterrupted(
   asyncJob: WithId<AsyncJob>,
   chunkSeq: number,
   authState: Readonly<AuthState>,
-  inMemoryResults: Record<number, BundleEntry>
+  inMemoryResults: Record<number, BundleEntry>,
+  router: FhirRouter
 ): Promise<void> {
   try {
     logger.info('Async batch job cancelled mid-flight; making partial results available', {
@@ -452,6 +491,9 @@ async function finalizeInterrupted(
     const userConfig = await getUserConfiguration(systemRepo, authState.project, authState.membership);
     const repo = await getBatchUserRepo(authState, userConfig);
     const { binary, bundle } = await assembleResultBundle(repo, store, initialState, chunkSeq, inMemoryResults);
+    // Cancellation is terminal, so close out the pre-event dispatched when the bundle was
+    // preprocessed, possibly by an earlier run of this job.
+    dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
     const output: Parameters = {
       resourceType: 'Parameters',
       parameter: [
@@ -499,6 +541,24 @@ async function assembleResultBundle(
   return { binary, bundle };
 }
 
+/**
+ * Dispatches the terminal batch telemetry event for an async batch, closing out the pre-event that
+ * `BatchProcessor.preprocess` dispatched when the bundle was first accepted.
+ *
+ * A re-entrant batch is processed by a succession of `BatchProcessor` instances, none of which can
+ * tell that the batch is finished or account for the runs before it, so the worker emits this
+ * rather than the processor. It must be sent exactly once per job, on completion, failure, or
+ * cancellation — and never when a run is merely checkpointed for a later worker to resume, which
+ * would count one batch as several.
+ * @param router - The router the telemetry listeners are subscribed to.
+ * @param bundleType - The type of the *request* bundle, matching what the synchronous path reports.
+ * @param errorCount - Failed entries across the whole job, from the assembled response bundle.
+ */
+function dispatchBatchCompleted(router: FhirRouter, bundleType: Bundle['type'], errorCount: number): void {
+  const event: BatchEvent = { type: 'batch', bundleType, errorCount };
+  router.dispatchEvent(event);
+}
+
 function countBundleErrors(bundle: Bundle): number {
   let errors = 0;
   for (const entry of bundle.entry ?? []) {
@@ -522,7 +582,11 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  // This path runs the whole bundle through `processBatch`, which dispatches both telemetry events
+  // itself; it only needed listeners subscribed. See the TODO in `execBatchJob` about the routes a
+  // bare FhirRouter exposes.
   const router = new FhirRouter();
+  addBatchTelemetryListeners(router);
   const req: FhirRequest = {
     method: 'POST',
     url: '/',
@@ -549,6 +613,7 @@ export async function execLegacyBatchJob(job: Job<LegacyBatchJobData>): Promise<
       if (!bundle.entry) {
         return;
       }
+      incrementCounter(PROCESSED_ENTRIES_METRIC, BASE_METRIC_OPTIONS, bundle.entry.length);
 
       let errors = 0;
       for (const entry of bundle.entry) {
