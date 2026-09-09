@@ -22,7 +22,7 @@ export function addBatchTelemetryListeners(router: FhirRouter): void {
 
     // It would be nice to include projectId as an attribute, but some metrics destinations
     // charge per unique attribute combination, so omit projectId to avoid extra costs
-    const metricOpts = { attributes: { bundleType } };
+    const metricOpts = { attributes: { bundleType, async: ctx.isAsync } };
     if (count !== undefined) {
       recordHistogramValue('medplum.batch.entries', count, metricOpts);
     }

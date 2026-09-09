@@ -140,4 +140,31 @@ describe('SchedulingWorkspace', () => {
       expect(screen.getAllByText('Renee Alvarez').length).toBeGreaterThan(0);
     });
   });
+
+  describe('saying which clock the calendar is drawn on', () => {
+    test('warns when a calendar is scheduled somewhere other than the viewer', async () => {
+      // The fixtures' providers are scheduled in Eastern and Central time and the runner is not,
+      // which is the situation the notice exists for: the grid above it is drawn on the runner's clock.
+      const medplum = await setupClient();
+      renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+      const notice = await screen.findByTestId('calendar-timezone-notice');
+      expect(notice).toHaveTextContent('Calendar shown in your local time');
+    });
+
+    test('stops warning once every calendar kept elsewhere is deselected', async () => {
+      const medplum = await setupClient();
+      renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+      await screen.findByTestId('calendar-timezone-notice');
+      await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByText('Dr. Tunde Okafor')).toBeInTheDocument());
+
+      await userEvent.click(screen.getByText('Dr. Maya Rivera').closest('button') as HTMLElement);
+      await userEvent.click(screen.getByText('Dr. Tunde Okafor').closest('button') as HTMLElement);
+
+      // Neither calendar left on the grid is drawn on another clock, so there is nothing to warn about.
+      await waitFor(() => expect(screen.queryByTestId('calendar-timezone-notice')).toBeNull());
+    });
+  });
 });
