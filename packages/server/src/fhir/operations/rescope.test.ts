@@ -10,16 +10,8 @@ import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
-import { createTestProject } from '../../test.setup';
+import { createTestProject, getSuperAdminAccessToken } from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
-
-async function superAdminToken(): Promise<string> {
-  const res = await createTestProject({
-    withAccessToken: true,
-    project: { superAdmin: true },
-  });
-  return res.accessToken;
-}
 
 describe('User/$rescope', () => {
   const app = express();
@@ -60,7 +52,7 @@ describe('User/$rescope', () => {
     const user = await invitedUser('server');
     expect(user.project).toBeUndefined();
 
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
@@ -83,7 +75,7 @@ describe('User/$rescope', () => {
     const user = await invitedUser('project');
     expect(user.project?.reference).toStrictEqual(`Project/${project.id}`);
 
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
@@ -269,7 +261,7 @@ describe('User/$rescope', () => {
 
   test('Missing project reference for scope=project returns 400', async () => {
     const user = await invitedUser('server');
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
@@ -285,7 +277,7 @@ describe('User/$rescope', () => {
 
   test('Invalid scope value returns 400', async () => {
     const user = await invitedUser('project');
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
@@ -301,7 +293,7 @@ describe('User/$rescope', () => {
 
   test('Already server-scoped returns 400 when rescoping to server', async () => {
     const user = await invitedUser('server');
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
@@ -317,7 +309,7 @@ describe('User/$rescope', () => {
 
   test('Already in target project returns 400 when rescoping to same project', async () => {
     const user = await invitedUser('project');
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
@@ -348,7 +340,7 @@ describe('User/$rescope', () => {
       await systemRepo.deleteResource('ProjectMembership', m.id);
     }
 
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)
@@ -406,7 +398,7 @@ describe('User/$rescope', () => {
     { name: 'no slash', reference: 'not-a-reference' },
   ])('Invalid project reference ($name) returns 400', async ({ reference }) => {
     const user = await invitedUser('server');
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
@@ -425,7 +417,7 @@ describe('User/$rescope', () => {
 
   test('Target project does not exist returns 404', async () => {
     const user = await invitedUser('server');
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
@@ -447,7 +439,7 @@ describe('User/$rescope', () => {
     // Invite into otherProject so the User has a membership there
     const user = await invitedUser('server', otherProject);
 
-    const superToken = await superAdminToken();
+    const superToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post(`/fhir/R4/User/${user.id}/$rescope`)
       .set('Authorization', 'Bearer ' + superToken)

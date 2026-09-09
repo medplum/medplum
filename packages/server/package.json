@@ -26,7 +26,7 @@
     "migrate": "npm run build --workspace=@medplum/definitions && tsx src/migrations/migrate-main.ts",
     "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./dist/otel/instrumentation.js dist/index.js",
     "test": "vitest run --exclude src/seed.test.ts",
-    "test:seed": "vitest run src/seed.test.ts --testTimeout=400000"
+    "test:seed": "vitest run --config vite.seed.config.ts --testTimeout=400000"
   },
   "dependencies": {
     "@appsignal/opentelemetry-instrumentation-bullmq": "0.9.0",
