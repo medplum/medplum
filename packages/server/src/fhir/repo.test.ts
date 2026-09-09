@@ -844,7 +844,6 @@ describe('FHIR Repo', () => {
 
       const repo = new Repository({
         projects: [project],
-        currentProject: project,
         extendedMode: true,
         skipBackgroundJobs: true,
         author: {

@@ -46,14 +46,14 @@ flowchart TD
 
 ### CoverageEligibilityRequest
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `insurer` | Reference to the payer Organization | Yes |
-| `provider` | Reference to the provider Organization | Yes |
-| `subscriber` | Reference to the subscriber Patient | Yes |
-| `insurance` | Array of Coverages. If there are more than one, the array item labeled as the focal will be used for the eligibility check | Yes |
-| `servicedPeriod.start` | Service period start date | No (defaults to current date if not provided) |
-| `item` | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. `item.category` is what selects the service types the check asks about, described below. | No (defaults to service type code `30`) |
+| Field                  | Description                                                                                                                                                                                                                                             | Required                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `insurer`              | Reference to the payer Organization                                                                                                                                                                                                                     | Yes                                           |
+| `provider`             | Reference to the provider Organization                                                                                                                                                                                                                  | Yes                                           |
+| `subscriber`           | Reference to the subscriber Patient                                                                                                                                                                                                                     | Yes                                           |
+| `insurance`            | Array of Coverages. If there are more than one, the array item labeled as the focal will be used for the eligibility check                                                                                                                              | Yes                                           |
+| `servicedPeriod.start` | Service period start date                                                                                                                                                                                                                               | No (defaults to current date if not provided) |
+| `item`                 | Array of details about the eligibility being checked. This includes what procedure, product, or service is being provided as well as why it is being provided. `item.category` is what selects the service types the check asks about, described below. | No (defaults to service type code `30`)       |
 
 #### Service type codes
 
@@ -65,19 +65,19 @@ Each `item.category.coding` entry with the system `https://x12.org/codes/service
 
 These are the codes most implementations start with.
 
-| Code | Display |
-|------|---------|
-| `30` | Health Benefit Plan Coverage |
-| `12` | Durable Medical Equipment Purchase |
-| `35` | Dental Care |
-| `47` | Hospital |
-| `48` | Hospital - Inpatient |
-| `50` | Hospital - Outpatient |
-| `88` | Pharmacy |
+| Code | Display                                 |
+| ---- | --------------------------------------- |
+| `30` | Health Benefit Plan Coverage            |
+| `12` | Durable Medical Equipment Purchase      |
+| `35` | Dental Care                             |
+| `47` | Hospital                                |
+| `48` | Hospital - Inpatient                    |
+| `50` | Hospital - Outpatient                   |
+| `88` | Pharmacy                                |
 | `98` | Professional (Physician) Visit - Office |
-| `AL` | Vision (Optometry) |
-| `MH` | Mental Health |
-| `UC` | Urgent Care |
+| `AL` | Vision (Optometry)                      |
+| `MH` | Mental Health                           |
+| `UC` | Urgent Care                             |
 
 For the complete set of accepted codes, see the service type codes section of [Stedi's eligibility code lists](https://www.stedi.com/docs/healthcare/eligibility-code-lists). Stedi also publishes [guidance on choosing service type codes](https://www.stedi.com/docs/healthcare/eligibility-stc-procedure-codes), and the codes themselves are maintained as the [X12 Service Type Codes](https://x12.org/codes/service-type-codes).
 
@@ -103,14 +103,15 @@ item: [
   },
 ],
 ```
+
 :::
 
 ### Organization (Payer)
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `identifier` | System must be `https://www.stedi.com/healthcare/network` | Yes |
-| `name` | Organization name | Yes |
+| Field        | Description                                               | Required |
+| ------------ | --------------------------------------------------------- | -------- |
+| `identifier` | System must be `https://www.stedi.com/healthcare/network` | Yes      |
+| `name`       | Organization name                                         | Yes      |
 
 :::info[]
 If you are using an Organization from the Medplum Payer Directory, it will have the correct Payer identifier, so you can just use that.
@@ -118,29 +119,29 @@ If you are using an Organization from the Medplum Payer Directory, it will have 
 
 ### Organization (Provider)
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `identifier` | System must be `http://hl7.org/fhir/sid/us-npi` | Yes |
-| `name` | Organization name | Yes |
+| Field        | Description                                     | Required |
+| ------------ | ----------------------------------------------- | -------- |
+| `identifier` | System must be `http://hl7.org/fhir/sid/us-npi` | Yes      |
+| `name`       | Organization name                               | Yes      |
 
 ### Patient (Subscriber)
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name.family` | Last name | Yes |
-| `name.given` | First name | Yes |
-| `birthDate` | Date of birth | Yes |
-| `identifier` | System `http://hl7.org/fhir/sid/us-ssn` | No (but recommended) |
+| Field         | Description                             | Required             |
+| ------------- | --------------------------------------- | -------------------- |
+| `name.family` | Last name                               | Yes                  |
+| `name.given`  | First name                              | Yes                  |
+| `birthDate`   | Date of birth                           | Yes                  |
+| `identifier`  | System `http://hl7.org/fhir/sid/us-ssn` | No (but recommended) |
 
 ### Coverage
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `subscriberId` | Insurance subscriber ID | Yes |
-| `status` | Should be "active" | Yes |
-| `subscriber` | Reference to a Patient or RelatedPerson | Yes |
-| `beneficiary` | Reference to a Patient or RelatedPerson | Yes |
-| `payor` | Reference to the payer Organization | Yes |
+| Field          | Description                             | Required |
+| -------------- | --------------------------------------- | -------- |
+| `subscriberId` | Insurance subscriber ID                 | Yes      |
+| `status`       | Should be "active"                      | Yes      |
+| `subscriber`   | Reference to a Patient or RelatedPerson | Yes      |
+| `beneficiary`  | Reference to a Patient or RelatedPerson | Yes      |
+| `payor`        | Reference to the payer Organization     | Yes      |
 
 ## Executing the Eligibility Check
 
@@ -170,7 +171,7 @@ The Stedi sandbox successfully validates only a few payloads. **We recommend usi
 :::
 
 <details>
-<summary>Example transaction Bundle (recommended for Stedi sandbox testing)</summary>
+<summary>Example transaction Bundle for Eligibility Checks (recommended for Stedi sandbox testing)</summary>
 
 ```json
 {
@@ -181,47 +182,28 @@ The Stedi sandbox successfully validates only a few payloads. **We recommend usi
       "fullUrl": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
       "resource": {
         "resourceType": "Patient",
-        "name": [
-          {
-            "family": "Doe",
-            "given": ["John"]
-          }
-        ],
-        "birthDate": "1994-04-04"
+        "name": [{ "family": "DOE", "given": ["JANE"] }],
+        "birthDate": "2004-04-04",
+        "gender": "female",
+        "identifier": [{ "system": "http://hl7.org/fhir/sid/us-ssn", "value": "987654321" }]
       },
-      "request": {
-        "method": "POST",
-        "url": "Patient"
-      }
+      "request": { "method": "POST", "url": "Patient" }
     },
     {
       "fullUrl": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
       "resource": {
         "resourceType": "Organization",
-        "name": "Provider Name",
-        "identifier": [
-          {
-            "system": "http://hl7.org/fhir/sid/us-npi",
-            "value": "1999999984"
-          }
-        ]
+        "name": "My Provider",
+        "identifier": [{ "system": "http://hl7.org/fhir/sid/us-npi", "value": "1999999984" }]
       },
-      "request": {
-        "method": "POST",
-        "url": "Organization"
-      }
+      "request": { "method": "POST", "url": "Organization" }
     },
     {
       "fullUrl": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
       "resource": {
         "resourceType": "Organization",
-        "name": "Aetna",
-        "identifier": [
-          {
-            "system": "https://www.stedi.com/healthcare/network",
-            "value": "68069"
-          }
-        ],
+        "name": "AETNA INC",
+        "identifier": [{ "system": "https://www.stedi.com/healthcare/network", "value": "60054" }],
         "type": [
           {
             "coding": [
@@ -234,36 +216,30 @@ The Stedi sandbox successfully validates only a few payloads. **We recommend usi
           }
         ]
       },
-      "request": {
-        "method": "POST",
-        "url": "Organization"
-      }
+      "request": { "method": "POST", "url": "Organization" }
     },
     {
       "fullUrl": "urn:uuid:d4f5a6b7-8c9d-4e0f-b1a2-3c4d5e6f7a8b",
       "resource": {
         "resourceType": "Coverage",
         "status": "active",
-        "subscriberId": "AMBETTER123",
+        "subscriberId": "AETNA12345",
         "subscriber": {
           "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
-          "display": "John Doe"
+          "display": "JANE DOE"
         },
         "beneficiary": {
           "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
-          "display": "John Doe"
+          "display": "JANE DOE"
         },
         "payor": [
           {
             "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
-            "display": "Aetna"
+            "display": "AETNA INC"
           }
         ]
       },
-      "request": {
-        "method": "POST",
-        "url": "Coverage"
-      }
+      "request": { "method": "POST", "url": "Coverage" }
     },
     {
       "fullUrl": "urn:uuid:e5a6b7c8-9d0e-4f1a-82b3-4d5e6f7a8b9c",
@@ -273,16 +249,16 @@ The Stedi sandbox successfully validates only a few payloads. **We recommend usi
         "purpose": ["benefits"],
         "patient": {
           "reference": "urn:uuid:a1c2d3e4-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
-          "display": "John Doe"
+          "display": "JANE DOE"
         },
-        "created": "2026-03-16",
+        "created": "2026-09-08",
         "provider": {
           "reference": "urn:uuid:b2d3e4f5-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
-          "display": "Provider Name"
+          "display": "My Provider"
         },
         "insurer": {
           "reference": "urn:uuid:c3e4f5a6-7b8c-4d9e-af1a-2b3c4d5e6f7a",
-          "display": "Aetna"
+          "display": "AETNA INC"
         },
         "insurance": [
           {
@@ -306,10 +282,7 @@ The Stedi sandbox successfully validates only a few payloads. **We recommend usi
           }
         ]
       },
-      "request": {
-        "method": "POST",
-        "url": "CoverageEligibilityRequest"
-      }
+      "request": { "method": "POST", "url": "CoverageEligibilityRequest" }
     }
   ]
 }
@@ -353,9 +326,9 @@ flowchart TD
     class Coverage coverage
 ```
 
-It will also contain the benefits information for the coverage in it's `insurance.item` field. 
+It will also contain the benefits information for the coverage in it's `insurance.item` field.
 
-[CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse).insurance.item field will contain the benefits information about the patient's coverage. Read more about [Receiving a CoverageEligibilityResponse](/docs/billing/insurance-eligibility-checks#receiving-a-response).  
+[CoverageEligibilityResponse](/docs/api/fhir/resources/coverageeligibilityresponse).insurance.item field will contain the benefits information about the patient's coverage. Read more about [Receiving a CoverageEligibilityResponse](/docs/billing/insurance-eligibility-checks#receiving-a-response).
 
 Each `insurance.item` entry describes a benefit the payer reported, and its `category.coding` records the X12 service type codes that benefit applies to, using the system `https://x12.org/codes/service-type-codes`. Benefits scoped to general coverage also carry a `http://terminology.hl7.org/CodeSystem/ex-benefitcategory` coding for code `30`. A payer may report benefits for service types beyond the ones you asked about, and a benefit the payer did not scope to any service type has no `category` at all.
 
@@ -511,7 +484,7 @@ Each `insurance.item` entry describes a benefit the payer reported, and its `cat
               "allowedUnsignedInt": 10 // 10% coinsurance
             }
           ]
-        },        
+        },
 
         // DEDUCTIBLE - Amount before insurance contributes (in-network)
         {
@@ -667,7 +640,7 @@ Each `insurance.item` entry describes a benefit the payer reported, and its `cat
           ]
         },
 
-        // OUT-OF-POCKET (STOP LOSS) - the amount of money that the patient has to pay 
+        // OUT-OF-POCKET (STOP LOSS) - the amount of money that the patient has to pay
         // out of pocket before the insurance covers 100% (in-network)
         {
           "category": {
@@ -747,9 +720,11 @@ Each `insurance.item` entry describes a benefit the payer reported, and its `cat
       ]
     },
     //You will usually get out of network benefits as well
-  ]
+
+]
 }
-```
+
+````
 </details>
 
 Here are the STEDI specific codes that will be included in each of these fields:
@@ -855,7 +830,7 @@ Here are the STEDI specific codes that will be included in each of these fields:
 
 ## Different Subscriber and Dependent
 
-If the subscriber and dependent are different, for example if you are checking benefits for a spouse or child who is covered under their parent's insurance, your Coverage resource will need to reference both the subscriber and dependent Patient resources. You will need to use this model for coverage eligibility checks that are not for the subscriber themselves. 
+If the subscriber and dependent are different, for example if you are checking benefits for a spouse or child who is covered under their parent's insurance, your Coverage resource will need to reference both the subscriber and dependent Patient resources. You will need to use this model for coverage eligibility checks that are not for the subscriber themselves.
 
 ```mermaid
 flowchart TD
@@ -889,7 +864,7 @@ flowchart TD
     class PayerOrg,ProviderOrg organization
     class Patient patient
     class Coverage coverage
-```
+````
 
 ## How to find the raw eligibility check data
 

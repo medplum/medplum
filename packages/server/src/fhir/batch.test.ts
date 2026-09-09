@@ -30,6 +30,7 @@ import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { generateAccessToken } from '../oauth/keys';
+import * as otelModule from '../otel/otel';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { ReentrantBatchJobData } from '../workers/batch';
 import { execBatchJob as execBatchJobImpl, getBatchQueue } from '../workers/batch';
@@ -188,11 +189,22 @@ describe('Batch and Transaction processing', () => {
         },
       ],
     };
+    const histogram = vi.spyOn(otelModule, 'recordHistogramValue');
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(batch);
+
+    try {
+      const metricOptions = { attributes: { bundleType: 'batch', async: false } };
+      expect(histogram).toHaveBeenCalledWith('medplum.batch.entries', 6, metricOptions);
+      expect(histogram).toHaveBeenCalledWith('medplum.batch.errors', 1, metricOptions);
+      expect(histogram).toHaveBeenCalledWith('medplum.batch.size', expect.any(Number), metricOptions);
+    } finally {
+      histogram.mockRestore();
+    }
+
     expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
