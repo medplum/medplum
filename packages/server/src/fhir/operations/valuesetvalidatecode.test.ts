@@ -446,6 +446,99 @@ describe('ValueSet validate-code', () => {
     ]);
   });
 
+  test('Validates code via include.valueSet', async () => {
+    const system = 'http://example.com/system-' + randomUUID();
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'CodeSystem',
+        url: system,
+        status: 'active',
+        content: 'complete',
+        concept: [{ code: 'TARGET', display: 'Target' }],
+      } satisfies CodeSystem);
+    expect(csRes).toHaveStatus(201);
+
+    const innerRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/inner-vs-' + randomUUID(),
+        status: 'active',
+        compose: { include: [{ system, concept: [{ code: 'TARGET' }] }] },
+      } satisfies ValueSet);
+    expect(innerRes).toHaveStatus(201);
+
+    const outerRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ValueSet',
+        url: 'http://example.com/outer-vs-' + randomUUID(),
+        status: 'active',
+        // No system: this include pulls in the other ValueSet
+        compose: { include: [{ valueSet: [(innerRes.body as ValueSet).url as string] }] },
+      } satisfies ValueSet);
+    expect(outerRes).toHaveStatus(201);
+
+    const validateRes = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: (outerRes.body as ValueSet).url },
+          { name: 'coding', valueCoding: { system, code: 'TARGET' } },
+        ],
+      });
+    expect(validateRes).toHaveStatus(200);
+    expect(validateRes.body.parameter).toContainExactly([
+      { name: 'result', valueBoolean: true },
+      { name: 'display', valueString: 'Target' },
+    ]);
+  });
+
+  test('Terminates when ValueSets include each other', async () => {
+    const urlA = 'http://example.com/cycle-a-' + randomUUID();
+    const urlB = 'http://example.com/cycle-b-' + randomUUID();
+    for (const [url, other] of [
+      [urlA, urlB],
+      [urlB, urlA],
+    ]) {
+      const res = await request(app)
+        .post('/fhir/R4/ValueSet')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'ValueSet',
+          url,
+          status: 'active',
+          compose: { include: [{ valueSet: [other] }] },
+        } satisfies ValueSet);
+      expect(res).toHaveStatus(201);
+    }
+
+    const validateRes = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: urlA },
+          { name: 'coding', valueCoding: { system, code: 'NOPE' } },
+        ],
+      });
+    expect(validateRes).toHaveStatus(200);
+    expect(validateRes.body.parameter).toContainExactly([{ name: 'result', valueBoolean: false }]);
+  });
+
   test('Falls back to validating system URL when CodeSystem unavailable', async () => {
     const system = 'http://example.com/other-codes-' + randomUUID();
     const res = await request(app)
