@@ -8,6 +8,8 @@ This guide explains how laboratory results are handled in the Medplum-Health Gor
 
 When Health Gorilla receives results from performing laboratories (Quest, Labcorp, regional labs, etc.), they are synchronized into your Medplum project as structured FHIR resources. The sections below describe the resulting data model and how results are matched to orders and patients.
 
+Orders placed through the [Lab Ordering iFrame](./iframe.md) also require this results integration. The iframe is for ordering only, and its browser callback does not deliver results. The iframe bot does not create Medplum orders or sync patient identifiers, so verify [order and patient matching](#resolving-orders-with-results) when setting up this flow.
+
 ## How results arrive in Medplum 
 
 There are two ways results and related resources get into your project:

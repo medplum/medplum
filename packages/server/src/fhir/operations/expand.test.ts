@@ -14,7 +14,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, getSuperAdminAccessToken, initTestAuth, withTestContext } from '../../test.setup';
 import { repoAccess } from '../repository/access-tracker';
 import type { PgQueryable } from '../sql';
 import { addExpansionItems, countCandidatesBounded, expansionQuery, hydrateCodeSystemProperties } from './expand';
@@ -313,7 +313,7 @@ describe('Expand', () => {
       version: '1',
       content: 'not-present',
     };
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
 
     // First version of code system
     const res1 = await request(app)
@@ -1975,7 +1975,7 @@ describe('Expand', () => {
       } satisfies CodeSystem);
     expect(csRes).toHaveStatus(201);
 
-    const superAdminToken = await initTestAuth({ superAdmin: true });
+    const superAdminToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${url}&filter=clien`)
       .set('Authorization', 'Bearer ' + superAdminToken);
