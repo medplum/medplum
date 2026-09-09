@@ -5,7 +5,15 @@ import { getStatus, OperationOutcomeError } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Mock } from 'vitest';
 import { getLogger } from '../logger';
-import { GLOBAL_SHARD_ID, normalizeShardId, PLACEHOLDER_SHARD_ID, resolveShardId, TODO_SHARD_ID } from './sharding';
+import {
+  GLOBAL_SHARD_ID,
+  normalizeShardId,
+  PLACEHOLDER_SHARD_ID,
+  resetStrictShardingEnforcement,
+  resolveShardId,
+  setStrictShardingEnforcement,
+  TODO_SHARD_ID,
+} from './sharding';
 
 const PROJECT_SHARD_ID = 'shard-1';
 
@@ -54,7 +62,12 @@ describe('resolveShardId', () => {
     });
 
     test('logs warning on project-scoped resource types', () => {
-      resolveGlobalShardId(types('Patient'), 'shard-project');
+      const fn = (): unknown => resolveGlobalShardId(types('Patient'), 'shard-project');
+      expect(fn).toThrow('Operation cannot be routed to a project shard from global-only');
+
+      setStrictShardingEnforcement(false);
+      expect(logSpy).toHaveBeenCalledTimes(0);
+      fn();
       expect(logSpy).toHaveBeenCalledTimes(1);
       expect(logSpy).toHaveBeenCalledWith(
         expect.any(Number),
@@ -64,10 +77,16 @@ describe('resolveShardId', () => {
           source: 'shard-project',
         })
       );
+      resetStrictShardingEnforcement();
     });
 
     test('logs warning when an operation mixes global and project resource types', () => {
-      resolveGlobalShardId(types('ProjectMembership', 'Practitioner'), 'shard-span');
+      const fn = (): unknown => resolveGlobalShardId(types('ProjectMembership', 'Practitioner'), 'shard-span');
+      expect(fn).toThrow('Operation cannot be routed to a project shard from global-only');
+
+      setStrictShardingEnforcement(false);
+      expect(logSpy).toHaveBeenCalledTimes(0);
+      fn();
       expect(logSpy).toHaveBeenCalledTimes(1);
       expect(logSpy).toHaveBeenCalledWith(
         expect.any(Number),

@@ -29,6 +29,16 @@ export const TODO_SHARD_ID = 'todo';
 
 export type ShardRouting = { kind: 'global-only' } | { kind: 'project-shard'; shardId: string };
 
+let strictShardingEnforcement = process.env.NODE_ENV === 'test';
+
+export function resetStrictShardingEnforcement(): void {
+  strictShardingEnforcement = process.env.NODE_ENV === 'test';
+}
+
+export function setStrictShardingEnforcement(value: boolean): void {
+  strictShardingEnforcement = value;
+}
+
 /**
  * Resource types that always live on the global shard, regardless of the project they belong to.
  *
@@ -50,6 +60,7 @@ export const globalShardResourceTypes: ReadonlySet<ResourceType> = new Set([
   'SmartHealthLink', // currently read by id, TODO add projectId to URLs and throw if not available so this line can be removed
   'SmartAppLaunch', // read by id during login
   'DomainConfiguration', // read by domain for external auth flow
+  'UserConfiguration', // TODO confirm this makes sense
 ]);
 
 /**
@@ -114,16 +125,17 @@ export function resolveShardId(
   }
 
   if (routing.kind === 'global-only') {
-    // to strictly enforce that global-only routing cannot touch project-scoped resources,
-    // throw instead log
-    getLogger().warn('Operation cannot be routed to a project shard from global-only routing', {
-      project: projectTypes.join(', '),
-      source: source || 'unknown',
-    });
-    // throw shardRoutingError(
-    //   'Operation cannot be routed to a project shard from global-only routing',
-    //   `project: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
-    // );
+    if (strictShardingEnforcement) {
+      throw shardRoutingError(
+        'Operation cannot be routed to a project shard from global-only routing',
+        `project: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
+      );
+    } else {
+      getLogger().warn('Operation cannot be routed to a project shard from global-only routing', {
+        project: projectTypes.join(', '),
+        source: source || 'unknown',
+      });
+    }
   }
 
   // the fallback to global MUST go away when global-only routing touching
