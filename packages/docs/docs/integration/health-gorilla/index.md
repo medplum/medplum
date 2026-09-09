@@ -13,7 +13,7 @@ Need help? This is an advanced integration. [Contact our team](mailto:info+healt
 
 This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering.
 
-To embed Health Gorilla's hosted ordering interface in your application, use the [`health-gorilla-iframe` bot](./iframe.md). It returns an authenticated ordering URL for a Medplum patient. Results continue to arrive through the API integration.
+Choose one ordering interface for your workflow: build a form with Medplum's [React components and `useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react), or embed Health Gorilla's hosted interface using the [`health-gorilla-iframe` bot](./iframe.md). The iframe is optional; you do not need both approaches. Results arrive through the API integration with either approach.
 
 For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). To backfill or recover results that were not delivered by webhook, see [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
 

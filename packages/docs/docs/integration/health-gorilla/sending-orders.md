@@ -10,7 +10,7 @@ For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data 
 
 This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
 
-To embed Health Gorilla's hosted ordering interface, see [Lab Ordering iFrame](./iframe.md). The `health-gorilla-iframe` bot returns a patient-specific ordering URL. The custom ordering workflow below uses Medplum FHIR resources and `send-to-health-gorilla` to submit orders.
+This guide covers building an order form with Medplum's React components and `useHealthGorillaLabOrder` hook, using Medplum FHIR resources and `send-to-health-gorilla` to submit orders. The [Lab Ordering iFrame](./iframe.md) is an optional alternative that embeds Health Gorilla's hosted interface. Choose either approach for your ordering workflow; the form components and hook do not require the iframe bot.
 
 The high-level workflow for sending laboratory & imaging orders from a custom order form is:
 

@@ -4,9 +4,11 @@ sidebar_position: 4
 
 # Lab Ordering iFrame
 
-The `health-gorilla-iframe` bot lets your application launch Health Gorilla's hosted lab ordering interface for a Medplum patient. It returns an authenticated URL that you embed in an `<iframe>`; the bot itself does not render a user interface.
+:::info[Choose one ordering interface]
+The iframe is an **optional alternative** to Medplum's [React order form components and `useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react). Use either the hosted iframe or the Medplum form components and hook for your ordering workflow. You do not need both, and the iframe is not required for the Health Gorilla integration.
+:::
 
-Use this flow to let clinicians order through Health Gorilla's interface. To build your own ordering interface, see [Creating an Order Form in React](./sending-orders.md#creating-an-order-form-in-react).
+The `health-gorilla-iframe` bot lets your application launch Health Gorilla's hosted lab ordering interface for a Medplum patient. It returns an authenticated URL that you embed in an `<iframe>`; the bot itself does not render a user interface.
 
 Health Gorilla's [Lab Network iFrame](https://developer.healthgorilla.com/docs/lab-network-iframe) supports order placement for a single patient and a single order. Results are handled separately through the [results integration](./receiving-results.md).
 
