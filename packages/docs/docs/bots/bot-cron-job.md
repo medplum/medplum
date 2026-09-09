@@ -61,12 +61,14 @@ A Bot is code, not authority, so `targetReference` may name a Bot in a
 [linked project](/docs/access/projects#project-linking) while `onBehalfOf` may not. That is what
 lets a shared project publish a Bot once and each customer project schedule it:
 
-- The `Cron` and its `onBehalfOf` `ProjectMembership` live in the customer project, which needs the
-  `cron` feature. `onBehalfOf` can never name a membership in another project, linked or not — it
-  chooses the access policy the run assumes, so allowing it would let one project borrow another's
-  privileges.
-- The Bot lives in the shared project, which needs the `bots` feature, and the customer project must
-  link to it. If the shared project sets `exportedResourceType`, it has to include `Bot`.
+- The `Cron` and its `onBehalfOf` `ProjectMembership` live in the customer project, which needs both
+  the `cron` and `bots` features. `onBehalfOf` can never name a membership in another project,
+  linked or not — it chooses the access policy the run assumes, so allowing it would let one project
+  borrow another's privileges.
+- The Bot lives in the shared project, which the customer project must link to. If the shared
+  project sets `exportedResourceType`, it has to include `Bot`. The shared project does not itself
+  need the `bots` feature to publish a Bot others run — that feature is checked against
+  `onBehalfOf`'s project, since that is where the run executes — but it does need it to deploy one.
 - The customer project still needs a `ProjectMembership` of its own for that Bot to point
   `onBehalfOf` at.
 

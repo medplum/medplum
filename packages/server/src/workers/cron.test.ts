@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, parseSearchRequest, resolveId } from '@medplum/core';
+import { createReference, getReferenceString, Operator, parseSearchRequest, resolveId } from '@medplum/core';
 import type {
   AuditEvent,
   Bot,
@@ -746,6 +746,57 @@ describe('Cron across linked projects', () => {
         })
       ).rejects.toThrow(`Cannot resolve 'Bot/${closedBot.id}'`);
     }));
+
+  /*
+   * The `bots` feature follows onBehalfOf's project, since that is where the run executes and whose
+   * data it touches. A shared project only publishes the code, so its own entitlement says nothing.
+   */
+  test.each([
+    [[] as string[], ['bots', 'cron'], false],
+    [['bots'], ['cron'], true],
+  ])('Publisher features %j, customer features %j -> blocked=%s', (sharedFeatures, customerFeatures, blocked) =>
+    withTestContext(async () => {
+      const shared = await createTestProject({ withClient: true, project: { features: sharedFeatures as [] } });
+      const publisherRepo = new Repository({
+        extendedMode: true,
+        projects: [shared.project],
+        author: createReference(shared.client),
+      });
+      const bot = await publisherRepo.createResource<Bot>({ resourceType: 'Bot', name: 'published-bot' });
+
+      const customer = await createTestProject({
+        withClient: true,
+        project: { features: customerFeatures as [], link: [{ project: createReference(shared.project) }] },
+      });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(customer.project),
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+      const cron = await customerRepoFor(customer, shared.project).createResource<Cron>({
+        resourceType: 'Cron',
+        active: true,
+        cronString: '* * * * *',
+        onBehalfOf: createReference(membership),
+        targetReference: createReference(bot),
+      });
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      const auditEvent = await systemRepo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) }],
+      });
+      expect(auditEvent?.meta?.project).toStrictEqual(customer.project.id);
+      if (blocked) {
+        expect(auditEvent?.outcomeDesc).toStrictEqual('Bots not enabled');
+      } else {
+        // Reaching the runtime at all is the point: the publisher's missing feature did not gate it
+        expect(auditEvent?.outcomeDesc).toStrictEqual('Unsupported bot runtime');
+      }
+    })
+  );
 
   test('Unregisters the job when the link is revoked after the Cron was written', () =>
     withTestContext(async () => {
