@@ -50,6 +50,9 @@ export default {
  * Clicking a different day with the form part-filled re-opens it on the new day and
  * clears the answers; clicking again inside the day already open leaves them alone.
  *
+ * Clicking a booked appointment instead — the Tuesday and Wednesday imaging visits, or
+ * anything booked from the form — opens its details over the calendar.
+ *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.

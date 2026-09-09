@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, CloseButton, Group, Title, useMantineTheme } from '@mantine/core';
+import { Alert, CloseButton, Drawer, Group, Title, useMantineTheme } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import {
   getExtensionValue,
   getReferenceString,
@@ -24,6 +25,7 @@ import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
+import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
@@ -56,6 +58,8 @@ export interface SchedulingWorkspaceProps {
  *   The form writes the booking and announces what it wrote, which is what puts the
  *   new appointment on the calendar beside it — a host supplies no data for any of it.
  *   What was written is reported through `onBooked`, for a host that wants to say so.
+ * - Shows what is booked: clicking an appointment opens {@link AppointmentDetails} in a
+ *   drawer over the calendar.
  * - Highlights the time last chosen, wherever it was chosen: the click that opened the
  *   pane, then whatever the form's time search settles on, and nothing while the form
  *   holds no time. The calendar is never moved to reach it — a highlight off the week
@@ -78,11 +82,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [range, setRange] = useState<DateTimeRange>();
 
-  // What was clicked
+  // What was selected
   const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>();
+
   // What the calendar highlights
   const [highlight, setHighlight] = useState<DateTimeRange>();
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
+
 
   // Finds all bookable Schedules, with one search per bookable actor type.
   useEffect(() => {
@@ -187,6 +194,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [closeBooking, onBooked]
   );
 
+  const selectAppointment = useCallback((appointment: Appointment): void => {
+    if (appointment.id) {
+      setSelectedAppointmentId(appointment.id);
+    }
+  }, []);
+
+  const closeAppointment = useCallback((): void => setSelectedAppointmentId(undefined), []);
+
+  const openAppointment = useMemo((): WithId<Appointment> | undefined => {
+    if (selectedAppointmentId) {
+      return (appointments ?? []).find((a) => a.id === selectedAppointmentId);
+    }
+    return undefined;
+  }, [appointments, selectedAppointmentId]);
+
   const toItem = (candidate: ScheduleCandidate, selected: boolean): CalendarsPanelItem => {
     const color = colorByScheduleId.get(candidate.schedule.id);
     if (!color) {
@@ -226,10 +248,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           onRangeChange={setRange}
           loading={resourcesLoading}
           onSelectInterval={startBooking}
+          onSelectAppointment={selectAppointment}
           selection={highlight}
         />
         <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} anyUnknown={anyUnknown} />
       </div>
+      <Drawer
+        opened={openAppointment !== undefined}
+        onClose={closeAppointment}
+        position="right"
+        title="Appointment details"
+        closeButtonProps={{ 'aria-label': 'Close appointment details' }}
+      >
+        {openAppointment && <AppointmentDetails appointment={openAppointment} />}
+      </Drawer>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>
           <Group justify="space-between" wrap="nowrap" mb="sm">

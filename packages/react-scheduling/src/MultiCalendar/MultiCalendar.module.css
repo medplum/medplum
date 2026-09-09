@@ -27,8 +27,13 @@
 }
 
 :global(.appointment.cancelled),
-:global(.appointment.noshow) {
+:global(.appointment.noshow),
+:global(.appointment.entered-in-error) {
   --status-color: var(--mantine-color-red-3);
+}
+
+:global(.appointment.waitlist) {
+  --status-color: var(--mantine-color-gray-3);
 }
 
 .eventTime {
