@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 ## Overview
 
-Medplum supports the [OAuth 2.0 Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693) proposed standard. Token exchange provides a mechanism exchange an external access token for a Medplum access token without redirecting the user. This is useful when your application has already authenticated the user with an external identity provider, such as [Auth0](https://auth0.com/), and would access the medplum api services without requiring the user to log in again.
+Medplum supports the [OAuth 2.0 Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693) proposed standard. Token exchange provides a mechanism to exchange an external access token for a Medplum access token without redirecting the user. This is useful when your application has already authenticated the user with an external identity provider, such as [Auth0](https://auth0.com/), and want to access the Medplum API services without requiring the user to log in again.
 
 ## Set up your ClientApplication
 
@@ -62,7 +62,7 @@ The client makes a token exchange request to the token endpoint with an extensio
 
 The response will include a Medplum access token, which you can use to access the Medplum API. The Medplum SDK also provides the [`exchangeExternalAccessToken()`](/docs/sdk/core.medplumclient.exchangeexternalaccesstoken) helper method.
 
-## Server-scoped users and the `membership_id` parameter (self hosted only)
+## Server-scoped users and the `membership_id` parameter (self-hosted only)
 
 The setup above configures the external identity provider on a single [`ClientApplication`](https://app.medplum.com/ClientApplication). Because a `ClientApplication` lives inside one [`Project`](/docs/api/fhir/medplum/project), the exchange is implicitly scoped to that project: Medplum only considers the user's [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) records **within the client's project**. For most [project-scoped users](/docs/user-management/project-vs-server-scoped-users) that resolves to a single membership and the token "just works".
 

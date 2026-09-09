@@ -6,7 +6,7 @@ sidebar_position: 4
 
 Bots are an advanced Medplum feature that enable complex workflows.
 
-One of the most powerful uses is to combine Bots with [Questionnaires](/docs/api/fhir/resources/questionnaire)
+One of the most powerful uses is to combine Bots with [Questionnaires](/docs/api/fhir/resources/questionnaire).
 
 A FHIR [Questionnaire](/docs/api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
 
@@ -85,8 +85,8 @@ import reviewAnswersUrl from './review-answers.png';
 Let’s take a look at the resource that is created:
 
 - The resulting resource is of type [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse)
-- The main property of interest is called `item`, all the form questions as well as their answers.
-- Each item has a `linkId` that you set in the builder, as well an answer array. Most of the time this array will contain 0 or 1 elements, but it could contain multiple elements in the case of multi-choice fields
+- The main property of interest is called `item`, which contains all the form questions as well as their answers.
+- Each item has a `linkId` that you set in the builder, as well as an answer array. Most of the time this array will contain 0 or 1 elements, but it could contain multiple elements in the case of multi-choice fields
 - The `questionnaire` property contains a reference to the original questionnaire that generated this response
 
 ### 4. Write the Bot
@@ -174,8 +174,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 The last step is to have your Bot listen to your Questionnaire responses.
 
-1. Go to you the your Questionnaire's page in the [Medplum App](https://app.medplum.com/Questionnaire)
-2. Click on the the "Bots" tab
+1. Go to your Questionnaire's page in the [Medplum App](https://app.medplum.com/Questionnaire)
+2. Click on the "Bots" tab
 3. Start typing the name of your Bot.
 4. When your Bot appears in the type ahead, select it and click "Connect"
 

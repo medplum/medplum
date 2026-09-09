@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 
 # Building Migration Pipelines
 
-When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data _into_ Medplum.
+When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migrate data _into_ Medplum.
 
 [patient]: /docs/api/fhir/resources/patient
 [condition]: /docs/api/fhir/resources/condition
@@ -52,9 +52,9 @@ This approach ensures that your operation is idempotent and can be safely repeat
 
 You can read more about Conditional Updates [here](/docs/fhir-datastore/working-with-fhir#upsert).
 
-## Using Batches Requests for Efficiency
+## Using Batch Requests for Efficiency
 
-You can use [FHIR batch request](/docs/fhir-datastore/fhir-batch-requests) allow you to combine multiple operations into a single API call, improving efficiency.
+[FHIR batch requests](/docs/fhir-datastore/fhir-batch-requests) allow you to combine multiple operations into a single API call, improving efficiency.
 
 Batch requests are a great option to improve throughput when performing multiple independent operations, each of which can succeed or fail independently.
 

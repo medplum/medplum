@@ -12,13 +12,13 @@ Upload [questionnaire-bundle.json](https://drive.google.com/file/d/1oiFZSnXcloFO
 
 ## View Questionnaire
 
-Second, navigate to the [Questionnaires](https://app.medplum.com/Questionnaire?_count=20&_fields=id,_lastUpdated,name,subjectType&_offset=0&_sort=-_lastUpdated) on your Medplum App and click on the Questionnaire you just uploaded.
+Second, navigate to the [Questionnaires](https://app.medplum.com/Questionnaire?_count=20&_fields=id,_lastUpdated,name,subjectType&_offset=0&_sort=-_lastUpdated) page on your Medplum App and click on the Questionnaire you just uploaded.
 
 Familiarize yourself with the Questionnaire tool - you can see a `Preview`, add items to the questionnaire through the `Builder` and more.
 
 ## Try Questionnaire
 
-To fill out the Questionnaire, navigate to the Patient on your Medplum app and click on any Patient. You'll see an `Apps` tab on the Patient which is were all Questionnaires where `subjectType` is `Patient`.
+To fill out the Questionnaire, navigate to the Patients page on your Medplum app and click on any Patient. You'll see an `Apps` tab on the Patient which is where all Questionnaires with a `subjectType` of `Patient` will appear.
 
 Click on the link and fill out the Questionnaire.
 
@@ -40,5 +40,5 @@ There are bots in the [medplum-demo-bot repository](https://github.com/medplum/m
 
 ## Related Resources
 
-- [Download Questionnaires](https://lhcformbuilder.nlm.nih.gov/) that have LOINC codes from NIH - includes many common assessments like PHQ-9, Activities of Daily living and more
-- [Video Overview on NIH Questionnaires](https://youtu.be/E5gttZwr2mk) on the Youtube
+- [Download Questionnaires](https://lhcformbuilder.nlm.nih.gov/) that have LOINC codes from NIH - includes many common assessments like PHQ-9, Activities of Daily Living and more
+- [Video Overview on NIH Questionnaires](https://youtu.be/E5gttZwr2mk) on YouTube

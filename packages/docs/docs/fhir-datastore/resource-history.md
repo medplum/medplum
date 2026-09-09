@@ -24,19 +24,19 @@ To access a resource's history in the [Medplum App](https://app.medplum.com), fo
 
 Alternatively, you can navigate directly to this page at https://app.medplum.com/:resourceType/:id/history.
 
-The `History` tab shows every version of the selected resource, representing each time the resoruce was changed. Along with this, it will show when the change was made, as well as the user who made the update.
+The `History` tab shows every version of the selected resource, representing each time the resource was changed. Along with this, it will show when the change was made, as well as the user who made the update.
 
 Selecting a version will bring you to the `Diff` page, which displays the differences between that version and the version directly previous to it.
 
 ![Diff Page](diff-page.png)
 
-You can also view the raw JSON of the selected version by clickin on the `Raw` tab.
+You can also view the raw JSON of the selected version by clicking on the `Raw` tab.
 
 ![Raw Page](raw-page.png)
 
 ## Accessing the /\_history Endpoint
 
-The history of a resouce can also be viewed by accessing the `/_history` endpoint in the FHIR API. This endpoint allows you to retrieve the history of an individual resource, a resource type, or all resources in your system.
+The history of a resource can also be viewed by accessing the `/_history` endpoint in the FHIR API. This endpoint allows you to retrieve the history of an individual resource, a resource type, or all resources in your system.
 
 To access the `/_history` endpoint, make a GET request to the url of the desired resource or resource type.
 
