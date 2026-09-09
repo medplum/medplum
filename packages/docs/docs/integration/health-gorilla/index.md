@@ -13,6 +13,8 @@ Need help? This is an advanced integration. [Contact our team](mailto:info+healt
 
 This guide provides an overview of Medplum's Health Gorilla labs integration and a list of recommendations for systemizing lab ordering.
 
+To embed Health Gorilla's hosted ordering interface in your application, use the [`health-gorilla-iframe` bot](./iframe.md). It returns an authenticated ordering URL for a Medplum patient. Results continue to arrive through the API integration.
+
 For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). To backfill or recover results that were not delivered by webhook, see [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
 
 ## Prerequisites
@@ -138,6 +140,8 @@ To avoid this and ensure results are properly matched to the correct patient:
 By doing this, the `receive-from-health-gorilla` bot will successfully match the incoming result's Placer/Accession number to the placeholder order, automatically linking the result to the correct patient and avoiding unsolicited reports.
 
 #### 3. Ordering from Medplum
+
+You can embed Health Gorilla's hosted ordering interface using the [Lab Ordering iFrame](./iframe.md) bot, or build a custom order form with Medplum's React components.
 
 In the final phase, you transition to placing lab orders directly from your Medplum application. To accelerate the development of the ordering interface, you can use the [`useHealthGorillaLabOrder` hook](./sending-orders.md#creating-an-order-form-in-react) from the `@medplum/health-gorilla-react` package. This headless UI hook helps manage the complex state required for creating an order, including searching and selecting lab tests, answering Ask on Entry (AOE) questions, and completing the order workflow.
 

@@ -10,7 +10,9 @@ For a vendor-neutral overview of diagnostic ordering concepts and the FHIR data 
 
 This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
 
-The high-level workflow for sending laboratory & imaging orders is:
+To embed Health Gorilla's hosted ordering interface, see [Lab Ordering iFrame](./iframe.md). The `health-gorilla-iframe` bot returns a patient-specific ordering URL. The custom ordering workflow below uses Medplum FHIR resources and `send-to-health-gorilla` to submit orders.
+
+The high-level workflow for sending laboratory & imaging orders from a custom order form is:
 
 1. Present the provider with the appropriate lab order form (CPOE)
 2. Create the appropriate FHIR resources based on that information
