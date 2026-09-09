@@ -407,7 +407,9 @@ export function intervalsExceedingCapacity(slots: Slot[], candidateCapacity: num
       if (event.entering) {
         open.push(event.capacity);
       } else {
-        open.splice(open.indexOf(event.capacity), 1);
+        const idx = open.indexOf(event.capacity);
+        assert(idx >= 0);
+        open.splice(idx, 1);
       }
     }
 
