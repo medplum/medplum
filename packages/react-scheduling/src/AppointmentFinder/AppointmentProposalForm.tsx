@@ -28,6 +28,8 @@ import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import type { BookingAuthorizationValues } from './AppointmentFinder.authorization';
 import {
+  DEFAULT_DIAGNOSIS_VALUE_SET,
+  DEFAULT_PROCEDURE_VALUE_SET,
   EMPTY_AUTHORIZATION_VALUES,
   hasRequiredAuthorizationValues,
   toCodings,
@@ -96,9 +98,9 @@ export interface AppointmentProposalFormProps {
    * rather than leaving it on a time nobody chose.
    */
   readonly onChangeTime?: (time: DateTimeRange | undefined) => void;
-  /** The ValueSet the procedure code field binds to. */
+  /** The ValueSet the procedure code field binds to. Defaults to the full CPT value set. */
   readonly procedureBinding?: string;
-  /** The ValueSet the diagnosis code field binds to. */
+  /** The ValueSet the diagnosis code field binds to. Defaults to the full ICD-10-CM value set. */
   readonly diagnosisBinding?: string;
   /**
    * Performs the booking with the proposal the form assembled.
@@ -138,8 +140,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onToggleTimeFinder,
     onChangeService,
     onChangeTime,
-    procedureBinding,
-    diagnosisBinding,
+    procedureBinding = DEFAULT_PROCEDURE_VALUE_SET,
+    diagnosisBinding = DEFAULT_DIAGNOSIS_VALUE_SET,
     onBook,
   } = props;
 

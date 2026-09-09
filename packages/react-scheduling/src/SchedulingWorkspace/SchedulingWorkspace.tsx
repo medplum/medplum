@@ -43,9 +43,9 @@ const NONE_DESELECTED: DeselectedIdsByActorType = {
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
-  /** The ValueSet the procedure code field binds to. See `AppointmentProposalForm`. */
+  /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
   readonly procedureBinding?: string;
-  /** The ValueSet the diagnosis code field binds to. See `AppointmentProposalForm`. */
+  /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
   readonly diagnosisBinding?: string;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
 }
