@@ -3,6 +3,12 @@
 import type { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { valueSetElementToCoding } from '@medplum/react';
 
+/** The value set the procedure code field binds to when a host names none. */
+export const DEFAULT_PROCEDURE_VALUE_SET = 'http://www.ama-assn.org/go/cpt/vs';
+
+/** The value set the diagnosis code field binds to when a host names none. */
+export const DEFAULT_DIAGNOSIS_VALUE_SET = 'http://hl7.org/fhir/sid/icd-10-cm/vs';
+
 /**
  * The authorization-related values that the booking form captures for a visit type
  * that requires authorization.
