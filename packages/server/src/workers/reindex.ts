@@ -5,6 +5,7 @@ import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { reconnectOnError } from '../redis';
 import { LongJob } from './long-job';
 
 /*
@@ -39,7 +40,7 @@ const progressLogThreshold = 50_000;
 
 export function initReindexWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   queue = new Queue<ReindexJobData>(queueName, {

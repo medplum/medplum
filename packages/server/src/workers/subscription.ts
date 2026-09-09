@@ -28,7 +28,7 @@ import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { getRedis } from '../redis';
+import { getRedis, reconnectOnError } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -80,7 +80,7 @@ let worker: Worker<SubscriptionJobData> | undefined = undefined;
  */
 export function initSubscriptionWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   queue = new Queue<SubscriptionJobData>(queueName, {

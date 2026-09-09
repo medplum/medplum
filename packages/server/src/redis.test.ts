@@ -1,7 +1,14 @@
 import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
-import { closeRedis, getRedis, getRedisSubscriber, getRedisSubscriberCount, initRedis } from './redis';
+import {
+  closeRedis,
+  getRedis,
+  getRedisSubscriber,
+  getRedisSubscriberCount,
+  initRedis,
+  reconnectOnError,
+} from './redis';
 
 describe('Redis', () => {
   let config: MedplumServerConfig;
@@ -19,6 +26,20 @@ describe('Redis', () => {
   test('Not initialized', async () => {
     expect(() => getRedis()).toThrow();
     await expect(closeRedis()).resolves.toBeUndefined();
+  });
+
+  describe('reconnectOnError', () => {
+    test('Returns 2 for READONLY error', () => {
+      expect(reconnectOnError(new Error("READONLY You can't write against a read only replica"))).toBe(2);
+    });
+
+    test('Returns 2 for LOADING error', () => {
+      expect(reconnectOnError(new Error('LOADING Redis is loading the dataset in memory'))).toBe(2);
+    });
+
+    test('Returns false for other errors', () => {
+      expect(reconnectOnError(new Error('NOAUTH Authentication required'))).toBe(false);
+    });
   });
 
   describe('getRedisSubscriber', () => {
