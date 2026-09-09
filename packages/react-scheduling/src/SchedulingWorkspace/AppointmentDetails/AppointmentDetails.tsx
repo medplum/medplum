@@ -1,13 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Stack, Text } from '@mantine/core';
+import { Alert, Badge, Button, Divider, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { formatCodeableConcept, isDefined } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, Reference } from '@medplum/fhirtypes';
-import { ReferenceDisplay } from '@medplum/react';
+import { formatCodeableConcept, isDefined, normalizeErrorString, resolveId } from '@medplum/core';
+import type {
+  Appointment,
+  AppointmentParticipant,
+  Parameters,
+  Reference,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
+import { ReferenceDisplay, ValueSetAutocomplete } from '@medplum/react';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
-import { Fragment } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { formatDayHeading, formatZonedTime } from '../../AppointmentFinder/AppointmentFinder.times';
+import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
+
+/** The statuses `Appointment/:id/$cancel` accepts. It refuses any other with a 400. */
+const CANCELABLE_STATUSES: readonly Appointment['status'][] = ['pending', 'booked'];
 
 const STATUS_COLORS: Record<Appointment['status'], string> = {
   proposed: 'yellow',
@@ -48,9 +59,60 @@ export interface AppointmentDetailsProps {
  * @returns The details component
  */
 export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element {
-  const { appointment } = props;
+  const { appointment, onCancelled, cancellationReasonValueSet } = props;
+  const medplum = useMedplum();
   const patient = getPatientParticipant(appointment)?.actor;
   const otherActors = getOtherActors(appointment);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<unknown>();
+  const [reason, setReason] = useState<ValueSetExpansionContains>();
+
+  const cancel = useCallback(async (): Promise<void> => {
+    if (!reason) {
+      return;
+    }
+    setCancelling(true);
+    setCancelError(undefined);
+    try {
+      const cancelled = await medplum.post<WithId<Appointment>>(
+        medplum.fhirUrl('Appointment', appointment.id, '$cancel'),
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'cancelationReason',
+              valueCodeableConcept: {
+                coding: [{ system: reason.system, code: reason.code, display: reason.display }],
+              },
+            },
+          ],
+        } satisfies Parameters
+      );
+
+      // `$cancel` is a custom operation, so the MedplumClient cannot tell what it changed.
+      // Announce changes to the Appointment so other UI can reflect this update.
+      medplum.notifyResourceModified({
+        resourceType: 'Appointment',
+        operation: 'update',
+        id: cancelled.id,
+        resource: cancelled,
+      });
+      // The operation deleted the Slots the appointment was holding. Read off the
+      // appointment as it stood before.
+      for (const slot of appointment.slot ?? []) {
+        const id = resolveId(slot);
+        if (id) {
+          medplum.notifyResourceModified({ resourceType: 'Slot', operation: 'delete', id });
+        }
+      }
+
+      onCancelled?.(cancelled);
+    } catch (err: unknown) {
+      setCancelError(err);
+    } finally {
+      setCancelling(false);
+    }
+  }, [appointment, medplum, onCancelled, reason]);
 
   return (
     <Stack gap="sm">
@@ -72,6 +134,41 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
         }
       />
       <Detail label="Notes" value={appointment.comment ?? appointment.description} />
+      <Divider />
+      <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
+      {cancelError !== undefined && (
+        <Alert color="red" title="Could not cancel this appointment">
+          {normalizeErrorString(cancelError)}
+        </Alert>
+      )}
+      {CANCELABLE_STATUSES.includes(appointment.status) ? (
+        <>
+          {/*
+           * Coded against the value set rather than against a list kept here, and not
+           * `creatable`: a reason typed in by hand would be written as a code no
+           * terminology knows.
+           */}
+          <ValueSetAutocomplete
+            binding={cancellationReasonValueSet ?? APPOINTMENT_CANCELLATION_REASON_VALUE_SET}
+            label="Cancellation reason"
+            placeholder="Search reasons"
+            maxValues={1}
+            creatable={false}
+            required
+            onChange={(reasons) => setReason(reasons[0])}
+          />
+          {/* Nothing is cancelled without a reason for it. */}
+          <Button color="red" variant="light" loading={cancelling} disabled={!reason} onClick={cancel}>
+            Cancel Appointment
+          </Button>
+        </>
+      ) : (
+        <Text size="sm" c="dimmed">
+          {appointment.status === 'cancelled'
+            ? 'This appointment is cancelled.'
+            : `An appointment in '${appointment.status}' status cannot be cancelled.`}
+        </Text>
+      )}
     </Stack>
   );
 }
