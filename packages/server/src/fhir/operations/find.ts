@@ -4,9 +4,9 @@ import {
   allOk,
   arrayify,
   badRequest,
-  createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  isDefined,
   isNotFound,
   isReference,
   OperationOutcomeError,
@@ -15,7 +15,7 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, HealthcareService, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, HealthcareService, Reference, Schedule } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
@@ -28,6 +28,7 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 import {
   applyExistingSlots,
   assertAllLoaded,
+  buildAppointmentSlots,
   getSchedulingParametersGroup,
   resolveAvailability,
   slotsOverlappingInterval,
@@ -44,6 +45,7 @@ const appointmentFindOperation = makeOperationDefinition(
       { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
       { use: 'in', name: 'service-type-reference', type: 'string', min: 1, max: '1', searchType: 'reference' },
       { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
+      { use: 'in', name: 'ignore-appointment', type: 'string', min: 0, max: '1', searchType: 'reference' },
       { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
       { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
     ],
@@ -55,6 +57,7 @@ type AppointmentFindParameters = {
   end: string;
   'service-type-reference': string;
   schedule: string | string[];
+  'ignore-appointment'?: string;
   _count?: number;
 };
 
@@ -62,6 +65,7 @@ type AppointmentFindParameters = {
 async function handler(params: {
   schedules: WithPath<Reference<Schedule> & { reference: string }>[];
   healthcareService: Reference<HealthcareService> & { reference: string };
+  ignoreAppointment?: WithPath<Reference<Appointment> & { reference: string }>;
   start: string;
   end: string;
   _count?: number;
@@ -87,7 +91,8 @@ async function handler(params: {
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedules, existingSlots, healthcareService] = await Promise.all([
+  const ignoreAppointment = params.ignoreAppointment;
+  const [schedules, allExistingSlots, healthcareService, ignoredAppointment] = await Promise.all([
     ctx.repo.readReferences(params.schedules).then((schedules) => copyPaths(params.schedules, schedules)),
     slotsOverlappingInterval(ctx.repo, params.schedules, requestedRange),
     ctx.repo.readReference<HealthcareService>(params.healthcareService).catch((err) => {
@@ -96,9 +101,22 @@ async function handler(params: {
       }
       throw err;
     }),
+    ignoreAppointment
+      ? ctx.repo.readReference<Appointment>(ignoreAppointment).catch((err) => {
+          if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+            throw new OperationOutcomeError(badRequest('Appointment not found', getPath(ignoreAppointment)));
+          }
+          throw err;
+        })
+      : undefined,
   ]);
 
   assertAllLoaded(schedules, 'Loading schedule failed');
+
+  // The Slots held by the appointment being reassigned shouldn't block that appointment from
+  // moving, so drop them before computing availability.
+  const ignoredSlotIds = new Set((ignoredAppointment?.slot ?? []).map((ref) => resolveId(ref)).filter(isDefined));
+  const existingSlots = allExistingSlots.filter((slot) => !ignoredSlotIds.has(slot.id));
 
   const parameterGroup = await getSchedulingParametersGroup(
     ctx.repo,
@@ -197,39 +215,7 @@ async function handler(params: {
     const slots = schedules.flatMap((schedule) => {
       const parameters = parameterGroup.get(schedule);
       assert(parameters);
-
-      const resultSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          start,
-          end,
-          schedule: createReference(schedule),
-          status: 'busy',
-        },
-      ];
-
-      if (parameters.get('bufferBefore')) {
-        resultSlots.push({
-          resourceType: 'Slot',
-          start: addMinutes(interval.start, -1 * parameters.get('bufferBefore')).toISOString(),
-          end: start,
-          schedule: createReference(schedule),
-          status: 'busy-unavailable',
-          comment: 'buffer before appointment',
-        });
-      }
-
-      if (parameters.get('bufferAfter')) {
-        resultSlots.push({
-          resourceType: 'Slot',
-          start: end,
-          end: addMinutes(interval.end, parameters.get('bufferAfter')).toISOString(),
-          schedule: createReference(schedule),
-          status: 'busy-unavailable',
-          comment: 'buffer after appointment',
-        });
-      }
-      return resultSlots;
+      return buildAppointmentSlots({ schedule, parameters, interval });
     });
 
     const participant = schedules.flatMap((schedule) =>
@@ -278,12 +264,25 @@ export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResp
     throw new OperationOutcomeError(badRequest('Invalid schedule reference', `Parameters.schedule[${invalidIndex}]`));
   }
 
+  let ignoreAppointment: WithPath<Reference<Appointment> & { reference: string }> | undefined;
+  const ignoreAppointmentParam = params['ignore-appointment'];
+  if (ignoreAppointmentParam) {
+    const ref = { reference: ignoreAppointmentParam };
+    if (!isReference<Appointment>(ref, 'Appointment')) {
+      throw new OperationOutcomeError(
+        badRequest('Invalid ignore-appointment reference', 'Parameters.ignore-appointment')
+      );
+    }
+    ignoreAppointment = withPath(ref, 'Parameters.ignore-appointment');
+  }
+
   const appointments = await handler({
     start,
     end,
     _count,
     healthcareService: { reference: params['service-type-reference'] },
     schedules: withPaths(scheduleRefs, 'Parameters.schedule'),
+    ignoreAppointment,
   });
 
   const bundle: Bundle<Appointment> = {

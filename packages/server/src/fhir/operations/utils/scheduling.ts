@@ -29,7 +29,7 @@ import type {
 import assert from 'node:assert';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
-import { areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
+import { addMinutes, areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
 import type { LayeredDict } from '../../../util/layereddict';
 import type { WithPath } from '../../../util/withpath';
 import { copyPaths, filterWithPaths, getPath, withPath } from '../../../util/withpath';
@@ -347,6 +347,64 @@ export function applyExistingSlots(params: {
   return removeAvailability(allAvailability, busySlotIntervals);
 }
 
+/**
+ * Builds the Slot resources that an appointment on `schedule` over `interval` must hold: one
+ * `busy` Slot for the appointment itself, plus a `busy-unavailable` Slot for each configured
+ * buffer. The set is fully determined by the scheduling parameters, so this is the single
+ * definition shared by $find (which proposes them) and the write operations (which persist them).
+ *
+ * @param params - input object
+ * @param params.schedule - The Schedule the slots belong to
+ * @param params.parameters - Scheduling parameters supplying bufferBefore/bufferAfter
+ * @param params.interval - The appointment's own start and end, excluding buffers
+ * @returns The Slot resources for this schedule, unpersisted
+ */
+export function buildAppointmentSlots(params: {
+  schedule: WithId<Schedule>;
+  parameters: LayeredDict<SchedulingParameters>;
+  interval: Interval;
+}): Slot[] {
+  const { schedule, parameters, interval } = params;
+  const start = interval.start.toISOString();
+  const end = interval.end.toISOString();
+
+  const slots: Slot[] = [
+    {
+      resourceType: 'Slot',
+      start,
+      end,
+      schedule: createReference(schedule),
+      status: 'busy',
+    },
+  ];
+
+  const bufferBefore = parameters.get('bufferBefore');
+  if (bufferBefore) {
+    slots.push({
+      resourceType: 'Slot',
+      start: addMinutes(interval.start, -1 * bufferBefore).toISOString(),
+      end: start,
+      schedule: createReference(schedule),
+      status: 'busy-unavailable',
+      comment: 'buffer before appointment',
+    });
+  }
+
+  const bufferAfter = parameters.get('bufferAfter');
+  if (bufferAfter) {
+    slots.push({
+      resourceType: 'Slot',
+      start: end,
+      end: addMinutes(interval.end, bufferAfter).toISOString(),
+      schedule: createReference(schedule),
+      status: 'busy-unavailable',
+      comment: 'buffer after appointment',
+    });
+  }
+
+  return slots;
+}
+
 export function assertAllLoaded<T extends Resource>(
   objects: WithPath<T | Error>[],
   message: string
@@ -433,7 +491,7 @@ export async function slotsOverlappingInterval(
   repo: Repository,
   schedules: (WithId<Schedule> | (Reference<Schedule> & { reference: string }))[],
   interval: Interval
-): Promise<Slot[]> {
+): Promise<WithId<Slot>[]> {
   const searchStart = interval.start.toISOString();
   const searchEnd = interval.end.toISOString();
   const results = await repo.searchResources<Slot>({

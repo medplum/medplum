@@ -71,6 +71,7 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 | `end`                    | `dateTime`                       | End of the search window (inclusive)                                                         | Yes      |
 | `service-type-reference` | `reference(HealthcareService)`   | The HealthcareService describing the type of appointment to be scheduled.                    | Yes      |
 | `schedule`               | `reference(Schedule)`            | A schedule to check for availability. May be passed multiple times with different schedules. | Yes      |
+| `ignore-appointment`     | `reference(Appointment)`         | Compute availability as if this Appointment did not exist. See [Reassigning an existing appointment](#reassigning-an-existing-appointment). | No       |
 | `_count`                 | `integer`                        | Maximum number of Appointment resources to return. Defaults to 20. Maximum is 1000.          | No       |
 
 ### Constraints
@@ -81,6 +82,7 @@ curl -G 'https://api.medplum.com/fhir/R4/Appointment/$find' \
 - Each schedule must have exactly **one actor** reference
 - Each schedule's `serviceType` field must match the requested HealthcareService.type
 - Each schedule's actor (Practitioner, Location, or Device) must have a timezone defined via the `http://hl7.org/fhir/StructureDefinition/timezone` extension
+- `ignore-appointment`, if provided, must reference an Appointment that exists and is readable by the caller
 
 ## Output
 
@@ -180,16 +182,47 @@ The Appointments are virtual — they are not persisted in the FHIR store. Each 
 ```
 
 
+## Reassigning an existing appointment
+
+When an appointment is moved to a different Schedule — say an 11am visit with Dr. Smith moves from
+room one to room two — the appointment being moved is itself blocking the time you want to search
+for. Dr. Smith's schedule is busy at 11am, but only because of the very appointment being
+reassigned. A plain `$find` for Dr. Smith and room two would therefore not offer 11am.
+
+Passing `ignore-appointment` computes availability as if that Appointment did not exist:
+
+```
+[base]/R4/Appointment/$find?...&schedule=Schedule/dr-smith-schedule&schedule=Schedule/room-two-schedule&ignore-appointment=Appointment/my-appointment-id
+```
+
+Every blocking Slot referenced by `Appointment.slot` is discarded before availability is computed,
+including the `busy-unavailable` buffer Slots created alongside the appointment. Slots belonging to
+*other* appointments still block, even at the same time on the same Schedule — the parameter frees
+only the time held by the one appointment it names. Slots with status `free` are never discarded,
+since dropping them would remove availability rather than restore it.
+
+:::caution
+
+A time found with `ignore-appointment` cannot be committed with [`$book`](/docs/scheduling/appointment-book)
+or [`$hold`](/docs/scheduling/appointment-hold). Those operations validate availability with the
+original appointment's Slots still in place and will reject the request with
+`Requested time slot is not available`. Use
+[`$reschedule`](/docs/scheduling/appointment-reschedule) instead, which releases those Slots and
+moves the appointment in a single transaction.
+
+:::
+
 ## Availability Logic
 
 `$find` calculates available windows by:
 
 1. Reading each Schedule's `SchedulingParameters` extension to determine recurring availability windows, slot duration, buffer times, and alignment constraints
 2. Fetching existing Slot resources for each Schedule in the requested range (busy, busy-tentative, busy-unavailable, and free slots)
-3. Adding time for existing Slot resources with status `free`
-4. Subtracting occupied time for existing Slot resources with status `busy`, `busy-tentative`, or `busy-unavailable`.
-5. Applying alignment intervals and offsets to produce valid start times
-6. Returning Appointments up to `_count`
+3. Discarding the blocking Slots held by `ignore-appointment`, if it was provided
+4. Adding time for existing Slot resources with status `free`
+5. Subtracting occupied time for existing Slot resources with status `busy`, `busy-tentative`, or `busy-unavailable`.
+6. Applying alignment intervals and offsets to produce valid start times
+7. Returning Appointments up to `_count`
 
 See [Defining Availability](/docs/scheduling/defining-availability) for full details on how `SchedulingParameters` are configured.
 
@@ -250,6 +283,7 @@ The Scheduling API is under active development. This [beta](/docs/compliance/alp
 
 - [Appointment `$book`](/docs/scheduling/appointment-book) - Book one of the returned Appointments
 - [Appointment `$hold`](/docs/scheduling/appointment-hold) - Reserve one of the returned Appointments
+- [Appointment `$reschedule`](/docs/scheduling/appointment-reschedule) - Move an existing Appointment to one of the returned times
 - [Defining Availability](/docs/scheduling/defining-availability) - How to configure `SchedulingParameters` on a Schedule
 - [Scheduling Overview](/docs/scheduling) - High-level scheduling concepts
 - [`Schedule` resource](/docs/api/fhir/resources/schedule)
