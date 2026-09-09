@@ -27,7 +27,7 @@ import type { SchedulingRole } from './AppointmentFinder.roles';
 import { getActorRoleLabel, SCHEDULING_ROLES } from './AppointmentFinder.roles';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
-import { formatDateRange, formatDayLabel, getDurationMinutes } from './AppointmentFinder.times';
+import { formatDateRange, formatDayLabel, getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -154,8 +154,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // request per keystroke.
   const combinations = useMemo(() => (searching ? getActorCombinations(selections) : []), [searching, selections]);
 
-  // The first actor's schedule answers for all of them: every actor in one search
-  // shares the scheduling parameters, or `$find` rejects the request.
+  // `$find` applies each Schedule's own parameters, so the actors in one search need not
+  // agree on a timezone. The first one is taken as the exemplar for what to display:
+  // the times themselves are real instants either way, only their labelling is at stake.
   const timezone = useMemo(() => {
     const [first] = getSelectedCandidates(selections);
     return service ? getSchedulingTimezone(service, first?.schedule, first?.actorResource) : undefined;
@@ -625,5 +626,6 @@ function formatZonedDateTime(value: Date, timezone: string | undefined): string 
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZoneName: isViewerTimezone(timezone) ? undefined : 'shortGeneric',
   }).format(value);
 }
