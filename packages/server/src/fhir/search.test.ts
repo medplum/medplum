@@ -83,7 +83,6 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
     repo = new Repository({
       strictMode: true,
       projects: [project],
-      currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
     systemRepo = repo.getSystemRepo();

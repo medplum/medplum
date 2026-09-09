@@ -7,6 +7,7 @@ import type {
   AuditEventAgent,
   AuditEventAgentNetwork,
   AuditEventEntity,
+  AuditEventEntityDetail,
   Bot,
   ClientApplication,
   Coding,
@@ -168,6 +169,10 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction
   110123: undefined,
 };
 
+export function isReadOnlyAction(subtype: AuditEventSubtype): boolean {
+  return AuditEventActionLookup[subtype.code] === 'R';
+}
+
 /**
  * AuditEvent outcome code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
@@ -191,6 +196,7 @@ export function createAuditEvent(
     description?: string;
     resource?: Resource | Reference;
     searchQuery?: string;
+    entityDetail?: AuditEventEntityDetail[];
     durationMs?: number;
     /**
      * The authenticating ClientApplication, recorded as an additional non-requestor
@@ -209,6 +215,9 @@ export function createAuditEvent(
     entity = [{ what: applyOptionalRedaction(what) }];
   } else if (options?.searchQuery) {
     entity = [{ query: options.searchQuery }];
+  }
+  if (entity && options?.entityDetail) {
+    entity[0].detail = options.entityDetail;
   }
 
   let network: AuditEventAgentNetwork | undefined = undefined;
@@ -471,4 +480,8 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
     default:
       return { code: '4', display: 'Domain' };
   }
+}
+
+export function numResultsDetail(numResults: number): AuditEventEntityDetail[] {
+  return [{ type: 'numResults', valueString: numResults.toString() }];
 }

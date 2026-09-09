@@ -47,6 +47,7 @@ import { FhirRepository, RepositoryMode } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AuditEventEntityDetail,
   Binary,
   Bundle,
   BundleEntry,
@@ -86,7 +87,9 @@ import {
   CreateInteraction,
   DeleteInteraction,
   HistoryInteraction,
+  isReadOnlyAction,
   logAuditEvent,
+  numResultsDetail,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
@@ -186,16 +189,14 @@ export interface RepositoryContext {
 
   /**
    * Projects that the Repository is allowed to access.
-   * This should include the ID/UUID of the current project, but may also include other accessory Projects.
-   * If this is undefined, the current user is a server user (e.g. Super Admin)
-   * The usual case has two elements: the user's Project and the base R4 Project
-   * The user's "primary" Project will be the first element in the array (i.e. projects[0])
-   * This value will be included in every resource as meta.project.
+   * If undefined, the repository acts on behalf of the server
+   * instead of a particular user.
+   * If not undefined, must have at least one element, and the first element
+   * is considered the "current project". The repository sets meta.project to
+   * the current project in edited resources. The R4 Project is appended if not already present
+   * by the Repository constructor.
    */
   projects?: WithId<Project>[];
-
-  /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: WithId<Project>;
 
   /**
    * Optional compartment restriction.
@@ -351,6 +352,9 @@ export class Repository extends FhirRepository implements Disposable {
   constructor(context: RepositoryContext, connections?: RepositoryConnections, transaction?: TransactionBinding) {
     super();
 
+    if (context.projects?.length === 0) {
+      throw new Error('Repository context.projects must be undefined or have at least one project');
+    }
     addSyntheticR4ProjectIfMissing(context);
     this.context = context;
     this._normalizedShardId = normalizeShardId(context.shardId);
@@ -575,7 +579,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   currentProject(): WithId<Project> | undefined {
-    return this.context.currentProject;
+    return this.context.projects?.[0];
   }
 
   effectiveAccessPolicy(): Readonly<AccessPolicy> | undefined {
@@ -593,8 +597,8 @@ export class Repository extends FhirRepository implements Disposable {
     if (!projectId) {
       return undefined;
     }
-    if (projectId === this.context.currentProject?.id) {
-      return this.context.currentProject;
+    if (projectId === this.currentProject()?.id) {
+      return this.currentProject();
     }
     return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
@@ -1608,7 +1612,7 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(badRequest('Expunge request contains too many IDs'));
     }
 
-    const projectId = this.isSuperAdmin() ? undefined : this.context.currentProject?.id;
+    const projectId = this.isSuperAdmin() ? undefined : this.currentProject()?.id;
     const deletedIds = await this.withTransaction<string[]>(
       async (txRepo) => {
         const deleteQuery = new DeleteQuery(resourceType).where('id', 'IN', ids).returning('id');
@@ -1697,7 +1701,11 @@ export class Repository extends FhirRepository implements Disposable {
       // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
+        searchRequest,
+        entityDetail: numResultsDetail(result.entry?.length ?? 0),
+        durationMs,
+      });
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
@@ -1753,6 +1761,7 @@ export class Repository extends FhirRepository implements Disposable {
         };
         this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
           searchRequest: refSearch,
+          entityDetail: numResultsDetail(result[ref]?.length ?? 0),
           durationMs,
         });
       }
@@ -1808,7 +1817,6 @@ export class Repository extends FhirRepository implements Disposable {
       const project = this.context.projects[i];
       if (
         resourceType === 'Project' || // When searching for projects, include all projects
-        project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
         !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
         project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
       ) {
@@ -2008,7 +2016,7 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   supportsRangeSearch(): boolean {
-    return Boolean(getConfig().rangeSearch || this.context.currentProject?.features?.includes('range-search'));
+    return Boolean(getConfig().rangeSearch || this.currentProject()?.features?.includes('range-search'));
   }
 
   /**
@@ -2378,6 +2386,7 @@ export class Repository extends FhirRepository implements Disposable {
    * @param options -
    * @param options.resource - Optional resource to associate with the AuditEvent.
    * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
+   * @param options.entityDetail - Optional tagged value pairs to record as detail on the AuditEvent's entity.
    * @param options.durationMs - Duration of the operation, used for generating metrics.
    */
   private logEvent(
@@ -2387,18 +2396,20 @@ export class Repository extends FhirRepository implements Disposable {
     options?: {
       resource?: Resource | Reference;
       searchRequest?: SearchRequest;
+      entityDetail?: AuditEventEntityDetail[];
       durationMs?: number;
     }
   ): void {
     const resource = options?.resource;
     const isSystem = this.context.author.reference === 'system';
+    const resourceType = isResource(resource) ? resource?.resourceType : undefined;
 
     if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
           system: isSystem,
-          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+          resourceType,
         },
       });
     }
@@ -2410,8 +2421,8 @@ export class Repository extends FhirRepository implements Disposable {
       },
     });
 
-    if (isSystem) {
-      // Don't log system events.
+    if (isSystem && (isReadOnlyAction(subtype) || resourceType === 'AuditEvent')) {
+      // Don't log system read or audit events
       return;
     }
     let outcomeDesc: string | undefined = undefined;
@@ -2434,6 +2445,7 @@ export class Repository extends FhirRepository implements Disposable {
         description: outcomeDesc,
         resource,
         searchQuery: query,
+        entityDetail: options?.entityDetail,
         durationMs: options?.durationMs,
         client: this.context.client,
       }
