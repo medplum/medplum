@@ -138,7 +138,7 @@ jobs:
           MESSAGE=$(cat .github/pr-unvouched-message)
           MESSAGE="${MESSAGE//\{author\}/$PR_AUTHOR}"
           MESSAGE="${MESSAGE//\{label\}/$COMMUNITY_PR_LABEL}"
-          MESSAGE="${MESSAGE//\{vouched-label\}/$VOUCHED_PR_LABEL}"
+          MESSAGE="${MESSAGE//\{vouched\}/$VOUCHED_PR_LABEL}"
           MESSAGE="${MESSAGE//\{repo\}/${{ github.repository }}}"
 
           if [ "$DRY_RUN" = "true" ]; then
