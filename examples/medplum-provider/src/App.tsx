@@ -43,6 +43,7 @@ import { DocumentsPage } from './pages/patient/DocumentsPage';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
+import { HieImportTab } from './pages/patient/HieImportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
@@ -261,6 +262,7 @@ export function App(): JSX.Element | null {
                 {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
+                <Route path="hie-import" element={<HieImportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage tab="open" />} />
                 <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage tab="open" />} />
                 <Route path="DiagnosticReport" element={<LabsPage tab="completed" />} />
