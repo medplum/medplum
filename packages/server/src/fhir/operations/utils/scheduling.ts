@@ -317,6 +317,10 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
 
 type CapacityEvent = { time: number; capacity: number; entering: boolean };
 
+function occupiesTime(status: Slot['status']): boolean {
+  return !(status === 'free' || status === 'entered-in-error');
+}
+
 function slotToInterval(slot: Slot, path?: string): Interval {
   const start = new Date(slot.start);
   const end = new Date(slot.end);
@@ -339,7 +343,7 @@ function slotToInterval(slot: Slot, path?: string): Interval {
 function intervalsExceedingCapacityOne(slots: Slot[]): Interval[] {
   const result: Interval[] = [];
   for (const slot of slots) {
-    if (slot.status !== 'free' && slot.status !== 'entered-in-error') {
+    if (occupiesTime(slot.status)) {
       result.push(slotToInterval(slot));
     }
   }
@@ -350,7 +354,7 @@ function intervalsExceedingCapacityOne(slots: Slot[]): Interval[] {
 function buildCapacityEvents(slots: Slot[]): CapacityEvent[] {
   const events: CapacityEvent[] = [];
   for (const slot of slots) {
-    if (slot.status === 'free' || slot.status === 'entered-in-error') {
+    if (!occupiesTime(slot.status)) {
       continue;
     }
     const { start, end } = slotToInterval(slot);
@@ -463,10 +467,8 @@ export function applyExistingSlots(params: {
     .filter(isDefined);
 
   const busySlots = params.slots
-    .filter(
-      (slot) => slot.status === 'busy' || slot.status === 'busy-unavailable' || slot.status === 'busy-tentative'
-    )
-    .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY))
+    .filter((slot) => occupiesTime(slot.status))
+    .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY));
 
   const blockedIntervals = intervalsExceedingCapacity(busySlots, capacity);
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
@@ -774,7 +776,7 @@ async function validateAvailability(
     // Include structured JSON in diagnostics so automated tooling can
     // programmatically inspect which slots are blocking the request.
     const blockingSlots = existingSlots
-      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .filter((slot) => occupiesTime(slot.status))
       .map((slot) => ({
         reference: `Slot/${slot.id}`,
         start: slot.start,
