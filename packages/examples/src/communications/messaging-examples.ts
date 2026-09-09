@@ -99,7 +99,7 @@ const threadWithReadState = {
 };
 // end-block threadHeaderWithReadExtensionTs
 // Satisfy TS6133 (unused variable); value only used for doc block extraction
-// eslint-disable-next-line no-void
+ 
 console.log(threadWithReadState);
 
 // start-block updateThreadReadStateTs
@@ -152,7 +152,7 @@ const readReceiptTask = await medplum.createResource({
 });
 // end-block createReadReceiptTaskTs
 // Satisfy TS6133 (unused variable); value only used for doc block extraction
-// eslint-disable-next-line no-void
+ 
 console.log(readReceiptTask);
 
 // start-block markReadReceiptTaskTs
@@ -415,9 +415,9 @@ const walkthroughFirstMessage = await medplum.createResource({
   sent: '2024-04-10T10:00:00.000Z',
 });
 // end-block createYourFirstThreadHeaderAndFirstMessageTs
-// eslint-disable-next-line no-void
+ 
 console.log(createdThreadHeader);
-// eslint-disable-next-line no-void
+ 
 console.log(walkthroughFirstMessage);
 
 // start-block createYourFirstThreadReplyFromAnotherUserTs
@@ -440,7 +440,7 @@ const walkthroughSecondMessage = await medplum.createResource({
   sent: '2024-04-10T10:05:00.000Z',
 });
 // end-block createYourFirstThreadReplyFromAnotherUserTs
-// eslint-disable-next-line no-void
+ 
 console.log(walkthroughSecondMessage);
 
 // start-block createYourFirstThreadReplyInResponseToTs
@@ -457,7 +457,7 @@ const walkthroughReplyInResponseTo = await medplum.createResource({
   inResponseTo: [{ reference: `Communication/${walkthroughSecondMessage.id}` }],
 });
 // end-block createYourFirstThreadReplyInResponseToTs
-// eslint-disable-next-line no-void
+ 
 console.log(walkthroughReplyInResponseTo);
 
 // start-block filterByPatientTs
