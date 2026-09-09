@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AppShell as MantineAppShell } from '@mantine/core';
+import { AppShell as MantineAppShell, Menu } from '@mantine/core';
 import { locationUtils } from '@medplum/core';
 import { MockClient, TestProject } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { ReactNode } from 'react';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
@@ -12,12 +13,17 @@ const medplum = new MockClient();
 const navigateMock = vi.fn();
 const closeMock = vi.fn();
 
-async function setup(client?: MockClient): Promise<void> {
+async function setup(client?: MockClient, userMenuItems?: ReactNode): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={client ?? medplum} navigate={navigateMock}>
         <MantineAppShell>
-          <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} />
+          <Header
+            logo={<Logo size={24} />}
+            version="test.version"
+            navbarToggle={closeMock}
+            userMenuItems={userMenuItems}
+          />
         </MantineAppShell>
       </MedplumProvider>
     );
@@ -99,6 +105,16 @@ describe('Header', () => {
     await act(async () => {
       fireEvent.click(menuButton);
     });
+  });
+
+  test('Renders consumer user menu items without replacing built-in items', async () => {
+    await setup(undefined, <Menu.Item>Custom user menu item</Menu.Item>);
+
+    await openMenu();
+
+    expect(screen.getByText('Custom user menu item')).toBeInTheDocument();
+    expect(screen.getByText('Account settings')).toBeInTheDocument();
+    expect(screen.getByText('Sign out')).toBeInTheDocument();
   });
 
   test('Switch profile', async () => {

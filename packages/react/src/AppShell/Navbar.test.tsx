@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AppShell as MantineAppShell } from '@mantine/core';
+import { AppShell as MantineAppShell, Menu } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Communication, UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient, TestProject } from '@medplum/mock';
@@ -167,6 +167,35 @@ describe('Navbar', () => {
     });
 
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('Renders consumer user menu items without replacing built-in items', async () => {
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum} navigate={navigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={toggleMock}
+              closeNavbar={closeMock}
+              userMenuEnabled={true}
+              userMenuItems={<Menu.Item>Custom user menu item</Menu.Item>}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('User menu'));
+    });
+
+    expect(await screen.findByText('Custom user menu item')).toBeInTheDocument();
+    expect(await screen.findByText('Account settings')).toBeInTheDocument();
+    expect(await screen.findByText('Sign out')).toBeInTheDocument();
   });
 
   test('Highlighted link', async () => {

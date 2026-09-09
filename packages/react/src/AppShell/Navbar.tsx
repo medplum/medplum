@@ -67,6 +67,7 @@ export interface NavbarProps {
   readonly opened?: boolean;
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  readonly userMenuItems?: ReactNode;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -245,7 +246,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown className={headerDropdownClasses.dropdown}>
-                <HeaderDropdown version={props.version} showLayoutVersionToggle={props.showLayoutVersionToggle} />
+                <HeaderDropdown
+                  version={props.version}
+                  showLayoutVersionToggle={props.showLayoutVersionToggle}
+                  userMenuItems={props.userMenuItems}
+                />
               </Menu.Dropdown>
             </Menu>
           </MantineAppShell.Section>

@@ -17,7 +17,7 @@ import {
   IconTable,
 } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import { ProjectLoginOption } from '../auth/ProjectLoginOption';
 import { getAppName } from '../utils/app';
@@ -64,6 +64,7 @@ function getLoginKey(login: LoginState): string {
 export interface HeaderDropdownProps {
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  readonly userMenuItems?: ReactNode;
 }
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
@@ -110,6 +111,12 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
               </Box>
             </Menu.Item>
           ))}
+        </>
+      )}
+      {props.userMenuItems && (
+        <>
+          <HeaderDropdownDivider />
+          {props.userMenuItems}
         </>
       )}
       <HeaderDropdownDivider />

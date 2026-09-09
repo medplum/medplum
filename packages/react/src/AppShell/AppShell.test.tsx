@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { ReactNode } from 'react';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import type { AppShellAnnouncement } from './AnnouncementBanners';
@@ -10,7 +11,11 @@ import { AppShell } from './AppShell';
 const medplum = new MockClient();
 const navigateMock = vi.fn();
 
-async function setup(layoutVersion: 'v1' | 'v2' = 'v1', announcements?: AppShellAnnouncement[]): Promise<void> {
+async function setup(
+  layoutVersion: 'v1' | 'v2' = 'v1',
+  announcements?: AppShellAnnouncement[],
+  userMenuItems?: ReactNode
+): Promise<void> {
   // Reset localStorage before each test
   localStorage.clear();
 
@@ -22,6 +27,7 @@ async function setup(layoutVersion: 'v1' | 'v2' = 'v1', announcements?: AppShell
           version="test.version"
           layoutVersion={layoutVersion}
           announcements={announcements}
+          userMenuItems={userMenuItems}
           menus={[
             {
               title: 'Menu 1',
@@ -65,6 +71,16 @@ describe('AppShell v1', () => {
     await setup();
 
     expect(screen.getByText('Your application here')).toBeInTheDocument();
+  });
+
+  test('Renders consumer user menu items', async () => {
+    await setup('v1', undefined, <div>Custom user menu item</div>);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('User menu'));
+    });
+
+    expect(await screen.findByText('Custom user menu item')).toBeInTheDocument();
   });
 
   test('Toggle sidebar', async () => {
@@ -141,6 +157,16 @@ describe('AppShell v2', () => {
     await setup('v2');
 
     expect(screen.getByText('Your application here')).toBeInTheDocument();
+  });
+
+  test('Renders consumer user menu items in v2', async () => {
+    await setup('v2', undefined, <div>Custom user menu item</div>);
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('User menu'));
+    });
+
+    expect(await screen.findByText('Custom user menu item')).toBeInTheDocument();
   });
 
   test('Toggle sidebar v2 via logo', async () => {
