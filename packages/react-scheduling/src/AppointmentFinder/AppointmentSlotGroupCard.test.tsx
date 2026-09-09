@@ -39,7 +39,12 @@ function setup(
 ): void {
   const { onSelectAppointment = vi.fn(), medplum = new MockClient() } = options;
   renderWithMedplum(
-    <AppointmentSlotGroupCard group={group} timezone={EASTERN} onSelectAppointment={onSelectAppointment} />,
+    <AppointmentSlotGroupCard
+      group={group}
+      timezone={EASTERN}
+      viewerTimezone={EASTERN}
+      onSelectAppointment={onSelectAppointment}
+    />,
     medplum
   );
 }

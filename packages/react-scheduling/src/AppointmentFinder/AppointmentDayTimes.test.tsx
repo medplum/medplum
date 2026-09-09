@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { buildProposedAppointment } from '../stories/scheduling';
-import { act, fireEvent, render, renderWithMedplum, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
@@ -42,14 +42,15 @@ describe('AppointmentDayTimes', () => {
   test('Leaves the zone off times the viewer already reads on their own clock', () => {
     const [day] = groupAppointmentsByDay([buildProposedAppointment({ start: MORNING })], EASTERN);
 
-    render(
+    renderWithMedplum(
       <AppointmentDayTimes
         date={day.date}
         groups={day.groups}
         timezone={EASTERN}
         viewerTimezone={EASTERN}
         onSelectAppointment={vi.fn()}
-      />
+      />,
+      new MockClient()
     );
 
     expect(screen.getByRole('button', { name: '9:00 AM' })).toBeInTheDocument();
@@ -58,14 +59,15 @@ describe('AppointmentDayTimes', () => {
   test("Names the zone when the site does not keep the viewer's time", () => {
     const [day] = groupAppointmentsByDay([buildProposedAppointment({ start: MORNING })], EASTERN);
 
-    render(
+    renderWithMedplum(
       <AppointmentDayTimes
         date={day.date}
         groups={day.groups}
         timezone={EASTERN}
         viewerTimezone="America/Los_Angeles"
         onSelectAppointment={vi.fn()}
-      />
+      />,
+      new MockClient()
     );
 
     expect(screen.getByRole('button', { name: '9:00 AM ET' })).toBeInTheDocument();
