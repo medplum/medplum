@@ -11,7 +11,7 @@ import * as fns from '../migrate-functions';
 // prettier-ignore
 export async function run(client: PoolClient): Promise<void> {
   const results: { name: string; durationMs: number }[] = []
-  await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Cron" (
+  await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Enterprise" (
   "id" UUID PRIMARY KEY,
   "content" TEXT NOT NULL,
   "lastUpdated" TIMESTAMPTZ NOT NULL,
@@ -30,41 +30,52 @@ export async function run(client: PoolClient): Promise<void> {
   "__identifier" UUID[],
   "__identifierText" TEXT[],
   "__identifierSort" TEXT,
-  "onBehalfOf" TEXT,
-  "target" TEXT,
+  "name" TEXT,
+  "status" TEXT,
+  "organization" TEXT,
+  "__code" UUID[],
+  "__codeText" TEXT[],
+  "__codeSort" TEXT,
+  "project" TEXT[],
+  "projectCode" TEXT[],
   "___compartmentIdentifierSort" TEXT,
-  "__onBehalfOfIdentifierSort" TEXT,
-  "__targetIdentifierSort" TEXT
+  "__organizationIdentifierSort" TEXT,
+  "__projectIdentifierSort" TEXT
 )`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_lastUpdated_idx" ON "Cron" ("lastUpdated")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_projectId_lastUpdated_idx" ON "Cron" ("projectId", "lastUpdated")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_projectId_idx" ON "Cron" ("projectId")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron__source_idx" ON "Cron" ("_source")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron__profile_idx" ON "Cron" USING gin ("_profile")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___version_idx" ON "Cron" ("__version")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_reindex_idx" ON "Cron" ("lastUpdated", "__version") WHERE (deleted = false)`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_compartments_idx" ON "Cron" USING gin ("compartments")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___sharedTokens_idx" ON "Cron" USING gin ("__sharedTokens")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___sharedTokensTextTrgm_idx" ON "Cron" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron____tag_idx" ON "Cron" USING gin ("___tag")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron____tagTextTrgm_idx" ON "Cron" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___idnt_idx" ON "Cron" USING gin ("__identifier")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron___idntTextTrgm_idx" ON "Cron" USING gin (token_array_to_text("__identifierText") gin_trgm_ops)`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_onBehalfOf_idx" ON "Cron" ("onBehalfOf")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_target_idx" ON "Cron" ("target")`);
-  await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Cron_History" (
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_lastUpdated_idx" ON "Enterprise" ("lastUpdated")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_projectId_lastUpdated_idx" ON "Enterprise" ("projectId", "lastUpdated")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_projectId_idx" ON "Enterprise" ("projectId")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise__source_idx" ON "Enterprise" ("_source")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise__profile_idx" ON "Enterprise" USING gin ("_profile")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___version_idx" ON "Enterprise" ("__version")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_reindex_idx" ON "Enterprise" ("lastUpdated", "__version") WHERE (deleted = false)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_compartments_idx" ON "Enterprise" USING gin ("compartments")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___sharedTokens_idx" ON "Enterprise" USING gin ("__sharedTokens")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___sharedTokensTextTrgm_idx" ON "Enterprise" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise____tag_idx" ON "Enterprise" USING gin ("___tag")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise____tagTextTrgm_idx" ON "Enterprise" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___idnt_idx" ON "Enterprise" USING gin ("__identifier")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___idntTextTrgm_idx" ON "Enterprise" USING gin (token_array_to_text("__identifierText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_name_idx" ON "Enterprise" ("name")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_status_idx" ON "Enterprise" ("status")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_organization_idx" ON "Enterprise" ("organization")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___code_idx" ON "Enterprise" USING gin ("__code")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise___codeTextTrgm_idx" ON "Enterprise" USING gin (token_array_to_text("__codeText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_project_idx" ON "Enterprise" USING gin ("project")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_projectCode_idx" ON "Enterprise" USING gin ("projectCode")`);
+  await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Enterprise_History" (
   "versionId" UUID PRIMARY KEY,
   "id" UUID NOT NULL,
   "content" TEXT NOT NULL,
   "lastUpdated" TIMESTAMPTZ NOT NULL
 )`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_History_id_idx" ON "Cron_History" ("id")`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_History_lastUpdated_idx" ON "Cron_History" ("lastUpdated")`);
-  await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Cron_References" (
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_History_id_idx" ON "Enterprise_History" ("id")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_History_lastUpdated_idx" ON "Enterprise_History" ("lastUpdated")`);
+  await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Enterprise_References" (
   "resourceId" UUID NOT NULL,
   "targetId" UUID NOT NULL,
   "code" TEXT NOT NULL,
   PRIMARY KEY ("resourceId", "targetId", code)
 )`);
-  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Cron_Refs_targetId_code_idx" ON "Cron_References" ("targetId", "code") INCLUDE ("resourceId")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Enterprise_Refs_targetId_code_idx" ON "Enterprise_References" ("targetId", "code") INCLUDE ("resourceId")`);
 }

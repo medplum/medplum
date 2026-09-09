@@ -294,7 +294,7 @@ async function generateJwt(exp: string, claims: JWTPayload, tokenIssuer = issuer
     throw new Error('Invalid token duration');
   }
 
-  return new SignJWT(claims)
+  const signedJwt = new SignJWT(claims)
     .setProtectedHeader({
       alg: jsonWebKey.alg ?? LEGACY_DEFAULT_ALG,
       kid: jsonWebKey.id,
@@ -303,10 +303,12 @@ async function generateJwt(exp: string, claims: JWTPayload, tokenIssuer = issuer
     .setJti(randomUUID())
     .setIssuedAt()
     .setNotBefore(new Date())
-    .setIssuer(tokenIssuer)
-    .setAudience(claims.aud ?? (claims.client_id as string))
-    .setExpirationTime(exp)
-    .sign(defaultSigningKey);
+    .setIssuer(tokenIssuer);
+  const aud = claims.aud ?? (claims.client_id as string | undefined);
+  if (aud) {
+    signedJwt.setAudience(aud);
+  }
+  return signedJwt.setExpirationTime(exp).sign(defaultSigningKey);
 }
 
 /**

@@ -7,6 +7,7 @@ import {
   isDefined,
   normalizeErrorString,
   SchedulingScheduleColorURI,
+  TimezoneExtensionURI,
 } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
@@ -26,6 +27,7 @@ import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { DateTimeRange } from '../types';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
 import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
+import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import classes from './SchedulingWorkspace.module.css';
 
 const EMPTY_CANDIDATES: Readonly<Record<SchedulingRole, ScheduleCandidate[]>> = { provider: [], room: [], device: [] };
@@ -155,6 +157,23 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     });
   }, [activeCandidates, slots, appointments, colorByScheduleId]);
 
+  /*
+   * A calendar's zone is read off its actor alone. A Schedule can also carry a zone per
+   * service in its scheduling parameters, but nothing here names a service to pick between
+   * them, and while a Schedule holds a single actor the actor's own zone is the one those
+   * parameters are likely to agree with anyway.
+   */
+  const timezones = useMemo((): string[] => {
+    const zones: string[] = [];
+    for (const candidate of activeCandidates) {
+      const timezone = candidate.actorResource && getExtensionValue(candidate.actorResource, TimezoneExtensionURI);
+      if (typeof timezone === 'string') {
+        zones.push(timezone);
+      }
+    }
+    return zones;
+  }, [activeCandidates]);
+
   const startBooking = useCallback((interval: DateTimeRange): void => {
     setBookingSelection(interval);
     setHighlight(interval);
@@ -209,12 +228,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           </Alert>
         )}
         <MultiCalendar
+          className={classes.multiCalendar}
           sources={sources}
           onRangeChange={setRange}
           loading={resourcesLoading}
           onSelectInterval={startBooking}
           selection={highlight}
         />
+        <CalendarTimezoneNotice className={classes.timezoneNotice} timezones={timezones} />
       </div>
       {bookingSelection && (
         <div className={cx(classes.bookingPane, { [classes.bookingPaneWide]: timeFinderOpen })}>

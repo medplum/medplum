@@ -211,7 +211,7 @@ async function canCronReadBot(systemRepo: Repository, cron: Cron, bot: Bot): Pro
   }
 
   const cronProject = await systemRepo.readResource<Project>('Project', cronProjectId);
-  const permitted = getPermittedProjectIds(await getAllowedProjects(cronProject), cronProject, 'Bot');
+  const permitted = getPermittedProjectIds(await getAllowedProjects(cronProject), 'Bot');
   return !permitted || permitted.includes(botProjectId);
 }
 

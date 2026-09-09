@@ -54,6 +54,12 @@ export function asyncBatchHandler(
   };
 }
 
+/**
+ * Determines whether a project opts out of re-entrant async batch processing. Re-entrant processing
+ * (see workers/batch.ts) is the default unless the  `reentrantAsyncBatch` system setting is explicitly false.
+ * @param project - The submitting project.
+ * @returns True if the batch should be processed by the legacy worker.
+ */
 function useLegacyBatchProcessing(project: Project): boolean {
-  return !project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean;
+  return project.systemSetting?.find((s) => s.name === 'reentrantAsyncBatch')?.valueBoolean === false;
 }

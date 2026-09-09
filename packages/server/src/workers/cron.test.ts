@@ -623,7 +623,6 @@ describe('Cron across linked projects', () => {
       extendedMode: true,
       strictMode: true,
       projects: [customer.project, linked],
-      currentProject: customer.project,
       author: createReference(customer.client),
     });
   }

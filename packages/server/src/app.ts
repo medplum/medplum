@@ -206,7 +206,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(attachRequestContext);
 
   app.use(rateLimitHandler(config));
-  app.use('/dicomweb/', dicomRouter);
+  app.use(
+    ['/dicomweb', '/api/dicomweb', '/projects/:projectId/dicomweb', '/api/projects/:projectId/dicomweb'],
+    dicomRouter
+  );
   app.use(
     [
       '/fhir/R4/Binary',

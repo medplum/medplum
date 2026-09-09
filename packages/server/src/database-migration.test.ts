@@ -922,5 +922,78 @@ describe('Database migrations', () => {
         expect(queueAddSpy).not.toHaveBeenCalled();
       });
     });
+
+    describe('Drop invalid indexes', () => {
+      test('Queues explicitly selected invalid index cleanup actions', async () => {
+        const targets = [
+          { schema: 'public', index: 'AuditEvent_References_pkey_ccnew' },
+          { schema: 'pg_toast', index: 'pg_toast_2539493_index_ccnew' },
+        ];
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/drop-invalid-indexes')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ targets });
+
+        expect(res).toHaveStatus(202);
+        expect(res.headers['content-location']).toBeDefined();
+        expect(queueAddSpy).toHaveBeenCalledTimes(1);
+        const jobData = queueAddSpy.mock.calls[0][1];
+        expect(jobData).toMatchObject({
+          type: 'dynamic',
+          migrationActions: {
+            preDeploy: [],
+            postDeploy: [
+              {
+                type: 'DROP_INVALID_INDEX',
+                schemaName: 'public',
+                indexName: 'AuditEvent_References_pkey_ccnew',
+              },
+              {
+                type: 'DROP_INVALID_INDEX',
+                schemaName: 'pg_toast',
+                indexName: 'pg_toast_2539493_index_ccnew',
+              },
+            ],
+          },
+        });
+        const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+        expect(asyncJob.request).toBe(
+          '/admin/super/drop-invalid-indexes?index=public.AuditEvent_References_pkey_ccnew&index=pg_toast.pg_toast_2539493_index_ccnew'
+        );
+        expect(asyncJob.meta?.project).toBeUndefined();
+      });
+
+      test.each([
+        {},
+        { targets: [] },
+        { targets: Array.from({ length: 11 }, (_, index) => ({ schema: 'public', index: `Index${index}` })) },
+        { targets: 'AuditEvent_References_pkey_ccnew' },
+        { targets: [123] },
+        { targets: [{}] },
+        { targets: [{ schema: 'public' }] },
+        { targets: [{ index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'public', index: 'AuditEvent_References_pkey_ccnew', extra: true }] },
+        { targets: [{ schema: 123, index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'schema; DROP SCHEMA public', index: 'AuditEvent_References_pkey_ccnew' }] },
+        { targets: [{ schema: 'public', index: 123 }] },
+        { targets: [{ schema: 'public', index: 'index; DROP TABLE Patient' }] },
+      ])('Rejects invalid input: %j', async (body) => {
+        const queueAddSpy = getQueueAddSpy();
+
+        const res = await request(app)
+          .post('/admin/super/drop-invalid-indexes')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send(body);
+
+        expect(res).toHaveStatus(400);
+        expect(queueAddSpy).not.toHaveBeenCalled();
+      });
+    });
   });
 });

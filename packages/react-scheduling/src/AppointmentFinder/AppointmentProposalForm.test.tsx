@@ -33,11 +33,16 @@ import {
   chooseSite,
   chosenTimeField,
   clickBook,
+  dayCell,
+  dragDays,
   field,
   fillBooking,
   finderButton,
+  findRequests,
   hasPill,
   isBefore,
+  lastFindEnd,
+  lastFindParams,
   lastFindStart,
   MONDAY_MORNING,
   openRoleField,
@@ -46,6 +51,9 @@ import {
   removePill,
   searchField,
   setupBookingClient,
+  shiftChooseDay,
+  showMoreDays,
+  showNextMonth,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen, waitFor, within } from '../test-utils/render';
 import type { AppointmentProposalFormProps } from './AppointmentProposalForm';
@@ -159,9 +167,10 @@ describe('AppointmentProposalForm', () => {
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
       await openTimeFinder();
 
-      // One group, not two: `$find` intersects the schedules it is given.
+      // One set of actors, not two: `$find` intersects the schedules it is given. Now
+      // that each day gets its own card, distinct groups are counted by testid, not length.
       const groups = await screen.findAllByTestId(/^slot-group-/);
-      expect(groups).toHaveLength(1);
+      expect(new Set(groups.map((group) => group.dataset.testid)).size).toBe(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Dr. Tunde Okafor')).toBeInTheDocument();
     });
@@ -296,7 +305,7 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
 
       const groups = await screen.findAllByTestId(/^slot-group-/);
-      expect(groups).toHaveLength(1);
+      expect(new Set(groups.map((group) => group.dataset.testid)).size).toBe(1);
       expect(within(groups[0]).getByText('Dr. Maya Rivera')).toBeInTheDocument();
       expect(within(groups[0]).getByText('Exam Room A')).toBeInTheDocument();
     });
@@ -358,6 +367,278 @@ describe('AppointmentProposalForm', () => {
     });
   });
 
+  describe('Showing several days at a time', () => {
+    test('Offers the day picked, and none of the days around it', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
+      // "Show more days" is what asks for the days after; a click asks only for its own.
+      expect(screen.queryByText(/Tuesday, August 18/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Wednesday, August 19/)).not.toBeInTheDocument();
+
+      await chooseDay('20');
+
+      expect(await screen.findByText(/Thursday, August 20/)).toBeInTheDocument();
+      expect(screen.queryByText(/Friday, August 21/)).not.toBeInTheDocument();
+      // The window closes on the 21st because that is the site's next midnight; no time on
+      // the 21st itself fits inside it.
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(21);
+    });
+
+    test('Asks about the one day picked, with a page wide enough for it', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      const params = lastFindParams(get) as URLSearchParams;
+      // `$find` only offers a time that fits inside the window, so one day is asked about
+      // up to the following midnight rather than to the last instant of the day itself.
+      expect(new Date(params.get('end') as string).getDate()).toBe(18);
+      expect(Number(params.get('_count'))).toBe(50);
+    });
+
+    test('Adds the next two days under the ones already on screen', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+
+      await showMoreDays();
+
+      expect(await screen.findByText(/Tuesday, August 18/)).toBeInTheDocument();
+      expect(screen.getByText(/Wednesday, August 19/)).toBeInTheDocument();
+      // Appended, not replaced: the days already answered stay on screen.
+      expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
+    });
+
+    test('Asks only about the days it is adding', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+
+      await showMoreDays();
+
+      // Not the days already answered: re-asking would waste a request per click. It opens
+      // on the midnight the first window closed on, which is the site's rather than the
+      // viewer's: midnight in Eastern time is 04:00 UTC, the clock the runner keeps.
+      expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
+      expect(Number(lastFindParams(get)?.get('_count'))).toBe(100);
+    });
+
+    test('Names a day that offers nothing, so nothing is missing but the days nobody asked about', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      // 21st is a Friday; the clinic keeps no hours on the weekend "Show more days" reaches into.
+      await chooseDay('21');
+      await screen.findByText(/Friday, August 21/);
+
+      await showMoreDays();
+
+      expect(await screen.findByText(/Saturday, August 22/)).toBeInTheDocument();
+      expect(screen.getByText(/Sunday, August 23/)).toBeInTheDocument();
+      expect(screen.getAllByText('No times are offered on this day.')).toHaveLength(2);
+    });
+
+    test('Marks the days on show against the calendar, widening the range as it grows', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+
+      // Which days the times below belong to is otherwise only in their headings.
+      expect(dayCell('17').className).toContain('selected');
+      expect(dayCell('18').closest('td')?.className).not.toContain('inRange');
+
+      await showMoreDays();
+
+      await waitFor(() => expect(dayCell('18').closest('td')?.className).toContain('inRange'));
+      expect(dayCell('19').closest('td')?.className).toContain('inRange');
+      expect(dayCell('20').closest('td')?.className).not.toContain('inRange');
+      // "Show more days" widens the range on show, so its new far end is marked
+      // too, the same as the day first picked.
+      expect(dayCell('17').className).toContain('selected');
+      expect(dayCell('19').className).toContain('selected');
+    });
+
+    test('Puts the added days away when the named resources change', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+      await showMoreDays();
+      expect(await screen.findByText(/Wednesday, August 19/)).toBeInTheDocument();
+
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+
+      // The times on screen were one provider's alone, not times the pair share.
+      await waitFor(() => expect(screen.queryByText(/Wednesday, August 19/)).not.toBeInTheDocument());
+      expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Choosing several days at once', () => {
+    /** Gets as far as a time search open on the day the form starts on. */
+    async function openFinder(): Promise<void> {
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await screen.findByText(/Monday, August 17/);
+    }
+
+    test('Searches every day a drag covered', async () => {
+      setup(medplum);
+      await openFinder();
+
+      await dragDays('17', '21');
+
+      expect(await screen.findByText(/Friday, August 21/)).toBeInTheDocument();
+      expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
+      expect(screen.getByText(/Thursday, August 20/)).toBeInTheDocument();
+      // Stopped at the Friday, so the weekend after it was never asked about.
+      expect(screen.queryByText(/Saturday, August 22/)).not.toBeInTheDocument();
+    });
+
+    test('Asks about the whole stretch in one window, not one request per day', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await openFinder();
+      get.mockClear();
+
+      await dragDays('17', '21');
+
+      // `$find` pages a window at once: one request for all five days, wide enough to hold them.
+      expect(findRequests(get)).toHaveLength(1);
+      const params = lastFindParams(get) as URLSearchParams;
+      expect(new Date(params.get('end') as string).getDate()).toBe(22);
+      expect(Number(params.get('_count'))).toBe(250);
+    });
+
+    test('Marks both ends of a stretch that was picked on purpose', async () => {
+      setup(medplum);
+      await openFinder();
+
+      await dragDays('17', '21');
+
+      // Unlike a picked day, where only that day is marked: every day of a picked
+      // stretch was asked for, so every day is marked.
+      await waitFor(() => expect(dayCell('21').className).toContain('selected'));
+      expect(dayCell('17').className).toContain('selected');
+      expect(dayCell('19').closest('td')?.className).toContain('inRange');
+      expect(dayCell('22').closest('td')?.className).not.toContain('inRange');
+    });
+
+    test('Shift-clicking widens the days searched, holding the end it is not moving', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await openFinder();
+      await chooseDay('18');
+      await screen.findByText(/Tuesday, August 18/);
+
+      await shiftChooseDay('21');
+
+      expect(await screen.findByText(/Friday, August 21/)).toBeInTheDocument();
+      // Grew from the day picked, rather than starting over at the day shift-clicked.
+      expect(screen.getByText(/Tuesday, August 18/)).toBeInTheDocument();
+      expect(new Date(lastFindParams(get)?.get('end') as string).getDate()).toBe(22);
+    });
+
+    test('Searches a stretch reaching back over today from now rather than from midnight', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await openFinder();
+      await chooseDay('20');
+      await screen.findByText(/Thursday, August 20/);
+
+      // 17th is today: the stretch now reaches back over a day already under way.
+      await shiftChooseDay('17');
+
+      expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
+      const start = new Date(lastFindStart(get) as string);
+      expect(start.getTime()).toBeGreaterThanOrEqual(MONDAY_MORNING.getTime());
+    });
+
+    test('Refuses a stretch longer than one `$find` window', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await openFinder();
+      get.mockClear();
+
+      await showNextMonth();
+      await shiftChooseDay('20');
+
+      // Caught before the request, not by a refusal coming back.
+      expect(await screen.findByText('Choose at most 31 days at a time.')).toBeInTheDocument();
+      expect(findRequests(get)).toHaveLength(0);
+    });
+
+    test('Adds days under a stretch that was picked', async () => {
+      setup(medplum);
+      await openFinder();
+      await dragDays('17', '21');
+      await screen.findByText(/Friday, August 21/);
+
+      await showMoreDays();
+
+      expect(await screen.findByText(/Saturday, August 22/)).toBeInTheDocument();
+      expect(screen.getByText(/Sunday, August 23/)).toBeInTheDocument();
+      expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
+    });
+
+    test('Puts the added days away back to the stretch that was picked', async () => {
+      setup(medplum);
+      await openFinder();
+      await dragDays('17', '21');
+      await screen.findByText(/Friday, August 21/);
+      await showMoreDays();
+      expect(await screen.findByText(/Sunday, August 23/)).toBeInTheDocument();
+
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
+
+      // Only what "Show more days" added goes away; the picked stretch stays as the search.
+      await waitFor(() => expect(screen.queryByText(/Sunday, August 23/)).not.toBeInTheDocument());
+      expect(screen.getByText(/Friday, August 21/)).toBeInTheDocument();
+      expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
+    });
+
+    test('Clears the chosen time when a stretch is picked', async () => {
+      setup(medplum);
+      await openFinder();
+      await chooseFirstOfferedTime();
+      expect(chosenTimeField()).not.toBeNull();
+
+      await dragDays('17', '21');
+
+      // A proposal carries the Slots it was found for, and the search has moved on.
+      expect(chosenTimeField()).toBeNull();
+    });
+
+    test('Names the days being searched, without the weekdays their headings carry', async () => {
+      setup(medplum);
+      await openFinder();
+
+      expect(screen.getByText(/^August 17 · drag or shift-click/)).toBeInTheDocument();
+
+      await dragDays('17', '21');
+
+      expect(await screen.findByText(/August 17 – August 21 · drag or shift-click/)).toBeInTheDocument();
+    });
+  });
+
   describe('Reading times in the site’s timezone', () => {
     test('Shows an offered time as the time at the site', async () => {
       setup(medplum);
@@ -376,8 +657,40 @@ describe('AppointmentProposalForm', () => {
           timeZone: SITE_TIMEZONE,
           hour: 'numeric',
           minute: '2-digit',
+          // The viewer under the test runner does not share the site's timezone, so the zone is
+          // named beside the time.
+          timeZoneName: 'shortGeneric',
         }).format(start)
       );
+    });
+
+    test('Names the zone on the time that is about to be booked', async () => {
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      // The last time read before booking says which clock it is on, like the times offered.
+      expect(chosenTimeField()?.value).toMatch(/\bET$/);
+    });
+
+    test('Asks for the day as the site keeps it, not as the booker does', async () => {
+      const get = vi.spyOn(medplum, 'get');
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      await chooseDay('18');
+
+      // Bounded on the runner's clock this would run 00:00Z to 23:59Z, which is 8pm on the
+      // 17th to 8pm on the 18th at the site: the clinic's morning missed, and its evening
+      // fetched under the following day's heading.
+      expect(lastFindStart(get)).toBe('2026-08-18T04:00:00.000Z');
+      // `$find` only offers a time that fits inside the window, so it runs to the site's
+      // next midnight: stopping short would drop the last hours the clinic is open.
+      expect(lastFindEnd(get)).toBe('2026-08-19T04:00:00.000Z');
     });
 
     test('Records the instant the site-local time stands for', async () => {
@@ -719,6 +1032,17 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
 
       expect(await screen.findByText(/Wednesday, September 2/)).toBeInTheDocument();
+    });
+
+    test('Opens on today when the day the host named has gone', async () => {
+      setup(medplum, { defaultService: UltrasoundImagingService, defaultStart: new Date(2026, 7, 10, 0, 0, 0) });
+      await settleAutocomplete();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+
+      // Floored to now rather than searching from the stale day named.
+      expect(await screen.findByText(/Monday, August 17/)).toBeInTheDocument();
+      expect(screen.queryByText(/August 10/)).not.toBeInTheDocument();
     });
   });
 

@@ -73,7 +73,6 @@ export async function getRepoForLogin(
 
   return new Repository({
     projects: allowedProjects,
-    currentProject: project,
     author: profile ? createReference(profile) : realMembership.profile,
     remoteAddress: remoteAddress ?? login.remoteAddress,
     superAdmin: project.superAdmin,

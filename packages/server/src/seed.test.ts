@@ -83,17 +83,17 @@ describe('Seed', () => {
     // Run post-deploy migrations synchronously
     await synchronouslyRunAllPendingPostDeployMigrations(repo);
 
-    // Scheduling features use serializable transactions that touch these
+    // Scheduling and user creation use serializable transactions that touch these
     // tables. The `fastUpdate` feature can cause seemingly unrelated transactions
     // to append to the same "pending list", which can cause transaction
     // failures.
     //
-    // Here we update the indexes on Appointment and Slot tables to disable `fastUpdate`,
+    // Here we update the indexes on Appointment, Slot, and User tables to disable `fastUpdate`,
     // and then vacuum the tables to clear any existing pending list entries.
     const actions: OutputAction[] = [];
-    const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References'];
+    const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References', 'User', 'User_References'];
     const client = repo.getDatabaseClient(
-      repoAccess.sqlWrite(['Appointment', 'Slot'], { source: 'seed.test.configureIndexes' })
+      repoAccess.sqlWrite(['Appointment', 'Slot', 'User'], { source: 'seed.test.configureIndexes' })
     );
     await configureGinIndexes(client, actions, tables, { fastUpdate: false });
     for (const table of tables) {
