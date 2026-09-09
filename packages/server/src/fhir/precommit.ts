@@ -54,6 +54,7 @@ export async function preCommitValidation<T extends Resource>(
       await checkReferencesForDelete(repo, resource);
     } catch (err) {
       logger.warn('Deleting resource referenced by ProjectMembership', err as Error);
+      throw err;
     }
   }
 

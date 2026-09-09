@@ -12,7 +12,7 @@ import { globalLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import { createBot } from './operations/botinit';
 import { deployBot } from './operations/deploy';
-import type { Repository } from './repo';
+import { Repository } from './repo';
 
 describe('FHIR Repo', () => {
   let project: WithId<Project>;
@@ -171,18 +171,38 @@ describe('FHIR Repo', () => {
     });
 
     test('Checks ProjectMembership.profile', async () => {
-      await expect(repo.deleteResource('Practitioner', profile.id)).resolves.toBeUndefined();
+      await expect(repo.deleteResource('Practitioner', profile.id)).rejects.toThrow(
+        `Cannot delete Practitioner/${profile.id}: referenced by ProjectMembership/`
+      );
       expect(logSpy).toHaveBeenCalledWith('Deleting resource referenced by ProjectMembership', expect.any(Error));
+      // The delete is blocked, so the resource should still exist
+      await expect(repo.readResource('Practitioner', profile.id)).resolves.toMatchObject({ id: profile.id });
     });
 
     test('Checks ProjectMembership.access.policy', async () => {
-      await expect(repo.deleteResource('AccessPolicy', accessPolicy.id)).resolves.toBeUndefined();
+      await expect(repo.deleteResource('AccessPolicy', accessPolicy.id)).rejects.toThrow(
+        `Cannot delete AccessPolicy/${accessPolicy.id}: referenced by ProjectMembership/`
+      );
       expect(logSpy).toHaveBeenCalledWith('Deleting resource referenced by ProjectMembership', expect.any(Error));
+      // The delete is blocked, so the resource should still exist
+      await expect(repo.readResource('AccessPolicy', accessPolicy.id)).resolves.toMatchObject({ id: accessPolicy.id });
     });
 
     test('Does not check ProjectMembership.userConfiguration', async () => {
       await expect(repo.deleteResource('UserConfiguration', userConfig.id)).resolves.toBeUndefined();
       expect(logSpy).toHaveBeenCalledTimes(0);
+    });
+
+    test('Super admin can delete referenced resources', async () => {
+      // Super admins bypass the critical reference check by design
+      const superAdminRepo = new Repository({
+        extendedMode: true,
+        superAdmin: true,
+        author: createReference(profile),
+      });
+
+      await expect(superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id)).resolves.toBeUndefined();
+      expect(logSpy).not.toHaveBeenCalledWith('Deleting resource referenced by ProjectMembership', expect.any(Error));
     });
   });
 });
