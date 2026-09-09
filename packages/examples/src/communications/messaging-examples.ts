@@ -100,7 +100,7 @@ const threadWithReadState = {
 // end-block threadHeaderWithReadExtensionTs
 // Satisfy TS6133 (unused variable); value only used for doc block extraction
 // eslint-disable-next-line no-void
-void threadWithReadState;
+console.log(threadWithReadState);
 
 // start-block updateThreadReadStateTs
 // Option B: Find this participant's read-state block by URL, update lastRead and lastReadAt, then PUT
@@ -153,7 +153,7 @@ const readReceiptTask = await medplum.createResource({
 // end-block createReadReceiptTaskTs
 // Satisfy TS6133 (unused variable); value only used for doc block extraction
 // eslint-disable-next-line no-void
-void readReceiptTask;
+console.log(readReceiptTask);
 
 // start-block markReadReceiptTaskTs
 // Option C: Mark read-receipt Task completed when user reads the message
@@ -416,9 +416,9 @@ const walkthroughFirstMessage = await medplum.createResource({
 });
 // end-block createYourFirstThreadHeaderAndFirstMessageTs
 // eslint-disable-next-line no-void
-void createdThreadHeader;
+console.log(createdThreadHeader);
 // eslint-disable-next-line no-void
-void walkthroughFirstMessage;
+console.log(walkthroughFirstMessage);
 
 // start-block createYourFirstThreadReplyFromAnotherUserTs
 // In production this createResource call would run as another user (e.g. patient portal) with their own MedplumClient session.
@@ -441,7 +441,7 @@ const walkthroughSecondMessage = await medplum.createResource({
 });
 // end-block createYourFirstThreadReplyFromAnotherUserTs
 // eslint-disable-next-line no-void
-void walkthroughSecondMessage;
+console.log(walkthroughSecondMessage);
 
 // start-block createYourFirstThreadReplyInResponseToTs
 // Use when the user explicitly replies to one message (not required for linear chat).
@@ -458,7 +458,7 @@ const walkthroughReplyInResponseTo = await medplum.createResource({
 });
 // end-block createYourFirstThreadReplyInResponseToTs
 // eslint-disable-next-line no-void
-void walkthroughReplyInResponseTo;
+console.log(walkthroughReplyInResponseTo);
 
 // start-block filterByPatientTs
 // Filter threads to a specific patient
