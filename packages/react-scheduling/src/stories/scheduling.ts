@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   deepClone,
+  getReferenceString,
   HL7_V2_0203,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
@@ -31,7 +32,7 @@ import type {
 import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 
 /** Who an appointment can be held on, as FHIR allows. */
-type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
+export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;
 
 /**
  * Fixtures for the scheduling components: one imaging service bookable against
@@ -239,6 +240,17 @@ function buildSchedule(
       },
     ],
   };
+}
+
+/**
+ * Keys resources by the reference a proposed appointment names them by, which is
+ * the shape `groupAppointmentsByDay` and `getAppointmentActors` read them from.
+ *
+ * @param resources - The resources a caller has already read.
+ * @returns The resources, keyed by reference.
+ */
+export function indexByReference<T extends WithId<Resource>>(resources: readonly T[]): Map<string, T> {
+  return new Map(resources.map((resource) => [getReferenceString(resource), resource]));
 }
 
 export const DrRiveraSchedule = buildSchedule('schedule-dr-rivera', 'Practitioner/dr-rivera', 'Dr. Maya Rivera');

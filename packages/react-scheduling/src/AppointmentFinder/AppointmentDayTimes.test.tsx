@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { MockClient } from '@medplum/mock';
 import { buildProposedAppointment } from '../stories/scheduling';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import { groupAppointmentsByDay } from './AppointmentFinder.times';
 
@@ -19,13 +20,14 @@ describe('AppointmentDayTimes', () => {
       EASTERN
     );
 
-    render(
+    renderWithMedplum(
       <AppointmentDayTimes
         date={day.date}
         groups={day.groups}
         timezone={EASTERN}
         onSelectAppointment={onSelectAppointment}
-      />
+      />,
+      new MockClient()
     );
 
     expect(screen.getByText('Monday, July 27')).toBeInTheDocument();
@@ -40,14 +42,15 @@ describe('AppointmentDayTimes', () => {
   test('Leaves the zone off times the viewer already reads on their own clock', () => {
     const [day] = groupAppointmentsByDay([buildProposedAppointment({ start: MORNING })], EASTERN);
 
-    render(
+    renderWithMedplum(
       <AppointmentDayTimes
         date={day.date}
         groups={day.groups}
         timezone={EASTERN}
         viewerTimezone={EASTERN}
         onSelectAppointment={vi.fn()}
-      />
+      />,
+      new MockClient()
     );
 
     expect(screen.getByRole('button', { name: '9:00 AM' })).toBeInTheDocument();
@@ -56,21 +59,25 @@ describe('AppointmentDayTimes', () => {
   test("Names the zone when the site does not keep the viewer's time", () => {
     const [day] = groupAppointmentsByDay([buildProposedAppointment({ start: MORNING })], EASTERN);
 
-    render(
+    renderWithMedplum(
       <AppointmentDayTimes
         date={day.date}
         groups={day.groups}
         timezone={EASTERN}
         viewerTimezone="America/Los_Angeles"
         onSelectAppointment={vi.fn()}
-      />
+      />,
+      new MockClient()
     );
 
     expect(screen.getByRole('button', { name: '9:00 AM ET' })).toBeInTheDocument();
   });
 
   test('Says so on a day that offers nothing', () => {
-    render(<AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />);
+    renderWithMedplum(
+      <AppointmentDayTimes date={new Date(2026, 6, 28)} groups={[]} onSelectAppointment={vi.fn()} />,
+      new MockClient()
+    );
 
     expect(screen.getByText('Tuesday, July 28')).toBeInTheDocument();
     expect(screen.getByText('No times are offered on this day.')).toBeInTheDocument();

@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { Appointment, HealthcareService } from '@medplum/fhirtypes';
 import { useCallback, useMemo, useState } from 'react';
+import type { SchedulingActorResource } from '../actors';
 import type { DateTimeRange } from '../types';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { AppointmentDay } from './AppointmentFinder.times';
@@ -31,6 +32,12 @@ export interface UseDaySearchOptions {
   readonly timezone: string | undefined;
   /** The day to open on. Defaults to today. */
   readonly defaultStart?: Date;
+  /**
+   * The actors' own resources, keyed by reference, for whichever of them the caller has
+   * already read, so a group can be headed by the actor itself rather than by whatever
+   * `$find` copied off the Schedule.
+   */
+  readonly actorResources?: ReadonlyMap<string, SchedulingActorResource>;
   /** Fired when the days picked change, so the caller can drop what it chose from the old ones. */
   readonly onDaysChanged?: () => void;
 }
@@ -78,7 +85,7 @@ export interface UseDaySearchResult {
  * @returns The days on show with their times, load and error state, and the three ways in.
  */
 export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
-  const { service, combinations, timezone, defaultStart, onDaysChanged } = options;
+  const { service, combinations, timezone, defaultStart, actorResources, onDaysChanged } = options;
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
 
@@ -100,9 +107,9 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
 
   const { timeResultsByDay, hasTimes } = useMemo(() => {
     const times = search.loading ? daySearch.found : [...daySearch.found, ...search.appointments];
-    const grouped = groupAppointmentsByDay(times, timezone, selectedDayRange);
+    const grouped = groupAppointmentsByDay(times, timezone, selectedDayRange, actorResources);
     return { timeResultsByDay: grouped, hasTimes: grouped.some((day) => day.groups.length > 0) };
-  }, [search.loading, search.appointments, daySearch.found, timezone, selectedDayRange]);
+  }, [search.loading, search.appointments, daySearch.found, timezone, selectedDayRange, actorResources]);
 
   const chooseDayRange = useCallback(
     (start: Date, end?: Date): void => {

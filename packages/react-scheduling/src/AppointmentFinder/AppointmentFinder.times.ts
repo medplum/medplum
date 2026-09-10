@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, isDefined } from '@medplum/core';
 import type { Appointment, Reference } from '@medplum/fhirtypes';
-import type { SchedulingActor } from '../actors';
+import type { SchedulingActorResource, SchedulingActorValue } from '../actors';
 
 /**
  * The longest window `Appointment/$find` accepts. Requests wider than this are
@@ -24,7 +24,7 @@ export type TimeOfDay = 'any' | 'morning' | 'afternoon';
 export interface AppointmentSlotGroup {
   /** Stable key derived from the actors, so React keys survive a refetch. */
   readonly key: string;
-  readonly actors: readonly SchedulingActor[];
+  readonly actors: readonly SchedulingActorValue[];
   readonly durationMinutes: number;
   /** Sorted by start time. */
   readonly appointments: readonly Appointment[];
@@ -251,12 +251,15 @@ export function filterByTimeOfDay(
  * @param searched - Days to list whether or not they offer anything, so a searched day
  *   that came back empty still shows up rather than going missing. Read on the local
  *   calendar, matching how a day is picked.
+ * @param actorResources - The actors' own resources, keyed by reference, for
+ *   whichever of them the caller has already read. See {@link getAppointmentActors}.
  * @returns Days in ascending order, each holding its groups.
  */
 export function groupAppointmentsByDay(
   appointments: readonly Appointment[],
   timezone?: string,
-  searched?: DateRange
+  searched?: DateRange,
+  actorResources?: ReadonlyMap<string, SchedulingActorResource>
 ): AppointmentDay[] {
   const days = new Map<string, Map<string, Appointment[]>>();
 
@@ -294,19 +297,42 @@ export function groupAppointmentsByDay(
       key: dayKey,
       date: parseDayKey(dayKey),
       groups: [...groups.entries()]
-        .map(([groupKey, groupAppointments]) => toSlotGroup(groupKey, groupAppointments))
+        .map(([groupKey, groupAppointments]) => toSlotGroup(groupKey, groupAppointments, actorResources))
         .sort((left, right) => left.key.localeCompare(right.key)),
     }));
 }
 
-function toSlotGroup(key: string, appointments: Appointment[]): AppointmentSlotGroup {
+function toSlotGroup(
+  key: string,
+  appointments: Appointment[],
+  actorResources: ReadonlyMap<string, SchedulingActorResource> | undefined
+): AppointmentSlotGroup {
   const sorted = [...appointments].sort((left, right) => (left.start ?? '').localeCompare(right.start ?? ''));
   return {
     key,
-    actors: sorted[0]?.participant?.map((participant) => participant.actor).filter(isDefined) ?? [],
+    actors: getAppointmentActors(sorted[0], actorResources),
     durationMinutes: getDurationMinutes(sorted[0]),
     appointments: sorted,
   };
+}
+
+/**
+ * Get the actor(s) of an appointment.
+ * @param appointment - The proposed appointment.
+ * @param actorResources - Map of actor resources that have already been previously loaded.
+ * @returns List of actors. Resource if it's already loaded, reference otherwise.
+ */
+export function getAppointmentActors(
+  appointment: Appointment | undefined,
+  actorResources?: ReadonlyMap<string, SchedulingActorResource>
+): SchedulingActorValue[] {
+  return (appointment?.participant ?? [])
+    .map((participant) => participant.actor)
+    .filter(isDefined)
+    .map((actor) => {
+      const reference = getReferenceString(actor);
+      return (reference ? actorResources?.get(reference) : undefined) ?? actor;
+    });
 }
 
 /**

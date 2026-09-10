@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Dereference } from '@medplum/core';
-import { assertNever, parseReference } from '@medplum/core';
-import type { Schedule } from '@medplum/fhirtypes';
+import type { Dereference, WithId } from '@medplum/core';
+import { assertNever, isResource, parseReference } from '@medplum/core';
+import type { ExtractResource, Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
@@ -10,6 +10,29 @@ import type { Schedule } from '@medplum/fhirtypes';
  */
 export type SchedulingActor = Schedule['actor'][number];
 export type SchedulingActorType = Dereference<SchedulingActor>['resourceType'];
+
+/** A loaded actor resource. Tied to the types `Schedule.actor` admits. */
+export type SchedulingActorResource = WithId<ExtractResource<SchedulingActorType>>;
+
+/**
+ * An actor as a reference, or as the resource when it has already been read.
+ */
+export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
+
+/** The resource types `Schedule.actor` admits, as values rather than a type. */
+const SCHEDULING_ACTOR_TYPES = [
+  'Device',
+  'HealthcareService',
+  'Location',
+  'Patient',
+  'Practitioner',
+  'PractitionerRole',
+  'RelatedPerson',
+] as const satisfies SchedulingActorType[];
+
+export function isSchedulingActorType(value: string | undefined): value is SchedulingActorType {
+  return SCHEDULING_ACTOR_TYPES.includes(value as SchedulingActorType);
+}
 
 /**
  * Actor types whose schedules may be offered for booking, in the order they are
@@ -33,17 +56,17 @@ export function isBookableActorType(value: string | undefined): value is Bookabl
 }
 
 /**
- * Extracts the resource type from a reference to an actor.
+ * Extracts the resource type of an actor, given as itself or as a reference.
  *
  * Only supports references that may be used for Scheduling operations, which are
  * those that have a qualified `reference` attribute. The attribute must be present,
  * and may not be a reference to a "contained" resource (eg. `{ reference: "#cid" }`)
  *
- * @param reference - A Reference to a schedulable resource
- * @returns The type that the reference refers to.
+ * @param actor - A schedulable resource, or a Reference to one
+ * @returns The type of the actor.
  */
-export function getActorType(reference: SchedulingActor): SchedulingActorType {
-  return parseReference(reference)[0];
+export function getActorType(actor: SchedulingActorValue): SchedulingActorType {
+  return isResource(actor) ? actor.resourceType : parseReference(actor)[0];
 }
 
 /**
