@@ -28,6 +28,7 @@ import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -72,6 +73,7 @@ export async function getRepoForLogin(
   const allowedProjects = await getAllowedProjects(project);
 
   return new Repository({
+    routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
     projects: allowedProjects,
     author: profile ? createReference(profile) : realMembership.profile,
     remoteAddress: remoteAddress ?? login.remoteAddress,

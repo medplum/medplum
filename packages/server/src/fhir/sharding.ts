@@ -3,6 +3,7 @@
 
 import { OperationOutcomeError } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
+import { getLogger } from '../logger';
 
 /**
  * The shard ID for the global database.
@@ -25,6 +26,8 @@ export const PLACEHOLDER_SHARD_ID = 'placeholder';
  * {@link normalizeShardId}.
  */
 export const TODO_SHARD_ID = 'todo';
+
+export type ShardRouting = { kind: 'global-only' } | { kind: 'project-shard'; shardId: string };
 
 /**
  * Resource types that always live on the global shard, regardless of the project they belong to.
@@ -76,14 +79,14 @@ export function normalizeShardId(shardId: string | undefined): string {
  * An empty set is not allowed: "touches no resources" does not identify a destination. A default
  * could silently misroute under-specified requests.
  *
- * @param projectShardId - The shard ID of the current project context (normalized internally).
+ * @param routing - The context indicating whether the operation is global-only or tied to a project shard.
  * @param resourceTypes - The resource types the operation touches. Must not be empty.
  * @param source - Optional label for the call site, reported in the diagnostics when this throws.
  * @returns The shard ID to route the operation to.
  * @throws {OperationOutcomeError} When the operation spans multiple shards or names no resource types.
  */
 export function resolveShardId(
-  projectShardId: string,
+  routing: ShardRouting,
   resourceTypes: ReadonlySet<ResourceType>,
   source?: string
 ): string {
@@ -110,7 +113,24 @@ export function resolveShardId(
     return GLOBAL_SHARD_ID;
   }
 
-  const normalizedShardId = normalizeShardId(projectShardId);
+  if (routing.kind === 'global-only') {
+    // to strictly enforce that global-only routing cannot touch project-scoped resources,
+    // throw instead log
+    getLogger().warn('Operation cannot be routed to a project shard from global-only routing', {
+      project: projectTypes.join(', '),
+      source: source || 'unknown',
+    });
+    // throw shardRoutingError(
+    //   'Operation cannot be routed to a project shard from global-only routing',
+    //   `project: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
+    // );
+  }
+
+  // the fallback to global MUST go away when global-only routing touching
+  // project-scoped resources is throws instead of logs
+  const routingShardId = routing.kind === 'project-shard' ? routing.shardId : GLOBAL_SHARD_ID;
+
+  const normalizedShardId = normalizeShardId(routingShardId);
   if (!globalTypes) {
     return normalizedShardId;
   }
@@ -119,9 +139,10 @@ export function resolveShardId(
   if (normalizedShardId === GLOBAL_SHARD_ID) {
     return GLOBAL_SHARD_ID;
   }
+
   throw shardRoutingError(
     `Operation cannot span shards`,
-    `global: ${globalTypes.join(', ')}, ${projectShardId}: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
+    `global: ${globalTypes.join(', ')}, ${routingShardId}: ${projectTypes.join(', ')}, source: ${source || 'unknown'}`
   );
 }
 

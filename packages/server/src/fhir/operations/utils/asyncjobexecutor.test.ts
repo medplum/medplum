@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../../test.setup';
-import { getGlobalSystemRepo, Repository } from '../../repo';
+import { getGlobalSystemRepo } from '../../repo';
 import { AsyncJobExecutor } from './asyncjobexecutor';
 
 describe('AsyncJobExecutor', () => {
@@ -33,13 +32,8 @@ describe('AsyncJobExecutor', () => {
 
   test('start', () =>
     withTestContext(async () => {
-      const testProject = await createTestProject({ withAccessToken: true });
-      const exec = new AsyncJobExecutor(
-        new Repository({
-          projects: [testProject.project],
-          author: { reference: 'User/' + randomUUID() },
-        })
-      );
+      const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
+      const exec = new AsyncJobExecutor(testProject.repo);
 
       const resource = await exec.init('http://example.com/async');
       const callback = vi.fn();

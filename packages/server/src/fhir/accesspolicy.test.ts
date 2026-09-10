@@ -47,6 +47,16 @@ import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
+import type { RepositoryContext } from './repository/repository-context';
+import { PLACEHOLDER_SHARD_ID } from './sharding';
+
+function getRepository(repoContext: Partial<RepositoryContext>): Repository {
+  return new Repository({
+    ...repoContext,
+    author: repoContext.author ?? { reference: 'Practitioner/123' },
+    routing: repoContext.routing ?? { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+  });
+}
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
@@ -80,10 +90,7 @@ describe('AccessPolicy', () => {
         resourceType: 'AccessPolicy',
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -97,10 +104,7 @@ describe('AccessPolicy', () => {
         resourceType: 'AccessPolicy',
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -126,10 +130,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -163,10 +164,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -200,10 +198,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -230,10 +225,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -260,11 +252,8 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
+      const repo = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy,
       });
 
@@ -305,11 +294,8 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
+      const repo = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy,
       });
 
@@ -356,12 +342,9 @@ describe('AccessPolicy', () => {
           binaryResource.criteria = 'Binary?_compartment=' + orgRef;
         }
 
-        const repo = new Repository({
+        const repo = getRepository({
           extendedMode: true,
           accessPolicy,
-          author: {
-            reference: 'Practitioner/1',
-          },
         });
 
         const binary = await repo.createResource<Binary>({
@@ -404,12 +387,9 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
+      const repo = getRepository({
         extendedMode: true,
         accessPolicy,
-        author: {
-          reference: 'Practitioner/1',
-        },
       });
 
       const observation = await repo.createResource<Observation>({
@@ -427,12 +407,9 @@ describe('AccessPolicy', () => {
       expect(readObservation.meta?.accounts).toContainExactly([{ reference: 'Organization/' + overrideId }]);
       expect(readObservation.meta?.compartment).toContainExactly([{ reference: 'Organization/' + overrideId }]);
 
-      const adminRepo = new Repository({
+      const adminRepo = getRepository({
         extendedMode: true,
         projectAdmin: true,
-        author: {
-          reference: 'Practitioner/0',
-        },
       });
       const orgReference = { reference: 'Organization/' + randomUUID() };
       const patient = await adminRepo.createResource<Patient>({
@@ -500,19 +477,13 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo1 = new Repository({
+      const repo1 = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy: accessPolicy1,
       });
 
-      const repo2 = new Repository({
+      const repo2 = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy: accessPolicy2,
       });
 
@@ -577,19 +548,13 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo1 = new Repository({
+      const repo1 = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy: accessPolicy1,
       });
 
-      const repo2 = new Repository({
+      const repo2 = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/456',
-        },
         accessPolicy: accessPolicy2,
       });
 
@@ -637,19 +602,13 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo1 = new Repository({
+      const repo1 = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy: accessPolicy1,
       });
 
-      const repo2 = new Repository({
+      const repo2 = getRepository({
         extendedMode: true,
-        author: {
-          reference: 'Practitioner/123',
-        },
         accessPolicy: accessPolicy2,
       });
 
@@ -992,10 +951,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -1037,10 +993,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -1080,10 +1033,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo = getRepository({
         accessPolicy,
       });
 
@@ -1108,10 +1058,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo = getRepository({
         accessPolicy,
       });
 
@@ -1148,10 +1095,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo = getRepository({
         accessPolicy,
       });
 
@@ -1214,10 +1158,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo = getRepository({
         accessPolicy,
       });
 
@@ -1267,8 +1208,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
-        author: { reference: 'Practitioner/123' },
+      const repo = getRepository({
         accessPolicy,
       });
 
@@ -1401,8 +1341,7 @@ describe('AccessPolicy', () => {
         resource: [{ resourceType: 'Patient', hiddenFields: ['name.family'] }],
       };
 
-      const repo2 = new Repository({
-        author: { reference: 'Practitioner/123' },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -1449,7 +1388,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({ author: { reference: 'Practitioner/123' }, accessPolicy });
+      const repo2 = getRepository({ accessPolicy });
 
       const readResource1 = await repo2.readResource<Observation>('Observation', obs1.id);
       expect(readResource1).toMatchObject({
@@ -1567,7 +1506,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({ author: { reference: 'Practitioner/123' }, accessPolicy });
+      const repo2 = getRepository({ accessPolicy });
 
       const readResource1 = await repo2.readResource<Observation>('Observation', obsQuantity.id);
       expect(readResource1).toMatchObject({
@@ -1686,10 +1625,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo = getRepository({
         accessPolicy,
       });
 
@@ -1736,10 +1672,7 @@ describe('AccessPolicy', () => {
         ],
       };
 
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
+      const repo2 = getRepository({
         accessPolicy,
       });
 
@@ -1767,8 +1700,7 @@ describe('AccessPolicy', () => {
 
   test('Compound parameterized access policy', () =>
     withTestContext(async () => {
-      const adminRepo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const adminRepo = getRepository({
         projects: [testProject],
         strictMode: true,
         extendedMode: true,
@@ -1822,8 +1754,7 @@ describe('AccessPolicy', () => {
 
   test('String parameters', () =>
     withTestContext(async () => {
-      const adminRepo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const adminRepo = getRepository({
         projects: [testProject],
         strictMode: true,
         extendedMode: true,
@@ -1871,8 +1802,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
 
-      const adminRepo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const adminRepo = getRepository({
         projects: [project],
         strictMode: true,
         extendedMode: true,
@@ -2375,8 +2305,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const { project, membership } = await createTestProject({ superAdmin: true, withClient: true });
 
-      const adminRepo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const adminRepo = getRepository({
         projects: [project],
         strictMode: true,
         extendedMode: true,
@@ -2476,8 +2405,7 @@ describe('AccessPolicy', () => {
           },
         ],
       });
-      const repo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const repo = getRepository({
         projects: [project],
         projectAdmin: true,
         strictMode: true,
@@ -2542,8 +2470,7 @@ describe('AccessPolicy', () => {
   test('Project admin check references', () =>
     withTestContext(async () => {
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
-      const repo1 = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const repo1 = getRepository({
         projects: [project1],
         projectAdmin: true,
         strictMode: true,
@@ -2552,8 +2479,7 @@ describe('AccessPolicy', () => {
       });
 
       const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
-      const repo2 = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const repo2 = getRepository({
         projects: [project2],
         projectAdmin: true,
         strictMode: true,
@@ -2614,8 +2540,7 @@ describe('AccessPolicy', () => {
 
   test('Shared project read only', () =>
     withTestContext(async () => {
-      const repo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const repo = getRepository({
         projects: [testProject],
         projectAdmin: true,
         strictMode: true,
@@ -2639,8 +2564,7 @@ describe('AccessPolicy', () => {
       };
 
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
-      const repo1 = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const repo1 = getRepository({
         projects: [project1],
         projectAdmin: true,
         strictMode: true,
@@ -2649,8 +2573,7 @@ describe('AccessPolicy', () => {
       });
 
       const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
-      const repo2 = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const repo2 = getRepository({
         projects: [project2, project1],
         projectAdmin: true,
         strictMode: true,
@@ -2736,7 +2659,7 @@ describe('AccessPolicy', () => {
 
       // Repos for the test user
 
-      const repoWithoutAccessPolicy = new Repository({
+      const repoWithoutAccessPolicy = getRepository({
         author: createReference(profile),
         projects: [project],
         projectAdmin: false,
@@ -2744,7 +2667,7 @@ describe('AccessPolicy', () => {
         extendedMode: true,
       });
 
-      const repoWithAccessPolicy = new Repository({
+      const repoWithAccessPolicy = getRepository({
         author: createReference(profile),
         projects: [project],
         projectAdmin: false,
@@ -3038,8 +2961,7 @@ describe('AccessPolicy', () => {
 
   test('Combined access policies with overlapping entries', () =>
     withTestContext(async () => {
-      const adminRepo = new Repository({
-        author: { reference: 'Practitioner/' + randomUUID() },
+      const adminRepo = getRepository({
         projects: [testProject],
         strictMode: true,
         extendedMode: true,

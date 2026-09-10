@@ -11,12 +11,11 @@ import type {
   PractitionerRole,
   Slot,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { createTestProject, withTestContext } from '../test.setup';
-import { Repository } from './repo';
+import type { Repository } from './repo';
 
 describe('Medplum Custom Search Parameters', () => {
   let config: MedplumServerConfig;
@@ -28,12 +27,7 @@ describe('Medplum Custom Search Parameters', () => {
   });
 
   beforeEach(async () => {
-    const { project } = await createTestProject();
-    repo = new Repository({
-      strictMode: true,
-      projects: [project],
-      author: { reference: 'User/' + randomUUID() },
-    });
+    ({ repo } = await createTestProject({ withRepo: true }));
   });
 
   afterAll(async () => {

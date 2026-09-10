@@ -736,17 +736,9 @@ describe('Non-strict mode', () => {
   const val1 = 'ABCDEFGHIJ';
 
   beforeAll(async () => {
-    const { project } = await createTestProject();
-    nonStrictRepo = new Repository({
-      strictMode: false,
-      projects: [project],
-      author: { reference: 'User/' + randomUUID() },
-    });
-    repo = new Repository({
-      strictMode: true,
-      projects: [project],
-      author: { reference: 'User/' + randomUUID() },
-    });
+    ({ repo } = await createTestProject({ withRepo: true }));
+    expect(repo.getConfig().strictMode).toBe(true);
+    nonStrictRepo = new Repository({ ...repo.getConfig(), strictMode: false });
     patient = await nonStrictRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Henry'] }],
@@ -841,12 +833,7 @@ describe('Condition.code token queries', () => {
   const disp1 = 'The Quick Brown Fox';
 
   beforeAll(async () => {
-    const { project } = await createTestProject();
-    repo = new Repository({
-      strictMode: true,
-      projects: [project],
-      author: { reference: 'User/' + randomUUID() },
-    });
+    ({ repo } = await createTestProject({ withRepo: true }));
 
     patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
     subject = createReference(patient);
@@ -1265,12 +1252,7 @@ describe('MedicationRequest.code legacy behavior', () => {
   const val2 = 'ZZZZZZZZZZ';
 
   beforeAll(async () => {
-    const { project } = await createTestProject();
-    repo = new Repository({
-      strictMode: true,
-      projects: [project],
-      author: { reference: 'User/' + randomUUID() },
-    });
+    ({ repo } = await createTestProject({ withRepo: true }));
 
     patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
     mr1 = await repo.createResource<MedicationRequest>({
