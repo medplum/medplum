@@ -11,7 +11,6 @@ import {
   FhirFilterComparison,
   FhirFilterConnective,
   FhirFilterNegation,
-  flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
@@ -24,7 +23,6 @@ import {
   parseFilterParameter,
   parseParameter,
   SearchParameterType,
-  serverError,
   splitN,
   splitSearchOnComma,
   subsetResource,
@@ -69,8 +67,10 @@ import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-c
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
 /**
- * Defines the minimum page size for cursor-based pagination that accommodates resources with the same lastUpdated. This value
- * is relevant primarily to the deprecated v1 cursor format, but is enforced for v2 cursors as well.
+ * Defines the minimum page size for cursor-based pagination. V3 cursors resume from an exact
+ * (lastUpdated, id) position and make progress at any page size; the minimum is kept for the
+ * deprecated v1 and v2 cursor formats, which only accommodate resources with the same lastUpdated
+ * when the page is large enough to span the tie.
  */
 export const minCursorBasedSearchPageSize = 20;
 
@@ -81,7 +81,11 @@ type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequ
 
 interface Cursor {
   version: string;
+  /** The lastUpdated timestamp of the next resource, as an ISO string. */
   nextInstant: string;
+  /** V3 only: the id of the next resource; the next page resumes from the exact (nextInstant, nextId) position. */
+  nextId?: string;
+  /** V2 only: ids already returned on the previous page that share its boundary timestamp. */
   excludedIds?: string[];
 }
 
@@ -287,21 +291,40 @@ export function getSelectQueryForSearch<T extends Resource>(
   addSortRules(repo, builder, searchRequest);
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
+  let cursor: Cursor | undefined;
   if (searchRequest.offset > 0) {
     if (searchRequest.cursor) {
       throw new OperationOutcomeError(badRequest('Cannot use both offset and cursor'));
     }
     builder.offset(searchRequest.offset);
   } else if (searchRequest.cursor) {
-    const cursor = parseCursor(searchRequest.cursor);
+    cursor = parseCursor(searchRequest.cursor);
     if (cursor) {
       builder.orderBy(new Column(builder.effectiveTableName, 'lastUpdated', false));
       builder.whereExpr(new Condition(new Column(builder.effectiveTableName, 'lastUpdated'), '>=', cursor.nextInstant));
 
-      if (cursor.excludedIds?.length) {
+      if (cursor.nextId) {
+        // V3: resume from the exact (lastUpdated, id) position. Together with the `>=` condition
+        // above, this is equivalent to (lastUpdated, id) >= (nextInstant, nextId) under the
+        // compound sort order. The `>=` condition alone determines the index range scanned, the
+        // same range as older cursor formats; this disjunction only filters rows that share the
+        // cursor timestamp.
+        builder.whereExpr(
+          new Disjunction([
+            new Condition(new Column(builder.effectiveTableName, 'lastUpdated'), '>', cursor.nextInstant),
+            new Condition(new Column(builder.effectiveTableName, 'id'), '>=', cursor.nextId),
+          ])
+        );
+      } else if (cursor.excludedIds?.length) {
         builder.whereExpr(new Negation(new Condition('id', 'IN', cursor.excludedIds)));
       }
     }
+  }
+  if (cursor || canUseCursorLinks(searchRequest)) {
+    // Cursor pagination resumes from an exact (lastUpdated, id) position, so within-tie order must
+    // be deterministic and stable across pages. Scoped to cursor-paginated searches so that other
+    // searches keep their query plans unchanged.
+    builder.orderBy(new Column(builder.effectiveTableName, 'id', false));
   }
   return builder;
 }
@@ -535,17 +558,7 @@ function getSearchLinks(
 
   if (searchRequest.count > 0 && entries?.length) {
     if (canUseCursorLinks(searchRequest)) {
-      // In order to make progress, the lastUpdated timestamp must change from the first entry of the current page
-      // to the first entry of the next page; otherwise we'd make the exact same request in a loop
-      if (entries[0].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
-        throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
-      }
-
-      // Exclude resources that would appear on the next page, but have already been given on this one
-      const excludedIds = flatMapFilter(entries, (entry) =>
-        entry.resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated ? entry.resource?.id : undefined
-      );
-      buildSearchLinksWithCursor(searchRequest, nextResource, excludedIds, result);
+      buildSearchLinksWithCursor(searchRequest, nextResource, result);
     } else {
       buildSearchLinksWithOffset(searchRequest, nextResource, result);
     }
@@ -560,7 +573,7 @@ function getSearchLinks(
  * A search request can use cursor links if:
  *   1. Not using offset pagination
  *   2. Exactly one sort rule using _lastUpdated ascending
- *   3. It uses a page size that can accommodate resources with the same lastUpdated
+ *   3. It meets the minimum page size, kept for compatibility with the deprecated cursor formats
  * @param searchRequest - The candidate search request.
  * @returns True if the search request can use cursor links.
  */
@@ -578,13 +591,11 @@ function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): bool
  * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
  * @param searchRequest - The search request.
  * @param nextResource - The next resource in the search results, which fell outside of the current page.
- * @param excludedIds - Resource IDs to exclude from the next page because they were already shown on the current one.
  * @param result - The search bundle links.
  */
 function buildSearchLinksWithCursor(
   searchRequest: SearchRequestWithCountAndOffset,
   nextResource: Resource | undefined,
-  excludedIds: string[],
   result: BundleLink[]
 ): void {
   result.push({
@@ -598,9 +609,9 @@ function buildSearchLinksWithCursor(
       url: getSearchUrl({
         ...searchRequest,
         cursor: formatCursor({
-          version: '2',
-          nextInstant: nextResource?.meta?.lastUpdated as string,
-          excludedIds,
+          version: '3',
+          nextInstant: nextResource.meta?.lastUpdated as string,
+          nextId: nextResource.id,
         }),
         offset: undefined,
       }),
@@ -620,6 +631,8 @@ function parseCursor(cursor: string): Cursor | undefined {
       return parseV1Cursor(cursor);
     case '2':
       return parseV2Cursor(cursor);
+    case '3':
+      return parseV3Cursor(cursor);
     default:
       return undefined;
   }
@@ -656,6 +669,23 @@ function parseV2Cursor(cursor: string): Cursor | undefined {
 }
 
 /**
+ * Parses a V3 cursor string of the format {version}-{nextInstant}-{nextId}
+ * @param cursor - The cursor string to parse.
+ * @returns The parsed cursor object.
+ */
+function parseV3Cursor(cursor: string): Cursor | undefined {
+  const [version, nextInstant, nextId] = splitN(cursor, '-', 3);
+  if (!nextId) {
+    return undefined;
+  }
+  const date = new Date(Number.parseInt(nextInstant, 10));
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return { version, nextInstant: date.toISOString(), nextId };
+}
+
+/**
  * Formats a cursor object into a cursor string.
  * @param cursor - The cursor object.
  * @returns The cursor string.
@@ -663,8 +693,8 @@ function parseV2Cursor(cursor: string): Cursor | undefined {
 function formatCursor(cursor: Cursor): string {
   const date = new Date(cursor.nextInstant);
   let str = `${cursor.version}-${date.getTime()}`;
-  if (cursor.excludedIds?.length) {
-    str += '-' + cursor.excludedIds.join(',');
+  if (cursor.nextId) {
+    str += '-' + cursor.nextId;
   }
   return str;
 }
