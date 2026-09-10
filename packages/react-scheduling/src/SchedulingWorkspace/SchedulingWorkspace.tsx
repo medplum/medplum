@@ -152,6 +152,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       return {
         schedule: candidate.schedule,
         color: colorByScheduleId.get(candidate.schedule.id),
+        label: getCandidateDisplay(candidate),
         slots: (slots ?? []).filter((slot: Slot) => slot.schedule?.reference === scheduleReference),
         appointments: (appointments ?? []).filter((appointment: Appointment) =>
           (appointment.participant ?? []).some(
