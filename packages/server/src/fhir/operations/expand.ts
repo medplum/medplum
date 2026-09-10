@@ -249,7 +249,7 @@ async function computeExpansion(
         displayLanguage: params.displayLanguage,
         filter: deferredFilter ? undefined : filter,
       });
-      for (const c of await validateCodings(codeSystem, codings, params)) {
+      for (const c of await validateEnumeratedConcepts(codeSystem, codings, params)) {
         if (c && (!deferredFilter || matchesTextFilter(c.display, deferredFilter))) {
           c.id = undefined;
           expansion.push(c);
@@ -261,6 +261,41 @@ async function computeExpansion(
   }
 
   return expansion;
+}
+
+async function validateEnumeratedConcepts(
+  codeSystem: WithId<CodeSystem>,
+  codings: Coding[],
+  params: ValueSetExpandParameters
+): Promise<(Coding | undefined)[]> {
+  // A display populated by flattenConcepts under displayLanguage came from a ValueSet designation override
+  const overriddenIndexes: number[] = [];
+  const translatedIndexes: number[] = [];
+  if (params.displayLanguage) {
+    for (let i = 0; i < codings.length; i++) {
+      (codings[i].display ? overriddenIndexes : translatedIndexes).push(i);
+    }
+  }
+  if (!overriddenIndexes.length) {
+    return validateCodings(codeSystem, codings, params);
+  }
+
+  const overridden = await validateCodings(
+    codeSystem,
+    overriddenIndexes.map((i) => codings[i])
+  );
+  const translated = translatedIndexes.length
+    ? await validateCodings(
+        codeSystem,
+        translatedIndexes.map((i) => codings[i]),
+        params
+      )
+    : EMPTY;
+
+  const result = new Array<Coding | undefined>(codings.length);
+  overriddenIndexes.forEach((index, i) => (result[index] = overridden[i]));
+  translatedIndexes.forEach((index, i) => (result[index] = translated[i]));
+  return result;
 }
 
 async function includeInExpansion(
