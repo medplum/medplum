@@ -204,6 +204,7 @@ const REFERENCE_TABLES: ReferenceTableDefinition[] = [
   { resourceType: 'DicomStudy', indexName: 'DicomStudy_Refs_projectId_code_targetId_idx', createIndexSql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS "DicomStudy_Refs_projectId_code_targetId_idx" ON "DicomStudy_References" ("projectId", "code", "targetId") INCLUDE ("resourceId")` },
   { resourceType: 'DicomSeries', indexName: 'DicomSeries_Refs_projectId_code_targetId_idx', createIndexSql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS "DicomSeries_Refs_projectId_code_targetId_idx" ON "DicomSeries_References" ("projectId", "code", "targetId") INCLUDE ("resourceId")` },
   { resourceType: 'DicomInstance', indexName: 'DicomInstance_Refs_projectId_code_targetId_idx', createIndexSql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS "DicomInstance_Refs_projectId_code_targetId_idx" ON "DicomInstance_References" ("projectId", "code", "targetId") INCLUDE ("resourceId")` },
+  { resourceType: 'Cron', indexName: 'Cron_Refs_projectId_code_targetId_idx', createIndexSql: `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Cron_Refs_projectId_code_targetId_idx" ON "Cron_References" ("projectId", "code", "targetId") INCLUDE ("resourceId")` },
 ];
 
 /** Reference rows updated per statement. Bounds how long any single row lock is held. */

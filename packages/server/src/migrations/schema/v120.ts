@@ -181,4 +181,5 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "DicomStudy_References" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "DicomSeries_References" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "DicomInstance_References" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Cron_References" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
 }
