@@ -28,8 +28,32 @@ export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDef
 /** Code system for scheduling requirements, recorded on `HealthcareService.eligibility.code`. */
 export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-eligibility';
 
-/** The eligibility code marking a visit type that cannot be booked without authorization codes. */
-export const REQUIRES_PRIOR_AUTH_CODE = 'requires-prior-auth';
+/** The eligibility code marking a visit type that cannot be booked without procedure codes. */
+export const REQUIRES_PROCEDURE_CODE = 'requires-procedure';
+
+/** The eligibility code marking a visit type that cannot be booked without diagnosis codes. */
+export const REQUIRES_DIAGNOSIS_CODE = 'requires-diagnosis';
+
+/** The eligibility code marking a visit type that cannot be booked without confirming medical necessity. */
+export const REQUIRES_MEDICAL_NECESSITY_CODE = 'requires-medical-necessity';
+
+/** Every eligibility code naming something a booking must carry. */
+export const SCHEDULING_REQUIREMENT_CODES = [
+  REQUIRES_PROCEDURE_CODE,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+] as const;
+
+export type SchedulingRequirement = (typeof SCHEDULING_REQUIREMENT_CODES)[number];
+
+/**
+ * Returns whether a code names a scheduling requirement.
+ * @param value - The `Coding.code` to test, which a resource need not carry.
+ * @returns True when it is one of the requirements a booking honours.
+ */
+export function isSchedulingRequirement(value: string | undefined): value is SchedulingRequirement {
+  return SCHEDULING_REQUIREMENT_CODES.includes(value as SchedulingRequirement);
+}
 
 /** Extension on an Appointment recording that medical necessity was confirmed when it was booked. */
 export const SchedulingMedicalNecessityURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingMedicalNecessity';
@@ -82,17 +106,21 @@ export function hasSchedulingParameters(resource: Schedule | HealthcareService):
 }
 
 /**
- * Returns whether a visit type may only be booked once authorization codes (CPT, ICD-10, etc.)
- * have been provided. Based on `HealthcareService.eligibility` codes.
+ * Returns what a visit type must be given before it can be booked, from its
+ * `HealthcareService.eligibility` codes.
  * @param service - The visit type being booked, if one has been chosen yet.
- * @returns True when booking it requires authorization codes.
+ * @returns The requirements it names, empty until a visit type is chosen or when it names none.
  */
-export function requiresPriorAuthorization(service: HealthcareService | undefined): boolean {
-  return !!service?.eligibility?.some((eligibility) =>
-    eligibility.code?.coding?.some(
-      (coding) => coding.system === SCHEDULING_ELIGIBILITY_SYSTEM && coding.code === REQUIRES_PRIOR_AUTH_CODE
-    )
-  );
+export function getSchedulingRequirements(service: HealthcareService | undefined): Set<SchedulingRequirement> {
+  const requirements = new Set<SchedulingRequirement>();
+  for (const eligibility of service?.eligibility ?? []) {
+    for (const coding of eligibility.code?.coding ?? []) {
+      if (coding.system === SCHEDULING_ELIGIBILITY_SYSTEM && isSchedulingRequirement(coding.code)) {
+        requirements.add(coding.code);
+      }
+    }
+  }
+  return requirements;
 }
 
 // Scheduling matches a `service` reference on resourceType and id, so a stored reference carrying a version

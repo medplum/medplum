@@ -1,18 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Button, Checkbox, Group, Loader, Pill, Stack, Text, TextInput } from '@mantine/core';
-import type { WithId } from '@medplum/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   createReference,
   formatDate,
   getIdentifier,
   getIdentifierByType,
   getReferenceString,
+  getSchedulingRequirements,
   getSchedulingTimezone,
   isDefined,
   MRN_IDENTIFIER_TYPE,
   normalizeErrorString,
-  requiresPriorAuthorization,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
   SchedulingMedicalNecessityURI,
 } from '@medplum/core';
 import type { Appointment, HealthcareService, Location, Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
@@ -163,9 +166,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const selectionError = getSelectionError(selections);
 
-  // Only a visit type requiring prior authorization is asked for these.
-  const needsAuthorization = requiresPriorAuthorization(service);
-  const authorizationOutstanding = needsAuthorization && !hasRequiredAuthorizationValues(authorization);
+  // Each authorization field is asked for on its own, by a visit type whose eligibility names it.
+  const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
+  const authorizationOutstanding = !hasRequiredAuthorizationValues(authorization, requirements);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -290,7 +293,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient, needsAuthorization ? authorization : undefined));
+      await onBook(buildBooking(chosen, patient, authorization, requirements));
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -372,48 +375,54 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={choosePatient}
         />
 
-        {/* Fields specific to visit types that require authorization. */}
-        {needsAuthorization && service && (
+        {/* Each field is shown only for a visit type whose eligibility asks for it. */}
+        {service && requirements.size > 0 && (
           <Fragment key={service.id}>
-            <ValueSetAutocomplete
-              name="procedure-code"
-              label="Procedure codes"
-              required
-              creatable={false}
-              itemComponent={AuthorizationCodeItem}
-              pillComponent={AuthorizationCodePill}
-              binding={procedureBinding}
-              onChange={(elements) =>
-                chooseAuthorization({
-                  ...authorization,
-                  procedure: toCodings(elements),
-                })
-              }
-            />
-            <ValueSetAutocomplete
-              name="diagnosis-code"
-              label="Diagnosis codes"
-              required
-              creatable={false}
-              itemComponent={AuthorizationCodeItem}
-              pillComponent={AuthorizationCodePill}
-              binding={diagnosisBinding}
-              onChange={(elements) =>
-                chooseAuthorization({
-                  ...authorization,
-                  diagnosis: toCodings(elements),
-                })
-              }
-            />
-            <Checkbox
-              classNames={{ label: classes.requiredLabel }}
-              label="Medical necessity confirmed"
-              required
-              checked={authorization.medicalNecessity}
-              onChange={(event) =>
-                chooseAuthorization({ ...authorization, medicalNecessity: event.currentTarget.checked })
-              }
-            />
+            {requirements.has(REQUIRES_PROCEDURE_CODE) && (
+              <ValueSetAutocomplete
+                name="procedure-code"
+                label="Procedure codes"
+                required
+                creatable={false}
+                itemComponent={AuthorizationCodeItem}
+                pillComponent={AuthorizationCodePill}
+                binding={procedureBinding}
+                onChange={(elements) =>
+                  chooseAuthorization({
+                    ...authorization,
+                    procedure: toCodings(elements),
+                  })
+                }
+              />
+            )}
+            {requirements.has(REQUIRES_DIAGNOSIS_CODE) && (
+              <ValueSetAutocomplete
+                name="diagnosis-code"
+                label="Diagnosis codes"
+                required
+                creatable={false}
+                itemComponent={AuthorizationCodeItem}
+                pillComponent={AuthorizationCodePill}
+                binding={diagnosisBinding}
+                onChange={(elements) =>
+                  chooseAuthorization({
+                    ...authorization,
+                    diagnosis: toCodings(elements),
+                  })
+                }
+              />
+            )}
+            {requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) && (
+              <Checkbox
+                classNames={{ label: classes.requiredLabel }}
+                label="Medical necessity confirmed"
+                required
+                checked={authorization.medicalNecessity}
+                onChange={(event) =>
+                  chooseAuthorization({ ...authorization, medicalNecessity: event.currentTarget.checked })
+                }
+              />
+            )}
           </Fragment>
         )}
 
@@ -660,18 +669,35 @@ function ActorField(props: ActorFieldProps): JSX.Element {
 /**
  * Puts the patient, and anything the visit type required, onto the proposal that will be booked.
  *
+ * Records a value only where the visit type asked for one: a field nobody was shown holds
+ * whatever it was left at, and writing that would put an answer on the booking that was
+ * never given.
+ *
  * @param proposal - The time that was chosen, as `$find` offered it.
  * @param patient - Who the visit is for.
- * @param authorization - The codes and attestation given, for a visit type that requires them.
+ * @param authorization - The codes and attestation given.
+ * @param requirements - What the visit type requires, from its eligibility codes.
  * @returns The appointment to book.
  */
 function buildBooking(
   proposal: Appointment,
   patient: WithId<Patient>,
-  authorization: BookingAuthorizationValues | undefined
+  authorization: BookingAuthorizationValues,
+  requirements: ReadonlySet<SchedulingRequirement>
 ): Appointment {
   const patientReference = getReferenceString(patient);
-  const booking: Appointment = {
+  const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? authorization.procedure : [];
+  const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? authorization.diagnosis : [];
+  const serviceType = [...(proposal.serviceType ?? []), ...procedure.map((coding) => ({ coding: [coding] }))];
+  const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis.map((coding) => ({ coding: [coding] }))];
+  const extension = [
+    ...(proposal.extension ?? []),
+    ...(requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)
+      ? [{ url: SchedulingMedicalNecessityURI, valueBoolean: authorization.medicalNecessity }]
+      : []),
+  ];
+
+  return {
     ...proposal,
     participant: [
       // A proposal knows nothing about patients, but a host may have put one on
@@ -679,20 +705,9 @@ function buildBooking(
       ...proposal.participant.filter((participant) => participant.actor?.reference !== patientReference),
       { actor: createReference(patient), required: 'required', status: 'needs-action' },
     ],
-  };
-
-  if (!authorization) {
-    return booking;
-  }
-
-  return {
-    ...booking,
-    serviceType: [...(booking.serviceType ?? []), ...authorization.procedure.map((coding) => ({ coding: [coding] }))],
-    reasonCode: [...(booking.reasonCode ?? []), ...authorization.diagnosis.map((coding) => ({ coding: [coding] }))],
-    extension: [
-      ...(booking.extension ?? []),
-      { url: SchedulingMedicalNecessityURI, valueBoolean: authorization.medicalNecessity },
-    ],
+    ...(serviceType.length > 0 && { serviceType }),
+    ...(reasonCode.length > 0 && { reasonCode }),
+    ...(extension.length > 0 && { extension }),
   };
 }
 

@@ -1,6 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CPT, extractServiceTypeReferences, getExtensionValue, SchedulingMedicalNecessityURI } from '@medplum/core';
+import type { SchedulingRequirement } from '@medplum/core';
+import {
+  CPT,
+  extractServiceTypeReferences,
+  getExtensionValue,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
+  SCHEDULING_ELIGIBILITY_SYSTEM,
+  SchedulingMedicalNecessityURI,
+} from '@medplum/core';
 import type { Appointment, Device } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import type { JSX } from 'react';
@@ -1223,6 +1233,25 @@ describe('AppointmentProposalForm', () => {
     setup(medplum, { procedureBinding: PROCEDURE_VALUE_SET, diagnosisBinding: DIAGNOSIS_VALUE_SET, ...props });
   }
 
+  /**
+   * Opens a booking of the designated visit type narrowed to the requirements named, with
+   * everything but the authorization fields answered.
+   *
+   * The same visit type throughout, so the schedules and the times it is offered at do not
+   * change with what it asks for.
+   * @param requirements - The eligibility codes the visit type is to carry.
+   */
+  async function fillBookingRequiring(...requirements: SchedulingRequirement[]): Promise<void> {
+    const eligibility = requirements.map((code) => ({
+      code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
+    }));
+    setupWithCodeValueSets({ defaultService: { ...InfusionService, eligibility } });
+    await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
+    await openTimeFinder();
+    await chooseFirstOfferedTime();
+    await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+  }
+
   describe('Codes a designated visit type cannot be booked without', () => {
     test('Asks for nothing extra for a visit type the practice did not designate', async () => {
       setupWithCodeValueSets();
@@ -1243,6 +1272,53 @@ describe('AppointmentProposalForm', () => {
       // Required like the two code fields, since nothing here is optional once a practice
       // designated the visit type.
       expect(medicalNecessityBox()).toBeRequired();
+    });
+
+    test('Asks only for what the visit type names, so a requirement can be dropped on its own', async () => {
+      await fillBookingRequiring(REQUIRES_PROCEDURE_CODE);
+
+      expect(field(/procedure code/i)).toBeInTheDocument();
+      expect(screen.queryByRole('searchbox', { name: /diagnosis code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+    });
+
+    test('Books on the one field it asked for, without waiting on the ones it did not', async () => {
+      await fillBookingRequiring(REQUIRES_PROCEDURE_CODE);
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/procedure code/i, ProcedureCodes[0]);
+      expect(bookButton()).toBeEnabled();
+
+      await clickBook();
+      const proposal = proposedAppointment();
+      expect(proposal.serviceType?.slice(1)).toEqual([{ coding: [ProcedureCodes[0]] }]);
+      // Nothing was asked, so nothing is recorded: an unasked field is not an answered one.
+      expect(proposal.reasonCode).toBeUndefined();
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBeUndefined();
+    });
+
+    test('Asks for medical necessity alone where that is all the visit type names', async () => {
+      await fillBookingRequiring(REQUIRES_MEDICAL_NECESSITY_CODE);
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+
+      await confirmMedicalNecessity();
+      await clickBook();
+
+      const proposal = proposedAppointment();
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBe(true);
+      expect(proposal.serviceType).toHaveLength(1);
+    });
+
+    test('Asks for the two codes without the attestation where that is what the visit type names', async () => {
+      await fillBookingRequiring(REQUIRES_PROCEDURE_CODE, REQUIRES_DIAGNOSIS_CODE);
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+
+      await enterCode(/procedure code/i, ProcedureCodes[0]);
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      expect(bookButton()).toBeEnabled();
     });
 
     test('Asks for them after the patient, as the last of the visit details', async () => {
