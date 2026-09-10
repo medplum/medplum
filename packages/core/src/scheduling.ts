@@ -80,8 +80,12 @@ function isServiceReference(reference: Reference | undefined, serviceReference: 
   if (!reference?.reference) {
     return false;
   }
-  const [resourceType, id] = reference.reference.split('/');
-  return `${resourceType}/${id}` === serviceReference;
+  return getUnversionedServiceReference(reference.reference) === getUnversionedServiceReference(serviceReference);
+}
+
+function getUnversionedServiceReference(reference: string): string {
+  const [resourceType, id] = reference.split('/');
+  return resourceType && id ? `${resourceType}/${id}` : reference;
 }
 
 function matchesServiceSchedulingParameters(extension: Extension, serviceReference: string): boolean {
@@ -262,7 +266,7 @@ export function serviceTypeIncludesService(
   return serviceType.some((concept) => {
     const serviceReference = getExtensionValue(concept, ServiceTypeReferenceURI) as
       Reference<HealthcareService> | undefined;
-    return serviceReference?.reference === reference;
+    return isServiceReference(serviceReference, reference);
   });
 }
 

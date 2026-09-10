@@ -262,6 +262,7 @@ describe('serviceType CodeableConcepts', () => {
     const serviceType = toServiceTypeCodeableConcepts(service);
 
     expect(serviceTypeIncludesService(serviceType, createReference(service))).toBe(true);
+    expect(serviceTypeIncludesService(serviceType, { reference: 'HealthcareService/service-1/_history/2' })).toBe(true);
     expect(serviceTypeIncludesService(serviceType, { reference: 'HealthcareService/service-2' })).toBe(false);
   });
 
