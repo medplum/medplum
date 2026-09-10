@@ -160,7 +160,7 @@ PartialAuthRequired.decorators = [withFindStub()];
  *
  * The cost of taking only what a value set offers. Both fields take themselves out of use, saying
  * "This field is unavailable", and the visit cannot be booked at all: there is no free text to fall
- * back to. Deliberate for fields gating an authorization, but it does mean a terminology gap stops
+ * back to. Deliberate for fields gating a prior authorization, but it does mean a terminology gap stops
  * these visit types being booked rather than degrading quietly, so importing the two value sets is
  * part of what has to be in place before go-live.
  * @returns The story.

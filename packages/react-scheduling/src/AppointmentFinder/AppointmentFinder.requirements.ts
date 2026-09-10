@@ -12,36 +12,49 @@ export const DEFAULT_PROCEDURE_VALUE_SET = 'http://www.ama-assn.org/go/cpt/vs';
 export const DEFAULT_DIAGNOSIS_VALUE_SET = 'http://hl7.org/fhir/sid/icd-10-cm/vs';
 
 /**
- * The authorization-related values that the booking form captures, each asked for only by a
- * visit type whose eligibility names it.
+ * What the booking form captures for a visit type's requirements: one value per requirement it
+ * can be asked for.
  */
-export interface BookingAuthorizationValues {
+export interface BookingRequirementValues {
   readonly procedure: readonly Coding[];
   readonly diagnosis: readonly Coding[];
   readonly medicalNecessity: boolean;
 }
 
-export const EMPTY_AUTHORIZATION_VALUES: BookingAuthorizationValues = {
+export const EMPTY_REQUIREMENT_VALUES: BookingRequirementValues = {
   procedure: [],
   diagnosis: [],
   medicalNecessity: false,
 };
 
+/** What answers each requirement. */
+const REQUIREMENT_ANSWERS: Record<SchedulingRequirement, (values: BookingRequirementValues) => boolean> = {
+  [REQUIRES_PROCEDURE_CODE]: (values) => values.procedure.length > 0,
+  [REQUIRES_DIAGNOSIS_CODE]: (values) => values.diagnosis.length > 0,
+  [REQUIRES_MEDICAL_NECESSITY_CODE]: (values) => values.medicalNecessity,
+};
+
 /**
- * Whether every value the visit type asks for has been filled in.
- * @param values - Values captured from the authorization fields.
+ * Whether one requirement has been answered.
+ * @param requirement - The requirement to weigh.
+ * @param values - What the fields are holding.
+ * @returns True when the field answering that requirement holds a value.
+ */
+export function isRequirementAnswered(requirement: SchedulingRequirement, values: BookingRequirementValues): boolean {
+  return REQUIREMENT_ANSWERS[requirement](values);
+}
+
+/**
+ * Whether every requirement a visit type names has been answered.
+ * @param values - What the fields are holding.
  * @param requirements - What the visit type requires, from its eligibility codes.
  * @returns True once each required field holds a value. A value nothing asked for is not weighed.
  */
-export function hasRequiredAuthorizationValues(
-  values: BookingAuthorizationValues,
+export function hasRequiredValues(
+  values: BookingRequirementValues,
   requirements: ReadonlySet<SchedulingRequirement>
 ): boolean {
-  return (
-    (!requirements.has(REQUIRES_PROCEDURE_CODE) || values.procedure.length > 0) &&
-    (!requirements.has(REQUIRES_DIAGNOSIS_CODE) || values.diagnosis.length > 0) &&
-    (!requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) || values.medicalNecessity)
-  );
+  return [...requirements].every((requirement) => isRequirementAnswered(requirement, values));
 }
 
 /**

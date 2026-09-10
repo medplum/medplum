@@ -301,7 +301,7 @@ describe('SchedulingWorkspace booking', () => {
     });
   });
 
-  describe('Visit types that require authorization codes', () => {
+  describe('Visit types that require prior authorization', () => {
     test('Will not book one until its codes are given', async () => {
       const post = vi.spyOn(medplum, 'post');
       setup();

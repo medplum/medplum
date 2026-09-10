@@ -50,7 +50,7 @@ export async function chooseImagingService(): Promise<void> {
 }
 
 /**
- * Names the visit type a practice designated as needing authorization codes.
+ * Names the visit type a practice designated as needing prior authorization.
  */
 export async function chooseAuthorizedService(): Promise<void> {
   await typeInAutocomplete(field(/visit type/i), 'Infusion');
@@ -59,7 +59,7 @@ export async function chooseAuthorizedService(): Promise<void> {
 }
 
 /**
- * Gives one of the authorization codes, by searching its code and taking it off the list.
+ * Gives one of the codes a prior authorization needs, by searching it and taking it off the list.
  *
  * Searching by code is what a scheduler does, and it is what tells two codes apart when their
  * descriptions share a long prefix. Only a code the value set offered can be given, so a test
@@ -294,7 +294,7 @@ export async function chooseSecondOfferedTime(): Promise<void> {
 }
 
 /**
- * Matches the pill holding one authorization code.
+ * Matches the pill holding one code.
  *
  * A code pill leads with the code and continues with its description, so it is matched on the code
  * it starts with rather than on the whole of what it reads.
@@ -441,7 +441,8 @@ export async function fillBooking(): Promise<void> {
 }
 
 /**
- * Answers everything a booking of a designated visit type needs except the authorization fields.
+ * Answers everything a booking of a designated visit type needs except the fields its
+ * eligibility asks for.
  *
  * They are left out so that a test can find the form holding every other answer, which is what
  * proves those fields are the thing blocking it.

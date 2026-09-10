@@ -1221,7 +1221,7 @@ describe('AppointmentProposalForm', () => {
 
   /**
    * Opens a booking of the designated visit type narrowed to the requirements named, with
-   * everything but the authorization fields answered.
+   * everything but the required fields answered.
    *
    * The same visit type throughout, so the schedules and the times it is offered at do not
    * change with what it asks for.
@@ -1238,7 +1238,7 @@ describe('AppointmentProposalForm', () => {
     await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
   }
 
-  describe('Codes a designated visit type cannot be booked without', () => {
+  describe('Values a designated visit type cannot be booked without', () => {
     test('Asks for nothing extra for a visit type the practice did not designate', async () => {
       setupWithCodeValueSets();
       await chooseImagingService();
@@ -1332,7 +1332,7 @@ describe('AppointmentProposalForm', () => {
       expect(bookButton()).toBeEnabled();
     });
 
-    test('Does not book when the action is clicked while an authorization field is unanswered', async () => {
+    test('Does not book when the action is clicked while a required field is unanswered', async () => {
       setupWithCodeValueSets();
       await fillAuthorizedBooking();
       await clickBook();
@@ -1435,7 +1435,7 @@ describe('AppointmentProposalForm', () => {
     test('Cannot book a designated visit type when its value sets were never imported', async () => {
       // The cost of taking only what a value set offers: there is nothing to fall back to, so a
       // project that imported neither cannot book the visit types that need them at all. Loud, and
-      // deliberately so, since the quiet alternative is booking authorization-gated visits on free text.
+      // deliberately so, since the quiet alternative is booking prior-authorization-gated visits on free text.
       restoreValueSets();
       restoreValueSets = installValueSetStub(medplum, {});
       setupWithCodeValueSets();

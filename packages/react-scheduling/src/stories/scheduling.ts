@@ -442,8 +442,9 @@ export const DrKimSchedule = buildSchedule('schedule-dr-kim', 'Practitioner/dr-k
 export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/or-3', 'Operating Room 3', SURGERY);
 
 /**
- * A visit type the practice designated as needing authorization, which is what makes the booking
- * form ask for codes. Requires all three, since a practice billing for an injection needs each.
+ * A visit type the practice designated as needing prior authorization, which is what makes the
+ * booking form ask for codes. Requires all three, since a practice billing for an injection needs
+ * each.
  */
 export const InfusionService = buildSchedulableService({
   id: 'infusion-therapy',
