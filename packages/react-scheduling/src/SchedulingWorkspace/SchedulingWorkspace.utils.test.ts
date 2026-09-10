@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { TimezoneExtensionURI } from '@medplum/core';
 import type { Practitioner, Schedule } from '@medplum/fhirtypes';
-import type { WithId } from '@medplum/core';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCalendarTimezones } from './SchedulingWorkspace.utils';
 
