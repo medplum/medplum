@@ -208,7 +208,7 @@ describe('Google Auth', () => {
     expect(user).toBeDefined();
   });
 
-  test('Require email verification for new project', async () => {
+  test('Require email verification when Google has not verified email', async () => {
     getConfig().requireVerifiedEmailForProjectCreation = true;
     const email = 'new-google-' + randomUUID() + '@example.com';
     const res = await request(app)
@@ -217,13 +217,37 @@ describe('Google Auth', () => {
       .send({
         projectId: 'new',
         googleClientId: getConfig().googleClientId,
-        googleCredential: createCredential('Test', 'Test', email),
+        googleCredential: createCredential('Test', 'Test', email, undefined, false),
         createUser: true,
       });
     expect(res).toHaveStatus(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.emailVerificationRequired).toBe(true);
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user?.emailVerified).toBe(false);
+  });
+
+  test('Skip email verification when Google verified email', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email, undefined, true),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.emailVerificationRequired).toBeUndefined();
+
+    // Google's assertion is accepted, so the user can create a project immediately
+    const user = await getUserByEmail(email, undefined);
+    expect(user?.emailVerified).toBe(true);
   });
 
   test('Skip email verification for verified user', async () => {
@@ -609,6 +633,18 @@ describe('Google Auth', () => {
   });
 });
 
-function createCredential(firstName: string, lastName: string, email: string, picture?: string): string {
-  return JSON.stringify({ given_name: firstName, family_name: lastName, email, picture });
+function createCredential(
+  firstName: string,
+  lastName: string,
+  email: string,
+  picture?: string,
+  emailVerified?: boolean
+): string {
+  return JSON.stringify({
+    given_name: firstName,
+    family_name: lastName,
+    email,
+    picture,
+    email_verified: emailVerified,
+  });
 }

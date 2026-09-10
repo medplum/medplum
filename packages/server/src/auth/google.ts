@@ -118,6 +118,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       firstName: claims.given_name,
       lastName: claims.family_name,
       email,
+      // Google has already established that the user owns this address, so accept its
+      // assertion rather than asking for a second proof. Anything but a verified claim
+      // is falsy here and falls through to the email verification below.
+      emailVerified: claims.email_verified,
       project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
   }
