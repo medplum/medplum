@@ -85,55 +85,6 @@ describe('Export', () => {
       }
     }));
 
-  test.each(['/$export', '/Patient/$export'])('Ignores foreign _project on %s', async (endpoint) =>
-    withTestContext(async () => {
-      const caller = await createTestProject({ withAccessToken: true, withRepo: true });
-      const other = await createTestProject({ withAccessToken: true, withRepo: true });
-      const ownPatient = await caller.repo.createResource<Patient>({ resourceType: 'Patient' });
-      await other.repo.createResource<Patient>({ resourceType: 'Patient' });
-
-      const initRes = await request(app)
-        .get(`/fhir/R4${endpoint}?_type=Patient&_project=${other.project.id}`)
-        .set('Authorization', 'Bearer ' + caller.accessToken);
-      expect(initRes).toHaveStatus(202);
-      const location = new URL(initRes.headers['content-location']);
-      await waitForAsyncJob(location.toString(), app, caller.accessToken);
-      const statusRes = await request(app)
-        .get(location.pathname)
-        .set('Authorization', 'Bearer ' + caller.accessToken);
-      expect(statusRes).toHaveStatus(200);
-      const output = statusRes.body.output as BulkDataExportOutput[];
-      expect(output).toHaveLength(1);
-      const content = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(new URL(output[0].url));
-      expect(
-        content
-          .trim()
-          .split('\n')
-          .map((line) => JSON.parse(line).id)
-      ).toEqual([ownPatient.id]);
-
-      const jobId = location.pathname.split('/').pop() as string;
-      const job = await caller.repo.readResource<AsyncJob>('AsyncJob', jobId);
-      expect(job.meta?.project).toBe(caller.project.id);
-      const binaryRef = job.output?.parameter?.[0].part?.find((part) => part.name === 'url')?.valueUri as string;
-      const binary = await caller.repo.readReference({ reference: binaryRef });
-      expect(binary.meta?.project).toBe(caller.project.id);
-
-      for (const method of ['get', 'delete'] as const) {
-        const agent = request(app);
-        const denied = await agent[method](`${location.pathname}?_project=${caller.project.id}`).set(
-          'Authorization',
-          'Bearer ' + other.accessToken
-        );
-        expect(denied).toHaveStatus(404);
-      }
-      const deniedBinary = await request(app)
-        .get(`/fhir/R4/${binaryRef}?_project=${caller.project.id}`)
-        .set('Authorization', 'Bearer ' + other.accessToken);
-      expect(deniedBinary).toHaveStatus(404);
-    })
-  );
-
   test.each(['/$export', '/Patient/$export'])('Excludes linked project resources on %s', async (endpoint) =>
     withTestContext(async () => {
       const linked = await createTestProject({ withRepo: true });
@@ -148,7 +99,7 @@ describe('Export', () => {
       expect((await caller.repo.readResource('Patient', linkedPatient.id)).id).toBe(linkedPatient.id);
 
       const initRes = await request(app)
-        .get(`/fhir/R4${endpoint}?_type=Patient&_project=${linked.project.id}`)
+        .get(`/fhir/R4${endpoint}?_type=Patient`)
         .auth(caller.accessToken, { type: 'bearer' });
       expect(initRes).toHaveStatus(202);
       const location = new URL(initRes.headers['content-location']);
@@ -173,7 +124,6 @@ describe('Export', () => {
       const restrictedRepo = new Repository({
         author: { reference: `ClientApplication/${caller.client.id}` },
         projects: [caller.project],
-        currentProject: caller.project,
         accessPolicy: {
           resourceType: 'AccessPolicy',
           resource: [

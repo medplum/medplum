@@ -13,6 +13,7 @@ import {
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  AsyncJob,
   AuditEvent,
   Binary,
   Bot,
@@ -2697,6 +2698,47 @@ describe('AccessPolicy', () => {
 
       expect(accessPolicy).toBeDefined();
       expect(accessPolicy.resource?.find((r) => r.resourceType === '*')).toBeDefined();
+    }));
+
+  test('AsyncJob requester is readonly for users', async () =>
+    withTestContext(async () => {
+      const profile = { reference: `Practitioner/${randomUUID()}` };
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        name: 'Async jobs',
+        resource: [{ resourceType: 'AsyncJob' }],
+      });
+      const accessPolicy = await buildAccessPolicy({
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile,
+        access: [{ policy: createReference(policy) }],
+      });
+      expect(accessPolicy.resource).toContainEqual({ resourceType: 'AsyncJob', readonlyFields: ['requester'] });
+
+      // A user cannot claim a job on create, and the server assigns the requester instead
+      const repo = new Repository({ author: profile, projects: [testProject], accessPolicy });
+      const job = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'https://example.com/job',
+        requestTime: new Date().toISOString(),
+        requester: profile,
+      });
+      expect(job.requester).toBeUndefined();
+      const assigned = await systemRepo.updateResource<AsyncJob>({ ...job, requester: profile });
+      expect(assigned.requester).toStrictEqual(profile);
+
+      // Nor reassign or clear it afterwards
+      const reassigned = await repo.updateResource<AsyncJob>({
+        ...assigned,
+        status: 'active',
+        requester: { reference: `Practitioner/${randomUUID()}` },
+      });
+      expect(reassigned.requester).toStrictEqual(profile);
+      const cleared = await repo.updateResource<AsyncJob>({ ...reassigned, status: 'completed', requester: undefined });
+      expect(cleared.requester).toStrictEqual(profile);
     }));
 
   test('AccessPolicy for Subscriptions with author in criteria', async () =>

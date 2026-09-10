@@ -1127,17 +1127,6 @@ export class Repository extends FhirRepository implements Disposable {
     );
     updated = await replaceConditionalReferences(this, updated);
 
-    if (updated.resourceType === 'AsyncJob') {
-      // Ownership is independent of meta.author, which changes whenever a worker updates the job.
-      if (existing?.resourceType === 'AsyncJob') {
-        updated.requester = existing.requester;
-      } else if (!this.isSuperAdmin() || !updated.requester) {
-        // Only trusted system code may supply a requester on behalf of another profile.
-        const author = this.getAuthor();
-        updated.requester = author.reference === 'system' ? undefined : author;
-      }
-    }
-
     const resultMeta: Meta = {
       ...updated.meta,
       versionId: this.generateId(),
