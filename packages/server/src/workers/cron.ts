@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
-import { ContentType, createReference, resolveId } from '@medplum/core';
+import { ContentType, createReference, isGone, isNotFound, normalizeOperationOutcome, resolveId } from '@medplum/core';
 import type { Bot, Cron, Project, ProjectMembership, Resource, ResourceType, Timing } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
@@ -195,22 +195,19 @@ function isPastEndTime(cron: Cron): boolean {
  * A bot is code, not authority, so the target may live in a linked project. The link is what makes
  * that safe, and it is checked here because the worker reads on an unscoped system repo, which
  * would otherwise reach a bot in any project at all.
- * @param systemRepo - System repository used to load the Cron's project.
- * @param cron - The Cron naming the bot.
+ * @param cronProject - The project owning the Cron that names the bot.
  * @param bot - The bot the Cron targets.
  * @returns True if the bot's project is the Cron's own or a link that exports Bot.
  */
-async function canCronReadBot(systemRepo: Repository, cron: Cron, bot: Bot): Promise<boolean> {
+async function canCronReadBot(cronProject: WithId<Project>, bot: Bot): Promise<boolean> {
   const botProjectId = bot.meta?.project;
-  const cronProjectId = cron.meta?.project;
-  if (!botProjectId || !cronProjectId) {
+  if (!botProjectId) {
     return false;
   }
-  if (botProjectId === cronProjectId) {
+  if (botProjectId === cronProject.id) {
     return true;
   }
 
-  const cronProject = await systemRepo.readResource<Project>('Project', cronProjectId);
   const permitted = getPermittedProjectIds(await getAllowedProjects(cronProject), 'Bot');
   return !permitted || permitted.includes(botProjectId);
 }
@@ -274,6 +271,101 @@ export function convertTimingToCron(timing: Timing): string | undefined {
   return `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
 }
 
+/**
+ * Reads a resource a registered job depends on, treating one that is gone as `undefined`.
+ *
+ * A deleted resource never comes back, so the caller can stop the job; any other failure
+ * propagates, so a transient read error retries rather than costing the schedule.
+ * @param read - Reads the resource.
+ * @returns The resource, or undefined if it no longer exists.
+ */
+async function readIfPresent<T extends Resource>(read: () => Promise<WithId<T>>): Promise<WithId<T> | undefined> {
+  try {
+    return await read();
+  } catch (err: unknown) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isNotFound(outcome) || isGone(outcome)) {
+      return undefined;
+    }
+    throw err;
+  }
+}
+
+async function unregisterCronJob(cron: WithId<Cron>, reason: string): Promise<void> {
+  getLogger().warn('Unregistering cron job', { cronId: cron.id, reason });
+  await removeBullMQJobByKey(getSchedulerId(cron));
+}
+
+/**
+ * Resolves what a Cron tick needs in order to run, or stops the job and returns undefined.
+ *
+ * Edits go through `addCronJobs`, but a registered job can be invalidated with nobody touching it:
+ * an end time passes, a link is revoked, the target or the identity is deleted, or the project
+ * loses the `cron` feature. None recover on a retry, so they are resolved here rather than failing
+ * on every tick.
+ * @param systemRepo - System repository, which reads across every project.
+ * @param cronId - The Cron to resolve.
+ * @returns The bot, the membership to run as, and the Cron; or undefined if the tick should not run.
+ */
+async function resolveCronJob(
+  systemRepo: Repository,
+  cronId: string
+): Promise<{ bot: WithId<Bot>; runAs: WithId<ProjectMembership>; cron: WithId<Cron> } | undefined> {
+  const cron = await systemRepo.readResource<Cron>('Cron', cronId);
+
+  if (!getCronStringForCron(cron)) {
+    await unregisterCronJob(cron, 'the schedule no longer runs');
+    return undefined;
+  }
+
+  const projectId = cron.meta?.project;
+  const project = projectId
+    ? await readIfPresent(() => systemRepo.readResource<Project>('Project', projectId))
+    : undefined;
+  if (!project) {
+    await unregisterCronJob(cron, 'its project could not be read');
+    return undefined;
+  }
+
+  if (!project.features?.includes('cron')) {
+    // addCronJobs refuses to register without the feature, so a job that outlived it must not run.
+    // The schedule stays registered: the feature can come back, and nothing re-registers a dropped
+    // job, so unregistering would strand the Cron.
+    getLogger().info('Skipping cron job, project does not have the cron feature', {
+      cronId: cron.id,
+      projectId: project.id,
+    });
+    return undefined;
+  }
+
+  const bot = await readIfPresent(() => systemRepo.readReference<Bot>(cron.targetReference));
+  if (!bot) {
+    await unregisterCronJob(cron, 'its target bot no longer exists');
+    return undefined;
+  }
+
+  if (!(await canCronReadBot(project, bot))) {
+    // The write path authorized this target, so the link must have been revoked or narrowed since.
+    await unregisterCronJob(cron, 'its target bot is no longer readable');
+    return undefined;
+  }
+
+  const runAs = await readIfPresent(() => systemRepo.readReference<ProjectMembership>(cron.onBehalfOf));
+  if (!runAs) {
+    await unregisterCronJob(cron, 'its onBehalfOf membership no longer exists');
+    return undefined;
+  }
+
+  if (resolveId(runAs.project) !== project.id) {
+    // onBehalfOf picks the access policy the run assumes, so it never crosses a project boundary --
+    // otherwise a Cron could borrow the privileges of a membership elsewhere. The write path
+    // rejects this, so reaching it means the Cron arrived some other way: fail loudly.
+    throw new Error('Cron onBehalfOf membership belongs to a different project');
+  }
+
+  return { bot, runAs, cron };
+}
+
 export async function execBot(job: Job<CronJobData>): Promise<void> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
 
@@ -282,37 +374,14 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   let input: unknown;
 
   if (job.data.resourceType === 'Cron') {
-    const cron = await systemRepo.readResource<Cron>('Cron', job.data.cronId);
-    if (!getCronStringForCron(cron)) {
-      // Edits go through addCronJobs, but nothing fires when an end time merely passes, so a job
-      // that can no longer run unregisters itself on its next tick.
-      await removeBullMQJobByKey(getSchedulerId(cron));
+    const resolved = await resolveCronJob(systemRepo, job.data.cronId);
+    if (!resolved) {
       return;
     }
-
-    bot = await systemRepo.readReference<Bot>(cron.targetReference);
-
-    if (!(await canCronReadBot(systemRepo, cron, bot))) {
-      // The write path authorized this target, so the link must have been revoked or narrowed
-      // since. Nothing re-validates existing Crons when that happens, so unregister here rather
-      // than fail on every tick until someone edits the Cron.
-      getLogger().warn('Unregistering cron job whose target bot is no longer readable', {
-        cronId: cron.id,
-        botId: bot.id,
-      });
-      await removeBullMQJobByKey(getSchedulerId(cron));
-      return;
-    }
-
-    runAs = await systemRepo.readReference<ProjectMembership>(cron.onBehalfOf);
-    if (!cron.meta?.project || resolveId(runAs.project) !== cron.meta.project) {
-      // onBehalfOf picks the access policy the run assumes, so it never crosses a project
-      // boundary -- otherwise a Cron could borrow the privileges of a membership elsewhere.
-      throw new Error('Cron onBehalfOf membership belongs to a different project');
-    }
-
+    bot = resolved.bot;
+    runAs = resolved.runAs;
     // The whole Cron goes to the target, so a bot reads its parameters alongside the schedule
-    input = cron;
+    input = resolved.cron;
   } else {
     bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
     runAs = await findProjectMembership(bot.meta?.project as string, createReference(bot));

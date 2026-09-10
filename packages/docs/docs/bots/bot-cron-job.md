@@ -74,7 +74,11 @@ lets a shared project publish a Bot once and each customer project schedule it:
 
 The Bot therefore runs with the customer project's access policy, reading and writing the customer's
 data, and its secrets are the shared project's overlaid with the customer's. The execution
-`AuditEvent` is written to the customer project, since that is the identity the run assumed; the
-publishing project sees its Bots' outcomes through server logs and bot execution metrics instead.
+`AuditEvent` and the recorded Bot input both belong to the customer project — that is the identity
+the run assumed, and the input is the customer's data — so the publishing project sees its Bots'
+outcomes through server logs and bot execution metrics instead.
 
-Revoking the link stops the job: the next tick unregisters it rather than failing indefinitely.
+A job that can no longer run stops itself on its next tick rather than failing indefinitely.
+Revoking the link, deleting the target Bot, and deleting the `onBehalfOf` `ProjectMembership` each
+unregister it. Removing the `cron` feature only pauses it, so restoring the feature resumes the
+existing schedule.

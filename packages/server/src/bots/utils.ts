@@ -175,16 +175,22 @@ export async function isBotEnabledForProject(projectId: string): Promise<boolean
  * @param request - The bot request.
  */
 export async function writeBotInputToStorage(request: BotExecutionRequest): Promise<void> {
-  const { bot, contentType, input } = request;
+  const { bot, contentType, input, runAs } = request;
   const now = new Date();
   const today = now.toISOString().substring(0, 10).replaceAll('-', '/');
-  const key = `bot/${bot.meta?.project}/${today}/${now.getTime()}-${randomUUID()}.json`;
+  // Partition by the project the run executed in, not the one that owns the bot: the input is the
+  // caller's data, so a bot shared from a linked project must not deposit it in the publisher's
+  // partition. Its account compartments stay behind for the same reason -- they name another project.
+  const projectId = resolveId(runAs.project) as string;
+  const sameProject = bot.meta?.project === projectId;
+  const key = `bot/${projectId}/${today}/${now.getTime()}-${randomUUID()}.json`;
   const row: Record<string, unknown> = {
     contentType,
     input,
     botId: bot.id,
-    projectId: bot.meta?.project,
-    accountId: bot.meta?.account,
+    projectId,
+    botProjectId: sameProject ? undefined : bot.meta?.project,
+    accountId: sameProject ? bot.meta?.account : undefined,
     subscriptionId: request.subscription?.id,
     agentId: request.agent?.id,
     deviceId: request.device?.id,

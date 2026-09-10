@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString, Operator, parseSearchRequest, resolveId } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+  parseSearchRequest,
+  resolveId,
+  serverError,
+} from '@medplum/core';
 import type {
   AuditEvent,
   Bot,
@@ -19,6 +27,7 @@ import * as executeModule from '../bots/execute';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
+import { getBinaryStorage } from '../storage/loader';
 import type { TestProjectResult } from '../test.setup';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
@@ -603,6 +612,117 @@ describe('Cron resource', () => {
       // Failing the write is what keeps an unrunnable job off the scheduler entirely
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
+
+  // None of these recover on a retry, so the tick unregisters the job rather than failing forever
+  test.each([
+    ['its target bot is deleted', 'targetReference'],
+    ['its onBehalfOf membership is deleted', 'onBehalfOf'],
+  ])('execBot unregisters the job once %s', (_name, field) =>
+    withTestContext(async () => {
+      const doomedBot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'doomed-target' });
+      const doomedMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(doomedBot),
+        profile: createReference(doomedBot),
+      });
+      const cron = await repo.createResource<Cron>({
+        ...validCron(),
+        targetReference: createReference(doomedBot),
+        onBehalfOf: createReference(doomedMembership),
+      });
+
+      if (field === 'targetReference') {
+        await repo.deleteResource('Bot', doomedBot.id);
+      } else {
+        await systemRepo.deleteResource('ProjectMembership', doomedMembership.id);
+      }
+
+      const queue = getCronQueue() as any;
+      queue.removeJobScheduler.mockClear();
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      expect(executeBotSpy).not.toHaveBeenCalled();
+      expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
+      executeBotSpy.mockRestore();
+    })
+  );
+
+  test('execBot keeps the job when a read fails for any other reason', () =>
+    withTestContext(async () => {
+      const cron = await repo.createResource<Cron>(validCron());
+
+      const queue = getCronQueue() as any;
+      queue.removeJobScheduler.mockClear();
+      // Only a target that is gone unregisters: a transient failure must not cost the schedule
+      const readSpy = vi
+        .spyOn(Repository.prototype, 'readReference')
+        .mockRejectedValueOnce(new OperationOutcomeError(serverError(new Error('database is down'))));
+
+      await expect(execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>)).rejects.toThrow(
+        'database is down'
+      );
+      expect(queue.removeJobScheduler).not.toHaveBeenCalled();
+      readSpy.mockRestore();
+    }));
+
+  test('execBot unregisters the job when its project cannot be read', () =>
+    withTestContext(async () => {
+      // A system-level write is the only way a Cron ends up with no project to check at all
+      const cron = await systemRepo.createResource<Cron>(validCron());
+      expect(cron.meta?.project).toBeUndefined();
+
+      const queue = getCronQueue() as any;
+      queue.removeJobScheduler.mockClear();
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      expect(executeBotSpy).not.toHaveBeenCalled();
+      expect(queue.removeJobScheduler).toHaveBeenCalledWith(`Cron/${cron.id}`);
+      executeBotSpy.mockRestore();
+    }));
+
+  test('execBot skips a job whose project lost the cron feature, but keeps its schedule', () =>
+    withTestContext(async () => {
+      // A project of its own, so turning the feature off does not disturb the shared one
+      const gated = await createTestProject({ withClient: true, project: { features: ['cron'] } });
+      const gatedRepo = new Repository({
+        extendedMode: true,
+        strictMode: true,
+        projects: [gated.project],
+        author: createReference(gated.client),
+      });
+      const gatedBot = await gatedRepo.createResource<Bot>({ resourceType: 'Bot', name: 'gated-target' });
+      const gatedMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(gated.project),
+        user: createReference(gatedBot),
+        profile: createReference(gatedBot),
+      });
+      const cron = await gatedRepo.createResource<Cron>({
+        resourceType: 'Cron',
+        active: true,
+        cronString: '* * * * *',
+        onBehalfOf: createReference(gatedMembership),
+        targetReference: createReference(gatedBot),
+      });
+
+      await systemRepo.updateResource<Project>({ ...gated.project, features: [] });
+
+      const queue = getCronQueue() as any;
+      queue.removeJobScheduler.mockClear();
+      const executeBotSpy = vi.spyOn(executeModule, 'executeBot').mockResolvedValue({} as any);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      expect(executeBotSpy).not.toHaveBeenCalled();
+      // The feature can come back, and nothing re-registers a job that was dropped
+      expect(queue.removeJobScheduler).not.toHaveBeenCalled();
+      executeBotSpy.mockRestore();
+    }));
 });
 
 /*
@@ -632,7 +752,7 @@ describe('Cron across linked projects', () => {
   ): Promise<{ project: WithId<Project>; repo: Repository; membership: WithId<ProjectMembership> }> {
     const customer = await createTestProject({
       withClient: true,
-      project: { features: ['cron'], link: [{ project: createReference(linked) }] },
+      project: { features: ['cron', 'bots'], link: [{ project: createReference(linked) }] },
     });
     const repo = customerRepoFor(customer, linked);
     const membership = await withTestContext(() =>
@@ -697,6 +817,32 @@ describe('Cron across linked projects', () => {
       expect(args.runAs.id).toStrictEqual(customerMembership.id);
       expect(resolveId(args.runAs.project)).toStrictEqual(customerProject.id);
       executeBotSpy.mockRestore();
+    }));
+
+  test('Files the bot input under the customer project, not the publisher', () =>
+    withTestContext(async () => {
+      const customer = await linkedCustomer(sharedProject);
+      const cron = await customer.repo.createResource<Cron>({
+        resourceType: 'Cron',
+        active: true,
+        cronString: '* * * * *',
+        onBehalfOf: createReference(customer.membership),
+        targetReference: createReference(sharedBot),
+        parameter: [{ name: 'mrn', valueString: 'A123' }],
+      });
+
+      const writeFileSpy = vi.spyOn(getBinaryStorage(), 'writeFile');
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      const [key, , body] = writeFileSpy.mock.calls[0];
+      expect(key).toStrictEqual(expect.stringContaining(`bot/${customer.project.id}/`));
+      expect(JSON.parse(body as string)).toMatchObject({
+        botId: sharedBot.id,
+        projectId: customer.project.id,
+        botProjectId: sharedProject.id,
+        input: { parameter: [{ name: 'mrn', valueString: 'A123' }] },
+      });
+      writeFileSpy.mockRestore();
     }));
 
   test('Rejects an onBehalfOf membership in the linked project', () =>
