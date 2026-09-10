@@ -7,6 +7,7 @@ import {
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenType,
+  OperationOutcomeError,
   Operator,
   createReference,
   getStatus,
@@ -35,6 +36,7 @@ import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
+import { getLogger } from '../logger';
 import { getProjectScopedUrl, safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
@@ -317,13 +319,6 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Use a timing-safe-equal here so that we don't expose timing information which could be
-  // used to infer the secret value
-  if (!timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)) {
-    sendTokenError(res, 'invalid_request', 'Invalid token');
-    return;
-  }
-
   let client: ClientApplication | undefined;
   if (login.client) {
     const clientId = resolveId(login.client) ?? '';
@@ -357,18 +352,38 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Refresh token rotation
-  // Generate a new refresh secret and update the login
-  const updatedLogin = await rotateLoginRefreshSecret(login, {
+  const updatedLogin = await rotateLoginRefreshSecret(login, claims.refresh_secret, {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
+
+  if (!updatedLogin) {
+    // A refresh secret is only written at login creation and at rotation, and `verifyJwt` has
+    // already proved this server minted this token for this login. A mismatch is therefore a
+    // superseded token, never a guess, so it is reuse. See the OAuth 2.0 Security BCP, 4.14.2.
+    //
+    // Patched rather than `revokeLogin`, which writes back the caller's snapshot: `login` was read
+    // before the rotation it lost, so its superseded secret would be restored with `revoked`.
+    await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
+    getLogger().warn('Refresh token reuse detected, login revoked', {
+      login: login.id,
+      remoteAddress: req.ip,
+    });
+    sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
 
   await sendTokenResponse(req, res, updatedLogin, client);
 }
 
 /**
- * Rotates a login's refresh secret as part of refresh-token rotation.
+ * Consumes a login's refresh secret and rotates it, as one atomic step.
+ *
+ * The `test` operation makes this a compare-and-swap: `patchResource` reads the login from the
+ * database inside its own transaction, so the test runs against the committed secret and the whole
+ * patch is rejected if it has moved on. A concurrent caller writing the same row raises a
+ * serialization failure, which `withTransaction` retries by re-running the callback; the retry
+ * re-reads, fails the test, and so takes the same path as any other replay.
  *
  * The rotation is applied via `patchResource` rather than a full
  * `updateResource` of a `{ ...login }` snapshot. `patchResource` re-reads the
@@ -380,24 +395,39 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * submission fail with a spurious "Invalid token" while enrolling in email MFA.
  *
  * @param login - The login to rotate; only its `id` is authoritative.
+ * @param expectedSecret - The refresh secret presented by the caller.
  * @param details - Request metadata to record on the login.
  * @param details.remoteAddress - The client IP address to record, if any.
  * @param details.userAgent - The client user agent to record, if any.
- * @returns The updated login with a freshly rotated refresh secret.
+ * @returns The updated login, or undefined if the presented secret was not the current one.
  */
 export async function rotateLoginRefreshSecret(
   login: WithId<Login>,
+  expectedSecret: string,
   details?: { remoteAddress?: string; userAgent?: string }
-): Promise<WithId<Login>> {
+): Promise<WithId<Login> | undefined> {
   const systemRepo = getGlobalSystemRepo();
-  const patch: Operation[] = [{ op: 'add', path: '/refreshSecret', value: generateSecret(32) }];
+  const patch: Operation[] = [
+    { op: 'test', path: '/refreshSecret', value: expectedSecret },
+    { op: 'add', path: '/refreshSecret', value: generateSecret(32) },
+  ];
   if (details?.remoteAddress !== undefined) {
     patch.push({ op: 'add', path: '/remoteAddress', value: details.remoteAddress });
   }
   if (details?.userAgent !== undefined) {
     patch.push({ op: 'add', path: '/userAgent', value: details.userAgent });
   }
-  return systemRepo.patchResource<Login>('Login', login.id, patch);
+
+  try {
+    return await systemRepo.patchResource<Login>('Login', login.id, patch);
+  } catch (err) {
+    // The patch is fixed in shape, so the only content it can be rejected over is the test
+    // operation. A connection loss or an exhausted retry says nothing about the secret.
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 400) {
+      return undefined;
+    }
+    throw err;
+  }
 }
 
 /**
