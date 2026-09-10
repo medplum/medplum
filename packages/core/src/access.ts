@@ -19,6 +19,7 @@ export const protectedResourceTypes = ['DomainConfiguration', 'Enterprise', 'Jso
  * accessible to project administrators.
  */
 export const projectAdminResourceTypes = [
+  'Cron',
   'Package',
   'PackageRelease',
   'PackageInstallation',
