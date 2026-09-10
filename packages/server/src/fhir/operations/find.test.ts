@@ -9,6 +9,7 @@ import {
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
 import type {
+  AccessPolicy,
   Appointment,
   Bundle,
   Extension,
@@ -24,7 +25,7 @@ import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
-import { createTestProject } from '../../test.setup';
+import { addTestUser, createTestProject } from '../../test.setup';
 import type { SchedulingParametersExtensionExtension } from './utils/scheduling-parameters';
 
 const app = express();
@@ -260,7 +261,7 @@ describe('Appointment/$find', () => {
     });
   }
 
-  function makeRequest(params: Record<string, string | string[]>): ReturnType<typeof request.get> {
+  function makeRequest(params: Record<string, string | string[]>, token = accessToken): ReturnType<typeof request.get> {
     const qs = new URLSearchParams();
     for (const [key, val] of Object.entries(params)) {
       if (Array.isArray(val)) {
@@ -272,7 +273,7 @@ describe('Appointment/$find', () => {
       }
     }
 
-    return request.get('/fhir/R4/Appointment/$find').set('Authorization', `Bearer ${accessToken}`).query(qs.toString());
+    return request.get('/fhir/R4/Appointment/$find').set('Authorization', `Bearer ${token}`).query(qs.toString());
   }
 
   test('finds appointments that are available on all referenced schedules', async () => {
@@ -1604,5 +1605,76 @@ describe('Appointment/$find', () => {
     expect(response).toHaveStatus(200);
     expect(response.body).toHaveProperty('entry');
     expect(response.body.entry).toHaveLength(4);
+  });
+
+  describe('when the caller cannot read Schedule.actor', () => {
+    // Grants everything `$find` needs of its own and nothing else. Notably absent is read
+    // on the Practitioner, Location, or Device named by `Schedule.actor`, which an access
+    // policy may legitimately withhold while still allowing schedules to be listed.
+    const scheduleOnlyPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        { resourceType: 'Schedule', interaction: ['read'] },
+        { resourceType: 'HealthcareService', interaction: ['read'] },
+        { resourceType: 'Slot', interaction: ['read', 'search'] },
+      ],
+    };
+
+    const range = {
+      start: new Date('2026-03-16T00:00:00Z').toISOString(),
+      end: new Date('2026-03-17T00:00:00Z').toISOString(),
+    };
+
+    function startsOf(response: { body: Bundle<Appointment> }): (string | undefined)[] {
+      return (response.body.entry ?? []).map((entry) => entry.resource?.start);
+    }
+
+    test('finds the same times as a caller who can, when the Schedule names a timezone', async () => {
+      // The actor's zone is the lowest-priority layer, so a Schedule naming one of its own
+      // never consults the actor. The read that used to fail the operation was discarded.
+      const schedule = await makeSchedule(
+        [{ service: genericVisit, duration: 60, timezone: 'America/Phoenix', availability: monTueAvailability }],
+        { actor: [createReference(practitioner)] }
+      );
+      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: scheduleOnlyPolicy });
+
+      const params = {
+        ...range,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${schedule.id}`,
+      };
+      const asProjectAdmin = await makeRequest(params);
+      const asRestricted = await makeRequest(params, restrictedToken);
+
+      expect(asProjectAdmin).toHaveStatus(200);
+      expect(asRestricted).toHaveStatus(200);
+      expect(startsOf(asProjectAdmin).length).toBeGreaterThan(0);
+      expect(startsOf(asRestricted)).toEqual(startsOf(asProjectAdmin));
+    });
+
+    test('errors when no timezone is named higher up', async () => {
+      // `officeVisit` names no timezone and neither does this schedule, so the actor's own
+      // zone is the only one there is. It reads for the project admin and not for this
+      // caller, and the message says which of the two happened.
+      const schedule = await makeSchedule([{ service: officeVisit, duration: 60, availability: monTueAvailability }], {
+        actor: [createReference(practitioner)],
+      });
+      const { accessToken: restrictedToken } = await addTestUser(project, { accessPolicy: scheduleOnlyPolicy });
+
+      const params = {
+        ...range,
+        'service-type-reference': `HealthcareService/${officeVisit.id}`,
+        schedule: `Schedule/${schedule.id}`,
+      };
+
+      expect(await makeRequest(params)).toHaveStatus(200);
+
+      const asRestricted = await makeRequest(params, restrictedToken);
+      expect(asRestricted).toHaveStatus(400);
+      expect(asRestricted.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'No timezone specified and schedule.actor could not be read' } }],
+      });
+    });
   });
 });

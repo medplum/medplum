@@ -280,15 +280,12 @@ describe('AppointmentProposalForm', () => {
       expect(within(listbox).getByText('Uro Associates - Satellite')).toBeInTheDocument();
     });
 
-    test('Narrows the visit types to the chosen site, and says which site', async () => {
+    test('Narrows the visit types to the chosen site', async () => {
       setup(medplum);
       await chooseSite('Satellite', 'Uro Associates - Satellite');
 
       await typeInAutocomplete(field(/visit type/i), 'Ultrasound');
 
-      expect(
-        screen.getByText('Showing visit types offered at Uro Associates - Satellite, plus those not tied to a site.')
-      ).toBeInTheDocument();
       // Imaging names the main clinic, and only a visit type naming this site exactly
       // is offered at it.
       expect(await screen.findByText('Nothing found')).toBeInTheDocument();
@@ -625,17 +622,6 @@ describe('AppointmentProposalForm', () => {
 
       // A proposal carries the Slots it was found for, and the search has moved on.
       expect(chosenTimeField()).toBeNull();
-    });
-
-    test('Names the days being searched, without the weekdays their headings carry', async () => {
-      setup(medplum);
-      await openFinder();
-
-      expect(screen.getByText(/^August 17 · drag or shift-click/)).toBeInTheDocument();
-
-      await dragDays('17', '21');
-
-      expect(await screen.findByText(/August 17 – August 21 · drag or shift-click/)).toBeInTheDocument();
     });
   });
 

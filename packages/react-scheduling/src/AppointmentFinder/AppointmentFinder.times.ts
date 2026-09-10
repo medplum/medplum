@@ -130,15 +130,6 @@ export function formatDayHeading(date: Date): string {
 }
 
 /**
- * Names a calendar day without its weekday (e.g. "July 27").
- * @param date - Local midnight of the day.
- * @returns The formatted day.
- */
-export function formatDayLabel(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric' }).format(date);
-}
-
-/**
  * Returns how far a timezone is from UTC at a given instant.
  * @param instant - The instant to read the offset at.
  * @param timezone - IANA timezone identifier.
@@ -428,21 +419,6 @@ export function endOfDay(date: Date): Date {
   return result;
 }
 
-/**
- * Returns whether two instants fall on the same local day.
- * @param left - The first instant.
- * @param right - The second, or undefined when there is nothing to compare.
- * @returns True when both fall on the same local day.
- */
-export function isSameDay(left: Date, right: Date | undefined): boolean {
-  return (
-    !!right &&
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
-}
-
 export function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
@@ -536,27 +512,4 @@ export function getFindWindowError(range: DateRange): string | undefined {
  */
 export function getDayCount(start: Date, end: Date): number {
   return Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY);
-}
-
-/**
- * Says in words which days a search covers.
- * @param range - The days asked for.
- * @param formatDay - How to name one day. Defaults to naming it with its weekday.
- * @returns The range as a phrase, or undefined when both ends are open.
- */
-export function formatDateRange(
-  range: DateRange,
-  formatDay: (date: Date) => string = formatDayHeading
-): string | undefined {
-  const { start, end } = range;
-  if (start && end) {
-    return isSameDay(start, end) ? formatDay(start) : `${formatDay(start)} – ${formatDay(end)}`;
-  }
-  if (start) {
-    return `From ${formatDay(start)}`;
-  }
-  if (end) {
-    return `Through ${formatDay(end)}`;
-  }
-  return undefined;
 }

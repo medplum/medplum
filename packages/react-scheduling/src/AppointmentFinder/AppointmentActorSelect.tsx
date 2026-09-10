@@ -70,7 +70,6 @@ export function AppointmentActorSelect(props: AppointmentActorSelectProps): JSX.
       name={actorType}
       label={label}
       required={required}
-      description={required ? undefined : `Optional. Leave empty to search without holding a ${noun}.`}
       placeholder={`Search ${noun}s`}
       error={error}
       disabled={disabled}

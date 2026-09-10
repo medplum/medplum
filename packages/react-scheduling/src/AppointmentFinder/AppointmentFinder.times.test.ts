@@ -6,8 +6,6 @@ import {
   endOfMonth,
   enumerateDateRange,
   filterByTimeOfDay,
-  formatDateRange,
-  formatDayLabel,
   formatTimezoneLabel,
   formatZonedTime,
   getActorGroupKey,
@@ -235,34 +233,6 @@ describe('enumerateDateRange', () => {
   test('Stops at the limit rather than running a year out', () => {
     const days = enumerateDateRange({ start: new Date(2026, 6, 1), end: new Date(2027, 6, 1) }, 5);
     expect(days).toHaveLength(5);
-  });
-});
-
-describe('formatDateRange', () => {
-  test('Says which days are being searched', () => {
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 27) })).toBe('Monday, July 27');
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) })).toBe(
-      'Monday, July 27 – Thursday, July 30'
-    );
-    expect(formatDateRange({ start: new Date(2026, 6, 27) })).toBe('From Monday, July 27');
-    expect(formatDateRange({ end: new Date(2026, 6, 30) })).toBe('Through Thursday, July 30');
-  });
-
-  test('Says nothing when neither end was asked for', () => {
-    expect(formatDateRange({})).toBeUndefined();
-  });
-
-  test('Names the days however the caller asks them to be named', () => {
-    expect(formatDateRange({ start: new Date(2026, 6, 27), end: new Date(2026, 6, 30) }, formatDayLabel)).toBe(
-      'July 27 – July 30'
-    );
-    expect(formatDateRange({ start: new Date(2026, 6, 27) }, formatDayLabel)).toBe('From July 27');
-  });
-});
-
-describe('formatDayLabel', () => {
-  test('Names a day without its weekday', () => {
-    expect(formatDayLabel(new Date(2026, 6, 27))).toBe('July 27');
   });
 });
 

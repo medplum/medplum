@@ -2404,4 +2404,94 @@ describe('scheduling flow integration test', () => {
     // set `meta.author` to the creating Patient, which could leak PHI.
     expect(otherPatientResponse.body.entry[0].resource.meta).not.toHaveProperty('author');
   });
+
+  test('booking a slot as a patient who cannot read Schedule.actor', async () => {
+    // The same minimal policy as above, less the read on Practitioner. `$book` validates
+    // the proposed appointment through the same scheduling parameters `$find` does, so it
+    // used to fail here too even though the Schedule names a timezone of its own.
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      serviceType: toServiceTypeCodeableConcepts(service),
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'service', valueReference: createReference(service) },
+            // Deliberately not the actor's zone, so the times below can only have come
+            // from the Schedule.
+            { url: 'timezone', valueCode: 'America/Phoenix' },
+            threeDayAvailability,
+            { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+          ],
+        },
+      ],
+    });
+
+    const { accessToken, profile } = await addTestUser(project.project, {
+      resourceType: 'Patient',
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'HealthcareService', interaction: ['read'] },
+          { resourceType: 'Schedule', interaction: ['read'] },
+          { resourceType: 'Patient', criteria: 'Patient?_compartment=%patient', interaction: ['read'] },
+          { resourceType: 'Slot', interaction: ['create', 'search'] },
+          { resourceType: 'Appointment', interaction: ['create'], criteria: 'Appointment?_compartment=%patient' },
+        ],
+      } satisfies AccessPolicy,
+    });
+
+    const start = '2026-01-28T16:00:00Z'; // 09:00 America/Phoenix (UTC-7)
+    const end = '2026-01-28T17:00:00Z'; // 10:00 America/Phoenix
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'appointment',
+            resource: {
+              resourceType: 'Appointment',
+              start,
+              end,
+              status: 'proposed',
+              serviceType: toServiceTypeCodeableConcepts(service),
+              participant: [
+                { actor: createReference(profile), status: 'accepted' },
+                { actor: createReference(practitioner), status: 'accepted' },
+              ],
+              contained: [
+                {
+                  resourceType: 'Slot',
+                  schedule: createReference(schedule),
+                  start,
+                  end,
+                  status: 'busy',
+                  serviceType: [officeVisitConcept],
+                } satisfies Slot,
+              ],
+            } satisfies Appointment,
+          },
+        ],
+      });
+
+    expect(response).toHaveStatus(201);
+
+    const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+    const appointments = entries.filter(isAppointment);
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0]).toHaveProperty('status', 'booked');
+    expect(appointments[0]).toHaveProperty('start', start);
+    expect(appointments[0]).toHaveProperty('end', end);
+  });
 });
