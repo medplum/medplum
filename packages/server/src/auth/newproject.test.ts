@@ -387,7 +387,9 @@ describe('New project', () => {
       projectName: 'Hamilton Project',
     });
     expect(res2).toHaveStatus(400);
-    expect(res2.body).toMatchObject(badRequest('Email verification is required to create a project. Check your email for a verification link.'));
+    expect(res2.body).toMatchObject(
+      badRequest('Email verification is required to create a project. Check your email for a verification link.')
+    );
   });
 
   test('Require verified email - sends a verification link', async () => {
