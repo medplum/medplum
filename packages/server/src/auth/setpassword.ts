@@ -60,9 +60,10 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
  * Sets the user's password and revokes their active sessions.
  *
  * When the change is authorized by a UserSecurityRequest, pass it as `securityRequest` so that it
- * is consumed as part of the same operation. It is consumed after the password has been validated
- * and hashed, so a password that fails validation does not burn the user's link, but before the
- * password is applied, so the request cannot be redeemed twice.
+ * is consumed in the same transaction that applies the password: either both land or neither does.
+ * It is consumed after the password has been validated and hashed, so a password that fails
+ * validation does not burn the user's link, but before the password is applied, so the request
+ * cannot be redeemed twice.
  * @param systemRepo - The system repository to use.
  * @param user - The user whose password is being set.
  * @param password - The new plaintext password.
@@ -81,11 +82,17 @@ export async function setPassword(
 
   const passwordHash = await bcryptHashPassword(password);
 
-  if (securityRequest) {
-    await consumeSecurityRequest(systemRepo, securityRequest);
-  }
-
-  await systemRepo.updateResource<User>({ ...user, passwordHash });
+  await systemRepo.withTransaction(
+    async (txRepo) => {
+      // Consume the request first, so that concurrent requests carrying the same token
+      // cannot both get through
+      if (securityRequest) {
+        await consumeSecurityRequest(txRepo, securityRequest);
+      }
+      await txRepo.updateResource<User>({ ...user, passwordHash });
+    },
+    { resourceTypes: ['User', 'UserSecurityRequest'], source: 'setPassword' }
+  );
 
   const activeSessions = await systemRepo.search<Login>({
     resourceType: 'Login',

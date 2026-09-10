@@ -15,7 +15,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
@@ -337,6 +337,68 @@ describe('Set Password', () => {
 
     // The link still works with an acceptable password
     setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
+    const res2 = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res2).toHaveStatus(200);
+  });
+
+  test('Failure to apply the password does not consume the UserSecurityRequest', async () => {
+    const email = `george${randomUUID()}@example.com`;
+
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const usr = await withTestContext(async () =>
+      systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: { project: project.id },
+        type: 'reset',
+        user: createReference(user),
+        secret: generateSecret(16),
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      })
+    );
+
+    // Fail the User update that follows the consume, so the transaction rolls back
+    const originalUpdate = Repository.prototype.updateResource;
+    const updateSpy = vi.spyOn(Repository.prototype, 'updateResource').mockImplementation(async function (
+      this: Repository,
+      resource,
+      options
+    ) {
+      if (resource.resourceType === 'User') {
+        throw new Error('Simulated failure');
+      }
+      return originalUpdate.call(this, resource, options);
+    });
+
+    try {
+      const res = await request(app).post('/auth/setpassword').type('json').send({
+        id: usr.id,
+        secret: usr.secret,
+        password: 'my-new-password',
+      });
+      expect(res.status).not.toBe(200);
+    } finally {
+      updateSpy.mockRestore();
+    }
+
+    // The request was not consumed, so the link still works
+    const check = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', usr.id);
+    expect(check.used).toBeFalsy();
+
     const res2 = await request(app).post('/auth/setpassword').type('json').send({
       id: usr.id,
       secret: usr.secret,

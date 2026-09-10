@@ -46,7 +46,8 @@ export function getSecurityRequestExpiration(type: UserSecurityRequest['type']):
  *
  * Requests created before `expiresAt` existed do not carry the field, so they fall back to their
  * creation time plus the window for their type. That retires previously unlimited tokens as soon
- * as this code is deployed. A request with no timestamps at all is treated as expired.
+ * as this code is deployed. A request with no timestamps at all, or an unparseable one, is treated
+ * as expired.
  * @param securityRequest - The request to check.
  * @returns True if the request has expired.
  */
@@ -54,7 +55,8 @@ export function isSecurityRequestExpired(securityRequest: UserSecurityRequest): 
   const expiresAt = securityRequest.expiresAt
     ? new Date(securityRequest.expiresAt).getTime()
     : new Date(securityRequest.meta?.lastUpdated ?? 0).getTime() + getExpirationMs(securityRequest.type);
-  return !(expiresAt > Date.now());
+  // An unparseable timestamp yields NaN, which loses every comparison, so check for it explicitly
+  return Number.isNaN(expiresAt) || Date.now() >= expiresAt;
 }
 
 /**
@@ -106,7 +108,10 @@ export async function supersedePriorSecurityRequests(
   for (const entry of priorRequests.entry ?? EMPTY) {
     const priorRequest = entry.resource as WithId<UserSecurityRequest>;
     if (priorRequest.type === type && !priorRequest.used) {
-      await systemRepo.updateResource<UserSecurityRequest>({ ...priorRequest, used: true });
+      // Patch rather than update, so that a request being consumed concurrently is not clobbered
+      await systemRepo.patchResource<UserSecurityRequest>('UserSecurityRequest', priorRequest.id, [
+        { op: 'add', path: '/used', value: true },
+      ]);
     }
   }
 }
