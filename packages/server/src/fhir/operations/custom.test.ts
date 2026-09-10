@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, ContentType, createReference } from '@medplum/core';
-import type { Bot, Patient } from '@medplum/fhirtypes';
+import type { Bot, BundleEntry, OperationDefinition, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -736,5 +736,204 @@ describe('Custom operation', () => {
     expect(res.body.resourceType).toBe('Patient');
     expect(res.body.name).toMatchObject([{ family: 'FromBody' }]);
     expect(res.body.id).toBeUndefined();
+  });
+
+  test('Custom operation code that collides with a FHIR spec operation resolves to the bot', async () => {
+    // The spec CodeSystem/$lookup definition is visible in every project and has no bot implementation
+    const specRes = await request(app)
+      .get('/fhir/R4/OperationDefinition?code=lookup')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(specRes).toHaveStatus(200);
+    const specEntries = specRes.body.entry as BundleEntry<OperationDefinition>[];
+    expect(specEntries.some((e) => e.resource?.resource?.includes('CodeSystem'))).toBe(true);
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Bot', name: 'Lookup Bot', runtimeVersion: 'vmcontext' });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: `exports.handler = async function () { return { result: 'healthcare-service-lookup' }; };` });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'healthcare-service-lookup',
+        status: 'active',
+        kind: 'operation',
+        code: 'lookup',
+        resource: ['HealthcareService'],
+        system: false,
+        type: true,
+        instance: false,
+        parameter: [{ use: 'out', name: 'result', type: 'string', min: 1, max: '1' }],
+      });
+    expect(res3).toHaveStatus(201);
+
+    const res4 = await request(app)
+      .post('/fhir/R4/HealthcareService/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res4).toHaveStatus(200);
+    expect(res4.body).toMatchObject({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueString: 'healthcare-service-lookup' }],
+    });
+  });
+
+  test('Custom operations with the same code on different resource types resolve to their own bots', async () => {
+    const bots: Record<string, WithId<Bot>> = {};
+    for (const resourceType of ['HealthcareService', 'Slot']) {
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Bot', name: `${resourceType} Shared Code Bot`, runtimeVersion: 'vmcontext' });
+      expect(res1).toHaveStatus(201);
+      const bot = res1.body as WithId<Bot>;
+      bots[resourceType] = bot;
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ code: `exports.handler = async function () { return { result: '${resourceType}' }; };` });
+      expect(res2).toHaveStatus(200);
+
+      const res3 = await request(app)
+        .post('/fhir/R4/OperationDefinition')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'OperationDefinition',
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+              valueReference: createReference(bot),
+            },
+          ],
+          name: `${resourceType}-shared-code-operation`,
+          status: 'active',
+          kind: 'operation',
+          code: 'my-shared-code-operation',
+          resource: [resourceType],
+          system: false,
+          type: true,
+          instance: false,
+          parameter: [{ use: 'out', name: 'result', type: 'string', min: 1, max: '1' }],
+        });
+      expect(res3).toHaveStatus(201);
+    }
+
+    for (const resourceType of ['HealthcareService', 'Slot']) {
+      const res = await request(app)
+        .post(`/fhir/R4/${resourceType}/$my-shared-code-operation`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({});
+      expect(res).toHaveStatus(200);
+      expect(res.body).toMatchObject({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'result', valueString: resourceType }],
+      });
+    }
+  });
+
+  test('System-level and type-level custom operations with the same code resolve by request level', async () => {
+    for (const level of ['system', 'type']) {
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Bot', name: `${level} Multi Level Bot`, runtimeVersion: 'vmcontext' });
+      expect(res1).toHaveStatus(201);
+      const bot = res1.body as WithId<Bot>;
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ code: `exports.handler = async function () { return { result: '${level}' }; };` });
+      expect(res2).toHaveStatus(200);
+
+      const res3 = await request(app)
+        .post('/fhir/R4/OperationDefinition')
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'OperationDefinition',
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+              valueReference: createReference(bot),
+            },
+          ],
+          name: `${level}-multi-level-operation`,
+          status: 'active',
+          kind: 'operation',
+          code: 'my-multi-level-operation',
+          resource: level === 'type' ? ['Patient'] : undefined,
+          system: level === 'system',
+          type: level === 'type',
+          instance: false,
+          parameter: [{ use: 'out', name: 'result', type: 'string', min: 1, max: '1' }],
+        });
+      expect(res3).toHaveStatus(201);
+    }
+
+    const systemRes = await request(app)
+      .post('/fhir/R4/$my-multi-level-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(systemRes).toHaveStatus(200);
+    expect(systemRes.body).toMatchObject({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueString: 'system' }],
+    });
+
+    const typeRes = await request(app)
+      .post('/fhir/R4/Patient/$my-multi-level-operation')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(typeRes).toHaveStatus(200);
+    expect(typeRes.body).toMatchObject({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueString: 'type' }],
+    });
+  });
+
+  test('FHIR spec operation without a bot implementation still returns 404', async () => {
+    const specRes = await request(app)
+      .get('/fhir/R4/OperationDefinition?code=translate')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(specRes).toHaveStatus(200);
+    const specEntries = specRes.body.entry as BundleEntry<OperationDefinition>[];
+    expect(specEntries.some((e) => e.resource?.resource?.includes('ConceptMap'))).toBe(true);
+
+    const res = await request(app)
+      .post('/fhir/R4/HealthcareService/$translate')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res).toHaveStatus(404);
   });
 });

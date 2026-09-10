@@ -94,8 +94,9 @@ Create an `OperationDefinition` that describes your operation and links to your 
   "status": "active",
   "kind": "operation",
   "code": "my-custom-operation",
-  "system": true,
-  "type": false,
+  "resource": ["Patient"],
+  "system": false,
+  "type": true,
   "instance": false,
   "parameter": [
     {
@@ -121,6 +122,7 @@ Create an `OperationDefinition` that describes your operation and links to your 
 - Must include the `operationDefinition-implementation` extension
 - Extension must reference a Bot resource
 - Define appropriate input/output parameters
+- Set `resource` and the `system`, `type`, and `instance` flags to match how the operation is invoked (see [Operation Types](#operation-types))
 
 ### Step 4: Invoke Your Custom Operation
 
@@ -149,7 +151,11 @@ Custom operations support all standard FHIR operation types:
 - **Type-level operations**: `/fhir/R4/Patient/$my-operation`
 - **Instance-level operations**: `/fhir/R4/Patient/123/$my-operation`
 
-Configure the operation type using the `system`, `type`, and `instance` properties in your `OperationDefinition`.
+Configure the operation type using the `system`, `type`, and `instance` properties in your `OperationDefinition`, and list the resource types a type-level or instance-level operation applies to in `resource`.
+
+### Operation Codes
+
+Medplum resolves a request such as `POST /fhir/R4/HealthcareService/$lookup` by searching for `OperationDefinition` resources with the code `lookup`. The `OperationDefinition` resources from the FHIR specification (for example `CodeSystem/$lookup`) are visible in every project, so your custom operation may share its code with a specification operation, or with another custom operation on a different resource type. When several definitions share a code, Medplum only considers definitions that link to a Bot, and picks the one whose `resource` and level flags match the request. If two definitions match equally well, a definition in your own project takes precedence over one shared from another project.
 
 ## Input and Output Handling
 
