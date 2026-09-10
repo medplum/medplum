@@ -9,8 +9,8 @@ import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { sendVerificationEmail } from './newuser';
 import { makeValidationMiddleware } from '../util/validator';
+import { sendVerificationEmail } from './newuser';
 import { sendLoginResult } from './utils';
 import { sendWelcomeEmail } from './welcomeemail';
 
