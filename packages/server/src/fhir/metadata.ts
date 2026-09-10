@@ -154,6 +154,12 @@ const supportedOperations: Record<string, CapabilityStatementRestResourceOperati
       definition: 'http://hl7.org/fhir/uv/bulkdata/OperationDefinition/group-export',
     },
   ],
+  Questionnaire: [
+    {
+      name: 'assemble',
+      definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
+    },
+  ],
 };
 
 /**
