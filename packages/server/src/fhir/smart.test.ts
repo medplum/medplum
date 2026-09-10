@@ -477,6 +477,38 @@ describe('SMART on FHIR', () => {
           { resourceType: 'Observation', readonly: true, criteria: `Observation?_compartment=Patient/${patientId}` },
         ]);
       });
+
+      test('Use on-behalf-of Patient profile as context', () => {
+        const patientId = randomUUID();
+        const authState = authStateFor('openid patient/Observation.rs', {
+          onBehalfOfMembership: { ...membership, profile: { reference: `Patient/${patientId}` } },
+        });
+        expect(applySmartScopes(startAccessPolicy, authState).resource).toMatchObject([
+          { resourceType: 'Observation', readonly: true, criteria: `Observation?_compartment=Patient/${patientId}` },
+        ]);
+      });
+
+      test('Reject non-Patient on-behalf-of profile', () => {
+        const authState = authStateFor('openid patient/Observation.rs', {
+          onBehalfOfMembership: { ...membership, profile: { reference: `Practitioner/${randomUUID()}` } },
+        });
+        expect(() => applySmartScopes(startAccessPolicy, authState)).toThrow('Missing patient context');
+      });
+
+      test('Prefer launch context over on-behalf-of profile', () => {
+        const patientId = randomUUID();
+        const authState = authStateFor('openid patient/Observation.rs', {
+          onBehalfOfMembership: { ...membership, profile: { reference: `Patient/${randomUUID()}` } },
+          smartAppLaunch: {
+            resourceType: 'SmartAppLaunch',
+            id: randomUUID(),
+            patient: { reference: `Patient/${patientId}` },
+          },
+        });
+        expect(applySmartScopes(startAccessPolicy, authState).resource).toMatchObject([
+          { resourceType: 'Observation', readonly: true, criteria: `Observation?_compartment=Patient/${patientId}` },
+        ]);
+      });
     });
   });
 });

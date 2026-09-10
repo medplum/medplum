@@ -1150,22 +1150,23 @@ async function makeAuthResult(
     accessToken: opts?.accessToken,
     profile: opts?.profile,
   };
-  let repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  await tryAddOnBehalfOf(repo, req, authState);
-  if (authState.onBehalfOf) {
-    repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
-  }
+  // Resolve "on behalf of" before building the repository, so that the access policy is built from
+  // the effective membership.  Resolving it afterwards would require a repository to already exist,
+  // which cannot be built for a login whose scopes depend on the on-behalf-of membership.
+  await tryAddOnBehalfOf(systemRepo, req, authState);
+  const repo = await getRepoForLogin(authState, extendedMode, opts?.remoteAddress);
   return { authState, repo };
 }
 
 /**
  * Tries to add the "on behalf of" user to the auth state.
- * @param repo - The user's FHIR repository.
+ * @param systemRepo - The system repository.  Project isolation is enforced explicitly below,
+ *   since the system repository does not apply the caller's access policy.
  * @param req - The incoming HTTP request.
  * @param authState - The existing auth state.
  */
 async function tryAddOnBehalfOf(
-  repo: Repository,
+  systemRepo: Repository,
   req: IncomingMessage | undefined,
   authState: AuthState
 ): Promise<void> {
@@ -1181,9 +1182,19 @@ async function tryAddOnBehalfOf(
   let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
 
   if (onBehalfOfHeader.startsWith('ProjectMembership/')) {
-    onBehalfOfMembership = await repo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+    try {
+      onBehalfOfMembership = await systemRepo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+    } catch {
+      throw new OperationOutcomeError(forbidden);
+    }
+    if (
+      !authState.project.superAdmin &&
+      onBehalfOfMembership.project.reference !== getReferenceString(authState.project)
+    ) {
+      throw new OperationOutcomeError(forbidden);
+    }
   } else {
-    onBehalfOfMembership = await repo.searchOne({
+    onBehalfOfMembership = await systemRepo.searchOne({
       resourceType: 'ProjectMembership',
       filters: [
         { code: 'profile', operator: Operator.EQUALS, value: onBehalfOfHeader },
@@ -1195,7 +1206,7 @@ async function tryAddOnBehalfOf(
     }
   }
 
-  const onBehalfOf = await repo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  const onBehalfOf = await systemRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
 }

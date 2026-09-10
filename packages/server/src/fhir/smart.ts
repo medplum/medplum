@@ -214,7 +214,8 @@ export function applySmartScopes(accessPolicy: PopulatedAccessPolicy, authState:
  * @returns The Patient context reference, if a valid one is available.
  */
 function getPatientContext(authState: AuthState): Reference<Patient> | undefined {
-  for (const candidate of [authState.smartAppLaunch?.patient, authState.membership.profile]) {
+  const membership = authState.onBehalfOfMembership ?? authState.membership;
+  for (const candidate of [authState.smartAppLaunch?.patient, membership.profile]) {
     const [resourceType, id] = splitN(candidate?.reference ?? '', '/', 2);
     if (resourceType === 'Patient' && id) {
       return candidate as Reference<Patient>;
