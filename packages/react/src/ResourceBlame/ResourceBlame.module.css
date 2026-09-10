@@ -44,7 +44,7 @@
 }
 
 .lineNumber {
-  background-color: var(--mantine-color-gray-1);
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
   border: 0;
   color: var(--mantine-color-gray-5);
   font-family: var(--mantine-font-family-monospace);
