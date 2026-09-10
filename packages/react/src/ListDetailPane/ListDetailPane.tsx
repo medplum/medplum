@@ -6,27 +6,27 @@ import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import classes from './ListWithDetailPane.module.css';
-import { ListWithDetailPaneSkeleton } from './ListWithDetailPaneSkeleton';
+import classes from './ListDetailPane.module.css';
+import { ListDetailPaneSkeleton } from './ListDetailPaneSkeleton';
 
-export interface ListWithDetailPaneTab {
+export interface ListDetailPaneTab {
   readonly value: string;
   readonly label: ReactNode;
   readonly uri: string;
 }
 
-export interface ListWithDetailPaneItemContext<T extends { id?: string } = Resource> {
+export interface ListDetailPaneItemContext<T extends { id?: string } = Resource> {
   readonly selected: boolean;
   readonly index: number;
   readonly items: T[];
 }
 
-export interface ListWithDetailPaneDetailContext {
+export interface ListDetailPaneDetailContext {
   readonly refresh: () => Promise<void>;
 }
 
 /**
- * Props shared by every ListWithDetailPane, independent of the header style.
+ * Props shared by every ListDetailPane, independent of the header style.
  * @param items - The current page of items to render in the list.
  * @param loading - When true, the list area shows the skeleton instead of items.
  * @param selectedKey - Id of the highlighted row.
@@ -34,6 +34,9 @@ export interface ListWithDetailPaneDetailContext {
  * @param emptyList - Shown when the list is empty. Default: dimmed "No items found".
  * @param skeleton - Shown while loading. Default: built-in skeleton rows.
  * @param listWidth - Sidebar width in pixels. Default 350.
+ * @param listVisible - Whether the list sidebar is shown. Default true. When false the sidebar collapses
+ * (animated) and is removed from the accessibility tree. Controlled — consumers render their own toggle
+ * buttons (typically a collapse icon in `headerActions` and an expand icon somewhere in the detail pane).
  * @param headerActions - Right-aligned slot in the sidebar header row: action buttons, filter popovers.
  * @param selected - The resolved selected item, or undefined when nothing is selected.
  * @param renderDetail - Renders the detail pane for the selected item.
@@ -48,17 +51,18 @@ export interface ListWithDetailPaneDetailContext {
  * @param pageCount - Total number of pages. Pagination is hidden when this is less than or equal to 1.
  * @param onPageChange - Fired by the built-in pagination with the new 1-based page.
  */
-export interface ListWithDetailPanePropsBase<T extends { id?: string } = Resource> {
+export interface ListDetailPanePropsBase<T extends { id?: string } = Resource> {
   readonly items: T[];
   readonly loading: boolean;
   readonly selectedKey?: string;
-  readonly renderItem: (item: T, ctx: ListWithDetailPaneItemContext<T>) => ReactNode;
+  readonly renderItem: (item: T, ctx: ListDetailPaneItemContext<T>) => ReactNode;
   readonly emptyList?: ReactNode;
   readonly skeleton?: ReactNode;
   readonly listWidth?: number;
+  readonly listVisible?: boolean;
   readonly headerActions?: ReactNode;
   readonly selected: T | undefined;
-  readonly renderDetail: (selected: T, ctx: ListWithDetailPaneDetailContext) => ReactNode;
+  readonly renderDetail: (selected: T, ctx: ListDetailPaneDetailContext) => ReactNode;
   readonly emptyDetail?: ReactNode;
   readonly refresh: () => Promise<void>;
   readonly onSelectFirst?: (item: T) => void;
@@ -72,7 +76,7 @@ export interface ListWithDetailPanePropsBase<T extends { id?: string } = Resourc
  * can't be mixed with tabs.
  * @param headerText - Plain title shown at the left of the header.
  */
-export interface ListWithDetailPaneTextHeaderProps {
+export interface ListDetailPaneTextHeaderProps {
   readonly headerText?: ReactNode;
   readonly tabs?: never;
   readonly activeTab?: never;
@@ -84,33 +88,31 @@ export interface ListWithDetailPaneTextHeaderProps {
  * @param tabs - Sidebar header tabs. Selecting a tab navigates to its URI.
  * @param activeTab - Controlled active tab value; consumers derive it from the URL.
  */
-export interface ListWithDetailPaneTabsHeaderProps {
-  readonly tabs: ListWithDetailPaneTab[];
+export interface ListDetailPaneTabsHeaderProps {
+  readonly tabs: ListDetailPaneTab[];
   readonly activeTab?: string;
   readonly headerText?: never;
 }
 
 /** The sidebar header is plain text or pill tabs, never both. */
-export type ListWithDetailPaneHeaderProps = ListWithDetailPaneTextHeaderProps | ListWithDetailPaneTabsHeaderProps;
+export type ListDetailPaneHeaderProps = ListDetailPaneTextHeaderProps | ListDetailPaneTabsHeaderProps;
 
-export type ListWithDetailPaneProps<T extends { id?: string } = Resource> = ListWithDetailPanePropsBase<T> &
-  ListWithDetailPaneHeaderProps;
+export type ListDetailPaneProps<T extends { id?: string } = Resource> = ListDetailPanePropsBase<T> &
+  ListDetailPaneHeaderProps;
 
 // Configs
 const DEFAULT_LIST_WIDTH = 350;
 const HEADER_HEIGHT = 64;
 
 /**
- * ListWithDetailPane is a generic, presentational master-detail shell: a left sidebar
+ * ListDetailPane is a generic, presentational master-detail shell: a left sidebar
  * with optional pill tabs, header actions, a scrollable list, and pagination, plus a
  * detail area for the selected item. It does no data fetching — it renders what it is
  * given, navigates via links, and emits `onPageChange` / `onSelectFirst` callbacks.
- * @param props - The ListWithDetailPane React props.
- * @returns The ListWithDetailPane React node.
+ * @param props - The ListDetailPane React props.
+ * @returns The ListDetailPane React node.
  */
-export function ListWithDetailPane<T extends { id?: string } = Resource>(
-  props: ListWithDetailPaneProps<T>
-): JSX.Element {
+export function ListDetailPane<T extends { id?: string } = Resource>(props: ListDetailPaneProps<T>): JSX.Element {
   const {
     items,
     loading,
@@ -119,6 +121,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     emptyList,
     skeleton,
     listWidth = DEFAULT_LIST_WIDTH,
+    listVisible = true,
     headerText,
     tabs,
     activeTab,
@@ -180,7 +183,13 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
 
   return (
     <Flex direction="row" h="100%" w="100%" className={classes.container}>
-      <Flex direction="column" w={listWidth} h="100%" className={classes.shell}>
+      <Flex
+        direction="column"
+        w={listVisible ? listWidth : 0}
+        h="100%"
+        className={cx(classes.shell, !listVisible && classes.shellHidden)}
+        aria-hidden={!listVisible || undefined}
+      >
         {(tabs || headerActions || headerText) && (
           <>
             <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
@@ -191,7 +200,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
           </>
         )}
         <ScrollArea flex={1} scrollbarSize={10} type="hover" scrollHideDelay={250}>
-          {loading && (skeleton ?? <ListWithDetailPaneSkeleton />)}
+          {loading && (skeleton ?? <ListDetailPaneSkeleton />)}
           {!loading && items.length === 0 && (emptyList ?? <DefaultEmptyList />)}
           {!loading && items.length > 0 && (
             <div className={classes.list}>

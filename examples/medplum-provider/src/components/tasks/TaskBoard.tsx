@@ -4,7 +4,7 @@ import { ActionIcon, Flex, Text, Tooltip } from '@mantine/core';
 import type { SearchRequest, WithId } from '@medplum/core';
 import { Operator, parseSearchRequest } from '@medplum/core';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
-import { ListWithDetailPane, useMedplum } from '@medplum/react';
+import { ListDetailPane, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -245,7 +245,7 @@ export function TaskBoard({
 
   return (
     <>
-      <ListWithDetailPane<WithId<Task>>
+      <ListDetailPane<WithId<Task>>
         items={tasks}
         loading={loading}
         selectedKey={selectedKey}

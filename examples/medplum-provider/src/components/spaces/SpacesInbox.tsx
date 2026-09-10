@@ -3,7 +3,6 @@
 import {
   ActionIcon,
   Badge,
-  Box,
   CloseButton,
   Code,
   Collapse,
@@ -14,9 +13,9 @@ import {
   Text,
   ThemeIcon,
 } from '@mantine/core';
-import { getDisplayString } from '@medplum/core';
+import { formatDate, getDisplayString } from '@medplum/core';
 import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react';
+import { ListDetailPane, MedplumLink, useMedplum, useResource } from '@medplum/react';
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -30,19 +29,24 @@ import {
 } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { JSX } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PromptComposer } from '../../pages/spaces/PromptComposer';
 import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
 import { processMessage } from '../../utils/spaceMessaging';
 import { getDefaultModel, getProjectModels } from '../../utils/spaceModels';
-import { loadConversationMessages } from '../../utils/spacePersistence';
+import { loadConversationMessages, loadRecentTopics, touchConversationTopic } from '../../utils/spacePersistence';
 import { ComponentPreview } from './ComponentPreview';
-import { HistoryList } from './HistoryList';
 import { Markdown } from './Markdown';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
 import classes from './SpacesInbox.module.css';
+
+// Spaces always renders the chat pane — with no topic selected it is a new (draft)
+// conversation — so this placeholder keeps ListDetailPane on its detail slot
+// instead of swapping to the empty-detail slot, which would remount the chat once
+// the first message creates the real topic.
+const NEW_CONVERSATION: Communication = { resourceType: 'Communication', status: 'in-progress' };
 
 interface SpaceInboxProps {
   topic: Communication | Reference<Communication> | undefined;
@@ -65,6 +69,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [currentTopicId, setCurrentTopicId] = useState(topic?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [topics, setTopics] = useState<Communication[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(true);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const [selectedResources, setSelectedResources] = useState<string[] | undefined>();
   const [resourceFromComponent, setResourceFromComponent] = useState(false);
@@ -172,33 +178,18 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setShowScrollButton(false);
   };
 
-  const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
-    loadVersionRef.current++;
-    const myVersion = loadVersionRef.current;
-    try {
-      setLoading(true);
-      const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
-      if (myVersion !== loadVersionRef.current) {
-        return;
-      }
-      setMessages([...loadedMessages]);
-      isAtBottomRef.current = true;
-      setShowScrollButton(false);
-      setCurrentTopicId(selectedTopicId);
-      setHasStarted(true);
-      setSelectedResource(undefined);
-      setSelectedResources(undefined);
-      setComponentPreview(undefined);
-      setStreamingComponentCode(undefined);
-      setComponentPanelOpen(false);
-    } catch (error) {
-      showErrorNotification(error);
-    } finally {
-      if (myVersion === loadVersionRef.current) {
-        setLoading(false);
-      }
-    }
-  };
+  const refreshTopics = useCallback(async (): Promise<void> => {
+    setTopics(await loadRecentTopics(medplum, 20));
+  }, [medplum]);
+
+  // Load the conversation list. `refreshKey` is bumped by processMessage when a
+  // send creates or renames a topic. The loading flag is only cleared, never
+  // re-set, so refreshes update the list in place without a skeleton flash.
+  useEffect(() => {
+    refreshTopics()
+      .catch(showErrorNotification)
+      .finally(() => setTopicsLoading(false));
+  }, [refreshTopics, refreshKey]);
 
   const handleSend = async (overrideInput?: string): Promise<void> => {
     if (isSendingRef.current) {
@@ -213,6 +204,17 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     const isFirstMessage = !hasStarted;
     if (isFirstMessage) {
       setHasStarted(true);
+    }
+
+    // Bump the topic's meta.lastUpdated on every user prompt so the conversation
+    // list (sorted by -_lastUpdated) reflects latest user activity. This is the
+    // only place that touches the parent topic — assistant/tool output is persisted
+    // as child messages and never bumps it. A just-created topic (first message) is
+    // already fresh. Fire-and-forget: a stale sort is not worth failing the send.
+    if (!isFirstMessage && currentTopicId) {
+      touchConversationTopic(medplum, currentTopicId)
+        .then(() => setRefreshKey((prev) => prev + 1))
+        .catch(console.error);
     }
 
     const userMessage: Message = {
@@ -321,401 +323,434 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   }, [messages]);
 
   return (
-    <>
-      {/* Sidebar */}
-      <Box className={classes.sidebar} style={{ width: sidebarOpen ? 280 : 0, opacity: sidebarOpen ? 1 : 0 }}>
-        <div className={classes.sidebarHeader}>
-          <Text className={classes.sidebarTitle}>Conversations</Text>
-          <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(false)}>
-            <IconLayoutSidebarLeftCollapse size={18} />
-          </ActionIcon>
-        </div>
-        <div className={classes.sidebarContent}>
-          <HistoryList
-            key={refreshKey}
-            currentTopicId={currentTopicId}
-            onSelectTopic={handleSelectTopic}
-            onSelectedItem={onSelectedItem}
-          />
-        </div>
-      </Box>
-
-      {/* Main Chat Area */}
-      <div className={classes.chatContainer}>
-        <div className={classes.chatHeader}>
-          <div>
-            {!sidebarOpen && (
-              <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(true)} mr="md">
-                <IconLayoutSidebarLeftExpand size={16} />
-              </ActionIcon>
-            )}
-          </div>
-          {onAdd && (
-            <ActionIcon variant="subtle" color="gray" size="sm" onClick={onAdd} aria-label="New conversation">
-              <IconPlus size={16} />
-            </ActionIcon>
-          )}
-        </div>
-
-        <div className={classes.messagesArea}>
-          {!hasStarted ? (
-            <div className={classes.emptyState}>
-              <ThemeIcon size={64} radius="xl" variant="light" color="gray" className={classes.emptyStateIcon}>
-                <IconRobot size={32} />
-              </ThemeIcon>
-              <Text size="xl" fw={500} mb="sm">
-                How can I help you today?
-              </Text>
-              <Text c="dimmed" size="sm" maw={400}>
-                I can help you search for patients, create resources, or answer clinical questions.
-              </Text>
+    <ListDetailPane<Communication>
+      items={topics}
+      loading={topicsLoading}
+      selectedKey={topic?.id ?? currentTopicId}
+      selected={topic ?? NEW_CONVERSATION}
+      listWidth={280}
+      listVisible={sidebarOpen}
+      headerText="Conversations"
+      headerActions={
+        <ActionIcon variant="subtle" color="gray" onClick={() => setSidebarOpen(false)} aria-label="Hide conversations">
+          <IconLayoutSidebarLeftCollapse size={18} />
+        </ActionIcon>
+      }
+      emptyList={
+        <Text size="sm" c="dimmed" ta="center" mt="md">
+          No conversations yet
+        </Text>
+      }
+      refresh={refreshTopics}
+      renderItem={(item) => <TopicListItem topic={item} uri={onSelectedItem(item)} />}
+      renderDetail={() => (
+        <>
+          {/* Main Chat Area */}
+          <div className={classes.chatContainer}>
+            <div className={classes.chatHeader}>
+              <div>
+                {!sidebarOpen && (
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => setSidebarOpen(true)}
+                    mr="md"
+                    aria-label="Show conversations"
+                  >
+                    <IconLayoutSidebarLeftExpand size={16} />
+                  </ActionIcon>
+                )}
+              </div>
+              {onAdd && (
+                <ActionIcon variant="subtle" color="gray" size="sm" onClick={onAdd} aria-label="New conversation">
+                  <IconPlus size={16} />
+                </ActionIcon>
+              )}
             </div>
-          ) : (
-            <ScrollArea
-              style={{ flex: 1 }}
-              viewportRef={scrollViewportRef}
-              onScrollPositionChange={handleScrollPositionChange}
-            >
-              <Stack gap="xl" py="xl" px={52} w="100%" maw={864} mx="auto">
-                {visibleMessages.map((message, index) => {
-                  // FHIR tool calls — show each request paired with its response
-                  if (message.role === 'assistant' && message.tool_calls && !message.content) {
-                    return (
-                      <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                        <Stack gap="md">
-                          {message.tool_calls.map((tc, tcIdx) => {
-                            let args: { method?: string; path?: string } | undefined;
-                            try {
-                              args =
-                                typeof tc.function.arguments === 'string'
-                                  ? JSON.parse(tc.function.arguments)
-                                  : tc.function.arguments;
-                            } catch {
-                              /* ignore */
-                            }
 
-                            const response = tc.id ? toolResponsesByCallId.get(tc.id) : undefined;
-                            const responseKey = tc.id ?? `${index}-${tcIdx}`;
-                            const isExpanded = expandedResponses.has(responseKey);
-                            let prettyContent = response?.content ?? '';
-                            try {
-                              prettyContent = JSON.stringify(JSON.parse(response?.content ?? ''), null, 2);
-                            } catch {
-                              /* use raw */
-                            }
+            <div className={classes.messagesArea}>
+              {!hasStarted ? (
+                <div className={classes.emptyState}>
+                  <ThemeIcon size={64} radius="xl" variant="light" color="gray" className={classes.emptyStateIcon}>
+                    <IconRobot size={32} />
+                  </ThemeIcon>
+                  <Text size="xl" fw={500} mb="sm">
+                    How can I help you today?
+                  </Text>
+                  <Text c="dimmed" size="sm" maw={400}>
+                    I can help you search for patients, create resources, or answer clinical questions.
+                  </Text>
+                </div>
+              ) : (
+                <ScrollArea
+                  style={{ flex: 1 }}
+                  viewportRef={scrollViewportRef}
+                  onScrollPositionChange={handleScrollPositionChange}
+                >
+                  <Stack gap="xl" py="xl" px={52} w="100%" maw={864} mx="auto">
+                    {visibleMessages.map((message, index) => {
+                      // FHIR tool calls — show each request paired with its response
+                      if (message.role === 'assistant' && message.tool_calls && !message.content) {
+                        return (
+                          <div key={index} className={cx(classes.messageWrapper, classes.assistantMessage)}>
+                            <Stack gap="md">
+                              {message.tool_calls.map((tc, tcIdx) => {
+                                let args: { method?: string; path?: string } | undefined;
+                                try {
+                                  args =
+                                    typeof tc.function.arguments === 'string'
+                                      ? JSON.parse(tc.function.arguments)
+                                      : tc.function.arguments;
+                                } catch {
+                                  /* ignore */
+                                }
 
-                            return (
-                              <Stack key={responseKey} gap={6}>
-                                {args ? (
-                                  <Group gap="xs" align="flex-start" wrap="nowrap" className={classes.toolCallGroup}>
-                                    <Badge
-                                      size="sm"
-                                      color={getMethodColor(args.method)}
-                                      variant="filled"
-                                      className={classes.toolCallBadge}
-                                    >
-                                      {args.method ?? 'CALL'}
-                                    </Badge>
-                                    <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
-                                  </Group>
-                                ) : (
-                                  <Text size="xs" c="dimmed" fs="italic">
-                                    Unable to parse tool call
-                                  </Text>
-                                )}
-                                {response && (
-                                  <>
-                                    <Group
-                                      gap="xs"
-                                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                                      onClick={() => toggleResponse(responseKey)}
-                                    >
-                                      <Text size="xs" fw={500} c="dimmed">
-                                        Response
+                                const response = tc.id ? toolResponsesByCallId.get(tc.id) : undefined;
+                                const responseKey = tc.id ?? `${index}-${tcIdx}`;
+                                const isExpanded = expandedResponses.has(responseKey);
+                                let prettyContent = response?.content ?? '';
+                                try {
+                                  prettyContent = JSON.stringify(JSON.parse(response?.content ?? ''), null, 2);
+                                } catch {
+                                  /* use raw */
+                                }
+
+                                return (
+                                  <Stack key={responseKey} gap={6}>
+                                    {args ? (
+                                      <Group
+                                        gap="xs"
+                                        align="flex-start"
+                                        wrap="nowrap"
+                                        className={classes.toolCallGroup}
+                                      >
+                                        <Badge
+                                          size="sm"
+                                          color={getMethodColor(args.method)}
+                                          variant="filled"
+                                          className={classes.toolCallBadge}
+                                        >
+                                          {args.method ?? 'CALL'}
+                                        </Badge>
+                                        <Code className={classes.toolCallPath}>{args.path ?? tc.function.name}</Code>
+                                      </Group>
+                                    ) : (
+                                      <Text size="xs" c="dimmed" fs="italic">
+                                        Unable to parse tool call
                                       </Text>
-                                      <Text size="xs" c="dimmed">
-                                        {isExpanded ? '▲' : '▼'}
-                                      </Text>
-                                    </Group>
-                                    <Collapse in={isExpanded}>
-                                      <Code block className={classes.toolResponseCode}>
-                                        {prettyContent}
-                                      </Code>
-                                    </Collapse>
-                                  </>
-                                )}
+                                    )}
+                                    {response && (
+                                      <>
+                                        <Group
+                                          gap="xs"
+                                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                                          onClick={() => toggleResponse(responseKey)}
+                                        >
+                                          <Text size="xs" fw={500} c="dimmed">
+                                            Response
+                                          </Text>
+                                          <Text size="xs" c="dimmed">
+                                            {isExpanded ? '▲' : '▼'}
+                                          </Text>
+                                        </Group>
+                                        <Collapse in={isExpanded}>
+                                          <Code block className={classes.toolResponseCode}>
+                                            {prettyContent}
+                                          </Code>
+                                        </Collapse>
+                                      </>
+                                    )}
+                                  </Stack>
+                                );
+                              })}
+                            </Stack>
+                          </div>
+                        );
+                      }
+
+                      // Tool responses are rendered inline with their request above
+                      if (message.role === 'tool') {
+                        return null;
+                      }
+
+                      // Standard user / assistant messages
+                      return (
+                        <div
+                          key={index}
+                          className={cx(
+                            classes.messageWrapper,
+                            message.role === 'user' ? classes.userMessage : classes.assistantMessage
+                          )}
+                        >
+                          {message.role === 'user' &&
+                            message.selectedPatients &&
+                            message.selectedPatients.length > 0 && (
+                              <Stack gap={4} mb={4} align="flex-end">
+                                {message.selectedPatients.map((patient, i) => (
+                                  <PatientContextBubble key={i} patient={patient} />
+                                ))}
                               </Stack>
-                            );
-                          })}
-                        </Stack>
-                      </div>
-                    );
-                  }
-
-                  // Tool responses are rendered inline with their request above
-                  if (message.role === 'tool') {
-                    return null;
-                  }
-
-                  // Standard user / assistant messages
-                  return (
-                    <div
-                      key={index}
-                      className={cx(
-                        classes.messageWrapper,
-                        message.role === 'user' ? classes.userMessage : classes.assistantMessage
-                      )}
-                    >
-                      {message.role === 'user' && message.selectedPatients && message.selectedPatients.length > 0 && (
-                        <Stack gap={4} mb={4} align="flex-end">
-                          {message.selectedPatients.map((patient, i) => (
-                            <PatientContextBubble key={i} patient={patient} />
-                          ))}
-                        </Stack>
-                      )}
-                      {message.content && (
-                        <div className={classes.messageContent}>
-                          {message.role === 'assistant' ? (
-                            <Markdown>{message.content}</Markdown>
-                          ) : (
-                            <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                            )}
+                          {message.content && (
+                            <div className={classes.messageContent}>
+                              {message.role === 'assistant' ? (
+                                <Markdown>{message.content}</Markdown>
+                              ) : (
+                                <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
+                              )}
+                            </div>
+                          )}
+                          {message.componentCode && (
+                            <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
+                              <Paper
+                                withBorder
+                                p="sm"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => {
+                                  setSelectedResource(undefined);
+                                  setSelectedResources(undefined);
+                                  setComponentPreview({
+                                    code: message.componentCode as string,
+                                    resources: message.resources,
+                                  });
+                                  setComponentPanelOpen(true);
+                                }}
+                              >
+                                <Group gap="sm" wrap="nowrap">
+                                  <ThemeIcon size="lg" variant="light" color="violet">
+                                    <IconCode size={20} />
+                                  </ThemeIcon>
+                                  <Text size="sm" fw={600} c="violet.7">
+                                    View Component
+                                  </Text>
+                                </Group>
+                              </Paper>
+                            </Stack>
+                          )}
+                          {message.resources && message.resources.length > 0 && !message.componentCode && (
+                            <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
+                              {message.resources.length <= 2 ? (
+                                message.resources.map((resourceRef, idx) => (
+                                  <ResourceBox
+                                    key={idx}
+                                    resourceReference={resourceRef}
+                                    onClick={(ref) => {
+                                      setComponentPanelOpen(false);
+                                      setResourceFromComponent(false);
+                                      setSelectedResources(undefined);
+                                      setSelectedResource(ref);
+                                    }}
+                                  />
+                                ))
+                              ) : (
+                                <Paper
+                                  withBorder
+                                  p="sm"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => {
+                                    setComponentPanelOpen(false);
+                                    setSelectedResource(undefined);
+                                    setResourceFromComponent(false);
+                                    setSelectedResources(message.resources);
+                                  }}
+                                >
+                                  <Group gap="sm" wrap="nowrap">
+                                    <ThemeIcon size="lg" variant="light" color="violet">
+                                      <IconList size={20} />
+                                    </ThemeIcon>
+                                    <Text size="sm" fw={600} c="violet.7">
+                                      {message.resources.length} results
+                                    </Text>
+                                  </Group>
+                                </Paper>
+                              )}
+                            </Stack>
                           )}
                         </div>
-                      )}
-                      {message.componentCode && (
-                        <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
-                          <Paper
-                            withBorder
-                            p="sm"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => {
-                              setSelectedResource(undefined);
-                              setSelectedResources(undefined);
-                              setComponentPreview({
-                                code: message.componentCode as string,
-                                resources: message.resources,
-                              });
-                              setComponentPanelOpen(true);
-                            }}
-                          >
-                            <Group gap="sm" wrap="nowrap">
-                              <ThemeIcon size="lg" variant="light" color="violet">
-                                <IconCode size={20} />
-                              </ThemeIcon>
-                              <Text size="sm" fw={600} c="violet.7">
-                                View Component
-                              </Text>
-                            </Group>
-                          </Paper>
-                        </Stack>
-                      )}
-                      {message.resources && message.resources.length > 0 && !message.componentCode && (
-                        <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
-                          {message.resources.length <= 2 ? (
-                            message.resources.map((resourceRef, idx) => (
-                              <ResourceBox
-                                key={idx}
-                                resourceReference={resourceRef}
-                                onClick={(ref) => {
-                                  setComponentPanelOpen(false);
-                                  setResourceFromComponent(false);
-                                  setSelectedResources(undefined);
-                                  setSelectedResource(ref);
-                                }}
-                              />
-                            ))
-                          ) : (
+                      );
+                    })}
+                    {loading && (
+                      <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
+                        <div className={classes.messageContent}>
+                          {streamingContent && <Markdown>{streamingContent}</Markdown>}
+                          {!streamingContent && currentFhirRequest && (
+                            <Text size="sm" c="dimmed" fs="italic">
+                              Executing {currentFhirRequest}...
+                            </Text>
+                          )}
+                          {!streamingContent && !currentFhirRequest && streamingComponentCode === undefined && (
+                            <Text size="sm" c="dimmed" fs="italic">
+                              Thinking...
+                            </Text>
+                          )}
+                        </div>
+                        {streamingComponentCode !== undefined && (
+                          <Stack gap="xs" mt="sm" w={300}>
                             <Paper
                               withBorder
                               p="sm"
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
-                                setComponentPanelOpen(false);
                                 setSelectedResource(undefined);
-                                setResourceFromComponent(false);
-                                setSelectedResources(message.resources);
+                                setComponentPanelOpen(true);
                               }}
                             >
                               <Group gap="sm" wrap="nowrap">
                                 <ThemeIcon size="lg" variant="light" color="violet">
-                                  <IconList size={20} />
+                                  <IconCode size={20} />
                                 </ThemeIcon>
                                 <Text size="sm" fw={600} c="violet.7">
-                                  {message.resources.length} results
+                                  Generating component...
                                 </Text>
                               </Group>
                             </Paper>
-                          )}
-                        </Stack>
-                      )}
-                    </div>
-                  );
-                })}
-                {loading && (
-                  <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                    <div className={classes.messageContent}>
-                      {streamingContent && <Markdown>{streamingContent}</Markdown>}
-                      {!streamingContent && currentFhirRequest && (
-                        <Text size="sm" c="dimmed" fs="italic">
-                          Executing {currentFhirRequest}...
-                        </Text>
-                      )}
-                      {!streamingContent && !currentFhirRequest && streamingComponentCode === undefined && (
-                        <Text size="sm" c="dimmed" fs="italic">
-                          Thinking...
-                        </Text>
-                      )}
-                    </div>
-                    {streamingComponentCode !== undefined && (
-                      <Stack gap="xs" mt="sm" w={300}>
-                        <Paper
-                          withBorder
-                          p="sm"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => {
-                            setSelectedResource(undefined);
-                            setComponentPanelOpen(true);
-                          }}
-                        >
-                          <Group gap="sm" wrap="nowrap">
-                            <ThemeIcon size="lg" variant="light" color="violet">
-                              <IconCode size={20} />
-                            </ThemeIcon>
-                            <Text size="sm" fw={600} c="violet.7">
-                              Generating component...
-                            </Text>
-                          </Group>
-                        </Paper>
-                      </Stack>
+                          </Stack>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
-              </Stack>
-            </ScrollArea>
-          )}
-        </div>
+                  </Stack>
+                </ScrollArea>
+              )}
+            </div>
 
-        <div className={classes.inputArea}>
-          {hasStarted && showScrollButton && (
-            <div className={classes.scrollToBottomWrapper}>
-              <ActionIcon
-                variant="default"
-                radius="xl"
-                size="lg"
-                className={classes.scrollToBottomButton}
-                onClick={scrollToBottom}
-                aria-label="Scroll to bottom"
-              >
-                <IconArrowDown size={14} />
-              </ActionIcon>
+            <div className={classes.inputArea}>
+              {hasStarted && showScrollButton && (
+                <div className={classes.scrollToBottomWrapper}>
+                  <ActionIcon
+                    variant="default"
+                    radius="xl"
+                    size="lg"
+                    className={classes.scrollToBottomButton}
+                    onClick={scrollToBottom}
+                    aria-label="Scroll to bottom"
+                  >
+                    <IconArrowDown size={14} />
+                  </ActionIcon>
+                </div>
+              )}
+              <div className={classes.inputWrapper}>
+                <PromptComposer
+                  input={input}
+                  onInputChange={setInput}
+                  onKeyDown={handleKeyDown}
+                  onSend={handleSend}
+                  loading={loading}
+                  models={models}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  selectedPatients={selectedPatients}
+                  setSelectedPatients={setSelectedPatients}
+                />
+              </div>
+              <Text size="xs" c="gray.6" className={classes.inputDisclaimer}>
+                AI models can make mistakes. Please double-check important information.
+              </Text>
+            </div>
+          </div>
+
+          {/* Resource List Panel */}
+          {selectedResources && !selectedResource && (
+            <div className={classes.resourcePanel}>
+              <div className={classes.resourceHeader}>
+                <Text fw={600} size="sm">
+                  Results ({selectedResources.length})
+                </Text>
+                <CloseButton onClick={() => setSelectedResources(undefined)} />
+              </div>
+              <ScrollArea style={{ flex: 1 }} p="md">
+                <Stack gap="xs">
+                  {selectedResources.map((ref, idx) => (
+                    <ResourceBox key={idx} resourceReference={ref} onClick={(r) => setSelectedResource(r)} />
+                  ))}
+                </Stack>
+              </ScrollArea>
             </div>
           )}
-          <div className={classes.inputWrapper}>
-            <PromptComposer
-              input={input}
-              onInputChange={setInput}
-              onKeyDown={handleKeyDown}
-              onSend={handleSend}
-              loading={loading}
-              models={models}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              selectedPatients={selectedPatients}
-              setSelectedPatients={setSelectedPatients}
-            />
-          </div>
-          <Text size="xs" c="gray.6" className={classes.inputDisclaimer}>
-            AI models can make mistakes. Please double-check important information.
-          </Text>
-        </div>
-      </div>
 
-      {/* Resource List Panel */}
-      {selectedResources && !selectedResource && (
-        <div className={classes.resourcePanel}>
-          <div className={classes.resourceHeader}>
-            <Text fw={600} size="sm">
-              Results ({selectedResources.length})
-            </Text>
-            <CloseButton onClick={() => setSelectedResources(undefined)} />
-          </div>
-          <ScrollArea style={{ flex: 1 }} p="md">
-            <Stack gap="xs">
-              {selectedResources.map((ref, idx) => (
-                <ResourceBox key={idx} resourceReference={ref} onClick={(r) => setSelectedResource(r)} />
-              ))}
-            </Stack>
-          </ScrollArea>
-        </div>
-      )}
-
-      {/* Resource Panel */}
-      {selectedResource && (
-        <div className={classes.resourcePanel}>
-          <div className={classes.resourceHeader}>
-            <Group gap="xs">
-              {(resourceFromComponent || selectedResources) && (
-                <ActionIcon
-                  variant="subtle"
-                  color="gray"
-                  size="sm"
+          {/* Resource Panel */}
+          {selectedResource && (
+            <div className={classes.resourcePanel}>
+              <div className={classes.resourceHeader}>
+                <Group gap="xs">
+                  {(resourceFromComponent || selectedResources) && (
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedResource(undefined);
+                        if (resourceFromComponent) {
+                          setComponentPanelOpen(true);
+                        }
+                      }}
+                    >
+                      <IconArrowLeft size={16} />
+                    </ActionIcon>
+                  )}
+                  <Text fw={600} size="sm">
+                    Resource Details
+                  </Text>
+                </Group>
+                <CloseButton
                   onClick={() => {
                     setSelectedResource(undefined);
-                    if (resourceFromComponent) {
-                      setComponentPanelOpen(true);
-                    }
+                    setSelectedResources(undefined);
                   }}
-                >
-                  <IconArrowLeft size={16} />
-                </ActionIcon>
-              )}
-              <Text fw={600} size="sm">
-                Resource Details
-              </Text>
-            </Group>
-            <CloseButton
-              onClick={() => {
-                setSelectedResource(undefined);
-                setSelectedResources(undefined);
-              }}
-            />
-          </div>
-          <ScrollArea style={{ flex: 1 }} p="md">
-            <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
-          </ScrollArea>
-        </div>
-      )}
+                />
+              </div>
+              <ScrollArea style={{ flex: 1 }} p="md">
+                <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
+              </ScrollArea>
+            </div>
+          )}
 
-      {/* Component Preview Panel */}
-      {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
-        <div className={classes.resourcePanel}>
-          <div className={classes.resourceHeader}>
-            <Text fw={600} size="sm">
-              Component Preview
-            </Text>
-            <CloseButton onClick={() => setComponentPanelOpen(false)} />
-          </div>
-          <ScrollArea style={{ flex: 1 }} p="md">
-            {streamingComponentCode !== undefined && (
-              <Code block style={{ whiteSpace: 'pre-wrap' }}>
-                {streamingComponentCode || ' '}
-              </Code>
-            )}
-            {streamingComponentCode === undefined && componentPreview && (
-              <ComponentPreview
-                code={componentPreview.code}
-                resources={componentPreview.resources}
-                onResourceClick={(ref) => {
-                  setComponentPanelOpen(false);
-                  setResourceFromComponent(true);
-                  setSelectedResource(ref);
-                }}
-              />
-            )}
-          </ScrollArea>
-        </div>
+          {/* Component Preview Panel */}
+          {componentPanelOpen && (componentPreview || streamingComponentCode !== undefined) && (
+            <div className={classes.resourcePanel}>
+              <div className={classes.resourceHeader}>
+                <Text fw={600} size="sm">
+                  Component Preview
+                </Text>
+                <CloseButton onClick={() => setComponentPanelOpen(false)} />
+              </div>
+              <ScrollArea style={{ flex: 1 }} p="md">
+                {streamingComponentCode !== undefined && (
+                  <Code block style={{ whiteSpace: 'pre-wrap' }}>
+                    {streamingComponentCode || ' '}
+                  </Code>
+                )}
+                {streamingComponentCode === undefined && componentPreview && (
+                  <ComponentPreview
+                    code={componentPreview.code}
+                    resources={componentPreview.resources}
+                    onResourceClick={(ref) => {
+                      setComponentPanelOpen(false);
+                      setResourceFromComponent(true);
+                      setSelectedResource(ref);
+                    }}
+                  />
+                )}
+              </ScrollArea>
+            </div>
+          )}
+        </>
       )}
-    </>
+    />
+  );
+}
+
+function TopicListItem({ topic, uri }: { topic: Communication; uri: string }): JSX.Element {
+  return (
+    <MedplumLink to={uri} underline="never" display="block" c="inherit">
+      <Stack gap={4} p="xs">
+        <Text size="sm" fw={500} lineClamp={1}>
+          {topic.topic?.text || 'Untitled conversation'}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {formatDate(topic.meta?.lastUpdated)}
+        </Text>
+      </Stack>
+    </MedplumLink>
   );
 }
 

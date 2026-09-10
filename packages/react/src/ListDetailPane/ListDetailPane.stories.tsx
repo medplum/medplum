@@ -4,14 +4,14 @@ import { ActionIcon, Box, Paper, Text, Tooltip } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
-import { IconPlus } from '@tabler/icons-react';
+import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { ListWithDetailPane } from './ListWithDetailPane';
+import { ListDetailPane } from './ListDetailPane';
 
 export default {
-  title: 'Medplum/ListWithDetailPane',
-  component: ListWithDetailPane,
+  title: 'Medplum/ListDetailPane',
+  component: ListDetailPane,
 } as Meta;
 
 const sampleItems: WithId<Communication>[] = [
@@ -94,7 +94,7 @@ export const Basic = (): JSX.Element => {
 
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={sampleItems}
         loading={false}
         selectedKey={selectedId}
@@ -117,10 +117,60 @@ export const Basic = (): JSX.Element => {
   );
 };
 
+export const CollapsibleList = (): JSX.Element => {
+  const [listVisible, setListVisible] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | undefined>('comm-1');
+
+  const selected = sampleItems.find((item) => item.id === selectedId);
+
+  return (
+    <Frame>
+      <ListDetailPane<WithId<Communication>>
+        items={sampleItems}
+        loading={false}
+        selectedKey={selectedId}
+        selected={selected}
+        refresh={async () => {}}
+        headerText="Conversations"
+        listVisible={listVisible}
+        headerActions={
+          <Tooltip label="Hide list" position="bottom">
+            <ActionIcon variant="subtle" color="gray" onClick={() => setListVisible(false)} aria-label="Hide list">
+              <IconLayoutSidebarLeftCollapse size={18} />
+            </ActionIcon>
+          </Tooltip>
+        }
+        renderItem={(item) => (
+          <div onClick={() => setSelectedId(item.id)} onKeyDown={() => {}} role="presentation">
+            <ItemRow item={item} />
+          </div>
+        )}
+        renderDetail={(item) => (
+          <Paper style={{ flex: 1 }} p="md">
+            {!listVisible && (
+              <Tooltip label="Show list" position="bottom">
+                <ActionIcon variant="subtle" color="gray" onClick={() => setListVisible(true)} aria-label="Show list">
+                  <IconLayoutSidebarLeftExpand size={18} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+            <Box p="lg">
+              <Text fw={800} fz="lg">
+                {item.topic?.text}
+              </Text>
+              <Text mt="md">{item.payload?.[0]?.contentString}</Text>
+            </Box>
+          </Paper>
+        )}
+      />
+    </Frame>
+  );
+};
+
 export const Loading = (): JSX.Element => {
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={[]}
         loading={true}
         selected={undefined}
@@ -137,7 +187,7 @@ export const Loading = (): JSX.Element => {
 export const Empty = (): JSX.Element => {
   return (
     <Frame>
-      <ListWithDetailPane<WithId<Communication>>
+      <ListDetailPane<WithId<Communication>>
         items={[]}
         loading={false}
         selected={undefined}
