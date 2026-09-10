@@ -6,7 +6,9 @@ import type { JWTPayload } from 'jose';
 import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getProjectScopedUrl } from '../util/url';
+import type { MedplumBaseClaims } from './keys';
 import { verifyJwt } from './keys';
+import { timingSafeEqualStr } from './utils';
 
 /**
  * Handles the OAuth2 Token Introspection Endpoint
@@ -22,11 +24,27 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
   }
 
   try {
-    const decodedToken = await verifyJwt(token, getProjectScopedUrl(req.originalUrl, getConfig().issuer));
+    const expectedIssuer = getProjectScopedUrl(req.originalUrl, getConfig().issuer);
+    const decodedToken = await verifyJwt(token, expectedIssuer);
+    const claims = decodedToken.payload as MedplumBaseClaims & { refresh_secret?: string };
+
+    // Introspection is defined only for access and refresh tokens, which are audienced to the issuer.
+    // ID tokens are audienced to the client, and are not introspectable here.
+    if (claims.aud !== expectedIssuer) {
+      writeInactiveResponse(res);
+      return;
+    }
 
     const systemRepo = getGlobalSystemRepo();
-    const login = await systemRepo.readResource<Login>('Login', decodedToken.payload.login_id as string);
+    const login = await systemRepo.readResource<Login>('Login', claims.login_id);
     if (!login.granted || login.revoked) {
+      writeInactiveResponse(res);
+      return;
+    }
+
+    // Ensure that only the current refresh token is marked as active, since the
+    // JWT itself may not be expired
+    if (claims.refresh_secret !== undefined && !timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)) {
       writeInactiveResponse(res);
       return;
     }
