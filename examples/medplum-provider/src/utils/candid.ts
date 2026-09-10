@@ -20,6 +20,61 @@ export const CANDID_GET_ENCOUNTER_BOT_IDENTIFIER = {
   value: 'get-encounter',
 };
 
+// Bot that searches the Candid Health payer directory.
+export const CANDID_GET_PAYERS_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-get-payers',
+};
+
+// Bot that registers a Practitioner or Organization as a Candid organization provider and stamps
+// the Candid provider ID back onto the resource.
+export const CANDID_CREATE_PROVIDER_BOT_IDENTIFIER = {
+  system: CANDID_INTEGRATION_SYSTEM,
+  value: 'candid-create-provider',
+};
+
+// Profile the medplum-ee candid-health package publishes for billing organizations: it requires the
+// NPI and Tax ID identifiers, the 'prov' organization type, and a complete address. Saving a billing
+// organization claims it so the server enforces those on write; a project without the Candid package
+// deployed has no such StructureDefinition, and the server skips a profile it cannot resolve.
+export const CANDID_BILLING_ORGANIZATION_PROFILE =
+  'https://medplum.com/profiles/integrations/candid-health/StructureDefinition/candid-billing-organization';
+
+// Identifier the candid-create-provider bot writes onto the registered resource; its presence
+// means the provider exists in Candid.
+export const CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM = 'https://candidhealth.com/organization-provider-id';
+
+// Candid requires isBilling/isRendering on every organization provider and FHIR has no native
+// field for them, so candid-create-provider reads them from these extensions and rejects a
+// resource that carries neither.
+export const CANDID_IS_BILLING_PROVIDER_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/is-billing-provider';
+export const CANDID_IS_RENDERING_PROVIDER_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/is-rendering-provider';
+
+// Identifier systems the Candid bots use to resolve a payer Organization back to the Candid
+// directory (see medplum-ee payer-lookup.ts). The Candid UUID is the preferred, unambiguous key.
+export const CANDID_PAYER_UUID_SYSTEM = 'https://www.joincandidhealth.com/payer-uuid';
+export const CHC_PAYER_ID_SYSTEM = 'https://www.joincandidhealth.com/chc-payerid';
+// Legacy system stamped by imports before the bot moved to Candid's payers.v4 API; kept only as
+// a display fallback for previously imported payers.
+export const CMS_PAYER_ID_SYSTEM = 'https://www.cms.gov/payer-id';
+
+// Capability-specific payer ID systems stamped by the candid-get-payers bot (Candid payers.v4).
+export const CANDID_ELIGIBILITY_PAYER_ID_SYSTEM = 'https://www.joincandidhealth.com/eligibility-payerid';
+export const CANDID_REMITTANCE_PAYER_ID_SYSTEM = 'https://www.joincandidhealth.com/remittance-payerid';
+
+// Coding system for Candid's payer category (e.g. MEDICARE, BCBS), stamped in Organization.type.
+export const CANDID_PAYER_CATEGORY_SYSTEM = 'https://www.joincandidhealth.com/payer-category';
+
+// Extensions carrying the best support state per capability across Candid's clearinghouses.
+export const CANDID_ELIGIBILITY_SUPPORT_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/eligibility-support';
+export const CANDID_PROFESSIONAL_CLAIMS_SUPPORT_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/professional-claims-support';
+export const CANDID_REMITTANCE_SUPPORT_EXTENSION =
+  'https://candidhealth.com/fhir/StructureDefinition/remittance-support';
+
 // Identifier the send-to-candid bot writes onto the ClaimResponse; its presence marks the
 // claim as a Candid claim.
 export const CANDID_ENCOUNTER_ID_SYSTEM = 'https://candidhealth.com/encounter-id';

@@ -4,13 +4,7 @@ import { Alert, List, Stack, Text } from '@mantine/core';
 import { Document } from '@medplum/react';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import {
-  withBookStub,
-  withChainedActorSearch,
-  withFindStub,
-  withFixtures,
-  withMockedDate,
-} from '../stories/decorators';
+import { withBookStub, withFindStub, withFixtures, withMockedDate } from '../stories/decorators';
 import {
   MainClinic,
   MRN_SYSTEM,
@@ -40,7 +34,7 @@ function reportBooking(booking: AppointmentBooking): void {
 export default {
   title: 'Medplum/AppointmentBookingForm',
   component: AppointmentBookingForm,
-  decorators: [withChainedActorSearch(), withBookStub(), withFixtures(STORY_FIXTURES), withMockedDate],
+  decorators: [withBookStub(), withFixtures(STORY_FIXTURES), withMockedDate],
 } as Meta;
 
 /**

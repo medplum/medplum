@@ -5,6 +5,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 # Every job below declares its own permissions, which replace (not merge with) these
 permissions:
@@ -340,27 +341,39 @@ jobs:
               repo: context.repo.repo,
               tag
             });
-            await github.rest.repos.uploadReleaseAsset({
+            const version = packageJson.version;
+            const existingAssets = await github.paginate(github.rest.repos.listReleaseAssets, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-installer-" + packageJson.version + ".exe",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
+              per_page: 100
             });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-installer-" + packageJson.version + ".exe.asc",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.asc`)
-            });
+            // A manual re-publish of a tag re-runs this job, and the upload endpoint rejects
+            // duplicate asset names with a 422, so replace any asset left by the earlier run.
+            async function uploadAsset(name, path) {
+              const existing = existingAssets.find((asset) => asset.name === name);
+              if (existing) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existing.id
+                });
+              }
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id,
+                name,
+                data: fs.readFileSync(path)
+              });
+            }
+            const shorthash = process.env.MEDPLUM_GIT_SHORTHASH;
+            for (const ext of ["", ".sha256", ".asc"]) {
+              await uploadAsset(
+                `medplum-agent-installer-${version}.exe${ext}`,
+                `packages/agent/medplum-agent-installer-${version}-${shorthash}.exe${ext}`
+              );
+            }
 
   build_agent_linux:
     strategy:
@@ -439,27 +452,36 @@ jobs:
               repo: context.repo.repo,
               tag
             });
-            await github.rest.repos.uploadReleaseAsset({
+            const version = packageJson.version;
+            const existingAssets = await github.paginate(github.rest.repos.listReleaseAssets, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux`)
+              per_page: 100
             });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.sha256`)
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.asc",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.asc`)
-            });
+            async function uploadAsset(name, path) {
+              const existing = existingAssets.find((asset) => asset.name === name);
+              if (existing) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existing.id
+                });
+              }
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id,
+                name,
+                data: fs.readFileSync(path)
+              });
+            }
+            for (const ext of ["", ".sha256", ".asc"]) {
+              await uploadAsset(
+                `medplum-agent-${version}-linux-${{ matrix.arch.suffix }}${ext}`,
+                `packages/agent/medplum-agent-${version}-linux${ext}`
+              );
+            }
 
   build_agent_macos:
     runs-on: macos-latest
@@ -531,24 +553,33 @@ jobs:
               repo: context.repo.repo,
               tag
             });
-            await github.rest.repos.uploadReleaseAsset({
+            const version = packageJson.version;
+            const existingAssets = await github.paginate(github.rest.repos.listReleaseAssets, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-macos-arm64",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos`)
+              per_page: 100
             });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-macos-arm64.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos.sha256`)
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-macos-arm64.asc",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos.asc`)
-            });
+            async function uploadAsset(name, path) {
+              const existing = existingAssets.find((asset) => asset.name === name);
+              if (existing) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  asset_id: existing.id
+                });
+              }
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id,
+                name,
+                data: fs.readFileSync(path)
+              });
+            }
+            for (const ext of ["", ".sha256", ".asc"]) {
+              await uploadAsset(
+                `medplum-agent-${version}-macos-arm64${ext}`,
+                `packages/agent/medplum-agent-${version}-macos${ext}`
+              );
+            }

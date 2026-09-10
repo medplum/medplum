@@ -13,6 +13,7 @@ import {
   combine,
   executeMigrationActions,
   generateConstraintsActions,
+  generateIndexesActions,
   generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
@@ -439,6 +440,93 @@ describe('Generator', () => {
     });
   });
 
+  describe('generateIndexesActions', () => {
+    test('allows a primary key to satisfy a structurally identical unique index declaration', () => {
+      const startTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [
+          {
+            columns: ['id'],
+            indexType: 'btree',
+            unique: true,
+            indexdef: 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'Coding',
+        columns: [{ name: 'id', type: 'BIGSERIAL', primaryKey: true }],
+        indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({ preDeploy: [], postDeploy: [] });
+    });
+
+    test('drops concurrent rebuild indexes instead of valid indexes with the same definition', () => {
+      const primaryKeyDefinition = {
+        columns: ['resourceId', 'targetId', 'code'],
+        indexType: 'btree' as const,
+        unique: true,
+      };
+      const targetIdDefinition = {
+        columns: ['targetId', 'code'],
+        indexType: 'btree' as const,
+        include: ['resourceId'],
+      };
+      const startTable: TableDefinition = {
+        name: 'AuditEvent_References',
+        columns: [],
+        indexes: [
+          {
+            ...primaryKeyDefinition,
+            indexdef:
+              'CREATE UNIQUE INDEX "AuditEvent_References_pkey_ccnew" ON public."AuditEvent_References" USING btree ("resourceId", "targetId", code)',
+          },
+          {
+            ...primaryKeyDefinition,
+            indexdef:
+              'CREATE UNIQUE INDEX "AuditEvent_References_pkey" ON public."AuditEvent_References" USING btree ("resourceId", "targetId", code)',
+          },
+          {
+            ...targetIdDefinition,
+            indexdef:
+              'CREATE INDEX "AuditEvent_References_targetId_code_idx_ccnew" ON public."AuditEvent_References" USING btree ("targetId", code) INCLUDE ("resourceId")',
+          },
+          {
+            ...targetIdDefinition,
+            indexdef:
+              'CREATE INDEX "AuditEvent_References_targetId_code_idx" ON public."AuditEvent_References" USING btree ("targetId", code) INCLUDE ("resourceId")',
+          },
+        ],
+      };
+      const targetTable: TableDefinition = {
+        name: 'AuditEvent_References',
+        columns: [],
+        compositePrimaryKey: primaryKeyDefinition.columns,
+        indexes: [targetIdDefinition],
+      };
+
+      const result = generateIndexesActions(startTable, targetTable, {
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: true,
+      });
+
+      expect(result).toEqual({
+        preDeploy: [
+          { type: 'DROP_INDEX', indexName: 'AuditEvent_References_pkey_ccnew' },
+          { type: 'DROP_INDEX', indexName: 'AuditEvent_References_targetId_code_idx_ccnew' },
+        ],
+        postDeploy: [],
+      });
+    });
+  });
+
   describe('parseIndexName', () => {
     test('parse index name with quotes', () => {
       const indexdef = 'CREATE INDEX "Account_Token_code_idx" ON "Account_Token" USING btree (code)';
@@ -477,6 +565,8 @@ type MigrationActionTestCase = {
   executionCheck: (mocks: {
     mockQuery: MockInstance;
     mockAnalyzeTable: MockInstance;
+    mockDropInvalidIndexConcurrently: MockInstance;
+    mockReindexConcurrently: MockInstance;
     mockIdempotentCreateIndex: MockInstance;
     mockNonBlockingAlterColumnNotNull: MockInstance;
     mockNonBlockingAddCheckConstraint: MockInstance;
@@ -650,6 +740,27 @@ const migrationActionTestCases: MigrationActionTestCase[] = [
     },
   },
   {
+    name: 'DROP_INVALID_INDEX',
+    action: { type: 'DROP_INVALID_INDEX', schemaName: 'public', indexName: 'Patient_name_idx_ccnew' },
+    builderExpected: "await fns.dropInvalidIndexConcurrently(client, results, 'public', 'Patient_name_idx_ccnew');",
+    executionCheck: ({ mockDropInvalidIndexConcurrently, mockClient, results }) => {
+      expect(mockDropInvalidIndexConcurrently).toHaveBeenCalledWith(
+        mockClient,
+        results,
+        'public',
+        'Patient_name_idx_ccnew'
+      );
+    },
+  },
+  {
+    name: 'REINDEX_CONCURRENTLY',
+    action: { type: 'REINDEX_CONCURRENTLY', target: 'INDEX', name: 'Patient_name_idx' },
+    builderExpected: 'await fns.reindexConcurrently(client, results, \'INDEX\', "Patient_name_idx");',
+    executionCheck: ({ mockReindexConcurrently, mockClient, results }) => {
+      expect(mockReindexConcurrently).toHaveBeenCalledWith(mockClient, results, 'INDEX', 'Patient_name_idx');
+    },
+  },
+  {
     name: 'ADD_CONSTRAINT',
     action: {
       type: 'ADD_CONSTRAINT',
@@ -675,6 +786,8 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
   let mockClient: { query: Mock };
   let mockQuery: MockInstance;
   let mockAnalyzeTable: MockInstance;
+  let mockDropInvalidIndexConcurrently: MockInstance;
+  let mockReindexConcurrently: MockInstance;
   let mockIdempotentCreateIndex: MockInstance;
   let mockNonBlockingAlterColumnNotNull: MockInstance;
   let mockNonBlockingAddCheckConstraint: MockInstance;
@@ -683,6 +796,8 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
     mockClient = { query: vi.fn() };
     mockQuery = vi.spyOn(fns, 'query').mockResolvedValue({ rows: [], rowCount: 0 } as any);
     mockAnalyzeTable = vi.spyOn(fns, 'analyzeTable').mockResolvedValue(undefined);
+    mockDropInvalidIndexConcurrently = vi.spyOn(fns, 'dropInvalidIndexConcurrently').mockResolvedValue(undefined);
+    mockReindexConcurrently = vi.spyOn(fns, 'reindexConcurrently').mockResolvedValue(undefined);
     mockIdempotentCreateIndex = vi.spyOn(fns, 'idempotentCreateIndex').mockResolvedValue(undefined);
     mockNonBlockingAlterColumnNotNull = vi.spyOn(fns, 'nonBlockingAlterColumnNotNull').mockResolvedValue(undefined);
     mockNonBlockingAddCheckConstraint = vi.spyOn(fns, 'nonBlockingAddCheckConstraint').mockResolvedValue(undefined);
@@ -766,6 +881,8 @@ async function callback(client: PoolClient, results: MigrationActionResult[]): P
     executionCheck({
       mockQuery,
       mockAnalyzeTable,
+      mockDropInvalidIndexConcurrently,
+      mockReindexConcurrently,
       mockIdempotentCreateIndex,
       mockNonBlockingAlterColumnNotNull,
       mockNonBlockingAddCheckConstraint,

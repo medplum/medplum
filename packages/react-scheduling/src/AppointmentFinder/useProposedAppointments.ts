@@ -7,6 +7,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useState } from 'react';
 import type { ActorCombination } from './AppointmentFinder.schedules';
 import type { DateRange } from './AppointmentFinder.times';
+import { getFindWindowError } from './AppointmentFinder.times';
 
 /** `$find`'s own default page size, applied per combination. */
 const DEFAULT_COUNT = 20;
@@ -39,10 +40,16 @@ export interface UseProposedAppointmentsResult {
   readonly loading: boolean;
   /** Set only when every combination failed. */
   readonly error: Error | undefined;
+  /** A window `$find` will not answer, caught before the request is made. */
+  readonly windowError: string | undefined;
 }
 
 /**
  * Searches for the times an appointment could be held at.
+ *
+ * A window `$find` would refuse is caught here rather than sent: this is the layer that
+ * decides whether the request is made, so it is the layer that says why it was not.
+ *
  * @param options - The service, actor combinations, days, and page size.
  * @returns The times offered, plus load and error state.
  */
@@ -52,9 +59,10 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
   const [answered, setAnswered] = useState<SearchState>(NOTHING_ASKED);
 
   const { start, end } = range;
+  const windowError = getFindWindowError(range);
   const serviceReference = service && getReferenceString(service);
   const urls =
-    serviceReference && start && end
+    serviceReference && start && end && !windowError
       ? combinations.map((combination) => buildFindUrl(medplum, serviceReference, combination, start, end, count))
       : [];
   const urlsKey = urls.join(URL_SEPARATOR);
@@ -99,6 +107,7 @@ export function useProposedAppointments(options: UseProposedAppointmentsOptions)
     requestCount: urls.length,
     loading: urls.length > 0 && stale,
     error: stale ? undefined : answered.error,
+    windowError,
   };
 }
 

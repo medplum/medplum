@@ -8,7 +8,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { globalLogger } from '../../logger';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
 
 describe('$db-schema-diff', () => {
   const app = express();
@@ -26,7 +26,7 @@ describe('$db-schema-diff', () => {
   });
 
   test('Success', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res1 = await request(app)
       .post('/fhir/R4/$db-schema-diff')
