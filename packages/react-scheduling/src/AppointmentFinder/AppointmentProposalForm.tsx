@@ -27,7 +27,7 @@ import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
-import { formatDateRange, formatDayLabel, getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
+import { getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from './AppointmentServiceSelect.utils';
@@ -44,11 +44,6 @@ const PATIENT_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
-
-// Shown beneath the calendar, since dragging or shift-clicking leaves no visible mark.
-const DAY_GESTURE_HINT = 'drag or shift-click to search more days';
-
-const HINT_SEPARATOR = ' · ';
 
 export interface AppointmentProposalFormProps {
   /** Pre-fills where the visit is, for a host that already knows. */
@@ -331,9 +326,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               onClick={daySearch.chooseDayRange}
               onSelectRange={daySearch.chooseDayRange}
             />
-            <Text size="xs" c="dimmed">
-              {getSearchedDaysHint(daySearch.selectedDayRange)}
-            </Text>
             {daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
           </Stack>
         )}
@@ -599,15 +591,6 @@ function toRange(appointment: Appointment | undefined): DateTimeRange | undefine
     return undefined;
   }
   return { start: new Date(appointment.start), end: new Date(appointment.end) };
-}
-
-/**
- * The line under the calendar: which days are being searched, and how to ask for others.
- * @param range - The days being searched.
- * @returns The line to show beneath the calendar.
- */
-function getSearchedDaysHint(range: DateTimeRange): string {
-  return [formatDateRange(range, formatDayLabel), DAY_GESTURE_HINT].filter(isDefined).join(HINT_SEPARATOR);
 }
 
 /**
