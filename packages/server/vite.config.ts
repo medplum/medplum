@@ -68,6 +68,7 @@ export default defineConfig({
       reportsDirectory: 'coverage',
       include: ['src/**/*.ts'],
       exclude: [
+        'src/**/*.test.ts',
         'src/__mocks__/**',
         'src/migrations/migrate-main.ts',
         'src/migrations/schema/**',
