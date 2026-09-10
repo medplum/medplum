@@ -28,15 +28,17 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const { id } = req.params;
   const since = singularize(req.query._since);
   const types = singularize(req.query._type)?.split(',');
+  // Apply the export's project boundary to members and recursively resolved references too.
+  const repo = ctx.repo.clone({ projects: [ctx.project], superAdmin: false });
 
   // First read the group as the user to verify access
-  const group = await ctx.repo.readResource<Group>('Group', id);
+  const group = await repo.readResource<Group>('Group', id);
 
   // Start the exporter
-  const exporter = new BulkExporter(ctx.repo);
+  const exporter = new BulkExporter(repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4/' + req.pathname));
 
-  groupExportResources(ctx.repo, exporter, ctx.project, group, {
+  groupExportResources(repo, exporter, ctx.project, group, {
     _type: types as ResourceType[] | undefined,
     _since: since,
   })
