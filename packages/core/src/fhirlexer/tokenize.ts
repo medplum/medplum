@@ -149,6 +149,9 @@ export class Tokenizer {
   private consumeMultiLineComment(): Token {
     const start = this.pos.index;
     this.consumeWhile(() => this.curr() !== '*' || this.peek() !== '/');
+    if (!this.curr()) {
+      throw new Error('Unterminated multi-line comment');
+    }
     this.advance();
     this.advance();
     return this.buildToken('Comment', this.str.substring(start, this.pos.index));
@@ -167,6 +170,9 @@ export class Tokenizer {
     let char: string;
     while ((char = this.consumeChar(endChar))) {
       str += char;
+    }
+    if (!this.curr()) {
+      throw new Error('Unterminated string literal');
     }
     const result = this.buildToken(endChar === '`' ? 'Symbol' : 'String', str);
     this.advance();

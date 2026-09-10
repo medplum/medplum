@@ -32,6 +32,13 @@ describe('Tokenizer', () => {
     ]);
   });
 
+  test.each([
+    ['string literal', "'unterminated"],
+    ['block comment', '/* unterminated'],
+  ])('Rejects an unterminated %s', (_name, input) => {
+    expect(() => tokenize(input)).toThrow('Unterminated');
+  });
+
   test('Simple string matching', () => {
     const matches = tokenize('  (  + ) /   ( *  ');
     expect(matches).toMatchObject([
