@@ -15,6 +15,7 @@ import {
   sortStringArray,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { RepositoryMode } from '@medplum/fhir-router';
 import type {
   Attachment,
   Binary,
@@ -73,6 +74,12 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
   // _inlineAttachments is a Medplum extension not in the standard OperationDefinition.
   params._inlineAttachments = isPatientEverythingInlineAttachmentsEnabled(req, ctx.repo);
   params._cursor = getStringQueryParam(req, '_cursor');
+
+  // This operation is read-only, so serve it from the reader when `searchOnReader` is enabled,
+  // mirroring how plain FHIR searches honor the setting.
+  if (req.config?.searchOnReader) {
+    ctx.repo.setMode(RepositoryMode.READER);
+  }
 
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);

@@ -669,6 +669,50 @@ describe('FHIR Routes', () => {
       }));
   });
 
+  test('Patient $everything reads from the writer by default', async () => {
+    const createRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Everything'], family: 'Test' }] });
+    expect(createRes.status).toBe(201);
+    const patient = createRes.body as Patient;
+
+    const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+    try {
+      const res = await request(app)
+        .get(`/fhir/R4/Patient/${patient.id}/$everything`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+      expect(writerSpy).toHaveBeenCalled();
+      expect(readerSpy).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
+  test('Patient $everything reads from the reader when searchOnReader is enabled', async () => {
+    const createRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + searchOnReaderAccessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Everything'], family: 'Test' }] });
+    expect(createRes.status).toBe(201);
+    const patient = createRes.body as Patient;
+
+    const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+    try {
+      const res = await request(app)
+        .get(`/fhir/R4/Patient/${patient.id}/$everything`)
+        .set('Authorization', 'Bearer ' + searchOnReaderAccessToken);
+      expect(res.status).toBe(200);
+      expect(readerSpy).toHaveBeenCalled();
+      expect(writerSpy).not.toHaveBeenCalled();
+    } finally {
+      restore();
+    }
+  });
+
   test('Search invalid resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx`)
