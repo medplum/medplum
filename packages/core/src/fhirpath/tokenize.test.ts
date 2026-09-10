@@ -83,6 +83,14 @@ describe('Tokenizer', () => {
     expect(tokenize('')).toStrictEqual([]);
   });
 
+  test('Tracks the position of tokens after a newline', () => {
+    expect(tokenize('Patient\n  .name')).toMatchObject([
+      { id: 'Symbol', value: 'Patient', line: 1, column: 0 },
+      { id: '.', value: '.', line: 2, column: 2 },
+      { id: 'Symbol', value: 'name', line: 2, column: 3 },
+    ]);
+  });
+
   describe('String escapes', () => {
     test('String escape sequence', () => {
       expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toMatchObject([

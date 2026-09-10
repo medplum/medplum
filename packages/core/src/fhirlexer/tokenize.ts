@@ -378,8 +378,9 @@ export class Tokenizer {
   }
 
   private advance(): void {
+    const char = this.curr();
     this.pos.index++;
-    if (this.curr() === '\n') {
+    if (char === '\n') {
       this.pos.line++;
       this.pos.column = 0;
     } else {
