@@ -13,7 +13,7 @@ import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import type { Repository, SystemRepository } from '../repo';
 
 class MockBinaryStorage {
   private content: string;
@@ -37,6 +37,7 @@ class MockBinaryStorage {
 describe('PackageRelease $install', () => {
   const app = express();
   let project: WithId<Project>;
+  let systemRepo: SystemRepository;
   let adminAccessToken: string;
   let nonAdminAccessToken: string;
 
@@ -44,16 +45,15 @@ describe('PackageRelease $install', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const testProject = await createTestProject({
-      withAccessToken: true,
-      membership: { admin: true },
-    });
+    let adminRepo: Repository;
+    ({
+      project,
+      repo: adminRepo,
+      accessToken: adminAccessToken,
+    } = await createTestProject({ withAccessToken: true, withRepo: true, membership: { admin: true } }));
+    systemRepo = adminRepo.getSystemRepo();
 
-    const testUser = await addTestUser(testProject.project);
-
-    project = testProject.project;
-    adminAccessToken = testProject.accessToken;
-    nonAdminAccessToken = testUser.accessToken;
+    ({ accessToken: nonAdminAccessToken } = await addTestUser(project));
   });
 
   afterAll(async () => {
@@ -65,7 +65,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Require semver version string', async () => {
-    const systemRepo = getGlobalSystemRepo();
     await expect(async () =>
       withTestContext(() =>
         systemRepo.createResource<PackageRelease>({
@@ -83,7 +82,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Forbidden for non-admin user', async () => {
-    const systemRepo = getGlobalSystemRepo();
     const packageRelease = await withTestContext(() =>
       systemRepo.createResource<PackageRelease>({
         resourceType: 'PackageRelease',
@@ -106,8 +104,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Success for admin user', async () => {
-    const systemRepo = getGlobalSystemRepo();
-
     // Create a test bundle to install
     const bundle: Bundle = {
       resourceType: 'Bundle',
@@ -174,8 +170,6 @@ describe('PackageRelease $install', () => {
   });
 
   test('Error handling when bundle processing fails', async () => {
-    const systemRepo = getGlobalSystemRepo();
-
     // Create a malformed bundle
     const malformedBundle = {
       resourceType: 'Bundle',

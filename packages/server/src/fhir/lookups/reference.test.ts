@@ -6,14 +6,15 @@ import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getGlobalSystemRepo } from '../repo';
+import { globalLogger } from '../../logger';
 import { repoAccess } from '../repository/access-tracker';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 import { lookupTables } from '../searchparameter';
 import type { PgQueryable } from '../sql';
 import { ReferenceTable } from './reference';
 
 describe('ReferenceTable', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
   let refTable: ReferenceTable;
 
   beforeAll(async () => {
@@ -221,11 +222,17 @@ describe('ReferenceTable', () => {
         throw extractError;
       });
 
+      const logErrorSpy = vi.spyOn(globalLogger, 'error').mockImplementation(() => {});
       await expect(refTable.batchIndexResources(getReferenceTestClient(obs.resourceType), [obs], true)).rejects.toThrow(
         'Test extraction error'
       );
+      expect(logErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error extracting values'),
+        expect.objectContaining({ err: extractError })
+      );
 
       extractValuesSpy.mockRestore();
+      logErrorSpy.mockRestore();
     });
 
     test('handles resource with contained resource reference', async () => {

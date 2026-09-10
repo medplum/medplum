@@ -5,12 +5,12 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../../test.setup';
-import { getGlobalSystemRepo } from '../../repo';
+import { getTestProjectSystemRepo } from '../../repository/test-utils';
 import { AsyncJobExecutor } from './asyncjobexecutor';
 
 describe('AsyncJobExecutor', () => {
   const app = express();
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

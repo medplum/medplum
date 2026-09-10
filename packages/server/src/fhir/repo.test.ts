@@ -7,6 +7,7 @@ import {
   badRequest,
   created,
   createReference,
+  forbidden,
   getReferenceString,
   isGone,
   isOk,
@@ -59,18 +60,17 @@ import {
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import type { SystemRepository } from './repo';
+import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 import * as tokenColumnModule from './token-column';
 
 describe('FHIR Repo', () => {
-  const globalSystemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;
-
   let testProjectRepo: Repository;
-  let systemRepo: Repository;
+  let systemRepo: SystemRepository;
   let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
   beforeAll(async () => {
@@ -79,20 +79,8 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    testProject = await globalSystemRepo.createResource({
-      resourceType: 'Project',
-      id: randomUUID(),
-    });
-    systemRepo = await getProjectSystemRepo(testProject);
-    testProjectRepo = new Repository({
-      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-      projects: [testProject],
-      extendedMode: true,
-      strictMode: true,
-      author: {
-        reference: 'Practitioner/' + randomUUID(),
-      },
-    });
+    ({ project: testProject, repo: testProjectRepo } = await createTestProject({ withRepo: true }));
+    systemRepo = testProjectRepo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -117,7 +105,7 @@ describe('FHIR Repo', () => {
 
   test('Enterprise access is limited to super admins', () => {
     expect(testProjectRepo.supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(false);
-    expect(globalSystemRepo.supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(true);
+    expect(testProjectRepo.getSystemRepo().supportsInteraction(AccessPolicyInteraction.READ, 'Enterprise')).toBe(true);
   });
 
   describe('setMode routes reads to reader until writer promotion', () => {
@@ -249,9 +237,9 @@ describe('FHIR Repo', () => {
   });
 
   test('Read Binary requires access to securityContext', async () => {
-    const patient = await withTestContext(() => globalSystemRepo.createResource<Patient>({ resourceType: 'Patient' }));
+    const patient = await withTestContext(() => testProjectRepo.createResource<Patient>({ resourceType: 'Patient' }));
     const binary = await withTestContext(() =>
-      globalSystemRepo.createResource<Binary>({
+      testProjectRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: 'text/plain',
         securityContext: createReference(patient),
@@ -260,8 +248,7 @@ describe('FHIR Repo', () => {
     const versionId = binary.meta?.versionId as string;
 
     const repoWithoutPatientAccess = new Repository({
-      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-      author: { reference: 'Practitioner/' + randomUUID() },
+      ...testProjectRepo.getConfig(),
       accessPolicy: {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Binary', interaction: ['read', 'vread'] }],
@@ -271,12 +258,12 @@ describe('FHIR Repo', () => {
     await expect(repoWithoutPatientAccess.readResource<Binary>('Binary', binary.id)).rejects.toThrow();
     await expect(repoWithoutPatientAccess.readReference<Binary>(createReference(binary))).rejects.toThrow();
     await expect(repoWithoutPatientAccess.readVersion<Binary>('Binary', binary.id, versionId)).rejects.toThrow();
-    const deniedReferences = await repoWithoutPatientAccess.readReferences<Binary>([createReference(binary)]);
-    expect(deniedReferences[0]).toBeInstanceOf(Error);
+    await expect(repoWithoutPatientAccess.readReferences<Binary>([createReference(binary)])).rejects.toThrow(
+      new OperationOutcomeError(forbidden)
+    );
 
     const repoWithPatientAccess = new Repository({
-      routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
-      author: { reference: 'Practitioner/' + randomUUID() },
+      ...testProjectRepo.getConfig(),
       accessPolicy: {
         resourceType: 'AccessPolicy',
         resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }],
@@ -293,7 +280,7 @@ describe('FHIR Repo', () => {
 
   test('Write Binary rejects Binary securityContext', async () => {
     const binary = await withTestContext(() =>
-      globalSystemRepo.createResource<Binary>({
+      systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: 'text/plain',
         data: Buffer.from('recursive security context').toString('base64'),
@@ -301,10 +288,7 @@ describe('FHIR Repo', () => {
     );
 
     await expect(
-      globalSystemRepo.updateResource<Binary>({
-        ...binary,
-        securityContext: createReference(binary),
-      })
+      systemRepo.updateResource<Binary>({ ...binary, securityContext: createReference(binary) })
     ).rejects.toThrow('Binary.securityContext cannot reference another Binary');
   });
 

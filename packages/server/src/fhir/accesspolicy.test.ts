@@ -46,6 +46,7 @@ import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, reconcileDefaultAccessPolicy } from './accesspolicy';
+import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
@@ -60,7 +61,7 @@ function getRepository(repoContext: Partial<RepositoryContext>): Repository {
 
 describe('AccessPolicy', () => {
   let testProject: WithId<Project>;
-  let systemRepo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();

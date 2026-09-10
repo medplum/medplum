@@ -60,8 +60,9 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
-import { getGlobalSystemRepo, Repository } from './repo';
+import { Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
+import { getTestProjectSystemRepo } from './repository/test-utils';
 import type { ChainedSearchLink } from './search';
 import { clampEstimateCount, Direction, getCount, parseChainedParameter } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
@@ -2693,7 +2694,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         name: randomUUID(),
       });
 
-      const patient = await getGlobalSystemRepo().createResource({
+      const patient = await repo.getSystemRepo().createResource({
         resourceType: 'Patient',
         meta: { project: project.id },
         managingOrganization: createReference(organization),
@@ -5595,7 +5596,7 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 });
 
 describe.each([true, false])('systemRepo', (rangeSearch) => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -5616,17 +5617,13 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         identifier: [{ system: 'id', value: idValue }],
-        meta: {
-          project: project1,
-        },
+        meta: { project: project1 },
       });
 
       const patient2 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         identifier: [{ system: 'id', value: idValue }],
-        meta: {
-          project: project2,
-        },
+        meta: { project: project2 },
       });
 
       const patient3 = await systemRepo.createResource<Patient>({

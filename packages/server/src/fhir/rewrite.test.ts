@@ -9,12 +9,13 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
-import { Repository, getGlobalSystemRepo } from './repo';
+import { Repository, getShardSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 
 describe('URL rewrite', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const shardId = PLACEHOLDER_SHARD_ID;
+  const systemRepo = getShardSystemRepo(shardId);
   let config: MedplumServerConfig;
   let binary: WithId<Binary>;
 
