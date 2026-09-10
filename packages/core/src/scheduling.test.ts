@@ -5,9 +5,11 @@ import {
   clearScheduleParameter,
   extractServiceTypeReferences,
   getScheduleParameters,
+  getSchedulingRequirements,
   getSchedulingTimezone,
-  REQUIRES_PRIOR_AUTH_CODE,
-  requiresPriorAuthorization,
+  REQUIRES_DIAGNOSIS_CODE,
+  REQUIRES_MEDICAL_NECESSITY_CODE,
+  REQUIRES_PROCEDURE_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
   schedulingDurationToMinutes,
   SchedulingParametersURI,
@@ -298,41 +300,69 @@ describe('schedulingDurationToMinutes', () => {
   });
 });
 
-describe('requiresPriorAuthorization', () => {
+describe('getSchedulingRequirements', () => {
   function withEligibility(...codings: Coding[]): HealthcareService {
     return { ...service, eligibility: codings.map((coding) => ({ code: { coding: [coding] } })) };
   }
 
-  const designated: Coding = { system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_PRIOR_AUTH_CODE };
+  function requirement(code: string): Coding {
+    return { system: SCHEDULING_ELIGIBILITY_SYSTEM, code };
+  }
 
-  test('Designated visit type requires authorization', () => {
-    expect(requiresPriorAuthorization(withEligibility(designated))).toBe(true);
+  test('Reads each requirement a visit type names', () => {
+    expect(getSchedulingRequirements(withEligibility(requirement(REQUIRES_PROCEDURE_CODE)))).toStrictEqual(
+      new Set([REQUIRES_PROCEDURE_CODE])
+    );
+    expect(getSchedulingRequirements(withEligibility(requirement(REQUIRES_DIAGNOSIS_CODE)))).toStrictEqual(
+      new Set([REQUIRES_DIAGNOSIS_CODE])
+    );
+    expect(getSchedulingRequirements(withEligibility(requirement(REQUIRES_MEDICAL_NECESSITY_CODE)))).toStrictEqual(
+      new Set([REQUIRES_MEDICAL_NECESSITY_CODE])
+    );
   });
 
-  test('Visit type with no eligibility requirements does not', () => {
-    expect(requiresPriorAuthorization(service)).toBe(false);
+  test('Requirements are independent, so a visit type can ask for a subset', () => {
+    const service = withEligibility(requirement(REQUIRES_PROCEDURE_CODE), requirement(REQUIRES_DIAGNOSIS_CODE));
+    expect(getSchedulingRequirements(service)).toStrictEqual(
+      new Set([REQUIRES_PROCEDURE_CODE, REQUIRES_DIAGNOSIS_CODE])
+    );
   });
 
-  test('Undefined service does not, so nothing is asked before a visit type is chosen', () => {
-    expect(requiresPriorAuthorization(undefined)).toBe(false);
+  test('Several requirements under one eligibility entry', () => {
+    const eligibility = [
+      { code: { coding: [requirement(REQUIRES_PROCEDURE_CODE), requirement(REQUIRES_MEDICAL_NECESSITY_CODE)] } },
+    ];
+    expect(getSchedulingRequirements({ ...service, eligibility })).toStrictEqual(
+      new Set([REQUIRES_PROCEDURE_CODE, REQUIRES_MEDICAL_NECESSITY_CODE])
+    );
   });
 
-  test('Finds the code among other eligibility requirements', () => {
-    const other: Coding = { system: SCHEDULING_ELIGIBILITY_SYSTEM, code: 'referral-required' };
-    expect(requiresPriorAuthorization(withEligibility(other, designated))).toBe(true);
+  test('Visit type with no eligibility requirements asks for nothing', () => {
+    expect(getSchedulingRequirements(service)).toStrictEqual(new Set());
+  });
+
+  test('Undefined service asks for nothing, so nothing is asked before a visit type is chosen', () => {
+    expect(getSchedulingRequirements(undefined)).toStrictEqual(new Set());
+  });
+
+  test('Finds the codes among other eligibility requirements', () => {
+    const service = withEligibility(requirement('referral-required'), requirement(REQUIRES_DIAGNOSIS_CODE));
+    expect(getSchedulingRequirements(service)).toStrictEqual(new Set([REQUIRES_DIAGNOSIS_CODE]));
   });
 
   test('Another system using the same code does not count', () => {
-    const impostor: Coding = { system: 'http://example.com/eligibility', code: REQUIRES_PRIOR_AUTH_CODE };
-    expect(requiresPriorAuthorization(withEligibility(impostor))).toBe(false);
-  });
-
-  test('Another code in the same system does not count', () => {
-    const other: Coding = { system: SCHEDULING_ELIGIBILITY_SYSTEM, code: 'referral-required' };
-    expect(requiresPriorAuthorization(withEligibility(other))).toBe(false);
+    const impostor: Coding = { system: 'http://example.com/eligibility', code: REQUIRES_PROCEDURE_CODE };
+    expect(getSchedulingRequirements(withEligibility(impostor))).toStrictEqual(new Set());
   });
 
   test('Eligibility carrying no coding does not throw', () => {
-    expect(requiresPriorAuthorization({ ...service, eligibility: [{ comment: 'Ask the front desk' }] })).toBe(false);
+    expect(getSchedulingRequirements({ ...service, eligibility: [{ comment: 'Ask the front desk' }] })).toStrictEqual(
+      new Set()
+    );
+  });
+
+  test('A requirement named twice is held once', () => {
+    const service = withEligibility(requirement(REQUIRES_PROCEDURE_CODE), requirement(REQUIRES_PROCEDURE_CODE));
+    expect(getSchedulingRequirements(service)).toStrictEqual(new Set([REQUIRES_PROCEDURE_CODE]));
   });
 });

@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { SchedulingRequirement } from '@medplum/core';
+import { REQUIRES_DIAGNOSIS_CODE, REQUIRES_MEDICAL_NECESSITY_CODE, REQUIRES_PROCEDURE_CODE } from '@medplum/core';
 import type { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { valueSetElementToCoding } from '@medplum/react';
 
@@ -10,8 +12,8 @@ export const DEFAULT_PROCEDURE_VALUE_SET = 'http://www.ama-assn.org/go/cpt/vs';
 export const DEFAULT_DIAGNOSIS_VALUE_SET = 'http://hl7.org/fhir/sid/icd-10-cm/vs';
 
 /**
- * The authorization-related values that the booking form captures for a visit type
- * that requires authorization.
+ * The authorization-related values that the booking form captures, each asked for only by a
+ * visit type whose eligibility names it.
  */
 export interface BookingAuthorizationValues {
   readonly procedure: readonly Coding[];
@@ -26,12 +28,20 @@ export const EMPTY_AUTHORIZATION_VALUES: BookingAuthorizationValues = {
 };
 
 /**
- * Whether all the required authorization values have been filled in.
+ * Whether every value the visit type asks for has been filled in.
  * @param values - Values captured from the authorization fields.
- * @returns True once both code fields hold at least one code and medical necessity is confirmed.
+ * @param requirements - What the visit type requires, from its eligibility codes.
+ * @returns True once each required field holds a value. A value nothing asked for is not weighed.
  */
-export function hasRequiredAuthorizationValues(values: BookingAuthorizationValues): boolean {
-  return values.procedure.length > 0 && values.diagnosis.length > 0 && values.medicalNecessity;
+export function hasRequiredAuthorizationValues(
+  values: BookingAuthorizationValues,
+  requirements: ReadonlySet<SchedulingRequirement>
+): boolean {
+  return (
+    (!requirements.has(REQUIRES_PROCEDURE_CODE) || values.procedure.length > 0) &&
+    (!requirements.has(REQUIRES_DIAGNOSIS_CODE) || values.diagnosis.length > 0) &&
+    (!requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE) || values.medicalNecessity)
+  );
 }
 
 /**

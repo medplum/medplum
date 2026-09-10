@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { SchedulingRequirement, WithId } from '@medplum/core';
 import {
   CPT,
   createReference,
   deepClone,
   HL7_V2_0203,
-  REQUIRES_PRIOR_AUTH_CODE,
+  REQUIRES_DIAGNOSIS_CODE,
   SCHEDULING_ELIGIBILITY_SYSTEM,
+  SCHEDULING_REQUIREMENT_CODES,
   SchedulingParametersURI,
   ServiceTypeReferenceURI,
   setScheduleParameter,
@@ -126,8 +127,8 @@ export interface SchedulableServiceOptions {
   readonly alignmentMinutes: number;
   /** The sites holding it, omitted entirely by a visit type held nowhere in particular. */
   readonly locationIds?: readonly string[];
-  /** Whether booking it is blocked until authorization codes are given. */
-  readonly requiresPriorAuth?: boolean;
+  /** What booking it is blocked on, recorded as eligibility codes. */
+  readonly requirements?: readonly SchedulingRequirement[];
 }
 
 /**
@@ -146,8 +147,10 @@ export function buildSchedulableService(options: SchedulableServiceOptions): Wit
       location: locationIds.map((locationId) => ({ reference: `Location/${locationId}` })),
     }),
     type: [{ coding: [{ system: APPOINTMENT_TYPE_SYSTEM, code: options.id }], text: options.category }],
-    ...(options.requiresPriorAuth && {
-      eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_PRIOR_AUTH_CODE }] } }],
+    ...(options.requirements?.length && {
+      eligibility: options.requirements.map((code) => ({
+        code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code }] },
+      })),
     }),
     extension: [
       {
@@ -440,7 +443,7 @@ export const OperatingRoom3Schedule = buildSchedule('schedule-or-3', 'Location/o
 
 /**
  * A visit type the practice designated as needing authorization, which is what makes the booking
- * form ask for codes. An injection, since that is one of the two kinds the requirement names.
+ * form ask for codes. Requires all three, since a practice billing for an injection needs each.
  */
 export const InfusionService = buildSchedulableService({
   id: 'infusion-therapy',
@@ -449,8 +452,17 @@ export const InfusionService = buildSchedulableService({
   durationMinutes: 60,
   alignmentMinutes: 30,
   locationIds: ['main-clinic'],
-  requiresPriorAuth: true,
+  requirements: SCHEDULING_REQUIREMENT_CODES,
 });
+
+/**
+ * The same visit type asking for only a diagnosis code, which is what a practice configures when
+ * the rest is already settled: a procedure code carried by the visit type itself, say.
+ */
+export const DiagnosisOnlyInfusionService: WithId<HealthcareService> = {
+  ...InfusionService,
+  eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_DIAGNOSIS_CODE }] } }],
+};
 
 export const DrChenInfusionSchedule = buildSchedule(
   'schedule-dr-chen-infusion',
