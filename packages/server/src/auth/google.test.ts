@@ -46,6 +46,7 @@ describe('Google Auth', () => {
 
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
+    getConfig().requireVerifiedEmailForProjectCreation = undefined;
   });
 
   afterAll(async () => {
@@ -176,6 +177,7 @@ describe('Google Auth', () => {
     expect(res).toHaveStatus(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+    expect(res.body.emailVerificationRequired).toBeUndefined();
 
     const user = await getUserByEmail(email, undefined);
     expect(user).toBeDefined();
@@ -204,6 +206,104 @@ describe('Google Auth', () => {
 
     const user = await getUserByEmail(email, undefined);
     expect(user).toBeDefined();
+  });
+
+  test('Require email verification for new project', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.emailVerificationRequired).toBe(true);
+  });
+
+  test('Skip email verification for verified user', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    await systemRepo.createResource<User>({
+      resourceType: 'User',
+      firstName: 'Google',
+      lastName: 'Google',
+      email,
+      emailVerified: true,
+    });
+
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.emailVerificationRequired).toBeUndefined();
+  });
+
+  test('Skip email verification on sign in', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    await systemRepo.createResource<User>({
+      resourceType: 'User',
+      firstName: 'Google',
+      lastName: 'Google',
+      email,
+    });
+
+    // Signing in is not registering, so an unverified user is not re-sent the link
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.emailVerificationRequired).toBeUndefined();
+  });
+
+  test('Skip email verification for existing project', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const project = await withTestContext(
+      async () =>
+        (
+          await registerNew({
+            firstName: 'Google',
+            lastName: 'Google',
+            projectName: 'Google Email Verification',
+            email: `google-owner${randomUUID()}@example.com`,
+            password: 'password!@#',
+          })
+        ).project
+    );
+
+    // Verification only gates new project creation, so joining an existing project
+    // does not send a link
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: project.id,
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.emailVerificationRequired).toBeUndefined();
   });
 
   test('Require Google auth', async () => {

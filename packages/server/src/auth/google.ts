@@ -15,6 +15,7 @@ import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
+import { sendVerificationEmail } from './newuser';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 /*
@@ -100,8 +101,8 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const existingUser = await getUserByEmail(email, projectId);
-  if (!existingUser) {
+  let user = await getUserByEmail(email, projectId);
+  if (!user) {
     if (!req.body.createUser) {
       sendOutcome(res, badRequest('User not found'));
       return;
@@ -112,7 +113,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       return;
     }
     const systemRepo = getGlobalSystemRepo();
-    await systemRepo.createResource<User>({
+    user = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
@@ -138,6 +139,18 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     allowNoMembership: req.body.createUser || projectId === 'new',
     pictureUrl: claims.picture,
   });
+
+  if (
+    getConfig().requireVerifiedEmailForProjectCreation &&
+    req.body.createUser &&
+    projectId === 'new' &&
+    !user.emailVerified
+  ) {
+    await sendVerificationEmail(user, login);
+    res.status(200).json({ login: login.id, emailVerificationRequired: true });
+    return;
+  }
+
   await sendLoginResult(res, login);
 }
 
