@@ -316,7 +316,7 @@ export async function createBotAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
-  const { bot, runAs, requester, input, subscription, agent, device } = request;
+  const { bot, runAs, requester, input, subscription, cron, agent, device } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
     trigger === 'never' ||
@@ -331,16 +331,17 @@ export async function createBotAuditEvent(
   if (tracingExt) {
     extension = append(extension, tracingExt);
   }
-  // The record lands in the project the run assumed, so a bot shared from elsewhere must not bring
-  // its own compartments along: they would scope the record to accounts of a different project.
+  // The record lands in the project the run assumed, so its compartments have to belong to that
+  // project. A Cron always does -- its project is the one onBehalfOf's membership belongs to -- so
+  // when one triggered the run it defines them; the bot only does when it lives there too.
   const auditProject = resolveId(runAs.project) as string;
-  const sameProject = bot.meta?.project === auditProject;
+  const compartmentSource = cron ?? (bot.meta?.project === auditProject ? bot : undefined);
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
       project: auditProject,
-      account: sameProject ? bot.meta?.account : undefined,
-      accounts: sameProject ? bot.meta?.accounts : undefined,
+      account: compartmentSource?.meta?.account,
+      accounts: compartmentSource?.meta?.accounts,
     },
     period: {
       start: startTime,

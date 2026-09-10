@@ -372,6 +372,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   let bot: WithId<Bot>;
   let runAs: WithId<ProjectMembership> | undefined;
   let input: unknown;
+  let cron: WithId<Cron> | undefined;
 
   if (job.data.resourceType === 'Cron') {
     const resolved = await resolveCronJob(systemRepo, job.data.cronId);
@@ -380,6 +381,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     }
     bot = resolved.bot;
     runAs = resolved.runAs;
+    cron = resolved.cron;
     // The whole Cron goes to the target, so a bot reads its parameters alongside the schedule
     input = resolved.cron;
   } else {
@@ -392,7 +394,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     throw new Error('Could not find project membership for bot');
   }
 
-  await executeBot({ bot, runAs, input, contentType: ContentType.FHIR_JSON });
+  await executeBot({ bot, runAs, input, cron, contentType: ContentType.FHIR_JSON });
 }
 
 export async function removeBullMQJobByKey(schedulerId: string): Promise<void> {

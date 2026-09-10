@@ -280,7 +280,7 @@ describe('Cron Worker', () => {
 });
 
 describe('Cron resource', () => {
-  let project: Project;
+  let project: WithId<Project>;
   let repo: Repository;
   let systemRepo: SystemRepository;
   let bot: Bot;
@@ -517,6 +517,73 @@ describe('Cron resource', () => {
       });
       await findAndExecDispatchJob(cron, 'create');
       expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
+    }));
+
+  // meta.account is a project admin write, which is also who may author a Cron
+  function projectAdminRepo(): Repository {
+    return new Repository({
+      extendedMode: true,
+      strictMode: true,
+      projectAdmin: true,
+      projects: [project],
+      author: createReference(bot),
+    });
+  }
+
+  test('The AuditEvent takes its compartments from the Cron, not from the target bot', () =>
+    withTestContext(async () => {
+      const adminRepo = projectAdminRepo();
+      const botAccount = { reference: 'Organization/' + randomUUID() };
+      const cronAccount = { reference: 'Organization/' + randomUUID() };
+
+      const accountedBot = await adminRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'accounted-target',
+        meta: { account: botAccount },
+      });
+      const cron = await adminRepo.createResource<Cron>({
+        ...validCron(),
+        targetReference: createReference(accountedBot),
+        meta: { account: cronAccount },
+      });
+      // Both are in the project the run assumes, so only the precedence rule decides
+      expect(accountedBot.meta?.accounts).toMatchObject([botAccount]);
+      expect(cron.meta?.accounts).toMatchObject([cronAccount]);
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      const auditEvent = await systemRepo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(cron) }],
+      });
+      expect(auditEvent?.meta?.project).toStrictEqual(project.id);
+      expect(auditEvent?.meta?.account).toMatchObject(cronAccount);
+      expect(auditEvent?.meta?.accounts).toMatchObject([cronAccount]);
+    }));
+
+  test('A Cron without compartments does not fall back to the bot', () =>
+    withTestContext(async () => {
+      const adminRepo = projectAdminRepo();
+      const botAccount = { reference: 'Organization/' + randomUUID() };
+      const accountedBot = await adminRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'accounted-target-2',
+        meta: { account: botAccount },
+      });
+      const cron = await adminRepo.createResource<Cron>({
+        ...validCron(),
+        targetReference: createReference(accountedBot),
+      });
+
+      await execBot({ data: { resourceType: 'Cron', cronId: cron.id } } as Job<CronJobData>);
+
+      const auditEvent = await systemRepo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(cron) }],
+      });
+      // An unscoped schedule means an unscoped run, not one scoped by whatever the bot carries
+      expect(auditEvent?.meta?.account).toBeUndefined();
+      expect(auditEvent?.meta?.accounts).toBeUndefined();
     }));
 
   test('execBot runs the target bot as onBehalfOf with the Cron as input', () =>
