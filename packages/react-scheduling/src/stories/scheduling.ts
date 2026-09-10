@@ -232,6 +232,7 @@ interface ScheduledService {
 const IMAGING: ScheduledService = { id: 'ultrasound-imaging', name: 'Ultrasound Imaging' };
 const SURGERY: ScheduledService = { id: 'bariatric-surgery', name: 'Bariatric Surgery' };
 const INFUSION: ScheduledService = { id: 'infusion-therapy', name: 'Infusion Therapy' };
+const IRON_INFUSION: ScheduledService = { id: 'iron-infusion', name: 'Iron Infusion' };
 
 function buildSchedule(
   id: string,
@@ -457,13 +458,22 @@ export const InfusionService = buildSchedulableService({
 });
 
 /**
- * The same visit type asking for only a diagnosis code, which is what a practice configures when
- * the rest is already settled: a procedure code carried by the visit type itself, say.
+ * A visit type asking for a diagnosis code and nothing else.
+ *
+ * A separate visit type rather than a variant of {@link InfusionService}, so that the two are told
+ * apart in the visit type field: one visit type cannot require different things in different
+ * stories. Iron is the one drug this practice infuses, so the procedure is settled by the visit
+ * type and only the diagnosis is still open at booking.
  */
-export const DiagnosisOnlyInfusionService: WithId<HealthcareService> = {
-  ...InfusionService,
-  eligibility: [{ code: { coding: [{ system: SCHEDULING_ELIGIBILITY_SYSTEM, code: REQUIRES_DIAGNOSIS_CODE }] } }],
-};
+export const IronInfusionService = buildSchedulableService({
+  id: 'iron-infusion',
+  name: 'Iron Infusion',
+  category: 'Treatment',
+  durationMinutes: 60,
+  alignmentMinutes: 30,
+  locationIds: ['main-clinic'],
+  requirements: [REQUIRES_DIAGNOSIS_CODE],
+});
 
 export const DrChenInfusionSchedule = buildSchedule(
   'schedule-dr-chen-infusion',
@@ -472,8 +482,20 @@ export const DrChenInfusionSchedule = buildSchedule(
   INFUSION
 );
 
-/** The designated visit type and somewhere to book it, on top of {@link SurgicalFixtures}. */
-export const AuthorizationFixtures = [InfusionService, DrChenInfusionSchedule];
+export const DrChenIronInfusionSchedule = buildSchedule(
+  'schedule-dr-chen-iron-infusion',
+  'Practitioner/dr-chen',
+  'Dr. Wei Chen',
+  IRON_INFUSION
+);
+
+/** The designated visit types and somewhere to book them, on top of {@link SurgicalFixtures}. */
+export const AuthorizationFixtures = [
+  InfusionService,
+  DrChenInfusionSchedule,
+  IronInfusionService,
+  DrChenIronInfusionSchedule,
+];
 
 export const SurgicalFixtures = [
   SurgeryService,

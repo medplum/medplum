@@ -9,8 +9,8 @@ import {
   AuthorizationFixtures,
   AuthorizationValueSets,
   DIAGNOSIS_VALUE_SET,
-  DiagnosisOnlyInfusionService,
   InfusionService,
+  IronInfusionService,
   MainClinic,
   MRN_SYSTEM,
   PatientFixtures,
@@ -134,18 +134,20 @@ export const AuthRequired = (): JSX.Element => (
 AuthRequired.decorators = [withFindStub()];
 
 /**
- * The same visit type asking for only part of it.
+ * A visit type naming one requirement rather than all three.
  *
- * Its eligibility names `requires-diagnosis` alone, so the form asks for the diagnosis code and
+ * "Iron Infusion" carries `requires-diagnosis` alone, so the form asks for the diagnosis code and
  * nothing else, and books on that. This is the shape a practice reaches for when the rest is
  * already known: a procedure code set on the `HealthcareService` and applied to every appointment
  * of that type has no business being asked for again at booking.
+ *
+ * Switch between it and "Infusion Therapy" to see the fields follow the visit type.
  * @returns The story.
  */
 export const PartialAuthRequired = (): JSX.Element => (
   <Document>
     <AppointmentBookingForm
-      defaultService={DiagnosisOnlyInfusionService}
+      defaultService={IronInfusionService}
       defaultLocation={MainClinic}
       procedureBinding={PROCEDURE_VALUE_SET}
       diagnosisBinding={DIAGNOSIS_VALUE_SET}
