@@ -14,6 +14,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -1328,5 +1329,214 @@ describe('Appointment/$find', () => {
     expect(response).toHaveStatus(200);
     expect(response.body).toHaveProperty('entry');
     expect(response.body.entry).toHaveLength(4);
+  });
+  describe('ignore-appointment', () => {
+    const searchRange = {
+      start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+      end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+    };
+    const tuesdayTwoPm = new Date('2026-03-17T14:00:00-04:00').toISOString();
+    const tuesdayThreePm = new Date('2026-03-17T15:00:00-04:00').toISOString();
+
+    async function makeRoom(): Promise<WithId<Location>> {
+      return systemRepo.createResource<Location>({
+        resourceType: 'Location',
+        meta: { project: project.id },
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+      });
+    }
+
+    // Tue-Wed 1pm-6pm EDT, 60min appointments
+    async function makeRoomSchedule(actor: Location): Promise<WithId<Schedule>> {
+      return (await makeSchedule([{ service: genericVisit, duration: 60, availability: tueWedAvailability }], {
+        actor: [createReference(actor)],
+      })) as WithId<Schedule>;
+    }
+
+    async function makeBusySlot(schedule: Schedule, opts?: { start?: string; end?: string }): Promise<WithId<Slot>> {
+      return systemRepo.createResource<Slot>({
+        resourceType: 'Slot',
+        meta: { project: project.id },
+        schedule: createReference(schedule),
+        status: 'busy',
+        start: opts?.start ?? tuesdayTwoPm,
+        end: opts?.end ?? tuesdayThreePm,
+      });
+    }
+
+    async function makeAppointment(slots: WithId<Slot>[]): Promise<WithId<Appointment>> {
+      return systemRepo.createResource<Appointment>({
+        resourceType: 'Appointment',
+        meta: { project: project.id },
+        status: 'booked',
+        start: tuesdayTwoPm,
+        end: tuesdayThreePm,
+        participant: [{ actor: createReference(practitioner as WithId<Practitioner>), status: 'accepted' }],
+        slot: slots.map((slot) => createReference(slot)),
+      });
+    }
+
+    test('unblocks the time held by the appointment being reassigned', async () => {
+      // Practitioner is Mon-Tue 9am-5pm; both rooms are Tue-Wed 1pm-6pm
+      const practitionerSchedule = await makeSchedule([
+        { service: genericVisit, duration: 60, availability: monTueAvailability },
+      ]);
+      const roomOneSchedule = await makeRoomSchedule(await makeRoom());
+      const roomTwoSchedule = await makeRoomSchedule(await makeRoom());
+
+      // Tue 2pm is booked with the practitioner in room one
+      const appointment = await makeAppointment([
+        await makeBusySlot(practitionerSchedule),
+        await makeBusySlot(roomOneSchedule),
+      ]);
+
+      const params = {
+        ...searchRange,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${roomTwoSchedule.id}`],
+      };
+
+      // Without the parameter, the practitioner's own appointment blocks 2pm
+      const before = await makeRequest(params);
+      expect(before).toHaveStatus(200);
+      expect((before.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start)).not.toContain(tuesdayTwoPm);
+
+      // Ignoring it frees the practitioner to be reassigned to room two at the same time
+      const after = await makeRequest({ ...params, 'ignore-appointment': `Appointment/${appointment.id}` });
+      expect(after).toHaveStatus(200);
+      expect((after.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start)).toContain(tuesdayTwoPm);
+    });
+
+    test('ignores buffer slots held by the appointment', async () => {
+      // 60min appointments with a 30min buffer before each one
+      const practitionerSchedule = await makeSchedule([
+        { service: genericVisit, duration: 60, bufferBefore: 30, availability: monTueAvailability },
+      ]);
+
+      // Booked Tue 3pm-4pm, with a 2:30pm-3pm buffer slot
+      const busySlot = await makeBusySlot(practitionerSchedule, {
+        start: tuesdayThreePm,
+        end: new Date('2026-03-17T16:00:00-04:00').toISOString(),
+      });
+      const bufferSlot = await systemRepo.createResource<Slot>({
+        resourceType: 'Slot',
+        meta: { project: project.id },
+        schedule: createReference(practitionerSchedule),
+        status: 'busy-unavailable',
+        start: new Date('2026-03-17T14:30:00-04:00').toISOString(),
+        end: tuesdayThreePm,
+      });
+      const appointment = await makeAppointment([busySlot, bufferSlot]);
+
+      const response = await makeRequest({
+        ...searchRange,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${practitionerSchedule.id}`,
+        'ignore-appointment': `Appointment/${appointment.id}`,
+      });
+
+      expect(response).toHaveStatus(200);
+      const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+
+      // 2pm requires the 2:30pm-3pm buffer window to be clear, so it only appears
+      // if the buffer slot was ignored along with the busy slot
+      expect(starts).toContain(tuesdayTwoPm);
+      expect(starts).toContain(tuesdayThreePm);
+    });
+
+    test('does not unblock a different appointment at the same time', async () => {
+      const practitionerSchedule = await makeSchedule([
+        { service: genericVisit, duration: 60, availability: monTueAvailability },
+      ]);
+      const roomSchedule = await makeRoomSchedule(await makeRoom());
+
+      // The appointment being reassigned holds the practitioner at 2pm...
+      const reassigned = await makeAppointment([await makeBusySlot(practitionerSchedule)]);
+      // ...but someone else already holds the room at 2pm
+      await makeAppointment([await makeBusySlot(roomSchedule)]);
+
+      const response = await makeRequest({
+        ...searchRange,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${roomSchedule.id}`],
+        'ignore-appointment': `Appointment/${reassigned.id}`,
+      });
+
+      expect(response).toHaveStatus(200);
+      const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+      expect(starts).not.toContain(tuesdayTwoPm);
+      expect(starts).toContain(tuesdayThreePm);
+    });
+
+    test('is a no-op for an appointment holding no slots', async () => {
+      const practitionerSchedule = await makeSchedule([
+        { service: genericVisit, duration: 60, availability: monTueAvailability },
+      ]);
+      // $cancel deletes an appointment's slots, so a cancelled appointment holds none
+      const cancelled = await systemRepo.createResource<Appointment>({
+        resourceType: 'Appointment',
+        meta: { project: project.id },
+        status: 'cancelled',
+        start: tuesdayTwoPm,
+        end: tuesdayThreePm,
+        participant: [{ actor: createReference(practitioner as WithId<Practitioner>), status: 'accepted' }],
+      });
+
+      const response = await makeRequest({
+        ...searchRange,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${practitionerSchedule.id}`,
+        'ignore-appointment': `Appointment/${cancelled.id}`,
+      });
+
+      expect(response).toHaveStatus(200);
+      expect((response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start)).toContain(tuesdayTwoPm);
+    });
+
+    test('rejects a reference to another resource type', async () => {
+      const practitionerSchedule = await makeSchedule([
+        { service: genericVisit, duration: 60, availability: monTueAvailability },
+      ]);
+
+      const response = await makeRequest({
+        ...searchRange,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${practitionerSchedule.id}`,
+        'ignore-appointment': `Slot/${randomUUID()}`,
+      });
+
+      expect(response).toHaveStatus(400);
+      expect(response.body).toHaveProperty('issue', [
+        {
+          code: 'invalid',
+          severity: 'error',
+          details: { text: 'Invalid ignore-appointment reference' },
+          expression: ['Parameters.ignore-appointment'],
+        },
+      ]);
+    });
+
+    test('rejects a reference to a nonexistent appointment', async () => {
+      const practitionerSchedule = await makeSchedule([
+        { service: genericVisit, duration: 60, availability: monTueAvailability },
+      ]);
+
+      const response = await makeRequest({
+        ...searchRange,
+        'service-type-reference': `HealthcareService/${genericVisit.id}`,
+        schedule: `Schedule/${practitionerSchedule.id}`,
+        'ignore-appointment': `Appointment/${randomUUID()}`,
+      });
+
+      expect(response).toHaveStatus(400);
+      expect(response.body).toHaveProperty('issue', [
+        {
+          code: 'invalid',
+          severity: 'error',
+          details: { text: 'Appointment not found' },
+          expression: ['Parameters.ignore-appointment'],
+        },
+      ]);
+    });
   });
 });
