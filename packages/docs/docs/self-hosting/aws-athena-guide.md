@@ -200,12 +200,15 @@ GROUP BY
 
 Medplum Bots automatically write input to S3 on every invocation.
 
+The `bot/MY_PROJECT_ID/` prefix is the project the invocation ran in, which is not always the project that owns the Bot: a Bot shared from a [linked project](/docs/access/projects#project-linking) runs in the caller's project, and the input is the caller's data. Those rows carry the publishing project in `botProjectId`, and omit `accountId`, since the Bot's compartments belong to a different project.
+
 Medplum Bot logs have a known structure whose partition scheme you can specify in advance, you can reduce query runtime and automate partition management by using the Athena partition projection feature. Partition projection automatically adds new partitions as new data is added.
 
 ```sql
 CREATE EXTERNAL TABLE my_bot_logs (
     botId STRING,
     projectId STRING,
+    botProjectId STRING,
     accountId STRING,
     agentId STRING,
     deviceId STRING,

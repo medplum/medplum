@@ -9,7 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
 import type { WsSubProjectDetailStats } from './getwssubprojectstats';
 
 describe('$get-ws-sub-project-stats', () => {
@@ -35,7 +35,7 @@ describe('$get-ws-sub-project-stats', () => {
   });
 
   test('Returns 400 when projectId is missing', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .get('/fhir/R4/$get-ws-sub-project-stats')
@@ -44,7 +44,7 @@ describe('$get-ws-sub-project-stats', () => {
   });
 
   test('Returns empty resource types for unknown project', async () => {
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .get('/fhir/R4/$get-ws-sub-project-stats')
@@ -105,7 +105,7 @@ describe('$get-ws-sub-project-stats', () => {
     await redis.hset(getActiveSubsKey(projectId, 'Patient'), 'Subscription/sub4', JSON.stringify(entry4));
 
     try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+      const accessToken = await getSuperAdminAccessToken();
 
       const res = await request(app)
         .get('/fhir/R4/$get-ws-sub-project-stats')
@@ -174,7 +174,7 @@ describe('$get-ws-sub-project-stats', () => {
     await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub3', 'Observation');
 
     try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+      const accessToken = await getSuperAdminAccessToken();
 
       const res = await request(app)
         .get('/fhir/R4/$get-ws-sub-project-stats')

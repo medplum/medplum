@@ -27,8 +27,6 @@
     "trailingComma": "es5"
   },
   "overrides": {
-    "@graphiql/plugin-history": "0.4.3",
-    "@graphiql/plugin-doc-explorer": "0.4.3",
     "@metriport/shared": {
       "@medplum/core": "5.1.37"
     },
@@ -39,7 +37,8 @@
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
     "uuid": "14.0.2",
-    "whatwg-url": "14.0.0"
+    "whatwg-url": "14.0.0",
+    "import-in-the-middle": "3.4.0"
   },
   "devDependencies": {
     "@microsoft/api-documenter": "7.30.13",
@@ -59,6 +58,7 @@
     "shx": "0.4.0",
     "sort-package-json": "4.0.0",
     "source-map-explorer": "2.5.3",
+    "storybook": "10.6.0",
     "tslib": "2.8.1",
     "tsx": "4.23.13",
     "turbo": "2.10.12",
