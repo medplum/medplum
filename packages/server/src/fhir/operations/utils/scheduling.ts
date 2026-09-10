@@ -506,17 +506,17 @@ export async function getSchedulingParametersGroup(
   const actors = await repo
     .readReferences(schedules.map((schedule) => schedule.actor[0]))
     .then((actors) => copyPaths(schedules, actors, { suffix: '.actor[0]' }));
-  assertAllLoaded(actors, 'Loading schedule.actor failed');
 
   const serviceParams = getHealthcareServiceSchedulingParameters(healthcareService);
 
   return new Map<WithPath<WithId<Schedule>>, LayeredDict<SchedulingParameters & { timezone: string }>>(
     schedules.map((schedule, idx) => {
       const actor = actors[idx];
+      const actorLoaded = isResource(actor);
 
       let parameters = getScheduleSchedulingParameters(schedule, healthcareService, serviceParams);
 
-      const timezone = getTimeZone(actor);
+      const timezone = actorLoaded ? getTimeZone(actor) : undefined;
       if (timezone) {
         // Tricky: `timezone` is defined to prefer scheduling-parameter
         // definitions coming from HealthcareService or Schedule extensions
@@ -529,7 +529,12 @@ export async function getSchedulingParametersGroup(
         schedule,
         parameters.refine((p): asserts p is SchedulingParameters & { timezone: string } => {
           if (p.timezone === undefined) {
-            throw new OperationOutcomeError(badRequest('No timezone specified', getPath(actor)));
+            throw new OperationOutcomeError(
+              badRequest(
+                actorLoaded ? 'No timezone specified' : 'No timezone specified and schedule.actor could not be read',
+                getPath(actor)
+              )
+            );
           }
         }),
       ];
