@@ -29,15 +29,15 @@ import { BOOKABLE_ACTOR_TYPES, getActorType, getActorTypeLabel } from '../actors
 import type { DateTimeRange } from '../types';
 import { AppointmentActorSelect } from './AppointmentActorSelect';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
-import type { BookingAuthorizationValues } from './AppointmentFinder.authorization';
+import classes from './AppointmentFinder.module.css';
+import type { BookingRequirementValues } from './AppointmentFinder.requirements';
 import {
   DEFAULT_DIAGNOSIS_VALUE_SET,
   DEFAULT_PROCEDURE_VALUE_SET,
-  EMPTY_AUTHORIZATION_VALUES,
-  hasRequiredAuthorizationValues,
+  EMPTY_REQUIREMENT_VALUES,
+  hasRequiredValues,
   toCodings,
-} from './AppointmentFinder.authorization';
-import classes from './AppointmentFinder.module.css';
+} from './AppointmentFinder.requirements';
 import type { ActorSelections, ScheduleCandidate } from './AppointmentFinder.schedules';
 import { getActorCombinations, getSelectedCandidates, getSelectionError } from './AppointmentFinder.schedules';
 import { formatDateRange, formatDayLabel, getDurationMinutes, isViewerTimezone } from './AppointmentFinder.times';
@@ -159,16 +159,16 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [actorFieldsKey, setActorFieldsKey] = useState(0);
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
   const [patient, setPatient] = useState<WithId<Patient> | undefined>(defaultPatient);
-  const [authorization, setAuthorization] = useState<BookingAuthorizationValues>(EMPTY_AUTHORIZATION_VALUES);
+  const [requirementValues, setRequirementValues] = useState<BookingRequirementValues>(EMPTY_REQUIREMENT_VALUES);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [bookError, setBookError] = useState<unknown>(undefined);
 
   const selectionError = getSelectionError(selections);
 
-  // Each authorization field is asked for on its own, by a visit type whose eligibility names it.
+  // Each field is asked for on its own, by a visit type whose eligibility names it.
   const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
-  const authorizationOutstanding = !hasRequiredAuthorizationValues(authorization, requirements);
+  const requirementsOutstanding = !hasRequiredValues(requirementValues, requirements);
 
   // Derived, not a flag: closing is never its own rule, so losing the last provider
   // closes the search however it was lost.
@@ -243,7 +243,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   function chooseService(next: WithId<HealthcareService> | undefined): void {
     setService(next);
     onChangeService?.(next);
-    setAuthorization(EMPTY_AUTHORIZATION_VALUES);
+    setRequirementValues(EMPTY_REQUIREMENT_VALUES);
     clearResources();
   }
 
@@ -280,20 +280,20 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setBooked(false);
   }
 
-  function chooseAuthorization(next: BookingAuthorizationValues): void {
-    setAuthorization(next);
+  function chooseRequirementValues(next: BookingRequirementValues): void {
+    setRequirementValues(next);
     setBooked(false);
   }
 
   async function bookAppointment(): Promise<void> {
-    if (!chosen || !patient || authorizationOutstanding) {
+    if (!chosen || !patient || requirementsOutstanding) {
       return;
     }
 
     setBooking(true);
     setBookError(undefined);
     try {
-      await onBook(buildBooking(chosen, patient, authorization, requirements));
+      await onBook(buildBooking(chosen, patient, requirementValues, requirements));
       setBooked(true);
     } catch (error) {
       // Left on screen with every answer still filled in: a refusal is usually
@@ -384,12 +384,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 label="Procedure codes"
                 required
                 creatable={false}
-                itemComponent={AuthorizationCodeItem}
-                pillComponent={AuthorizationCodePill}
+                itemComponent={RequirementCodeItem}
+                pillComponent={RequirementCodePill}
                 binding={procedureBinding}
                 onChange={(elements) =>
-                  chooseAuthorization({
-                    ...authorization,
+                  chooseRequirementValues({
+                    ...requirementValues,
                     procedure: toCodings(elements),
                   })
                 }
@@ -401,12 +401,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 label="Diagnosis codes"
                 required
                 creatable={false}
-                itemComponent={AuthorizationCodeItem}
-                pillComponent={AuthorizationCodePill}
+                itemComponent={RequirementCodeItem}
+                pillComponent={RequirementCodePill}
                 binding={diagnosisBinding}
                 onChange={(elements) =>
-                  chooseAuthorization({
-                    ...authorization,
+                  chooseRequirementValues({
+                    ...requirementValues,
                     diagnosis: toCodings(elements),
                   })
                 }
@@ -417,9 +417,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                 classNames={{ label: classes.requiredLabel }}
                 label="Medical necessity confirmed"
                 required
-                checked={authorization.medicalNecessity}
+                checked={requirementValues.medicalNecessity}
                 onChange={(event) =>
-                  chooseAuthorization({ ...authorization, medicalNecessity: event.currentTarget.checked })
+                  chooseRequirementValues({ ...requirementValues, medicalNecessity: event.currentTarget.checked })
                 }
               />
             )}
@@ -429,7 +429,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         {bookError !== undefined && <Alert color="red">{normalizeErrorString(bookError)}</Alert>}
         <Button
           fullWidth
-          disabled={!chosen || !patient || booked || authorizationOutstanding}
+          disabled={!chosen || !patient || booked || requirementsOutstanding}
           loading={booking}
           onClick={bookAppointment}
         >
@@ -586,7 +586,7 @@ function getFinderLabel(searching: boolean, chosen: boolean): string {
  * @param props - The option to render.
  * @returns The row.
  */
-function AuthorizationCodeItem(props: AsyncAutocompleteOption<ValueSetExpansionContains>): JSX.Element {
+function RequirementCodeItem(props: AsyncAutocompleteOption<ValueSetExpansionContains>): JSX.Element {
   const { label, resource, active } = props;
   return (
     <Group wrap="nowrap" gap="xs">
@@ -601,7 +601,7 @@ function AuthorizationCodeItem(props: AsyncAutocompleteOption<ValueSetExpansionC
   );
 }
 
-interface AuthorizationCodePillProps {
+interface RequirementCodePillProps {
   readonly item: AsyncAutocompleteOption<ValueSetExpansionContains>;
   readonly disabled?: boolean;
   readonly onRemove: () => void;
@@ -618,7 +618,7 @@ interface AuthorizationCodePillProps {
  * @param props - The chosen option, and how to take it back out.
  * @returns The pill.
  */
-function AuthorizationCodePill(props: AuthorizationCodePillProps): JSX.Element {
+function RequirementCodePill(props: RequirementCodePillProps): JSX.Element {
   const { item, disabled, onRemove } = props;
   const code = item.resource.code;
   return (
@@ -675,25 +675,25 @@ function ActorField(props: ActorFieldProps): JSX.Element {
  *
  * @param proposal - The time that was chosen, as `$find` offered it.
  * @param patient - Who the visit is for.
- * @param authorization - The codes and attestation given.
+ * @param values - The codes and attestation given.
  * @param requirements - What the visit type requires, from its eligibility codes.
  * @returns The appointment to book.
  */
 function buildBooking(
   proposal: Appointment,
   patient: WithId<Patient>,
-  authorization: BookingAuthorizationValues,
+  values: BookingRequirementValues,
   requirements: ReadonlySet<SchedulingRequirement>
 ): Appointment {
   const patientReference = getReferenceString(patient);
-  const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? authorization.procedure : [];
-  const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? authorization.diagnosis : [];
+  const procedure = requirements.has(REQUIRES_PROCEDURE_CODE) ? values.procedure : [];
+  const diagnosis = requirements.has(REQUIRES_DIAGNOSIS_CODE) ? values.diagnosis : [];
   const serviceType = [...(proposal.serviceType ?? []), ...procedure.map((coding) => ({ coding: [coding] }))];
   const reasonCode = [...(proposal.reasonCode ?? []), ...diagnosis.map((coding) => ({ coding: [coding] }))];
   const extension = [
     ...(proposal.extension ?? []),
     ...(requirements.has(REQUIRES_MEDICAL_NECESSITY_CODE)
-      ? [{ url: SchedulingMedicalNecessityURI, valueBoolean: authorization.medicalNecessity }]
+      ? [{ url: SchedulingMedicalNecessityURI, valueBoolean: values.medicalNecessity }]
       : []),
   ];
 

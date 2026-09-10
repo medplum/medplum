@@ -9,35 +9,57 @@ import {
   REQUIRES_PROCEDURE_CODE,
   SCHEDULING_REQUIREMENT_CODES,
 } from '@medplum/core';
-import type { BookingAuthorizationValues } from './AppointmentFinder.authorization';
+import type { BookingRequirementValues } from './AppointmentFinder.requirements';
 import {
-  EMPTY_AUTHORIZATION_VALUES,
-  hasRequiredAuthorizationValues,
+  EMPTY_REQUIREMENT_VALUES,
+  hasRequiredValues,
+  isRequirementAnswered,
   toCodings,
-} from './AppointmentFinder.authorization';
+} from './AppointmentFinder.requirements';
 
-describe('hasRequiredAuthorizationValues', () => {
+describe('isRequirementAnswered', () => {
+  const answers: Record<SchedulingRequirement, BookingRequirementValues> = {
+    [REQUIRES_PROCEDURE_CODE]: { ...EMPTY_REQUIREMENT_VALUES, procedure: [{ system: CPT, code: '96365' }] },
+    [REQUIRES_DIAGNOSIS_CODE]: { ...EMPTY_REQUIREMENT_VALUES, diagnosis: [{ system: ICD10, code: 'D63.1' }] },
+    [REQUIRES_MEDICAL_NECESSITY_CODE]: { ...EMPTY_REQUIREMENT_VALUES, medicalNecessity: true },
+  };
+
+  test.each(SCHEDULING_REQUIREMENT_CODES)('%s is answered by its own field, and by nothing else', (requirement) => {
+    expect(isRequirementAnswered(requirement, EMPTY_REQUIREMENT_VALUES)).toBe(false);
+    expect(isRequirementAnswered(requirement, answers[requirement])).toBe(true);
+
+    // Every other field filled, its own left empty: requirements do not stand in for one another.
+    const others = SCHEDULING_REQUIREMENT_CODES.filter((code) => code !== requirement);
+    const everythingElse = others.reduce<BookingRequirementValues>(
+      (values, code) => ({ ...values, ...answers[code] }),
+      EMPTY_REQUIREMENT_VALUES
+    );
+    expect(isRequirementAnswered(requirement, everythingElse)).toBe(false);
+  });
+});
+
+describe('hasRequiredValues', () => {
   const procedure = [{ system: CPT, code: '96365' }];
   const diagnosis = [{ system: ICD10, code: 'D63.1' }];
   const all = new Set(SCHEDULING_REQUIREMENT_CODES);
 
   test('Nothing given is not enough', () => {
-    expect(hasRequiredAuthorizationValues(EMPTY_AUTHORIZATION_VALUES, all)).toBe(false);
+    expect(hasRequiredValues(EMPTY_REQUIREMENT_VALUES, all)).toBe(false);
   });
 
   test('One field on its own is not enough', () => {
-    expect(hasRequiredAuthorizationValues({ ...EMPTY_AUTHORIZATION_VALUES, procedure }, all)).toBe(false);
-    expect(hasRequiredAuthorizationValues({ ...EMPTY_AUTHORIZATION_VALUES, diagnosis }, all)).toBe(false);
-    expect(hasRequiredAuthorizationValues({ ...EMPTY_AUTHORIZATION_VALUES, medicalNecessity: true }, all)).toBe(false);
+    expect(hasRequiredValues({ ...EMPTY_REQUIREMENT_VALUES, procedure }, all)).toBe(false);
+    expect(hasRequiredValues({ ...EMPTY_REQUIREMENT_VALUES, diagnosis }, all)).toBe(false);
+    expect(hasRequiredValues({ ...EMPTY_REQUIREMENT_VALUES, medicalNecessity: true }, all)).toBe(false);
   });
 
   test('One of each code, with medical necessity confirmed, is', () => {
-    expect(hasRequiredAuthorizationValues({ procedure, diagnosis, medicalNecessity: true }, all)).toBe(true);
+    expect(hasRequiredValues({ procedure, diagnosis, medicalNecessity: true }, all)).toBe(true);
   });
 
   test('Several of each is too, since one of each is a floor rather than a quota', () => {
     expect(
-      hasRequiredAuthorizationValues(
+      hasRequiredValues(
         {
           procedure: [...procedure, { system: CPT, code: '96366' }],
           diagnosis: [...diagnosis, { system: ICD10, code: 'E86.0' }],
@@ -49,28 +71,26 @@ describe('hasRequiredAuthorizationValues', () => {
   });
 
   test('Medical necessity is required rather than merely captured, so both codes are not enough', () => {
-    expect(hasRequiredAuthorizationValues({ procedure, diagnosis, medicalNecessity: false }, all)).toBe(false);
+    expect(hasRequiredValues({ procedure, diagnosis, medicalNecessity: false }, all)).toBe(false);
   });
 
   test('A visit type requiring nothing is answered by nothing', () => {
-    expect(hasRequiredAuthorizationValues(EMPTY_AUTHORIZATION_VALUES, new Set())).toBe(true);
+    expect(hasRequiredValues(EMPTY_REQUIREMENT_VALUES, new Set())).toBe(true);
   });
 
-  test.each<[SchedulingRequirement, BookingAuthorizationValues]>([
-    [REQUIRES_PROCEDURE_CODE, { ...EMPTY_AUTHORIZATION_VALUES, procedure }],
-    [REQUIRES_DIAGNOSIS_CODE, { ...EMPTY_AUTHORIZATION_VALUES, diagnosis }],
-    [REQUIRES_MEDICAL_NECESSITY_CODE, { ...EMPTY_AUTHORIZATION_VALUES, medicalNecessity: true }],
+  test.each<[SchedulingRequirement, BookingRequirementValues]>([
+    [REQUIRES_PROCEDURE_CODE, { ...EMPTY_REQUIREMENT_VALUES, procedure }],
+    [REQUIRES_DIAGNOSIS_CODE, { ...EMPTY_REQUIREMENT_VALUES, diagnosis }],
+    [REQUIRES_MEDICAL_NECESSITY_CODE, { ...EMPTY_REQUIREMENT_VALUES, medicalNecessity: true }],
   ])('%s alone is answered by its own field alone', (code, values) => {
     const requirements = new Set<SchedulingRequirement>([code]);
-    expect(hasRequiredAuthorizationValues(EMPTY_AUTHORIZATION_VALUES, requirements)).toBe(false);
-    expect(hasRequiredAuthorizationValues(values, requirements)).toBe(true);
+    expect(hasRequiredValues(EMPTY_REQUIREMENT_VALUES, requirements)).toBe(false);
+    expect(hasRequiredValues(values, requirements)).toBe(true);
   });
 
   test('A value nothing asked for does not stand in for one that was asked for', () => {
     const requirements = new Set<SchedulingRequirement>([REQUIRES_DIAGNOSIS_CODE]);
-    expect(hasRequiredAuthorizationValues({ procedure, diagnosis: [], medicalNecessity: true }, requirements)).toBe(
-      false
-    );
+    expect(hasRequiredValues({ procedure, diagnosis: [], medicalNecessity: true }, requirements)).toBe(false);
   });
 });
 
