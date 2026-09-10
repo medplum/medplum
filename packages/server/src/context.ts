@@ -24,6 +24,7 @@ import { authenticateTokenImpl } from './oauth/middleware';
 import { getRateLimitRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
+import { getLogTag } from './util/log-tag';
 import { generateTraceId, getTraceId } from './util/tracing';
 
 export class RequestContext implements IRequestContext {
@@ -55,6 +56,7 @@ export class RequestContext implements IRequestContext {
 export type AuthenticatedContextOptions = {
   logger?: Logger;
   async?: boolean;
+  logTag?: string; // Opaque caller-supplied string included in log output
 };
 
 export class AuthenticatedRequestContext extends RequestContext {
@@ -71,7 +73,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     repo: Repository,
     options?: AuthenticatedContextOptions
   ) {
-    let loggerMetadata: Record<string, any> | undefined;
+    const loggerMetadata: Record<string, any> = {};
     const projectId = repo.currentProject()?.id;
     if (projectId) {
       let profile = authState.membership.profile.reference;
@@ -79,7 +81,11 @@ export class AuthenticatedRequestContext extends RequestContext {
       if (asUserProfile && asUserProfile !== profile) {
         profile += ` (as ${asUserProfile})`;
       }
-      loggerMetadata = { projectId, profile };
+      loggerMetadata.projectId = projectId;
+      loggerMetadata.profile = profile;
+    }
+    if (options?.logTag) {
+      loggerMetadata.logTag = options.logTag;
     }
     super(requestId, traceId, options?.logger, loggerMetadata);
 
@@ -152,16 +158,27 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
   res.set('X-Request-Id', requestId);
   res.set('X-Trace-Id', traceId);
 
+  let logTag: string | undefined;
+  try {
+    logTag = getLogTag(req);
+  } catch (err: any) {
+    // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
+    const ctx = new RequestContext(requestId, traceId);
+    requestContextStore.run(ctx, () => next(err));
+    return;
+  }
+  const loggerMetadata = logTag ? { logTag } : undefined;
+
   let ctx: RequestContext | undefined;
   try {
     const result = await authenticateTokenImpl(req);
     if (result) {
       const { authState, repo } = result;
-      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
+      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo, { logTag });
     }
   } catch (err: any) {
     // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
-    ctx ??= new RequestContext(requestId, traceId);
+    ctx ??= new RequestContext(requestId, traceId, undefined, loggerMetadata);
     requestContextStore.run(ctx, () => {
       getLogger().error('Authentication error', { err: err.toString(), stack: err.stack });
       const outcome = badRequest('Authentication error');
@@ -172,7 +189,7 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
     return;
   }
 
-  ctx ??= new RequestContext(requestId, traceId);
+  ctx ??= new RequestContext(requestId, traceId, undefined, loggerMetadata);
   requestContextStore.run(ctx, () => next());
 }
 
