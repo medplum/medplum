@@ -114,7 +114,9 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
         txRepo.readReferences(requestedSchedules).then((loaded) => copyPaths(requestedSchedules, loaded)),
         txRepo.readReference<HealthcareService>(healthcareServiceRef).catch((err) => {
           if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
-            throw new OperationOutcomeError(badRequest('HealthcareService not found'));
+            throw new OperationOutcomeError(
+              badRequest('HealthcareService not found', 'Parameters.service-type-reference')
+            );
           }
           throw err;
         }),

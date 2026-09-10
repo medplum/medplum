@@ -485,7 +485,8 @@ describe('Appointment/:id/$reschedule', () => {
     expect(appointment).toMatchObject({ id: booked.id, status: 'booked', start: newStart, end: newEnd });
     expect(appointment.participant).toContainEqual({ actor: createReference(profile), status: 'accepted' });
   });
-  test('a proposed appointment from Appointment/$find can be used as input to $reschedule', async () => {
+
+  test('the start time of a proposed appointment from Appointment/$find can be used for $reschedule', async () => {
     const practitionerSchedule = await makeSchedule(practitioner);
     const roomOneSchedule = await makeSchedule(roomOne);
     const roomTwoSchedule = await makeSchedule(roomTwo);
@@ -497,7 +498,7 @@ describe('Appointment/:id/$reschedule', () => {
     });
 
     // Ask $find for times available to the practitioner and room two, ignoring the appointment
-    // we are about to move, then feed a result straight back in with no modification.
+    // we are about to move, then feed a result into $reschedule
     const findResponse = await request
       .get('/fhir/R4/Appointment/$find')
       .set('Authorization', `Bearer ${project.accessToken}`)
@@ -556,6 +557,30 @@ describe('Appointment/:id/$reschedule', () => {
     expect((appointment.participant ?? []).map((p) => p.actor?.reference)).toContainExactly([
       getReferenceString(patient),
       getReferenceString(practitioner),
+    ]);
+  });
+
+  test('rejects an invalid start time', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const start = '2026-04-14T16:00:00.000Z'; // Tue 11am EST
+    const end = '2026-04-14T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
+
+    // 11:17am is not on the 60 minute grid
+    const response = await reschedule(booked.id as string, {
+      start: '2026-04-14T16:17:60.000Z', // :60 seconds is invalid
+      schedules: [practitionerSchedule],
+    });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'Invalid start time ' },
+        expression: ['Parameters.start'],
+      },
     ]);
   });
 
@@ -636,6 +661,66 @@ describe('Appointment/:id/$reschedule', () => {
         severity: 'error',
         details: { text: 'Invalid schedule reference' },
         expression: ['Parameters.schedule[0]'],
+      },
+    ]);
+  });
+
+  test('rejects an invalid service-type-reference', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const start = '2026-04-16T16:00:00.000Z'; // Thu 11am EST
+    const end = '2026-04-16T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${booked.id}/$reschedule`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'start', valueDateTime: start },
+          { name: 'service-type-reference', valueReference: { reference: `Slot/${randomUUID}` } },
+          { name: 'schedule', valueReference: createReference(practitionerSchedule) },
+        ],
+      });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'Invalid service-type-reference' },
+        expression: ['Parameters.schedule[0]'],
+      },
+    ]);
+  });
+
+  test('rejects when the service-type-reference does not resolve', async () => {
+    const practitionerSchedule = await makeSchedule(practitioner);
+    const start = '2026-04-16T16:00:00.000Z'; // Thu 11am EST
+    const end = '2026-04-16T17:00:00.000Z';
+
+    const booked = await book(makeProposal({ start, end, schedules: [practitionerSchedule] }));
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${booked.id}/$reschedule`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'start', valueDateTime: start },
+          { name: 'service-type-reference', valueReference: { reference: `HealthcareService/${randomUUID}` } },
+          { name: 'schedule', valueReference: createReference(practitionerSchedule) },
+        ],
+      });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: { text: 'HealthcareService not found' },
+        expression: ['Parameters.service-type-reference'],
       },
     ]);
   });
