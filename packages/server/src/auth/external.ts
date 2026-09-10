@@ -13,6 +13,7 @@ import {
 } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, IdentityProvider, Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
@@ -305,11 +306,43 @@ async function verifyExternalCode(
       throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
     }
 
-    return parseJWTPayload(responseBody.id_token);
+    return await verifyExternalIdToken(idp, responseBody.id_token);
   } catch (err: any) {
+    if (err instanceof OperationOutcomeError) {
+      // Preserve specific validation messages (e.g. from id_token verification).
+      throw err;
+    }
     globalLogger.warn('Unhandled error in external auth check', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+}
+
+/**
+ * Parses the id_token returned by the external identity provider, verifying its signature when a
+ * JWKS is available.
+ *
+ * When the identity provider publishes a JWKS (`jwksUrl`), the id_token signature, issuer, and
+ * audience are checked before the claims are read. Providers without a configured `jwksUrl` retain
+ * the existing behavior of relying on the server-to-server token endpoint response; configuring
+ * `jwksUrl` (and `issuer`) is recommended so that claims are cryptographically verified.
+ * @param idp - The identity provider configuration.
+ * @param idToken - The raw id_token from the token endpoint response.
+ * @returns The id_token claims.
+ */
+async function verifyExternalIdToken(idp: IdentityProvider, idToken: unknown): Promise<Record<string, unknown>> {
+  if (!isString(idToken)) {
+    throw new OperationOutcomeError(badRequest('Missing id_token in external identity provider response'));
+  }
+
+  if (idp.jwksUrl) {
+    if (!idp.issuer) {
+      throw new OperationOutcomeError(badRequest('Missing issuer for external identity provider'));
+    }
+    const jwks = createRemoteJWKSet(new URL(idp.jwksUrl), { [customFetch]: safeFetch });
+    await jwtVerify(idToken, jwks, { issuer: idp.issuer, audience: idp.audience });
+  }
+
+  return parseJWTPayload(idToken);
 }
 
 /**

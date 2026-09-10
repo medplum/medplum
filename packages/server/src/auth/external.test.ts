@@ -13,6 +13,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
 import { registerNew } from './register';
@@ -280,6 +281,74 @@ describe('External', () => {
     expect(redirect.host).toStrictEqual(domain);
     expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
+  });
+
+  test('Login is scoped to the client project across tenants', async () => {
+    // A user who belongs only to a different project is not logged in through a
+    // ClientApplication in another project. External login resolves the user by email
+    // (including server-scoped users via getUserByEmailWithoutProject), but membership is
+    // scoped to the client's project, so a user with no membership there results in
+    // "User not found" and no authorization code is issued.
+    const otherEmail = `other-${randomUUID()}@example.com`;
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Other',
+        lastName: 'User',
+        projectName: 'Other Project ' + randomUUID(),
+        email: otherEmail,
+        password: 'password!@#',
+        remoteAddress: '6.6.6.6',
+        userAgent: 'Mozilla/5.0',
+      })
+    );
+
+    // The user is server-scoped, and so is resolvable by email with no project.
+    const otherUser = await withTestContext(() => getUserByEmailWithoutProject(otherEmail));
+    expect(otherUser).toBeDefined();
+
+    // Drive the callback with a client from a different project and a token asserting the
+    // other user's email.
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('id_token signature is verified when jwksUrl is configured', async () => {
+    // When the identity provider publishes a JWKS, a token that does not verify against it
+    // (here, the unsigned token produced by buildTokens) is rejected.
+    const jwksClient = await withTestContext(() =>
+      createClient(systemRepo, { project, name: 'JWKS Client', redirectUri })
+    );
+    await withTestContext(() =>
+      systemRepo.updateResource<ClientApplication>({
+        ...jwksClient,
+        identityProvider: {
+          ...identityProvider,
+          issuer: 'https://issuer.example.com',
+          jwksUrl: 'https://issuer.example.com/.well-known/jwks.json',
+          identitySource: 'email',
+          identityMappingMode: 'user-email',
+        },
+      })
+    );
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
+    });
+    // All fetches (token endpoint and JWKS endpoint) return non-JWKS JSON, so signature
+    // verification cannot succeed for the unsigned token.
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    const res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
   });
 
   test('Invalid client', async () => {
