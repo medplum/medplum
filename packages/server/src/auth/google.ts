@@ -124,6 +124,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       emailVerified: claims.email_verified,
       project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
+  } else if (claims.email_verified && !user.emailVerified) {
+    // Accept Google's assertion for accounts that predate it too, so a user invited or
+    // provisioned before this is not left permanently unverified. Only ever upgrades: a
+    // user who verified with Medplum is never downgraded by a false or missing claim.
+    user = await getGlobalSystemRepo().updateResource<User>({ ...user, emailVerified: true });
   }
 
   const login = await tryLogin({

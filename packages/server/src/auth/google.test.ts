@@ -275,6 +275,62 @@ describe('Google Auth', () => {
     expect(res.body.emailVerificationRequired).toBeUndefined();
   });
 
+  test('Verify existing user when Google verified email', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    await systemRepo.createResource<User>({
+      resourceType: 'User',
+      firstName: 'Google',
+      lastName: 'Google',
+      email,
+    });
+
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email, undefined, true),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.emailVerificationRequired).toBeUndefined();
+
+    // An account that predates the claim is upgraded rather than left unverified
+    const user = await getUserByEmail(email, undefined);
+    expect(user?.emailVerified).toBe(true);
+  });
+
+  test('Do not un-verify a user when Google reports unverified', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    await systemRepo.createResource<User>({
+      resourceType: 'User',
+      firstName: 'Google',
+      lastName: 'Google',
+      email,
+      emailVerified: true,
+    });
+
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email, undefined, false),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(200);
+    expect(res.body.emailVerificationRequired).toBeUndefined();
+
+    // A Medplum verification outranks a false claim and is never downgraded
+    const user = await getUserByEmail(email, undefined);
+    expect(user?.emailVerified).toBe(true);
+  });
+
   test('Skip email verification on sign in', async () => {
     getConfig().requireVerifiedEmailForProjectCreation = true;
     const email = 'new-google-' + randomUUID() + '@example.com';
