@@ -7,6 +7,7 @@ import {
   EMPTY,
   Operator,
   createReference,
+  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -91,6 +92,9 @@ const MAX_JOB_ATTEMPTS = 19;
  * This can be overridden by the subscription-max-attempts extension.
  */
 const DEFAULT_ATTEMPTS = 4;
+
+/** Subscription extension that removes Medplum-specific metadata from rest-hook payloads. */
+const SUBSCRIPTION_OMIT_EXTENDED_META = 'https://medplum.com/fhir/StructureDefinition/subscription-omit-extended-meta';
 
 /**
  * The maximum number of attempts to get through the preamble (loading subscription and resource).
@@ -743,18 +747,23 @@ async function sendRestHook(
     return;
   }
 
-  const body = interaction === 'delete' ? '{}' : stringify(resource);
-  const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
-  let error: Error | undefined = undefined;
-
-  const fetchStartTime = Date.now();
-  let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
     systemRepo = await getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
+
+  const webhookResource =
+    getExtensionValue(subscription, SUBSCRIPTION_OMIT_EXTENDED_META) === true
+      ? systemRepo.withOverrideConfig({ extendedMode: false }).removeHiddenFields(deepClone(resource))
+      : resource;
+  const body = interaction === 'delete' ? '{}' : stringify(webhookResource);
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
+  let error: Error | undefined = undefined;
+
+  const fetchStartTime = Date.now();
+  let fetchEndTime: number;
   try {
     log.info('Sending rest hook', {
       url,
