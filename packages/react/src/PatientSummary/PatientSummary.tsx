@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Divider, Flex, Group, Skeleton, Stack, Text, Tooltip } from '@mantine/core';
-import { formatHumanName, resolveId } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import { formatDate, formatHumanName, resolveId } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, usePatientSummaryData, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -36,13 +37,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   useEffect(() => {
     const id = resolveId(propsPatient);
     if (id) {
-      medplum
-        .readHistory('Patient', id)
-        .then((history) => {
-          const firstEntry = history.entry?.[history.entry.length - 1];
-          const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
-          setCreatedDate(typeof lastUpdated === 'string' ? lastUpdated : '');
-        })
+      readCreatedDate(medplum, id)
+        .then((lastUpdated) => setCreatedDate(lastUpdated ?? ''))
         .catch(() => {});
     }
   }, [propsPatient, medplum]);
@@ -66,18 +62,11 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 {formatHumanName(patient.name?.[0])}
               </Text>
             </Tooltip>
-            {(() => {
-              const dateString = typeof createdDate === 'string' && createdDate.length > 0 ? createdDate : undefined;
-              if (!dateString) {
-                return null;
-              }
-              const d = new Date(dateString);
-              return (
-                <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
-                  Patient since {d.getMonth() + 1}/{d.getDate()}/{d.getFullYear()}
-                </Text>
-              );
-            })()}
+            {createdDate && (
+              <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
+                Patient since {formatDate(createdDate)}
+              </Text>
+            )}
           </Stack>
         </Group>
         <Divider />
@@ -112,6 +101,25 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       </Stack>
     </Flex>
   );
+}
+
+/**
+ * Reads the creation timestamp of a patient from the oldest entry in its version history.
+ * History is returned newest first, so the newest page's `total` is used to page directly to the
+ * oldest version instead of downloading every version.
+ * @param medplum - The Medplum client.
+ * @param id - The patient ID.
+ * @returns The `meta.lastUpdated` of the first version, or undefined if unavailable.
+ */
+async function readCreatedDate(medplum: MedplumClient, id: string): Promise<string | undefined> {
+  const newest = await medplum.readHistory('Patient', id, { count: 1 });
+  const total = newest.total;
+  const oldest =
+    total !== undefined && total > 1
+      ? await medplum.readHistory('Patient', id, { count: 1, offset: total - 1 })
+      : newest;
+  const entries = oldest.entry ?? [];
+  return entries[entries.length - 1]?.resource?.meta?.lastUpdated;
 }
 
 export interface PatientSummarySkeletonProps {

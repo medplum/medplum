@@ -1,9 +1,8 @@
 .title {
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .itemWrapper {

@@ -8,21 +8,24 @@ import { formatTimezoneLabel, isViewerTimezone } from '../AppointmentFinder/Appo
 export interface CalendarTimezoneNoticeProps {
   /** IANA timezones of the calendars on show whose timezone is known. Exclude any that are unknown. */
   readonly timezones: readonly string[];
+  /** Whether any calendar on show has a timezone that could not be read. */
+  readonly anyUnknown?: boolean;
   /** The viewer's own IANA timezone. Defaults to the browser's. */
   readonly viewerTimezone?: string;
   readonly className?: string;
 }
 
 /**
- * Warns when the calendar's contents are not all in the same timezone as the viewer's.
+ * Warns when the calendar's contents are not all known to be in the same timezone as the
+ * viewer's.
  * @param props - The React props.
  * @returns The notice, or nothing when every calendar is on the viewer's own clock.
  */
 export function CalendarTimezoneNotice(props: CalendarTimezoneNoticeProps): JSX.Element | null {
-  const { timezones, viewerTimezone, className } = props;
+  const { timezones, anyUnknown, viewerTimezone, className } = props;
 
   const elsewhere = timezones.some((timezone) => !isViewerTimezone(timezone, viewerTimezone));
-  if (!elsewhere) {
+  if (!elsewhere && !anyUnknown) {
     return null;
   }
 
