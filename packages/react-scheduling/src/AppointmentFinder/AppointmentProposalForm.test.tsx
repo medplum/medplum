@@ -1321,6 +1321,34 @@ describe('AppointmentProposalForm', () => {
       expect(bookButton()).toBeEnabled();
     });
 
+    test('Books a visit type that names one requirement, chosen from the visit type field', async () => {
+      // Walks the fixture the PartialAuthRequired story uses, so the story shows a bookable
+      // visit type rather than one whose schedules never answer.
+      setupWithCodeValueSets();
+      await typeInAutocomplete(field(/visit type/i), 'Iron');
+      await clickAutocompleteOption('Iron Infusion');
+      await settleAutocomplete();
+
+      expect(field(/diagnosis code/i)).toBeInTheDocument();
+      expect(screen.queryByRole('searchbox', { name: /procedure code/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /medical necessity/i })).not.toBeInTheDocument();
+
+      await chooseActor(/provider/i, 'chen', 'Dr. Wei Chen');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, 'MRN-0041'));
+      expect(bookButton()).toBeDisabled();
+
+      await enterCode(/diagnosis code/i, DiagnosisCodes[0]);
+      await clickBook();
+
+      const proposal = proposedAppointment();
+      expect(proposal.reasonCode).toEqual([{ coding: [DiagnosisCodes[0]] }]);
+      // Just the concept `$find` put there naming the visit type.
+      expect(proposal.serviceType).toHaveLength(1);
+      expect(getExtensionValue(proposal, SchedulingMedicalNecessityURI)).toBeUndefined();
+    });
+
     test('Asks for them after the patient, as the last of the visit details', async () => {
       setupWithCodeValueSets();
       await chooseAuthorizedService();
