@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { EMPTY, getReferenceString } from '@medplum/core';
+import { createReference, EMPTY, getReferenceString } from '@medplum/core';
 import type { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../../storage/loader';
@@ -57,8 +57,10 @@ export class BulkExporter {
     // compartment as the account (so a policy that filters AsyncJob by _compartment still
     // matches it -- the poll in job.ts / bulkdata.ts reads through the caller's repo).
     const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
+    const author = this.repo.getAuthor();
     this.resource = await this.repo.getSystemRepo().createResource<AsyncJob>({
       resourceType: 'AsyncJob',
+      requester: author.reference === 'system' ? undefined : author,
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
@@ -71,15 +73,19 @@ export class BulkExporter {
   }
 
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
+    if (!this.resource) {
+      throw new Error('Export must be started before creating a writer');
+    }
     let writer = this.writers[resourceType];
     if (!writer) {
       // Like the AsyncJob, the output Binary is bookkeeping for a read operation, so create it
-      // with the system repo (scoped to the caller's project + account compartment so they can
-      // presign/download it). The exported data was already access-checked when read.
+      // with the system repo. Require access to the export job when reading or signing the file.
+      // The exported data was already access-checked when read.
       const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
       const binary = await this.repo.getSystemRepo().createResource<Binary>({
         resourceType: 'Binary',
         contentType: NDJSON_CONTENT_TYPE,
+        securityContext: createReference(this.resource),
         meta: {
           project: this.repo.currentProject()?.id,
           accounts: accountCompartment ? [accountCompartment] : undefined,

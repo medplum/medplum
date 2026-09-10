@@ -19,6 +19,7 @@ import {
 } from '@medplum/core';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type {
+  AsyncJob,
   AuditEvent,
   Binary,
   BundleEntry,
@@ -2090,6 +2091,47 @@ describe('FHIR Repo', () => {
       expect(await readVersion()).toStrictEqual(Repository.VERSION);
     });
   });
+
+  test('AsyncJob requester is assigned by the server and survives updates', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const suppliedRequester = { reference: `Practitioner/${randomUUID()}` };
+      const job = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'https://example.com/job',
+        requestTime: new Date().toISOString(),
+        requester: suppliedRequester,
+      });
+      expect(job.requester).toEqual(repo.getAuthor());
+
+      const updated = await repo.updateResource<AsyncJob>({ ...job, requester: suppliedRequester, status: 'active' });
+      expect(updated.requester).toEqual(repo.getAuthor());
+      const completed = await repo.getSystemRepo().updateResource<AsyncJob>({
+        ...updated,
+        requester: undefined,
+        status: 'completed',
+      });
+      expect(completed.requester).toEqual(repo.getAuthor());
+      expect(completed.meta?.author?.reference).toBe('system');
+    }));
+
+  test('System and legacy AsyncJobs may have no requester', () =>
+    withTestContext(async () => {
+      const job = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'data-migration',
+        requestTime: new Date().toISOString(),
+      });
+      expect(job.requester).toBeUndefined();
+      const updated = await systemRepo.updateResource<AsyncJob>({
+        ...job,
+        requester: { reference: `Practitioner/${randomUUID()}` },
+        status: 'completed',
+      });
+      expect(updated.requester).toBeUndefined();
+    }));
 
   test('Legacy UUID support -- non-conformant IDs that match UUID form are accepted', () =>
     withTestContext(async () => {

@@ -1526,6 +1526,24 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-requester",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-requester",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-requester",
+        "version": "4.0.1",
+        "name": "requester",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by requesting profile",
+        "code": "requester",
+        "base": ["AsyncJob"],
+        "type": "reference",
+        "expression": "AsyncJob.requester",
+        "target": ["Resource"]
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
       "resource": {
         "resourceType": "SearchParameter",
