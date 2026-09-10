@@ -78,8 +78,13 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse(chunks));
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
-      receivedChunks.push(chunk)
+    const result = await sendToBotStreaming(
+      mockMedplum as MedplumClient,
+      botId,
+      messages,
+      'gpt-4o',
+      'medium',
+      (chunk) => receivedChunks.push(chunk)
     );
 
     expect(result.content).toBe('Hello world!');
@@ -90,8 +95,13 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('This is a buffered response'));
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
-      receivedChunks.push(chunk)
+    const result = await sendToBotStreaming(
+      mockMedplum as MedplumClient,
+      botId,
+      messages,
+      'gpt-4o',
+      'medium',
+      (chunk) => receivedChunks.push(chunk)
     );
 
     expect(result.content).toBe('This is a buffered response');
@@ -101,17 +111,17 @@ describe('sendToBotStreaming', () => {
   test('throws error when bot execution returns 404', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockErrorResponse(404, 'Bot not found'));
 
-    await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
-      'Bot execution failed: 404 - Bot not found'
-    );
+    await expect(
+      sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn())
+    ).rejects.toThrow('Bot execution failed: 404 - Bot not found');
   });
 
   test('throws error when fetch fails', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockErrorResponse(500, 'Internal Server Error'));
 
-    await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
-      'Bot execution failed: 500 - Internal Server Error'
-    );
+    await expect(
+      sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn())
+    ).rejects.toThrow('Bot execution failed: 500 - Internal Server Error');
   });
 
   test('throws error when response body is null for streaming', async () => {
@@ -122,15 +132,15 @@ describe('sendToBotStreaming', () => {
     Object.defineProperty(mockResponse, 'body', { value: null });
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse);
 
-    await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
-      'No response body'
-    );
+    await expect(
+      sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn())
+    ).rejects.toThrow('No response body');
   });
 
   test('sends correct request headers and body', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('OK'));
 
-    await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn());
+    await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', 'medium', vi.fn());
 
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fwww.medplum.com%2Fbots%7Ctest-bot',
@@ -146,6 +156,7 @@ describe('sendToBotStreaming', () => {
           parameter: [
             { name: 'messages', valueString: JSON.stringify(messages) },
             { name: 'model', valueString: 'gpt-4o' },
+            { name: 'reasoning_effort', valueString: 'medium' },
           ],
         }),
       })
@@ -166,8 +177,13 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
-      receivedChunks.push(chunk)
+    const result = await sendToBotStreaming(
+      mockMedplum as MedplumClient,
+      botId,
+      messages,
+      'gpt-4o',
+      'medium',
+      (chunk) => receivedChunks.push(chunk)
     );
 
     expect(result.content).toBe('');
@@ -192,8 +208,13 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
-      receivedChunks.push(chunk)
+    const result = await sendToBotStreaming(
+      mockMedplum as MedplumClient,
+      botId,
+      messages,
+      'gpt-4o',
+      'medium',
+      (chunk) => receivedChunks.push(chunk)
     );
 
     expect(result.content).toBe('Hello there');
@@ -219,8 +240,13 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
-      receivedChunks.push(chunk)
+    const result = await sendToBotStreaming(
+      mockMedplum as MedplumClient,
+      botId,
+      messages,
+      'gpt-4o',
+      'medium',
+      (chunk) => receivedChunks.push(chunk)
     );
 
     expect(result.content).toBe('Hello world');
@@ -247,8 +273,13 @@ describe('sendToBotStreaming', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(response);
 
     const receivedChunks: string[] = [];
-    const result = await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', (chunk) =>
-      receivedChunks.push(chunk)
+    const result = await sendToBotStreaming(
+      mockMedplum as MedplumClient,
+      botId,
+      messages,
+      'gpt-4o',
+      'medium',
+      (chunk) => receivedChunks.push(chunk)
     );
 
     expect(result.content).toBe('Hello world');
@@ -262,6 +293,7 @@ describe('processMessage - max iterations behavior', () => {
     currentMessages: [{ role: 'user' as const, content: 'Show me the patient list' }],
     currentTopicId: 'topic-1',
     selectedModel: 'gpt-4o',
+    selectedReasoningEffort: 'medium' as const,
     isFirstMessage: false,
     setCurrentTopicId: vi.fn(),
     setRefreshKey: vi.fn(),

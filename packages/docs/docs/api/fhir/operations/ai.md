@@ -52,12 +52,14 @@ curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
 
 ## Parameters
 
-| Name       | Type     | Description                                                    | Required |
-| ---------- | -------- | -------------------------------------------------------------- | -------- |
-| `messages` | `string` | JSON string containing the conversation messages array         | Yes      |
-| `apiKey`   | `string` | OpenAI API key                                                 | Yes      |
-| `model`    | `string` | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`)           | Yes      |
-| `tools`    | `string` | JSON string containing the tools array for function calling    | No       |
+| Name               | Type     | Description                                                                                                                     | Required |
+| ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `messages`         | `string` | JSON string containing the conversation messages array                                                                          | Yes      |
+| `apiKey`           | `string` | OpenAI API key                                                                                                                  | Yes      |
+| `model`            | `string` | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`)                                                                            | Yes      |
+| `tools`            | `string` | JSON string containing the tools array for function calling                                                                     | No       |
+| `reasoning_effort` | `string` | Reasoning effort for reasoning models (`none`, `low`, `medium`, `high`, `xhigh`)                                                | No       |
+| `api`              | `code`   | OpenAI endpoint: `chat` or `responses`. Defaults to `chat`; `tools` with a `reasoning_effort` other than `none` use `responses` | No       |
 
 ### Messages Format
 
@@ -65,8 +67,8 @@ The `messages` parameter should be a JSON-encoded array of message objects follo
 
 ```json
 [
-  {"role": "system", "content": "You are a helpful healthcare assistant."},
-  {"role": "user", "content": "What is the normal range for blood pressure?"}
+  { "role": "system", "content": "You are a helpful healthcare assistant." },
+  { "role": "user", "content": "What is the normal range for blood pressure?" }
 ]
 ```
 
@@ -98,10 +100,10 @@ The `tools` parameter enables function calling capabilities:
 
 ## Output
 
-| Name         | Type     | Description                               |
-| ------------ | -------- | ----------------------------------------- |
-| `content`    | `string` | The AI response content                   |
-| `tool_calls` | `string` | JSON string containing tool calls array   |
+| Name         | Type     | Description                             |
+| ------------ | -------- | --------------------------------------- |
+| `content`    | `string` | The AI response content                 |
+| `tool_calls` | `string` | JSON string containing tool calls array |
 
 ### Example Response
 
