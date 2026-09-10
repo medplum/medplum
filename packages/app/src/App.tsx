@@ -25,6 +25,7 @@ import type { FunctionComponent, JSX } from 'react';
 import { Suspense } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
+import { CompartmentFilterControl } from './CompartmentFilterControl';
 
 import './App.css';
 
@@ -47,6 +48,7 @@ export function App(): JSX.Element {
       version={MEDPLUM_VERSION}
       menus={userConfigToMenu(config)}
       displayAddBookmark={!!config?.id}
+      notifications={<CompartmentFilterControl />}
       announcements={
         project?.superAdmin
           ? [
