@@ -1222,7 +1222,10 @@ async function tryExternalAuth(
   }
 
   const claims = parseJWTPayload(accessToken);
-  const issuer = claims.iss as string;
+  if (!hasIssuer(claims)) {
+    return undefined;
+  }
+  const issuer = claims.iss;
   const projectId = req ? getProjectIdFromUrl(req.originalUrl) : undefined;
   const externalAuthConfig = externalAuthProviders?.find(
     (provider) => (provider.identityProvider?.issuer ?? provider.issuer) === issuer
@@ -1273,7 +1276,7 @@ async function tryExternalAuthLogin(
   systemRepo: SystemRepository,
   req: Request | undefined,
   accessToken: string,
-  claims: JWTPayload,
+  claims: JWTPayload & { iss: string },
   idp: IdentityProvider,
   client: WithId<ClientApplication> | undefined
 ): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
@@ -1326,7 +1329,10 @@ async function tryExternalAuthLogin(
       filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
     });
   } else if (!isString(claims.sub)) {
-    client = await getExternalBearerClient(projectId as string, claims.iss as string);
+    if (!projectId) {
+      return undefined;
+    }
+    client = await getExternalBearerClient(projectId, claims.iss);
     membership = client ? await getClientApplicationMembership(systemRepo, client) : undefined;
   } else {
     // Path B: sub claim fallback - look up ProjectMembership by externalId
@@ -1436,4 +1442,8 @@ export function hashCode(code: string): string {
     .replaceAll('+', '-')
     .replaceAll('/', '_')
     .replaceAll('=', '');
+}
+
+function hasIssuer(claims: JWTPayload): claims is JWTPayload & { iss: string } {
+  return isString(claims.iss);
 }
