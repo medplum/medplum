@@ -488,9 +488,7 @@ export async function setLoginMembership(
   // This method is used internally in a bunch of places that do not need to check IP access rules
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
   // Include the SMART App Launch context, which patient scopes in the login require to build a policy
-  const smartAppLaunch = login.launch
-    ? await projectSystemRepo.readReference<SmartAppLaunch>(login.launch)
-    : undefined;
+  const smartAppLaunch = login.launch ? await projectSystemRepo.readReference<SmartAppLaunch>(login.launch) : undefined;
   const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig, smartAppLaunch });
   await checkIpAccessRules(login, accessPolicy);
 
