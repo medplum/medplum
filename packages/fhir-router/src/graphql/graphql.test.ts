@@ -124,24 +124,19 @@ describe('GraphQL', () => {
     expect(outcome).toMatchObject(badRequest('GraphQL syntax error.'));
   });
 
-  test('Introspection forbidden', async () => {
-    // https://graphql.org/learn/introspection/
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
-    const [outcome] = await graphqlHandler(
-      makeSimpleRequest('POST', '/fhir/R4/$graphql', {
-        query: `{
-          __schema {
-            types {
-              name
-            }
-          }
-        }`,
-      }),
-      repo,
-      fhirRouter
-    );
-    expect(outcome).toMatchObject(forbidden);
-  });
+  test.each<string>([`{ __schema {types {name} } }`, `{ __type(name:"Patient") { fields {name} } }`])(
+    'Introspection forbidden',
+    async (query) => {
+      // https://graphql.org/learn/introspection/
+      const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+      const [outcome] = await graphqlHandler(
+        makeSimpleRequest('POST', '/fhir/R4/$graphql', { query }),
+        repo,
+        fhirRouter
+      );
+      expect(outcome).toMatchObject(forbidden);
+    }
+  );
 
   test('Introspection allowed', async () => {
     // https://graphql.org/learn/introspection/
