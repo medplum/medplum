@@ -441,3 +441,21 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   background-color: var(--oc-grape-9);
   border-color: var(--oc-grape-9);
 }
+
+/*
+ * Kapa AI chat panel. `data-view-mode="sidebar"` in docusaurus.config.ts docks it to the right edge,
+ * but it is fixed-position and would sit on top of the page content, so inset the whole app by its
+ * width while it is open. `data-kapa-sidebar` is toggled by src/theme/Root.tsx; the width and the
+ * 300ms duration both match the widget's own slide transition.
+ *
+ * Below this breakpoint the widget goes full screen, so there is nothing left to inset.
+ */
+@media screen and (min-width: 997px) {
+  #__docusaurus {
+    transition: padding-right 300ms ease;
+  }
+
+  html[data-kapa-sidebar='open'] #__docusaurus {
+    padding-right: var(--kapa-sidebar-width);
+  }
+}
