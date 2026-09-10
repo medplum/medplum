@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { ClientApplication } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import type { ClientApplication, Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,7 +10,9 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
+import { generateAccessToken } from './keys';
 
 describe('OAuth2 UserInfo', () => {
   const app = express();
@@ -221,6 +224,78 @@ describe('OAuth2 UserInfo', () => {
       .send({ token });
     expect(res3).toHaveStatus(200);
     expect(res3.body).toStrictEqual({ active: false });
+  });
+
+  test('Token introspection rejects cross-Project token', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res).toHaveStatus(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.access_token).toBeDefined();
+    const token = res2.body.access_token;
+
+    // The token is active when introspected by the client it was issued to
+    const res3 = await request(app)
+      .post(`/oauth2/introspect`)
+      .set('Authorization', 'Bearer ' + token)
+      .send({ token });
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.active).toEqual(true);
+
+    // A caller in an unrelated Project learns nothing about the token
+    const { accessToken: otherProjectToken } = await createTestProject({ withAccessToken: true });
+    const res4 = await request(app)
+      .post(`/oauth2/introspect`)
+      .set('Authorization', 'Bearer ' + otherProjectToken)
+      .send({ token });
+    expect(res4).toHaveStatus(200);
+    expect(res4.body).toStrictEqual({ active: false });
+
+    // Same ClientApplication, but authenticated into another Project
+    const { project: otherProject } = await createTestProject();
+    const systemRepo = getGlobalSystemRepo();
+    const otherMembership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(otherProject),
+      user: createReference(client),
+      profile: createReference(client),
+    });
+    const otherLogin = await systemRepo.createResource<Login>({
+      resourceType: 'Login',
+      authMethod: 'client',
+      user: createReference(client),
+      client: createReference(client),
+      membership: createReference(otherMembership),
+      authTime: new Date().toISOString(),
+      granted: true,
+      scope: 'openid',
+    });
+    const sharedClientToken = await generateAccessToken({
+      login_id: otherLogin.id,
+      sub: client.id,
+      username: client.id,
+      client_id: client.id,
+      profile: getReferenceString(client),
+      scope: 'openid',
+    });
+    const res5 = await request(app)
+      .post(`/oauth2/introspect`)
+      .set('Authorization', 'Bearer ' + sharedClientToken)
+      .send({ token });
+    expect(res5).toHaveStatus(200);
+    expect(res5.body).toStrictEqual({ active: false });
   });
 
   test('Token parameter required', async () => {
