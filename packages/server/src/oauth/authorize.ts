@@ -244,8 +244,12 @@ async function getExistingLoginFromIdTokenHint(req: Request, client: ClientAppli
   }
 
   const systemRepo = getGlobalSystemRepo();
-  const login = await systemRepo.readResource<Login>('Login', existingLoginId);
-  return login.granted && !login.revoked ? login : undefined;
+  try {
+    const login = await systemRepo.readResource<Login>('Login', existingLoginId);
+    return !login.revoked ? login : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
