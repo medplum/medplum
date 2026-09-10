@@ -5,6 +5,7 @@ import { ContentType, OAuthTokenAuthMethod } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { createClient } from '../admin/client';
@@ -319,36 +320,91 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
 
-  test('id_token signature is verified when jwksUrl is configured', async () => {
-    // When the identity provider publishes a JWKS, a token that does not verify against it
-    // (here, the unsigned token produced by buildTokens) is rejected.
+  test('id_token verification rejects invalid tokens', async () => {
+    // Missing id_token in the token endpoint response.
+    const noJwksUrl = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: externalAuthClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson({}));
+    let res = await request(app).get(noJwksUrl);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing id_token in external identity provider response');
+
     const jwksClient = await withTestContext(() =>
       createClient(systemRepo, { project, name: 'JWKS Client', redirectUri })
+    );
+    const idp = {
+      ...identityProvider,
+      jwksUrl: 'https://issuer.example.com/.well-known/jwks.json',
+      identitySource: 'email' as const,
+      identityMappingMode: 'user-email' as const,
+    };
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
+    });
+    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+
+    // JWKS configured without an issuer.
+    await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...jwksClient, identityProvider: idp }));
+    res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing issuer for external identity provider');
+
+    // Issuer configured, but the (unsigned) token does not verify against the JWKS.
+    await withTestContext(() =>
+      systemRepo.updateResource<ClientApplication>({
+        ...jwksClient,
+        identityProvider: { ...idp, issuer: 'https://issuer.example.com' },
+      })
+    );
+    res = await request(app).get(url);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
+  });
+
+  test('id_token that verifies against the JWKS is accepted', async () => {
+    const issuer = 'https://issuer.example.com';
+    const jwksUrl = 'https://issuer.example.com/.well-known/verified-jwks.json';
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+
+    const jwksClient = await withTestContext(() =>
+      createClient(systemRepo, { project, name: 'JWKS Verified Client', redirectUri })
     );
     await withTestContext(() =>
       systemRepo.updateResource<ClientApplication>({
         ...jwksClient,
         identityProvider: {
           ...identityProvider,
-          issuer: 'https://issuer.example.com',
-          jwksUrl: 'https://issuer.example.com/.well-known/jwks.json',
+          issuer,
+          jwksUrl,
           identitySource: 'email',
           identityMappingMode: 'user-email',
         },
       })
     );
 
-    const url = appendQueryParams('/auth/external', {
-      code: randomUUID(),
-      state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
-    });
-    // All fetches (token endpoint and JWKS endpoint) return non-JWKS JSON, so signature
-    // verification cannot succeed for the unsigned token.
-    fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+    const jwt = await new SignJWT({ email })
+      .setProtectedHeader({ alg: 'ES256' })
+      .setIssuer(issuer)
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
 
-    const res = await request(app).get(url);
-    expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
+    // The token endpoint returns the signed token; the JWKS endpoint returns the public key.
+    fetchMock.mockImplementation((input: any) =>
+      String(input).includes('verified-jwks') ? mockFetchJson({ keys: [publicJwk] }) : mockFetchJson({ id_token: jwt })
+    );
+
+    const res = await request(app).get(
+      appendQueryParams('/auth/external', {
+        code: randomUUID(),
+        state: JSON.stringify({ redirectUri, clientId: jwksClient.id }),
+      })
+    );
+    expect(res).toHaveStatus(302);
+    expect(new URL(res.header.location).searchParams.get('code')).toBeTruthy();
   });
 
   test('Invalid client', async () => {
