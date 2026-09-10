@@ -659,6 +659,17 @@ describe('Cron resource', () => {
       ).rejects.toThrow(`Cannot resolve 'Bot/${otherBot.id}'`);
     }));
 
+  test('A read failure while validating is not reported as an unresolvable reference', () =>
+    withTestContext(async () => {
+      // Spying on the instance isolates the validation read: getAccounts uses the system repo
+      const readSpy = vi
+        .spyOn(repo, 'readReferences')
+        .mockRejectedValueOnce(new OperationOutcomeError(serverError(new Error('database is down'))));
+
+      await expect(repo.createResource<Cron>(validCron())).rejects.toThrow('database is down');
+      readSpy.mockRestore();
+    }));
+
   test('A Cron rejected on write schedules nothing', () =>
     withTestContext(async () => {
       const queue = getCronQueue() as any;

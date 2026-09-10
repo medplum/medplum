@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValueWithPath, ValidatorOptions } from '@medplum/core';
-import { badRequest, getReferenceString, OperationOutcomeError, Operator, validateResource } from '@medplum/core';
+import {
+  badRequest,
+  getReferenceString,
+  isResource,
+  OperationOutcomeError,
+  Operator,
+  validateResource,
+} from '@medplum/core';
 import type {
   CodeableConcept,
   Coding,
@@ -81,19 +88,18 @@ function validateCronString(cron: Cron): void {
  * @param cron - The Cron resource being written.
  */
 async function validateCronReferences(repo: Repository, cron: Cron): Promise<void> {
-  const references: [Reference | undefined, string][] = [
-    [cron.targetReference, 'Cron.targetReference'],
-    [cron.onBehalfOf, 'Cron.onBehalfOf'],
-  ];
+  // Cardinality and the cron-1/cron-2 constraints already cover a missing or logical reference.
+  const checks: { reference: Reference; path: string }[] = [
+    { reference: cron.targetReference, path: 'Cron.targetReference' },
+    { reference: cron.onBehalfOf, path: 'Cron.onBehalfOf' },
+  ].filter((check) => check.reference?.reference);
 
-  for (const [reference, path] of references) {
-    if (!reference?.reference) {
-      // Cardinality and the cron-1/cron-2 constraints already cover a missing or logical reference.
-      continue;
-    }
-    try {
-      await repo.readReference(reference);
-    } catch (_err: unknown) {
+  // readReferences resolves both in one pass, and reports only a reference the author cannot reach
+  // as an Error: any other read failure propagates, rather than being blamed on the Cron.
+  const results = await repo.readReferences(checks.map((check) => check.reference));
+  for (let i = 0; i < results.length; i++) {
+    if (!isResource(results[i])) {
+      const { reference, path } = checks[i];
       throw new OperationOutcomeError(badRequest(`Cannot resolve '${reference.reference}'`, path));
     }
   }
