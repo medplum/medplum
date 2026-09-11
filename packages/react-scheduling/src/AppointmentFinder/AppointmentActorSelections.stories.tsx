@@ -35,6 +35,8 @@ function Fields(props: {
   readonly location?: WithId<Location>;
 }): JSX.Element {
   const [value, setValue] = useState<ActorSelections>({});
+  const ways = countActorCombinations(value);
+  const requests = getActorCombinations(value).length;
 
   return (
     <Document>
@@ -46,8 +48,8 @@ function Fields(props: {
           onChange={setValue}
         />
         <div>
-          {countActorCombinations(value)} ways of holding this visit, searched as {getActorCombinations(value).length}{' '}
-          requests
+          {ways} {ways === 1 ? 'way' : 'ways'} of holding this visit, searched as {requests}{' '}
+          {requests === 1 ? 'request' : 'requests'}
         </div>
       </Stack>
     </Document>
